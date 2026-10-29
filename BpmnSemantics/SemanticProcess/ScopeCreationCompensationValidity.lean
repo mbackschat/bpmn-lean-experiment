@@ -3,12 +3,17 @@ module
 import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Fresh scope insertion preserves the exact Compensation ownership checks required by the
 [scope-creation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`triggerLifecycleValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

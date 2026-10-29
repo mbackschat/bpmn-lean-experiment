@@ -3,12 +3,16 @@ module
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Token patches retain complete unit counts for the publication bridge in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.TokenPatch #[`apply]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -4,13 +4,17 @@ public import BpmnSemantics.Experiments.CheckedSourceDecomposition
 public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.Experiments.CheckedSourceDecomposition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Declarative checked-source chains
 
 This module owns the graph-derived segment and chain relations plus executable-tail-parser soundness for the provisional structured-admission experiment.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.Experiments.CheckedSourceAdmission #[`parseFrom]
+
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 
@@ -100,6 +104,8 @@ inductive SegmentsEquivalent :
       (head : SegmentEquivalent left right)
       (tail : SegmentsEquivalent lefts rights) :
       SegmentsEquivalent (left :: lefts) (right :: rights)
+
+run_meta privateEquations `BpmnSemantics.Experiments.CheckedSourceAdmission #[`SegmentEquivalent, `isWaitNode]
 
 /-- One checked graph entry determines one exit and one segment up to branch exchange. -/
 theorem segmentAt_unique (source : CheckedProcess)

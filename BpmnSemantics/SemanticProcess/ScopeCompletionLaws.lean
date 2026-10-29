@@ -3,10 +3,15 @@ module
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
 import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Quiescent scope completion has no live descendant or called-root closure to remove. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`processInstanceClosureWithin, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -12,12 +12,28 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional removal preserves complete independent scope-creation preparations. Protected
 owner and token reads retain exact populations, while definition and Call freshness survive
 the actual removal filters required by the Internal Commutation account. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalScopeCreationStateFootprint,
+  `InternalCommutation.regionalOwnsAtom, `InternalCommutation.regionalOwnsOrdinaryAtom,
+  `InternalCommutation.regionalStateAtomsConflict, `canonicalStateAtomSet, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -43,7 +59,7 @@ theorem preparedRegional_scope_creation_counters (program : Program) (before aft
       cases parent : prepared.selection.root.parent <;> cases output <;>
         simp only [parent] at update <;> try contradiction
       cases withdrawal <;> simp only at update <;> rw [update] <;> exact ⟨rfl, rfl⟩
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       cases kind : prepared.selection.kind <;> simp only [kind] at update <;> try contradiction
       rw [update]
       exact ⟨rfl, rfl⟩

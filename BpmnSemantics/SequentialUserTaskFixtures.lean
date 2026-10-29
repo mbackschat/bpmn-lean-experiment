@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.Scenario
 /-! Fixture definitions of [`SequentialUserTask`](SequentialUserTask.lean), apart from its theorems so that
 the executable closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SequentialUserTask
 

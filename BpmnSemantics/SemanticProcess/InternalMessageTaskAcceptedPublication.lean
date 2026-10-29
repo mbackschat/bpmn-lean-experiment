@@ -9,11 +9,43 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
 import BpmnSemantics.SemanticProcess.InternalMessageTaskOpenProjection
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublication
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The selected subscription account publishes one atomic Task/Message delta.
 Acceptance checks the actual candidate, independent open projection, transition record, and token position. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMessageTaskContract.operation,
+  `InternalCommutation.InternalTransitionLifecycleTemplate.instantiate,
+  `InternalCommutation.InternalTransitionPublicationTemplate.instantiate,
+  `InternalCommutation.actualInternalTransitionPublication?, `InternalCommutation.internalArmingPublicationTemplate,
+  `InternalCommutation.internalMessageTaskPublicationTemplate?, `InternalCommutation.makeInternalMessageTaskPatch,
+  `InternalCommutation.uniqueFamilyDeclarer?, `applyFlowNodeOccurrenceDelta?, `availableAfterStarts,
+  `canonicalFlowNodeOccurrenceDelta, `flowNodeOccurrenceProgramValidity, `removeEndedFlowNodeOccurrences,
+  `runningInstance?, `runtimeStateWellFormed, `selectedOperationOwner?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

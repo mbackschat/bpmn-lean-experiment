@@ -7,15 +7,19 @@ import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
 import all Init.Data.Repr
-import all Init.Data.List.Sort.Basic
-import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import all BpmnSemantics.SemanticProcess.EffectDataAdmission
-import all BpmnSemantics.SemanticProcess.JsonSupport
-import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import all BpmnSemantics.SemanticProcess.MessageStartAdmission
-import all BpmnSemantics.SemanticProcess.ParallelScopeData
-import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import all BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.TransactionRetentionConformance
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFrontier
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! # Bounded Transaction cancellation witnesses
 
@@ -24,7 +28,7 @@ These transition witnesses extend the child-retention fixture; source admission 
 publication have separate end-to-end witnesses.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.TransactionCancellationConformance
 

@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual parallel body counter growth
 
@@ -11,7 +13,10 @@ increase only the End count, by at most one. These laws charge one internal
 record without assuming reservation preparation or a predecessor counter bound.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `SemanticOperation.kind]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

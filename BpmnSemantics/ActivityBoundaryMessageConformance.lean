@@ -10,10 +10,34 @@ import BpmnSemantics.SemanticProcess.MessageBoundedTaskLaws
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.Transition
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.ActivityBoundaryMessageConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.CommandStartBindings
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.MessageMonitoredTask
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.GraphReachability
 
 /-! # Interrupting Activity boundary Message conformance
 
@@ -22,7 +46,9 @@ exercise atomic same-owner arming, both exclusive victories, the refusal matrix,
 adversary, and exact Flow Node occurrence publication.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.ActivityBoundaryMessageConformance #[`armedState]
+
+public section
 
 namespace BpmnSemantics.ActivityBoundaryMessageConformance
 

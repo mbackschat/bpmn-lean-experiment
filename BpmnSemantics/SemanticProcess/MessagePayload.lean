@@ -11,7 +11,7 @@ declared Catch Event `DataOutput`; its direct association then routes the value 
 Process scope under the target `Property` identity. Neither pure intermediate binding is committed.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -46,7 +46,7 @@ theorem payloadMessageOperation?_facts (program : Program) (wait : MessageWait)
         operationOwningScope? program operation.id = some wait.owner.definitionScopeId := by
   unfold payloadMessageOperation? at resolved
   -- Split the definition's own `match` rather than restating it: a module gives a restated `match` its own
-  -- private matcher (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
+  -- private matcher (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
   split at resolved
   · rename_i entry entries
     obtain rfl := Option.some.inj resolved

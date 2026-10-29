@@ -5,12 +5,18 @@ import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 public import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Mixed local-control and arming read frames follow the complete predecessor account in the
 [Internal Commutation proposal](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalLocalControlSelection.apply,
+  `applyInternalArmingPatch]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

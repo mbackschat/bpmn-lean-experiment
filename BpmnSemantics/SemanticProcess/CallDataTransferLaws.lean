@@ -5,7 +5,7 @@ import BpmnSemantics.SemanticProcess.ProcessInterfaceData
 
 /-! Scalar Call snapshots preserve caller and callee inputs beyond the local constructor-selection bridges. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

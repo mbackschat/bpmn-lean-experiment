@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.RuntimeState
 The patch retains token units rather than a successor collection, preserving unrelated multiplicity.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

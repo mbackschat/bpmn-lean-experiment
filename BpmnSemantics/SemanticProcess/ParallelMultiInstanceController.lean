@@ -16,7 +16,7 @@ Scope boundary: controller representation and derived projections. It defines no
 evaluator, runtime-state field, admission rule, or public observation.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

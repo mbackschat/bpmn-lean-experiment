@@ -5,6 +5,11 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 import BpmnSemantics.SemanticProcess.CallActivityLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import all BpmnSemantics.SemanticProcess.Incident
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence lifecycle fold-soundness laws
 
@@ -18,7 +23,10 @@ Exactness of the four actual cancellation branches is the separate responsibilit
 these laws. Concrete executable witnesses remain in the conformance module.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectIncidentAssociationsValid, `exactLiveOccurrence,
+  `flowNodeOccurrenceOwnerLiveUnique, `projectOpenFlowNodeOccurrences?, `projectWaits?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -5,7 +5,7 @@ module
 This module tests whether small, serializable data types can preserve source provenance, compiled scope relations, edge-arrival identity, runtime instances, and command closure without importing CIB Seven or Temporal representations. The types are experiment-local candidates, not an approved BPMN IR or execution semantics.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.Experiments.SemanticRepresentations
 

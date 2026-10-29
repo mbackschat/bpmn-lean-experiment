@@ -12,11 +12,53 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Prepared arming freshness and predecessor ownership exclude aliases with the
 regional removal set; complete regional preparation depends on those exclusions. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.owner,
+  `InternalCommutation.PreparedInternalArming.apply, `InternalCommutation.PreparedInternalArming.scopeFramePatch,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalDataArmingPatch,
+  `InternalCommutation.makeInternalDataArmingPatch, `InternalCommutation.regionalBaseFootprint?,
+  `InternalCommutation.regionalCensusWrites, `InternalCommutation.regionalSelectionReferenceRetention,
+  `InternalCommutation.regionalStateFootprint?, `InternalCommutation.regionalWithdrawnActivityWrites,
+  `InternalCommutation.selectInternalOwnershipClosedRegional?, `MonitoredScopeTimerBinding,
+  `boundaryTimerWaitIdentity, `boundedCompletionReferenceRetention, `callReferenceRetention,
+  `cancellationReferenceRetention, `dataInputOutputActivityRecord, `messageIdNamesWait, `messageWaitKeyMatches,
+  `monitoredCompletionReferenceRetention, `ordinaryCompletionReferenceRetention, `recordInRegion, `runningInstance?,
+  `timerIdNamesWait, `timerWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

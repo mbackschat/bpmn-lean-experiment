@@ -8,7 +8,7 @@ public import BpmnSemantics.SequentialUserTaskFixtures
 This module owns the shared admitted Sequential User Task occurrence anchor used by independent witness leaves.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

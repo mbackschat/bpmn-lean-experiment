@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Sequential Multi-Instance well-formedness preservation
 
@@ -25,7 +29,12 @@ That agreement is what makes the two removing rewrites provable at all: a contro
 have named the removed record either, and its own record survives with it.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialMultiInstanceArm.innerTask,
+  `activateBoundedUserTask, `controllerNamesActivityOccurrence, `controllersOwnLiveActivity, `enteredController,
+  `finalCompletionState, `firstIterationEntryState, `interruptionState, `iteratedState, `runtimeStateIdentityBound,
+  `sameActivityOccurrence, `sameSequentialMultiInstanceController, `storeIterationResult]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

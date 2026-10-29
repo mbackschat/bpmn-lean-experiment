@@ -1,7 +1,7 @@
 /**
  * Keeps each named module's `import all` lines to those its own compile fails without, and drops the plain imports
  * that leaves behind wherever the module compiles without them, as the
- * [module rules](../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules) require. Every `import all` line widens what a body
+ * [module rules](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-rules) require. Every `import all` line widens what a body
  * edit of the opened module rebuilds, and every plain one what an interface edit rebuilds; a repair that added whole
  * import closures left 13,002 `import all` lines where the builds needed far fewer (process ledger, Finding 84).
  *

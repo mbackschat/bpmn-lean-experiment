@@ -7,12 +7,17 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional endings must pass the actual lifecycle fold before successor correspondence.
 Uniqueness and membership come from the predecessor projection and selected ending census.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalLifecycleTemplate?,
+  `applyFlowNodeOccurrenceDelta?, `availableAfterStarts, `canonicalFlowNodeOccurrenceDelta]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -106,7 +111,7 @@ theorem regionalLifecycleTemplate_empty_ends (program : Program) (before : Runti
           · cases lifecycle
             exact single _ _ (by assumption)
           · contradiction
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       cases kind : selected.kind <;> simp only [kind] at facts <;> try contradiction
       simp only [regionalLifecycleTemplate?, selectedOperation, kind] at lifecycle
       obtain ⟨_, _, lifecycle⟩ := Option.bind_eq_some_iff.mp lifecycle

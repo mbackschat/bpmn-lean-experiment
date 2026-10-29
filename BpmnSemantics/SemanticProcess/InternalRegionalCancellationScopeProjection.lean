@@ -6,12 +6,17 @@ import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Scope projection follows actual cancellation retention. A retained selected child
 still projects through its surviving parent; the shared position ancestry theorem
 establishes that parent lookup is unchanged. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceOwnedBySubtree]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

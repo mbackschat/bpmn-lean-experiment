@@ -25,13 +25,47 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.CyclicControlFlowConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.StrictJson
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandStartBindings
+import all BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
+import all BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
+import all BpmnSemantics.SemanticProcess.ExecutionRuntime
+import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Representative cyclic execution conformance
 
 This module owns exact representative execution and finite reviewed-choice schedules for the selected cyclic fixture. It proves no general termination, fairness, arbitrary-cycle, or concurrent-arrival claim.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeUserTask, `cyclicInitialPostMergeState,
+  `cyclicMergeInputs, `cyclicMergeOperation, `cyclicPostCompletionState, `cyclicPostStartState, `cyclicRepeatChoices,
+  `cyclicVariables, `cyclicWait, `cyclicWaitingState, `runChoices, `singletonWaitingState, `taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -124,6 +158,8 @@ inductive CyclicReviewCompletion :
       (patched : cyclicRoutePatch raw route = after) :
       CyclicReviewCompletion before activation route after
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cyclicRoutePatch]
+
 theorem representative_review_completion_is_exact
     (activation : Nat) (previousRoute : Option String) (route : String) :
     CyclicReviewCompletion (cyclicWaitingState activation previousRoute)
@@ -154,6 +190,8 @@ def CyclicReviewedChoice.route : CyclicReviewedChoice → String
 def CyclicReviewedChoice.output : CyclicReviewedChoice → ControlPlaceId
   | .repeatReview => ⟨"place:Flow_Repeat"⟩
   | .reworkReview => ⟨"place:Flow_Rework"⟩
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.CyclicReviewedChoice #[`route]
 
 theorem representative_reviewed_choice_closes_to_next_activation
     (activation : Nat) (choice : CyclicReviewedChoice) :
@@ -241,6 +279,8 @@ inductive CyclicReviewedThenExitExecution
         (cyclicPostCompletionState (choices.length + 1) "exit")
         cyclicExitChoices = some final) :
       CyclicReviewedThenExitExecution choices final
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cyclicStartClosureTrace]
 
 theorem every_finite_reviewed_schedule_reaches_next_activation_then_exits
     (choices : List CyclicReviewedChoice) :

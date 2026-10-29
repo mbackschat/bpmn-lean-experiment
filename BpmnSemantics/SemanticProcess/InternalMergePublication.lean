@@ -9,12 +9,29 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Retained Merge records bind the exact offered bucket used by strict replay, as required by the
 [complete-frontier outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMergeSelection.alternative,
+  `InternalCommutation.InternalMergeSelection.apply, `InternalCommutation.InternalMergeSelection.record,
+  `InternalCommutation.InternalMergeSelection.tokens,
+  `InternalCommutation.InternalTransitionLifecycleTemplate.instantiate,
+  `InternalCommutation.InternalTransitionPublicationTemplate.instantiate,
+  `InternalCommutation.actualInternalAlternativePublication?, `InternalCommutation.internalMergePublicationTemplate,
+  `InternalCommutation.makeInternalMergePreparation, `SemanticOperation.kind, `TokenPatch.apply,
+  `acceptFlowNodeOccurrenceCandidate?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -8,6 +8,14 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual parallel reservation ancestry
 
@@ -16,7 +24,10 @@ retains a sublist of that census and preserves the root, so resolution's exact
 live occurrence is enough to establish reservation's bounded ancestry check.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.occurrenceOwnerRootValid,
+  `ParallelScopeStart.analyzeProgram, `programWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

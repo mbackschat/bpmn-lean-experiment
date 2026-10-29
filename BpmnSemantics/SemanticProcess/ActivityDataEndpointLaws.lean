@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 import BpmnSemantics.SemanticProcess.ProcessInterfaceData
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Typed Activity data endpoint laws
 
@@ -10,7 +12,10 @@ Routing relates exact source and successor stores independently of the evaluator
 caller isolation, immutable inputs and sibling frames remain explicit obligations.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityDataPropertyOwner, `readActivityDataInput?,
+  `writeActivityDataOutput?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

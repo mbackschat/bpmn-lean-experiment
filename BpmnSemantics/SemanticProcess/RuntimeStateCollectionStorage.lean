@@ -9,7 +9,7 @@ Lean tokens are a unit bag: repeated equal tokens encode positive multiplicity, 
 TypeScript's one bucket per key. Their canonical order is checked without deduplication.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -5,10 +5,37 @@ import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefinement
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingPublication
 public import BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
 import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.InternalArmingBatch
+import all BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Ordinary snapshot-aware pair laws lift to finite prefixes with defined canonical accepted publication. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.PreparedInternalArming.apply,
+  `InternalCommutation.PreparedInternalArming.operation, `InternalCommutation.applyInternalArmingBatch,
+  `InternalCommutation.applyPreparedSnapshotArming?, `InternalCommutation.prepareSnapshotArming?,
+  `InternalCommutation.snapshotArmingAnchorFresh, `internalPublicationPairForFootprint?,
+  `snapshotArmingPublicationForFootprint?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -130,6 +157,8 @@ def SnapshotPreparedList (program : Program) (state : RuntimeState)
     (prepared : List PreparedInternalArming) : Prop :=
   ∀ member ∈ prepared, SnapshotPrepared program state member
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`SnapshotPreparedList]
+
 theorem snapshot_prepared_tail (program : Program) (state : RuntimeState)
     (head : PreparedInternalArming) (tail : List PreparedInternalArming) (instanceId : SemanticId)
     (stateValid : runtimeStateWellFormed program instanceId state = true)
@@ -220,6 +249,8 @@ def runPreparedSnapshotArmingBatch? (program : Program) (instanceId commandId : 
       let publication ← acceptedSnapshotArmingPublication? program instanceId commandId state head
       let (final, publications) ← runPreparedSnapshotArmingBatch? program instanceId commandId next tail
       return (final, publication :: publications)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`runPreparedSnapshotArmingBatch?]
 
 private theorem snapshot_mapM_congr (left right : α → Option β) (values : List α)
     (same : ∀ value ∈ values, left value = right value) :

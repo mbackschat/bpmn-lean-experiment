@@ -10,7 +10,7 @@ therefore remain fail-closed in `internalTransitionFootprint?`; a later proof ma
 with their complete operation footprints without changing their identity account.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

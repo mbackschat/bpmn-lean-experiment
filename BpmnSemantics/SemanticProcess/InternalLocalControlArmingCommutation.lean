@@ -6,12 +6,26 @@ import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Mixed prepared pairs use the equality-keyed state footprint selected in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.PreparedInternalArming.apply,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalDataArmingPatch,
+  `InternalCommutation.footprintOfPatch, `InternalCommutation.localControlStateFootprintsNonInterfering,
+  `canonicalStateAtomSet]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -20,6 +34,8 @@ open BpmnSemantics
 def armingPatch : PreparedInternalArming → InternalArmingPatch
   | .ordinary _ patch => patch
   | .data _ patch => patch.arm
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`armingPatch]
 
 private theorem arming_input_read (arm : PreparedInternalArming) :
     .tokenOwners (armingPatch arm).input ∈ arm.stateFootprint.reads := by

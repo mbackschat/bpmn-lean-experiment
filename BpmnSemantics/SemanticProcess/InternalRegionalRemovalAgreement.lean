@@ -3,6 +3,10 @@ module
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import all BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Regional removal agreement
 
@@ -10,7 +14,10 @@ Occurrence-region traversal and cancellation use different graphs. These laws co
 least closures while preserving directed Calls and the existing population-fuel evaluators.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrenceRegion.contains,
+  `InternalCommutation.scopeOwnershipGraphExact, `cancelScopeSubtree]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

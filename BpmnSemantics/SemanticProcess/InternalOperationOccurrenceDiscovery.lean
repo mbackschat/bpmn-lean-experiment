@@ -7,7 +7,7 @@ belongs to `InternalOperationOccurrence`; this module only decides which occurre
 declaration an occurrence names.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

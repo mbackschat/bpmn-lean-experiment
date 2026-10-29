@@ -16,6 +16,21 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
 import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleValidity
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.CallActivityIdentity
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Accepted lifecycle publication for the prepared child and Call operations in the
 [scope-creation contract](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
@@ -23,7 +38,13 @@ Predecessor validity, projection, and preparation determine the successor projec
 candidate acceptance; independent pairs retain those results in either execution order.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.internalScopeCreationStart?, `InternalCommutation.makeInternalScopeCreationPreparation,
+  `candidateFlowNodeOccurrenceDeltaForOperation?, `candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
+  `exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity,
+  `projectOpenFlowNodeOccurrences?, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

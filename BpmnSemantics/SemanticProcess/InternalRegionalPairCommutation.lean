@@ -12,10 +12,29 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete regional pairs compose the existing preparation, execution, validity, and publication laws. Canonical token order and additive end counts are proved separately from retained-field removal before reconstructing literal RuntimeState equality. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalOwnsAtom,
+  `InternalCommutation.regionalOwnsOrdinaryAtom, `InternalCommutation.regionalSelectionReferenceRetention,
+  `InternalCommutation.regionalStateAtomsConflict, `cancelScopeSubtree, `canonicalCollectionOrder, `retainedByRegion,
+  `runtimePositionValid, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

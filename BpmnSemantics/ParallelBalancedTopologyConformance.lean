@@ -8,7 +8,7 @@ public import BpmnSemantics.ParallelUserTaskMetadataCompositionFixtures
 This module distinguishes the admitted balanced two-branch Parallel Gateway chain from a same-cardinality acyclic graph that places one User Task before the split and routes the other branch directly to the join.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ParallelBalancedTopologyConformance
 

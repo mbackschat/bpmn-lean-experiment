@@ -1,13 +1,14 @@
 module
 
 public import BpmnSemantics.CheckedProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Called-Process Call Activity identity
 
 This module owns the byte-stable called-instance identity encoding and its injectivity laws. It does not own runtime associations, invocation or return transitions, source QName resolution, public observation, or Temporal hosting.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -24,6 +25,9 @@ def deriveCalledProcessInstanceId (callerId : SemanticId)
     (callActivityId : NodeId) (activation : Nat) : SemanticId :=
   ⟨calledProcessIdentityPrefix callerId callActivityId ++ toString activation⟩
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`calledProcessIdentityPrefix,
+  `deriveCalledProcessInstanceId]
+
 private theorem natToString_injective : Function.Injective (toString : Nat → String) := by
   intro left right equal
   have digits : Nat.toDigits 10 left = Nat.toDigits 10 right := by
@@ -34,6 +38,8 @@ private theorem natToString_injective : Function.Injective (toString : Nat → S
 
 def lengthFrame (value suffix : String) : String :=
   toString value.utf8ByteSize ++ ":" ++ value ++ suffix
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`lengthFrame]
 
 private theorem colon_absent_from_nat_string (value : Nat) :
     ∀ character ∈ (toString value).toList, (character == ':') = false := by

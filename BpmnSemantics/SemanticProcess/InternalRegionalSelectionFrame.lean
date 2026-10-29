@@ -2,11 +2,15 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Both local-control and arming patches preserve scope and Call records. Their regional
 selector proofs share this read interface, with each caller deriving the changed-work queries. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -59,7 +63,7 @@ theorem regionalSelection_read_frame (program : Program) (before after : Runtime
         repeat' first | (solve | simp at found) | split at found
         all_goals cases found <;> simp_all only [Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind, Option.bind_some]
     · contradiction
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
     dsimp only at found ⊢
     rw [inputs.1]
     obtain ⟨owner, offered, found⟩ := Option.bind_eq_some_iff.mp found

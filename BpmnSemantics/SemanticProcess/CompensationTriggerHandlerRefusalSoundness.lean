@@ -1,10 +1,15 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation trigger disabled and refusal soundness -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attemptCompensationTrigger,
+  `compensationTriggerProgramRejected, `constructCompensationTriggerFrontier]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

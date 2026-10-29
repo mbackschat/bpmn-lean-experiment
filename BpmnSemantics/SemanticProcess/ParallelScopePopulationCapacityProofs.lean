@@ -6,10 +6,29 @@ import BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Population capacity follows actual entry and retirement, so command composition need not assume successor capacity. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.programStateCapacity,
+  `cancelScopeSubtree, `issueParallelBodies?, `occurrenceInSubtree, `occurrenceInSubtreeWithin, `retainedByRegion,
+  `validParallelScopeIterations, `validParallelScopePopulation, `withdrawnByRegion]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,12 +1,13 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice)
 normalizes only singleton operations independent of every alternative. Presentation order supplies no choice.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -16,6 +17,8 @@ def normalizingInternalPrepared (members : List PreparedInternalTransition) : Li
   members.filter fun candidate => members.all fun other => decide
     (candidate.alternative = other.alternative ∨
       (candidate.operation.id ≠ other.operation.id ∧ candidate.Independent other))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`normalizingInternalPrepared]
 
 theorem mem_normalizingInternalPrepared (members : List PreparedInternalTransition) (candidate : PreparedInternalTransition) :
     candidate ∈ normalizingInternalPrepared members ↔

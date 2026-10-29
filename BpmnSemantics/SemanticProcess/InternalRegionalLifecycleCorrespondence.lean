@@ -2,15 +2,23 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional cancellation templates agree with the evaluator's predecessor lifecycle selector.
 The correspondence uses live projection ownership and the exact derived region, not a supplied mask.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalCancelsOpenOccurrence,
+  `flowNodeOccurrenceOwnedBySubtree, `ownedSubtreeCancellationEnds?, `terminationSubtreeCancellationEnds?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

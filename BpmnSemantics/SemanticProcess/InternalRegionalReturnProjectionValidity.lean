@@ -11,12 +11,26 @@ import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnWaitValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Return's independent projection guards follow from predecessor validators and the
 actual cleanup. Message-boundary record retention uses the independent reverse record census;
 each surviving Activity must retain its exact Task body. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+  `InternalCommutation.InternalMessageTaskContract.operation, `fire?, `flowNodeOccurrenceOwnerLiveUnique,
+  `flowNodeOccurrenceProgramValidity, `flowNodeOccurrenceStructuralProgramValidity,
+  `messageBoundedOperationProjectionValid, `messageBoundedProjectionValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

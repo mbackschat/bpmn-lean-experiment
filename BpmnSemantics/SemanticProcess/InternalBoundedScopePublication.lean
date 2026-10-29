@@ -9,13 +9,44 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
 import BpmnSemantics.SemanticProcess.InternalBoundedScopeRuntimeValidity
 import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Bounded Sub-Process arming publishes its child start and control-position delta through the
 existing acceptance boundary; the attached deadline remains private under the
 [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeContract.entryOperation,
+  `InternalCommutation.InternalBoundedScopeContract.operation,
+  `InternalCommutation.InternalBoundedScopeSelection.apply, `InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.InternalTransitionLifecycleTemplate.instantiate,
+  `InternalCommutation.InternalTransitionPublicationTemplate.instantiate,
+  `InternalCommutation.actualInternalTransitionPublication?,
+  `InternalCommutation.internalBoundedScopePublicationTemplate,
+  `InternalCommutation.makeInternalBoundedScopePreparation, `InternalCommutation.makeInternalBoundedScopeSelection,
+  `candidateFlowNodeOccurrenceDeltaForOperation?, `candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
+  `runningInstance?, `runtimeStateWellFormed, `selectedOperationOwner?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

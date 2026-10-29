@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 `hiddenRecordDeclarationsValid` binds records by selection key, independently of join-input payload.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.InclusiveGatewayPairingConformance
 

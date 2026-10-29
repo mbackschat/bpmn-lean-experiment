@@ -3,6 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Boundary Compensation Activity retention
 
@@ -11,7 +13,9 @@ an explicitly declared boundary Compensation handler. It defines no throw, handl
 ordering, cancellation, source, public-observation, or host behavior.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -330,6 +334,8 @@ def retainCompletedCompensableActivity (program : Program)
                     | _ => .refused .registerAbsent state
                 | none => .refused .malformedCompletion state
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completionOwnerValid, `retainCompletedCompensableActivity]
+
 /-- Successful child retention requires a complete live wait identity and its exact owner. -/
 theorem retainCompletedCompensableActivity_child_joined
     (program : Program) (declaration : CompensationActivityRetentionDeclaration)
@@ -459,12 +465,12 @@ theorem issueZeroItemOuterActivity_has_fresh_outer_identity
     (state : RuntimeState) (instanceId : SemanticId)
     (activityElementId : TaskDefinitionId) :
     (issueZeroItemOuterActivity state instanceId activityElementId).activity.activation =
-      activityActivationCount state activityElementId + 1 := rfl
+      activityActivationCount state activityElementId + 1 := (rfl)
 
 theorem issueZeroItemOuterActivity_has_no_inner_wait
     (state : RuntimeState) (instanceId : SemanticId)
     (activityElementId : TaskDefinitionId) :
     (issueZeroItemOuterActivity state instanceId activityElementId).successor.waits =
-      state.waits := rfl
+      state.waits := (rfl)
 
 end BpmnSemantics.SemanticProcess

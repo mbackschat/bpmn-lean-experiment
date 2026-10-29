@@ -19,13 +19,20 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.TimerStartAdmission
 public import BpmnSemantics.SemanticProcess.Message
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.TimerStartAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic Process external command admission
 
 This module owns the complete external stimulus dispatch and the fail-closed runtime-state gate applied before dispatch. It separates command admission from bounded internal closure and rejects incident-bearing states unless they belong to the exact approved profile, program shape, and private association invariant.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeData.stimulusAdmitted, `admitMessageStart?,
+  `admitTimerStart?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -438,6 +445,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState)
   | none => dispatchStimulusWithoutCompensationSnapshots program state stimulus
   | some _ => { outcome := .rejected, state }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`admitCorrelatedPayloadMessage, `dispatchStimulus]
+
 theorem dispatchStimulus_withSnapshotDeclaration_rejects (program : Program)
     (state : RuntimeState) (stimulus : Stimulus)
     (declaration : CompensationEventSubProcessSnapshotDeclaration)
@@ -499,6 +508,8 @@ def reserveRootCompensationParentContextBeforeStart (program : Program)
           | .refused reason _ => .refused reason before
       | _ => .refused .invalidState before
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`reserveRootCompensationParentContextBeforeStart]
+
 theorem reserveRootCompensationParentContextBeforeStart_refusal_preserves_before
     (program : Program) (before started returned : RuntimeState)
     (reason : CompensationParentContextRefusal)
@@ -543,6 +554,8 @@ def prepareStartedSnapshotState (program : Program) (before : RuntimeState)
       | .refused _ _ => { outcome := .rejected, state := before }
   | .rolledBack | .rejected | .semanticFailure | .unsupported => admission
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`prepareStartedSnapshotState]
+
 /- A committed command with invalid hidden state would make the next command reject a state this
 dispatcher itself exposed. `COMPENSATION-EVENT-SUB-PROCESS-SNAPSHOT-PROPOSAL.md` § Reservation,
 promotion, purge, and capacity therefore makes the post-state check part of admission, while the
@@ -573,6 +586,9 @@ def admitStimulusWithCompensationSnapshots (program : Program) (state : RuntimeS
           | .deliverCorrelatedPayloadMessage .. | .fireTimer .. | .completeEffect ..
           | .reportEffectFailure .. | .retryIncident .. | .cancelIncidentProcess .. => admission
         retainValidSnapshotAdmission program state prepared
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`admitStimulusWithCompensationSnapshots,
+  `retainValidSnapshotAdmission]
 
 /-- Every committed snapshot-aware admission carries a valid hidden lifecycle into closure. -/
 theorem admitStimulusWithCompensationSnapshots_committed_stateValid
@@ -614,6 +630,8 @@ def admitStimulus (program : Program) (state : RuntimeState)
   match program.compensationEventSubProcessSnapshots with
   | none => admitStimulusWithoutCompensationSnapshots program state stimulus
   | some _ => { outcome := .rejected, state }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`admitStimulus]
 
 /-- Parallel-scope proofs pass their profile selection to `simp`; this discharges the effect-data guard from it,
 so a guard added to `admitStimulusWithoutCompensationSnapshots` costs those proofs no extra case split. -/

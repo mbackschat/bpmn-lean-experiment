@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.JsonSupport
 /-! Canonical observation JSON shared by the Semantic Process and engine-population runners.
 Closed semantic variants are matched exhaustively so both evidence lanes observe the same contract. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson.Observation
 

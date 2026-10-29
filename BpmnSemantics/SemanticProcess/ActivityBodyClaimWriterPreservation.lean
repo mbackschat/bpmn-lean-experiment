@@ -7,6 +7,14 @@ public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 public import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.BoundedScopeArming
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Activity body-claim writer preservation
 
@@ -15,7 +23,11 @@ membership remains executable in the guarded census; this owner states why each 
 shape preserves `AOO-CLAIM-01` without coupling the representation owner to its transition users.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateBoundedUserTask, `activityBodyLive,
+  `activityBodyScopeClaims, `armScopeDeadline, `occursOnce, `replaceParallelRecordBody, `runtimeStateIdentityBound,
+  `sameActivityOccurrence, `taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

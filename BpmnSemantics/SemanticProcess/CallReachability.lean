@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.CallActivity
 import all BpmnSemantics.SemanticProcess.CallActivity
 import Std.Data.DTreeMap.Internal.Operations
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Bounded Called-Process reachability
 
@@ -11,7 +12,9 @@ seeds justify its equal-length stopping condition; record sorting and extension 
 instances without assuming successor validity or changing the evaluator's fuel policy.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertCallRecord]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

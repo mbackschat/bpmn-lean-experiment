@@ -6,10 +6,65 @@ import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.BoundedScopeArming
+import all BpmnSemantics.SemanticProcess.BoundedTask
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.InclusiveGateway
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationAttempt
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.MessageStart
+import all BpmnSemantics.SemanticProcess.MonitoredTask
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.TimerStart
+import all BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete ordinary frontiers derive prefix refusal absence and canonical publication equality in the actual snapshot batch runner. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.internalArmInput?, `InternalCommutation.internalArmOrigin?,
+  `InternalCommutation.prepareInternalArm?, `InternalCommutation.runPreparedSnapshotArmingBatch?,
+  `InternalCommutation.sortBy, `InternalCommutation.sortInsertBy, `InternalOperationAttempt.operation,
+  `attemptInternalOperation, `attemptTransactionCancellation, `canonicalEnabledInternalTransitions,
+  `fireSnapshotInternalBatch, `insertBy, `snapshotInternalTransitionFrontier, `sortBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -72,6 +127,8 @@ def SnapshotRefusableDisabled (program : Program) (state : RuntimeState) :
         attemptTransactionCancellation program operation state = .disabled state
   | _ => True
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`SnapshotRefusableDisabled]
+
 private theorem snapshot_refusable_disabled_frame (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalArming) (instanceId : SemanticId)
     (stateValid : runtimeStateWellFormed program instanceId state = true)
@@ -101,6 +158,8 @@ private theorem snapshot_refusable_disabled_frame (program : Program) (state : R
 def SnapshotNotRefused : InternalOperationAttempt → Prop
   | .refused _ _ => False
   | .disabled _ | .applied _ => True
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`SnapshotNotRefused]
 
 private theorem snapshot_attempt_not_refused (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (disabled : SnapshotRefusableDisabled program state operation) :

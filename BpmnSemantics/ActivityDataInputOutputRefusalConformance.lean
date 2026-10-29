@@ -15,13 +15,34 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.Execution
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.StrictJson
+import all BpmnSemantics.ActivityDataInputOutputConformanceDefinitionFixtures
+import all BpmnSemantics.ActivityDataInputOutputRefusalConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.BoundedTask
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.MessageMonitoredTask
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 /-! # Composed Activity data-input/output refusal conformance
 
 Whole-state and direct-transition refusal decisions over the shared claim fixture. The separate
 owner prevents malformed-state reductions from accumulating with successful lifetime proofs.
 -/
 
-@[expose] public section
+public section
 
 set_option Elab.async false
 

@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 This module owns external effect-occurrence matching, successful typed result routing, the executable completion transition, and its declarative soundness bridge. Command admission and internal closure remain in `Execution`.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

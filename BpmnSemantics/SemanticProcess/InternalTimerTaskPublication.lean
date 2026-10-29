@@ -10,12 +10,41 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+import all BpmnSemantics.SemanticProcess.ParallelScopeCompletionPublication
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Timer-task publication is checked through the evaluator's lifecycle acceptance boundary.
 The attached Timer remains private; the public delta starts only the prepared User Task.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalTimerTaskContract.operation,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalTimerTaskPatch,
+  `InternalCommutation.makeInternalTimerTaskPatch, `InternalCommutation.uniqueFamilyDeclarer?,
+  `candidateFlowNodeOccurrenceDeltaForOperation?, `candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
+  `candidateUserTaskStart?, `flowNodeOccurrenceProgramValidity, `runningInstance?, `selectedOperationOwner?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

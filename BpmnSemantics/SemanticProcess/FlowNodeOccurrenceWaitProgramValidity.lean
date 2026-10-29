@@ -3,13 +3,19 @@ module
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence wait Program validity
 
 This module validates the exact correspondence between immutable Program definitions and live wait occurrences before lifecycle projection. It owns operation-owned wait families, private Boundary Timer host pairing, and effect-local scope exactness. Structural scope and Call Activity correspondence remains in `FlowNodeOccurrenceProgramValidityCore`.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+  `flowNodeOccurrenceOwnerLiveUnique, `messageWaitDeclarers, `recordAttaches, `timerWaitDeclarers,
+  `userTaskWaitDeclarers]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -106,6 +112,9 @@ def scopeCancellationWithdrawsHandler (program : Program) (state : RuntimeState)
   (state.timerWaits.any fun wait => timerIdNamesWait id wait &&
     !flowNodeOccurrenceBoundaryTimerBound program state wait &&
     anyTimerIdNamesWait (attachedTimersOf withdrawn) wait)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.boundaryTimerOperationMatches,
+  `messageOperationMatchesWait, `messageWaitValid]
 
 private theorem boundaryTimerOperationMatches_insertUnboundedUserTask (program : Program)
     (state : RuntimeState) (selected : SemanticOperation) (wait : UserTaskWait)
@@ -231,6 +240,8 @@ def flowNodeOccurrenceWaitProgramValidity (program : Program) (state : RuntimeSt
     state.messageWaits.all (messageWaitValid program state) &&
     state.timerWaits.all (timerWaitValid program state) &&
     flowNodeOccurrenceEffectProgramValidity program state
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceWaitProgramValidity, `timerWaitValid]
 
 /-- Empty attachment lists preserve the complete wait validator, including its false states. -/
 theorem flowNodeOccurrenceWaitProgramValidity_insertUnattachedActivity (program : Program)
@@ -732,9 +743,6 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryTimer (program : Pro
       _ = 1 := by simpa [timerWaitDeclarers] using congrArg List.length declarers
   have newValidBefore : timerWaitValid program state wait = true := by
     simp_all [timerWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique]
-    -- `exact`: the remaining count carries the definition's matcher and `operationCount` this proof's
-    -- private one (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
-    exact operationCount
   have newValid : timerWaitValid program after wait = true := by
     have frame : timerWaitValid program after wait = timerWaitValid program state wait := by
       unfold timerWaitValid

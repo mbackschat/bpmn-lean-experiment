@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 to immutable provenance under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

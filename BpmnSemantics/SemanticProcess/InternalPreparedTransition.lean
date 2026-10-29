@@ -7,12 +7,24 @@ public import BpmnSemantics.SemanticProcess.InternalMergePreparation
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete finite mixed preparations follow the predecessor-only
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`boundedScopeContract?,
+  `messageTaskContract?, `prepareInternalArming?, `prepareInternalEnd?, `prepareInternalMessageTaskContract?,
+  `prepareInternalRegional?, `prepareInternalTimerTaskContract?, `timerTaskContract?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -74,7 +86,9 @@ def subscriptionPreparationAdmitted (program : Program) : Prop :=
   program.identity.semanticProfile = repeatableSubscriptionCheckpointProfileId ∧
     programWellFormed program = true ∧ repeatableSubscriptionProgramGraph program = true
 
-instance (program : Program) : Decidable (subscriptionPreparationAdmitted program) := by
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation.PreparedInternalTransition #[`alternative]
+
+@[no_expose] instance (program : Program) : Decidable (subscriptionPreparationAdmitted program) := by
   unfold subscriptionPreparationAdmitted
   infer_instance
 
@@ -97,7 +111,9 @@ def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeStat
   | .mergeInput prepared =>
       prepareInternalMerge? program state prepared.selection.operation prepared.selection.alternative = some prepared
 
-instance (program : Program) (state : RuntimeState) (prepared : PreparedInternalTransition) :
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation.PreparedInternalTransition #[`Prepared]
+
+@[no_expose] instance (program : Program) (state : RuntimeState) (prepared : PreparedInternalTransition) :
     Decidable (prepared.Prepared program state) := by
   cases prepared <;> unfold PreparedInternalTransition.Prepared <;> infer_instance
 
@@ -143,7 +159,7 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .timerTask .., _ | _, .timerTask .. | .regional _, _ | _, .regional _ | .ordinaryEnd _, _ | _, .ordinaryEnd _ =>
       regionalStateFootprintsIndependent left.stateFootprint right.stateFootprint = true
 
-instance (left right : PreparedInternalTransition) : Decidable (left.Independent right) := by
+@[no_expose] instance (left right : PreparedInternalTransition) : Decidable (left.Independent right) := by
   cases left <;> cases right <;> unfold PreparedInternalTransition.Independent <;> infer_instance
 
 def prepareOrdinaryInternalTransition? (program : Program) (state : RuntimeState)
@@ -197,6 +213,10 @@ def applyPreparedInternalTransition? (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition) : Option RuntimeState :=
   if program.compensationEventSubProcessSnapshots.isSome then none
   else if prepared.Prepared program state then some (prepared.apply program state) else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyPreparedInternalTransition?,
+  `prepareBoundedScopeInternalTransition?, `prepareInternalTransition?, `prepareMessageTaskInternalTransition?,
+  `prepareOrdinaryInternalTransition?, `prepareTimerTaskInternalTransition?]
 
 theorem prepareInternalTransition_subscription_refused (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (refused : ¬subscriptionPreparationAdmitted program)

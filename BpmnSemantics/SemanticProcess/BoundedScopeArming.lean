@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Interrupting Sub-Process boundary Timer: arming
 
@@ -23,7 +25,7 @@ region goes. The remaining ordinal joins in this family live in `BoundedScope` a
 in the Lean lane rather than a design choice.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -92,6 +94,8 @@ inductive BoundedScopeArmingStep : RuntimeState → BpmnElementOrigin → Contro
             decide (occurrence.parent = some parent)).map (·.id) = some child) :
       BoundedScopeArmingStep before origin input childEntry childScopeId boundaryTimer
         (armScopeDeadline entered parent origin child boundaryTimer)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`armScopeDeadline]
 
 theorem armBoundedScopeState_sound (before after : RuntimeState)
     (origin : BpmnElementOrigin) (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)

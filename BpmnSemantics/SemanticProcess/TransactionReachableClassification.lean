@@ -5,6 +5,14 @@ public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
 import BpmnSemantics.SemanticProcess.TransactionEarlyPhases
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationAttempt
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.TransactionBranchPhases
+import all BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+import all BpmnSemantics.SemanticProcess.TransactionScopePhases
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Complete Transaction reachable-frontier classification
 
@@ -12,7 +20,10 @@ The actual admission and command/prefix induction derive the only multi-operatio
 other reached prefix has at most one offered transition, with transition multiplicity preserved.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalEnabledInternalTransitions,
+  `snapshotInternalTransitionFrontier]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

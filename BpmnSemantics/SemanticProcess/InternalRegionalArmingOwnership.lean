@@ -8,11 +8,36 @@ public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Arming retains its newly allocated owners, so REG-OWN-CLOSE-01 can reuse the
 predecessor's regional reference-retention checks without inspecting a successor diff. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.occurrence,
+  `InternalCommutation.InternalArmingWrite.owner, `InternalCommutation.PreparedInternalArming.apply,
+  `InternalCommutation.PreparedInternalArming.scopeFramePatch, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.makeInternalDataArmingPatch,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
+  `InternalCommutation.regionalLocalScopeNamesActivity, `InternalCommutation.regionalRetainedLocalDataClosed,
+  `InternalCommutation.regionalSelectionLocalDataRetention, `InternalCommutation.regionalSelectionReferenceRetention,
+  `InternalCommutation.userTaskWaitOccurrence, `activityOwnerForRecord, `allMatchingRetained, `callReferenceRetention,
+  `calledInstanceClosure, `cancellationReferenceRetention, `dataInputOutputActivityRecord, `recordInRegion,
+  `regionalActivityOwnersClosed, `regionalActivityReferencesClosed, `regionalOwnershipClosed, `sameActivityOccurrence,
+  `taskIdNamesWait, `withdrawnByRegion]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

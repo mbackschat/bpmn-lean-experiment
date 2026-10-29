@@ -14,12 +14,44 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeTokenPositionProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationOwnerProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CallActivityAdmission
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
+import all BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual Start and PMIS entry determine the complete structural owner census.
 Lifetime scope removal retains those Program bindings, so structural publication
 validity follows without assuming a successful occurrence projection. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy,
+  `InternalCommutation.EntryBinding, `InternalCommutation.ScopeBinding, `ParallelScopeAcceptedStart.parent,
+  `ParallelScopeStart.analyzeProgram, `admitStimulus, `enteredChildScopeId?, `flowNodeOccurrenceOwnerLiveUnique,
+  `nonempty, `parallelScopeEntry?, `programWellFormed, `scopeOperationBindingValid, `scopedOwnershipComplete,
+  `uniqueDefinitionScope?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

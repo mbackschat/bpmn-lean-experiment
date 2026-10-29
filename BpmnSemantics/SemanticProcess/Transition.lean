@@ -16,13 +16,19 @@ public import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
 public import BpmnSemantics.SemanticProcess.MergeTargetOperations
 public import BpmnSemantics.SemanticProcess.ScopeOccurrenceEntry
 public import BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic Process internal transitions
 
 This module owns the declarative internal-operation relation, the executable evaluator, and their soundness bridge. Runtime representation and pure state transformations remain in `RuntimeState`.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialMultiInstanceArm.ofOperation?,
+  `awaitEventRaceState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -266,7 +272,7 @@ inductive OperationStep (program : Program) :
         SynchronizeSelectedStep before output selectionKey after) :
       OperationStep program
         (.synchronizeSelected id origin inputs output selectionKey) before after
-  | throwError (id origin input error handler) (before after : RuntimeState)
+  | «throwError» (id origin input error handler) (before after : RuntimeState)
       (transition :
         throwErrorState? before input error handler = some after) :
       OperationStep program (.throwError id origin input error handler) before after
@@ -391,6 +397,8 @@ def fireWithoutCompensationSnapshots? (program : Program)
   | .completeEventSubProcess _ origin scopeId =>
       completeEventSubProcessState? program state scopeId origin.elementId
   | .triggerCompensation .. | .cancelTransaction .. => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`fireWithoutCompensationSnapshots?]
 
 /-- Dispatcher and constructor-selection check: `fire?` routes every operation kind to the state
 transformation its relation arm names, and the constructor match is exhaustive.
@@ -558,6 +566,8 @@ def fire? (program : Program) (operation : SemanticOperation)
   | none => fireWithoutCompensationSnapshots? program operation state
   | some _ => none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attemptInternalOperation, `fire?]
+
 theorem fire_withSnapshotDeclaration_is_disabled (program : Program)
     (operation : SemanticOperation) (state : RuntimeState)
     (declaration : CompensationEventSubProcessSnapshotDeclaration)
@@ -673,6 +683,9 @@ theorem attemptInternalOperation_withoutSnapshotDeclaration
       | none => .disabled operation
       | some successor => .applied { operation, successor } := by
   simp [attemptInternalOperation, fire?, absent, executionAbsent]
+  -- `exact rfl`: the left side keeps the definition's matcher and the statement this proof's private one
+  -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  exact rfl
 
 /-- Program relation keeps the explicit selected operation identity as semantic input. -/
 def ProgramStep (program : Program) (before : RuntimeState)

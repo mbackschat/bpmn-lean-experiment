@@ -3,10 +3,23 @@ module
 public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Prepared data arming refines Activity activation and preserves the checked binding contract. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalDataArmingContract.activate?,
+  `InternalCommutation.InternalDataArmingContract.operation,
+  `InternalCommutation.InternalDataArmingData.inputAssociation?, `InternalCommutation.dataArmingBindings?,
+  `InternalCommutation.dataArmingEndpointKindsValid, `InternalCommutation.dataArmingHostValid,
+  `InternalCommutation.exactProgramSelection, `InternalCommutation.makeInternalDataArmingPatch,
+  `activateDataInputOutputUserTask?, `activateDataInputUserTask?, `activateDataOutputUserTask?,
+  `activityDataPropertyOwner, `activityOwnerForRecord, `dataInputOutputActivityOwner, `dataInputOutputActivityRecord,
+  `dataInputOutputRunningInstance?, `dataInputOutputSourceBinding?, `readActivityDataInput?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -108,6 +121,8 @@ def InternalDataArmingContract.ActivationStep (contract : InternalDataArmingCont
   | .input _ => DataInputActivationStep program before after
   | .output _ => DataOutputActivationStep program before after
   | .inputOutput _ _ => DataInputOutputActivationStep program before after
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation.InternalDataArmingContract #[`ActivationStep]
 
 /-- Preparation realizes the declaration's existing transition relation; it selects no profile. -/
 theorem prepareInternalDataArmingContract_sound

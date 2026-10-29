@@ -1,10 +1,21 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CommandAdmission
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.TimerStartAdmission
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Runtime-state well-formedness at initialization
 
@@ -13,7 +24,21 @@ This module owns `RSI-OBL-01` and `RSI-OBL-02`: the complete invariant for the e
 These are initialization base cases. They neither establish position validity nor prove preservation through internal closure or subsequent transitions, and therefore do not justify installing a full-invariant admission gate.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyClaimsUnique, `activityIdentitiesUnique,
+  `activityRecordsOwnLiveWork, `attachedMessagesUnambiguous, `attachedTimersUnambiguous, `canonicalCollectionOrder,
+  `canonicalCompensationParentContextRetentionsUtf8Bytes, `canonicalCompensationRecordsUtf8Bytes,
+  `compensationActivityRetentionDeclarationValid, `compensationActivityRetentionStateValid,
+  `compensationEventSubProcessSnapshotDeclarationValid, `compensationEventSubProcessSnapshotStateValid,
+  `compensationTransactionRetentionShapeValid, `controllerIdentitiesUnique, `controllersNotExhausted,
+  `controllersOwnLiveActivity, `effectIncidentAssociationsValid, `eventRaceAssociationsValid,
+  `hiddenRecordDeclarationsValid, `notStartedStateEmpty, `operationControlPlacesShareOwner, `orderedBy,
+  `parallelMultiInstanceControllersOrdered, `parallelMultiInstanceProgramBindingsValid, `programWellFormed,
+  `retentionLifecycleValid, `runtimePositionValid, `runtimeStateIdentityBound, `scopedOwnershipComplete,
+  `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
+  `sequentialMultiInstanceProgramBindingsValid, `sequentialScopeEntry?, `sequentialScopeStateValid,
+  `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

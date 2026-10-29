@@ -19,9 +19,23 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.StrictJson
+import all BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+import all BpmnSemantics.CompensationTriggerHandlerTransitionConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFrontier
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 /-! # Compensation trigger construction and frontier conformance -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerTransitionConformance
 

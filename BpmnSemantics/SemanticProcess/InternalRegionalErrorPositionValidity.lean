@@ -7,6 +7,10 @@ import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Error continuation position
 
@@ -15,7 +19,9 @@ The parent must survive the actual cancellation mask, and checked admission must
 handler output to that same parent's definition scope.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`runtimePositionValid, `scopedOwnershipComplete]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

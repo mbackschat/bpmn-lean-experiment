@@ -2,11 +2,19 @@ module
 
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Declarative Message interruption with evaluator soundness, exact regional withdrawal and context
 frames. These local laws do not assert admission or execution of unselected cross-family compositions. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`applyEventSubProcessInterruption, `cancelScopeSubtree,
+  `deliverEventSubProcessMessage, `occurrenceInSubtree, `occurrenceInSubtreeWithin,
+  `selectEventSubProcessMessageDelivery?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

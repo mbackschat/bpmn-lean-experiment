@@ -66,7 +66,7 @@ live body. Positive witnesses keep the rule cross-record only, including one par
 repeats a task claim inside that single record.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ActivityBodyClaimUniquenessConformance
 

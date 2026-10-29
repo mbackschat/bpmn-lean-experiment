@@ -6,12 +6,19 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import BpmnSemantics.SemanticProcess.ScopePositionInsertion
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual Terminate position publication follows from predecessor region selection and
 the existing evaluator's removal fields. Successor validity is derived from the selected step.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalPositionDelta?,
+  `controlPositionDelta?, `fire?, `projectControlPosition?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 PMIS-END-01, PMIS-EARLY-01 and PMIS-PUBLIC-01 derive completion terminals from one exact predecessor body and its validated population. Regional cancellation is supplied by the lifecycle owner; this module neither evaluates a runtime successor nor compares before/after collections.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

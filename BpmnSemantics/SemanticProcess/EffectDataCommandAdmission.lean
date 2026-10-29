@@ -5,6 +5,8 @@ public import BpmnSemantics.SemanticProcess.EffectDataAdmission
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import all BpmnSemantics.SemanticProcess.EffectDataAdmission
 public import BpmnSemantics.SemanticProcess.EffectDataMapping
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Structured effect-data command boundary
 
@@ -15,7 +17,9 @@ guard is a separate predicate rather than a fourth profile in `serialBusinessCom
 conjunction shape is projected positionally by the serial and mixed-task proofs.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.EffectData #[`bindingsValidUnder, `bindingsValidWith]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -39,6 +43,8 @@ def serialEffectPatchUnder? (policy : EffectMappingValuePolicy) (handlers : List
             return { name := mapping.target, value : VariableBinding }
         | _ => none
       return mergeProcessVariableBindings bindings writes
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`serialEffectPatchUnder?]
 
 theorem serialEffectPatchUnder?_scalar (handlers : List String) (outputs : List VariableMapping)
     (bindings patch : List VariableBinding) :

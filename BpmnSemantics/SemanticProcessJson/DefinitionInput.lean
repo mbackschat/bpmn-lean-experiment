@@ -11,7 +11,7 @@ public import BpmnSemantics.SemanticProcessJson.Program
 This module owns the line-oriented input boundary that decodes both definition representations, validates them independently, and requires exact canonical-lowering equality before evaluation.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

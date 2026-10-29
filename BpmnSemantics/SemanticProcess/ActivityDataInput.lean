@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Direct Activity data input
 
@@ -11,7 +13,9 @@ BPMN 2.0.2 Clause 10.4.2 makes an InputSet unavailable while any of its Data Ass
 Availability is decided at the representation level, and that is a recorded profile interpretation rather than a normative rule: a missing binding is unavailable, and a present binding whose value arm is `null` is available and is copied as explicit null. A duplicated name is unavailable too, because two bindings under one name is an invalid Process scope and selecting either would make the copied value depend on list order rather than on the model.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -22,6 +26,8 @@ def dataInputRunningInstance? (state : RuntimeState) :
   match state.control with
   | .running instanceId => some instanceId
   | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`dataInputRunningInstance?]
 
 theorem dataInputRunningInstance_of_running {state : RuntimeState}
     {instanceId : SemanticId} (running : state.control = .running instanceId) :
@@ -239,6 +245,8 @@ def dataInputActivityOwner (state : RuntimeState) (instanceId : SemanticId)
     activityElementId := ⟨taskId.value⟩
     activation := activityActivationCount state taskId + 1 }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`dataInputActivityOwner]
+
 /-- `ADINPUT-COPY-01` and `ADINPUT-SCOPE-01`. The activated Activity occurrence owns exactly one local
 binding, named by the target DataInput identity and holding the selected source value unchanged.
 
@@ -409,6 +417,8 @@ def dataInputActivityRecord (state : RuntimeState) (instanceId : SemanticId)
         elementId := ⟨taskId.value⟩
         activation := activationCount state taskId + 1 }
     attachedHandlers := [] }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`dataInputActivityRecord]
 
 /-- The successor's exact Activity collection, expressed over the record above. -/
 theorem activateDataInputUserTask_activityOccurrences {state after : RuntimeState}

@@ -20,7 +20,7 @@ other controls. Every non-ASCII byte and every other ASCII byte has zero expansi
 census to the already cached raw UTF-8 size is exact without constructing decoded characters.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

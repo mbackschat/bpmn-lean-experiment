@@ -17,11 +17,37 @@ import BpmnSemantics.SemanticProcess.InternalTimerTaskRuntimePreservation
 import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional retirement and joined Timer-task insertion commute from predecessor preparations.
 The proof binds actual Return, completion, Error, and Terminate execution, including continuations. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalTimerTaskPatch, `InternalCommutation.applyPreparedInternalRegional?,
+  `InternalCommutation.regionalBaseFootprint?, `InternalCommutation.regionalStateAtomsConflict,
+  `InternalCommutation.selectInternalRegional?, `InternalCommutation.timerTaskStateFootprint,
+  `canonicalCollectionOrder, `fire?, `runtimeStateWellFormed, `terminateScopeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -148,7 +174,7 @@ private theorem regional_timerTask_successors_equal (program : Program) (before 
           selected snapshots taskFired
       exact timerTask_selected_completion_successors_equal program before after afterTask contract patch _ definition output
         regional.selection.root withdrawal taskFound canonical running census withdrawn quiet tokenFrame raw taskRaw
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired
         exact fired

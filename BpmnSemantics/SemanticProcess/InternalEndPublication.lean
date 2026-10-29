@@ -11,11 +11,25 @@ import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 public import BpmnSemantics.SemanticProcess.TransitionRecord
 import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Ordinary End publishes an instantaneous occurrence and one consumed token. Acceptance is
 derived from the unchanged open projection, independently of later batch numbering. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalEndOrigin?,
+  `acceptFlowNodeOccurrenceCandidate?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

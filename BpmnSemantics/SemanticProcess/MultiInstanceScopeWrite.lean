@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 
 /-! SMIS-DATA-01/PMIS-DATA-01: shared write policy after validating the exact repeated-body binding. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

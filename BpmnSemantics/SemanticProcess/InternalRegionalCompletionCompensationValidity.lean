@@ -5,12 +5,25 @@ import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Normal root completion retains successful Compensation history. Quiescence rules out
 active triggers at the sole live root, while predecessor validity rules out failed triggers
 in a running state. These facts justify terminal validity without erasing that history. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`compensationActivityRetentionStateValid,
+  `compensationExecutionStateValid, `triggerLifecycleValid, `triggerMatchesDeclaration]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

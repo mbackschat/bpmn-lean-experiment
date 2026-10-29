@@ -7,13 +7,19 @@ import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 public import BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual execution and accepted publication for independent local-control pairs under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). Each operation keeps
 its assigned transition index in either execution order; finite sorting is a separate obligation.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation.InternalLocalControlPublicationTemplate #[`lifecycle]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

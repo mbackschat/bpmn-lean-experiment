@@ -4,11 +4,25 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 public import BpmnSemantics.SemanticProcess.InternalEndPreparation
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete End preparations survive disjoint input removal. The relative counter commutes
 without reading its predecessor value; the input census still protects single-unit selection. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalEndSelection.apply,
+  `InternalCommutation.InternalEndSelection.tokens, `InternalCommutation.internalEndStateFootprint,
+  `InternalCommutation.makeInternalEndPreparation, `InternalCommutation.prepareInternalEnd?,
+  `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -5,11 +5,15 @@ import BpmnSemantics.SemanticProcess.RuntimeStateCollectionCounterLaws
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Serial task issuance retains canonical counter storage and high-water marks. These laws are
 shared by the serial chain and mixed-task graph reachability frames. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateUserTask]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.SerialBusinessTask
 
@@ -22,6 +26,8 @@ def IssuanceFrame (state : RuntimeState) : Prop :=
   (state.activations.map (·.taskId)).Nodup ∧
   (state.effectActivations.map (·.elementId)).Nodup ∧
   (state.scopeActivations.map (·.scopeId)).Nodup
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`IssuanceFrame]
 
 theorem user_activation_issuance (state : RuntimeState) (instanceId : SemanticId)
     (owner : ScopeOccurrenceId) (input output : ControlPlaceId) (task : UserTaskDefinition)

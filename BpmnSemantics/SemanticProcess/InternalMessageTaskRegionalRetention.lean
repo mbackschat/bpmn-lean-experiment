@@ -13,12 +13,44 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
 public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional cleanup must retain the complete newly inserted Activity group.
 Owner separation, fresh Message identity, and the unchanged ownership graph determine the masks.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalMessageTaskPatch, `InternalCommutation.makeInternalMessageTaskPatch,
+  `InternalCommutation.messageTaskStateFootprint, `InternalCommutation.regionalBaseFootprint?,
+  `InternalCommutation.regionalCensusWrites, `InternalCommutation.regionalSelectionLocalDataRetention,
+  `InternalCommutation.regionalSelectionReferenceRetention, `InternalCommutation.regionalStateAtomsConflict,
+  `InternalCommutation.regionalStateFootprint?, `InternalCommutation.regionalWithdrawnActivityWrites,
+  `boundedCompletionReferenceRetention, `callReferenceRetention, `calledInstanceClosure,
+  `cancellationReferenceRetention, `monitoredCompletionReferenceRetention, `ordinaryCompletionReferenceRetention,
+  `recordInRegion, `runningInstance?, `withdrawnByRegion]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

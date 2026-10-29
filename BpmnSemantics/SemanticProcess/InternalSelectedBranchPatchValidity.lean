@@ -6,12 +6,30 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Selected-record validity for the approved
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalSelectedBranchPatch.apply,
+  `canonicalCollectionOrder, `hiddenRecordDeclarationsValid, `projectOpenFlowNodeOccurrences?,
+  `runtimeStateWellFormed, `scopeQuiescent, `transactionTriggerProvenanceValid, `triggerLifecycleValid,
+  `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -60,7 +78,7 @@ theorem InternalSelectedBranchPatch.preserves_hiddenRecordDeclarationsValid (pro
       | .selectMany _ _ _ _ _ selectionKey => decide (selectionKey = record.selectionKey)
       | _ => false).length = 1) = true :=
     -- A term, checked up to unfolding: `inserted` carries the statement's matcher and this restatement
-    -- this proof's private one (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
+    -- this proof's private one (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
     decide_eq_true (inserted record equality)
   refine Eq.trans ?_ counted
   apply congrArg (fun operations : List SemanticOperation => decide (operations.length = 1))
@@ -93,6 +111,8 @@ def InternalSelectedBranchPatch.SeparatesActiveCancelOwners
           ∀ trigger ∈ state.compensationTriggers, trigger.lifecycle = .active →
             ∀ record, patch = .insert record → record.owner ≠ trigger.owner
       | _ => True
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch #[`SeparatesActiveCancelOwners]
 
 theorem InternalSelectedBranchPatch.preserves_scopeQuiescent
     (state : RuntimeState) (patch : InternalSelectedBranchPatch) (owner : ScopeOccurrenceId)
@@ -262,7 +282,7 @@ theorem selectedBranchSet_insert_invalid_declarer_count_refused (program : Progr
   have countFalse : decide ((program.operations.filter fun
       | .selectMany _ _ _ _ _ selectionKey => decide (selectionKey = record.selectionKey)
       | _ => false).length = 1) = false :=
-    -- A term, checked up to unfolding, for the matcher split (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
+    -- A term, checked up to unfolding, for the matcher split (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
     decide_eq_false invalid
   simp only [hiddenRecordDeclarationsValid, InternalSelectedBranchPatch.apply,
     insertSelectedBranchSetCanonical_eq_canonicalInsertBy, all_canonicalInsertBy]

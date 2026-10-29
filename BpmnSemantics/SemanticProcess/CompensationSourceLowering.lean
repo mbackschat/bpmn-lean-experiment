@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.LoweringIdentity
 
 /-! # Checked Compensation source lowering -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

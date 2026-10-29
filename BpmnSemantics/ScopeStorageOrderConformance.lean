@@ -14,7 +14,7 @@ through their raw collections. These witnesses distinguish canonical storage fro
 they do not establish new Program or source admission.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ScopeStorageOrderConformance
 

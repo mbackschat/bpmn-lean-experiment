@@ -4,13 +4,17 @@ import BpmnSemantics.SemanticProcess.TokenStorage
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Canonical token order laws
 
 The complete place and owner key orders token units without collapsing multiplicity. Permutation and canonical order together recover exact stored equality; mixed insertion/removal laws therefore require an ordered predecessor.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalCollectionOrder, `orderedBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

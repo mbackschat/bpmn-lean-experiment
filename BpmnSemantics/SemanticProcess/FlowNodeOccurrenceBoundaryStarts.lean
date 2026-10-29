@@ -3,13 +3,14 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 public import BpmnSemantics.SemanticProcess.EffectDataMapping
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence boundary starts
 
 This module constructs candidate long-lived lifecycle starts from one exact selected Program operation and the runtime record that operation created. It does not project an open runtime state or validate a lifecycle fold against an after-state oracle.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -112,6 +113,9 @@ def candidateOperationFlowNodeIdentity? (program : Program) (operation : Semanti
     let identity ← candidateFlowNodeIdentity? program identityOwner elementId
     if identity.processId ≠ operationProcessId then none else pure identity
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`candidateFlowNodeIdentity?,
+  `candidateOperationFlowNodeIdentity?, `exactOperationOwner?]
+
 /-- Exact same-owner candidate identity follows from immutable operation and scope selection. -/
 theorem candidateOperationFlowNodeIdentity_of_exact_selection (program : Program)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId) (elementId : NodeId)
@@ -149,6 +153,9 @@ def candidateWaitStart? (program : Program) (operation : SemanticOperation)
         processId
         elementId
         owner }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`candidateOccurrenceId, `candidateWaitStart?,
+  `processIdForSelectedOperation?]
 
 /-- Exact candidate wait start from the public immutable-selection and identity facts. -/
 theorem candidateWaitStart_of_exact_selection (program : Program)

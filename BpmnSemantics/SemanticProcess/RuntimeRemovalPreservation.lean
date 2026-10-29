@@ -6,6 +6,10 @@ public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TokenOrder
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Removal-only preservation
 
@@ -13,7 +17,10 @@ Cancellation and Call removal share these consequences of retaining exact record
 counters. Their owner-liveness and Activity-controller rules remain at the distinct remover owners.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalCollectionOrder, `hiddenRecordDeclarationsValid,
+  `orderedBy, `runtimeStateIdentityBound, `waitDeclarationsValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -5,11 +5,18 @@ public import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Ordinary wait changes preserve Compensation execution when exact owner separation
 and retained identity provenance follow from the predecessor state. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateUserTask, `scopeQuiescent,
+  `transactionTriggerProvenanceValid, `triggerLifecycleValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

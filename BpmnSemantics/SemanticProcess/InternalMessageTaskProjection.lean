@@ -10,11 +10,66 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalCommutationProjection
 import BpmnSemantics.SemanticProcess.InternalMessageTaskValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.BoundedScopeArming
+import all BpmnSemantics.SemanticProcess.BoundedTask
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.CallDataTransfer
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.CallVariableMapping
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InclusiveGateway
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationAttempt
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.MessageStart
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredTask
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.TimerStart
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The subscription account publishes both Task and Message anchors at atomic arming.
 Program validity uses admission-derived owner identity; existing Timer classification frames. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMessageTaskContract.operation,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalMessageTaskPatch,
+  `InternalCommutation.makeInternalMessageTaskPatch, `InternalCommutation.uniqueFamilyDeclarer?,
+  `flowNodeOccurrenceProgramValidity, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

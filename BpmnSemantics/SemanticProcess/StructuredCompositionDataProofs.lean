@@ -4,10 +4,22 @@ public import BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
 import all BpmnSemantics.SemanticProcess.JsonSupport
 import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+import all BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+import all BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-AVAILABLE-01 separates computed predecessor obligations from runtime lookup. Binding-presence and uniqueness laws connect actual start/completion rewrites to the data facts used by the reachable-state argument. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics #[`SemanticProcess.StructuredComposition.ControlUnitBound,
+  `SemanticProcess.StructuredComposition.OperationAllowed, `SemanticProcess.StructuredComposition.definiteInputs,
+  `SemanticProcess.StructuredComposition.operationInputs, `SemanticProcess.StructuredComposition.operationVertex?,
+  `SemanticProcess.activateDataInputOutputUserTask?, `SemanticProcess.awaitUserTaskState?,
+  `SemanticProcess.chooseState?, `SemanticProcess.evaluateSimpleBooleanExpression,
+  `SemanticProcess.isCallActivityProgram, `SemanticProcess.operationOutputs, `SemanticProcess.processInterfaceScalar,
+  `SemanticProcess.reachNoneEndState?, `SemanticProcess.selectConditionalOutput,
+  `SemanticProcess.structuredCompositionOrdinaryCompletionAdmitted, `SemanticProcessJson.bindingNamesStrictlyIncrease]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
@@ -509,6 +521,8 @@ def RuntimeInputPositions (program : Program) (vertices : List Vertex) (analysis
   (∀ wait ∈ state.waits, ∃ operation ∈ program.operations,
     WaitMatchesOperation wait operation ∧
       InputsPresent vertices analysis state.variables.process.bindings operation.id.value)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`RuntimeInputPositions]
 
 theorem committed_start_has_input_positions
     (program : Program) (vertices : List Vertex) (analysis : Analysis)

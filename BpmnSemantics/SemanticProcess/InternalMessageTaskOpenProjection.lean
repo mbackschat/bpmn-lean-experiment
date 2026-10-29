@@ -10,11 +10,29 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalCommutationProjection
 import BpmnSemantics.SemanticProcess.InternalMessageTaskProjection
 import BpmnSemantics.SemanticProcess.InternalMessageTaskRuntimePreservation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! ESL-OWN-01 inserts the Task and subscription anchors in one projection step.
 The half-inserted state is not a publication boundary; freshness applies to both starts. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalArmingWrite.occurrence, `InternalCommutation.makeInternalMessageTaskPatch,
+  `InternalCommutation.messageWaitOccurrence, `InternalCommutation.userTaskWaitOccurrence,
+  `projectOpenFlowNodeOccurrences?, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

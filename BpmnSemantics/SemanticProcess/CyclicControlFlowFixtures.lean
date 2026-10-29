@@ -11,7 +11,7 @@ public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 This module owns the reviewed root-scope User Task cycle, its independently lowered program, finite stimuli, and hostile graph/state witnesses. It contains no conformance claims.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

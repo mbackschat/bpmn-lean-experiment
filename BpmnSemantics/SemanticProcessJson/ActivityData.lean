@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.ActivityDataContract
 
 /-! Shared closed endpoint decoding keeps checked and executable Activity contracts aligned. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

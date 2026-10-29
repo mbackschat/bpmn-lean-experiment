@@ -2,6 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.EffectCompletion
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Concurrent scope effect laws
 
@@ -12,7 +15,9 @@ isolation claim stays with the per-command sibling check of the preservation gat
 [concurrent scope Service Tasks proposal](../../docs/capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md#lean-assurance-lane).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectResultOutput, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

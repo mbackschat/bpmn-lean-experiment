@@ -13,11 +13,46 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationRuntimePreservation
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Message-host arming preserves the existing runtime predicate from complete raw preparation.
 The independent issuer and attachment obligations remain separate from public projection. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMessageTaskContract.operation,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalMessageTaskPatch,
+  `InternalCommutation.exactProgramSelection, `InternalCommutation.makeInternalMessageTaskPatch,
+  `InternalCommutation.messageWaitOccurrence, `InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.uniqueFamilyDeclarer?, `activateUserTask, `anyTimerIdNamesWait, `canonicalCollectionOrder,
+  `messageWaitKeyMatches, `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `runningInstance?,
+  `runtimePositionValid, `runtimeStateIdentityBound, `runtimeStateWellFormed, `sameActivityOccurrence,
+  `userTaskWaitDeclarationKey, `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique,
+  `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

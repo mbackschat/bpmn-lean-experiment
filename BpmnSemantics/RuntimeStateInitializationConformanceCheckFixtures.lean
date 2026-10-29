@@ -6,8 +6,6 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
-import all Init.Data.Repr
-import all Init.Data.List.Sort.Basic
 public import BpmnSemantics.SemanticProcess.CommandAdmission
 public import BpmnSemantics.SemanticProcess.MessageStartAdmission
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
@@ -17,7 +15,7 @@ public import BpmnSemantics.SemanticProcess.TimerStartAdmission
 /-! Fixture definitions and executable checks of [`RuntimeStateInitializationConformance`](RuntimeStateInitializationConformance.lean), apart from its theorems so that
 the check driver's closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.RuntimeStateInitializationConformance
 

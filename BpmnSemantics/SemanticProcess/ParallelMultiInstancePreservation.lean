@@ -9,6 +9,11 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 public import BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.ProfileCardinalities
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance evaluator soundness and invariant preservation
 
@@ -17,7 +22,12 @@ The post-state invariant check is part of fail-closed evaluation, never a repair
 does not satisfy the complete applicable invariant is refused before it can become committed state.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addOperationCardinality, `parallelMultiInstanceExactEntry,
+  `parallelMultiInstanceOperationWellFormed, `parallelMultiInstanceUserTaskProfileId, `programExactShape,
+  `programShape?, `programUndispatchedCapabilities, `progressedSharedParallelCompletionState,
+  `sequentialMultiInstanceUserTaskProfileId, `sequentialScopeEntry?, `sequentialScopeStateValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -487,6 +497,8 @@ def completeParallelMultiInstanceOrPreserve (arm : ParallelMultiInstanceArm)
     (submitted : List VariableBinding) : ParallelMultiInstanceRuntimeState :=
   (completeParallelMultiInstance? arm before taskId submitted).getD before
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeParallelMultiInstanceOrPreserve]
+
 theorem stale_or_duplicate_completion_preserves_exact_state
     (arm : ParallelMultiInstanceArm) (before : ParallelMultiInstanceRuntimeState)
     (taskId : UserTaskInstanceId) (submitted : List VariableBinding)
@@ -499,6 +511,8 @@ def completeSharedParallelMultiInstanceOrPreserve (arm : ParallelMultiInstanceAr
     (before : RuntimeState) (taskId : UserTaskInstanceId)
     (submitted : List VariableBinding) : RuntimeState :=
   (completeSharedParallelMultiInstance? arm before taskId submitted).getD before
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeSharedParallelMultiInstanceOrPreserve]
 
 theorem shared_stale_or_duplicate_completion_preserves_exact_state
     (arm : ParallelMultiInstanceArm) (before : RuntimeState)

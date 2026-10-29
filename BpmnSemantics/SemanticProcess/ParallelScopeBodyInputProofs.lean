@@ -10,6 +10,31 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProof
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeServiceInputProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Repeated-body local input availability
 
@@ -18,7 +43,13 @@ local eligible for Process fallback. Population ownership alone does not certify
 the stored values; initialization and nearest-scope writes own that invariant.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `ParallelScopeReplay.committedTransitions?, `ParallelScopeReplay.internalTransition?,
+  `ParallelScopeReplay.internalTransitions?, `ParallelScopeStart.analyzeProgram, `SemanticOperation.kind,
+  `completeSelectedScope?, `completeSerialEffect?, `evaluateParallelScopeInputs?, `issueParallelBodies?,
+  `readScopeVariable?, `scopeVariableScalar, `validParallelScopeIterations, `validParallelScopePopulation]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -33,6 +64,8 @@ def ParallelScopeLocalBindings (names : List String) (bindings : List VariableBi
 /-- Every retained body frame has the same declared scalar name domain. -/
 def ParallelScopeLocalsValid (names : List String) (variables : ScopedVariables) : Prop :=
   ∀ frame ∈ variables.scopes, ParallelScopeLocalBindings names frame.bindings
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeLocalsValid]
 
 private theorem ordered_snapshot_fields (mappings : List VariableMapping) (bindings : List VariableBinding)
     (matched : orderedInputSnapshotMatches mappings bindings = true) :

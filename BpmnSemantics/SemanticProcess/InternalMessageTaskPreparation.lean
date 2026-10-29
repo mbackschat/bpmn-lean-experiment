@@ -1,12 +1,19 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! ESL-OWN-01 requires atomic Task/Message/Activity preparation for source-reachable mixed
 frontiers. The existing tagged association footprint protects all three independent issuers;
 the Message anchor joins the Task anchor in the retained publication template. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.regionalActivityBodyTasks, `fire?, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -39,6 +46,9 @@ def messageTaskContract? : SemanticOperation → Option InternalMessageTaskContr
   | .awaitMessageMonitoredUserTask operationId origin input task message =>
       some { kind := .nonInterrupting, operationId, origin, input, task, message }
   | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalMessageTaskContract.operation,
+  `messageTaskContract?]
 
 theorem messageTaskContract_roundtrip (contract : InternalMessageTaskContract) :
     messageTaskContract? contract.operation = some contract := by
@@ -109,6 +119,8 @@ def applyInternalMessageTaskPatch (state : RuntimeState) (patch : InternalMessag
     activityActivations := setActivationCount state.activityActivations
       ⟨patch.record.activityElementId.value⟩ patch.record.activation }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`makeInternalMessageTaskPatch]
+
 /-- The retained patch realizes the existing atomic activation, including unequal counter values. -/
 theorem makeInternalMessageTaskPatch_refines_activation
     (program : Program) (state : RuntimeState) (contract : InternalMessageTaskContract)
@@ -158,6 +170,9 @@ def prepareInternalMessageTaskContract? (program : Program) (state : RuntimeStat
       state.activityOccurrences.any (regionalActivityAssociationsConflict · patch.record) ||
       !messageTaskArmAdmitted contract
     then none else some patch
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`messageTaskArmAdmitted,
+  `prepareInternalMessageTaskContract?]
 
 theorem prepareInternalMessageTaskContract_facts
     (program : Program) (state : RuntimeState) (contract : InternalMessageTaskContract)

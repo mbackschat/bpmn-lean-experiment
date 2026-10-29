@@ -17,7 +17,7 @@ Each formerly prepending writer must retain an earlier element's high-water mark
 later element in raw storage order. Task and Activity issuance remain separate.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ActivityActivationOrderConformance
 

@@ -4,12 +4,17 @@ import BpmnSemantics.SemanticProcess.InternalRegionalCallSequentialBinding
 import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
 import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Call-tree removal keeps issuance counters and immutable declaration bindings.
 Owner liveness uses the existing exact census theorem; controller liveness additionally
 uses the predecessor's program binding to align Activity identity and owner identity. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

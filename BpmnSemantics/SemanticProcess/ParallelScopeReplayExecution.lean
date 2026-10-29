@@ -9,7 +9,7 @@ Operational replay is kept below its accounting and graph certificates so the
 private publication runner does not import those proof dependencies.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 

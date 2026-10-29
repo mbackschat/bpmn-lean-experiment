@@ -2,6 +2,8 @@ module
 
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+import all BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Passive Process interface data
 
@@ -10,7 +12,11 @@ These laws cover caller-Property and Activity-local preservation and distinguish
 from an available null. They establish no invocation, return, admission, or reachability claim.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addProcessInterface?, `outputSlotAccepts,
+  `processInterfaceScalar, `readInterfaceBinding?, `readProcessInterfaceInput?, `readProcessInterfaceOutput?,
+  `selectProcessInterface?, `writeProcessInterfaceOutput?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

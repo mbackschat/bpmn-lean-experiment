@@ -3,6 +3,10 @@ module
 public import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalCommutation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Exact mixed data and ordinary arming commutation
 
@@ -10,7 +14,10 @@ The Activity supplement commutes with ordinary updates through separate counter 
 discriminated local owners, even when the Effect and Activity occurrence coordinates coincide.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyInternalArmingPatch,
+  `applyInternalDataArmingActivityPatch, `applyInternalDataArmingPatch]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

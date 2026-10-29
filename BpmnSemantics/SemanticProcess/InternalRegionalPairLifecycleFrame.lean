@@ -26,10 +26,50 @@ import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublicat
 import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Cancellation publication depends on projected anchors and live handler classification, including private Timers. Exact retained populations preserve that template without assuming publication acceptance. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.effectWaitOccurrence,
+  `InternalCommutation.messageWaitOccurrence, `InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.regionalCancelsOpenOccurrence, `InternalCommutation.regionalLifecycleTemplate?,
+  `InternalCommutation.regionalSelectionReferenceRetention, `InternalCommutation.regionalStateAtomsConflict,
+  `InternalCommutation.selectInternalRegional?, `InternalCommutation.timerWaitOccurrence,
+  `InternalCommutation.userTaskWaitOccurrence, `cancellationReferenceRetention, `fire?,
+  `flowNodeOccurrenceProgramValidity, `projectOpenFlowNodeOccurrences?, `runtimePositionValid,
+  `runtimeStateWellFormed, `sameActivityOccurrence, `scopeCancellationWithdrawsHandler, `scopeQuiescent,
+  `terminateScopeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -150,7 +190,7 @@ theorem regional_pair_retained_timer_frame (program : Program) (before after : R
               rw [afterRunning] at control
               contradiction
           · contradiction
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired
         exact fired
@@ -724,7 +764,7 @@ private theorem cancellation_entry_not_ended (program : Program) (state : Runtim
             exact disjoint _ (deriveInternalOccurrenceRegion_spec state _ _ lf.2.2.2.2.1).2.1
               (List.contains_iff_mem.mp inside)
           · contradiction
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       cases kind : left.selection.kind <;> simp only [kind] at facts <;> try contradiction
       simp only [regionalLifecycleTemplate?, operation, kind] at lifecycle
       obtain ⟨_, _, lifecycle⟩ := Option.bind_eq_some_iff.mp lifecycle

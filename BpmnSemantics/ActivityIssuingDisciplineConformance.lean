@@ -5,6 +5,11 @@ public import BpmnSemantics.SemanticProcess.BoundedScope
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.TimerStart
+import all BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Activity identity issuing-discipline preservation
 
@@ -14,7 +19,10 @@ record or exact predecessor identity, so unchanged counters or collection cardin
 withdrawal followed by reissue.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cancelScopeSubtree, `completeScopeState?, `interruptScope,
+  `replaceBodyIn, `replacedState, `retainedByRegion, `sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.ActivityIssuingDisciplineConformance
 

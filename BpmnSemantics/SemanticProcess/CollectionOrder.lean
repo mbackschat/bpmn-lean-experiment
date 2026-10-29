@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Collection laws for transition-level preservation
 
@@ -27,7 +29,9 @@ collections and needed no order argument; the first transition-level preservatio
 the theory.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attachedMessagesUnambiguous, `occursOnce, `orderedBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

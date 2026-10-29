@@ -13,7 +13,7 @@ public import BpmnSemantics.SemanticProcess.ValueDomain
 /-! Fixture definitions and executable checks of [`FiniteInternalArmingConformance`](FiniteInternalArmingConformance.lean), apart from its theorems so that
 the check driver's closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.FiniteInternalArmingConformance
 

@@ -12,7 +12,7 @@ Properties. Both source and Program sides project onto the structured-compositio
 role check serves both; business identifiers never select behavior.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

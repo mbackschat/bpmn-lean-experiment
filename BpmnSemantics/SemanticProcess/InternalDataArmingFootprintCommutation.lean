@@ -4,6 +4,10 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
 public import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalDataArmingPreparationPreservation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Composed data-pair laws from footprint independence
 
@@ -11,7 +15,11 @@ Both key inequalities follow from complete predecessor preparation and footprint
 counter storage uses the same canonical-order invariant as the evaluator's other affected fields.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.footprintOfPatch, `InternalCommutation.makeInternalDataArmingPatch, `canonicalCollectionOrder,
+  `canonicalStateAtomSet, `footprintsNonInterfering]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

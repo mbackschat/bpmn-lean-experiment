@@ -7,13 +7,36 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationProjection
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Internal commutation runtime preservation
 
 Proves family-specific non-interference and preservation of admitted runtime state, open occurrence projection, and exact single-arm execution for prepared internal arms.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalArmingWrite.kind, `InternalCommutation.InternalArmingWrite.occurrence,
+  `InternalCommutation.InternalArmingWrite.owner, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.effectWaitOccurrence, `InternalCommutation.internalArmInput?,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
+  `InternalCommutation.prepareInternalArm?, `InternalCommutation.uniqueFamilyDeclarer?, `activityBodyLive,
+  `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `attachedMessagesUnambiguous, `attachedTimersUnambiguous,
+  `effectIncidentAssociationValid, `effectIncidentAssociationsValid, `effectWaitKeyMatches, `effectWaitOccurrenceId,
+  `effectWaitOwnerAssociationValid, `eventRaceAssociationsValid, `eventRaceHasMessage, `eventRaceHasTimer,
+  `exactLiveOccurrence, `messageWaitKeyMatches, `runtimeStateWellFormed,
+  `sequentialMultiInstanceControllerProgramBindingValid, `sequentialMultiInstanceControllerProgramBindingsValid,
+  `sequentialMultiInstanceOperationBindingComplete, `sequentialMultiInstanceProgramBindingsValid, `taskIdNamesWait,
+  `timerWaitKeyMatches, `userTaskWaitDeclarers, `userTaskWaitKeyMatches, `waitDeclarationsValid,
+  `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

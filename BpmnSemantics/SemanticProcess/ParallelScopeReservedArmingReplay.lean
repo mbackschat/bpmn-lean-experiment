@@ -1,6 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Reserved arming replay of parallel scope bodies
 
@@ -9,7 +12,12 @@ arming retains its exact selection and readiness gates and matches ordinary occu
 depend on no replay history, so they stay separate from the structural frames in `ParallelScopeReplayFrames`.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatch.apply,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalOperationOccurrence?,
+  `InternalCommutation.effectWaitOccurrence, `InternalCommutation.internalArmInput?,
+  `InternalCommutation.prepareReservedOccurrenceArm?, `activateEffect, `activateUserTask]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 
@@ -44,6 +52,8 @@ def ReservedArmWriteShape (program : Program) (before : RuntimeState) (runtimeId
         descriptor := effect.descriptor, arguments, outputMappings := effect.outputMappings,
         output, bpmnErrorRoute := route } arguments
   | _ => False
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeReplay #[`ReservedArmWriteShape]
 
 /-- Actual reserved arming retains its exact selection and common readiness gates before either typed write. -/
 theorem prepareReservedOccurrenceArm_gate_provenance (program : Program) (before : RuntimeState)

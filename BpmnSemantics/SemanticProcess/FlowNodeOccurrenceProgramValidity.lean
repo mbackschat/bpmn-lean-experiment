@@ -1,13 +1,17 @@
 module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence Program validity
 
 This module composes structural, wait-family, selected-branch, and event-race correspondence for lifecycle projection. It also owns exact Message-boundary host/subscription pairing. Other family validators and the private Boundary Timer matcher remain at their lower owners.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceOwnerLiveUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -38,6 +42,8 @@ def messageBoundedProjectionPairMatches (program : Program)
               elementId := ⟨messageWait.elementId.value⟩
               activation := messageWait.activation }])
   | _ => false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`messageBoundedProjectionPairMatches]
 
 /-- Exact body and tagged-handler identities separate a new pair from every predecessor pair. -/
 theorem messageBoundedProjectionPairMatches_identities (program : Program)
@@ -88,6 +94,8 @@ def flowNodeOccurrenceProgramValidity (program : Program) (state : RuntimeState)
     state.selectedBranchSets.all (fun record =>
       flowNodeOccurrenceOwnerLiveUnique state record.owner) &&
     state.eventRaces.all (fun race => flowNodeOccurrenceOwnerLiveUnique state race.owner)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceProgramValidity]
 
 /-- Every projected wait stores the same process identity as its live owner. -/
 theorem flowNodeOccurrenceProgramValidity_wait_owner_ids (program : Program) (state : RuntimeState)

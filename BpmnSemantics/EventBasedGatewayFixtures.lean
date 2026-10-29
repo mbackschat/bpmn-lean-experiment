@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! Shared executable fixtures retain the conformance declaration bodies without importing their proofs. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.EventBasedGatewayConformance
 

@@ -8,12 +8,20 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceInstantaneousPublication
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
 import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Instantaneous entries sort after existing open occurrences and close in the same delta.
 Their transient anchors must neither remove nor collide with retained regional occurrences.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalCancellationEnds,
+  `InternalCommutation.regionalLifecycleTemplate?, `applyFlowNodeOccurrenceDelta?, `availableAfterStarts,
+  `canonicalFlowNodeOccurrenceDelta, `flowNodeOccurrenceAnchorBefore, `insertBy,
+  `instantaneousFlowNodeOccurrenceDeltaWithEnds, `sortBy, `sortFlowNodeOccurrenceEnds, `sortFlowNodeOccurrenceStarts,
+  `startBefore, `transitionAnchor]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -278,7 +286,7 @@ theorem regionalLifecycleTemplate_fold_facts (program : Program) (before : Runti
           split at lifecycle
           · cases lifecycle; rfl
           · contradiction
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       cases kind : selected.kind <;> simp only [kind] at facts <;> try contradiction
       simp only [regionalLifecycleTemplate?, selectedOperation, kind] at lifecycle
       obtain ⟨_, _, lifecycle⟩ := Option.bind_eq_some_iff.mp lifecycle

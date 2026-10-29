@@ -3,13 +3,18 @@ module
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.NestedScopeData
 public import BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Internal commutation footprint and prepared-patch core
 
 Defines the bounded internal-arm representation, exact preparation algorithm, raw patch application, and public transition-footprint classifier used by the commutation proof layers.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`declaredByExactlyOneOwnedOperation,
+  `operationOwningScope?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -295,6 +300,8 @@ def sortBy (before : α → α → Bool) : List α → List α
   | [] => []
   | value :: rest => sortInsertBy before value (sortBy before rest)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`sortBy, `sortInsertBy]
+
 theorem mem_sortInsertBy (before : α → α → Bool) (value inserted : α) (values : List α) : value ∈ sortInsertBy before inserted values ↔
       value = inserted ∨ value ∈ values := by
   induction values with
@@ -347,6 +354,8 @@ def exactProgramSelection (program : Program) (operation : SemanticOperation) (o
         decide (binding.operationId = operation.id) with
     | [binding] => decide (binding.scopeId = owner.definitionScopeId)
     | _ => false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`exactProgramSelection]
 
 /-- Internal proof API connecting a prepared exact selection to the runtime declaration census. -/
 theorem declaredByExactlyOneOwnedOperation_of_exactSelection (program : Program)

@@ -2,10 +2,11 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete retained preparations implement the predecessor-only finite-batch classification account. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -41,7 +42,7 @@ def PreparedInternalArming.Prepared (program : Program) (state : RuntimeState) :
   | .ordinary operation patch => prepareInternalArm? program state operation = some patch
   | .data contract patch => prepareInternalDataArmingContract? program state contract = some patch
 
-instance (program : Program) (state : RuntimeState) (prepared : PreparedInternalArming) :
+@[no_expose] instance (program : Program) (state : RuntimeState) (prepared : PreparedInternalArming) :
     Decidable (prepared.Prepared program state) := by
   cases prepared <;> unfold PreparedInternalArming.Prepared <;> infer_instance
 
@@ -63,7 +64,9 @@ def PreparedInternalArming.Independent (left right : PreparedInternalArming) : P
   footprintsNonInterfering left.footprint right.footprint = true ∧
     footprintsNonInterfering right.footprint left.footprint = true
 
-instance (left right : PreparedInternalArming) : Decidable (left.Independent right) :=
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareInternalArming?]
+
+@[no_expose] instance (left right : PreparedInternalArming) : Decidable (left.Independent right) :=
   inferInstanceAs (Decidable (_ ∧ _))
 
 theorem PreparedInternalArming.independent_symm {left right : PreparedInternalArming}

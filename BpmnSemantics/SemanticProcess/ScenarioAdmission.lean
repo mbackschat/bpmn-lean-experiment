@@ -13,7 +13,7 @@ public import BpmnSemantics.SemanticProcess.PortableHandoffAdmission
 
 /-! Pure scenario admission is independent of execution and projection: profile-supported stimulus domains do not imply command acceptance. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

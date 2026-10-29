@@ -15,7 +15,7 @@ TypeScript-only claims; see the
 [structured effect-data amendment](../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#source-profile-and-port-contract).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.EffectDataConformance
 

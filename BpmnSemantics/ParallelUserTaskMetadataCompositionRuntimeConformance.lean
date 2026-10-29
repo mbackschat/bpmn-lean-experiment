@@ -7,7 +7,7 @@ public import BpmnSemantics.ParallelUserTaskMetadataCompositionFixtures
 Proved start, exact sibling preservation, and occurrence-refusal behavior for two concurrent metadata-bearing User Tasks.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
 

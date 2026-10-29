@@ -11,11 +11,36 @@ import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
 import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Return and completion retain independent arming writes. Canonical insertion/filter laws
 preserve exact collection order, including Activity-local data and bounded deadlines. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.occurrence,
+  `InternalCommutation.InternalArmingWrite.owner, `InternalCommutation.PreparedInternalArming.apply,
+  `InternalCommutation.PreparedInternalArming.scopeFramePatch, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.effectWaitOccurrence,
+  `InternalCommutation.makeInternalDataArmingPatch, `MonitoredScopeTimerBinding, `canonicalCollectionOrder,
+  `completeQuiescentScope?, `completeScopeState?, `removeMonitoredScopeTimer, `timerWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

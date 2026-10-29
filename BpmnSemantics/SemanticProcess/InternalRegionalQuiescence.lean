@@ -2,12 +2,19 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Terminal Complete needs population emptiness, not just absence at one owner. RSI-OWN-01
 transfers singleton-root quiescence to each wait family; REG-OWN-CLOSE-01 separately excludes
 retained Activities whose last possible live body is a scope selected for removal. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `allMatchingRetained,
+  `exactLiveOccurrence, `regionalActivityReferencesClosed, `scopeQuiescent, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

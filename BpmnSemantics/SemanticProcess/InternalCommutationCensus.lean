@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcessContract
 This module classifies every current operation and RuntimeState field under the reviewed final-closure account. Classification enables no transition and supplies no footprint by itself.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

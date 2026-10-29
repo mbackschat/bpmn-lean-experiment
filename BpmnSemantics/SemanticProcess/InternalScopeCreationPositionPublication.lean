@@ -11,11 +11,28 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual control-position publication for prepared scope creation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.makeInternalScopeCreationPreparation, `controlPositionDelta?, `projectControlPosition?,
+  `runtimeStateWellFormed, `sameTokenPosition, `tokenMultiplicityAt, `tokenPositionsStrict, `uniqueDefinitionScope?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

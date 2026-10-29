@@ -10,7 +10,7 @@ Kernel-decided witnesses for root start, child entry and completion, Timer inter
 occurrence isolation, and exact commutation atoms.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
 

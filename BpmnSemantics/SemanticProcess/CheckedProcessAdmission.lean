@@ -11,7 +11,7 @@ public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 This module owns checked-process admission by composing representation-specific identity, scope ownership, reference, arity, mapping, Error-handler, and profile-capability rules with the topology predicate from `CheckedGraphValidation`. It does not lower or validate Semantic Process programs.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

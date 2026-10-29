@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation trigger and handler flow-node occurrences
 
@@ -12,7 +13,9 @@ so a handler whose body has a distinct element contributes both its handler anch
 anchor without inventing a second semantic operation.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`transitionAnchor]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -88,6 +91,9 @@ def projectOpenCompensationFlowNodeOccurrences? (program : Program) (state : Run
             let starts := sortFlowNodeOccurrenceStarts
               (activeCompensationTriggerStarts program operation state.compensationTriggers)
             if starts.map (·.anchor) |>.Nodup then some starts else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activeCompensationHandlerStarts,
+  `activeCompensationTriggerStarts, `compensationEffectStart, `compensationHandlerStart, `compensationTriggerStart]
 
 private theorem activeCompensationHandlerStarts_nonTransition (program : Program)
     (owner : ScopeOccurrenceId) (handlers : List CompensationHandlerExecution) :

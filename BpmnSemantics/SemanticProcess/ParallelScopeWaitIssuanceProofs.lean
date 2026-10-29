@@ -1,10 +1,11 @@
 module
 
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual parallel body wait-declaration preservation
 
@@ -13,7 +14,11 @@ census. This preserves hosting-instance provenance without assuming reserved
 preparation or claiming that foreign-instance waits belong to this Program.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `SemanticOperation.kind, `activateEffect, `activateUserTask, `declaredByExactlyOneOwnedOperation,
+  `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `waitDeclarationsValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

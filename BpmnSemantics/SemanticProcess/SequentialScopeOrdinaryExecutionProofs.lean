@@ -11,10 +11,39 @@ import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeValidityProofs
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalTransitionPreservation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeExecutionCertificate
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Ordinary parent/body execution preserves the SMIS execution certificate. Repeated-body lifecycle and command ingress belong to the separate preservation owner; history and readiness remain above both. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SemanticOperation.kind,
+  `SequentialScopeControl.bodyVertex?, `activateEffect, `activateUserTask, `bodyConsumedPorts,
+  `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `selectScopeVariables?, `sequentialScopeBindingForEntry?,
+  `sequentialScopeTaskWaitingCount]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -17,13 +17,40 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 public import BpmnSemantics.SemanticProcess.InternalEndPreparation
 public import BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalMergeCommutation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Merge and ordinary End reuse token-patch separation for bounded child entry under the
 [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).
 Neither changes the joined Activity or deadline, so those retained reads stay exact.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalBoundedScopeSelection.apply,
+  `InternalEndSelection.apply, `InternalEndSelection.tokens, `InternalLocalControlSelection.apply,
+  `InternalMergeSelection.apply, `InternalScopeCreationSelection.apply, `internalEndStateFootprint,
+  `makeInternalBoundedScopePreparation, `makeInternalBoundedScopeSelection, `makeInternalEndPreparation,
+  `regionalStateAtomsConflict]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

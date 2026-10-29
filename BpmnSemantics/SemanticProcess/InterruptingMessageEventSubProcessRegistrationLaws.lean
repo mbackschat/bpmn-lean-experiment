@@ -2,11 +2,21 @@ module
 
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistration
 public import BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistration
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Declarative registration and its executable soundness bridge. Local laws establish exact listener
 issuance, dormant handler state and execution frames, without claiming universal reachable-state preservation. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`admitStimulus,
+  `compensationEventSubProcessSnapshotScopeLifecycleWellFormed, `interruptingMessageEventSubProcessStateValid,
+  `registerEventSubProcessListener?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

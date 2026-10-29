@@ -7,13 +7,41 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationAttempt
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction branch structure and operational reachability
 
 Branch facts are derived from the existing admission reader. Command boundaries and internal prefixes use the compensation-aware evaluators, so their definitions require neither successor validity nor a desired frontier classification. Chain soundness and rollback preservation do not establish phase preservation or classify reachable frontiers.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TransactionProgramRoles.endsNormally, `activateUserTask,
+  `attemptInternalOperation, `awaitUserTaskState?, `canonicalEnabledInternalTransitions,
+  `compensationEventSubProcessSnapshotScopeLifecycleWellFormed, `completeBoundedScope?, `completeMonitoredScope?,
+  `duplicateState?, `initializeTransactionRetention, `runningInstance?, `scopeForestWellFormed,
+  `snapshotInternalTransitionFrontier]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -212,6 +240,8 @@ def transactionRootStartState {p : Program} (roles : TransactionAdmittedRoles p)
     scopeActivations := [{ scopeId := roles.root.id, count := 1 }]
     compensationActivityRetentions := [] }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`transactionRootStartState]
+
 theorem transaction_start_builder_normal_form (p : Program) (roles : TransactionAdmittedRoles p)
     (wellFormed : programWellFormed p = true) (instanceId : SemanticId)
     (variables : List VariableBinding) :
@@ -267,6 +297,8 @@ def transactionInitiatedState {p : Program} (roles : TransactionAdmittedRoles p)
     tokens := [{ placeId := roles.first, owner :=
       { processInstanceId := instanceId, definitionScopeId := roles.root.id, activation := 1 } }] }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`transactionInitiatedState]
+
 /-- The real dispatcher consumes pending initiation and produces the sole root entry token. -/
 theorem transaction_start_operation_reaches_entry (p : Program) (roles : TransactionAdmittedRoles p)
     (instanceId : SemanticId) (variables : List VariableBinding) :
@@ -299,6 +331,8 @@ def transactionEnteredState {p : Program} (roles : TransactionAdmittedRoles p)
     scopeActivations := setScopeActivationCount [{ scopeId := roles.root.id, count := 1 }]
       roles.child.id 1
     compensationActivityRetentions := [{ owner := child, nextCompletionOrdinal := 1, records := [] }] }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`transactionChildOwner, `transactionEnteredState]
 
 theorem transaction_primitive_entry_normal_form (p : Program) (roles : TransactionAdmittedRoles p)
     (wellFormed : programWellFormed p = true) (instanceId : SemanticId)
@@ -384,6 +418,8 @@ def transactionSplitState {p : Program} (roles : TransactionAdmittedRoles p)
     (instanceId : SemanticId) (variables : List VariableBinding) : RuntimeState :=
   { transactionEnteredState roles instanceId variables with
     tokens := addTokens [] [roles.left, roles.right] (transactionChildOwner roles instanceId) }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`transactionSplitState]
 
 /-- Split preserves the complete entered state except for its two canonically ordered child tokens. -/
 theorem transaction_split_operation_reaches_two_children (p : Program)
@@ -472,6 +508,8 @@ structure TransactionInitialTasks {p : Program} (roles : TransactionAdmittedRole
   leftHead : roles.leftOperations.head? = some left.operation
   rightHead : roles.rightOperations.head? = some right.operation
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.TransactionInitialTask #[`arm, `operation]
+
 private theorem transaction_chain_initial_task (p : Program) (child : DefinitionScopeId)
     (place : ControlPlaceId) (operations : List SemanticOperation) (places : List ControlPlaceId)
     (chain : TransactionTaskChain p child place operations places) (nontrivial : 2 ≤ operations.length) :
@@ -511,6 +549,8 @@ def TransactionInitialArmingPhase {p : Program} (roles : TransactionAdmittedRole
     (heads : TransactionInitialTasks roles) (instanceId : SemanticId) (variables : List VariableBinding)
     (state : RuntimeState) : Prop :=
   ∃ reverse stage, state = transactionInitialArmingState roles heads instanceId variables reverse stage
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`transactionInitialArmingState]
 
 private theorem transaction_initial_task_attempt (p : Program) (roles : TransactionAdmittedRoles p)
     (head : TransactionInitialTask) (instanceId : SemanticId) (state : RuntimeState)

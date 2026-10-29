@@ -3,10 +3,18 @@ module
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import BpmnSemantics.SemanticProcess.TokenStorage
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact owned port exchanges preserve continuation credit across Human, Service and internal body execution. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `SemanticOperation.kind, `activateEffect, `activateUserTask, `awaitEffectState?, `awaitUserTaskState?,
+  `bodyConsumedPorts, `bodyProducedPorts, `continuationMarking, `duplicateState?, `fire?, `ownedPortCount,
+  `reachNoneEndState?, `synchronizeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -71,6 +79,8 @@ namespace ContinuationMarkingLaws
 def tokenCount (tokens : List ControlToken) (owner : ScopeOccurrenceId)
     (place : ControlPlaceId) : Nat :=
   (tokens.filter (fun token => token.owner == owner && token.placeId == place)).length
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ContinuationMarkingLaws #[`tokenCount]
 
 theorem sum_map_add {α : Type} (values : List α) (left right : α → Nat) :
     (values.map (fun value => left value + right value)).sum =

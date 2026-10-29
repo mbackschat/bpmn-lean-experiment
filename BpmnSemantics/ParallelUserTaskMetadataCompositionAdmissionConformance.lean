@@ -12,7 +12,7 @@ public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 Proved exact profile identity, structural admission, task-to-metadata binding, metadata erasure, negative profile boundaries, and data-value admission for the composition checkpoint.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
 

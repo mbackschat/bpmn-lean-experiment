@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAd
 /-! Parent-owned Message listener registration for IMES-ARM-01. This owner reserves the exact shared
 Message identity without creating an executing handler; command admission owns when registration runs. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

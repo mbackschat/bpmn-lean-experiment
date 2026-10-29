@@ -13,12 +13,44 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Ordinary waits preserve complete bounded-entry preparation. The shared child-entry laws
 handle token populations; regional separation additionally protects the joined deadline.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.InternalArmingWrite.elementId, `InternalCommutation.InternalArmingWrite.kind,
+  `InternalCommutation.InternalBoundedScopeContract.entryOperation,
+  `InternalCommutation.InternalBoundedScopeSelection.apply, `InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.boundedScopeJointResourcesAvailable,
+  `InternalCommutation.boundedScopeStateFootprint, `InternalCommutation.footprintOfPatch,
+  `InternalCommutation.internalActivationCount, `InternalCommutation.liftRegionalStateAtom,
+  `InternalCommutation.makeInternalBoundedScopePreparation, `InternalCommutation.makeInternalBoundedScopeSelection,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
+  `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.selectInternalScopeCreation?,
+  `InternalWaitKind.activationKind, `canonicalCollectionOrder, `canonicalStateAtomSet, `effectActivationCount,
+  `exactLiveOccurrence, `messageActivationCount]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -4,8 +4,15 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 public import BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
 import BpmnSemantics.SemanticProcess.EffectCompletion
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-DATA-01: occurrence-bound input evaluation for parallel repeated bodies. -/
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScopeClaims, `parallelScopeBinding?,
+  `parallelScopeBodyBound]
 
 public section
 
@@ -19,6 +26,8 @@ def ParallelScopeCleanEntry (entry : ParallelScopeEntry) (parent : ScopeOccurren
   state.scopeOccurrences = [⟨parent, none⟩] ∧ entry.childScopeId ≠ parent.definitionScopeId ∧
     state.activityOccurrences = [] ∧ state.parallelScopeControllers = [] ∧
     state.variables.scopes = [] ∧ scopeActivationCount state entry.childScopeId = 0
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeCleanEntry]
 
 theorem ParallelScopeCleanEntry.frame (entry : ParallelScopeEntry) (parent : ScopeOccurrenceId)
     (before after : RuntimeState) (clean : ParallelScopeCleanEntry entry parent before)
@@ -104,6 +113,9 @@ def completeParallelScopeUserTask? (program : Program) (state : RuntimeState)
   else
     let variables ← writeParallelScopeValues? program state wait.owner values .userTask
     some { state with waits := state.waits.erase wait, variables, tokens := addToken state.tokens wait.output wait.owner }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeParallelScopeEffect?,
+  `completeParallelScopeUserTask?]
 
 /-- PMIS-DATA-01 extends sibling isolation to the actual population-bound write entry point. -/
 theorem writeParallelScopeValues_preserves_other_scopes {program : Program} {state : RuntimeState}

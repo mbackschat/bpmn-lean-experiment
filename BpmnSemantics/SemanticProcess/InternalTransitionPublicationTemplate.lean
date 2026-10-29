@@ -22,10 +22,52 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.InternalTimerTaskAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalTimerTaskProjection
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalRetention
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublication
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Predecessor-only mixed publication templates implement the numbering boundary in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeSelection.apply,
+  `InternalCommutation.InternalRegionalPublicationTemplate.lifecycle,
+  `InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.InternalTransitionLifecycleTemplate.instantiate,
+  `InternalCommutation.InternalTransitionPublicationTemplate.instantiate,
+  `InternalCommutation.PreparedInternalTransition.alternative, `InternalCommutation.PreparedInternalTransition.apply,
+  `InternalCommutation.PreparedInternalTransition.operation,
+  `InternalCommutation.actualInternalAlternativePublication?,
+  `InternalCommutation.actualInternalTransitionPublication?, `InternalCommutation.internalArmingPublicationTemplate?,
+  `InternalCommutation.internalEndPublicationTemplate, `InternalCommutation.internalMessageTaskPublicationTemplate?,
+  `InternalCommutation.internalRegionalPublicationTemplate, `InternalCommutation.makeInternalBoundedScopePreparation,
+  `InternalCommutation.makeInternalBoundedScopeSelection, `InternalCommutation.makeInternalMessageTaskPatch,
+  `InternalCommutation.makeInternalScopeCreationPreparation, `InternalCommutation.messageTaskStateFootprint,
+  `InternalCommutation.preparedTransitionPublicationTemplate?, `InternalCommutation.regionalOwnsAtom,
+  `InternalCommutation.regionalOwnsOrdinaryAtom, `InternalCommutation.regionalStateAtomsConflict,
+  `flowNodeOccurrenceOwnerLiveUnique, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

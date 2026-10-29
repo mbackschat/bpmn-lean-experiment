@@ -8,7 +8,7 @@ This module owns the kernel-decided ordinary invariant refusals and their siblin
 attribution checks without importing the event-race or successor reduction families.
 -/
 
-@[expose] public section
+public section
 
 set_option Elab.async false
 

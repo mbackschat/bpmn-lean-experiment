@@ -2,13 +2,18 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance shared runtime-state preservation
 
@@ -18,7 +23,16 @@ preservation. The upstream owner retains evaluator soundness, admitted-Program a
 and exact-state refusal.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelMultiInstanceSlot.taskId, `activityBodyTaskClaims,
+  `activityTaskBodyOwnersAgree, `insertParallelChildWaits, `mintedParallelTaskId, `operationDeclaresWaitKey,
+  `operationWaitDeclarationKeys, `parallelMultiInstanceUserTaskProfileId, `parallelSlotTaskIds, `pendingParallelSlots,
+  `pendingParallelSlotsFrom, `pendingParallelTaskIds, `programSequentialMultiInstanceProfileMatches,
+  `programUndispatchedCapabilities, `runtimeStateIdentityBound,
+  `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
+  `sequentialMultiInstanceProgramBindingsValid, `sequentialMultiInstanceUserTaskProfileId, `taskIdNamesWait,
+  `timerWaitDeclarationKey, `userTaskWaitDeclarationKey, `userTaskWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -37,6 +51,8 @@ def parallelEntryWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.task.id.value⟩
     activation := wait.activation }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`parallelEntryChildWait]
 
 theorem taskDefinitionId_eq_iff_value_eq (left right : TaskDefinitionId) :
     left = right ↔ left.value = right.value := by
@@ -269,6 +285,8 @@ def insertPendingParallelChildWaitState (arm : ParallelMultiInstanceArm)
         { state with
           waits := insertUserTaskWait wait state.waits
           activations := setActivationCount state.activations arm.taskId wait.activation }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertPendingParallelChildWaitState]
 
 theorem insertPendingParallelChildWaitState_eq (arm : ParallelMultiInstanceArm)
     (owner : ScopeOccurrenceId) (processInstanceId : SemanticId) (highWater index : Nat)

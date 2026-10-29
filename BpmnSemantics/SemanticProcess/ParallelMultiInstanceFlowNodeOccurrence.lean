@@ -10,7 +10,7 @@ Timer closure. They deliberately retain no host order. Shared E1/E2 publication 
 semantic delta into the repository-wide occurrence contract during integration.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

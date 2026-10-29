@@ -4,6 +4,9 @@ public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
 public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 import Std.Data.DTreeMap.Internal.Balancing
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Containing-scope termination
 
@@ -13,7 +16,9 @@ retaining the selected occurrence, and the existing scope-completion transition 
 producer of a parent continuation or root completion.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cancelScopeSubtree]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -83,6 +88,9 @@ def terminateScopeState? (program : Program) (before : RuntimeState)
   match selectedTerminateOwner? program before id origin input scopeId with
   | some owner => some (commitTermination before owner)
   | none => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`commitTermination, `operationOwnershipExact,
+  `terminateOperationPresent]
 
 private theorem selectedTerminateOwner_sound
     (program : Program) (before : RuntimeState) (id : OperationId)

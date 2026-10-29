@@ -67,6 +67,49 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.StrictJson
+import all BpmnSemantics.CompensationActivityRetentionConformance
+import all BpmnSemantics.ParallelMultiInstanceConformance
+import all BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.BoundedTask
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.MessageMonitoredTask
+import all BpmnSemantics.SemanticProcess.MonitoredTask
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import all BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+import all BpmnSemantics.SemanticProcess.TopologyFixtures
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.SequentialMultiInstanceDataFixtures
+import all BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
 
 /-! # Compensation Activity retention producer conformance
 
@@ -80,7 +123,7 @@ declarations, non-targets, and excluded ordinary operation families preserve the
 This module makes no source, profile, public-observation, or Temporal-hosting claim.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationActivityRetentionProducerConformance
 

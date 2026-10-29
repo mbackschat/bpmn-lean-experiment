@@ -2,6 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.NestedScopeData
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Nested scope-data frame laws
 
@@ -13,7 +16,10 @@ well-formedness because an occurrence with more than one frame makes resolution 
 choose.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`framesAt, `initializeFrame?,
+  `readOutcome?, `resolveOwner?, `write?, `writeAll?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.NestedScopeData
 
@@ -22,6 +28,8 @@ open BpmnSemantics
 /-- Whether a frame of `occurrence` declares `name`, a present null included. -/
 def declares (variables : ScopedVariables) (occurrence : ScopeOccurrenceId) (name : String) : Bool :=
   (framesAt variables.scopes occurrence).any fun frame => frame.bindings.any (·.name == name)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`declares]
 
 /-- NSD-READ-01, frame case: resolution selects the unique frame of the first chain scope that declares
 the name, and no earlier chain occurrence declares it. -/
@@ -92,7 +100,7 @@ theorem resolveOwner?_process_undeclared (variables : ScopedVariables) (name : S
 /-- CVM-ISOLATE-01 and CSD-ISOLATE-01, frame side: resolution selects only the frame of an occurrence
 on the resolving chain, so a called-owned read or write never selects a caller frame, and an
 occurrence never selects a sibling occurrence's frame. -/
-theorem resolveOwner?_frame_on_chain (variables : ScopedVariables) (chain : List ScopeOccurrenceId)
+private theorem resolveOwner?_frame_on_chain (variables : ScopedVariables) (chain : List ScopeOccurrenceId)
     (name : String) (owner : ScopeOccurrenceId)
     (resolved : resolveOwner? variables.scopes chain name = some (.frame owner)) :
     owner ∈ chain := by
@@ -134,7 +142,7 @@ private theorem calledRootOf?_on_chain (program : Program) (chain : List ScopeOc
 
 /-- CSD-ISOLATE-01, write side: a write from `writer` leaves every frame whose owner is not on the
 writer's live occurrence chain unchanged, so a sibling occurrence's frame never changes. -/
-theorem write?_off_chain_unchanged (program : Program) (occurrences : List RuntimeScopeOccurrence)
+private theorem write?_off_chain_unchanged (program : Program) (occurrences : List RuntimeScopeOccurrence)
     (variables result : ScopedVariables) (writer : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
     (binding : VariableBinding) (chained : occurrenceChain occurrences writer = some chain)
     (written : write? program occurrences variables writer binding = some result) :
@@ -455,20 +463,20 @@ CSD-CHAIN-01 and CSD-ISOLATE-01 on the smallest separating state: two live occur
 approval definition under one parent each hold a frame declaring `status`. The definition-chain account
 refused this state because one definition had two live frames. -/
 
-def siblingOwner (activation : Nat) : ScopeOccurrenceId :=
+private def siblingOwner (activation : Nat) : ScopeOccurrenceId :=
   { processInstanceId := ⟨"I"⟩, definitionScopeId := nonLawScope "O", activation }
 
-def siblingOccurrences : List RuntimeScopeOccurrence :=
+private def siblingOccurrences : List RuntimeScopeOccurrence :=
   [ { id := siblingOwner 1, parent := some (nonLawOwner "P") }
   , { id := siblingOwner 2, parent := some (nonLawOwner "P") }
   , { id := nonLawOwner "P", parent := none } ]
 
-def siblingVariables : ScopedVariables :=
+private def siblingVariables : ScopedVariables :=
   { emptyScopedVariables with scopes :=
       [ { owner := siblingOwner 1, bindings := [{ name := "status", value := .string "open" }] }
       , { owner := siblingOwner 2, bindings := [{ name := "status", value := .string "held" }] } ] }
 
-theorem sibling_occurrences_resolve_and_write_their_own_frames :
+private theorem sibling_occurrences_resolve_and_write_their_own_frames :
     (occurrenceChain siblingOccurrences (siblingOwner 1)).bind (resolveOwner? siblingVariables.scopes · "status") =
         some (.frame (siblingOwner 1)) ∧
       (occurrenceChain siblingOccurrences (siblingOwner 2)).bind (resolveOwner? siblingVariables.scopes · "status") =

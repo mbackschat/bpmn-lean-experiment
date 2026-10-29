@@ -19,6 +19,51 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.StrictJson
+import all BpmnSemantics.InternalScopeCreationFrameConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.CallActivityAdmission
+import all BpmnSemantics.SemanticProcess.CallActivityIdentity
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.ControlPositionContract
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 /-! # Independent scope-creation preparation witnesses
 
 The [scope-creation account](../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite)
@@ -28,7 +73,7 @@ source reachability of retained counters, or production batching. The existing C
 only its acyclic graph policy here; its separate profile cardinalities exclude these constructed pairs.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.InternalScopeCreationFrameConformance
 

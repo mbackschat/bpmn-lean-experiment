@@ -2,13 +2,18 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact frontier presentation uses the existing lexicographic and scope-order laws. Sorting
 does not resolve choice under the [explicit-choice account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalAlternativeBefore]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

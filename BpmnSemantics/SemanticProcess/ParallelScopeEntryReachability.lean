@@ -10,6 +10,28 @@ import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 import BpmnSemantics.SemanticProcess.TokenStorage
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual parent execution and parallel-entry uniqueness
 
@@ -20,7 +42,13 @@ parent accounting exhausts the selected entry input after its first execution,
 independently of whether the collection is empty.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `ParallelScopeStart.ParentSpineStep, `ParallelScopeStart.analyzeProgram, `ParallelScopeStart.programSelected,
+  `SemanticOperation.kind, `SequentialScopeControl.inputs, `bodyConsumedPorts, `completeParallelScope?,
+  `continuationMarking, `enterParallelScope?, `operationOutputs, `ownedPortCount, `parallelScopeBinding?,
+  `parallelScopeEntry?, `parallelScopeOperationWellFormed, `parentContinuationMarking]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

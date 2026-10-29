@@ -13,7 +13,7 @@ NSD-WRITE-01 from the Call's enclosing occurrence. An absent source copies a pre
 `VariableScope.getVariable` returns null for an unset name; a refused read disables the step.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

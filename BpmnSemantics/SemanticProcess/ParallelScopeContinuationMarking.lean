@@ -3,9 +3,14 @@ module
 import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
 import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
-import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
+import all BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.CallDataTransfer
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual body-operation continuation balance
 
@@ -14,7 +19,16 @@ actual owned input/output ports. Wait issuance counts its blocked output once;
 these laws do not assert enabledness or execution at most once.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ContinuationMarkingLaws.tokenCount,
+  `InternalCommutation.InternalArmingWrite.owner, `InternalCommutation.InternalOccurrencePatch.apply,
+  `InternalCommutation.InternalOccurrencePatch.operation, `InternalCommutation.InternalOccurrencePatch.owner,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.internalArmInput?,
+  `InternalCommutation.prepareOccurrenceTokenPatch?, `InternalCommutation.prepareReservedOccurrenceArm?,
+  `TokenPatch.apply, `cancelScopeSubtree, `completeSerialEffect?, `continuationMarking, `issueParallelBodies?,
+  `occurrenceInSubtree, `ownedPortCount, `parallelScopeBinding?, `retainedByRegion, `validParallelScopeIterations,
+  `validParallelScopePopulation]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -113,6 +127,8 @@ def parentContinuationMarking (entry : ParallelScopeEntry) (parent : ScopeOccurr
     record.owner == parent && record.activityElementId == entry.elementId &&
       (match record.body with | .parallelChildScopes .. => true | _ => false) &&
       entry.normalOutput == place).length
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`parentContinuationMarking]
 
 /-- PMIS-ENTER-01 supplies exactly the issued bodies' entry-port credits, preserving every prior continuation. -/
 theorem issueParallelBodies_continuation_balance (entry : ParallelScopeEntry)
@@ -505,6 +521,8 @@ def armingContinuationPorts : InternalArmingWrite → List ControlPlaceId
   | .effect wait _ => [wait.output]
   | .message _ | .timer _ => []
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`armingContinuationPorts]
+
 private theorem arming_patch_balance (before : RuntimeState) (patch : InternalArmingPatch)
     (owned : patch.write.owner = patch.owner)
     (present : ({ placeId := patch.input, owner := patch.owner } : ControlToken) ∈ before.tokens)
@@ -643,6 +661,8 @@ def occurrenceConsumedCharge (queried : ScopeOccurrenceId) (place : ControlPlace
 def occurrenceProducedCharge (queried : ScopeOccurrenceId) (place : ControlPlaceId)
     (patch : InternalOccurrencePatch) : Nat :=
   ownedPortCount (bodyProducedPorts patch.operation) patch.owner queried place
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`occurrenceConsumedCharge, `occurrenceProducedCharge]
 
 private theorem prepared_step_balance (program : Program) (before after : RuntimeState)
     (patch : InternalOccurrencePatch) (step : InternalOccurrencePatchStep program before after patch)

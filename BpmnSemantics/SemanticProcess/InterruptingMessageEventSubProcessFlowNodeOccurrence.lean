@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessSt
 /-! IMES-OBSERVE-01 separates a dormant parent listener from an executing handler scope.
 The declaration-owned projection supplements the ordinary-entry projection without weakening its predicates. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

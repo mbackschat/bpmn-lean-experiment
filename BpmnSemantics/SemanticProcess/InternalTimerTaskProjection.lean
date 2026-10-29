@@ -14,12 +14,35 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalCommutationProjection
 import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Timer-task arming adds one public task anchor. Its new Timer is private through the exact
 Activity association, while every predecessor Timer retains its publication classification.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalArmingWrite.occurrence, `InternalCommutation.InternalTimerTaskContract.operation,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalTimerTaskPatch,
+  `InternalCommutation.makeInternalTimerTaskPatch, `InternalCommutation.uniqueFamilyDeclarer?,
+  `InternalCommutation.userTaskWaitOccurrence, `flowNodeOccurrenceProgramValidity,
+  `messageBoundedOperationProjectionValid, `runningInstance?, `runtimeStateWellFormed, `userTaskWaitDeclarers]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

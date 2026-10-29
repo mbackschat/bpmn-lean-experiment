@@ -5,18 +5,27 @@ public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
 import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalLocalControlPositionTemplateOrder
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-SELECT-01 discovery traversals retain the same exact operation/owner offers.
 The bridge compares their canonical alternatives without choosing an execution or weakening
 the failed-wait and duplicate-alternative guards.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalAlternativeBefore,
+  `internalOperationOccurrenceOffers?, `internalOperationOccurrences?, `ordinaryExecutionFrontier, `sortBy,
+  `sortInsertBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 def occurrenceAlternative (pair : InternalOperationOccurrence × RuntimeState) :
     InternalAlternative := .operationOccurrence pair.1.operationId pair.1.owner
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`occurrenceAlternative]
 
 private theorem mapM_success (values : List α) (f : α → Option (List β)) (pieces : List (List β))
     (mapped : values.mapM f = some pieces) :
@@ -305,6 +314,8 @@ def selectedDiscovery (program : Program) (state : RuntimeState)
   match operation, state.control with
   | .mergeExclusive .., .running _ => mergeExecutionFrontier program state operation
   | _, _ => ordinaryExecutionFrontier program state operation
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectedDiscovery]
 
 private theorem selectedDiscovery_keys (program : Program) (state : RuntimeState)
     (operation : SemanticOperation)

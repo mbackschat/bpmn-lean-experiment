@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Wait activation
 
@@ -20,7 +21,7 @@ ordinals agree under every registered profile and the record is what stops that 
 load-bearing.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -2,10 +2,15 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Selectors require exact singleton censuses, not membership alone. Footprint-protected scopes and Call records retain both the selected member and the absence of competitors. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -128,7 +133,7 @@ theorem regionalSelection_filter_frame (program : Program) (before after : Runti
                 exact ⟨scope, ⟨member, parentKept parent parentEq scope member (by simpa using named)⟩, named⟩
             simp_all only [Bool.false_eq_true, ↓reduceIte, Option.bind_eq_bind, Option.bind_some]
       · contradiction
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       dsimp only at found ⊢
       rw [inputs.1]
       obtain ⟨owner, offered, found⟩ := Option.bind_eq_some_iff.mp found

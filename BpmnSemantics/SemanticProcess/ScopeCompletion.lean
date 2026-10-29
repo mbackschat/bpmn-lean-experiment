@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
 import Std.Data.DTreeMap.Internal.Operations
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Normal scope completion
 
@@ -14,7 +15,7 @@ predicate with their paired repetition policy in `SequentialScopeRuntime`; a bod
 emit the ordinary parent continuation (SMIS-END-01).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -33,6 +34,8 @@ def scopeQuiescent (state : RuntimeState) (owner : ScopeOccurrenceId) : Bool :=
     !(state.compensationTriggers.any fun trigger =>
       trigger.lifecycle == .active && trigger.owner == owner) &&
     !(state.scopeOccurrences.any fun occurrence => occurrence.parent == some owner)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`scopeQuiescent]
 
 theorem quiescent_scope_has_no_child (state : RuntimeState) (owner : ScopeOccurrenceId)
     (quiescent : scopeQuiescent state owner = true)
@@ -112,6 +115,8 @@ def completeScopeOccurrenceState? (state : RuntimeState) (owner : ScopeOccurrenc
   let occurrence ← state.scopeOccurrences.find? (·.id == owner)
   if occurrence.id.definitionScopeId ≠ scopeId || !scopeQuiescent state occurrence.id then none
   else completeQuiescentScope? state occurrence parentOutput
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeScopeOccurrenceState?, `completeScopeState?]
 
 private theorem find_unique_definition (values : List RuntimeScopeOccurrence)
     (scopeId : DefinitionScopeId) (occurrence : RuntimeScopeOccurrence)

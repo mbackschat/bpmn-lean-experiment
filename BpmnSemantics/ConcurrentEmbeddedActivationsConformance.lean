@@ -14,7 +14,7 @@ quantified law; the quantified laws live in `ScopeOccurrenceEntry`, `ScopeComple
 [concurrent embedded activations specification](../docs/capsules/CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md#separating-witnesses).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ConcurrentEmbeddedActivationsConformance
 

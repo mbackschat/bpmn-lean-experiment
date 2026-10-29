@@ -3,6 +3,9 @@ module
 public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 public import BpmnSemantics.SemanticProcess.CallActivity
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Atomic scalar Call transfers
 
@@ -10,7 +13,7 @@ CDATA-INPUT-01 and CDATA-OUTPUT-01 compose explicit owned data movement with the
 Call control relations. Empty interfaces retain the original control domain.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -100,6 +103,8 @@ inductive ReturnScalarProcessStep : RuntimeState → OperationId → BpmnElement
       (routed : ActivityDataOutputRouting .scalar controlAfter record.caller controlAfter.variables data.directOutput binding variables) :
       ReturnScalarProcessStep before id origin calledProcessId calledRootScopeId callerOutput data
         { controlAfter with variables }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`invokeProcessWithDataState?, `returnProcessWithDataState?]
 
 theorem scalarReturnRecord_iff {state : RuntimeState} {id : OperationId} {origin : BpmnElementOrigin}
     {record : CalledProcessOccurrence} : scalarReturnRecord? state id origin = some record ↔

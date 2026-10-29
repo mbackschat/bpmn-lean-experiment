@@ -6,12 +6,13 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional publication retains predecessor positions, open anchors, and instantaneous identities.
 Command and transition numbering are assigned only when the retained template is instantiated.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -32,6 +33,9 @@ def regionalCancellationEnds (program : Program) (state : RuntimeState) (region 
     (current : List OpenSemanticFlowNodeOccurrence) : List UnnumberedFlowNodeOccurrenceEnd :=
   (current.filter (regionalCancelsOpenOccurrence program state region retainRoot)).map fun entry =>
     { anchor := entry.anchor, terminal := .cancelled }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`regionalCancellationEnds,
+  `regionalCancelsOpenOccurrence]
 
 theorem regionalCancellation_retains_selected_root (program : Program) (state : RuntimeState) (region : InternalOccurrenceRegion)
     (entry : OpenSemanticFlowNodeOccurrence) (root : entry.anchor = .scope region.root) :

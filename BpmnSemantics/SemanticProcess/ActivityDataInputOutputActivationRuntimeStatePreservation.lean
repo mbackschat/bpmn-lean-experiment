@@ -19,6 +19,33 @@ import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.ValueDomain
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Activity-data activation runtime-state preservation
 
@@ -27,7 +54,17 @@ scope while preserving the aggregate runtime-state predicate. Exact declaration 
 the inserted Activity disjoint from every existing Multi-Instance controller's binding.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityIdentitiesUnique,
+  `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `anyTimerIdNamesWait, `attachedMessagesUnambiguous,
+  `attachedTimersUnambiguous, `canonicalCollectionOrder, `controllerIdentitiesUnique, `controllersNotExhausted,
+  `dataInputOutputActivityRecord, `declaredByExactlyOneOwnedOperation, `effectIncidentAssociationsValid,
+  `effectWaitOwnerAssociationValid, `eventRaceAssociationsValid, `exactLiveOccurrence, `hiddenRecordDeclarationsValid,
+  `occursOnce, `operationDeclaresWaitKey, `operationOwningScope?, `operationWaitDeclarationKeys,
+  `parallelMultiInstanceProgramBindingsValid, `runtimePositionValid, `runtimeStateIdentityBound,
+  `runtimeStateWellFormed, `sameActivityOccurrence, `taskIdNamesWait, `userTaskWaitDeclarationKey,
+  `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

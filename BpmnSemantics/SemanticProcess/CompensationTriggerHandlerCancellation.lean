@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 
 /-! # Compensation handler failure cancellation
 
@@ -9,7 +10,7 @@ This module owns the declarative handler-terminalization and root-cleanup relati
 `COMPH-CANCEL-01`. Handler terminalization is declarative; cleanup shares the runtime owner filter and is a constructor-selection boundary, not an independent cleanup oracle.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

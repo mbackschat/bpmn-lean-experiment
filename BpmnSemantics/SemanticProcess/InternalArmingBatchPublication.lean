@@ -10,10 +10,23 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalDataArmingExecution
 import BpmnSemantics.SemanticProcess.InternalDataArmingFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
+import all BpmnSemantics.SemanticProcess.InternalArmingBatch
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import all BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual accepted bundles remain defined and canonical through every independent finite prefix. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingBatch,
+  `InternalCommutation.applyPreparedInternalArming?, `fireInternalBatch?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -42,6 +55,9 @@ def acceptedPreparedArmingBatch? (program : Program) (instanceId commandId : Sem
   let (final, publications) ← runPreparedArmingBatch? program instanceId commandId state prepared
   return (final, numberInternalPublicationPairs firstTransitionIndex
     (canonicalAcceptedInternalPublicationPairs publications))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`acceptedPreparedArmingBatch?,
+  `runPreparedArmingBatch?]
 
 theorem prepared_arming_applies (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalArming)

@@ -2,12 +2,19 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalActivityValidity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Message-boundary projection checks the same three-way census from each participant.
 Cancellation preserves it when a matched Activity, Task, and Message share retention;
 the generic census law preserves multiplicity rather than replacing counts by membership. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`anyMessageIdNamesWait,
+  `messageBoundedOperationProjectionValid, `messageBoundedProjectionValid, `messageIdNamesWait, `recordInRegion]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

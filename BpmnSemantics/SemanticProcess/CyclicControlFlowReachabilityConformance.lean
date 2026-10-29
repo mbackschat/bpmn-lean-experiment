@@ -53,12 +53,38 @@ import all Lean.Data.Json.FromToJson.Extra
 import all Lean.Data.Json.Parser
 import all Lean.Data.Json.Printer
 import all Lean.Data.Json.Stream
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.ExecutionRuntime
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
+
 /-! # Actual cyclic reachability and closure conformance
 
 This module owns reflexive-transitive selected-program reachability and arbitrary automatic internal-closure traces. Representative schedule facts remain in `CyclicControlFlowExecutionConformance`.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CyclicReviewPatch.apply, `CyclicReviewPatch.bindings,
+  `CyclicRouteValue.bindings, `CyclicRouteValue.output, `chooseState?, `completeUserTask, `cyclicActiveUnitCount,
+  `cyclicAdmittedStartState, `cyclicChoiceOperation, `cyclicCompletedWithBindings, `cyclicDifferentOwnerState,
+  `cyclicInitialPostMergeState, `cyclicPatchReviewState, `cyclicPostChooseWithBindings,
+  `cyclicPostCompletionWithBindings, `cyclicPostEndWithBindings, `cyclicPostMergeWithBindings, `cyclicPostStartState,
+  `cyclicSameInputMultiplicityTwoState, `cyclicScopedVariables, `cyclicTwoInputState, `cyclicWait,
+  `cyclicWaitingWithBindings, `evaluateSimpleBooleanExpression, `selectConditionalOutput, `singletonWaitingState,
+  `taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

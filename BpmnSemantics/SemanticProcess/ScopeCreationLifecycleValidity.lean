@@ -4,13 +4,21 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Existing lifecycle owners survive fresh scope insertion under the
 [scope-creation contract](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
 Boundary-Timer classification additionally needs the static exclusion of the new ordinary child.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+  `InternalCommutation.InternalScopeCreationSelection.apply, `flowNodeOccurrenceProgramValidity]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

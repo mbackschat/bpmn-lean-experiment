@@ -2,11 +2,25 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The reverse preparation frame uses regional writes against local-control reads, including
 the scope owner and competing selected-join buckets in the complete predecessor footprint. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalLocalControlStateFootprint,
+  `InternalCommutation.liftRegionalStateAtom, `InternalCommutation.regionalOwnsAtom,
+  `InternalCommutation.regionalOwnsOrdinaryAtom, `InternalCommutation.regionalStateAtomsConflict,
+  `InternalCommutation.regionalStateFootprint?, `canonicalStateAtomSet, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

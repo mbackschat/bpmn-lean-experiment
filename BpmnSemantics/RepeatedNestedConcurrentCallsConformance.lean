@@ -13,7 +13,7 @@ decides one observation. They do not discharge a quantified law; the invocation,
 [repeated, nested and concurrent Calls specification](../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md#separating-witnesses).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.RepeatedNestedConcurrentCallsConformance
 

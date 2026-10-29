@@ -1,6 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Withdrawal finality for wait identities
 
@@ -18,7 +21,11 @@ The laws are stated over `List.erase` rather than over any one victory, so every
 wait by erasing it inherits them instead of restating the argument.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectIdNamesWait, `effectWaitKeyMatches,
+  `messageIdNamesWait, `messageWaitKeyMatches, `occursOnce, `taskIdNamesWait, `timerIdNamesWait, `timerWaitKeyMatches,
+  `userTaskWaitKeyMatches, `waitIdentitiesUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

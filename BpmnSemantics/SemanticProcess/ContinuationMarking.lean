@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! Blocked Task continuations and declared body ports support both MI execution accounts; enabled-token selection remains separate. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

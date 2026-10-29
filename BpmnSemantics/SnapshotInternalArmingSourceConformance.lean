@@ -7,7 +7,7 @@ public import BpmnSemantics.CompensationSourceLoweringFixtures
 checks that [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively. They are apart from the
 six-family arming witnesses because those import proof owners an executable root may not reach. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SnapshotInternalArmingSourceConformance
 

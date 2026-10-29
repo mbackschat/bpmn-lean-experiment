@@ -5,11 +5,22 @@ public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.InternalMessageTaskValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Message-host publication requires exact Task/Message/Activity pairing in both states.
 ESL-OWN-01 preparation's fresh anchors and tagged associations keep the inserted triple separate. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMessageTaskContract.operation,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalMessageTaskPatch,
+  `InternalCommutation.makeInternalMessageTaskPatch, `InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.uniqueFamilyDeclarer?, `activityBodyTask?, `messageBoundedOperationProjectionValid,
+  `messageBoundedProjectionPairMatches, `messageWaitKeyMatches, `recordBodyNamesWait,
+  `repeatableSubscriptionBoundaryOperation, `taskIdNamesWait, `userTaskWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -4,6 +4,8 @@ import BpmnSemantics.SemanticProcess.CallReachability
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Call associations under scope creation
 
@@ -11,7 +13,7 @@ The [scope-creation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md) requir
 parentless-root and Call-record bijection to survive the actual selected insertion.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -46,6 +48,8 @@ def AssociationFacts (state : RuntimeState) (hosting : SemanticId) : Prop :=
   (∀ record ∈ state.calledProcessOccurrences,
     record.calledRoot.processInstanceId ∈ processInstanceClosureWithin
       state.calledProcessOccurrences [hosting] (state.calledProcessOccurrences.length + 1))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`AssociationFacts, `RecordFacts]
 
 private theorem associations_iff (state : RuntimeState) (hosting : SemanticId)
     (running : state.control = .running hosting) :

@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.TransitionRecord
 This module binds the independent public-position projection and delta fold to strict committed-transition replay. Its accepted delta trace must reconstruct the independently projected head from revision zero.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

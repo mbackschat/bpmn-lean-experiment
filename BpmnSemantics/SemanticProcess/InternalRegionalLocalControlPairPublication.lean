@@ -14,11 +14,19 @@ import BpmnSemantics.SemanticProcess.InternalRegionalCancellationAcceptance
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleSelection
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Pair publication uses the same predecessor-selected templates and assigned transition
 indices in either execution order. Acceptance is proved against each actual successor. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.selectInternalRegional?,
+  `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -63,7 +71,7 @@ theorem preparedRegional_preserves_runtimeStateWellFormed (program : Program) [I
       cases output with
       | none => exact preparedRootComplete_preserves_runtimeStateWellFormed program before instanceId id origin definition prepared valid found
       | some output => exact preparedChildComplete_preserves_runtimeStateWellFormed program before instanceId id origin definition output prepared valid found
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       haveI := InterruptionInvocationsRooted.declared program _ (prepareInternalRegional_operation_declared program before _ prepared found) rfl
       exact preparedError_preserves_runtimeStateWellFormed program before instanceId id origin input error handler prepared valid found
   | terminateScope id origin input definition =>
@@ -103,7 +111,7 @@ theorem preparedRegional_accepted_lifecycle (program : Program) [InterruptionInv
       | some output =>
           exact preparedChildComplete_accepted_lifecycle program before commandId transitionIndex
             id origin definition output prepared programWF identities found
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       haveI := InterruptionInvocationsRooted.declared program _ (prepareInternalRegional_operation_declared program before _ prepared found) rfl
       exact preparedError_accepted_lifecycle program before commandId transitionIndex id origin input error handler prepared unique found
   | terminateScope id origin input definition =>

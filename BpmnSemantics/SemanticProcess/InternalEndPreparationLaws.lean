@@ -3,10 +3,19 @@ module
 public import BpmnSemantics.SemanticProcess.InternalEndPreparation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Prepared End selections preserve runtime-state validity through the local token update. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation.InternalEndSelection #[`tokens]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

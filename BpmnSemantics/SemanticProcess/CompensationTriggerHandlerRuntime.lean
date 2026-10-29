@@ -4,10 +4,15 @@ public import BpmnSemantics.SemanticProcess.CompensationActivityRetention
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation trigger and handler runtime validity -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalArrayUtf8Bytes, `effectIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -421,6 +426,10 @@ def compensationExecutionStateValid (program : Program) (state : RuntimeState) :
           canonicalCompensationExecutionStateUtf8Bytes state.compensationTriggers
               state.compensationHandlerEffectWaits ≤ declaration.limits.maxCanonicalBytes &&
           controlLifecycleValid program state
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CompensationSubjectDefinition.body,
+  `canonicalCompensationExecutionStateUtf8Bytes, `compensationExecutionStateValid, `controlLifecycleValid,
+  `strictlyOrderedBy, `triggerLifecycleValid, `waitCollidesWithOrdinaryState]
 
 theorem compensationExecutionStateValid_trigger (program : Program) (state : RuntimeState)
     (declaration : CompensationExecutionDeclaration)

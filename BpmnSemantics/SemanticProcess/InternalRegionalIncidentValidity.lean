@@ -4,12 +4,19 @@ public import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.Incident
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional cleanup must retain an incident's suspended wait and exact local-data owner together.
 The incident validator requires a singleton local scope and excludes an open wait with the same
 identity, so arbitrary sublist retention alone cannot establish its preservation. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectIdNamesWait, `effectIncidentAssociationValid,
+  `effectIncidentAssociationsValid, `effectWaitOccurrenceId, `effectWaitOwnerAssociationValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

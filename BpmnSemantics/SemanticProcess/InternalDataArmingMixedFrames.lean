@@ -4,6 +4,15 @@ public import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.InternalCommutation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Complete mixed data and ordinary arming frames
 
@@ -11,7 +20,14 @@ One predecessor and footprint separation determine both complete re-preparations
 Activity supplement preserves ordinary reads through the discriminated local-owner contract.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.dataArmingHostValid,
+  `InternalCommutation.footprintOfPatch, `InternalCommutation.internalActivationCount,
+  `InternalCommutation.listsDisjoint, `InternalCommutation.makeInternalDataArmingPatch,
+  `InternalCommutation.prepareInternalDataArmingContract?, `InternalCommutation.stateReadSetsDisjoint,
+  `canonicalStateAtomSet, `dataInputOutputActivityRecord, `dataInputOutputRunningInstance?, `footprintsNonInterfering]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -117,6 +133,8 @@ def applyInternalDataArmingActivityPatch (state : RuntimeState)
       ⟨patch.record.activityElementId.value⟩ patch.record.activation
     variables := addActivityOccurrenceVariableScope state.variables
       (activityOwnerForRecord patch.record) patch.bindings }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyInternalDataArmingActivityPatch]
 
 theorem prepared_data_activity_patch_issuesFreshActivity
     (program : Program) (state : RuntimeState) (contract : InternalDataArmingContract)

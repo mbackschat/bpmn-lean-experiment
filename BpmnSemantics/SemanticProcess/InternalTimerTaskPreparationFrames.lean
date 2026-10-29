@@ -7,12 +7,29 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete Timer-task preparation reads all three issuers and both untagged wait anchors.
 Regional footprint independence supplies their separation and the Activity-association frame.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalTimerTaskPatch,
+  `InternalCommutation.makeInternalTimerTaskPatch, `InternalCommutation.openWaitAnchorAbsent,
+  `InternalCommutation.openWaitAnchors, `InternalCommutation.prepareInternalTimerTaskContract?,
+  `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.timerTaskStateFootprint,
+  `canonicalCollectionOrder]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

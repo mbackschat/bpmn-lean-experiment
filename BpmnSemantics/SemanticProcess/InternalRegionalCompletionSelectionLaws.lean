@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCor
 
 /-! Predecessor-selected completion preserves runtime position under the checked admission contract. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

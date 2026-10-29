@@ -15,12 +15,55 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
 import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
 import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Bounded entry's child insertion uses the ordinary scope-position law. The joined Timer and
 Activity preserve that position while retaining their separate validity obligations.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeContract.entryOperation,
+  `InternalCommutation.InternalBoundedScopeContract.operation,
+  `InternalCommutation.InternalBoundedScopeSelection.apply, `InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.boundedScopeJointResourcesAvailable,
+  `InternalCommutation.internalScopeCreationDefinitionMatches,
+  `InternalCommutation.makeInternalBoundedScopePreparation, `InternalCommutation.makeInternalBoundedScopeSelection,
+  `InternalCommutation.regionalActivityAssociationsConflict, `InternalCommutation.uniqueFamilyDeclarer?,
+  `activityBodyLive, `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `canonicalCollectionOrder,
+  `controllersOwnLiveActivity, `enteredChildScopeId?, `exactLiveOccurrence, `runningInstance?,
+  `runtimeStateIdentityBound, `runtimeStateWellFormed, `sameActivityOccurrence, `sequentialScopeBindingForEntry?,
+  `sequentialScopeCollection?, `sequentialScopeEntry?, `sequentialScopeStateValid, `timerIdNamesWait,
+  `timerWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

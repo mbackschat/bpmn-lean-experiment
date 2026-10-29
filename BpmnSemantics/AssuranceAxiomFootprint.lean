@@ -81,7 +81,7 @@ A later semantic checkpoint adds its own composed guarantees beside these. The m
 semantics and imports only the owners of the theorems it pins.
 -/
 
-@[expose] public section
+public section
 
 /-- info: 'BpmnSemantics.SemanticProcess.ParallelScopeCommandBoundaryReachable.command_result_committed_stable_and_program_valid' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in

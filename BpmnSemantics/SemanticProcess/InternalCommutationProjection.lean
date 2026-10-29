@@ -9,13 +9,28 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityFrames
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Internal commutation occurrence-projection frames
 
 Proves that one prepared ordinary internal arm adds exactly one fresh projected wait occurrence while preserving the existing wait, scope, and called-process projections.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.InternalArmingWrite.elementId, `InternalCommutation.InternalArmingWrite.occurrence,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.effectWaitOccurrence,
+  `InternalCommutation.internalArmInput?, `InternalCommutation.internalArmOrigin?,
+  `InternalCommutation.messageWaitOccurrence, `InternalCommutation.openWaitAnchorAbsent,
+  `InternalCommutation.openWaitAnchors, `InternalCommutation.prepareInternalArm?,
+  `InternalCommutation.timerWaitOccurrence, `InternalCommutation.userTaskWaitOccurrence, `effectWaitOccurrenceId,
+  `exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,13 +1,17 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence Program-validity core
 
 This module owns the shared owner-binding primitive and the structural scope and Call Activity correspondence used by flow-node occurrence Program validity. Wait-family and private Boundary Timer validation remain in `FlowNodeOccurrenceWaitProgramValidity`.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`declaredByExactlyOneOwnedOperation]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -17,6 +21,8 @@ open BpmnSemantics
 def flowNodeOccurrenceOwnerLiveUnique (state : RuntimeState)
     (owner : ScopeOccurrenceId) : Bool :=
   (state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = owner)).length = 1
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceOwnerLiveUnique]
 
 namespace FlowNodeOccurrenceProgramValidity.Internal
 
@@ -110,6 +116,9 @@ def flowNodeOccurrenceStructuralProgramValidity (program : Program)
   state.scopeOccurrences.all (runtimeScopeBindingValid program state) &&
     state.calledProcessOccurrences.all (callRecordValid program state)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`callRecordValid,
+  `flowNodeOccurrenceStructuralProgramValidity]
+
 /-- The complete Call census supplies a declaring invocation owned by the recorded caller.
 Selection by Return identity alone does not establish this Program binding. -/
 theorem flowNodeOccurrenceStructuralProgramValidity_call_declarer (program : Program)
@@ -126,7 +135,7 @@ theorem flowNodeOccurrenceStructuralProgramValidity_call_declarer (program : Pro
   simp only [callRecordValid, Bool.and_eq_true] at count
   obtain ⟨operation, singleton⟩ := List.length_eq_one_iff.mp (of_decide_eq_true count.2)
   -- Derived from `singleton` rather than restated: a module gives a restated `match` its own private
-  -- matcher (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
+  -- matcher (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
   have selected := singleton ▸ List.mem_singleton_self operation
   obtain ⟨present, fields⟩ := List.mem_filter.mp selected
   split at fields

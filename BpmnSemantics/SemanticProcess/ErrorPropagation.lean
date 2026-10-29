@@ -1,13 +1,19 @@
 module
 
 public import BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Interrupting Sub-Process Error propagation
 
 This module owns reusable regional-interruption laws and the nearest synthetic negative witness for the direct catch-only Error profile. The admitted program fixture and artifact equality remain in the capsule conformance module; these laws deliberately range over runtime state without depending on one topology.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cancelScopeSubtree, `interruptScope]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

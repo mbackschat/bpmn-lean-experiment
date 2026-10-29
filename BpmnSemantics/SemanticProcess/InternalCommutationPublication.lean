@@ -7,13 +7,32 @@ import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
 import BpmnSemantics.SemanticProcess.InternalCommutationProjection
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 public import BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.InternalCommutation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Internal commutation publication
 
 This module proves that the exact accepted transition, lifecycle, logical-time, and public-position records of a classified pair are independent of execution order before canonical pair numbering.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.sortBy,
+  `InternalCommutation.sortInsertBy, `internalOperationPairIndependent?, `internalPublicationPairForFootprint?,
+  `internalTransitionFootprint?, `publicationPairBefore, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -51,6 +70,9 @@ def numberInternalPublicationPairs :
   | transitionIndex, pair :: rest =>
       { transitionIndex, publication := pair } ::
         numberInternalPublicationPairs (transitionIndex + 1) rest
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`acceptedPairBefore,
+  `canonicalAcceptedInternalPublicationPairs, `insertAcceptedPair]
 
 private theorem insertAcceptedPair_map_pair (inserted : AcceptedInternalPublicationPair)
     (values : List AcceptedInternalPublicationPair) :
@@ -110,6 +132,10 @@ def acceptedInternalPairPublication? (program : Program) (expectedInstanceId : S
   let secondFootprint ← internalTransitionFootprint? program state second
   acceptedInternalPairPublicationForFootprints? program expectedInstanceId state first second
     commandId firstTransitionIndex firstFootprint secondFootprint
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`acceptedInternalPairPublication?,
+  `acceptedInternalPairPublicationForFootprints?, `acceptedInternalPublicationForFootprint?,
+  `acceptedInternalPublicationPair?]
 
 theorem runtimeStateWellFormed_position (program : Program) (instanceId : SemanticId)
     (state : RuntimeState)
@@ -249,6 +275,8 @@ theorem canonicalAcceptedInternalPublicationPairs_pair_commutes
 
 def acceptedOperationIdBefore (left right : AcceptedInternalPublicationPair) : Bool :=
   left.pair.footprint.operationId.value < right.pair.footprint.operationId.value
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`acceptedOperationIdBefore]
 
 private theorem insertAcceptedPair_eq_id_insert (inserted : AcceptedInternalPublicationPair)
     (values : List AcceptedInternalPublicationPair)

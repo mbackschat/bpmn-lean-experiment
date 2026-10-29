@@ -4,13 +4,22 @@ import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Exact internal control-position delta proofs
 
 This proof leaf derives the one-token public position delta of a prepared ordinary internal arm from the existing canonical private-to-public projection. It changes neither the projection nor transition semantics.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.internalArmInput?, `InternalCommutation.internalArmOrigin?,
+  `InternalCommutation.prepareInternalArm?, `insertTokenPosition, `projectControlPosition?, `projectTokens,
+  `sameTokenPosition, `tokenDifference, `tokenMultiplicityAt, `tokenOrigin, `tokenPositionBefore, `tokenPositionKey,
+  `uniqueControlPlace?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -5,12 +5,20 @@ import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublication
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.TransitionStates
 
 /-! Complete regional preparation determines the actual public control-position delta.
 Each family derives successor validity from the predecessor rather than assuming publication.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -30,7 +38,7 @@ theorem preparedRegional_position_delta (program : Program) (before : RuntimeSta
       exact preparedReturn_position_delta program before id origin process definition output prepared found
   | completeScope id origin definition output =>
       exact preparedComplete_position_delta program before id origin definition output prepared found
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       haveI := interruptionRooted rfl
       exact preparedError_position_delta program before id origin input error handler prepared found
   | terminateScope id origin input definition =>

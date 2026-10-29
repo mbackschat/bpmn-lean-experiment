@@ -7,9 +7,6 @@ import {
   type SourceMeasurement,
 } from "./source-measure.ts";
 
-/** Narrow large-file exceptions in force; each must equal an approval the baseline below records. */
-export const reviewedLargeFiles: ReadonlyMap<string, string> = new Map();
-
 /**
  * Large-file exceptions the owner approved, recorded in a commit of their own. They take effect only once a later
  * commit names that commit as the baseline and lists them in `reviewedLargeFiles`, so no commit approves the
@@ -35,7 +32,9 @@ export const ownerApprovedLargeFiles: ReadonlyMap<string, string> = new Map([
   ["BpmnSemantics/SemanticProcess/StructuredCompositionControlProofs.lean", "Owner decision A, corrected on 2026-10-29: the hidden-bodies conversion grew this module only by `import all` lines the minimizer proved necessary and by `run_meta privateEquations` calls (owner decision 2) that keep its rewrites' equation lemmas private; its declarations did not grow."],
   ["BpmnSemantics/SemanticProcess/StructuredCompositionDataProofs.lean", "Owner decision A, corrected on 2026-10-29: the hidden-bodies conversion grew this module only by `import all` lines the minimizer proved necessary and by `run_meta privateEquations` calls (owner decision 2) that keep its rewrites' equation lemmas private; its declarations did not grow."],
 ]);
-const sourceHygieneExceptionApprovalBaseline = "3467377";
+/** Narrow large-file exceptions in force; each must equal an approval the baseline below records. */
+export const reviewedLargeFiles: ReadonlyMap<string, string> = new Map(ownerApprovedLargeFiles);
+const sourceHygieneExceptionApprovalBaseline = "576dc2f9";
 
 export type SourceHygieneAssessment = Readonly<{
   hardViolations: ReadonlyArray<SourceMeasurement>;

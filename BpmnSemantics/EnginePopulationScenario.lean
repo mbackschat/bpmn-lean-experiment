@@ -10,7 +10,7 @@ executes each Process independently until its correlated wait, matches the compl
 population once, and delivers only the exact retained unique candidate.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.EnginePopulationScenario
 

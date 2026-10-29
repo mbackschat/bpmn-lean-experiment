@@ -2,10 +2,14 @@ module
 
 public import BpmnSemantics.SemanticProcess.MessageStart
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.MessageStart
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Fresh-root Message initiation produces exactly the declared output-token multiplicities. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`initiateMessageState?, `initiateTriggeredStartState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

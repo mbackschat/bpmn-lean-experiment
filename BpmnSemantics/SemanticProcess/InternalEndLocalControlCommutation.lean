@@ -8,11 +8,25 @@ import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.InternalEndPreparation
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! End/local-control commutation reuses token-patch algebra. Selected-join preparation also
 protects every competing record's readiness bucket, beyond the selected owner's input. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalEndSelection.apply,
+  `InternalEndSelection.tokens, `InternalLocalControlSelection.apply, `internalEndStateFootprint,
+  `liftRegionalStateAtom, `regionalStateAtomsConflict]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

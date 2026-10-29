@@ -4,10 +4,32 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowClosureProofs
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAnalysisProjectionProofs
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowLifecycleProofs
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ClosureLimit
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowLifecycleProofs
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCollectionStorageProofs
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! MBERR-CATCH-01, MBERR-MAP-01 and MBERR-PROGRESS-01 derive attached Error completion and bounded resumption from an actual committed Start. Route selection belongs to the current wait; shared Error codes supply no authority to select another Service Task's continuation. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.frontierFields,
+  `completeBusinessEffect?, `completeSerialActivityScope?, `dispatchStimulus, `effectIdNamesWait, `effectResultOutput]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 

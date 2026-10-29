@@ -13,13 +13,25 @@ import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationOwnerProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitHistoryProofs
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel scope scheduler phase accounting
 
 PMIS-SELECT-01 accounts for actual selected execution before publication. This downstream owner composes phase-aware lifetime history with the runtime closure prefix law, including fuel exhaustion and terminal root completion.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatchStep,
+  `InternalCommutation.applyInternalOperationOccurrence?, `InternalCommutation.classifyPreparedInternalFrontier,
+  `InternalCommutation.prepareOccurrenceTokenPatch?, `InternalCommutation.prepareReservedOccurrenceArm?,
+  `InternalCommutation.sortBy, `ParallelScopeReplay.waitCompletionStimulus, `ParallelScopeStart.analyzeProgram,
+  `ParallelScopeStart.programSelected, `admitStimulus, `completeSelectedScope?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

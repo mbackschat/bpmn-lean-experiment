@@ -4,16 +4,31 @@ public import BpmnSemantics.SemanticProcess.Transition
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.CommandAdmission
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
-import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Repeated-scope dispatch contract
 
 The same four-case account must drive actual operation execution; these equations detect an unwired or misrouted dispatcher.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeData.humanValuesAdmitted,
+  `SequentialScopeData.scalarReadsValid, `SequentialScopeData.startAdmitted,
+  `SequentialScopeData.startBindingValueValid, `SequentialScopeData.startBindingsAdmitted,
+  `SequentialScopeData.startValueValid, `SequentialScopeData.stimulusAdmitted, `SerialBusinessTask.nameAllowed,
+  `SerialBusinessTask.scalar, `admitStimulus, `awaitEffectState?, `completeSequentialScopeResult?, `dispatchStimulus,
+  `enterSequentialScopeResult?, `fire?, `removeScopeVariables?, `runningInstance?, `scopeVariableNamesUnique,
+  `scopeVariableScalar, `sequentialScopeCollection?, `sequentialScopeCondition?, `sequentialScopeEntryEnabled,
+  `sequentialScopeProgramSelected, `sequentialScopeStateValid, `strictlySortedStrings]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -3,10 +3,18 @@ module
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Internal commutation Activity ownership preservation -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.timerWaitOccurrence,
+  `activityBodyLive, `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `anyTimerIdNamesWait,
+  `attachedTimersUnambiguous, `exactLiveOccurrence, `recordAttaches, `runtimeStateIdentityBound, `taskIdNamesWait,
+  `timerIdNamesWait, `timerWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

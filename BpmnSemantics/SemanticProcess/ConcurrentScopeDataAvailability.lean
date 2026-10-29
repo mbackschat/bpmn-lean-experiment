@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Concurrent scope data availability
 
@@ -17,7 +18,7 @@ definitely written is a required Start name. The walk is analysis evidence over 
 merge-region contraction, and carries no runtime authority.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.ConcurrentScopeData
 
@@ -41,15 +42,17 @@ structure Reached where
   written : List String
   required : List String
 
-def union (sets : List (List String)) : List String := sets.flatten.eraseDups
+private def union (sets : List (List String)) : List String := sets.flatten.eraseDups
 
-def intersection : List (List String) → List String
+private def intersection : List (List String) → List String
   | [] => []
   | first :: rest => first.filter fun name => rest.all (·.contains name)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ConcurrentScopeData #[`intersection]
+
 /-- CSD-AVAILABLE-01 at an Exclusive merge: a name stays available only when every incoming branch wrote
 it, so a write on one merge branch never reaches the merge target. -/
-theorem intersection_written_on_every_branch {sets : List (List String)} {name : String}
+private theorem intersection_written_on_every_branch {sets : List (List String)} {name : String}
     (available : name ∈ intersection sets) : ∀ set ∈ sets, name ∈ set := by
   cases sets with
   | nil => simp [intersection] at available
@@ -61,7 +64,7 @@ theorem intersection_written_on_every_branch {sets : List (List String)} {name :
       · exact available.2 set later
 
 /-- A Sub-Process vertex reads its inputs' enclosing names and writes its output targets. -/
-def recordAccess (record : ScopeLocalData) : Access :=
+private def recordAccess (record : ScopeLocalData) : Access :=
   { reads := SerialBusinessTask.readNames record.localInputs, writes := record.localOutputs.map (·.target) }
 
 /-- Leaving `id`: the merge of its predecessors' exits, then a task's own reads and writes. `complete` is

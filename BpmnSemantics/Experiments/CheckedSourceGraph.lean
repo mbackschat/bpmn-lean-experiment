@@ -14,7 +14,7 @@ public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 This module owns executable graph facts for the provisional structured-admission experiment. It does not participate in production source admission.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 

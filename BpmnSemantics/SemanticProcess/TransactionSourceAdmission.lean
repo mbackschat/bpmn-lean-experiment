@@ -2,12 +2,13 @@ module
 
 public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 public import BpmnSemantics.SemanticProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Bounded Transaction source and Program admission
 
 The Transaction cancellation capsule selects two finite Task chains by role. Neither reader compares a model with fixture identities or gives the profile a different transition meaning.
 -/
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -235,6 +236,8 @@ def transactionCancellationProgramGraph (p : Program) : Bool := Id.run do
     body.descriptor.operation == "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" &&
     elements.all nonempty && decide elements.Nodup
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`only?]
+
 namespace TransactionProgramRoles
 
 /-- These projections expose the admission reader's roles without a second graph traversal. -/
@@ -256,6 +259,8 @@ def taskElementIds (operations : List SemanticOperation) : List String :=
   operations.filterMap fun
     | .awaitUserTask _ _ _ _ task => some task.id.value
     | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.TransactionProgramRoles #[`operationInput?, `unique?]
 
 theorem unique_exact (values : List α) (value : α)
     (selected : unique? values = some value) : values = [value] := by
@@ -297,7 +302,7 @@ theorem soleConsumer_facts (p : Program) (place : ControlPlaceId)
   exact ⟨facts.1, by simpa only [beq_iff_eq] using facts.2⟩
 
 theorem taskChain_zero (p : Program) (child : DefinitionScopeId) (place : ControlPlaceId) :
-    taskChain? p child 0 place = none := rfl
+    taskChain? p child 0 place = none := (rfl)
 
 theorem taskChain_succ (p : Program) (child : DefinitionScopeId)
     (fuel : Nat) (place : ControlPlaceId) :
@@ -311,11 +316,11 @@ theorem taskChain_succ (p : Program) (child : DefinitionScopeId)
           let (ops, places) ← taskChain? p child fuel output
           pure (op :: ops, place :: places)
       | .reachNoneEnd .. | .cancelTransaction .. => pure ([op], [place])
-      | _ => none) := rfl
+      | _ => none) := (rfl)
 
 theorem exactInventory_eq [DecidableEq α] (xs ys : List α) :
     exactInventory xs ys =
-      (decide xs.Nodup && decide ys.Nodup && xs.length == ys.length && xs.all ys.contains) := rfl
+      (decide xs.Nodup && decide ys.Nodup && xs.length == ys.length && xs.all ys.contains) := (rfl)
 
 end TransactionProgramRoles
 

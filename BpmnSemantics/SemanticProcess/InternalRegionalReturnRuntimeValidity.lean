@@ -15,12 +15,34 @@ import BpmnSemantics.SemanticProcess.InternalRegionalIncidentValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalParallelReverseBinding
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalOrder
 import BpmnSemantics.SemanticProcess.TokenOrder
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Prepared Return preserves the complete runtime predicate by composing the existing
 Call-removal laws. Its Compensation case follows from the declaration restrictions and
 the preparation guard, rather than assuming the successor has empty retained state. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalSelectionReferenceRetention,
+  `compensationActivityRetentionDeclarationValid, `compensationActivityRetentionStateValid,
+  `compensationEventSubProcessSnapshotStateValid, `compensationExecutionStateValid,
+  `flowNodeOccurrenceProgramValidity, `operationInterrupts, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

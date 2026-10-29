@@ -3,6 +3,11 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
 import all BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Regional predecessor selection
 
@@ -10,7 +15,10 @@ The Internal Commutation preparation retains exact Return, Complete, Error, and 
 occurrences before deriving removal masks. Selection performs no runtime transition.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeQuiescentScope?, `completeScopeState?, `fire?,
+  `runningInstance?, `terminateScopeState?, `throwErrorState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -96,6 +104,8 @@ def selectInternalRegional? (program : Program) (state : RuntimeState)
       | [root] => some { operation, root, kind := .terminating }
       | _ => none
   | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalRegional?]
 
 /-- CDATA-OUTPUT-01 requires scalar return to prepare its required output before disposal. -/
 theorem regionalSelection_scalar_return_refused (program : Program) (state : RuntimeState)
@@ -377,7 +387,7 @@ theorem regionalSelection_refines (program : Program) (state : RuntimeState)
           obtain ⟨after, result, _⟩ := subscribedWithdrawal_refines program state completed definition output withdrawal withdrawn ordinary
           exact ⟨after, result⟩
       · contradiction
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       dsimp only at found
       change ∃ after, throwErrorState? state input error handler = some after
       obtain ⟨owner, offered, found⟩ := Option.bind_eq_some_iff.mp found

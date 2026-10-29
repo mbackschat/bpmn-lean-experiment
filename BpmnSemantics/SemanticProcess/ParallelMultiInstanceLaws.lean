@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance laws
 
@@ -10,7 +14,15 @@ accepted order from final slot state, while first-policy lifecycle evidence deli
 winner and terminated siblings.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelMultiInstanceSlot.result?,
+  `ParallelMultiInstanceSlot.taskId, `completeParallelSlot, `completedParallelResults?,
+  `insertParallelMultiInstanceController, `mintedParallelTaskId, `parallelActiveSlotCount,
+  `parallelCompletedSlotCount, `parallelMultiInstanceRuntimeWellFormed, `parallelSlotTaskIds,
+  `pendingParallelSlotsFrom, `progressedSharedParallelCompletionState, `removeParallelChildWaits,
+  `removeParallelController, `removeParallelRecord, `replaceParallelRecordBody, `replacePendingParallelSlot,
+  `sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

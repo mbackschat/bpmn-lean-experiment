@@ -3,11 +3,18 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! REG-OWN-CLOSE-01 preserves live references by retaining their complete predecessor census.
 Actual operation masks supply field agreement; successor validity is derived rather than assumed. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityTaskBodyOwnersAgree,
+  `eventRaceHasMessage, `eventRaceHasTimer, `exactLiveOccurrence, `messageIdNamesWait, `timerIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

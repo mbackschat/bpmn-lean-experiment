@@ -11,12 +11,45 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The child graph and joint deadline preserve independent regional selection. Child-position
 validity is derived from complete bounded preparation before using the shared scope-query laws.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeContract.operation,
+  `InternalCommutation.InternalBoundedScopeSelection.apply, `InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.boundedScopeJointResourcesAvailable, `InternalCommutation.deriveInternalOccurrenceRegion?,
+  `InternalCommutation.makeInternalBoundedScopePreparation, `InternalCommutation.makeInternalBoundedScopeSelection,
+  `InternalCommutation.occurrenceRegionMembersWithin, `InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.uniqueFamilyDeclarer?, `MonitoredScopeOwnership, `MonitoredScopeTimerBinding,
+  `NonInterruptingBoundaryTimerBinding, `activityBodyScope?, `monitoredScopeTimerNames, `runningInstance?,
+  `runtimeStateWellFormed, `scopeQuiescent, `timerIdNamesWait, `timerWaitDeclarers, `timerWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

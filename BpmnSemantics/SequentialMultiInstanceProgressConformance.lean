@@ -56,6 +56,21 @@ import all Lean.Data.Json.Parser
 import all Lean.Data.Json.Printer
 import all Lean.Data.Json.Stream
 public import BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceLaws
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SequentialMultiInstanceDataFixtures
+import all BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
 
 /-! # Sequential Multi-Instance progress conformance
 
@@ -73,7 +88,7 @@ Start and therefore that closure is a conditional statement about a real run; it
 no human completion, no Timer delivery, and nothing about states other than this entered one.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SequentialMultiInstanceProgressConformance
 

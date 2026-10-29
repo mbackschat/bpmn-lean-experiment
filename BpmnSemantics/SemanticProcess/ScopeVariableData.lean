@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Occurrence-owned embedded scope data
 
@@ -8,7 +9,7 @@ SMIS-DATA-01 fixes pre-entry Process evaluation, present-null shadowing and near
 These storage operations establish no body lifecycle, source admission or command-policy claim.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -77,6 +78,9 @@ def removeScopeVariables? (variables : ScopedVariables) (owner : ScopeOccurrence
     Option ScopedVariables := do
   let _ ← selectScopeVariables? variables owner
   some { variables with scopes := variables.scopes.filter fun scope => decide (scope.owner ≠ owner) }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`readScopeVariable?, `removeScopeVariables?,
+  `scopeVariableScalar, `selectScopeVariables?, `writeScopeVariables?]
 
 theorem selectScopeVariables_iff {variables : ScopedVariables} {owner : ScopeOccurrenceId}
     {scope : ScopeVariableScope} :

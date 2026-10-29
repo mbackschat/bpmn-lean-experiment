@@ -4,6 +4,9 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 public import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.CallActivityLaws
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Process-instance scope ancestry
 
@@ -11,7 +14,9 @@ Predecessor position validity supplies live parent edges and the static forest r
 reachability transfers the hosting singleton to every called instance before roots are identified.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`runtimePositionValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

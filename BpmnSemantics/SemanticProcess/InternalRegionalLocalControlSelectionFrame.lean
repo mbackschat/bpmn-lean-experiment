@@ -6,11 +6,19 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 public import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional selection observes token-owner censuses and quiescence. The existing patch filter
 laws retain both observations when the regional footprint excludes local-control writes. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalLocalControlSelection.apply,
+  `InternalCommutation.InternalLocalControlSelection.owner, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -64,7 +72,7 @@ theorem regionalSelection_localControl_frame (program : Program) (state : Runtim
   apply regionalSelection_read_frame program state (control.apply state) operation selected
     found rfl rfl rfl rfl quiet (fun _ _ _ chosen => chosen)
   cases operation with
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       have absent : input ∉ control.tokens.consumed ∧ input ∉ control.tokens.produced := by
         simpa only [List.mem_append, not_or] using inputs
       have owners := control.tokens.owner_selection_frame state input absent.1 absent.2

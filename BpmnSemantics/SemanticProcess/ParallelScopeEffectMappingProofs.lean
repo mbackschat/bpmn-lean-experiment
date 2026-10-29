@@ -16,6 +16,36 @@ import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeServiceInputProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Stored Service mapping provenance
 
@@ -24,7 +54,15 @@ The target-uniqueness invariant follows actual issuance and removal through the
 existing histories; declaration-key validity alone does not establish it.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `ParallelScopeCommand.stimulusAdmitted, `ParallelScopeReplay.committedTransitions?,
+  `ParallelScopeReplay.internalTransition?, `ParallelScopeReplay.internalTransitions?,
+  `ParallelScopeReplay.waitCompletionStimulus, `ParallelScopeStart.analyzeProgram,
+  `ParallelScopeStart.programSelected, `SemanticOperation.kind, `activateEffect, `admitStimulus,
+  `completeSelectedScope?, `completeSerialEffect?, `evaluateEffectInputs?, `issueParallelBodies?,
+  `sequentialScopeProgramSelected]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -33,6 +71,8 @@ open BpmnSemantics InternalCommutation ParallelScopeReplay
 /-- Stored Service outputs have distinct target names. -/
 def EffectOutputTargetsUnique (state : RuntimeState) : Prop :=
   ∀ wait ∈ state.effectWaits, (wait.outputMappings.map (·.target)).Nodup
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`EffectOutputTargetsUnique]
 
 private theorem start_outputs (program : Program) (instanceId : SemanticId)
     (values : List VariableBinding) (state : RuntimeState)

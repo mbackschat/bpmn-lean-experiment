@@ -5,18 +5,36 @@ import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
 public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.WireNatural
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-SELECT-01 reservation preserves the complete operation/owner sequence.
 These laws derive identity from the actual singleton preparation calls retained by
 the reservation trace, then connect accepted members to the current execution frontier.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalOccurrencePatch.operation,
+  `InternalOccurrencePatch.owner, `prepareOccurrenceTokenPatch?, `reserveOccurrenceMembers?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 def memberCandidate (member : InternalOccurrencePatch) : InternalOperationOccurrence :=
   ⟨member.operation.id, member.owner⟩
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`memberCandidate]
 
 private theorem prepared_token_owner (program : Program) (state : RuntimeState)
     (candidate : InternalOperationOccurrence) (patch : InternalOccurrenceTokenPatch)

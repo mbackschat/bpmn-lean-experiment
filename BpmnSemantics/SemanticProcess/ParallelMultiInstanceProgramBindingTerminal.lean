@@ -1,6 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingSelection
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance terminal Program binding
 
@@ -13,7 +16,11 @@ runtime-state well-formedness, result selection, Timer scheduling, evaluator lif
 behavior remain outside this module.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`closeSharedParallelRegion,
+  `parallelControllerNamesIdentity, `parallelMultiInstanceControllersOrdered,
+  `parallelMultiInstanceProgramBindingsValid, `removeParallelController, `sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -23,6 +30,8 @@ def terminalWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.task.id.value⟩
     activation := wait.activation }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`terminalWaitTaskId]
 
 /-- Closing the sole admitted Parallel Multi-Instance region withdraws its complete Program binding. -/
 theorem parallelMultiInstanceProgramBindingsValid_terminal

@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Directed Called-Process instance closure
 
@@ -8,7 +9,7 @@ Call association and regional cancellation share this bounded forward traversal.
 seeds justify its equal-length stopping condition; the executable duplicate-seed behavior is retained.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -31,6 +32,8 @@ abbrev expand (records : List CalledProcessOccurrence) (seed : List SemanticId) 
     if seed.contains record.caller.processInstanceId then
       some record.calledRoot.processInstanceId
     else none).eraseDups
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`processInstanceClosureWithin]
 
 private theorem mem_expand (records : List CalledProcessOccurrence) (seed : List SemanticId)
     (instanceId : SemanticId) :

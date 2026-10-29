@@ -1,10 +1,15 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation handler completion soundness -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attemptCompensationHandlerEffectCompletion,
+  `completeFailure, `completeSuccess]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

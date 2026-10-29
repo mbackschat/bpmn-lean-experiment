@@ -9,6 +9,41 @@ import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalPreparedFrontier
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeResumptionProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Progress after parallel subprocess retirement
 
@@ -18,7 +53,17 @@ issues the parent continuation. These laws connect cancellation to the actual
 retirement cut rather than assuming a later successful scheduler step.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `InternalCommutation.internalOperationOccurrenceOffers?, `InternalCommutation.internalOperationOccurrences?,
+  `InternalCommutation.mergeExecutionFrontier, `InternalCommutation.ordinaryExecutionFrontier,
+  `InternalCommutation.resolveInternalOperationOccurrence?, `ParallelScopeStart.programSelected,
+  `SemanticOperation.kind, `SequentialScopeControl.inputs, `SequentialScopeProgram.operationAllowed,
+  `activityRecordsAttachMessageWait, `anyTimerIdNamesWait, `attachedTimersOf, `bodyConsumedPorts, `cancelScopeSubtree,
+  `completeDeclaredScope?, `completeQuiescentScope?, `completeScopeState?, `completeSelectedScope?,
+  `enterParallelScope?, `exactLiveOccurrence, `occurrenceInSubtree, `occurrenceInSubtreeWithin, `recordInRegion,
+  `retainedCancellationRoot, `withdrawnByRegion]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -8,6 +8,25 @@ import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Pre-entry parent frontier exclusivity
 
@@ -17,7 +36,10 @@ result includes pending Start, parent prelude work and entry, and requires no
 reservation or successful collective preparation.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SemanticOperation.kind, `SequentialScopeControl.inputs,
+  `bodyConsumedPorts, `continuationMarking, `ownedPortCount, `parallelScopeEntry?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

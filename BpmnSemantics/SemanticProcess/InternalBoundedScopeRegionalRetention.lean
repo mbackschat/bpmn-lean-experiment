@@ -17,12 +17,56 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Independent bounded entry leaves the regional classifiers unchanged even for historical IDs.
 Both the parent-owned Activity and its child body must stay outside the removal region.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeSelection.apply,
+  `InternalCommutation.InternalScopeCreationSelection.apply, `InternalCommutation.boundedScopeStateFootprint,
+  `InternalCommutation.internalScopeCreationStateFootprint, `InternalCommutation.liftRegionalStateAtom,
+  `InternalCommutation.liftRegionalStateFootprint, `InternalCommutation.makeInternalBoundedScopePreparation,
+  `InternalCommutation.makeInternalBoundedScopeSelection, `InternalCommutation.regionalSelectionLocalDataRetention,
+  `InternalCommutation.regionalSelectionReferenceRetention, `InternalCommutation.regionalStateAtomsConflict,
+  `boundaryTimerWaitIdentity, `boundedCompletionReferenceRetention, `callReferenceRetention, `calledInstanceClosure,
+  `cancellationReferenceRetention, `canonicalStateAtomSet, `monitoredCompletionReferenceRetention,
+  `ordinaryCompletionReferenceRetention, `recordInRegion, `runningInstance?, `runtimeStateWellFormed,
+  `timerIdNamesWait, `timerWaitKeyMatches, `withdrawnByRegion]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -12,7 +12,7 @@ no whitespace, field order `kind` then `value` (or `kind`, `coefficient`, `scale
 measurement only; the 16,384-byte limit belongs to the wire domain owner.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

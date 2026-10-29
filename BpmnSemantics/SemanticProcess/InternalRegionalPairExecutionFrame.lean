@@ -14,10 +14,44 @@ import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.WireNatural
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual regional execution supplies the field updates and token actions used by the pair consumer. The facts follow from complete preparation rather than an assumed successor shape. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalBaseFootprint?,
+  `InternalCommutation.selectInternalRegional?, `fire?, `runtimeStateWellFormed, `terminateScopeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -143,7 +177,7 @@ theorem preparedRegional_execution_fields (program : Program) (before after : Ru
       apply completion_update program before after hosting id origin definition output prepared.selection withdrawal running afterRunning selected kind
       exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _
         selected facts.1 fired
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, facts.1] at fired
         exact fired
@@ -235,7 +269,7 @@ theorem preparedRegional_end_count (program : Program) (before after : RuntimeSt
       cases parent : prepared.selection.root.parent <;> cases output <;>
         simp only [parent] at update <;> try contradiction
       cases withdrawal <;> simp only at update <;> rw [update] <;> rfl
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       cases kind : prepared.selection.kind <;> simp only [kind] at update <;> try contradiction
       rw [update] <;> rfl
   | terminateScope id origin input definition =>
@@ -323,7 +357,7 @@ theorem preparedRegional_token_action (program : Program) (before : RuntimeState
                 have update := preparedCompletion_filter_update program state after hosting id origin definition output
                   prepared withdrawal parent stateValid stateRunning afterRunning stateFound applied kind parentEq
                 rw [update, trueFilter] <;> rfl
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       cases kind : prepared.selection.kind <;> simp only [kind] at baseFound <;> try contradiction
       rename_i parent
       cases baseFound
@@ -414,7 +448,7 @@ theorem regional_pair_effect_populations (program : Program) (before after : Run
       have fields := regionalSelectedCompletion_effect_and_branch_fields program before after definition output raw
       rw [fields.1, fields.2.1]
       exact ⟨rfl, rfl⟩
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       cases kind : left.selection.kind <;> simp only [kind] at update
       all_goals first
       | contradiction

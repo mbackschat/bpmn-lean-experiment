@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Passive Process interface runtime
 
@@ -9,7 +10,7 @@ Selector success equivalences support constructor-selection bridges here; higher
 live in `ProcessInterfaceData` because collection-order proofs already depend on Call execution.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -69,6 +70,9 @@ def writeProcessInterfaceOutput? (variables : ScopedVariables) (owner : ScopeOcc
     some { variables with processInterfaces := variables.processInterfaces.map fun candidate =>
       if candidate.owner = owner then { candidate with outputs := [output] } else candidate }
   else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addProcessInterface?, `readProcessInterfaceInput?,
+  `readProcessInterfaceOutput?, `writeProcessInterfaceOutput?]
 
 theorem selectProcessInterface_iff {variables : ScopedVariables} {owner : ScopeOccurrenceId}
     {scope : ProcessInterfaceScope} :

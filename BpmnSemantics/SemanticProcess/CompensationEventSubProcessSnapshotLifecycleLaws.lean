@@ -2,6 +2,11 @@ module
 
 public import BpmnSemantics.SemanticProcess.Transition
 public import BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation Event Sub-Process snapshot lifecycle laws
 
@@ -10,7 +15,10 @@ ordinary and bounded scope operations that consume them. These laws constrain th
 state-transforming paths directly; `AttemptProgramStep` remains only an evaluator graph.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attemptInternalOperation, `interruptScope,
+  `prepareStartedSnapshotState, `selectedCompletionOccurrence?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

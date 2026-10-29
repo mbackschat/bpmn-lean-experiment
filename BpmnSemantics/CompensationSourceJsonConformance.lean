@@ -8,7 +8,7 @@ Each accepted or refused wire shape is an independent kernel decision. This pres
 decoder obligation while preventing one conjunction from retaining all decoded fixture terms.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

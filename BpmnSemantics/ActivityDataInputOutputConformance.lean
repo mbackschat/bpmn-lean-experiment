@@ -21,7 +21,7 @@ copy, completion, routing, cleanup, and refusal laws remain in
 owners prove aggregate runtime well-formedness. These checks bind the laws to the source identities.
 -/
 
-@[expose] public section
+public section
 
 set_option Elab.async false
 

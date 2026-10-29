@@ -14,14 +14,12 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.CallActivity
-import all Init.Data.Repr
-import all Init.Data.List.Sort.Basic
 public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! Fixture definitions and executable checks of [`SequentialScopeGraphConformance`](SequentialScopeGraphConformance.lean), apart from its theorems so that
 the check driver's closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SequentialScopeGraphConformance
 

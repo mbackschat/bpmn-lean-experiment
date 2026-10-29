@@ -4,6 +4,23 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.WireNatural
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Frozen batch anchor and local-frame preservation
 
@@ -12,7 +29,13 @@ These laws reuse that certificate to preserve later members' anchor reads;
 they do not assume that a prefix revalidates or applies successfully.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalArmingWrite.kind, `InternalCommutation.InternalOccurrencePatch.apply,
+  `InternalCommutation.InternalOccurrencePatch.waitOccurrence?, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.reservedCohortSize,
+  `ParallelScopeReplay.ReservedArmWriteShape]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -14,10 +14,33 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Independent scope creation retains its new scope under the regional removal mask. Exact arbitrary-owner classifiers preserve all reference and local-data masks, including historical owners and attached-handler withdrawals. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.internalScopeCreationStateFootprint, `InternalCommutation.liftRegionalStateAtom,
+  `InternalCommutation.regionalBaseFootprint?, `InternalCommutation.regionalRetainedLocalDataClosed,
+  `InternalCommutation.regionalSelectionLocalDataRetention, `InternalCommutation.regionalSelectionReferenceRetention,
+  `InternalCommutation.regionalStateAtomsConflict, `boundedCompletionReferenceRetention, `callReferenceRetention,
+  `cancellationReferenceRetention, `canonicalStateAtomSet, `monitoredCompletionReferenceRetention,
+  `ordinaryCompletionReferenceRetention, `regionalActivityOwnersClosed, `regionalActivityReferencesClosed,
+  `regionalOwnershipClosed, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

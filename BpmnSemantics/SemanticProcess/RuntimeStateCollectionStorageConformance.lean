@@ -4,7 +4,7 @@ public import BpmnSemantics.ActivityBoundaryTimerFixtures
 
 /-! AA-18 separates committed storage admission from the raw evaluator's token and frame laws. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorageConformance
 

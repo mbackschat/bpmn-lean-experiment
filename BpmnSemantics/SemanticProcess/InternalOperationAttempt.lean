@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Refusable internal operation attempts
 
@@ -9,7 +10,7 @@ dispatcher and its lifecycle proofs. Keeping the validator beside the result typ
 dispatcher from accumulating proof-facing infrastructure.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -44,6 +45,8 @@ def applyValidSnapshotSuccessor (program : Program)
     .applied { operation, successor }
   else
     .refused operation (.parentContext .invalidState)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`applyValidSnapshotSuccessor]
 
 /-- An applied snapshot-aware successor has passed the complete aggregate-state invariant. -/
 theorem applyValidSnapshotSuccessor_applied_stateValid

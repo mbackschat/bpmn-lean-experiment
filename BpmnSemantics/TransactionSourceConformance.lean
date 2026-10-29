@@ -6,26 +6,25 @@ public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcessJson.CheckedProcess
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
-import all Init.Data.Repr
-import all Init.Data.List.Sort.Basic
-import all Init.Data.Ord.String
-import all Lean.Data.Json.Basic
-import all Std.Data.TreeMap.Raw.Basic
-import all Std.Data.DTreeMap.Raw.Basic
-import all Std.Data.DTreeMap.Internal.Def
-import all Std.Data.DTreeMap.Internal.Balancing
-import all Std.Data.DTreeMap.Internal.Operations
-import all Std.Data.DTreeMap.Internal.Queries
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SemanticProcess.TransactionSourceLowering
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.GraphReachability
 
 /-! # Transaction source grammar discriminators
 
 Renaming and chain lengths are parameters of the fixture, not admission identities. The misplaced-subject mutation preserves graph cardinalities and isolates the eligible-branch obligation.
 -/
-@[expose] public section
+public section
 
 namespace BpmnSemantics.TransactionSourceConformance
 open BpmnSemantics.SemanticProcess

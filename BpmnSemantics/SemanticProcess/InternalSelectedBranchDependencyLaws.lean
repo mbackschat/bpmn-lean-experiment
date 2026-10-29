@@ -2,10 +2,14 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import all BpmnSemantics.SemanticProcess.InclusiveGateway
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Selected-join readiness is unchanged by token patches outside its recorded read dependency. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`selectedBranchJoinReady]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

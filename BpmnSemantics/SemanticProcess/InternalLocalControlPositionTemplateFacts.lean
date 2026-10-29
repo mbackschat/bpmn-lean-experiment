@@ -5,12 +5,18 @@ import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
 import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Static signed-unit templates have canonical positive rows and exact complete-key lookup,
 as required by the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalLocalControlTokenResidual,
+  `sameTokenPosition, `tokenMultiplicityAt, `tokenPositionBefore, `tokenPositionsStrict]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

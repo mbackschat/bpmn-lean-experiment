@@ -11,11 +11,37 @@ import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionPublicati
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional execution preserves observations outside its predecessor-selected removal region.
 Filtering retains exact order and multiplicity, as required by complete local-control preparation. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalBaseFootprint?,
+  `InternalCommutation.regionalStateFootprint?, `InternalCommutation.selectInternalRegional?, `fire?,
+  `runningInstance?, `runtimeStateWellFormed, `terminateScopeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -214,7 +240,7 @@ theorem preparedRegional_control_filters (program : Program) (before after : Run
             · rw [tokenFields]
               exact filter_canonicalInsertBy_rejected _ tokenRead _ _ rejected
           · contradiction
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired
         exact fired

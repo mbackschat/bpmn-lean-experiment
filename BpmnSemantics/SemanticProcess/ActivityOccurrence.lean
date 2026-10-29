@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Activity occurrence ownership
 
@@ -20,7 +21,7 @@ well-formedness conjuncts across transition arms, which remains the runtime-stat
 deliberately open lane.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -68,6 +69,9 @@ The antecedent is identity equality over the committed pair. Body turnover there
 identity, removal issues nothing, and a future operation kind belongs without being enumerated here. -/
 def activityIdentityIssuingDiscipline (before after : RuntimeState) : Bool :=
   after.activityOccurrences.all (activityIdentityAdmittedAfter before)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityIdentityAdmittedAfter,
+  `activityIdentityIssuingDiscipline, `sameActivityOccurrence]
 
 theorem activityIdentityAdmittedAfter_of_mem {before : RuntimeState}
     {record : ActivityOccurrence} (present : record ∈ before.activityOccurrences) :
@@ -294,6 +298,9 @@ def RecordJoins (records : List ActivityOccurrence)
     (∃ body, activityBodyTask? record = some body ∧ taskIdNamesWait body task = true) ∧
     ∃ deadline ∈ record.timerHandlerOccurrences, timerIdNamesWait deadline timer = true
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`anyMessageIdNamesWait, `anyTimerIdNamesWait,
+  `attachedTimersOf]
+
 /-! ## Lookup soundness
 
 What a family recovering its pair needs from a lookup: that the record it answered is in the state, and
@@ -406,6 +413,8 @@ def withdrawnByRegion (cancelled : ScopeOccurrenceId → Bool)
 def retainedByRegion (cancelled : ScopeOccurrenceId → Bool)
     (records : List ActivityOccurrence) (retainedRoot : Option ScopeOccurrenceId := none) : List ActivityOccurrence :=
   records.filter fun record => !recordInRegion cancelled record retainedRoot
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`recordInRegion, `retainedByRegion, `withdrawnByRegion]
 
 theorem retained_and_withdrawn_partition_records
     (cancelled : ScopeOccurrenceId → Bool) (records : List ActivityOccurrence) :

@@ -11,6 +11,32 @@ public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
+import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.WireNatural
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Initial parallel entry through real closure draining
 
@@ -18,7 +44,12 @@ The closure-level consequence of the [initial entry blockers](ParallelScopeIniti
 draining retains an ingress-free body replay, so every issued child stays non-quiescent.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatch.operation,
+  `InternalCommutation.InternalOccurrencePatch.owner, `InternalCommutation.applyInternalOccurrenceBatch?,
+  `InternalCommutation.prepareInternalOccurrenceBatch?, `ParallelScopeReplay.internalTransition?,
+  `ParallelScopeReplay.internalTransitions?, `ParallelScopeStart.programSelected, `SemanticOperation.kind]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -11,7 +11,7 @@ from the executable trace check. Accounting-history consumers import this owner
 without making the private runtime runner depend on graph or lifetime proofs.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

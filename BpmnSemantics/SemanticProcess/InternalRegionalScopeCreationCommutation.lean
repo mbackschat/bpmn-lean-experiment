@@ -23,10 +23,35 @@ import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The complete regional/scope-creation outcome derives both preparations and opposite executions from predecessor facts. Collection algebra supplies literal canonical state equality; the existing publication acceptance laws then apply to all four actual steps. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.internalScopeCreationStateFootprint, `InternalCommutation.regionalStateAtomsConflict,
+  `canonicalCollectionOrder, `canonicalStateAtomSet, `interruptScope, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -197,7 +222,7 @@ private theorem regional_scope_creation_successors_equal (program : Program) (be
         all_goals rw [update, creationUpdate]
         all_goals cases creationKind : selected.kind <;>
           simp only [InternalScopeCreationSelection.apply, creationKind, insertScopeOccurrence, scopes, setCallActivationCount]
-    | throwError id origin input error handler =>
+    | «throwError» id origin input error handler =>
         cases kind : regional.selection.kind <;> simp only [kind] at update creationUpdate <;> try contradiction
         rw [update, creationUpdate]
         have algebra := scopeCreation_cancellation_fields_commute before selected regional.selection.root.id .remove scopeOrder

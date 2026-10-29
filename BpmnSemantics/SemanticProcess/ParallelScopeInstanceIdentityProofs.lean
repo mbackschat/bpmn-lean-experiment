@@ -3,6 +3,13 @@ module
 import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual parallel hosting-instance provenance
 
@@ -12,7 +19,9 @@ and completion commands. Nonempty identity comes separately from actual Start
 admission; the history constructors alone deliberately do not impose it.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeStart #[`analyzeProgram]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

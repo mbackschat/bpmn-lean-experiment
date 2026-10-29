@@ -3,12 +3,20 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationTimerFrames
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Cancellation retains the complete owner and Event Race censuses of surviving waits.
 Together with AOO-JOIN-03's Activity-host frames, these laws preserve wait correspondence;
 the Effect-local bijection is a separate obligation at the composition boundary. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+  `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceUserTaskProgramValidity,
+  `flowNodeOccurrenceWaitProgramValidity]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

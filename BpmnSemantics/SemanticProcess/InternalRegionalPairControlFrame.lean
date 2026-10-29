@@ -9,10 +9,24 @@ import BpmnSemantics.SemanticProcess.InternalRegionalErrorPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional selection reads control state, time, and owner censuses. Existing removal frames preserve those reads under regional footprint independence. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalOwnsAtom,
+  `InternalCommutation.regionalOwnsOrdinaryAtom, `InternalCommutation.regionalStateAtomsConflict,
+  `InternalCommutation.selectInternalRegional?, `fire?, `terminateScopeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -59,7 +73,7 @@ theorem preparedRegional_pending_frame (program : Program) (before after : Runti
       apply completion_pending_frame program before after definition output
       exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _
         selected snapshots fired
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired
         exact fired

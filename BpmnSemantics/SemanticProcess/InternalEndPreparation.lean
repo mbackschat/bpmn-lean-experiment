@@ -3,12 +3,22 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Ordinary End preparation reuses token-patch validity and the existing relative End atom from
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TokenPatch.apply, `reachNoneEndState?, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -87,6 +97,9 @@ def applyPreparedInternalEnd? (program : Program) (state : RuntimeState)
   if prepareInternalEnd? program state prepared.operation = some prepared then
     some (prepared.selection.apply state)
   else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalEndSelection.apply,
+  `InternalEndSelection.tokens, `prepareInternalEnd?, `selectInternalEnd?]
 
 theorem selectInternalEnd_facts (state : RuntimeState) (operation : SemanticOperation)
     (selected : InternalEndSelection) (found : selectInternalEnd? state operation = some selected) :

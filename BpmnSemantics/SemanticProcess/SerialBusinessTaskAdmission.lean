@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 
 /-! SBT-CHAIN-01 and SBT-AVAILABLE-01 independently analyze the checked graph and IL. The transient chain is analysis evidence, never serialized executable authority. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

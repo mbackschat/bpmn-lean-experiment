@@ -5,18 +5,22 @@ public import BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.CallActivity
-import all BpmnSemantics.SemanticProcess.EffectDataAdmission
-import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
-import all BpmnSemantics.SemanticProcess.JsonSupport
-import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import all BpmnSemantics.SemanticProcess.MessageStartAdmission
-import all BpmnSemantics.SemanticProcess.ParallelScopeData
-import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandStartBindings
+import all BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
 
 /-! Command witnesses exercise the actual external dispatcher, so a profile value-domain change alone cannot satisfy the required-input and ordinary-task write restrictions. -/
 
-@[expose] public section
+public section
 
 set_option Elab.async false
 

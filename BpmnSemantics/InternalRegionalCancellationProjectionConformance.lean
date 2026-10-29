@@ -14,7 +14,7 @@ import BpmnSemantics.SemanticProcess.CallActivity
 scope fixture supplies an actually armed state; each mutation removes only Activity
 ownership evidence, retaining its child scope and parent-owned deadline. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation.CancellationProjectionWitness
 

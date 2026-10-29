@@ -3,12 +3,18 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Child cancellation preserves Process lookup outside the cancelled region. The
 current Call account has parentless endpoints, so a child seed removes no Call record;
 this is a bounded profile fact, not a general BPMN restriction on nested Calls. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceOwnerLiveUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

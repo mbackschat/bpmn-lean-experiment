@@ -7,12 +7,29 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 import BpmnSemantics.SemanticProcess.InternalTimerTaskProjection
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The existing prepared-publication template covers Timer-task arming without a new wire shape.
 Acceptance checks the actual transition record, task-only lifecycle, and consumed-token position.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalTransitionLifecycleTemplate.instantiate,
+  `InternalCommutation.InternalTransitionPublicationTemplate.instantiate,
+  `InternalCommutation.actualInternalTransitionPublication?, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalTimerTaskPatch, `InternalCommutation.internalArmingPublicationTemplate,
+  `InternalCommutation.internalArmingPublicationTemplate?, `flowNodeOccurrenceProgramValidity, `runningInstance?,
+  `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

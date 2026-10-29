@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance Program-binding facts
 
@@ -13,7 +15,10 @@ Scope boundary: proof facts for one controller. This module defines no validator
 evaluator, runtime representation, admission rule, public observation, or Program-wide census.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelMultiInstanceSlot.taskId, `parallelSlotTaskIds,
+  `pendingParallelTaskIds]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

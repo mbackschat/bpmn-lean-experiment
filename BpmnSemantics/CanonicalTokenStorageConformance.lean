@@ -10,7 +10,7 @@ public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 These witnesses compare exact stored token units under the Internal Commutation canonical-storage account, including existing parallel execution prefixes. They introduce no source-admission or operation-family claim.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CanonicalTokenStorageConformance
 

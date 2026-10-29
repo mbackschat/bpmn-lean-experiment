@@ -3,16 +3,26 @@ module
 public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs
 import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
 import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import BpmnSemantics.SemanticProcess.ActivityDataEndpointLaws
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
+import all BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs
+import all BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-CLOSURE-01 requires reachable lifecycle and exact Activity-local shape, beyond input availability and decreasing rank. These predicates describe the existing runtime and are preserved through its actual operations and command admission. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredComposition.OperationAllowed,
+  `StructuredComposition.RootOwnedControl, `activateDataInputOutputUserTask?, `activateUserTask,
+  `activityOccurrenceForTaskWait?, `admitStimulus, `awaitUserTaskState?, `callDataRuntimeStateValid, `chooseState?,
+  `interruptingMessageEventSubProcessStateValid, `isCallActivityProgram, `operationDeclaresWaitKey,
+  `operationOwningScope?, `operationWaitDeclarationKeys, `processInterfaceScalar, `programEntryRootScopeId?,
+  `reachNoneEndState?, `runningInstance?, `sameActivityOccurrence, `scopeQuiescent, `scopedOwnershipComplete]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
@@ -47,6 +57,8 @@ def TaskLifetimeShape (program : Program) (state : RuntimeState) : Prop :=
             activation := activityActivation }
           bindings := [binding] }]
     | _ => False
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`TaskLifetimeShape]
 
 theorem no_wait_has_no_activity_lifetime
     (program : Program) (state : RuntimeState) (shape : TaskLifetimeShape program state)
@@ -575,7 +587,7 @@ theorem admitted_operations_share_declared_root
           · simp [programEntryRootScopeId?, definitions, accepted] at rootFound
         have paths := fun (operation : SemanticOperation) (member : operation ∈ program.operations) =>
           reachableWithin_sound _ _ _ _
-            (List.all_eq_true.mp allReach operation.id (List.mem_map.mpr ⟨operation, member, rfl⟩))
+            (all_reachable_within_iff.mp allReach operation.id (List.mem_map.mpr ⟨operation, member, rfl⟩))
         refine ⟨start, _, ?_, ?_, paths⟩
         · rw [← admitted_scope_lookup_is_exact program start wellFormed]
           have anchor := of_decide_eq_true graph.1.1.1.1.1.1.1.1.1.1.1

@@ -3,6 +3,9 @@ module
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Declaration selection for parallel reservation
 
@@ -11,7 +14,10 @@ checks follow exact occurrence resolution and the admitted Program graph,
 without assuming preparation succeeds or introducing another selection rule.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.exactProgramSelection,
+  `InternalCommutation.selectedInputOrigin?, `exactLiveOccurrence, `operationOwningScope?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

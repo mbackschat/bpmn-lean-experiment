@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! Shared executable fixtures retain the conformance declaration bodies without importing their proofs. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CallActivityConformance
 

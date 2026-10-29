@@ -8,12 +8,19 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete regional/arming publication composes the actual four steps. Each operation keeps
 its assigned index in either order; successor validity and accepted deltas are derived from
 the original preparations rather than supplied as intermediate assumptions. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalArmingPublicationTemplate?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

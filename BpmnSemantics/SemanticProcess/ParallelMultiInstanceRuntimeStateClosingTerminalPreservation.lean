@@ -8,6 +8,15 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance terminal runtime-state preservation
 
@@ -20,7 +29,17 @@ Scope boundary: terminal closure only. Progress, evaluator lifting, command trac
 and any change to the semantic account remain downstream.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityBodyParallelTasks?,
+  `activityBodyTaskClaims, `activityIdentitiesUnique, `activityRecordsOwnLiveWork, `anyTimerIdNamesWait,
+  `attachedMessagesUnambiguous, `attachedTimersUnambiguous, `canonicalCollectionOrder, `closeSharedParallelRegion,
+  `controllerIdentitiesUnique, `controllersNotExhausted, `controllersOwnLiveActivity, `effectIncidentAssociationValid,
+  `effectIncidentAssociationsValid, `effectWaitOwnerAssociationValid, `eventRaceAssociationsValid,
+  `exactLiveOccurrence, `hiddenRecordDeclarationsValid, `parallelMultiInstanceControllersOrdered,
+  `removeParallelChildWaits, `removeParallelController, `removeParallelRecord, `runtimeStateIdentityBound,
+  `runtimeStateWellFormed, `sameActivityOccurrence, `taskIdNamesWait, `timerWaitKeyMatches, `userTaskWaitKeyMatches,
+  `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -30,6 +49,8 @@ def terminalTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.task.id.value⟩
     activation := wait.activation }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`terminalTaskId]
 
 private theorem parallelBodyClaims_eq {record : ActivityOccurrence}
     {tasks : List UserTaskInstanceId}
@@ -75,6 +96,8 @@ private theorem removeParallelChildWaits_lookup_of_not_mem (waits : List UserTas
 def terminalLexStep [DecidableEq α] (less : α → α → Bool)
     (left right : α) (rest : Bool) : Bool :=
   if left ≠ right then less left right else rest
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`terminalLexStep]
 
 private theorem terminalLexStep_false_iff [DecidableEq α] (less : α → α → Bool)
     (left right : α) (rest : Bool) :
@@ -203,6 +226,8 @@ private theorem terminalLexStep_trans [DecidableEq α] (less : α → α → Boo
 def terminalStringBefore (left right : String) : Bool := decide (left < right)
 
 def terminalNatBefore (left right : Nat) : Bool := decide (left < right)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`terminalNatBefore, `terminalStringBefore]
 
 private theorem terminalString_asymm (left right : String) :
     terminalStringBefore left right = true → terminalStringBefore right left = false := by

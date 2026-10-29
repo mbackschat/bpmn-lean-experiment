@@ -13,7 +13,7 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 This module owns the exact two-Process fixture, the 3/3/2 closure witnesses, distinct called identity, paired invocation/return facts, and nearest malformed-association refusals. It does not claim external QName resolution, data mapping, recursion, or host Child Workflow behavior.
 -/
 
-@[expose] public section
+public section
 
 set_option Elab.async false
 

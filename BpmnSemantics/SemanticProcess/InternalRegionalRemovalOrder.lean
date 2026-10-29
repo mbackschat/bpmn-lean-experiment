@@ -2,13 +2,15 @@ module
 
 import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
 
 /-! # Canonical order after regional removal
 
 The actual cancellation and called-Process removal operations retain collection order by filtering. The proofs cover the complete canonical collection predicate without assuming validity of the selected region or its successor.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

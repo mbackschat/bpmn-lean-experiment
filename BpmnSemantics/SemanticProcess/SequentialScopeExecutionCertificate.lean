@@ -11,10 +11,30 @@ import BpmnSemantics.SemanticProcess.SequentialScopeAdmissionValidityProofs
 import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ADMIT-01 defines the joint phase, body-credit, data and population certificate, derives parent-credit consequences, and seeds it from actual committed Start. Transition preservation and actual-history transport remain above this owner. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SemanticOperation.kind, `bodyConsumedPorts,
+  `bodyProducedPorts, `continuationMarking, `exactLiveOccurrence, `flowNodeOccurrenceProgramValidity, `ownedPortCount,
+  `projectOpenFlowNodeOccurrences?, `runtimeStateWellFormed, `scopeQuiescent, `sequentialScopeBindingForEntry?,
+  `sequentialScopeBindingForOwner?, `sequentialScopeEntryEnabled, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -114,6 +134,9 @@ def SequentialScopeExecutionCertificateCore (program : Program) (entry : Sequent
           sequentialScopeTaskWaitingCount state binding.body.id operation ≤ fired.count operation) ∧
         (∀ place, continuationMarking state parent place = 0)
     | .completed => state.control = .completed hosting
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`sequentialScopeParentProducedPorts,
+  `sequentialScopeTaskWaitingCount]
 
 private theorem smis_parent_port_totals (ports : List ControlPlaceId) (parent : ScopeOccurrenceId)
     (unique : ports.Nodup) (select : SemanticOperation → List ControlPlaceId)

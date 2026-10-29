@@ -13,11 +13,41 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingFrames
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional selection observes quiescence and exact predecessor withdrawal records.
 An independent arming patch creates work outside the selected region. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalArmingWrite.kind, `InternalCommutation.InternalArmingWrite.owner,
+  `InternalCommutation.PreparedInternalArming.apply, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.internalArmInput?,
+  `InternalCommutation.liftRegionalStateAtom, `InternalCommutation.prepareInternalArm?,
+  `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.uniqueFamilyDeclarer?,
+  `MonitoredScopeOwnership, `MonitoredScopeTimerBinding, `NonInterruptingBoundaryTimerBinding,
+  `monitoredScopeTimerNames, `scopeQuiescent, `timerIdNamesWait, `timerWaitDeclarers, `timerWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -320,7 +350,7 @@ theorem regionalSelection_after_independent_arming (program : Program) (state : 
     rw [fields.2.2.2.2.2.2, filterTokens_removeToken_other _ _ _ _
       (regional_arming_input_distinct footprint arm input read independent)]
   cases operation with
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
     refine ⟨onlyTokenOwner_read_frame state (arm.apply state) input (census input inputRead), ?_⟩
     rw [fields.2.2.2.2.2.2]
     apply filter_removeToken_of_rejected

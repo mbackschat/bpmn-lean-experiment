@@ -6,6 +6,17 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.ParallelScopeLifetimeAccounting
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual lifetime record population
 
@@ -15,7 +26,12 @@ the initial owner population and original declarations, without uniqueness
 premises on either counting population.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeReplay.bodyOrRetirementTransition,
+  `ParallelScopeReplay.bodyTransition, `ParallelScopeReplay.declarationFiringCharge,
+  `ParallelScopeReplay.declarationFiringCount, `ParallelScopeReplay.retirementCharge,
+  `ParallelScopeStart.ParentSpineStep]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 

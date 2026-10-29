@@ -1,13 +1,19 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InclusiveGateway
+import all BpmnSemantics.SemanticProcess.InclusiveGateway
+import all BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Local-control branch preparation
 
 This owner retains the evaluated condition reads required by the complete-preparation frame in [the Internal Commutation proposal](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`evaluateInclusiveBranches,
+  `evaluateSimpleBooleanExpression, `evaluateTrueInclusiveCandidates, `selectConditionalOutput]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -15,6 +21,8 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 def internalExpressionReadVariables : SimpleBooleanExpression → List String
   | .literal _ => []
   | .isPresent name | .isNull name | .stringEquals name _ => [name]
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalExpressionReadVariables]
 
 /-- Equality of the referenced binding population preserves evaluation, including malformed duplicate-binding failure. -/
 theorem internal_expression_evaluation_frame
@@ -63,6 +71,8 @@ def prepareInternalConditional?
           pure { selected with readVariables :=
             internalExpressionReadVariables candidate.condition ++
               selected.readVariables }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareInternalConditional?]
 
 /-- Retained provenance and dependency reads do not change the existing conditional selector's output or failure. -/
 theorem prepare_internal_conditional_output
@@ -203,6 +213,9 @@ def prepareInternalInclusive?
     (bindings : List VariableBinding) : Option InternalInclusiveSelection := do
   let selected ← evaluateInclusiveBranches candidates defaultBranch bindings
   pure ⟨selected, internalInclusiveReadVariables candidates⟩
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalInclusiveReadVariables,
+  `prepareInternalInclusive?]
 
 /-- Retaining dependency reads preserves the evaluator's exact output/input pairs, default, ordering, and failure. -/
 theorem prepare_internal_inclusive_selected

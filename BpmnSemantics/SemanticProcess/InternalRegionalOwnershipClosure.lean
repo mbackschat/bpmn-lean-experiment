@@ -2,12 +2,13 @@ module
 
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
 import Std.Data.DTreeMap.Internal.Balancing
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! REG-OWN-CLOSE-01 separates predecessor liveness from survival under selected removal. The
 retention masks describe predecessor records only; no speculative successor supplies the condition.
 Exact raw-field agreement remains distinct from cross-target selection-domain agreement. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -46,6 +47,8 @@ def regionalOwnershipClosed (state : RuntimeState) (keep : RegionalReferenceRete
   state.eventRaces.all (fun race => !keep.race race ||
     (allMatchingRetained state.messageWaits keep.message (messageIdNamesWait race.messageSubscriptionId) &&
       allMatchingRetained state.timerWaits keep.timer (timerIdNamesWait race.timerOccurrenceId)))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`allMatchingRetained]
 
 /-- All matching records, rather than one chosen witness, preserve the exact reference census. -/
 theorem allMatchingRetained_preserves_census {α : Type} (values : List α) (keep names : α → Bool)

@@ -9,12 +9,32 @@ import BpmnSemantics.SemanticProcess.InternalMessageTaskValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The new Activity references its jointly inserted task and Message, which the regional mask retains.
 Existing retained locals keep their exact record census because preparation forbids Activity aliases.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalMessageTaskPatch, `InternalCommutation.makeInternalMessageTaskPatch,
+  `InternalCommutation.selectInternalOwnershipClosedRegional?, `allMatchingRetained, `messageIdNamesWait,
+  `messageWaitKeyMatches, `regionalActivityOwnersClosed, `regionalActivityReferencesClosed, `regionalOwnershipClosed,
+  `taskIdNamesWait, `userTaskWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

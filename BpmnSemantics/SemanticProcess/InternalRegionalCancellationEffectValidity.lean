@@ -2,12 +2,22 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitValidity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Effect-local data and its open or suspended wait must survive cancellation together.
 The projection's exact identity census excludes a cancelled alias from deleting a survivor's
 data; incident association supplies the identity used by the actual cleanup filter. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cancelScopeSubtree, `effectIncidentAssociationValid,
+  `effectIncidentAssociationsValid, `effectWaitOccurrenceId, `flowNodeOccurrenceEffectProgramValidity,
+  `flowNodeOccurrenceWaitProgramValidity]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

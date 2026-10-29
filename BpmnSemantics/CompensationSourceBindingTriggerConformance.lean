@@ -9,7 +9,7 @@ Trigger endpoints, trigger scope, and the deliberately dormant handler scope rem
 negative decisions.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

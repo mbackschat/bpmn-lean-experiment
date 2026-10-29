@@ -14,6 +14,48 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProof
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.CallActivityAdmission
+import all BpmnSemantics.SemanticProcess.CallDataContract
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.CorrelationScalarPath
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+import all BpmnSemantics.SemanticProcess.ErrorDefinition
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
+import all BpmnSemantics.SemanticProcess.MessageStart
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import all BpmnSemantics.SemanticProcess.TimerStart
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Reachable token-control readiness
 
@@ -23,7 +65,12 @@ the admitted acyclic body's lifetime accounting supplies empty output buckets.
 Neither fact assumes successful batch preparation or publication.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `InternalCommutation.prepareOccurrenceTokenPatch?, `ParallelScopeStart.analyzeProgram,
+  `ParallelScopeStart.programSelected, `SemanticOperation.kind, `SequentialScopeControl.inputs, `bodyConsumedPorts,
+  `continuationMarking, `nonempty, `operationOutputs]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -10,10 +10,30 @@ import BpmnSemantics.SemanticProcess.SequentialScopeAdmissionValidityProofs
 import BpmnSemantics.SemanticProcess.SequentialScopeBodyLifecycleProofs
 import BpmnSemantics.SemanticProcess.SequentialScopeDispatchLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeExecutionCertificate
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ADMIT-01 preserves the joint execution certificate through repeated-body lifecycle and Human/effect command ingress. Ordinary execution is imported from its separate owner; scheduler history and readiness remain above both. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeCompletionResult.state,
+  `SequentialScopeEntryResult.state, `continuationMarking, `flowNodeOccurrenceProgramValidity, `ownedPortCount,
+  `runtimeStateWellFormed, `scopeOperationBindingValid, `selectScopeVariables?, `sequentialScopeEntryEnabled,
+  `sequentialScopeTaskWaitingCount]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

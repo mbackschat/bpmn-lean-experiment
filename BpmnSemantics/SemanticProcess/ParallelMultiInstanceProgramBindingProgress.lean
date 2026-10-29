@@ -1,6 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingSelection
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance progress Program binding
 
@@ -13,7 +16,13 @@ closure, evaluator lifting, complete runtime-state well-formedness, and host beh
 this module.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelMultiInstanceSlot.taskId,
+  `activityBodyParallelTasks?, `completeParallelSlot, `insertParallelMultiInstanceController,
+  `parallelControllerNamesIdentity, `parallelMultiInstanceProgramBindingsValid,
+  `parallelMultiInstanceRuntimeWellFormed, `parallelOutputAbsent, `parallelSlotTaskIds, `pendingParallelTaskIds,
+  `removeParallelChildWaits, `removeParallelController, `replacePendingParallelSlot, `sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -23,6 +32,8 @@ def progressWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.task.id.value⟩
     activation := wait.activation }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`progressWaitTaskId]
 
 private theorem pendingParallelTaskIds_replacePendingParallelSlot
     (slots : List ParallelMultiInstanceSlot) (target : UserTaskInstanceId) (result : String) :
@@ -136,6 +147,8 @@ def progressedParallelRecord (record : ActivityOccurrence)
   if sameActivityOccurrence candidate record then
     { candidate with body := .parallelUserTasks first rest }
   else candidate
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`progressedParallelRecord]
 
 private theorem progressedParallelRecord_activityElementId (record : ActivityOccurrence)
     (first : UserTaskInstanceId) (rest : List UserTaskInstanceId)

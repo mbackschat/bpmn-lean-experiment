@@ -20,12 +20,40 @@ import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.InternalArmingBatchPublication
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The arming publication keeps its predecessor-selected start and time across an independent
 regional execution. Only the surviving arming owner needs a Process lookup frame.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalBaseFootprint?,
+  `InternalCommutation.selectInternalRegional?, `fire?, `runtimeStateWellFormed, `terminateScopeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -109,7 +137,7 @@ theorem preparedArming_regional_start_frame (program : Program) [InterruptionInv
               cases baseFound
               exact False.elim (untouched (baseWrites _ (by simp)))
           | some owner => simp [regionalBaseFootprint?, operationEq, kind, parent] at baseFound
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       haveI := InterruptionInvocationsRooted.declared program _
         (prepareInternalRegional_operation_declared program before _ regional regionalFound) rfl
       haveI := CallersParentless.of_rooted program before arm.scopeFramePatch.runtimeInstanceId

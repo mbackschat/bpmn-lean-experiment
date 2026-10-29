@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 
 /-! PMIS-ADMIT-01 checks the source graph independently of lowering; it grants no execution capability. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeChecked
 

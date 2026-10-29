@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcessContract
 This module owns exact-code resolution of one interrupting boundary Error handler for a throwing embedded Sub-Process scope. It validates the source-level handler relationship and lowers that already-resolved relationship into the Semantic Process operation payload; runtime propagation remains in `ErrorPropagation`.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

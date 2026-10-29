@@ -9,6 +9,10 @@ public import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
 public import BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Runtime-state well-formedness
 
@@ -56,7 +60,11 @@ would make every not-started and terminal state ill-formed; inside the running c
 to be two.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityOccurrenceForTimerWait?,
+  `effectWaitDeclarationKey, `exactLiveOccurrence, `messageWaitDeclarationKey, `occursOnce, `operationDeclaresWaitKey,
+  `operationWaitDeclarationKeys, `sameActivityOccurrence, `timerWaitDeclarationKey, `userTaskWaitDeclarationKey]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -159,6 +167,9 @@ def attachedMessagesUnambiguous (state : RuntimeState) : Bool :=
     record.messageHandlerOccurrences.all fun subscription =>
       (state.activityOccurrences.filter fun candidate =>
         candidate.messageHandlerOccurrences.contains subscription).length ≤ 1
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityRecordsOwnLiveWork,
+  `activityTaskBodyOwnersAgree, `attachedTimersUnambiguous]
 
 theorem activityRecordsOwnLiveWork_frame (before after : RuntimeState)
     (scopes : after.scopeOccurrences = before.scopeOccurrences)
@@ -337,6 +348,10 @@ def sequentialMultiInstanceOperationBindingComplete (program : Program) (state :
 def sequentialMultiInstanceProgramBindingsValid (program : Program) (state : RuntimeState) : Bool :=
   sequentialMultiInstanceControllerProgramBindingsValid program state &&
     program.operations.all (sequentialMultiInstanceOperationBindingComplete program state)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`sequentialMultiInstanceControllerProgramBindingValid,
+  `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
+  `sequentialMultiInstanceProgramBindingsValid]
 
 theorem sequentialMultiInstanceProgramBindingsValid_frame (program : Program)
     (before after : RuntimeState) (tasks : after.waits = before.waits)
@@ -673,6 +688,8 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
       compensationActivityRetentionStateValid program state &&
       compensationEventSubProcessSnapshotStateValid program state &&
       compensationExecutionStateValid program state && sequentialScopeStateValid program state)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`runtimeStateWellFormed]
 
 /-- Realizes the match congruence equation of `runtimeStateWellFormed` here, in its owner, so importers reuse
 it. Lean v4.34.1 deduplicates a realized `congr_eq_1` across imports but not its `_sparseCasesOn_1`

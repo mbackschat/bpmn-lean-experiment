@@ -5,12 +5,20 @@ public import BpmnSemantics.SemanticProcess.InternalChoiceSchedule
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessFlowNodeOccurrence
 public import BpmnSemantics.SemanticProcess.InternalPreparedFrontier
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalPreparedFrontier
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublication
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Bounded closure consumes explicit choices only after universally independent normalization,
 under the [approved choice account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`acceptedPreparedTransitionBatch?,
+  `classifyPreparedInternalFrontier, `findInternalExecutionOffer?, `normalizingInternalPrepared,
+  `runPreparedTransitionBatchPublication?, `sortBy, `sortInsertBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -48,6 +56,8 @@ def selectInternalExecutionFrontier (mode : InternalSchedulingMode) (ordinal : N
                   | some offer => .execute [offer] remaining true
                   | none => .ambiguous
       | _ => .ambiguous
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalExecutionFrontier]
 
 /-- A singleton uses no scheduling directive when its preparation names that same discovered alternative. -/
 theorem selectInternalExecutionFrontier_singleton (mode : InternalSchedulingMode) (ordinal : Nat)
@@ -142,6 +152,8 @@ def acceptedRevalidatedTransitionBatch? (program : Program) (instanceId commandI
   let (final, publications) ← runRevalidatedTransitionBatch? program instanceId commandId
     (internalTransitionPublicationIndex first templates) state frontier prepared
   some (final, canonicalInstantiatedTransitionPublications publications)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`runRevalidatedTransitionBatch?]
 
 /-- Revalidation adds refusal checks without changing any successful state or publication. -/
 theorem runRevalidatedTransitionBatch_refines (program : Program) (instanceId commandId : SemanticId)
@@ -296,6 +308,9 @@ def executeSelectedFrontier? (program : Program) (commandId : SemanticId)
                lifecycles := some (publications.map (·.lifecycle)) }
     | none => none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`executeSelectedFrontier?,
+  `singletonClosureStep]
+
 /-- A selected reservation reaches its last successor once identities align and the complete batch applies; absent publication remains a separate result. -/
 theorem executeSelectedFrontier_reserved_batch_ready (program : Program) (commandId : SemanticId)
     (first : Nat) (state : RuntimeState) (frontier : InternalExecutionFrontier)
@@ -333,6 +348,9 @@ def prependClosureStep (step : InternalClosureStep) (closed : ScheduledClosureRe
     records := do pure ((← step.records) ++ (← closed.records))
     lifecycles := do pure ((← step.lifecycles) ++ (← closed.lifecycles)) }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`ScheduledClosureResult.failed,
+  `prependClosureStep]
+
 private theorem prependClosureStep_projections (step : InternalClosureStep) (closed : ScheduledClosureResult) :
     (prependClosureStep step closed).state = closed.state ∧
     (prependClosureStep step closed).failed = closed.failed := by
@@ -366,6 +384,8 @@ def closeScheduledTraced (fuel : Nat) (program : Program) (commandId : SemanticI
                     remaining step.state)
 termination_by fuel
 decreasing_by exact Nat.lt_succ_of_le (Nat.sub_le _ _)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`closeScheduledTraced]
 
 /-- Stability is accepted before fuel is inspected, including at the exact zero-fuel boundary. -/
 theorem closeScheduledTraced_stable (fuel : Nat) (program : Program) (commandId : SemanticId)

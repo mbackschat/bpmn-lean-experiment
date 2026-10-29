@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Sequential Multi-Instance transitions
 
@@ -26,7 +30,9 @@ determinism across unspecified schedules. Soundness in one direction is what the
 evaluator that refused every input would satisfy all three of them.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityRecordsOwnLiveWork]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

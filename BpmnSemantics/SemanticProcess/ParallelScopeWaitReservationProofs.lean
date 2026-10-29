@@ -13,6 +13,24 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Reachable wait reservation
 
@@ -21,7 +39,15 @@ in addition to native transition enabledness. Actual command-prefix certificates
 supply those checks before the scheduler constructs its reserved patch.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.InternalArmingWrite.elementId, `InternalCommutation.InternalArmingWrite.kind,
+  `InternalCommutation.InternalArmingWrite.occurrence, `InternalCommutation.applyInternalOperationOccurrence?,
+  `InternalCommutation.effectWaitOccurrence, `InternalCommutation.internalArmInput?,
+  `InternalCommutation.internalArmOrigin?, `InternalCommutation.prepareReservedOccurrenceArm?,
+  `InternalCommutation.userTaskWaitOccurrence, `ParallelScopeStart.programOperationAllowed,
+  `SequentialScopeProgram.operationAllowed, `admitStimulus, `hasParallelScopeDefinition]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

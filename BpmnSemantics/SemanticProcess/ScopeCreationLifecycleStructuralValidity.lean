@@ -3,16 +3,26 @@ module
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.CallReachability
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CallActivityLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.CallActivityIdentity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Structural lifecycle preservation for the predecessor-selected scope creation account in
 [Internal Commutation](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+  `InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.internalScopeCreationDefinitionMatches, `InternalCommutation.internalScopeCreationOrigin?,
+  `InternalCommutation.internalScopeCreationStart?, `candidateCallStart?, `candidateScopeStart?,
+  `compensationEventSubProcessSnapshotScopeLifecycleWellFormed, `enteredChildScopeId?, `exactLiveOccurrence,
+  `programWellFormed, `scopeOperationBindingValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -151,6 +161,8 @@ def EntryBinding (program : Program) (occurrence : RuntimeScopeOccurrence)
     (definition : DefinitionScope) : Bool :=
   scopeOperationBindingValid program occurrence definition
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`EntryBinding]
+
 private theorem length_filterMap_as_filter (values : List α) (f : α → Option β) :
     (values.filterMap f).length = (values.filter fun value => (f value).isSome).length := by
   induction values with
@@ -262,6 +274,8 @@ def CallBinding (program : Program) (state : RuntimeState)
           origin.elementId.value = record.id.elementId.value && process = record.calledProcessId &&
             root = record.calledRoot.definitionScopeId && returned = record.returnOperationId
       | _ => false).length = 1
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`CallBinding, `ScopeBinding]
 
 private theorem call_binding_candidate_return (program : Program) (owner : ScopeOccurrenceId)
     (element : String) (process : ProcessId) (root : DefinitionScopeId) (returned : OperationId)

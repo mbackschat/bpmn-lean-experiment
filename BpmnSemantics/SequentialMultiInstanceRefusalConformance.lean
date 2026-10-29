@@ -62,6 +62,23 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.StrictJson
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SequentialMultiInstanceDataFixtures
+import all BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Sequential Multi-Instance refusal conformance
 
@@ -69,7 +86,11 @@ Admission, identity, deadline, and resource-bound refusals for the shared Sequen
 fixture chain.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics #[`SemanticProcess.canonicalCollectionUtf8Bytes,
+  `SemanticProcess.canonicalJsonStringCollectionUtf8Bytes,
+  `SequentialMultiInstanceProgramBindingConformance.profileLimits]
+
+public section
 
 namespace BpmnSemantics.SequentialMultiInstanceConformance
 
@@ -200,6 +221,8 @@ def a_collection_over_the_canonical_byte_bound_is_refused_at_entry : Bool := dec
 def maximalOutputCollection (result : String) : List String :=
   [result, result, result, result, result, result, result, result,
     result, result, result, result, result, result, result, result]
+
+run_meta privateEquations `BpmnSemantics.SequentialMultiInstanceConformance #[`maximalOutputCollection]
 
 /-- Sixteen results at the profile's own item bound cross its canonical collection bound.
 

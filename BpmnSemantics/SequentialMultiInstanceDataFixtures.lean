@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 /-! The reviewed Sequential Multi-Instance data-role identities, apart from the program-binding proofs so
 an executable check can use them without importing a proof owner. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SequentialMultiInstanceProgramBindingConformance
 

@@ -5,12 +5,20 @@ import BpmnSemantics.SemanticProcess.InternalRegionalOrderFacts
 import BpmnSemantics.SemanticProcess.InternalRegionalParallelBinding
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 import BpmnSemantics.SemanticProcess.InternalRegionalSequentialBinding
+import all BpmnSemantics.SemanticProcess.InternalRegionalParallelCensus
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual regional cleanup preserves complete PMI bindings by retaining whole controller,
 Activity, pending-child, and Timer groups. The predecessor flow-node ownership fact joins the
 different Process-identity and owner filters used by cancellation and Call cleanup. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyParallelTasks?, `anyTimerIdNamesWait,
+  `parallelMultiInstanceProgramBindingsValid, `recordInRegion, `withdrawnByRegion]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Activity body-claim uniqueness
 
@@ -12,7 +14,11 @@ The predicate depends only on the ordered body projection. Activity identity, bo
 controller binding, and host order are independent obligations and are not inferred here.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScope?, `activityBodyScopeClaims,
+  `activityBodyTask?, `activityBodyTaskClaims, `activityOccurrenceForScope?, `activityOccurrenceForTaskWait?,
+  `recordBodyNamesWait, `taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -20,6 +26,8 @@ open BpmnSemantics
 
 def exactListsOverlap [DecidableEq α] (left right : List α) : Bool :=
   left.any fun leftClaim => right.any fun rightClaim => decide (leftClaim = rightClaim)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`exactListsOverlap]
 
 private theorem exactListsOverlap_comm [DecidableEq α] (left right : List α) :
     exactListsOverlap left right = exactListsOverlap right left := by
@@ -36,6 +44,8 @@ def activityBodyClaimsDisjoint (left right : ActivityOccurrence) : Bool :=
   !exactListsOverlap (activityBodyTaskClaims left.body) (activityBodyTaskClaims right.body) &&
     !exactListsOverlap (activityBodyScopeClaims left.body) (activityBodyScopeClaims right.body)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyClaimsDisjoint]
+
 theorem activityBodyClaimsDisjoint_comm (left right : ActivityOccurrence) :
     activityBodyClaimsDisjoint left right = activityBodyClaimsDisjoint right left := by
   simp only [activityBodyClaimsDisjoint, exactListsOverlap_comm]
@@ -45,6 +55,8 @@ def activityBodyClaimsUnique : List ActivityOccurrence → Bool
   | [] => true
   | record :: rest =>
       rest.all (activityBodyClaimsDisjoint record) && activityBodyClaimsUnique rest
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyClaimsUnique]
 
 theorem activityBodyClaimsUnique_cons (record : ActivityOccurrence)
     (records : List ActivityOccurrence) :

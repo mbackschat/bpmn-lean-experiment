@@ -21,10 +21,56 @@ import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.SequentialScopeBodyAccountingProofs
 public import BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ADMIT-01 retains full runtime validity and actual projectability for successful individual transitions through admission and lifecycle contracts, below certificate preservation and scheduler transport. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SemanticOperation.kind,
+  `SequentialScopeCompletionResult.state, `SequentialScopeEntryResult.state, `activityBodyClaimsUnique,
+  `activityBodyLive, `activityIdentitiesUnique, `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree,
+  `attachedMessagesUnambiguous, `attachedTimersUnambiguous, `canonicalCollectionOrder,
+  `compensationActivityRetentionStateValid, `compensationEventSubProcessSnapshotStateValid,
+  `compensationExecutionStateValid, `controllerIdentitiesUnique, `controllersNotExhausted,
+  `controllersOwnLiveActivity, `effectIncidentAssociationsValid, `eventRaceAssociationsValid, `exactLiveOccurrence,
+  `flowNodeOccurrenceProgramValidity, `flowNodeOccurrenceUserTaskProgramValidity,
+  `flowNodeOccurrenceWaitProgramValidity, `hiddenRecordDeclarationsValid, `messageBoundedOperationProjectionValid,
+  `occursOnce, `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `orderedBy,
+  `parallelMultiInstanceControllersOrdered, `parallelMultiInstanceProgramBindingsValid,
+  `projectOpenFlowNodeOccurrences?, `projectWaits?, `runtimeStateIdentityBound, `runtimeStateWellFormed,
+  `sameActivityOccurrence, `scopeOperationBindingValid, `sequentialMultiInstanceControllerProgramBindingsValid,
+  `sequentialMultiInstanceOperationBindingComplete, `sequentialMultiInstanceProgramBindingsValid,
+  `sequentialScopeActivityId, `sequentialScopeEntry?, `sortBy, `sortFlowNodeOccurrenceStarts, `waitDeclarationsValid,
+  `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

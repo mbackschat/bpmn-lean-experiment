@@ -13,11 +13,20 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingExecution
 import BpmnSemantics.SemanticProcess.InternalDataArmingPublication
 public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 import BpmnSemantics.SemanticProcess.InternalCommutationPublication
-
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Individual family acceptance is shared by pair and finite-batch consumers, without depending on their unified preparation type. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalTransitionLifecycleTemplate.instantiate,
+  `InternalTransitionPublicationTemplate.instantiate, `actualInternalTransitionPublication?, `internalArmInput?,
+  `internalArmingPublicationTemplate, `internalArmingPublicationTemplate?, `internalScopeCreationPublicationTemplate]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

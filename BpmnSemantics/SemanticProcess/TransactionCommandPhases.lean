@@ -6,6 +6,41 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.BoundedTask
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandStartBindings
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.IncidentCancellation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.Message
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.MessageKeyCorrelation
+import all BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
+import all BpmnSemantics.SemanticProcess.MessageMonitoredTask
+import all BpmnSemantics.SemanticProcess.MessagePayload
+import all BpmnSemantics.SemanticProcess.MonitoredTask
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.TimerStartAdmission
+import all BpmnSemantics.SemanticProcess.TransactionBranchPhases
+import all BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction command admission and continuation
 
@@ -13,7 +48,22 @@ The complete admitted operation inventory excludes the alternative Task dispatch
 ordinary command admission to the retention-aware completion law used by the continuation proof.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CommandStartBindings.admitted,
+  `CommandStartBindings.parallelMultiInstanceProgramAdmitted,
+  `CommandStartBindings.sequentialMultiInstanceProgramAdmitted, `ParallelScopeStart.programSelected,
+  `admitMessageStart?, `admitStimulusWithCompensationSnapshots, `admitTimerStart?, `boundedTaskOperations,
+  `callDataRuntimeStateValid, `dataInputOutputTaskContracts, `dataInputTaskOperations, `dataOutputTaskOperations,
+  `deliverMessage, `deliverPayloadMessage, `fireTimer, `incidentProcessCancellationEligibility?,
+  `incidentProcessCancellationRoot?, `interruptingMessageEventSubProcessStateValid, `isBoundedTaskDefinition,
+  `isDataInputOutputTaskDefinition, `isMessageBoundaryDefinition, `isMessageBoundedTaskDefinition,
+  `isMessageMonitoredTaskDefinition, `isMonitoredMessageBoundaryDefinition, `isMonitoredTaskDefinition,
+  `messageBoundedTaskOperations, `messageKeyCorrelationProfileId, `messageMonitoredTaskDefinitions,
+  `messageStartProfileId, `messageStartTargetMatchesProgram, `monitoredTaskOperations,
+  `parallelMultiInstanceUserTaskProfileId, `reportEffectFailure, `retryEffectIncident,
+  `sequentialMultiInstanceUserTaskProfileId, `serviceTaskIncidentCancellationCheckpointProfileId,
+  `timerStartProfileId, `timerStartTargetMatchesProgram]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

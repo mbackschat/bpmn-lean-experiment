@@ -1,13 +1,20 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Timer-task preparation retains both waits and their Activity association before execution.
 The regional atom vocabulary already represents attached-handler conflicts; no new atom domain is
 needed for the [complete outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#timer-task-arming-outcome).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.regionalActivityBodyTasks, `fire?, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -40,6 +47,9 @@ def timerTaskContract? : SemanticOperation → Option InternalTimerTaskContract
   | .awaitMonitoredUserTask operationId origin input task timer =>
       some { kind := .nonInterrupting, operationId, origin, input, task, timer }
   | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalTimerTaskContract.operation,
+  `timerTaskContract?]
 
 theorem timerTaskContract_roundtrip (contract : InternalTimerTaskContract) :
     timerTaskContract? contract.operation = some contract := by
@@ -110,6 +120,8 @@ def applyInternalTimerTaskPatch (state : RuntimeState) (patch : InternalTimerTas
     activityActivations := setActivationCount state.activityActivations
       ⟨patch.record.activityElementId.value⟩ patch.record.activation }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`makeInternalTimerTaskPatch]
+
 /-- The retained patch realizes the existing atomic activation, including unequal counter values. -/
 theorem makeInternalTimerTaskPatch_refines_activation
     (program : Program) (state : RuntimeState) (contract : InternalTimerTaskContract)
@@ -154,6 +166,8 @@ def prepareInternalTimerTaskContract? (program : Program) (state : RuntimeState)
       !openWaitAnchorAbsent state (timerWaitOccurrence patch.timer) ||
       state.activityOccurrences.any (regionalActivityAssociationsConflict · patch.record)
     then none else some patch
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareInternalTimerTaskContract?]
 
 theorem prepareInternalTimerTaskContract_facts
     (program : Program) (state : RuntimeState) (contract : InternalTimerTaskContract)

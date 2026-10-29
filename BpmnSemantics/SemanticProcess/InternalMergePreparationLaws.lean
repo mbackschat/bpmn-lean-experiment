@@ -4,10 +4,17 @@ public import BpmnSemantics.SemanticProcess.InternalMergePreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Prepared merge selections preserve runtime-state validity and leave open occurrences unchanged. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMergeSelection.tokens,
+  `InternalCommutation.makeInternalMergePreparation, `InternalCommutation.prepareInternalMerge?, `exactLiveOccurrence,
+  `runningInstance?, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.TransitionTrace
 
 /-! Retained topology and state fixtures are shared by executable publication probes and their proof owners. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

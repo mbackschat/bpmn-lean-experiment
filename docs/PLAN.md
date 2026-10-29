@@ -50,9 +50,9 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 ### Lean build follow-ups
 
-The [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules) own the rules; this list owns the class repairs the module conversion left.
+The [module rules](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-rules) own the rules; this list owns the class repairs the module conversion left.
 
-- Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
+- Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
 - At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each, and drop the simp arguments Lean's linter reports unused, inside the same complete rebuild.
 - Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
@@ -86,17 +86,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-SPEC.md#problem) promise (owner direction, 2026-10-27). The [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md) family pauses after `2d8db0e7` until this outcome closes (owner direction, 2026-10-28); CSD-3 (Lean merge-target hooks, prepared declared entry, arming read atoms) and CSD-4 (models, scenarios, registration, capacity test, documentation, closure review) remain. Pull request #38 is the owner's to land.
+Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-PROPOSAL.md#problem) promise (owner direction, 2026-10-27). The [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md) family pauses after `2d8db0e7` until this outcome closes (owner direction, 2026-10-28); CSD-3 (Lean merge-target hooks, prepared declared entry, arming read atoms) and CSD-4 (models, scenarios, registration, capacity test, documentation, closure review) remain. Pull request #38 is the owner's to land.
 
 Deliverable: bodies hidden by default in every family, so a body edit rebuilds only the modules that load the body, re-checked by container rebuild probes across the core and every family.
 
-Acceptance blockers: the eight bounds whose `raised` names this conversion must fall to their `raisedFrom`; they are kept instead of reverting `99cb3861` under the session's delegated authority, pending explicit owner confirmation.
+Acceptance blockers: the probe matrix. Tier 1 edits a core and a member of all 72 families plus 10 hubs, and the public `.olean` must stay byte-identical; tier 2's full builds must not exceed the model's rebuild count.
 
-Current result: the first conversion was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)). At `7bedde10`, 275 modules exceed 10 body-edit importers, the widest at 944.
+Current result: the conversion landed under owner decisions of 2026-10-29; the [current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary) holds its measured state.
 
 Effort budget: 80 hours; the owner lifted the cap on 2026-10-27, so reaching it records progress and continues.
 
-Next action: commit the guards, then convert one hub at a time, each a declared and reviewed step under [Rule 2](../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change) with `import all` minimized from the start.
+Next action: run the probe matrix, then close out. Then, by owner acknowledgement of 2026-10-29, propose lemmas in owners and self-registering registries for hubs whose edits rebuild over 500 modules, reconciling the registry sentence of [the code style guide](CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries).
 
 Oracle: a container body-edit probe that rebuilds more than the body-edit model predicts, or any weakened lane shape, claim or gate.
 

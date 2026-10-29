@@ -1,10 +1,11 @@
 module
 
 public import BpmnSemantics.SemanticProcess.GraphReachability
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ADMIT-01 recognizes serial/paired regions and separate Ends, then counts task-cut automatic bursts. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredParallelBody
 
@@ -55,6 +56,8 @@ def orderPending : Nat → List (Vertex × Nat) → Option (List Vertex)
 /-- Kahn's indegree update preserves edge multiplicity without recounting the graph for each candidate. -/
 def topologicalOrder (fuel : Nat) (vertices : List Vertex) : Option (List Vertex) :=
   orderPending fuel (vertices.map fun vertex => (vertex, incomingCount vertices vertex.id))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredParallelBody #[`incomingCount, `orderPending]
 
 private theorem deduplicated_length_le (values : List String) :
     values.eraseDups.length ≤ values.length := by

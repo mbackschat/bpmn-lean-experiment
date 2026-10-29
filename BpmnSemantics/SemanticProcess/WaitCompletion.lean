@@ -5,13 +5,15 @@ public import BpmnSemantics.SemanticProcess.MonitoredScope
 public import BpmnSemantics.SemanticProcess.BoundedTask
 public import BpmnSemantics.SemanticProcess.EventBasedGateway
 public import BpmnSemantics.SemanticProcess.MonitoredTask
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # External wait completion
 
 This module owns how a waiting runtime state advances when its external event arrives: matching a User Task or Timer wait on its full occurrence identity, and routing a matched Timer into the composite wait that owns it instead of completing it directly. It owns no stimulus admission, closure, or public command outcome; an absent result means semantic rejection, while recurring Timer capacity refusal requires whole-command rollback.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -73,7 +75,9 @@ def SelectedMonitoredTaskBinding (program : Program) (state : RuntimeState)
   | some timer => pair.record.attachedHandlers = [.timer (boundaryTimerWaitIdentity timer)] ∧
       NonInterruptingBoundaryTimerBinding state pair.record timer pair.boundary
 
-instance (program : Program) (state : RuntimeState) (pair : SelectedMonitoredTask) :
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SelectedMonitoredTaskBinding]
+
+@[no_expose] instance (program : Program) (state : RuntimeState) (pair : SelectedMonitoredTask) :
     Decidable (SelectedMonitoredTaskBinding program state pair) := by
   unfold SelectedMonitoredTaskBinding
   cases pair.timer with

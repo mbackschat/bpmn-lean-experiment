@@ -10,12 +10,26 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.InternalEndPreparation
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual End/regional executions commute by the existing fixed regional token action and
 relative End increment. Both complete preparations and successor facts come from predecessor
 validity and footprint independence, without an intermediate-invariant premise. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalEndStateFootprint,
+  `regionalStateAtomsConflict]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -48,7 +62,7 @@ private theorem end_regional_retained_fields (program : Program) (before after a
       cases parent : regional.selection.root.parent <;> cases output <;>
         simp only [parent] at update endUpdate <;> try contradiction
       cases withdrawal <;> simp only at update endUpdate <;> rw [update, endUpdate] <;> rfl
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       cases kind : regional.selection.kind <;> simp only [kind] at update endUpdate <;> try contradiction
       rw [update, endUpdate]
       rfl

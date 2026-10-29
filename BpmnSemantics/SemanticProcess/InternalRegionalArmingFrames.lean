@@ -15,11 +15,44 @@ import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional/arming frames reuse the owner-aware footprint and exact regional observation
 filters. The consumed token's complete place census protects preparation across cancellation. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.footprintOfPatch, `InternalCommutation.liftRegionalStateAtom,
+  `InternalCommutation.makeInternalDataArmingPatch, `InternalCommutation.openWaitAnchorAbsent,
+  `InternalCommutation.prepareInternalDataArmingContract?, `InternalCommutation.regionalOwnsAtom,
+  `InternalCommutation.regionalOwnsOrdinaryAtom, `InternalCommutation.regionalStateAtomsConflict,
+  `InternalCommutation.selectInternalRegional?, `canonicalStateAtomSet, `dataInputOutputActivityRecord,
+  `dataInputOutputRunningInstance?, `effectActivationCount, `exactLiveOccurrence, `fire?, `messageActivationCount,
+  `runtimeStateWellFormed, `terminateScopeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -186,7 +219,7 @@ theorem preparedRegional_interface_census (program : Program) (before after : Ru
         (regionalLocalData_selected_completion_variables program before after definition output raw)
       change after.variables.processInterfaces = before.variables.processInterfaces at interfaces
       rw [interfaces]
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired
         exact fired
@@ -302,7 +335,7 @@ theorem preparedRegional_arming_retirement (program : Program) (before after : R
       apply selectedCompletion_arming_retirement program before after definition output
       exact selectInternalRegional?_completeScope_fired program before before after id origin definition output _
         selected snapshots fired
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired
         exact fired

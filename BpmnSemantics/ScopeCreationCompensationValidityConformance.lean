@@ -26,6 +26,20 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.StrictJson
+import all BpmnSemantics.CompensationActivityRetentionConformance
+import all BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.TopologyFixtures
 
 /-! # Compensation owner lookups under scope insertion
 
@@ -35,7 +49,7 @@ test the existing Compensation predicates directly; they do not assert complete 
 admission of a new transition composition.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ScopeCreationCompensationValidityConformance
 

@@ -14,6 +14,20 @@ import BpmnSemantics.SemanticProcess.InternalCommutationProjection
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Internal commutation open-projection preservation
 
@@ -21,7 +35,20 @@ Combines the prepared-arm runtime preservation and occurrence-projector frame la
 public classifier and two-order commutation theorem in `InternalCommutation`.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalArmingWrite.kind, `InternalCommutation.InternalArmingWrite.occurrence,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.effectWaitOccurrence,
+  `InternalCommutation.exactProgramSelection, `InternalCommutation.internalArmInput?,
+  `InternalCommutation.internalArmOrigin?, `InternalCommutation.messageWaitOccurrence,
+  `InternalCommutation.prepareInternalArm?, `InternalCommutation.timerWaitOccurrence,
+  `InternalCommutation.userTaskWaitOccurrence, `availableAfterStarts, `candidateEffectStart?,
+  `candidateFlowNodeOccurrenceDeltaForOperation?, `candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
+  `candidateMessageStart?, `candidateTimerStart?, `candidateUserTaskStart?, `canonicalFlowNodeOccurrenceDelta,
+  `effectWaitKeyMatches, `flowNodeOccurrenceProgramValidity, `messageBoundedOperationProjectionValid,
+  `messageWaitDeclarers, `messageWaitKeyMatches, `projectOpenFlowNodeOccurrences?, `removeEndedFlowNodeOccurrences,
+  `timerWaitKeyMatches, `userTaskWaitDeclarers, `userTaskWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

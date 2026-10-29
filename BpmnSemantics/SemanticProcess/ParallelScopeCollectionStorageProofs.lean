@@ -19,12 +19,51 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProof
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! RSI-ORDER-01/RSI-UNIQ-02 storage follows actual PMIS ingress and internal steps.
 Reservation validity supplies fresh wait identities; collection storage alone is not an issuance certificate.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.effectWaitOccurrence, `InternalCommutation.messageWaitOccurrence,
+  `InternalCommutation.occurrenceReservationStateValid, `InternalCommutation.openWaitAnchors,
+  `InternalCommutation.timerWaitOccurrence, `InternalCommutation.userTaskWaitOccurrence,
+  `ParallelScopeStart.analyzeProgram, `ParallelScopeStart.programSelected, `activityIdentitiesUnique,
+  `canonicalCollectionOrder, `completeSelectedScope?, `completeSerialEffect?, `effectWaitKeyMatches,
+  `issueParallelBodies?, `messageWaitKeyMatches, `occursOnce, `orderedBy, `parallelMultiInstanceControllersOrdered,
+  `sameActivityOccurrence, `timerWaitKeyMatches, `uniqueCollectionKeys, `userTaskWaitKeyMatches,
+  `waitIdentitiesUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

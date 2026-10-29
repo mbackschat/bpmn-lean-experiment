@@ -11,6 +11,20 @@ import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeResumptionProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Refusal-free multi-offer preparation during scoped resumption
 
@@ -21,7 +35,10 @@ frontier installs its complete reserved batch. Initial-entry drain remains outsi
 this scoped-resumption premise.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.analyzeProgram,
+  `ParallelScopeStart.programSelected, `SemanticOperation.kind]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

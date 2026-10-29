@@ -6,6 +6,11 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 public import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Completion admission and runtime position
 
@@ -14,7 +19,10 @@ and declared Call census distinguish the hosting root from a parentless called r
 ordinary or bounded completion changes runtime control.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeScopeState?, `programWellFormed,
+  `runtimePositionValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

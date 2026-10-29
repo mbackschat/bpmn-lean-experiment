@@ -63,7 +63,7 @@ the Activity-occurrence reductions so the independent proof families do not accu
 kernel target under the repository's hard 3 GiB Lean measurement bound.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.RuntimeStateWellFormedConformance
 

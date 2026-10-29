@@ -62,6 +62,24 @@ import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.StrictJson
+import all BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SequentialMultiInstanceConformanceFixtures
+import all BpmnSemantics.SequentialMultiInstanceDataFixtures
+import all BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
 
 /-! # Sequential Multi-Instance runtime conformance
 
@@ -69,7 +87,7 @@ Positive runtime, lifecycle, binding, interruption, and empty-collection facts f
 Sequential Multi-Instance fixture chain.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SequentialMultiInstanceConformance
 

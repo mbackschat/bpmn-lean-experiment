@@ -9,7 +9,7 @@ are available only to the hosting instance; Process ports belong to the complete
 No endpoint falls back to another store, and no write changes Activity-local bindings.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

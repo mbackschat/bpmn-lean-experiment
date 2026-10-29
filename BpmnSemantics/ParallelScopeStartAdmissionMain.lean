@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcessJson.Scenario
 
 /-! Diagnostic closure bounds over existing checked-source and Start-data wire inputs; this is not command admission. -/
 
-@[expose] public section
+public section
 
 def runInputs (frontier : Bool) : List String → IO UInt32
   | [] => pure 0

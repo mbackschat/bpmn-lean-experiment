@@ -10,7 +10,7 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 interpreters. This test entrypoint does not add a profile or engine API contract.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.InternalChoiceScheduleJsonMain
 

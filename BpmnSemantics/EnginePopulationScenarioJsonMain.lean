@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcessJson.Publication
 
 /-! Canonical JSON-lines emitter for admitted engine-population scenarios. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.EnginePopulationScenarioJsonMain
 

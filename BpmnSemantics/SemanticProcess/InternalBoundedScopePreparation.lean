@@ -3,12 +3,19 @@ module
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete bounded Sub-Process preparations combine the existing child-entry footprint with
 the joined Activity and parent-owned Timer for either explicit boundary disposition under the [complete-family account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeContract.operation,
+  `InternalCommutation.exactProgramSelection, `InternalCommutation.makeInternalBoundedScopeSelection,
+  `InternalCommutation.regionalActivityAssociationsConflict, `activityBodyScopeClaims]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -51,6 +58,9 @@ def boundedScopeJointResourcesAvailable (program : Program) (state : RuntimeStat
     uniqueFamilyDeclarer? program contract.operation .timer contract.timer.elementId &&
     openWaitAnchorAbsent state (timerWaitOccurrence selected.timer) &&
     !(state.activityOccurrences.any (regionalActivityAssociationsConflict · selected.record))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`boundedScopeJointResourcesAvailable,
+  `makeInternalBoundedScopePreparation]
 
 /-- A same-id declaration of the other boundary kind cannot satisfy exact Program selection. -/
 theorem boundedScope_wrong_disposition_refuses_exact_selection (program : Program)

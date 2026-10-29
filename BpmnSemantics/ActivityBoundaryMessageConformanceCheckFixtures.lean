@@ -14,7 +14,7 @@ public import BpmnSemantics.SemanticProcess.Transition
 The fixture definitions and executable checks of [`ActivityBoundaryMessageConformance`](ActivityBoundaryMessageConformance.lean), apart from its proofs, so the conformance check driver runs them without loading a proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ActivityBoundaryMessageConformance
 

@@ -5,12 +5,17 @@ import BpmnSemantics.SemanticProcess.TokenStorage
 import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional position removal preserves complete public keys, token multiplicity, and order.
 Projection and difference laws operate on owner predicates rather than enumerated fixtures.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertTokenPosition, `projectTokens, `tokenMultiplicityAt,
+  `tokenPositionsStrict]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

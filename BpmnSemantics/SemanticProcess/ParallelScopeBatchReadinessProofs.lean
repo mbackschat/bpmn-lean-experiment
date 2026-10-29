@@ -6,6 +6,19 @@ import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel batch reservation provenance
 
@@ -14,7 +27,17 @@ The trace below retains the actual reservation calls and their accumulators;
 it supplies provenance for prefix revalidation without assuming application succeeds.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalArmingWrite.kind, `InternalCommutation.InternalArmingWrite.occurrence,
+  `InternalCommutation.InternalOccurrencePatch.apply, `InternalCommutation.InternalOccurrencePatch.endIncrement,
+  `InternalCommutation.InternalOccurrencePatch.tokenKeys, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.effectWaitOccurrence, `InternalCommutation.internalOperationOccurrences?,
+  `InternalCommutation.occurrenceOwnerRootValid, `InternalCommutation.prepareOccurrenceTokenPatch?,
+  `InternalCommutation.reserveOccurrenceMembers?, `InternalCommutation.resolveInternalOperationOccurrence?,
+  `InternalCommutation.userTaskWaitOccurrence, `ParallelScopeReplay.ReservedArmWriteShape, `SemanticOperation.kind,
+  `effectActivationCount, `exactLiveOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -471,6 +494,8 @@ def reservedCohortSize (members : List InternalOccurrencePatch)
     | .arm patch => patch.write.kind == kind && patch.write.elementId.value == element
     | .token _ => false).length
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`reservedCohortSize]
+
 /-- Actual reservation assigns the next slot in the shared element/family cohort, independent of body ownership. -/
 theorem singleton_reservation_arm_allocation (program : Program) (state : RuntimeState)
     (reserved : List InternalOccurrencePatch) (candidate : InternalOperationOccurrence) (arm : InternalArmingPatch)
@@ -544,6 +569,8 @@ def ReservationCountersAgree (state : RuntimeState) (reserved : List InternalOcc
     reservedCohortSize reserved .userTask task.value) ∧
   (∀ element, effectActivationCount current element = effectActivationCount state element +
     reservedCohortSize reserved .effect element.value)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`ReservationCountersAgree]
 
 private theorem singleton_reservation_counters (program : Program) (state : RuntimeState)
     (reserved : List InternalOccurrencePatch) (candidate : InternalOperationOccurrence)

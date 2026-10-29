@@ -14,7 +14,7 @@ graphs; see the
 [concurrent scope Service Tasks proposal](../docs/capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md#separating-witnesses).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ConcurrentScopeServiceTasksConformance
 
@@ -86,7 +86,7 @@ def supplierWithScreen (screen : CheckedNode) : CheckedProcess :=
 /-- Both directions are malformed under the data rules of CSD-ADMIT-01: an input never copies a local, and an
 output only copies one. A well-formed mapping makes the model data-bearing instead. -/
 def mapping : VariableMapping := { target := "screening", expression := .localVariable "screening" }
-def enclosingOutput : VariableMapping := { target := "screening", expression := .enclosingVariable "screening" }
+private def enclosingOutput : VariableMapping := { target := "screening", expression := .enclosingVariable "screening" }
 
 def errorRoute : CheckedBpmnErrorRoute :=
   { boundaryEventId := ⟨"ScreenFailed"⟩, boundaryEventName := none, attachedToRef := ⟨"Screen"⟩
@@ -184,10 +184,10 @@ def service_task_burst_reaches_the_closure_limit : Bool := decide <|
 def service_task_burst_beyond_the_closure_limit_is_refused : Bool := decide <|
     NestedScopeControl.checkedAnalysis deepestForked = none
 
-def service_task_with_malformed_input_mapping_is_refused : Bool := decide <|
+private def service_task_with_malformed_input_mapping_is_refused : Bool := decide <|
     NestedScopeControl.checkedAnalysis (supplierWithScreen (screen [mapping] [] none)) = none
 
-def service_task_with_malformed_output_mapping_is_refused : Bool := decide <|
+private def service_task_with_malformed_output_mapping_is_refused : Bool := decide <|
     NestedScopeControl.checkedAnalysis (supplierWithScreen (screen [] [enclosingOutput] none)) = none
 
 def service_task_with_error_route_is_refused : Bool := decide <|

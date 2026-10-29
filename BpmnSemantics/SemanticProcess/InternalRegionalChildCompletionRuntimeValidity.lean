@@ -19,12 +19,40 @@ import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.TokenOrder
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Child completion changes scope/token positions, disposes its scope-local frame, expires owned passive listeners and may
 withdraw one bounded Activity and its deadline. Owner closure protects the
 retained Activity owners that quiescence alone does not constrain. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalSelectionReferenceRetention,
+  `boundedCompletionReferenceRetention, `canonicalCollectionOrder, `compensationEventSubProcessSnapshotStateValid,
+  `flowNodeOccurrenceProgramValidity, `monitoredCompletionReferenceRetention, `operationInterrupts,
+  `ordinaryCompletionReferenceRetention, `runtimeStateIdentityBound, `runtimeStateWellFormed, `scopeQuiescent,
+  `sequentialScopeCollection?, `sequentialScopeEntry?, `waitDeclarationsValid, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

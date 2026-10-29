@@ -7,6 +7,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.TerminateEnd
 
 /-! # Hosting-root termination position
 
@@ -15,7 +17,7 @@ reaches every live child and called instance, retains the hosting root, and leav
 completion responsible for the terminal control change.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

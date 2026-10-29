@@ -9,7 +9,7 @@ public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 This module owns the proof-facing predicate used by conformance facts to combine independent checked-process and Semantic Process validation with profile capability and exact canonical-lowering equality. Runtime JSON input admission remains in `SemanticProcessJson.DefinitionInput`, and neither representation-specific validator depends on the other representation.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

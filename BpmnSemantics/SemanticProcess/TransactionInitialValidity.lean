@@ -9,6 +9,41 @@ import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.CallDataAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction split-state validity
 
@@ -17,7 +52,23 @@ the exact open child occurrence at the split. The cancellation capsule's retaine
 canonical scope/token identities supply the base case required by the existing arming laws.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyClaimsUnique, `activityIdentitiesUnique,
+  `activityRecordsOwnLiveWork, `attachedMessagesUnambiguous, `attachedTimersUnambiguous, `canonicalCollectionOrder,
+  `compensationEventSubProcessSnapshotDeclarationValid, `compensationEventSubProcessSnapshotStateValid,
+  `compensationTransactionParentScope?, `controllerIdentitiesUnique, `controllersNotExhausted,
+  `controllersOwnLiveActivity, `effectIncidentAssociationsValid, `eventRaceAssociationsValid, `exactLiveOccurrence,
+  `flowNodeOccurrenceEffectProgramValidity, `flowNodeOccurrenceOwnerLiveUnique,
+  `flowNodeOccurrenceUserTaskProgramValidity, `flowNodeOccurrenceWaitProgramValidity, `hiddenRecordDeclarationsValid,
+  `insertBy, `messageBoundedOperationProjectionValid, `nonempty, `operationControlPlaces,
+  `operationControlPlacesShareOwner, `operationOutputs, `orderedBy, `parallelMultiInstanceControllersOrdered,
+  `parallelMultiInstanceProgramBindingsValid, `programWellFormed, `projectOpenFlowNodeOccurrences?,
+  `runtimeStateIdentityBound, `sequentialMultiInstanceControllerProgramBindingsValid,
+  `sequentialMultiInstanceOperationBindingComplete, `sequentialMultiInstanceProgramBindingsValid,
+  `sequentialScopeStateValid, `sortBy, `sortFlowNodeOccurrenceStarts, `transactionChildOwner,
+  `transactionEnteredState, `transactionInitiatedState, `transactionRootStartState, `transactionSplitState,
+  `uniqueControlPlace?, `uniqueDefinitionScope?, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

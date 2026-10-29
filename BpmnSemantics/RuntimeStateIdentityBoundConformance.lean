@@ -10,7 +10,7 @@ counter entry that bounds one live occurrence from the reachable interrupting bo
 The absent key reads as zero, so the corresponding live activation at one must be refused.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.RuntimeStateIdentityBoundConformance
 

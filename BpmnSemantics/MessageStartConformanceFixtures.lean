@@ -9,7 +9,7 @@ public import BpmnSemantics.SemanticProcess.TopologyFixtures
 This module owns the exact standards-only Message Start fixture shared by the independently elaborated admission, closure, identity-refusal, and scenario-ordering proof modules.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.MessageStartConformance
 

@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction cancellation and the compensation join
 
@@ -9,7 +10,7 @@ TXC-CANCEL-01 selects retained completed work before regional cleanup. The selec
 while compensation runs; TXC-JOIN-01 releases the direct-parent Cancel route only after quiescence.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -76,6 +77,8 @@ inductive TransactionCancellationJoin (before : RuntimeState) (owner : ScopeOccu
           compensationActivityRetentions := before.compensationActivityRetentions.filter
             (fun retention => retention.owner != owner)
           tokens := addToken before.tokens output parent }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`finishTransactionCancellation?]
 
 theorem finishTransactionCancellation_sound (before after : RuntimeState)
     (owner : ScopeOccurrenceId) (output : ControlPlaceId)
@@ -150,6 +153,8 @@ inductive CompensationCompletionRouting (program : Program) (before : RuntimeSta
         [.cancelTransaction id origin scope input output boundary])
       (joined : TransactionCancellationJoin before trigger.owner trigger.output after) :
       CompensationCompletionRouting program before trigger after
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`compensationCompletionRoute?]
 
 theorem compensationCompletionRoute_sound (program : Program) (before after : RuntimeState)
     (trigger : CompensationTriggerExecution)

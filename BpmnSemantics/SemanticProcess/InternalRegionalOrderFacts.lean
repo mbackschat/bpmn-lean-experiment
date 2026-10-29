@@ -3,13 +3,21 @@ module
 public import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.InclusiveGateway
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Regional removal order facts
 
 Filtering changes adjacency, so the regional removal account needs composition of non-inversion for every retained collection comparator.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`orderedBy, `parallelMultiInstanceControllersOrdered]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

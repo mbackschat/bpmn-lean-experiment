@@ -12,11 +12,29 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 import BpmnSemantics.SemanticProcess.InternalTimerTaskLocalControl
 import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalRetention
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The finite dispatcher consumes the complete Timer-task pair laws for every prepared family.
 No family is admitted through a weaker pair-specific preparation or successor premise. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeContract.operation,
+  `InternalCommutation.InternalMessageTaskContract.operation,
+  `InternalCommutation.InternalTimerTaskContract.operation, `InternalCommutation.PreparedInternalTransition.apply,
+  `repeatableSubscriptionBoundaryOperation]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

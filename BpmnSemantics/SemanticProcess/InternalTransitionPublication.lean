@@ -2,10 +2,11 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete prepared templates and accepted batch execution follow the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -45,6 +46,8 @@ def preparedTransitionPublicationTemplate? (program : Program) (state : RuntimeS
   | .regional prepared => some (internalRegionalPublicationTemplate prepared)
   | .ordinaryEnd prepared => some (internalEndPublicationTemplate prepared)
   | .mergeInput prepared => some (internalMergePublicationTemplate prepared)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`preparedTransitionPublicationTemplate?]
 
 /-- A raw bounded-child constructor cannot publish metadata from a different operation. -/
 theorem bounded_scope_template_refuses_operation_mismatch (program : Program) (state : RuntimeState)

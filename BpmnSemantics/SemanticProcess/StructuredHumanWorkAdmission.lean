@@ -10,7 +10,7 @@ End branches required by the structured Human Work profile. It excludes Product 
 content, which have no semantic authority.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

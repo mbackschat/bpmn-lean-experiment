@@ -11,7 +11,7 @@ the one fact the refusal names, is admitted. Each refusal is its own check. The 
 [repeated, nested and concurrent Calls specification](../docs/capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md#separating-witnesses).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.RepeatedNestedConcurrentCallsConformance
 

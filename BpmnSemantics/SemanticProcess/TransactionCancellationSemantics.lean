@@ -2,6 +2,11 @@ module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCancellation
 public import BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction cancellation relations
 
@@ -10,7 +15,11 @@ an empty cancellation join from a capacity-checked handler frontier; TXC-FAIL-01
 whole-Process failure disposition rather than asserting a regional frame for failure.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attemptTransactionCancellation, `cancelScopeSubtree,
+  `clearClaimedActivityRecords, `compensationTriggerProgramRejected, `constructCompensationTriggerFrontier,
+  `selectedCompensationSubjects?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -248,7 +257,7 @@ theorem transaction_cancellation_empty_joins_parent
 theorem transaction_selected_subjects_ignore_live_waits (program : Program)
     (state : RuntimeState) (owner : ScopeOccurrenceId) (waits : List UserTaskWait) :
     selectedCompensationSubjects? program owner { state with waits } =
-      selectedCompensationSubjects? program owner state := rfl
+      selectedCompensationSubjects? program owner state := (rfl)
 
 /-- A disjoint owner's records cannot enter or remove the selected owner's compensation sources. -/
 theorem transaction_selected_subjects_exact_owner_frame (program : Program)

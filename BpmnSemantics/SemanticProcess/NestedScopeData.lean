@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.ScopeVariableData
 public import BpmnSemantics.SemanticProcess.EffectDataMapping
+import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Nested embedded scope data
 
@@ -17,7 +19,9 @@ Two live occurrences of one definition are two owners, so a sibling's frame is n
 Every operation depends only on the Program, the live occurrences and `ScopedVariables`.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectMappingValuePolicy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -27,6 +31,8 @@ open BpmnSemantics
 the same occurrence chain; every value check takes that Program's effect policy. -/
 def nestedScopeDataProgram (program : Program) : Bool :=
   program.identity.semanticProfile == nestedScopeDataProfileId || embeddedScopeDataBearing program
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`nestedScopeDataProgram]
 
 theorem nestedScopeDataProgram_of_profile_value {program : Program} {value : String}
     (selected : program.identity.semanticProfile.value = value)

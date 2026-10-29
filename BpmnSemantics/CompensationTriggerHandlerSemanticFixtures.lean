@@ -13,7 +13,7 @@ public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 
 /-! # Shared compensation trigger and handler semantic fixtures -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 

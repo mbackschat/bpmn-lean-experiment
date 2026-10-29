@@ -7,6 +7,15 @@ import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance progress runtime-state preservation
 
@@ -19,7 +28,18 @@ Scope boundary: the `.progresses` completion arm only. Terminal closure, Timer i
 evaluator lifting, host behavior, and any change to the semantic account remain downstream.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityBodyParallelTasks?,
+  `activityBodyTaskClaims, `activityIdentitiesUnique, `activityRecordsOwnLiveWork, `attachedMessagesUnambiguous,
+  `attachedTimersUnambiguous, `canonicalCollectionOrder, `completeParallelSlot, `controllerIdentitiesUnique,
+  `controllersNotExhausted, `controllersOwnLiveActivity, `effectIncidentAssociationValid,
+  `effectIncidentAssociationsValid, `effectWaitOwnerAssociationValid, `eventRaceAssociationsValid,
+  `exactLiveOccurrence, `hiddenRecordDeclarationsValid, `insertParallelMultiInstanceController,
+  `parallelMultiInstanceControllersOrdered, `parallelWaitTaskId, `pendingParallelTaskIds, `removeParallelChildWaits,
+  `removeParallelController, `replaceParallelRecordBody, `replacePendingParallelSlot, `runtimeStateIdentityBound,
+  `runtimeStateWellFormed, `sameActivityOccurrence, `taskIdNamesWait, `userTaskWaitKeyMatches, `waitDeclarationsValid,
+  `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Policy-parameterized effect input mapping
 
@@ -10,7 +12,9 @@ theorem pins the `scalar` arm to that definition, so the legacy names and statem
 scalar specialization without rewriting the proofs that unfold them.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.EffectMappingValuePolicy #[`admits]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -68,6 +72,9 @@ def evaluateEnclosingInputMappingsUnder (policy : EffectMappingValuePolicy)
     (bindings : List VariableBinding) (mappings : List VariableMapping) :
     Option (List VariableBinding) :=
   evaluateInputMappingsUnder? policy (enclosingVariableUnder? policy bindings) mappings
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`evaluateInputMappingsInOrderUnder,
+  `inputSnapshotMatchesUnder, `orderedInputSnapshotMatchesUnder]
 
 /-! The `scalar` arm is the legacy definition. -/
 

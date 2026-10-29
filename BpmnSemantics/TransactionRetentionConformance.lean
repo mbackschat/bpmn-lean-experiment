@@ -11,7 +11,7 @@ root completion-fact contract. These fixtures check those boundaries without cla
 or a complete cancellation run.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.TransactionRetentionConformance
 

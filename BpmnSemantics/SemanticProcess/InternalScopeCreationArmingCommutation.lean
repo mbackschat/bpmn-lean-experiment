@@ -4,12 +4,22 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.TokenOrder
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact mixed scope/arming commutation uses the distinct consumed and created owners required
 by the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalScopeCreationSelection.apply,
+  `PreparedInternalArming.scopeFramePatch, `applyInternalArmingPatch]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

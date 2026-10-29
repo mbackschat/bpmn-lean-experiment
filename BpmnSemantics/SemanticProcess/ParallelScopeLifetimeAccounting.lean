@@ -5,6 +5,41 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual parallel body retirement accounting
 
@@ -13,7 +48,18 @@ occurrences. The scope census is a decreasing resource independently of token
 credit; this law does not assert whole-command phase correspondence or progress.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalOccurrencePatch.apply, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalOccurrenceBatch?, `InternalCommutation.applyInternalOperationOccurrence?,
+  `InternalCommutation.occurrenceCounterRowsValid, `InternalCommutation.occurrenceReservationStateValid,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
+  `InternalCommutation.prepareInternalOccurrenceBatch?, `ParallelScopeCommand.stimulusAdmitted,
+  `ParallelScopeReplay.ReservedArmWriteShape, `ParallelScopeReplay.bodyTransition,
+  `ParallelScopeReplay.waitCompletionStimulus, `ParallelScopeStart.analyzeProgram,
+  `ParallelScopeStart.programSelected, `SemanticOperation.kind, `admitStimulus, `cancelScopeSubtree,
+  `completeParallelScopeEffect?, `completeSelectedScope?, `completeSerialEffect?, `issueParallelBodies?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -107,6 +153,8 @@ namespace ParallelScopeReplay
 def retirementCharge : CommittedTransition → Nat
   | .externalStimulus _ => 0
   | .internalOperation record => if record.operationKind == .completeParallelMultiInstanceScope then 1 else 0
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeReplay #[`retirementCharge]
 
 private theorem human_scope_frame (program : Program) (before after : RuntimeState)
     (id : UserTaskInstanceId) (values : List VariableBinding)

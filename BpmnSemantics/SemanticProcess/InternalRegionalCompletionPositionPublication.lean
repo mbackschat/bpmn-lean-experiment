@@ -8,12 +8,21 @@ import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.ScopePositionInsertion
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Completion publication follows the actual root or child update, including bounded withdrawal.
 Root quiescence establishes empty tokens before terminal cleanup; child completion adds one unit.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalPositionDelta?,
+  `controlPositionDelta?, `fire?, `flowNodeOccurrenceProgramValidity, `projectControlPosition?, `projectScopes,
+  `projectTokens, `scopeDifference, `tokenDifference]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

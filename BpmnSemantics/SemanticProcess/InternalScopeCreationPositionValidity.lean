@@ -12,12 +12,19 @@ import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 import BpmnSemantics.SemanticProcess.ScopeCreationCallAssociations
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.CallActivityIdentity
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Runtime-position preservation for complete scope-creation preparations under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.internalScopeCreationDefinitionMatches, `exactLiveOccurrence, `uniqueDefinitionScope?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -74,6 +81,8 @@ def PositionFacts (program : Program) (expected hosting : SemanticId)
   (∀ occurrence ∈ state.scopeOccurrences, exactLiveOccurrence state occurrence.id = true ∧
     ScopeFacts program hosting state occurrence) ∧
   ∀ token ∈ state.tokens, TokenFacts program state token
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`Called, `Hosting]
 
 /-- The checked view is shared by population creation, whose successive siblings
 must retain the same runtime validator as ordinary child creation. -/

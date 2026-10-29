@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.EventBasedGateway
 This module owns direct Message-subscription correlation, committed delivery, its declarative external transition relation, and the executable soundness bridge. Message activation remains an internal Semantic Process operation owned by `Transition`; command closure and scenario projection remain separate.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

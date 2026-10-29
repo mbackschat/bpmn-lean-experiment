@@ -4,6 +4,9 @@ public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.ScopeCreationCallAssociations
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Admission facts for scope creation
 
@@ -11,7 +14,10 @@ The Call association invariant requires distinct caller and called definitions. 
 admission account supplies that fact; local preparation alone does not establish it.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.makeInternalScopeCreationPreparation,
+  `processRootWithin, `programWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

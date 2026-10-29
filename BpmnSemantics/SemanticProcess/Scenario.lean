@@ -10,7 +10,7 @@ public import BpmnSemantics.SemanticProcess.SequentialScopeObservation
 This module owns stable-state projection and answer-free scenario execution over the pure stimulus boundary. Pure admission is owned by [ScenarioAdmission](ScenarioAdmission.lean); lowering, transition meaning and capsule fixtures remain separate.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -10,7 +10,7 @@ state and insertion stay in `CompensationActivityRetention` so aggregate Program
 on this module without creating a Program-to-runtime import cycle.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,9 +1,10 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Regional continuation admission
 
@@ -12,7 +13,9 @@ bindings required by the raw Return preservation theorem. A selected runtime Cal
 cannot justify the continuation's definition-scope owner.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`programWellFormed, `runtimePositionValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

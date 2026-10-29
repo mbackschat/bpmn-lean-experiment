@@ -5,7 +5,6 @@ import BpmnSemantics.SemanticProcess.CallStorageOrder
 import BpmnSemantics.SemanticProcess.ScopeCreationCompensationValidity
 import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
@@ -18,12 +17,32 @@ import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.TransactionScopeCreationDomain
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Aggregate validity of actual scope creation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.internalScopeCreationDefinitionMatches, `canonicalCollectionOrder,
+  `compensationEventSubProcessSnapshotScopeLifecycleWellFormed, `compensationEventSubProcessSnapshotStateValid,
+  `effectIncidentAssociationValid, `enteredChildScopeId?, `exactLiveOccurrence, `messageWaitDeclarationKey,
+  `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `parallelMultiInstanceExactEntry,
+  `parallelMultiInstanceOperationWellFormed, `runtimeStateWellFormed, `scopedOwnershipComplete,
+  `sequentialScopeCollection?, `sequentialScopeEntry?, `sequentialScopeOperationsPaired, `sequentialScopeStateValid,
+  `timerWaitDeclarationKey, `userTaskWaitDeclarationKey, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

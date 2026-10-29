@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
 
 /-! Exact private choice identities are decoded separately from execution and publication. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

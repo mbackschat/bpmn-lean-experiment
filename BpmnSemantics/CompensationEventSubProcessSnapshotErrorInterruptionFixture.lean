@@ -7,7 +7,7 @@ public import BpmnSemantics.SubProcessErrorPropagationConformance
 
 /-! # Compensation Event Sub-Process snapshot Error interruption fixture -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
 

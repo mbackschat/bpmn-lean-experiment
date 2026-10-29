@@ -7,7 +7,7 @@ public import BpmnSemantics.CheckedProcessContract
 This module owns the shared identifier mapping from checked BPMN nodes and Sequence Flows to Semantic Process operations and control places.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

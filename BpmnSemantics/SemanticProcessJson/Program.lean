@@ -10,7 +10,7 @@ public import BpmnSemantics.SemanticProcessJson.CompensationTriggerHandler
 Owns one public contract: the executable program the semantic core evaluates. Decoding establishes
 neither structural validity, profile capability, nor equality with checked-process lowering. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

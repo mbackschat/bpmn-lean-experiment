@@ -3,13 +3,19 @@ module
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.EffectDataMapping
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence Effect Program validity
 
 This module owns immutable-Program correspondence for Effect waits and incidents together with the private exact bijection between Effect occurrences and Effect-owned local variable scopes. It does not define Effect execution or incident transitions.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+  `effectWaitDeclarers, `flowNodeOccurrenceOwnerLiveUnique, `operationControlPlaces,
+  `operationControlPlacesShareOwner, `operationOutputs]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -49,6 +55,9 @@ def flowNodeOccurrenceEffectProgramValidity (program : Program) (state : Runtime
   state.effectWaits.all (effectWaitValid program state) &&
     state.effectIncidents.all (fun incident => effectWaitValid program state incident.wait) &&
     effectLocalScopesExact state
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectLocalScopesExact, `effectWaitValid,
+  `flowNodeOccurrenceEffectProgramValidity]
 
 /-- Stored Service output mappings come from the owned declaration; completion cannot invent write targets. -/
 theorem flowNodeOccurrenceEffectProgramValidity_declaration (program : Program)
@@ -371,9 +380,6 @@ theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : 
       _ = 1 := by simpa [effectWaitDeclarers] using congrArg List.length declarers
   have newValid : effectWaitValid program after wait = true := by
     simp_all [effectWaitValid, occurrenceOwnerValid, flowNodeOccurrenceOwnerLiveUnique, after]
-    -- `exact`: the remaining count carries the definition's matcher and `operationCount` this proof's
-    -- private one (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
-    exact operationCount
   simp only [flowNodeOccurrenceEffectProgramValidity, Bool.and_eq_true] at prior ⊢
   obtain ⟨⟨waits, incidents⟩, localScopes⟩ := prior
   have waitsAfter : after.effectWaits.all (effectWaitValid program after) = true := by

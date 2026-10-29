@@ -30,12 +30,39 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutatio
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalRetention
 import BpmnSemantics.SemanticProcess.InternalArmingBatch
 import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalMergeCommutation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalTransitionPreservation
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete mixed preparations lift to arbitrary finite prefixes and multiplicity-preserving
 permutations under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.PreparedInternalTransition.Prepared,
+  `InternalCommutation.PreparedInternalTransition.apply,
+  `InternalCommutation.PreparedInternalTransition.stateFootprint, `InternalCommutation.applyInternalTransitionBatch,
+  `InternalCommutation.internalEndStateFootprint, `InternalCommutation.internalScopeCreationStateFootprint,
+  `InternalCommutation.liftRegionalStateAtom, `InternalCommutation.makeInternalEndPreparation,
+  `InternalCommutation.makeInternalMessageTaskPatch, `InternalCommutation.messageTaskStateFootprint,
+  `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.timerTaskStateFootprint,
+  `canonicalStateAtomSet, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -663,6 +690,9 @@ def fireInternalAlternativeBatch? (program : Program) (state : RuntimeState) :
   | (operation, alternative) :: tail => do
       let next ← fireInternalAlternative? program state operation alternative
       fireInternalAlternativeBatch? program next tail
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`fireInternalAlternativeBatch?,
+  `fireInternalTransitionBatch?, `runPreparedTransitionBatch?]
 
 theorem fireInternalAlternativeBatch_operations (program : Program) (state : RuntimeState)
     (operations : List SemanticOperation) :

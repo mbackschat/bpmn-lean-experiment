@@ -12,10 +12,14 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 public import BpmnSemantics.SemanticProcess.PortableHandoffAdmission
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Declaration-bound Start binding policy shared by raw command dispatch and private capacity admission. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeStart #[`programSelected]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.CommandStartBindings
 
@@ -95,6 +99,8 @@ def admitted (program : Program) (instanceId : SemanticId) (bindings : List Vari
   else if program.identity.semanticProfile = activityDataInputOutputUserTaskProfileId then
     dataInputOutputStartBindingsAdmitted program bindings
   else processDataBindingsAdmitted program.identity.semanticProfile .processStart bindings
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.CommandStartBindings #[`admitted]
 
 @[simp] theorem admitted_structuredComposition (program : Program) (instanceId : SemanticId)
     (bindings : List VariableBinding)

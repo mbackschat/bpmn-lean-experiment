@@ -5,12 +5,19 @@ import BpmnSemantics.SemanticProcess.InternalTransitionPublicationOrder
 public import BpmnSemantics.SemanticProcess.InternalTransitionBatch
 import BpmnSemantics.SemanticProcess.InternalPreparedTransitionLaws
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalTransitionBatch
+import all BpmnSemantics.SemanticProcess.InternalTransitionPreservation
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublication
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual finite mixed publication uses ranks of complete predecessor templates under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`acceptedPreparedTransitionBatch?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

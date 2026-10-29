@@ -1,12 +1,15 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.MonitoredScope
 
 /-! ADINPUT-SCOPE-01 and ADIO-SCOPE-01 require retained Activity-local data to keep its exact
 live Activity owner. This private preparation condition leaves the global Effect-only predicate
 and the raw regional cleanup operations unchanged. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -60,12 +63,12 @@ theorem regionalLocalData_complete_retains (state : RuntimeState)
     (operation : SemanticOperation) (root : RuntimeScopeOccurrence)
     (withdrawal : InternalCompletionWithdrawal) (scope : ActivityVariableScope) :
     regionalSelectionLocalDataRetention state
-      { operation, root, kind := .completing withdrawal } scope = true := rfl
+      { operation, root, kind := .completing withdrawal } scope = true := (rfl)
 
 theorem regionalLocalData_call_fields (state : RuntimeState) (operation : SemanticOperation)
     (root : RuntimeScopeOccurrence) (record : CalledProcessOccurrence) :
     (removeCalledProcessTree state record).variables.activities = state.variables.activities.filter
-      (regionalSelectionLocalDataRetention state { operation, root, kind := .returning record }) := rfl
+      (regionalSelectionLocalDataRetention state { operation, root, kind := .returning record }) := (rfl)
 
 theorem regionalLocalData_cancellation_fields (state : RuntimeState) (operation : SemanticOperation)
     (root : RuntimeScopeOccurrence) (parent : ScopeOccurrenceId) :

@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 Retention and snapshot record and byte limits remain four separately reduced binding obligations.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

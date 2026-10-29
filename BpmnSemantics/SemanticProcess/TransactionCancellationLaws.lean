@@ -5,7 +5,7 @@ import BpmnSemantics.SemanticProcess.TokenStorage
 
 /-! Transaction cancellation emits one parent continuation without emitting the normal output. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

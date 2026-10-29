@@ -7,6 +7,20 @@ import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeParentAccounting
 import BpmnSemantics.SemanticProcess.TokenStorage
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parent-spine continuation credit
 
@@ -16,7 +30,15 @@ root completion. Each step takes an explicit cursor and its matching source
 operation; the laws preserve token and blocked-wait credit together.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalOperationOccurrence?, `ParallelScopeReplay.bodyTransition,
+  `ParallelScopeReplay.waitCompletionStimulus, `ParallelScopeStart.ParentSpineStep,
+  `ParallelScopeStart.programSelected, `SemanticOperation.kind, `SequentialScopeControl.inputs, `bodyConsumedPorts,
+  `bodyProducedPorts, `completeParallelScope?, `completeQuiescentScope?, `completeScopeState?,
+  `completeSelectedScope?, `continuationMarking, `ownedPortCount, `parallelScopeBinding?, `parentContinuationMarking,
+  `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

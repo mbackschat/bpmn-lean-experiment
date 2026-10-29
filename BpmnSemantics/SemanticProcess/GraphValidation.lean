@@ -7,13 +7,20 @@ public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.OperationControlPlaces
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.CallActivityAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Fuel-bounded graph validation
 
 This module owns small executable graph predicates shared by checked-source proof experiments and standalone Semantic Process validation. Production validators derive fuel from the finite admitted vertex set; discriminating witnesses may deliberately underfuel a search. Graph search never participates in a semantic transition.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`operationControlPlaces, `operationControlPlacesShareOwner,
+  `operationInputPlaces, `operationOutputs]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -272,6 +279,9 @@ def programResumptionCutEdges (program : Program)
     (edges : List (GraphEdge OperationId)) : List (GraphEdge OperationId) :=
   edges.filter fun edge => !programEdgeIsResumptionContinuation program edge
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`placesOwnedBy, `programResumptionCutEdges,
+  `scopedOwnershipComplete]
+
 theorem directed_path_survives_program_resumption_cut
     (program : Program) (fullEdges : List (GraphEdge OperationId))
     (vertices : List OperationId)
@@ -279,8 +289,8 @@ theorem directed_path_survives_program_resumption_cut
     (avoids : ∀ edge ∈ directedPathEdges vertices,
       programEdgeIsResumptionContinuation program edge = false) :
     DirectedPath (programResumptionCutEdges program fullEdges) vertices := by
-  intro edge edgeOnPath
-  have fullMember := path edge edgeOnPath
+  refine directed_path_iff.mpr fun edge edgeOnPath => ?_
+  have fullMember := directed_path_iff.mp path edge edgeOnPath
   have retained := avoids edge edgeOnPath
   simp [programResumptionCutEdges, fullMember, retained]
 
@@ -291,8 +301,8 @@ theorem directed_cycle_survives_program_resumption_cut
     (avoids : ∀ edge ∈ directedPathEdges vertices,
       programEdgeIsResumptionContinuation program edge = false) :
     DirectedCycle (programResumptionCutEdges program fullEdges) vertices := by
-  obtain ⟨start, middle, shape, path⟩ := cycle
-  exact ⟨start, middle, shape,
+  obtain ⟨start, middle, shape, path⟩ := directed_cycle_iff.mp cycle
+  exact directed_cycle_iff.mpr ⟨start, middle, shape,
     directed_path_survives_program_resumption_cut program fullEdges vertices
       path avoids⟩
 
@@ -384,6 +394,8 @@ def programGraphWellFormedWithScopeLifecycle (program : Program)
             programGraphPolicyValid program (programOrderEdges program) fuel
       | none => false
   | _ => false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`parallelMultiInstancePairsShareScope]
 
 /-- Without invocations, the producer census is the single-producer rule: a shared producer must be an
 invocation (CALLN-ADMIT-01). -/

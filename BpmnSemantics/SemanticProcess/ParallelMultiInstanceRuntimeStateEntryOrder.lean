@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.RuntimeState
 This module isolates the Activity-occurrence comparator fact used by nonempty shared entry preservation so that the preservation owner retains reviewable growth headroom.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

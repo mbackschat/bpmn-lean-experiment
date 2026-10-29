@@ -18,12 +18,51 @@ import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleValidity
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The bounded Sub-Process adds one public scope anchor. Its joined deadline remains private,
 while fresh child and Activity identities preserve every existing Timer classification.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.boundaryTimerOperationMatches,
+  `FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+  `InternalCommutation.InternalBoundedScopeContract.entryOperation,
+  `InternalCommutation.InternalBoundedScopeContract.operation,
+  `InternalCommutation.InternalBoundedScopeSelection.apply, `InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.boundedScopeJointResourcesAvailable,
+  `InternalCommutation.internalScopeCreationDefinitionMatches,
+  `InternalCommutation.makeInternalBoundedScopePreparation, `InternalCommutation.makeInternalBoundedScopeSelection,
+  `InternalCommutation.regionalActivityAssociationsConflict, `InternalCommutation.timerWaitOccurrence,
+  `InternalCommutation.uniqueFamilyDeclarer?, `activityBodyScope?, `activityBodyScopeClaims, `anyTimerIdNamesWait,
+  `enteredChildScopeId?, `exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity,
+  `flowNodeOccurrenceWaitProgramValidity, `messageBoundedOperationProjectionValid, `projectOpenFlowNodeOccurrences?,
+  `recordAttaches, `runningInstance?, `runtimeStateWellFormed, `timerIdNamesWait, `timerWaitDeclarers,
+  `timerWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

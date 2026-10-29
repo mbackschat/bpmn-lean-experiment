@@ -9,7 +9,7 @@ The two definition-scope IDs deliberately collide with a Multi-Instance task ele
 and after the child respectively. These are constructed Programs, not public admission witnesses.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.BoundedScopeActivityIdentityConformance
 

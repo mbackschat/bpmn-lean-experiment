@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! CEA-OCCUR-01 and CEA-QUIESCE-01: the scope operations of a merge target, which alone take the
 occurrence-addressed path in the embedded completion profile. The entry is the `enterScope` fed by a
@@ -10,7 +11,7 @@ arm. Every other scope
 operation keeps its definition-addressed path and its prepared batches. The predicate is Program-static,
 so a Program without a merge region keeps its exact execution. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -29,6 +30,8 @@ def isMergeTargetOperation (program : Program) (operation : SemanticOperation) :
           | .enterScope _ _ _ _ childScopeId => childScopeId == scopeId
           | _ => false
     | _ => false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`isMergeTargetOperation]
 
 /-- Every other profile keeps its definition-addressed execution, so consumers of the shared frontier, replay
 and relation reduce the merge-target branches away without unfolding the predicate; as a simp lemma it

@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Exact parent ancestry
 
@@ -9,7 +11,10 @@ The unchanged parent walker reaches the least directed parent closure. Its popul
 derived from strict growth of reached live IDs, so cycles require no acyclicity assumption.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`occurrenceInSubtree, `occurrenceInSubtreeWithin,
+  `occurrenceParent?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -10,7 +10,7 @@ import BpmnSemantics.SemanticProcess.CallActivity
 the [Call Activity account](../docs/capsules/CALL-ACTIVITY-SPEC.md).
 -/
 
-@[expose] public section
+public section
 
 set_option Elab.async false
 

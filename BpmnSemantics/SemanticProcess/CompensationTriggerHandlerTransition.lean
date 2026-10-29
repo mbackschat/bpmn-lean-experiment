@@ -1,10 +1,11 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFrontier
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation trigger construction -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -536,6 +537,9 @@ inductive CompensationTriggerRefusalStep (program : Program)
           effectActivations := activated.effectActivations })
       (rejected : compensationTriggerHandlerStateValid program after = false) :
       CompensationTriggerRefusalStep program operation before .invalidState
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attemptCompensationTrigger,
+  `compensationTriggerProgramRejected, `constructCompensationTriggerFrontier]
 
 theorem attemptCompensationTrigger_sound (program : Program)
     (operation : SemanticOperation) (before after : RuntimeState)

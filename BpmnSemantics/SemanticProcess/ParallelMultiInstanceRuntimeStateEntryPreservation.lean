@@ -15,6 +15,29 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservati
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance shared runtime-state entry preservation
 
@@ -22,7 +45,18 @@ This module owns nonempty insertion and complete shared entry-step preservation.
 corollary and closing preservation remain downstream and are not imported here.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityBodyParallelTasks?,
+  `activityIdentitiesUnique, `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `anyTimerIdNamesWait,
+  `attachedMessagesUnambiguous, `attachedTimersUnambiguous, `canonicalCollectionOrder, `controllerIdentitiesUnique,
+  `controllersNotExhausted, `controllersOwnLiveActivity, `declaredByExactlyOneOwnedOperation,
+  `eventRaceAssociationsValid, `exactLiveOccurrence, `hiddenRecordDeclarationsValid,
+  `insertParallelMultiInstanceController, `occursOnce, `parallelControllerNamesIdentity, `parallelEntryChildWait,
+  `parallelEntryWaitTaskId, `parallelMultiInstanceControllersOrdered, `parallelMultiInstanceRuntimeWellFormed,
+  `parallelSlotIdentityValid, `pendingParallelSlots, `runtimeStateIdentityBound, `runtimeStateWellFormed,
+  `sameActivityOccurrence, `timerIdNamesWait, `timerWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique,
+  `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

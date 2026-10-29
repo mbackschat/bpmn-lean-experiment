@@ -9,7 +9,7 @@ public import Lean.Data.Json.Printer
 This module independently parses and evaluates the project-owned Simple Boolean v1 language used by condition-bearing BPMN elements. The language is deliberately smaller than XPath or JUEL and consumes only complete Process-scope string/null bindings.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

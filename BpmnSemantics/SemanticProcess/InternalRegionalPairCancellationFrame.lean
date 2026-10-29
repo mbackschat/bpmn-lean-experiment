@@ -12,10 +12,19 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPreparationLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlPairPublication
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Cancellation removes derived Activity, effect, and incident populations, so pair commutation needs their exact predecessor lists rather than only disjoint root IDs. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`fire?, `runtimeStateWellFormed, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -126,7 +135,7 @@ theorem preparedRegional_cancellation_triggers_empty (program : Program) [Interr
       have empty := (terminate_compensation_execution_empty program state id origin input definition member snapshots
         (Bool.and_eq_true_iff.mp retention).1 execution).1
       simp [empty]
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       haveI := InterruptionInvocationsRooted.declared program _
         (prepareInternalRegional_operation_declared program state _ prepared found) rfl
       haveI := CallersParentless.of_rooted program state hosting hosting position running

@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.ValueDomain
 
 /-! # Exact Compensation source-checkpoint admission -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

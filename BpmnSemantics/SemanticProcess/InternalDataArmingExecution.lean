@@ -7,6 +7,9 @@ import BpmnSemantics.SemanticProcess.ControlPositionDeltaProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 public import BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Data-arming execution and transition record
 
@@ -14,7 +17,10 @@ The complete predecessor preparation supplies the actual evaluator and committed
 legacy evaluator retains its existing snapshot-declaration boundary.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalDataArmingContract.operation,
+  `InternalCommutation.exactProgramSelection, `selectedOperationOwner?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -10,7 +10,7 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 /-! Private occurrence-publication agreement reads existing Program/Start wires and projects applied reservation prefixes, exact body retirements, and real command traces.
 The command witness uses the existing evaluator and publication serializer without registering a public profile. -/
 
-@[expose] public section
+public section
 
 open BpmnSemantics BpmnSemantics.SemanticProcess BpmnSemantics.SemanticProcess.InternalCommutation
 open BpmnSemantics.SemanticProcessJson Lean

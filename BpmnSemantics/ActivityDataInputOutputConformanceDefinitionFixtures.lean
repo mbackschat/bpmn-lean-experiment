@@ -10,7 +10,7 @@ import BpmnSemantics.SemanticProcess.CallActivity
 /-! Fixture definitions of [`ActivityDataInputOutputConformanceFixtures`](ActivityDataInputOutputConformanceFixtures.lean), apart from its theorems so that
 the executable closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ActivityDataInputOutputConformance
 

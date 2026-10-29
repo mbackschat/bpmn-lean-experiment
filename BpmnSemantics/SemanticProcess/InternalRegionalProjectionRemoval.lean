@@ -4,13 +4,16 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional projection removal preserves ordered multiplicity through successful optional
 projection and the lifecycle's canonical ordering. Source retention stays independent of projected
 ownership because a scope occurrence is owned by its surviving parent.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertBy, `removeEndedFlowNodeOccurrences, `sortBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

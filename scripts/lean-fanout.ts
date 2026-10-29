@@ -26,12 +26,12 @@ export function leanLibraryModules(sources: LeanSources, root: string): Set<stri
 
 /**
  * Every module whose build an edit to a module's public interface can invalidate, keyed by that module and
- * sorted by name: the static fanout that [the fanout ratchet](../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract)
+ * sorted by name: the static fanout that [the fanout ratchet](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#contract)
  * bounds.
  *
  * Lake rebuilds an importer from the artifacts of everything it loads. A module loads what it imports directly,
  * of any form, and whatever those re-export through `public import`; a private import stops there, which the
- * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-SPEC.md#mechanism-observations-lean-v4341-2026-10-23)
+ * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#mechanism-observations-lean-v4341-2026-10-23)
  * record. An `import all` or `meta import` opens the imported module's private part, so it also loads everything
  * that module loads, private imports included: a private import of the family admission module into the profile
  * registry let an interface edit rebuild the registry's ten `import all` importers (pinned container, 2026-10-26).
@@ -89,17 +89,20 @@ export function leanFanouts(sources: LeanSources): Map<string, string[]> {
  * not `import all` the module or a chain member is left alone. A `meta import` loads the compiled form of the
  * imported module's whole import closure, and a plain file loads every module of its import closure whole, so each
  * of them that reaches the module rebuilds too (the
- * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-SPEC.md#mechanism-observations-lean-v4341-2026-10-23)).
+ * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#mechanism-observations-lean-v4341-2026-10-23)).
  *
  * An `import all` importer that rewrites with one of the module's hidden definitions (`simp [f]`, `rw [f]` and
  * their siblings, or a named `f.eq_…` lemma) generates that definition's equation lemmas and exports them, so the
  * hidden body becomes part of its public interface and everything loading it rebuilds as well; `unfold f` exports
- * none. A source scan cannot see which rewrites survive elaboration, so every such rewrite counts.
+ * none. The module rewriting with its own hidden definition exports them the same way. A source scan cannot see which
+ * rewrites survive elaboration, so every such rewrite counts, unless the rewriting module declares the definition's
+ * equation lemmas privately first.
  */
 export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[]> {
   const { headers, closure } = importGraph(sources);
   const interfaceFanouts = leanFanouts(sources);
   const text = new Map(sources.map(({ path, source }) => [path.replace(/\.lean$/u, "").replaceAll("/", "."), source]));
+  const candidates = rewriteCandidateCache();
   const hiddenLoaders = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
   const plainReach = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
   for (const [importer, header] of headers) {
@@ -121,8 +124,8 @@ export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[
       }
     }
     const hidden = hiddenDefinitions(text.get(module)!);
-    for (const importer of [...rebuilt]) {
-      if (rewritesWith(text.get(importer)!, hidden)) for (const loader of interfaceFanouts.get(importer)!) rebuilt.add(loader);
+    for (const importer of [module, ...rebuilt]) {
+      if (rewritesWith(candidates(text.get(importer)!), hidden)) for (const loader of interfaceFanouts.get(importer)!) rebuilt.add(loader);
     }
     for (const importer of plainReach.get(module)!) rebuilt.add(importer);
     rebuilt.delete(module);
@@ -138,20 +141,40 @@ export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[
 function hiddenDefinitions(source: string): HiddenDefinitions {
   const names = new Set<string>();
   const recursive = new Set<string>();
-  if (!leanHeader(source).isModule) return { names, recursive };
+  const definitions = new Map<string, HiddenDefinition[]>();
+  if (!leanHeader(source).isModule) return { names, recursive, definitions };
   const lines = source.split("\n");
-  for (const declaration of declarations(source)) {
+  for (const declaration of leanDeclarations(source)) {
     if (bodyExported(declaration)) continue;
-    const { line: index, name } = declaration;
+    const { line: index, name, qualifiedName, attributes } = declaration;
     names.add(name);
+    definitions.set(name, [...definitions.get(name) ?? [], { qualifiedName, reducible: /(?<![\w])reducible\b/u.test(attributes) }]);
     const end = lines.findIndex((next, at) => at > index && /^[^\s|]/u.test(next) && !/^(?:termination_by|decreasing_by)\b/u.test(next));
     const block = lines.slice(index, end === -1 ? lines.length : end).join("\n");
     if ((block.match(nameToken(name)) ?? []).length > 1) recursive.add(name);
   }
-  return { names, recursive };
+  return { names, recursive, definitions };
 }
 
-type HiddenDefinitions = Readonly<{ names: ReadonlySet<string>; recursive: ReadonlySet<string> }>;
+type HiddenDefinition = Readonly<{ qualifiedName: string; reducible: boolean }>;
+
+/** `definitions` maps each short name to the hidden definitions carrying it. */
+type HiddenDefinitions = Readonly<{ names: ReadonlySet<string>; recursive: ReadonlySet<string>;
+  definitions: ReadonlyMap<string, ReadonlyArray<HiddenDefinition>> }>;
+
+/**
+ * The full names of the definitions whose equation lemmas a module declares as ordinary private declarations with
+ * `privateEquations` (BpmnSemantics/PrivateEquationLemmas.lean): each listed name appended to the call's scope, as the
+ * helper appends them. Lean reuses a lemma already present under its expected name (Lean/Meta/Eqns.lean:225), so a
+ * later rewrite realizes and exports none, and the helper fails when a rewrite realized one before the call.
+ */
+function privatelyDeclaredEquations(source: string): Set<string> {
+  const declared = new Set<string>();
+  for (const [, scope, list] of source.matchAll(/\bprivateEquations\s+`([^\s#]+)\s+#\[([^\]]*)\]/gu)) {
+    for (const name of list!.split(",")) declared.add(`${scope}.${name.trim().replace(/^`/u, "")}`);
+  }
+  return declared;
+}
 
 /** A whole-identifier occurrence of a short name, so `f` matches neither `f'`, `f?`, `g.f` nor `f_eq`. */
 function nameToken(name: string): RegExp {
@@ -216,17 +239,26 @@ function signatureOf(declaration: string): string {
 }
 
 /**
- * Every bracketed argument list that follows a word or a closing parenthesis, with its top-level elements: the
- * argument lists of `simp`, `rw`, `grind` and every sibling, whatever the tactic's name and wherever the list starts.
- * A list after `@` or `#` is an attribute or an array literal. Term-level lists applied to a function count too, which
- * only over-approximates.
+ * A tactic whose lemma list realizes the equation lemmas of a definition it names, with what may stand between it and
+ * the list: `?` or `!`, then `+option` flags, parenthesized configuration or discharger and `only` in Lean's order
+ * (`Init/Tactics.lean:685`) or any other, then occurrence numbers. `dsimp` is absent: it only marks a named definition
+ * to unfold (`Lean/Elab/Tactic/Simp.lean:281-282`).
  */
-function argumentLists(source: string): Array<Readonly<{ index: number; elements: string[] }>> {
-  const lists: Array<Readonly<{ index: number; elements: string[] }>> = [];
+const rewritingTactic = new RegExp(String.raw`(?<![\w.'])(simp|simp_all|simpa|simp_arith|rw|rwa|rewrite|erw|rw_mod_cast|`
+  + String.raw`nth_rewrite|nth_rw|push_cast|norm_cast|norm_num|field_simp|grind)[?!]?`
+  + String.raw`(?:\s+only|\s+[+-][\w.]+|\s*\((?:[^()]|\([^()]*\))*\))*(?:\s+\d+)*\s*$`, "u");
+
+/**
+ * Every bracketed argument list of a rewriting tactic, with its top-level elements: the lemma lists of `simp`, `rw`,
+ * `grind` and their siblings, wherever the list starts. A list a term applies a function to, such as
+ * `withHandlers [a, b]`, realizes nothing; counting those reported 450 sites in the converted tree where the leak oracle
+ * found 3 leaking definitions (2026-10-29).
+ */
+function argumentLists(source: string): Array<Readonly<{ index: number; tactic: string; elements: string[] }>> {
+  const lists: Array<Readonly<{ index: number; tactic: string; elements: string[] }>> = [];
   for (let at = source.indexOf("["); at !== -1; at = source.indexOf("[", at + 1)) {
-    if ("@#".includes(source[at - 1] ?? "")) continue;
-    const before = /(\S)\s*$/u.exec(source.slice(Math.max(0, at - 200), at))?.[1];
-    if (before === undefined || !/[\w'?!)]/u.test(before)) continue;
+    const tactic = rewritingTactic.exec(source.slice(Math.max(0, at - 200), at))?.[1];
+    if (tactic === undefined) continue;
     const elements: string[] = [];
     let depth = 0;
     let start = at + 1;
@@ -244,22 +276,46 @@ function argumentLists(source: string): Array<Readonly<{ index: number; elements
       }
     }
     elements.push(source.slice(start, close));
-    lists.push({ index: at, elements });
+    lists.push({ index: at, tactic, elements });
   }
   return lists;
 }
 
-/** Whether a source rewrites with any of `hidden` through a tactic that generates equation lemmas. */
-function rewritesWith(source: string, hidden: HiddenDefinitions): boolean {
-  return hiddenRewriteSites(source, hidden).length > 0;
+/** Whether a source's candidates rewrite with any of `hidden` through a tactic that generates equation lemmas. */
+function rewritesWith(candidates: RewriteCandidates, hidden: HiddenDefinitions): boolean {
+  return hiddenRewriteSites(candidates, hidden).length > 0;
 }
 
 /**
- * The name each rewrite with a hidden definition uses, once per occurrence: an element of an argument list, a local
- * `simp` attribute, a named `f.eq_…` or functional-induction lemma, or an `unfold` of a recursive one.
+ * What a source writes that may realize equation lemmas, whichever module's hidden definitions it turns out to name:
+ * each written name with whether `simp` or a sibling wrote it and whether its enclosing declaration binds it, in
+ * source order, then the `unfold` and induction names. `bound` is asked only of a name that denotes a hidden
+ * definition and answered once, because {@link boundIn} compiles its patterns per call.
  */
-function hiddenRewriteSites(text: string, { names, recursive }: HiddenDefinitions): string[] {
-  if (names.size === 0) return [];
+type RewriteCandidates = Readonly<{ declared: ReadonlySet<string>; prefixes: ReadonlyArray<string>;
+  realizing: ReadonlyArray<Readonly<{ written: string; bySimp: boolean; bound: () => boolean }>>;
+  unfolded: ReadonlyArray<string>; induction: ReadonlyArray<string> }>;
+
+/**
+ * {@link rewriteCandidates} cached by source text for one fan-out computation, which filters an importer's candidates
+ * once per module it opens: extracting them again per module took 255 s for the hidden-edit fan-outs of the converted
+ * tree (2026-10-29).
+ */
+function rewriteCandidateCache(): (text: string) => RewriteCandidates {
+  const cache = new Map<string, RewriteCandidates>();
+  return (text) => {
+    const cached = cache.get(text) ?? rewriteCandidates(text);
+    cache.set(text, cached);
+    return cached;
+  };
+}
+
+// A dotted name starts only after a character that cannot continue one, so a scan does not restart inside each name.
+const equationLemma = /(?<![A-Za-z0-9_'?!.])((?:[A-Za-z0-9_'?!]+\.)*[A-Za-z0-9_'?!]+)\.eq_(?:\d+|def|unfold)\b/gu;
+const inductionPrinciple = /(?<![A-Za-z0-9_'?!.])((?:[A-Za-z0-9_'?!]+\.)*[A-Za-z0-9_'?!]+)\.(?:induct|fun_cases)\b/gu;
+
+/** The {@link RewriteCandidates} of one source. */
+function rewriteCandidates(text: string): RewriteCandidates {
   const source = withoutComments(text);
   let declarations_: number[] | undefined;
   const enclosing = (at: number) => {
@@ -269,36 +325,106 @@ function hiddenRewriteSites(text: string, { names, recursive }: HiddenDefinition
   };
   // `(f ·)` and `@f` name `f` itself: simp unfolds a cdot alias (Lean/Elab/Tactic/Simp.lean:235).
   const head = (element: string) => /^[\s←↓↑=<\-(@]*([\p{L}_][\w'.?!]*)/u.exec(element)?.[1];
-  const arguments_ = argumentLists(source).flatMap(({ index, elements }) => elements.flatMap((element) => {
-    const argument = head(element);
-    return argument !== undefined && names.has(argument.split(".").at(-1)!) && !boundIn(enclosing(index), argument.split(".")[0]!)
-      ? [argument.split(".").at(-1)!] : [];
+  const unbound = () => false;
+  const arguments_ = argumentLists(source).flatMap(({ index, tactic, elements }) => elements.flatMap((element) => {
+    const written = head(element);
+    if (written === undefined) return [];
+    let bound: boolean | undefined;
+    return [{ written, bySimp: !rewritesRegardless.has(tactic),
+      bound: () => bound ??= boundIn(enclosing(index), written.split(".")[0]!) }];
   }));
   const attributed = [...source.matchAll(/^attribute\s*\[[^\]]*\bsimp\b[^\]]*\]([^\n]*)/gmu)]
-    .flatMap(([, list]) => list!.trim().split(/\s+/u).map((name) => name.split(".").at(-1)!));
-  // Functional induction principles are realized on demand like equation lemmas, so they count as well.
-  const lemmas = [...source.matchAll(/([A-Za-z0-9_'?!]+)\.(?:eq_(?:\d+|def|unfold)|induct|fun_cases)\b/gu)].map(([, name]) => name!);
-  const induction = [...source.matchAll(/\bfun_(?:induction|cases)\s+([^\s;)]+)/gu)].map(([, name]) => name!.split(".").at(-1)!);
-  const unfolded = [...source.matchAll(/\bunfold\b([^\n;)]*)/gu)]
-    .flatMap(([, list]) => list!.split(/\s+at\s+/u)[0]!.trim().split(/\s+/u).map((name) => name.split(".").at(-1)!))
-    .filter((name) => recursive.has(name));
-  return [...arguments_, ...attributed, ...lemmas, ...induction, ...unfolded].filter((name) => names.has(name));
+    .flatMap(([, list]) => list!.trim().split(/\s+/u)).map((written) => ({ written, bySimp: true, bound: unbound }));
+  const lemmas = [...source.matchAll(equationLemma)].map(([, written]) => ({ written: written!, bySimp: false, bound: unbound }));
+  return {
+    declared: privatelyDeclaredEquations(source),
+    prefixes: resolutionPrefixes(source),
+    realizing: [...arguments_, ...attributed, ...lemmas],
+    unfolded: [...source.matchAll(/\bunfold\b([^\n;)]*)/gu)].flatMap(([, list]) => list!.split(/\s+at\s+/u)[0]!.trim().split(/\s+/u)),
+    // Functional induction principles are realized on demand like equation lemmas, so they count as well.
+    induction: [
+      ...[...source.matchAll(inductionPrinciple)].map(([, name]) => name!),
+      ...[...source.matchAll(/\bfun_(?:induction|cases)\s+([^\s;)]+)/gu)].map(([, name]) => name!),
+    ],
+  };
 }
 
 /**
- * Every rewrite with a hidden definition of a module imported with `import all`, as `Module.definition` per
- * occurrence and keyed by the rewriting module, which item 2 of
- * [the build modularity specification](../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract) forbids: each one
+ * The name each rewrite with a hidden definition uses, once per occurrence: an element of an argument list, a local
+ * `simp` attribute, a named `f.eq_…` or functional-induction lemma, or an `unfold` of a recursive one. A definition
+ * whose equation lemmas the source declares privately is a site only through its functional induction principle,
+ * which `privateEquations` does not declare.
+ */
+function hiddenRewriteSites({ declared, prefixes, realizing, unfolded, induction }: RewriteCandidates,
+  { names, recursive, definitions }: HiddenDefinitions): string[] {
+  if (names.size === 0) return [];
+  // The definitions a written name can denote: those it resolves to under one of the source's namespaces.
+  const denoted = (written: string) => {
+    const rooted = written.startsWith("_root_.");
+    const path = written.replace(/^_root_\./u, "");
+    return (definitions.get(path.split(".").at(-1)!) ?? [])
+      .filter(({ qualifiedName }) => qualifiedName === path || (!rooted && prefixes.some((prefix) => qualifiedName === `${prefix}.${path}`)));
+  };
+  // A site realizes lemmas when one denoted definition lacks privately declared ones; `simp` and its siblings unfold
+  // a reducible definition without them (Lean/Meta/Tactic/Simp/SimpTheorems.lean:534).
+  const realizes = (written: string, bySimp: boolean) => denoted(written)
+    .some(({ qualifiedName, reducible }) => !declared.has(qualifiedName) && !(bySimp && reducible));
+  return [
+    ...realizing.filter(({ written, bySimp, bound }) => realizes(written, bySimp) && !bound()).map(({ written }) => written),
+    ...unfolded.filter((name) => recursive.has(name.split(".").at(-1)!) && realizes(name, false)),
+    ...induction.filter((name) => denoted(name).length > 0),
+  ].map((name) => name.split(".").at(-1)!);
+}
+
+/**
+ * The namespaces a source resolves a written name against, ignoring where each applies so that it never yields too
+ * few: every enclosing namespace and its prefixes, the namespace of every declaration's own name, every opened
+ * namespace, and every opened namespace inside an enclosing one.
+ */
+function resolutionPrefixes(source: string): string[] {
+  const enclosing = new Set<string>();
+  const scopes: string[] = [];
+  const opened: string[] = [];
+  for (const raw of source.split("\n")) {
+    const line = raw.trim();
+    const namespace = /^namespace\s+(\S+)/u.exec(line);
+    const section = /^(?:@\[[^\]]*\]\s*)?(?:(?:public|noncomputable|meta)\s+)*section(?:\s+(\S+))?\s*$/u.exec(line);
+    const end = /^end(?:\s+(\S+))?\s*$/u.exec(line);
+    if (namespace !== null) scopes.push(...namespace[1]!.split("."));
+    else if (section !== null) scopes.push(...(section[1]?.split(".") ?? [""]).map(() => ""));
+    else if (end !== null) scopes.splice(Math.max(0, scopes.length - (end[1]?.split(".").length ?? 1)));
+    const path = scopes.filter((component) => component !== "");
+    for (let length = 1; length <= path.length; length += 1) enclosing.add(path.slice(0, length).join("."));
+    const open = /^open\s+(.*?)(?:\s+in)?$/u.exec(line);
+    if (open !== null) opened.push(...open[1]!.replace(/\([^)]*\)/gu, " ").split(/\s+/u)
+      .filter((word) => /^[\p{L}_][\w.'?!]*$/u.test(word) && !["scoped", "hiding", "renaming", "in"].includes(word)));
+  }
+  for (const { qualifiedName } of leanDeclarations(source, ["theorem", "lemma", "def", "abbrev", "instance", "structure", "inductive"])) {
+    const parts = qualifiedName.split(".").slice(0, -1);
+    for (let length = 1; length <= parts.length; length += 1) enclosing.add(parts.slice(0, length).join("."));
+  }
+  return [...enclosing, ...opened, ...[...enclosing].flatMap((outer) => opened.map((name) => `${outer}.${name}`))];
+}
+
+/** The rewriting tactics that request a definition's equation lemmas even when it is reducible. */
+const rewritesRegardless = new Set(["rw", "rwa", "rewrite", "erw", "rw_mod_cast", "nth_rewrite", "nth_rw", "grind"]);
+
+/**
+ * Every rewrite with a hidden definition of a module imported with `import all`, or of the rewriting module itself, as
+ * `Module.definition` per occurrence and keyed by the rewriting module, which item 2 of
+ * [the build modularity specification](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#contract) forbids: each one
  * exports the definition's equation lemmas, so a body edit changes the rewriting module's public interface.
  */
 export function leanHiddenRewrites(sources: LeanSources): Map<string, string[]> {
   const { headers } = importGraph(sources);
   const text = new Map(sources.map(({ path, source }) => [path.replace(/\.lean$/u, "").replaceAll("/", "."), source]));
   const hidden = new Map([...headers.keys()].map((module) => [module, hiddenDefinitions(text.get(module)!)]));
+  const candidates = rewriteCandidateCache();
   const rewrites = new Map<string, string[]>();
   for (const [importer, header] of headers) {
-    const sites = header.imports.filter(({ module, importsAll }) => importsAll && headers.has(module))
-      .flatMap(({ module }) => hiddenRewriteSites(text.get(importer)!, hidden.get(module)!).map((name) => `${module}.${name}`));
+    const opened = header.imports.filter(({ module, importsAll }) => importsAll && headers.has(module)).map(({ module }) => module);
+    const sites = [importer, ...opened]
+      .flatMap((module) => hiddenRewriteSites(candidates(text.get(importer)!), hidden.get(module)!).map((name) => `${module}.${name}`));
     rewrites.set(importer, sites.sort());
   }
   return rewrites;
@@ -306,7 +432,7 @@ export function leanHiddenRewrites(sources: LeanSources): Map<string, string[]> 
 
 /**
  * Every module that an edit to one of a module's hidden definition bodies rebuilds, keyed by that module and sorted by
- * name: the cost the [build modularity specification](../docs/LEAN-BUILD-MODULARITY-SPEC.md#problem) set out to bound.
+ * name: the cost the [build modularity specification](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#problem) set out to bound.
  *
  * A body in an `@[expose]` section is part of the public interface, so in a module with such a section every body
  * edit rebuilds the whole interface fanout; otherwise a body edit rebuilds only the hidden-edit fanout. One
@@ -328,13 +454,13 @@ export function leanBodyEditFanouts(sources: LeanSources): Map<string, string[]>
 
 /**
  * The definitions each module exposes individually, keyed by module: an `@[expose]` definition, an `abbrev`, and an
- * `instance`, whose body Lean exposes unless its type is a proposition (Lean/Elab/MutualDef.lean:1349), so counting
- * every instance over-approximates. Each one's body edit rebuilds the module's whole interface fanout, so a wide
+ * `instance`, unless marked `@[no_expose]`; Lean also hides an instance whose type is a proposition
+ * (Lean/Elab/MutualDef.lean:1349), so counting every instance over-approximates. Each one's body edit rebuilds the module's whole interface fanout, so a wide
  * module names every such definition in a reviewed allowance.
  */
 export function leanExposedDefinitions(sources: LeanSources): Map<string, string[]> {
   return new Map(sources.map(({ path, source }) => {
-    const names = leanHeader(source).isModule ? declarations(source).filter((declaration) =>
+    const names = leanHeader(source).isModule ? leanDeclarations(source).filter((declaration) =>
       !declaration.isPrivate && !declaration.inExposedScope && bodyExported(declaration)).map(({ name }) => name) : [];
     return [path.replace(/\.lean$/u, "").replaceAll("/", "."), names.sort()];
   }));
@@ -342,16 +468,22 @@ export function leanExposedDefinitions(sources: LeanSources): Map<string, string
 
 /** Whether a module exposes a body through a section: a non-private definition inside an `@[expose]` section, or a plain file. */
 function exposedSectionDefinitions(source: string): boolean {
-  return !leanHeader(source).isModule || declarations(source).some(({ isPrivate, inExposedScope }) => !isPrivate && inExposedScope);
+  return !leanHeader(source).isModule || leanDeclarations(source).some(({ isPrivate, inExposedScope }) => !isPrivate && inExposedScope);
 }
 
-type Declaration = Readonly<{ line: number; keyword: string; name: string; attributes: string; isPrivate: boolean;
-  inExposedScope: boolean }>;
+/**
+ * A declaration as {@link leanDeclarations} reads it. `inPublicScope` holds inside a `public section`, where a module's
+ * declarations are public unless marked `private`; outside one a module's declarations are private by default.
+ */
+export type LeanDeclaration = Readonly<{ line: number; keyword: string; name: string; qualifiedName: string; attributes: string;
+  isPrivate: boolean; inExposedScope: boolean; inPublicScope: boolean }>;
 
-const sectionHeader = /^(@\[expose\]\s+)?(?:public\s+)?(?:noncomputable\s+)?(?:meta\s+)?section(?:\s+(\S+))?\s*$/u;
+const sectionHeader = /^(@\[expose\]\s+)?(public\s+)?(?:noncomputable\s+)?(?:meta\s+)?section(?:\s+(\S+))?\s*$/u;
 const sectionCommand = /^(?:@\[[^\]]*\]\s*|(?:public|private|protected|noncomputable|meta)\s+)*section\b/u;
 const modifier = String.raw`(?:private|protected|noncomputable|partial|public|unsafe|nonrec|meta)`;
-const declarationLine = new RegExp(String.raw`^((?:@\[[^\]]*\]\s*)*)((?:${modifier}\s+)*)(def|instance|abbrev)\b\s*(.*)$`, "u");
+const declarationLine = (keywords: ReadonlyArray<string>) =>
+  new RegExp(String.raw`^((?:@\[[^\]]*\]\s*)*)((?:${modifier}\s+)*)(${keywords.join("|")})\b\s*(.*)$`, "u");
+const definitionKeywords = ["def", "instance", "abbrev"];
 /** Attributes and modifiers with nothing after them yet, so the declaration or section continues on the next line. */
 const declarationPrefix = new RegExp(String.raw`^(?:@\[[^\]]*\]\s*)+(?:${modifier}\s*)*$|^(?:${modifier}\s*)+$`, "u");
 /** Whether an attribute list opened on this line is still unclosed. */
@@ -361,28 +493,34 @@ const openAttribute = (line: string) => /@\[[^\]]*$/u.test(line);
  * hides it, `@[expose]` exports it, and otherwise an abbrev, an instance or a def in an `@[expose]` section is exported.
  * A Prop-valued instance is hidden too, which this reading of the source cannot tell, so it counts as exported.
  */
-function bodyExported({ keyword, attributes, inExposedScope }: Declaration): boolean {
+function bodyExported({ keyword, attributes, inExposedScope }: LeanDeclaration): boolean {
   if (/\bno_expose\b/u.test(attributes)) return false;
   return /(?<![\w])expose\b/u.test(attributes) || keyword !== "def" || inExposedScope;
 }
 
 /**
- * Every `def`, `instance` and `abbrev` with its attributes, including attributes and modifiers on the lines above its
- * keyword, and whether an enclosing `@[expose]` scope covers it. Indentation is ignored, because an indented command is
- * still a command.
+ * Every declaration introduced by one of `keywords`, by default every `def`, `instance` and `abbrev`, with its
+ * attributes, including attributes and modifiers on the lines above its keyword, its full name, and whether an
+ * enclosing `@[expose]` or `public` scope covers it. Indentation is ignored, because an indented command is still a
+ * command.
  *
  * Scopes follow Lean v4.34.1: a section header is `@[expose]? public? noncomputable? meta? section name?`
  * (Lean/Parser/Command.lean:308), every `section`, `namespace` and `mutual` scope inherits its parent's attributes,
  * a dotted name opens and `end name` closes one scope per component (Lean/Elab/BuiltinCommand.lean:45-70). A line that
  * starts a section command outside that grammar throws, so a new spelling fails closed instead of reading as hidden.
  */
-function declarations(source: string): Declaration[] {
+export function leanDeclarations(source: string, keywords: ReadonlyArray<string> = definitionKeywords): LeanDeclaration[] {
   source = withoutComments(source);
-  const exposed: boolean[] = [false];
-  const open = (count: number, expose: boolean) => {
-    for (let at = 0; at < count; at += 1) exposed.push(exposed.at(-1)! || expose);
+  const startsDeclaration = declarationLine(keywords);
+  // One entry per open scope after the file's root: a namespace component, or "" for a section or mutual block.
+  const scopes: Array<Readonly<{ component: string; exposed: boolean; isPublic: boolean }>> = [];
+  const enclosing = () => scopes.at(-1) ?? { component: "", exposed: false, isPublic: false };
+  const open = (components: ReadonlyArray<string>, expose: boolean, isPublic: boolean) => {
+    for (const component of components) {
+      scopes.push({ component, exposed: enclosing().exposed || expose, isPublic: enclosing().isPublic || isPublic });
+    }
   };
-  const found: Declaration[] = [];
+  const found: LeanDeclaration[] = [];
   // Attributes and modifiers that precede their keyword on earlier lines, joined until the declaration or section.
   let pending = "";
   const lines = source.split("\n");
@@ -397,16 +535,20 @@ function declarations(source: string): Declaration[] {
     const section = sectionHeader.exec(line);
     const namespace = /^namespace\s+(\S+)\s*$/u.exec(line);
     const end = /^end(?:\s+(\S+))?\s*$/u.exec(line);
-    if (section !== null) open(section[2]?.split(".").length ?? 1, section[1] !== undefined);
+    if (section !== null) open((section[3]?.split(".") ?? [""]).map(() => ""), section[1] !== undefined, section[2] !== undefined);
     else if (sectionCommand.test(line)) throw new Error(`unrecognized section header: ${line}`);
-    else if (namespace !== null) open(namespace[1]!.split(".").length, false);
-    else if (/^mutual\s*$/u.test(line)) open(1, false);
-    else if (end !== null) exposed.splice(Math.max(1, exposed.length - (end[1]?.split(".").length ?? 1)));
-    const declaration = declarationLine.exec(line);
+    else if (namespace !== null) open(namespace[1]!.split("."), false, false);
+    else if (/^mutual\s*$/u.test(line)) open([""], false, false);
+    else if (end !== null) scopes.splice(Math.max(0, scopes.length - (end[1]?.split(".").length ?? 1)));
+    const declaration = startsDeclaration.exec(line);
     if (declaration !== null) {
       const [, attributes = "", modifiers, keyword, rest] = declaration;
-      found.push({ line: index, keyword: keyword!, name: declarationName(keyword!, declarationHeader(rest!, lines.slice(index + 1))), attributes,
-        isPrivate: /\bprivate\b/u.test(modifiers!), inExposedScope: exposed.at(-1)! });
+      const name = declarationName(keyword!, declarationHeader(rest!, lines.slice(index + 1)));
+      const written = /^([^\s:(\[{]+)/u.exec(rest!)?.[1] ?? name;
+      const qualifiedName = written.startsWith("_root_.") ? written.slice("_root_.".length)
+        : [...scopes.map(({ component }) => component).filter((component) => component !== ""), written].join(".");
+      found.push({ line: index, keyword: keyword!, name, qualifiedName, attributes,
+        isPrivate: /\bprivate\b/u.test(modifiers!), inExposedScope: enclosing().exposed, inPublicScope: enclosing().isPublic });
     }
   }
   return found;

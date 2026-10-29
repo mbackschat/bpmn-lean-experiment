@@ -4,13 +4,19 @@ public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Exact data-arming patch commutation
 
 Fixed patches share one predecessor while task and Activity issuers retain independent counters.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.makeInternalDataArmingPatch, `armingLexStep]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

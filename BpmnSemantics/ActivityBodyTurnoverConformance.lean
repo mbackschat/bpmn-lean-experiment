@@ -20,7 +20,7 @@ the Activity stay at `1`. That divergence is the whole point of the record, and 
 decided fact is what stops it from being only a described one.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ActivityBodyTurnoverConformance
 

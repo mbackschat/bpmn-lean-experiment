@@ -2,12 +2,18 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete predecessor preparations for ordinary child entry and Call invocation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalScopeCreationRetentionUnchanged,
+  `definitionScope?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -150,6 +156,9 @@ def applyPreparedInternalScopeCreation? (program : Program) (state : RuntimeStat
   if prepareInternalScopeCreation? program state prepared.selection.operation = some prepared then
     some (prepared.selection.apply state)
   else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyPreparedInternalScopeCreation?,
+  `internalScopeCreationCounterSafe, `internalScopeCreationPredecessorChecks, `internalScopeCreationTokensAvailable]
 
 theorem prepareInternalScopeCreation_facts (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)

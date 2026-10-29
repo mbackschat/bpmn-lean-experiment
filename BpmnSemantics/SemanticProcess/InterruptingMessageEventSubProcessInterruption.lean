@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.ScopeCancellation
 /-! Exact Message selection and retained-parent interruption for IMES-TRIGGER-01. Selection uses the
 predecessor; the rewrite composes regional cleanup with fresh handler creation in that order. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -9,13 +9,43 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # External completion and internal body-operation locality
 
 PMIS-DATA-01 replaces one exact live wait with a continuation token owned by the same body. These laws establish sibling quiescence preservation through external completion and the PMIS-SELECT-01 singleton body dispatcher. Reserved-batch prefixes can make a blocked owner quiescent only through a token patch at that owner; arming retains a wait blocker. Committed-state reachability and bounded closure progress are separate obligations in the capsule's reachable-retirement account.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.owner,
+  `InternalCommutation.InternalOccurrencePatch.apply, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalOperationOccurrence?, `InternalCommutation.internalOperationOccurrenceOffers?,
+  `InternalCommutation.internalOperationOccurrences?, `InternalCommutation.ordinaryExecutionFrontier,
+  `InternalCommutation.prepareReservedOccurrenceArm?, `InternalCommutation.resolveInternalOperationOccurrence?,
+  `ParallelScopeCommand.completeEffect?, `ParallelScopeCommand.completeTask?,
+  `ParallelScopeReplay.waitCompletionStimulus, `SemanticOperation.kind, `SequentialScopeControl.inputs,
+  `admitStimulus, `bodyConsumedPorts, `completeParallelScopeEffect?, `completeParallelScopeUserTask?,
+  `completeSerialEffect?, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

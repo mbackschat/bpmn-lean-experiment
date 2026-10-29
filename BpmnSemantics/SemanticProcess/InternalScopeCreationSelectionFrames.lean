@@ -4,12 +4,17 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.CallActivityLaws
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Population frames for scope creation preserve the complete definition and instance exclusions
 of the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalScopeCreationSelection.apply,
+  `selectInternalScopeCreation?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

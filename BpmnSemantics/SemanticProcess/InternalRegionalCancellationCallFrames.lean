@@ -5,12 +5,18 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! REG-OWN-FRAME-01 needs Call masks computed from the actual cancellation successor.
 Predecessor region disjointness protects both endpoints of every reachable Call edge, so the
 retained graph's own fuel computes the same forward closure without successor-validity premises. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrenceRegion.contains,
+  `InternalCommutation.scopeOwnershipGraphExact, `callReferenceRetention]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

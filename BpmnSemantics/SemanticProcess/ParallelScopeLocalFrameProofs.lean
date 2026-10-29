@@ -1,7 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Activity-local frame provenance for parallel scopes
 
@@ -10,7 +13,10 @@ PMIS execution creates only Effect-local frames; entry initializes scope data
 and retirement or completion can only remove existing local frames.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `completeSerialEffect?, `issueParallelBodies?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

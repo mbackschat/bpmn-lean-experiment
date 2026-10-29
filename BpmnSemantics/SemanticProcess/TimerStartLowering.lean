@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.LoweringIdentity
 This module owns endpoint-derived Timer Start fan-out and exact `PT1S` normalization. Checked admission establishes the selected source shape before this total projection is used.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

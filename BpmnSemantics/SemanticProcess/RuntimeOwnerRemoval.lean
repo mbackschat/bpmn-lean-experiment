@@ -10,7 +10,7 @@ rules. Event Sub-Process listeners deliberately remain outside this shared filte
 and Call removal dispose them, while the existing Compensation failure account retains them.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

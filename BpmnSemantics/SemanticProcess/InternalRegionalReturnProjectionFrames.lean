@@ -2,12 +2,17 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalCallPositionValidity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Return preserves complete lookup results for owners outside its selected Call tree.
 Incoming Call records are retained by target Process, including all matching records;
 the association invariant excludes an equal selected identity with a different target. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceOwnerLiveUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

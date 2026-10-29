@@ -9,7 +9,7 @@ import BpmnSemantics.SemanticProcess.CallActivity
 /-! Fixture definitions and executable checks of [`ActivityDataInputOutputRefusalConformance`](ActivityDataInputOutputRefusalConformance.lean), apart from its theorems so that
 the check driver's closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ActivityDataInputOutputConformance
 

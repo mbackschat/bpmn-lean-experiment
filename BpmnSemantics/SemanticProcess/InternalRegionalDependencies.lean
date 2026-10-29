@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Regional dependency atoms
 
@@ -10,7 +12,10 @@ keep additional families outside the legacy inductive. Regional preparation foll
 while retaining owner facts for legacy wait and local-data keys that do not themselves carry a scope.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.listsDisjoint,
+  `InternalCommutation.stateReadSetsDisjoint, `sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -180,6 +185,11 @@ def regionalStateAtomBefore (left right : InternalRegionalStateAtom) : Bool :=
 def canonicalRegionalStateAtoms (atoms : List InternalRegionalStateAtom) : List InternalRegionalStateAtom :=
   sortBy regionalStateAtomBefore atoms.eraseDups
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`canonicalRegionalStateAtoms,
+  `liftRegionalStateAtom, `regionalActivityAssociationsConflict, `regionalActivityTouchesLegacyAtom,
+  `regionalAtomListsDisjoint, `regionalOwnsAtom, `regionalOwnsOrdinaryAtom, `regionalStateAtomsConflict,
+  `regionalStateFootprintsIndependent]
+
 /-- Relative End increments commute, but observing the absolute total conflicts with either increment. -/
 theorem regionalEnd_increment_dependency :
     regionalStateAtomsConflict .endIncrement .endIncrement = false ∧
@@ -293,9 +303,9 @@ theorem differentActivityKeys_read_independent (left right : ActivityOccurrenceI
     stateReadSetsDisjoint [.activityOccurrence left] [.activityOccurrence right] = true := by
   simp [stateReadSetsDisjoint, listsDisjoint, different]
 theorem activityPopulation_association_conflict (record : ActivityOccurrence) :
-    regionalStateAtomsConflict (.ordinary .activityPopulation) (.activityAssociation record) = true := rfl
+    regionalStateAtomsConflict (.ordinary .activityPopulation) (.activityAssociation record) = true := (rfl)
 theorem activityAssociation_population_conflict (record : ActivityOccurrence) :
-    regionalStateAtomsConflict (.activityAssociation record) (.ordinary .activityPopulation) = true := rfl
+    regionalStateAtomsConflict (.activityAssociation record) (.ordinary .activityPopulation) = true := (rfl)
 theorem activityPopulation_region_conflict (region : InternalOccurrenceRegion) :
     regionalStateAtomsConflict (.ordinary .activityPopulation) (.occurrenceRegion region) = true := by
   simp [regionalStateAtomsConflict, regionalOwnsAtom, regionalOwnsOrdinaryAtom]

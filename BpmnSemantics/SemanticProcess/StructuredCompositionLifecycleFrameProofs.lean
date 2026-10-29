@@ -3,10 +3,24 @@ module
 public import BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
 import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-CLOSURE-01's lifecycle frame: a reached composition holds no foreign execution state and keeps its one live Process root until completion retires it, preserved through the actual operations and command admission. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredComposition.OperationAllowed,
+  `activateDataInputOutputUserTask?, `admitStimulus, `awaitUserTaskState?, `callDataRuntimeStateValid, `chooseState?,
+  `completeDataInputOutputUserTask?, `interruptingMessageEventSubProcessStateValid, `reachNoneEndState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
@@ -27,6 +41,9 @@ def RootLifecycle (state : RuntimeState) : Prop :=
 
 def LifecycleFrame (state : RuntimeState) : Prop :=
   (ForeignRuntimeEmpty state ∧ state.logicalTimeMs = 0) ∧ RootLifecycle state
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`ForeignRuntimeEmpty,
+  `LifecycleFrame, `RootLifecycle]
 
 theorem admitted_fire_preserves_lifecycle_frame
     (program : Program) (analysis : Analysis) (before after : RuntimeState) (operation : SemanticOperation)

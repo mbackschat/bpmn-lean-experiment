@@ -5,6 +5,15 @@ public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProduce
 public import BpmnSemantics.SemanticProcess.TransactionCancellationSemantics
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
 public import BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction inactive collections and live-scope control
 
@@ -16,7 +25,9 @@ assert runtime validity nor assume a successor phase; initialization and command
 own their establishment.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cancelScopeSubtree]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -28,6 +39,8 @@ def TransactionInertCollections (state : RuntimeState) : Prop :=
 
 def TransactionLiveScopeControl (state : RuntimeState) : Prop :=
   ∀ scope ∈ state.scopeOccurrences, state.control = .running scope.id.processInstanceId
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TransactionInertCollections]
 
 /-- A stale live scope cannot share a phase with a different running Process identity. -/
 theorem transaction_live_scope_rejects_foreign_instance (state : RuntimeState)

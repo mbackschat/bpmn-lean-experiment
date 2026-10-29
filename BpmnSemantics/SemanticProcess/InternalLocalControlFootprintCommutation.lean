@@ -5,13 +5,30 @@ import BpmnSemantics.SemanticProcess.InternalCommutation
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import all BpmnSemantics.SemanticProcess.InclusiveGateway
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlBranchSelection
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The five local-control families use equality-keyed state atoms. Their complete predecessor
 footprints supply the frames and unit separation required by the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalLocalControlSelection.apply,
+  `InternalCommutation.InternalLocalControlSelection.owner, `InternalCommutation.internalLocalControlExtraReads,
+  `InternalCommutation.internalLocalControlExtraWrites, `InternalCommutation.internalLocalControlStateFootprint,
+  `InternalCommutation.localControlStateFootprintsNonInterfering, `InternalCommutation.selectInternalLocalControl?,
+  `InternalCommutation.tokenPatchWriteAtoms, `InternalSelectedBranchPatch.selectionKey, `canonicalCollectionOrder,
+  `canonicalStateAtomSet]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

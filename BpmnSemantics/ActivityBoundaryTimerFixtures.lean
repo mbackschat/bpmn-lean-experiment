@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! The boundary-Timer fixture is shared by executable rejection probes and its conformance proofs. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ActivityBoundaryTimerConformance
 

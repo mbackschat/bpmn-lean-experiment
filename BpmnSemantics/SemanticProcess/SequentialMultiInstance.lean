@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Sequential Multi-Instance outer controller
 
@@ -24,7 +25,7 @@ Scope boundary: representation and its canonical order. It adds no BPMN capabili
 kind, no admission rule, and no public observation.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -56,6 +57,9 @@ below is what makes that safe, by showing the two agree on every controller the 
 account admits. -/
 def pendingItemCount (controller : SequentialMultiInstanceController) : Nat :=
   controller.snapshot.length - generatedInstanceCount controller
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completedInstanceCount, `generatedInstanceCount,
+  `pendingItemCount]
 
 /-- Planned equals pending plus generated, for a controller that still has an item to generate.
 
@@ -106,6 +110,8 @@ def activeInstanceCount (state : RuntimeState)
       | .parallelUserTasks .. => 0
       | .childScope _ | .parallelChildScopes .. => 0
   | _ => 0
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activeInstanceCount]
 
 /-- Generated equals active plus completed, for a controller bound to one live task-bodied record.
 

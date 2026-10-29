@@ -2,7 +2,6 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionPatch
 import BpmnSemantics.SemanticProcess.CallRecordCanonicalEquality
-import all BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CallStorageOrder
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
@@ -10,10 +9,17 @@ import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.CallDataTransfer
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Scope creation inserts outside a prepared removal region. These collection laws retain exact order and multiplicity when insertion is exchanged with removal; token equality is kept separate from the other RuntimeState fields. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
+  `cancelScopeSubtree, `sortCallRecords]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

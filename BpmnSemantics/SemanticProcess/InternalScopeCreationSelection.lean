@@ -3,12 +3,17 @@ module
 public import BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Predecessor selection and retained patches for ordinary child entry and Call invocation in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`enterDeclaredScope?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -107,6 +112,9 @@ def selectInternalScopeCreation? (state : RuntimeState) (operation : SemanticOpe
       else none
   | _ => none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalScopeCreationSelection.apply,
+  `selectInternalScopeCreation?]
+
 /-- CDATA-INPUT-01 requires scalar Calls to use their data-aware atomic preparation. -/
 theorem scopeCreationSelection_scalar_refused (state : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input entry : ControlPlaceId)
@@ -184,6 +192,8 @@ def internalScopeCreationRetentionUnchanged (program : Program) : SemanticOperat
       decide (program.compensationActivityRetention.map (·.definitionScopeId) ≠ some scope) &&
         (NestedScopeData.recordFor? program scope).isNone
   | _ => true
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalScopeCreationRetentionUnchanged]
 
 /-- Retained patches agree with the evaluator when neither snapshot nor child retention is created;
 this is not a footprint, validity-preservation, or commutation claim. -/

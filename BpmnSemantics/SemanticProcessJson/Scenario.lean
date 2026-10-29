@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcessJson.Elements
 This module owns strict decoding of the current answer-free scenario document. It does not decode definition artifacts or execute scenarios.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

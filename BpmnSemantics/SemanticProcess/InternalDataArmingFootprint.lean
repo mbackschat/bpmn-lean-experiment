@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Complete Activity-data arming footprints
 
@@ -8,7 +10,11 @@ The prepared data arm owns its Activity record and Activity-local scope in addit
 wait. Shared Process input reads remain independent under the Internal Commutation contract.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.footprintOfPatch,
+  `InternalCommutation.listsDisjoint, `InternalCommutation.stateReadSetsDisjoint, `InternalWaitKind.activationKind,
+  `canonicalStateAtomSet, `footprintsNonInterfering]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -20,6 +26,8 @@ The owner atom protects the interface census as well as the selected input value
 def dataArmingInputAtom (owner : ScopeOccurrenceId) : ActivityDataInputSource → InternalStateAtom
   | .property propertyId => .processVariable propertyId
   | .processDataInput _ => .scopeOccurrence owner
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`dataArmingInputAtom]
 
 theorem process_input_atom_is_not_property (owner : ScopeOccurrenceId) (port propertyId : String) :
     dataArmingInputAtom owner (.processDataInput port) ≠ .processVariable propertyId := by
@@ -41,6 +49,8 @@ def footprintOfDataPatch (contract : InternalDataArmingContract)
     writes := canonicalStateAtomSet
       (ordinary.writes ++ [counter, record, scope] ++ (patch.bindings.map fun binding =>
         .activityVariable (.activityOccurrence activity) binding.name) ++ claims) }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`footprintOfDataPatch]
 
 theorem ordinary_arming_reads_publication_time (patch : InternalArmingPatch) :
     InternalStateAtom.logicalTime ∈ (footprintOfPatch patch).reads := by

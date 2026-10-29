@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 public import BpmnSemantics.SemanticProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Terminate End lowering
 
@@ -11,7 +12,7 @@ operation origin, and the checked containing definition scope becomes the termin
 continuation output is synthesized here.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -32,6 +33,8 @@ def lowerTerminateEnd? (source : CheckedProcess) (id : NodeId) :
       { elementId := id }
       input
       scopeId, scopeId)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`lowerTerminateEnd?]
 
 theorem lowerTerminateEnd_preserves_identity_input_scope
     (source : CheckedProcess) (id : NodeId) (input : ControlPlaceId)

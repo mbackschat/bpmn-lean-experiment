@@ -3,12 +3,19 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! A prepared quiescent Return region contains only its called root. Actual Call-tree
 cleanup therefore preserves every wait, token, branch, and race population; Activity
 records retain their independent owner-removal mask rather than an assumed empty census. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrenceRegion.contains,
+  `fire?, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

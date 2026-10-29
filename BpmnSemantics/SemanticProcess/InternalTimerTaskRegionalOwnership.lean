@@ -8,12 +8,35 @@ import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalSelection
 import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The new Activity references its jointly inserted task and Timer, which the regional mask retains.
 Existing retained locals keep their exact record census because preparation forbids Activity aliases.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalTimerTaskPatch, `InternalCommutation.makeInternalTimerTaskPatch,
+  `InternalCommutation.regionalActivityAssociationsConflict, `InternalCommutation.regionalLocalScopeNamesActivity,
+  `InternalCommutation.selectInternalOwnershipClosedRegional?, `activityOwnerForRecord, `allMatchingRetained,
+  `regionalActivityOwnersClosed, `regionalActivityReferencesClosed, `regionalOwnershipClosed, `sameActivityOccurrence,
+  `taskIdNamesWait, `timerIdNamesWait, `timerWaitKeyMatches, `userTaskWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

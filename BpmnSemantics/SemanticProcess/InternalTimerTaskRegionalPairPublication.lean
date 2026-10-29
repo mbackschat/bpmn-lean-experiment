@@ -11,7 +11,7 @@ public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
 /-! Both regional/Timer-task orders accept the same per-operation publication at assigned indices.
 The retained Timer-task preparation fixes its Process identity and task-only lifecycle template. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

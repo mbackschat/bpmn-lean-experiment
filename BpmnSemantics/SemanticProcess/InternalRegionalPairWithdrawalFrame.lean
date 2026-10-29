@@ -5,10 +5,29 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairSelectionFrame
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Bounded completion withdraws a parent-owned Activity and deadline outside its child region. Explicit Activity and Timer reads protect that selection where root disjointness alone would be insufficient. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.regionalStateAtomsConflict, `MonitoredScopeTimerBinding, `NonInterruptingBoundaryTimerBinding,
+  `runtimeStateWellFormed, `sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

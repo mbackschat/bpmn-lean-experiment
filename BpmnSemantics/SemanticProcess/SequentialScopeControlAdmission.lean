@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.ContinuationMarking
 
 /-! SMIS-ADMIT-01 composes body bursts with the outer lifecycle; generic graph and data admission remain separate conjuncts. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.SequentialScopeControl
 

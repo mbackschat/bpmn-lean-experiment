@@ -25,7 +25,7 @@ correspondence from label matching, cross-Process associations and control-only 
 The selected scalar profile bounds these checks; they establish no general call equivalence.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CallActivityDataBoundariesConformance
 

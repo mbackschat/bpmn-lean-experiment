@@ -14,13 +14,29 @@ import all BpmnSemantics.SemanticProcess.CallActivity
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.UserTaskInteractionConformanceCheckFixtures
 public import BpmnSemantics.Experiments.CheckedSourceScenario
+import all BpmnSemantics.SemanticProcess.CallActivityAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelation — positional-lowering discriminator
 
 The deliberately wrong lowerer zips checked User Tasks with separately sorted input/output Sequence Flows. It also obtains task metadata through the wrongly paired input Flow target, which makes the positional error publicly observable under an admitted renaming while the retained fixtures happen to align.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceRelation
 

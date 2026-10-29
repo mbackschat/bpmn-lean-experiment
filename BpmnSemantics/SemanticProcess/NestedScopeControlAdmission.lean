@@ -4,6 +4,8 @@ public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 public import BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! NSC-ADMIT-01 for the embedded completion profile. Each definition scope's body is projected to the
 reviewed structured-body analysis, a Sub-Process appearing in its parent as a task vertex, so
@@ -24,7 +26,9 @@ CSD-ADMIT-01 admits data in a model without a Call: Sub-Process declarations and
 under the bounded String rules, with the required Start names of CSD-AVAILABLE-01 computed over the raw
 bodies by `ConcurrentScopeData`. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`unique?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.NestedScopeControl
 
@@ -355,12 +359,12 @@ structure Data where
   handlers : List String
   accesses : List (String × ConcurrentScopeData.Access)
 
-def serviceAccess (inputs outputs : List VariableMapping) : ConcurrentScopeData.Access :=
+private def serviceAccess (inputs outputs : List VariableMapping) : ConcurrentScopeData.Access :=
   { reads := SerialBusinessTask.readNames inputs, writes := outputs.map (·.target) }
 
 /-- CSD-ADMIT-01's data rules over a tree whose control is already admitted: declarations sorted by scope,
 each on a Sub-Process scope and within the declaration rule, then CSD-AVAILABLE-01 over the raw bodies. -/
-def admittedData (scopes : List DefinitionScope) (raw : List RawBody) (data : Data) : Option (List String) := do
+private def admittedData (scopes : List DefinitionScope) (raw : List RawBody) (data : Data) : Option (List String) := do
   let root ← StructuredComposition.unique? (scopes.filter (·.parentScopeId.isNone))
   let bodies := raw.map fun body => ({ scope := body.scope, vertices := body.vertices, children := body.children } :
     ConcurrentScopeData.Body)
@@ -370,12 +374,14 @@ def admittedData (scopes : List DefinitionScope) (raw : List RawBody) (data : Da
   else ConcurrentScopeData.requiredStartNames root.id.value bodies data.records data.accesses
 
 /-- The admitted largest closure and, for a data-bearing model, its required Start names. -/
-def admittedModel (scopes : List DefinitionScope) (raw : List RawBody) (data : Option Data) :
+private def admittedModel (scopes : List DefinitionScope) (raw : List RawBody) (data : Option Data) :
     Option (Nat × List String) := do
   let burst ← analyze scopes (← raw.mapM contractBody)
   match data with
   | none => return (burst, [])
   | some data => return (burst, ← admittedData scopes raw data)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`admittedModel]
 
 /-- A single scope admits nothing: the class needs a Sub-Process or a Call, and a called root is a second
 scope. -/
@@ -490,7 +496,7 @@ def checkedBodies (source : CheckedProcess) (data : Option Data) : Option (List 
                | _ => none) ++ serviceTasks
              serviceTasks, calls }
 
-def checkedModel (source : CheckedProcess) : Option (Nat × List String) := do
+private def checkedModel (source : CheckedProcess) : Option (Nat × List String) := do
   if !(source.nodes.all fun node => (controlCheckedScope? source node.id).isSome) then none
   else
     let data := checkedData source
@@ -603,7 +609,7 @@ def programBodies (program : Program) (data : Option Data) : Option (List RawBod
                | _ => none }
 
 /-- A data-bearing embedded completion Program's declarations, handlers and mapped Service Tasks. -/
-def programData (program : Program) : Option Data :=
+private def programData (program : Program) : Option Data :=
   if embeddedScopeDataBearing program then
     some { records := program.scopeLocalData, handlers := SerialBusinessTask.programHandlers program
            accesses := program.operations.filterMap fun op => match op with
@@ -611,7 +617,7 @@ def programData (program : Program) : Option Data :=
              | _ => none }
   else none
 
-def programModel (program : Program) : Option (Nat × List String) := do
+private def programModel (program : Program) : Option (Nat × List String) := do
   let root ← StructuredComposition.unique? (program.definitionScopes.filter fun scope =>
     scope.parentScopeId.isNone && scope.originElementId.value == program.processId.value)
   let completions := program.operations.filter StructuredComposition.isScopeCompletion
@@ -649,6 +655,8 @@ def programModel (program : Program) : Option (Nat × List String) := do
 /-- NSC-ADMIT-01 and CSD-ADMIT-01 over the Program, independent of the checked graph; `none` refuses it. -/
 def programAnalysis (program : Program) : Option Nat :=
   (programModel program).map (·.1)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`programAnalysis, `programModel]
 
 theorem programAnalysis_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
     programAnalysis program = none := by

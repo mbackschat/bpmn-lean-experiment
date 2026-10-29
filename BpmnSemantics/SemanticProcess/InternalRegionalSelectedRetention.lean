@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
 public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Ownership closure for selected regional operations
 
@@ -10,7 +11,7 @@ REG-OWN-CLOSE-01 derives reference masks from retained predecessor choices and c
 with actual evaluator fields before deriving Activity and event-race reference preservation.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -46,6 +47,8 @@ def selectInternalOwnershipClosedRegional? (program : Program) (state : RuntimeS
       regionalActivityOwnersClosed state (regionalSelectionReferenceRetention state selected) then
     some selected
   else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalOwnershipClosedRegional?]
 
 theorem ownershipClosedSelection_refuses_stranded_reference (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalRegionalSelection)

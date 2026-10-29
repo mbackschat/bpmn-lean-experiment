@@ -7,11 +7,21 @@ import BpmnSemantics.SemanticProcess.InternalRegionalChildTimerFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Child completion preserves the exact ordered wait projection. Its withdrawn Timer
 was already private, and every retained wait keeps its complete owner/Process lookup. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MonitoredScopeTimerBinding, `fire?, `projectWaits?,
+  `timerWaitKeyMatches, `waitIdentitiesUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

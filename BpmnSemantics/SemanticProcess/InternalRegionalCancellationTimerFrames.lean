@@ -1,12 +1,19 @@
 module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! AOO-CANCEL-01 makes every Activity claiming a surviving Timer survive with it.
 These exact census frames include malformed populations and both root dispositions;
 they use the actual removal filters, not an assumed successor invariant. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScope?, `recordAttaches, `recordInRegion,
+  `retainedCancellationRoot, `timerIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

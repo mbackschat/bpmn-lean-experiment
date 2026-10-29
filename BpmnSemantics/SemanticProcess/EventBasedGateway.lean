@@ -2,13 +2,18 @@ module
 
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
 import Std.Data.DTreeMap.Internal.Balancing
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Event-Based Gateway race semantics
 
 This module owns atomic Message/Timer race arming, the hidden occurrence association, winner selection, and the declarative relations that constrain those executable transformations. It does not choose between jointly ready host events; callers provide one explicit semantic stimulus at a time.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cancelScopeSubtree, `interruptScope]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -383,6 +388,9 @@ inductive EventRaceWinnerStep : Program → RuntimeState → Stimulus →
         after) :
       EventRaceWinnerStep program before
         (.fireTimer commandId timerId logicalTimeMs) after
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`commitEventRaceMessageWinner, `commitEventRaceTimerWinner,
+  `eventRaceMessageWinner?, `eventRaceTimerWinner?]
 
 theorem eventRaceMessageWinnerState_sound (program : Program)
     (before after : RuntimeState) (subscriptionId : MessageSubscriptionId)

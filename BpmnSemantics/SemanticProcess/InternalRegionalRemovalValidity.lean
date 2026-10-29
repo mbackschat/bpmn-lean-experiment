@@ -2,6 +2,10 @@ module
 
 import BpmnSemantics.SemanticProcess.RuntimeRemovalPreservation
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Regional removal validity
 
@@ -10,7 +14,9 @@ bindings. These laws preserve the corresponding runtime conjuncts and exact surv
 censuses, independently of the selected scope's retain/remove disposition.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`exactLiveOccurrence, `recordInRegion, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

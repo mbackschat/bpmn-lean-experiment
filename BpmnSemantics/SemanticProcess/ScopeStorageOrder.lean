@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! # Scope occurrence and remaining activation-counter order laws
 
@@ -12,7 +13,7 @@ every other key and its high-water value. These collection laws are prerequisite
 preparation, not a proof that any regional transition can already enter a production batch.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,9 +1,9 @@
-# Lean build modularity specification
+# Lean build modularity proposal
 
 ## Status
 
 Lifecycle: implementation-in-progress
-Review: closure-approved for the 2026-10-26 contract; the 2026-10-28 changes to contract item 6, the acceptance and the current boundary passed the same reviewer's correction audit on 2026-10-28
+Review: approved-with-required-edits
 
 ## Problem
 
@@ -144,7 +144,7 @@ The owner approved a proof-level workaround on 2026-10-24. Each affected proof e
 
 ## Current boundary
 
-**Hidden-by-default bodies are not delivered.** Contract item 2 is open, so this document returns to `-PROPOSAL` in the commit that lands the conversion, whose Lean files cite it (owner direction, 2026-10-28). At `7bedde10` (2026-10-28), 988 of the 1,024 library files open an `@[expose] public section`, so most body edits still rebuild a whole public cone: 275 modules exceed the body-edit default, the widest at 944 importers. The body-edit ratchet records that graph and only shrinks; [PLAN](PLAN.md#exact-resume-point) owns the conversion. An uncommitted first conversion was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)).
+**Hidden-by-default bodies are converted, not yet proven.** Contract item 2 stays open until the probe matrix that [PLAN](PLAN.md#exact-resume-point) owns measures body edits across the core and every family. After the conversion (owner decisions of 2026-10-29), 15 of the 1,023 library files still open an `@[expose] public section` and 6 stay plain. 214 modules exceed the body-edit default of 10; the widest are a body edit of `ActivityOccurrence` at 624 importers and of the `privateEquations` helper at 784, whose every loader re-runs its meta code. Over the 67 history commits the fan-out model predicts a mean of 118 and a p90 of 490 rebuilt modules, with 6 commits above 500; that is the restated target of owner decision 1, not a measurement. One real build backs it so far: comment and module-doc edits to 19 modules rebuilt 499 modules where the model allows 561 (scratch tree, pinned container, 2026-10-29). The first conversion attempt was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)).
 
 The first family-shaped increment was [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md), measured in the pinned container on one CPU, 2026-10-26.
 

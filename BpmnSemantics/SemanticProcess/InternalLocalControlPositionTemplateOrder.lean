@@ -2,12 +2,16 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalLocalControlOriginFacts
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The template's sort retains each resolved place once, with strict public flow order under
 the alias refusal rule in the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`sortBy, `sortInsertBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -11,7 +11,7 @@ User Task and any other step names the Process a Call invokes. The journey helpe
 and activation across called instances. This module states no theorem, so each conformance module decides
 only its own facts. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.RepeatedNestedConcurrentCallsConformance
 

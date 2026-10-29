@@ -25,7 +25,7 @@ public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 These checks own generic runtime closure, resumability, and evaluator behavior. Checked-graph admission, program validation, definition binding, and lowering fixtures live in `SemanticProcessAdmissionConformance` so each kernel-decided lane has an independent build boundary.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessConformance
 

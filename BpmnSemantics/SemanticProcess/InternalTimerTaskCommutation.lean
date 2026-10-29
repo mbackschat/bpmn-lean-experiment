@@ -3,12 +3,17 @@ module
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact Timer-task patch equality reuses the established collection insertion laws. The three
 issuers remain independent, so task separation cannot stand in for Timer separation.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyInternalArmingPatch,
+  `applyInternalTimerTaskPatch, `makeInternalTimerTaskPatch]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

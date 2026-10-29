@@ -12,7 +12,7 @@ It preserves a distinct checked-source constructor while keeping the runtime ope
 state, and observation contracts unchanged.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ConfiguredTaskConformance
 

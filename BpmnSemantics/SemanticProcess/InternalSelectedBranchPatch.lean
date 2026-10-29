@@ -3,12 +3,19 @@ module
 public import BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InclusiveGateway
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Selected-record algebra for the approved local-control preparation boundary in
 [the selected-join readiness amendment](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#selected-join-readiness-dependency-amendment).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.listsDisjoint, `armingLexStep,
+  `insertSelectedBranchSetCanonical, `orderedBy, `selectedBranchJoinReady, `selectionBefore]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -31,6 +38,8 @@ def InternalSelectedBranchPatch.selectionKey : InternalSelectedBranchPatch → O
 /-- The population dependency in the readiness amendment excludes a shared key across all owners. -/
 def InternalSelectedBranchPatch.Separated (left right : InternalSelectedBranchPatch) : Prop :=
   ∀ key, left.selectionKey = some key → right.selectionKey ≠ some key
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch #[`apply, `selectionKey]
 
 private theorem selectionBefore_chain (left right : SelectedBranchSet) :
     selectionBefore left right =

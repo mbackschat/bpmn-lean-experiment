@@ -3,10 +3,18 @@ module
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-SELECT-01 shares retained-anchor issuance checks with private command admission without importing transition publication back into admission. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.InternalArmingWrite.elementId, `InternalCommutation.InternalArmingWrite.occurrence,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.effectWaitOccurrence,
+  `InternalCommutation.openWaitAnchors, `InternalCommutation.userTaskWaitOccurrence, `effectActivationCount]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -33,6 +41,8 @@ def occurrenceReservationStateValid (state : RuntimeState) : Bool :=
       | .effectOccurrence id => issued ⟨id.processInstanceId, id.elementId, id.activation⟩
           (effectActivationCount state ⟨id.elementId.value⟩)
       | .activityOccurrence _ => true)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`occurrenceReservationStateValid]
 
 /-- String-key reservation lookup agrees with the native task counter, including an absent row. -/
 theorem taskActivationCount_string_lookup (rows : List TaskActivation) (task : TaskDefinitionId) :
@@ -348,7 +358,7 @@ theorem occurrenceReservationStateValid_insertEffectWait (before : RuntimeState)
 
 /-- Reservation issuance depends on anchors and counters, so token rewrites leave it unchanged. -/
 theorem occurrenceReservationStateValid_tokens (before : RuntimeState) (tokens : List ControlToken) :
-    occurrenceReservationStateValid { before with tokens } = occurrenceReservationStateValid before := rfl
+    occurrenceReservationStateValid { before with tokens } = occurrenceReservationStateValid before := (rfl)
 
 /-- Effect preparation availability excludes the exact local owner required by reservation insertion. -/
 theorem effect_write_available_owner_fresh (before : RuntimeState) (wait : EffectWait)

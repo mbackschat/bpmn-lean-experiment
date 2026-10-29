@@ -2,6 +2,10 @@ module
 
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Multi-Instance frames for unrelated Activity-data arming
 
@@ -9,7 +13,13 @@ The admitted declarer census separates the new ordinary Activity from existing M
 controllers. Their record filters and independent high-water counters therefore remain exact.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`controllerNamesActivityOccurrence,
+  `controllersOwnLiveActivity, `parallelControllerNamesIdentity, `parallelControllerProgramBindingValid,
+  `parallelMultiInstanceProgramBindingsValid, `parallelRecordForController?,
+  `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
+  `sequentialMultiInstanceProgramBindingsValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

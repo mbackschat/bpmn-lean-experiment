@@ -3,6 +3,17 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationProvenanceProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.WireNatural
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual reservation anchor uniqueness
 
@@ -12,7 +23,11 @@ Together these facts make the actual reservation result's wait anchors unique
 before collective batch acceptance, without a runtime-reachability premise.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalArmingWrite.kind, `InternalCommutation.InternalOccurrencePatch.waitOccurrence?,
+  `InternalCommutation.reservedCohortSize, `ParallelScopeReplay.ReservedArmWriteShape]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -26,6 +41,8 @@ def ReservedArmDeclared (program : Program) (arm : InternalArmingPatch) : Prop :
       SemanticOperation.awaitEffect id origin input output effect route ∈ program.operations ∧
         effect.elementId = wait.elementId
   | _ => False
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`ReservedArmDeclared]
 
 private theorem prepared_arm_declared (program : Program) (state : RuntimeState)
     (arm : InternalArmingPatch)

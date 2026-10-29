@@ -2,16 +2,27 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationEffectValidity
 import BpmnSemantics.SemanticProcess.ParallelScopeLocalFrameProofs
-import all BpmnSemantics.SemanticProcess.ParallelScopeData
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS entry, completion and retirement preserve the full wait projection
 contract, including the Service wait/local-data bijection. Declaration provenance
 alone does not establish the fields and identities that lifecycle publication reads. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+  `cancelScopeSubtree, `completeParallelScopeEffect?, `completeSerialEffect?, `effectIdNamesWait,
+  `effectIncidentAssociationsValid, `effectWaitOccurrenceId, `flowNodeOccurrenceEffectProgramValidity,
+  `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceWaitProgramValidity, `issueParallelBodies?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeCommand
 

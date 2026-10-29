@@ -2,6 +2,10 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Retained Activity lifetime under regional cancellation
 
@@ -10,7 +14,10 @@ body census, while AOO-ATTACH-01/02 prevent another withdrawn Activity from taki
 record's tagged handler. The selected root's retain/remove disposition changes neither argument.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityTaskBodyOwnersAgree,
+  `exactLiveOccurrence, `messageIdNamesWait, `recordInRegion, `retainedCancellationRoot]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

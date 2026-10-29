@@ -3,6 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.GraphValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Runtime position validity
 
@@ -11,7 +13,9 @@ associations, and token bindings against one immutable Semantic Process program.
 projection and committed transition traces consume this predicate but do not define it.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`scopeForestWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -136,6 +140,10 @@ def invocationsInProcessRoots (program : Program) : Bool :=
           scope.id != owner.scopeId || scope.parentScopeId.isNone
     | _ => true
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`calledRootBindingValid, `exactLiveOccurrence,
+  `hostingRoot, `hostingRootCount, `rootAssociationValid, `runtimeParentValid, `scopeOccurrenceValid,
+  `tokenBindingValid, `uniqueDefinitionScope?]
+
 /-- The explicit Program premise of the cancellation proofs, a class so those proofs thread it by
 instance resolution rather than by argument position. -/
 class InvocationsInProcessRoots (program : Program) : Prop where
@@ -207,6 +215,9 @@ def runtimePositionValid (program : Program) (expectedInstanceId : SemanticId)
     (state : RuntimeState) : Bool :=
   programWellFormed program && programProjectionBindingsValid program &&
     lifecyclePositionValid program expectedInstanceId state
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`lifecyclePositionValid, `runningPositionValid,
+  `runtimePositionValid]
 
 /-- A valid running predecessor exposes exact live scopes and their static parent binding. -/
 theorem runtimePositionValid_scope_parent_binding (program : Program)

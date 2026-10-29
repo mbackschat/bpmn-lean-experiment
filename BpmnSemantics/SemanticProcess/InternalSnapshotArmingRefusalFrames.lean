@@ -8,10 +8,37 @@ import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 public import BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.BoundedScopeArming
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationAttempt
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Ordinary arming preserves unavailable refusable operations: consuming a token adds an owned wait, so scope completion cannot become newly enabled. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.owner,
+  `InternalCommutation.applyInternalArmingPatch, `anyTimerIdNamesWait, `armBoundedScopeState?,
+  `attemptCompensationTrigger, `attemptCompleteScope, `attemptEnterBoundedScope, `attemptEnterScope,
+  `boundedScopeChildOccurrence?, `childOccurrenceAfterEntry?, `compensationTriggerOwnerRejected,
+  `completeQuiescentScope?, `completeScopeState?, `parentOwnedDeadline?, `runtimeStateWellFormed, `scopeQuiescent,
+  `selectedCompletionOccurrence?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 The fixture reader exposes the checked, generic Program and profile Program gates separately so canonical-lowering equality cannot mask which independent admission boundary refused an input. It performs no evaluation.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.DefinitionAdmissionJsonMain
 

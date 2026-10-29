@@ -2,21 +2,29 @@ module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
-import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 public import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
+import all BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Existing profile capability counts discharge the root-only Compensation proof domain
 without adding a premise to their public preservation guarantees. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addOperationCardinality, `programCapabilityDispatched,
+  `programExactShape, `programUndispatchedCapabilities, `sequentialScopeStateValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
 def isCompensationOperation : SemanticOperation → Bool
   | .triggerCompensation .. | .cancelTransaction .. => true
   | _ => false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`isCompensationOperation]
 
 private theorem compensationCardinality (operations : List SemanticOperation) :
     (operationCardinalities operations).compensationTriggers =

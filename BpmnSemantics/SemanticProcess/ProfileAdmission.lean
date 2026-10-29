@@ -5,6 +5,9 @@ import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 public import BpmnSemantics.SemanticProcess.ValueDomain
 import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ProfileCardinalities
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic profile admission consequences
 
@@ -12,7 +15,12 @@ Counts live in `ProfileCardinalities` and selection in `ProfileShapeCatalog`; th
 retains the stable theorem surface consumed by runtime-preservation proofs.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`isEventRaceOperation,
+  `parallelMultiInstanceUserTaskProfileId, `programCapabilityDispatched, `programExactShape,
+  `programProfileCapabilitiesValid, `programShape?, `programUndispatchedCapabilities,
+  `sequentialMultiInstanceUserTaskProfileId, `withScopeCompletions]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

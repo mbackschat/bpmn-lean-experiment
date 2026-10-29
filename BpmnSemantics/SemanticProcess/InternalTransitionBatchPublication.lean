@@ -4,12 +4,22 @@ public import BpmnSemantics.SemanticProcess.InternalTransitionBatch
 import BpmnSemantics.SemanticProcess.InternalTransitionPublicationTemplate
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalTransitionBatch
+import all BpmnSemantics.SemanticProcess.InternalTransitionPreservation
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublication
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Every mixed execution prefix publishes its original prepared value under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyInternalTransitionBatch,
+  `runPreparedTransitionBatchPublication?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

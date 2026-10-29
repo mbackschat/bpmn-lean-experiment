@@ -3,10 +3,21 @@ module
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The existing regional conflict predicate protects occurrence regions as well as concrete keys. These laws expose its symmetric and directional consequences without introducing a second independence account. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.regionalActivityTouchesLegacyAtom, `InternalCommutation.regionalOwnsAtom,
+  `InternalCommutation.regionalOwnsOrdinaryAtom, `InternalCommutation.regionalStateAtomsConflict, `runningInstance?,
+  `sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

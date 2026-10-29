@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.InternalOperationAttempt
 
 /-! # Compensation Event Sub-Process snapshot-aware scope transitions -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

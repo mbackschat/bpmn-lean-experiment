@@ -8,6 +8,28 @@ public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 import BpmnSemantics.SemanticProcess.InternalCommutationOpenProjection
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
+import all BpmnSemantics.SemanticProcess.ParallelScopeCompletionPublication
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Accepted data-arming publication
 
@@ -15,7 +37,15 @@ The prepared wait's exact candidate must pass the existing lifecycle acceptance 
 successful projection alone does not establish the committed delta.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.occurrence,
+  `InternalCommutation.InternalDataArmingContract.operation, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.makeInternalDataArmingPatch,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
+  `InternalCommutation.userTaskWaitOccurrence, `candidateFlowNodeOccurrenceDeltaForOperation?,
+  `candidateFlowNodeOccurrenceDeltaForOwnedOperation?, `candidateUserTaskStart?, `flowNodeOccurrenceProgramValidity,
+  `userTaskWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

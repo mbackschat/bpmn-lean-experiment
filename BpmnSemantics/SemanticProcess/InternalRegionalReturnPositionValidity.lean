@@ -6,6 +6,9 @@ import BpmnSemantics.SemanticProcess.ScopeCompletionLaws
 import BpmnSemantics.SemanticProcess.CallActivityLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Return continuation position
 
@@ -15,7 +18,9 @@ from cleanup. The continuation still needs its declared static place binding: th
 receives an output identifier rather than a Program.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`exactLiveOccurrence, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

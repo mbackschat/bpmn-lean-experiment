@@ -4,13 +4,14 @@ public import BpmnSemantics.SemanticProcess.CanonicalBusinessValue
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 public import BpmnSemantics.SemanticProcess.RuntimeState
 public import BpmnSemantics.SemanticProcess.JsonSupport
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation Event Sub-Process parent-context snapshots
 
 This module owns the approved pure runtime account for reserving, promoting, validating, measuring, and purging hidden parent-context snapshots. Transition integration remains with the operation-family owners.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -314,6 +315,8 @@ def compensationEventSubProcessSnapshotStateValid (program : Program)
             declaration.maxCanonicalBytes &&
           retentionLifecycleValid program state retentions
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`compensationEventSubProcessSnapshotStateValid]
+
 theorem compensationEventSubProcessSnapshotStateValid_implies_declarationValid
     (program : Program) (state : RuntimeState)
     (valid : compensationEventSubProcessSnapshotStateValid program state = true) :
@@ -396,6 +399,8 @@ def capacityRefusal? (declaration : CompensationEventSubProcessSnapshotDeclarati
       some (.capacity .canonicalBytes declaration.maxCanonicalBytes observed)
     else none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`capacityRefusal?]
+
 theorem capacityRefusal_records (declaration : CompensationEventSubProcessSnapshotDeclaration)
     (retentions : List CompensationParentContextRetention)
     (overflow : retentions.length > declaration.maxRecords) :
@@ -459,6 +464,8 @@ def reserveCompensationParentContext (program : Program) (state : RuntimeState)
           else .refused .invalidState state
     else .refused .invalidState state
   else .refused .invalidProgram state
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`reserveCompensationParentContext]
 
 theorem reserveCompensationParentContext_refusal_preserves_state
     (program : Program) (state : RuntimeState) (parent : RuntimeScopeOccurrence)
@@ -531,6 +538,9 @@ def captureCompensationParentContext? (program : Program)
   | .failed .. => none
   | _ => captureCompensationParentContextWhileNotFailed? program state parent
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`captureCompensationParentContext?,
+  `captureCompensationParentContextWhileNotFailed?, `constructCompensationParentContextSnapshot?]
+
 theorem captureCompensationParentContext_root_shape (program : Program)
     (state : RuntimeState) (parent : RuntimeScopeOccurrence)
     (snapshot : CompensationParentContextSnapshot)
@@ -589,6 +599,8 @@ def promoteSelectedCompensationParentContext
             | none => .applied
                 { state with compensationParentContextRetentions := prospective }
       else .refused .invalidState state
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`promoteSelectedCompensationParentContext]
 
 private theorem promoteSelectedCompensationParentContext_applied_shape
     (program : Program) (state after : RuntimeState)
@@ -714,6 +726,8 @@ def promoteCompensationParentContext (program : Program) (state : RuntimeState)
     else .refused .invalidState state
   else .refused .invalidProgram state
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`promoteCompensationParentContext]
+
 theorem promoteCompensationParentContext_refusal_preserves_state
     (program : Program) (state : RuntimeState) (parent : RuntimeScopeOccurrence)
     (reason : CompensationParentContextRefusal) (returned : RuntimeState)
@@ -758,6 +772,8 @@ def purgeCompensationParentContextForParent (state : RuntimeState)
         | .provisional retainedParent _ => retainedParent.id != parent.id
         | .promoted .. => true }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`purgeCompensationParentContextForParent]
+
 theorem mem_purgeCompensationParentContextForParent_iff
     (state : RuntimeState) (parent : RuntimeScopeOccurrence)
     (retention : CompensationParentContextRetention) :
@@ -782,6 +798,9 @@ def purgeCompensationParentContextForRoot (state : RuntimeState)
       state.compensationParentContextRetentions.filter fun retention =>
         !retentionOwnedByRoot root retention ||
           (disposition == .retainPromoted && retention.isPromoted) }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`purgeCompensationParentContextForRoot,
+  `retentionOwnedByRoot]
 
 theorem mem_purgeCompensationParentContextForRoot_iff
     (state : RuntimeState) (root : RuntimeScopeOccurrence)

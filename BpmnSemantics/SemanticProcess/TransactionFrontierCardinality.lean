@@ -4,6 +4,9 @@ import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
 public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
 import BpmnSemantics.SemanticProcess.TransactionFrontierPhases
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction single-token frontier cardinality
 
@@ -12,7 +15,10 @@ filtering those attempts preserve multiplicity, so the conclusion covers the pro
 not merely a set of enabled operation identities. Reachability must still establish the phase facts.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalEnabledInternalTransitions,
+  `snapshotInternalTransitionFrontier]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

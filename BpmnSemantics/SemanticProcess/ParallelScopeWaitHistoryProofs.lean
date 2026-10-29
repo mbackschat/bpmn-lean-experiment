@@ -5,6 +5,16 @@ import BpmnSemantics.SemanticProcess.ParallelScopeWaitDeclarationProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitCompletionProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitIssuanceProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.TransitionRecord
 
 /-! # Declaration provenance along actual parallel-scope histories
 
@@ -12,7 +22,7 @@ RSI-BIND-04 is established by Start and carried through actual successful
 execution, so later reservation proofs need not assume provenance at every step.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

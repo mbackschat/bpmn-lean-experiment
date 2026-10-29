@@ -6,13 +6,17 @@ import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 public import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact canonical Call storage requires the unique caller/element anchors of the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 The comparator omits retained payload fields, so permutation and order alone are insufficient.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`armingLexStep, `callRecordBefore, `orderedBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

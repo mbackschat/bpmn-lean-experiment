@@ -2,6 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Structured effect-data profile admission
 
@@ -15,6 +18,9 @@ The chain vertices, mapping grammar and name policy are `SerialBusinessTask`'s. 
 preamble differs, and it is restated here instead of parameterizing `SerialBusinessTask.analyze`
 because three serial proof modules unfold that definition.
 -/
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`EffectMappingValuePolicy.admits,
+  `SerialBusinessTask.scalar]
 
 public section
 
@@ -45,6 +51,8 @@ def bindingsValidWith (admits : VariableValue → Bool) (handlers : List String)
 def bindingsValidUnder (policy : EffectMappingValuePolicy) (handlers : List String)
     (bindings : List VariableBinding) : Bool :=
   bindingsValidWith (policy.admits true) handlers bindings
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.EffectData #[`bindingsValidWith, `mappingsValid]
 
 theorem bindingsValidUnder_scalar (handlers : List String) (bindings : List VariableBinding) :
     bindingsValidUnder .scalar handlers bindings = SerialBusinessTask.bindingsValid handlers bindings := by
@@ -129,6 +137,8 @@ def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) 
       bindingsValidWith (fun value => SerialBusinessTask.scalar value &&
         EffectMappingValuePolicy.singletonBusinessItem.admits true value) (programHandlers program) bindings &&
         analysis.required.all (fun name => bindings.any (·.name == name))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.EffectData #[`checkedAnalysis, `checkedVertex?]
 
 /-! PBV-EFF-01's 1,024-byte bound as laws over the bounding predicates; finite witnesses would have to
 construct boundary-sized Strings in the kernel ([witness placement](../../docs/REVIEW-POLICY.md#lean-proof-design-and-review)). -/

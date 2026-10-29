@@ -3,13 +3,14 @@ module
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAdmission
 public import BpmnSemantics.WireNatural
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation Event Sub-Process snapshot declaration
 
 Program-only validation for the optional hidden snapshot declaration and its narrow dormant-handler scope lifecycle. Runtime snapshots remain outside this module so graph admission depends only on immutable Program data.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -252,6 +253,9 @@ def compensationEventSubProcessSnapshotScopeLifecycleWellFormed
     program.definitionScopes.all
       (declaredScopeLifecycleValid program entryRootId
         (declaredHandlerScopeIds program))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`compensationEventSubProcessSnapshotScopeLifecycleWellFormed,
+  `completesScope, `ordinaryScopeLifecycleValid]
 
 /-- A declared parentless scope with a Complete operation is the hosting entry scope. Called
 roots require Return instead, and the snapshot handler exemption requires a child scope. -/

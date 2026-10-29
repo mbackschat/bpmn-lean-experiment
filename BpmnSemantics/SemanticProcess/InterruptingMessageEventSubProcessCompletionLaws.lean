@@ -2,11 +2,18 @@ module
 
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! IMES-CLOSE-01 and IMES-EXPIRE-01 relations, soundness and lifetime laws. These distinguish handler
 disposal from ordinary-child continuation and passive listening from work that prevents completion. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeEventSubProcessState?,
+  `messageEventSubProcessRunningPhaseValid, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -93,7 +100,7 @@ theorem completeEventSubProcessState_refuses_unfinished_child
 theorem eventSubProcessListeners_do_not_block_quiescence (state : RuntimeState)
     (listeners : List EventSubProcessMessageSubscription) (owner : ScopeOccurrenceId) :
     scopeQuiescent { state with eventSubProcessMessageSubscriptions := listeners } owner =
-      scopeQuiescent state owner := rfl
+      scopeQuiescent state owner := (rfl)
 
 /-- IMES-EXPIRE-01 withdraws exactly the completing owner's passive listeners on either ordinary completion path. -/
 theorem normalScopeCompletion_expires_owned_listeners

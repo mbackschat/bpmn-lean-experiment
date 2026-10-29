@@ -1,10 +1,11 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation handler maximal-frontier activation -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -220,6 +221,8 @@ def activateHandlers (program : Program) (trigger : CompensationTriggerExecution
           activateHandlers program trigger rest activations
         pure (handler :: handlers, waits, finalActivations)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateHandlers]
+
 private theorem activateHandlers_sound (program : Program)
     (trigger : CompensationTriggerExecution)
     (beforeHandlers afterHandlers : List CompensationHandlerExecution)
@@ -400,6 +403,8 @@ inductive CompensationFrontierRefusalStep (program : Program) (state : RuntimeSt
       (refusal : CompensationFrontierHandlersRefusal
         program trigger trigger.handlers state.effectActivations) :
       CompensationFrontierRefusalStep program state trigger
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateCompensationFrontier]
 
 theorem activateCompensationFrontier_sound (program : Program) (state : RuntimeState)
     (trigger : CompensationTriggerExecution) (activation : CompensationFrontierActivation)

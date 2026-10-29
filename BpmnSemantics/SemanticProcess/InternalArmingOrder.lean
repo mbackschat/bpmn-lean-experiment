@@ -3,10 +3,15 @@ module
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Internal arming collection order: canonical insertion and distinct-key replacement laws for bounded internal arming. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`orderedBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -338,6 +343,8 @@ def stringKeyBefore (key : α → String) (left right : α) : Bool := decide (ke
 
 def excludesStringKey (key : α → String) (removed : String) (value : α) : Bool := decide (key value ≠ removed)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`excludesStringKey, `stringKeyBefore]
+
 theorem stringKeyBefore_asymm (key : α → String) (left right : α) : stringKeyBefore key left right = true → stringKeyBefore key right left = false := by
   simp only [stringKeyBefore, decide_eq_true_eq, decide_eq_false_iff_not]
   exact String.lt_asymm
@@ -510,6 +517,8 @@ private theorem setEffectActivationCount_eq_replace (values : List EffectActivat
     NodeId.value nodeId_eq_of_value_eq elementId]
 
 def mappedActivationCount (element : α → NodeId) (count : α → Nat) (values : List α) (query : NodeId) : Nat := ((values.find? fun value => decide (element value = query)).map count).getD 0
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`mappedActivationCount]
 
 private theorem elementActivationCount_map_eq (element : α → NodeId) (count : α → Nat) (values : List α) (query : NodeId) : elementActivationCount (values.map fun value => (element value, count value)) query = mappedActivationCount element count values query := by
   induction values with

@@ -3,6 +3,10 @@ module
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationProvenanceProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Declared Human and Service anchor freshness
 
@@ -11,7 +15,14 @@ Service source keys. RSI-BIND-04 applies those facts to hosting-instance waits;
 the reservation bounds then exclude any ordinal above the issuing family's counter.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.effectWaitOccurrence, `InternalCommutation.messageWaitOccurrence,
+  `InternalCommutation.occurrenceReservationStateValid, `InternalCommutation.openWaitAnchorAbsent,
+  `InternalCommutation.openWaitAnchors, `InternalCommutation.timerWaitOccurrence,
+  `InternalCommutation.userTaskWaitOccurrence, `ParallelScopeStart.programOperationAllowed,
+  `SequentialScopeProgram.operationAllowed, `declaredByExactlyOneOwnedOperation, `waitDeclarationsValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

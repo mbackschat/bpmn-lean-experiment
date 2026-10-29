@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Occurrence-chain bridge
 
@@ -13,7 +15,9 @@ changes nothing for a state in which every chain definition is activated once.
 The definition-chain walk survives here only as that reference account; no runtime operation uses it.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`occurrenceChainWithin, `resolveOwner?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.NestedScopeData
 
@@ -40,7 +44,7 @@ def framesOf (scopes : List ScopeVariableScope) (instanceId : SemanticId) (scope
     frame.owner.processInstanceId == instanceId && frame.owner.definitionScopeId == scopeId
 
 /-- The reference account: the nearest chain definition whose frame in the instance declares `name`. -/
-def definitionResolveOwner? (scopes : List ScopeVariableScope) (instanceId : SemanticId) :
+private def definitionResolveOwner? (scopes : List ScopeVariableScope) (instanceId : SemanticId) :
     List DefinitionScopeId → String → Option Owner
   | [], _ => some .process
   | scopeId :: rest, name =>
@@ -51,11 +55,14 @@ def definitionResolveOwner? (scopes : List ScopeVariableScope) (instanceId : Sem
           else definitionResolveOwner? scopes instanceId rest name
       | _ => none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`chainWithin, `definitionChain,
+  `definitionResolveOwner?]
+
 section Walk
 
 variable (occurrences : List RuntimeScopeOccurrence)
 
-theorem occurrenceChainWithin_succ : ∀ (fuel : Nat) (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId),
+private theorem occurrenceChainWithin_succ : ∀ (fuel : Nat) (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId),
     occurrenceChainWithin occurrences fuel owner = some chain →
     occurrenceChainWithin occurrences (fuel + 1) owner = some chain
   | 0, _, _, walked => by simp [occurrenceChainWithin] at walked
@@ -163,7 +170,7 @@ end Walk
 every chain definition has exactly one live occurrence in its instance; every chain occurrence is
 nested as its definition is, in the same instance, and its definition is a Program scope; every frame
 is owned by a live occurrence. -/
-structure ChainBridgePremises (definitions : List DefinitionScope) (occurrences : List RuntimeScopeOccurrence)
+private structure ChainBridgePremises (definitions : List DefinitionScope) (occurrences : List RuntimeScopeOccurrence)
     (frames : List ScopeVariableScope) (chain : List ScopeOccurrenceId) : Prop where
   singular : ∀ member ∈ chain, (occurrences.filter fun occurrence =>
     occurrence.id.processInstanceId == member.processInstanceId &&
@@ -264,7 +271,7 @@ private theorem resolveOwner?_of_frames_eq (instanceId : SemanticId) (name : Str
 /-- CSD-CHAIN-01 bridge: under the three premises, the occurrence chain of `reader` names the same
 frames as the definition chain of its definition in its instance, so both accounts resolve every name
 to the same owner. -/
-theorem occurrenceChain_bridge (reader : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+private theorem occurrenceChain_bridge (reader : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
     (chained : occurrenceChain occurrences reader = some chain)
     (premises : ChainBridgePremises definitions occurrences frames chain) :
     chain.map (framesAt frames) =

@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Context-backed Message key correlation
 
@@ -8,7 +9,7 @@ This module owns the pure finite-population matcher, candidate projection from c
 state, and exact target delivery for the bounded single-property correlation profile.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -66,6 +67,9 @@ def matchingCorrelatedMessageCandidates (address : CorrelatedMessageAddress)
     List CorrelatedMessageCandidate :=
   candidates.filter (correlatedMessageCandidateMatches address payload)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`correlatedMessageCandidateMatches,
+  `matchingCorrelatedMessageCandidates]
+
 /-- Candidate enumeration order cannot change the matching population. -/
 theorem matchingCorrelatedMessageCandidates_perm
     (address : CorrelatedMessageAddress) (payload : CorrelatedStringPayload)
@@ -79,6 +83,8 @@ def classifyCorrelatedMessageCandidates :
   | [] => .noMatch
   | [candidate] => .unique candidate
   | _ :: _ :: _ => .ambiguous
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`classifyCorrelatedMessageCandidates]
 
 private theorem classifyCorrelatedMessageCandidates_perm
     {left right : List CorrelatedMessageCandidate} (permutation : left.Perm right) :
@@ -113,6 +119,8 @@ def matchCorrelatedMessageCandidates (address : CorrelatedMessageAddress)
   else
     some (classifyCorrelatedMessageCandidates
       (matchingCorrelatedMessageCandidates address payload candidates))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`matchCorrelatedMessageCandidates]
 
 /-- Validation and exact-cardinality classification are invariant under candidate enumeration. -/
 theorem matchCorrelatedMessageCandidates_perm
@@ -298,6 +306,8 @@ def selectedCorrelatedMessageWait? (program : Program) (state : RuntimeState)
   | [wait] => some wait
   | _ => none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`correlatedOperationSelectedForWait]
+
 theorem selectedCorrelatedMessageWait?_facts (program : Program) (state : RuntimeState)
     (instanceId : SemanticId) (operation : SemanticOperation)
     (message : MessageDefinition) (output : ControlPlaceId) (wait : MessageWait)
@@ -444,6 +454,8 @@ def correlatedDeliveryRechecks (candidate : CorrelatedMessageCandidate)
     candidate.processPropertyId = delivery.processPropertyId &&
     candidate.key = delivery.payload
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`correlatedDeliveryRechecks]
+
 theorem correlatedDeliveryRechecks_exact (candidate : CorrelatedMessageCandidate)
     (delivery : DeliverCorrelatedPayloadMessageStimulus) :
     correlatedDeliveryRechecks candidate delivery = true ↔
@@ -519,6 +531,8 @@ def deliverCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
                   messageWaits := state.messageWaits.erase wait
                   tokens := addToken state.tokens wait.output wait.owner }
       else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`deliverCorrelatedPayloadMessage]
 
 /-- A changed current Process key refuses the stale delivery before any wait can be retargeted. -/
 theorem deliverCorrelatedPayloadMessage_changed_property_refuses

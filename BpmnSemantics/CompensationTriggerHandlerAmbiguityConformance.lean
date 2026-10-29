@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 COMPH-TRIGGER-01 requires exact live-root ownership and refuses ambiguous occurrence lifting. These kernel witnesses preserve partial selection and terminal tombstones without broadening the root-scoped checkpoint.
 -/
 
-@[expose] public section
+public section
 
 set_option Elab.async false
 

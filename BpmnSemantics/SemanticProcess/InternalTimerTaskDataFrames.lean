@@ -8,12 +8,37 @@ import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalDataArmingCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
 import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Timer-task and Activity-data arming retain separate task and Activity issuers.
 The complete preparations also protect both untagged wait anchors and Activity body ownership.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalDataArmingPatch,
+  `InternalCommutation.applyInternalTimerTaskPatch, `InternalCommutation.footprintOfPatch,
+  `InternalCommutation.makeInternalDataArmingPatch, `InternalCommutation.makeInternalTimerTaskPatch,
+  `InternalCommutation.prepareInternalDataArmingContract?, `InternalCommutation.prepareInternalTimerTaskContract?,
+  `InternalCommutation.regionalActivityAssociationsConflict, `InternalCommutation.regionalActivityBodyTasks,
+  `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.timerTaskStateFootprint,
+  `InternalWaitKind.activationKind, `activityBodyScopeClaims, `activityBodyTaskClaims, `canonicalCollectionOrder,
+  `canonicalStateAtomSet, `dataInputOutputActivityRecord, `dataInputOutputRunningInstance?, `sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

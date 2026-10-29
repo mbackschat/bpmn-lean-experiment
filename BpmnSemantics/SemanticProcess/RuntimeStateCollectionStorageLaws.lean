@@ -3,10 +3,11 @@ module
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 
 /-! The stricter committed-storage subset supplies the existing weak-order and unique-key facts. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

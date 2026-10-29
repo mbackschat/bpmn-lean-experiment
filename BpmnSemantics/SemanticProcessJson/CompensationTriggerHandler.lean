@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcessContract
 
 /-! # Compensation trigger and single-effect handler Program decoding -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

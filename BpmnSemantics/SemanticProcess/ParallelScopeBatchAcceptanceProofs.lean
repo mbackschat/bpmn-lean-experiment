@@ -9,6 +9,11 @@ import BpmnSemantics.SemanticProcess.ParallelScopeWaitReadiness
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Complete ordinary frontier acceptance
 
@@ -17,7 +22,12 @@ reachability and admission discharge its collision, identity and numeric gates;
 the ordinary-frontier classification remains an explicit boundary.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.acceptOccurrenceBatch?,
+  `InternalCommutation.deriveInternalExecutionFrontier, `InternalCommutation.internalOperationOccurrenceOffers?,
+  `InternalCommutation.ordinaryExecutionFrontier, `InternalCommutation.prepareInternalOccurrenceBatch?,
+  `ParallelScopeStart.analyzeProgram, `ParallelScopeStart.programSelected]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

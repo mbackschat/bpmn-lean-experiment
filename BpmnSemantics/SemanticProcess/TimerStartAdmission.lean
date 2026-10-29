@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 This module owns exact resolved Timer Start admission against the registered profile and its single admitted IL start operation. It creates no runtime Timer and performs no scheduling.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

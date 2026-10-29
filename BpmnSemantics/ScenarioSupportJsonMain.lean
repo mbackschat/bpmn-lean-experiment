@@ -9,7 +9,7 @@ public import BpmnSemantics.SemanticProcessJson.Scenario
 `unsupportedResultExact` holds when a supported scenario needs no check, or an unsupported one runs to exactly the
 deployment-unsupported result. -/
 
-@[expose] public section
+public section
 
 open BpmnSemantics BpmnSemantics.SemanticProcess BpmnSemantics.SemanticProcessJson Lean
 

@@ -4,6 +4,8 @@ public import BpmnSemantics.SemanticProcess.BoundedScope
 public import BpmnSemantics.SemanticProcess.MonitoredScope
 public import BpmnSemantics.SemanticProcess.TransactionCancellation
 public import BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Declared scope entry and completion
 
@@ -14,7 +16,9 @@ completion disposes it. A Program without a `scopeLocalData` record for the scop
 undeclared entry and completion, which the `_undeclared` and `_other_profile` equations state.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`recordFor?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -47,6 +51,8 @@ def completeDeclaredScope? (program : Program) (state : RuntimeState) (scopeId :
     | some _ => do
         completeSelectedScope? program (← NestedScopeData.writeOutputs? program state scopeId) scopeId
           (some output)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeDeclaredScope?, `enterDeclaredScope?]
 
 theorem enterDeclaredScope?_undeclared (program : Program) (state : RuntimeState)
     (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)

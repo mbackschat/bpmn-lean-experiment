@@ -12,7 +12,7 @@ public import BpmnSemantics.SemanticProcess.TransitionTrace
 Shared exact-process and runtime fixtures for the proved composition checkpoint over the existing balanced two-branch Parallel Gateway control account and passive User Task assignment/form metadata.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ParallelUserTaskMetadataCompositionConformance
 

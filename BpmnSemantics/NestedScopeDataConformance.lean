@@ -17,7 +17,7 @@ boundary-sized patch; see the
 [nested scope data specification](../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#separating-witnesses-and-rule-to-evidence-matrix).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.NestedScopeDataConformance
 

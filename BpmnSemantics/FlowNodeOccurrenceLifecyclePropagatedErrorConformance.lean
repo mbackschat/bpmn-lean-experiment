@@ -7,7 +7,7 @@ public import BpmnSemantics.SubProcessErrorPropagationConformance
 [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively. It is apart from the other cancellation
 witnesses because those import proof owners an executable root may not reach. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

@@ -4,12 +4,17 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleOrder
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Instantaneous publication preserves the independently projected open occurrence set.
 The lifecycle fold owns both freshness and same-delta closure.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`applyFlowNodeOccurrenceDelta?, `availableAfterStarts,
+  `flowNodeOccurrenceAnchorBefore, `insertBy, `removeEndedFlowNodeOccurrences, `sortBy, `startBefore,
+  `transitionAnchor]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

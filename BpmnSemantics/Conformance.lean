@@ -10,7 +10,7 @@ These facts lock only distinctions required directly by the architecture handoff
 They are not evidence of BPMN or CIB Seven compatibility.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics
 
@@ -75,7 +75,7 @@ def contractScenario : Scenario :=
           , "engine/src/test/java/org/cibseven/bpm/engine/test/api/task/TaskServiceTest.java#testCompleteTaskUnexistingTaskId" ] } }
 
 theorem contract_scenario_has_two_stimuli :
-    contractScenario.stimuli.length = 2 := rfl
+    contractScenario.stimuli.length = 2 := (rfl)
 
 def emptyRunner : ScenarioRunner :=
   fun _ =>
@@ -83,7 +83,7 @@ def emptyRunner : ScenarioRunner :=
       trace := [] }
 
 theorem empty_runner_emits_no_trace :
-    (emptyRunner contractScenario).trace = [] := rfl
+    (emptyRunner contractScenario).trace = [] := (rfl)
 
 #check SemanticProcess.Obligations.evaluator_sound
 #check SemanticProcess.Obligations.lower_preserves_supported_run

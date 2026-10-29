@@ -2,10 +2,13 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 public import BpmnSemantics.SemanticProcess.CallActivity
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 
 /-! Reference retention agrees with Call-aware regional removal and cancellation. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

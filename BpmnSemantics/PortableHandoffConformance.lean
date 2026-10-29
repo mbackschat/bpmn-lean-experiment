@@ -10,7 +10,7 @@ theorems; see the
 [serial-handoff amendment](../docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#decisive-witnesses-and-checkpoint).
 -/
 
-@[expose] public section
+public section
 
 set_option Elab.async false
 

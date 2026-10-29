@@ -2,11 +2,52 @@ module
 
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCollectionStorageProofs
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCounterLaws
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The exact serial suffix and root frame discharge the runtime ingress validator.
 This derived guard is separate from command progress and its scheduled closure assembly. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.ForeignRuntimeEmpty,
+  `SerialBusinessTask.IssuanceFrame, `SerialBusinessTask.OperationAllowed, `SerialBusinessTask.frontierFields,
+  `activityBodyClaimsUnique, `activityIdentitiesUnique, `activityRecordsOwnLiveWork, `attachedMessagesUnambiguous,
+  `attachedTimersUnambiguous, `canonicalCollectionOrder, `compensationActivityRetentionDeclarationValid,
+  `compensationActivityRetentionStateValid, `compensationEventSubProcessSnapshotDeclarationValid,
+  `compensationEventSubProcessSnapshotStateValid, `compensationExecutionDeclarationValid,
+  `compensationExecutionStateValid, `controllerIdentitiesUnique, `controllersNotExhausted,
+  `controllersOwnLiveActivity, `effectIncidentAssociationsValid, `effectWaitKeyMatches, `eventRaceAssociationsValid,
+  `exactLiveOccurrence, `hiddenRecordDeclarationsValid, `occursOnce, `orderedBy,
+  `parallelMultiInstanceControllersOrdered, `runtimeStateIdentityBound, `runtimeStateWellFormed,
+  `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
+  `sequentialMultiInstanceProgramBindingsValid, `sequentialScopeEntry?, `sequentialScopeStateValid,
+  `userTaskWaitKeyMatches, `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.SerialBusinessTask
 

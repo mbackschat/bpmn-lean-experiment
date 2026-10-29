@@ -9,6 +9,15 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.ProfileCardinalities
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Message payload delivery preservation
 
@@ -17,7 +26,16 @@ and changes only Process-scoped bindings. This module closes that atomic rewrite
 runtime-state invariant.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityIdentitiesUnique,
+  `activityRecordsOwnLiveWork, `attachedMessagesUnambiguous, `attachedTimersUnambiguous, `canonicalCollectionOrder,
+  `controllerIdentitiesUnique, `controllersNotExhausted, `controllersOwnLiveActivity, `eventRaceAssociationsValid,
+  `exactLiveOccurrence, `hiddenRecordDeclarationsValid, `messageWaitKeyMatches, `notStartedStateEmpty,
+  `parallelMultiInstanceUserTaskProfileId, `programParallelMultiInstanceProfileMatches,
+  `programUndispatchedCapabilities, `runtimeStateWellFormed, `sequentialMultiInstanceControllerProgramBindingValid,
+  `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
+  `sequentialMultiInstanceProgramBindingsValid, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

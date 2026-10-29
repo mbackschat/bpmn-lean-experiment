@@ -11,7 +11,7 @@ This module proves that the independent open-occurrence projector emits only wai
 Call Activity anchors. Instantaneous transition anchors enter only through accepted deltas.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

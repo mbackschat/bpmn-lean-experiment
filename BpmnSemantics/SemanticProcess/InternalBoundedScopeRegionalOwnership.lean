@@ -9,11 +9,26 @@ import BpmnSemantics.SemanticProcess.InternalRegionalArmingOwnership
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Bounded entry adds a child and its parent-owned Activity/Timer together. Regional reference
 closure retains that complete group; local-data ownership reuses the Timer-task insertion law.+-/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeSelection.apply,
+  `InternalCommutation.InternalScopeCreationSelection.apply, `InternalCommutation.boundedScopeJointResourcesAvailable,
+  `InternalCommutation.makeInternalBoundedScopePreparation, `InternalCommutation.makeInternalBoundedScopeSelection,
+  `InternalCommutation.selectInternalOwnershipClosedRegional?, `allMatchingRetained, `regionalActivityOwnersClosed,
+  `regionalActivityReferencesClosed, `regionalOwnershipClosed, `timerIdNamesWait, `timerWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

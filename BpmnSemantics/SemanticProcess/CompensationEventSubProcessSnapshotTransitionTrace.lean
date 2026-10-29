@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation attempt-aware transition trace
 
@@ -10,7 +12,9 @@ declaration-free evaluator so legacy kernel fixtures do not import the compensat
 its reduction cost.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StimulusResult #[`ofClosure]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -165,6 +169,9 @@ structure SnapshotEvaluatedStimulus where
   result : StimulusResult
   candidateTransitions : Option (List CommittedTransition)
   candidateLifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`closeSupportedTracedWithCompensationSnapshots,
+  `replayCommittedTransitionsWithCompensationSnapshots]
 
 /-- The actual closure recursion preserves a phase when its selected singleton and batch steps do.
 This induction principle lets the Transaction account derive command-boundary reachability without
@@ -344,6 +351,8 @@ def replayCheckedSnapshotTransitions (program : Program)
           some result then candidate else []
   | none => []
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`replayCheckedSnapshotTransitions]
+
 private theorem replayCheckedSnapshotTransitions_sound (program : Program)
     (initial result : RuntimeState) (candidate : Option (List CommittedTransition))
     (published : replayCheckedSnapshotTransitions program initial result candidate ≠ []) :
@@ -379,6 +388,8 @@ def applyStimulusWithCompensationSnapshots (closureLimit : Nat) (program : Progr
       program.compensationExecution.isSome then
     (evaluateStimulusWithCompensationSnapshots closureLimit program state stimulus).result
   else applyStimulus closureLimit program state stimulus
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`applyStimulusWithCompensationSnapshots]
 
 /-- Local admission and selected-step phase laws lift through the actual Compensation evaluator,
 including its whole-command rollback and refusal paths. -/
@@ -482,6 +493,8 @@ def applyStimulusTracedWithCompensationSnapshots (closureLimit : Nat)
       committedTransitions := publishSnapshotTransitions program state evaluated
       flowNodeOccurrenceLifecycles := publishSnapshotLifecycles program state evaluated }
   else applyStimulusTraced closureLimit program state stimulus
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`applyStimulusTracedWithCompensationSnapshots]
 
 theorem applyStimulusWithCompensationSnapshots_closure_failure_rolls_back
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)

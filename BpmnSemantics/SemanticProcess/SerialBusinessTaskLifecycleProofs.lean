@@ -7,10 +7,60 @@ import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.BoundedTask
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.MessageMonitoredTask
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.MonitoredTask
+import all BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCollectionStorageProofs
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCounterLaws
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SBT-RESULT-01 and SBT-REFUSE-01 expose actual atomic completion and predecessor-preserving refusal. The unified reachable invariant uses the exact root lifetime, foreign-state absence and issuance frame preserved by these real transitions. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.ForeignRuntimeEmpty,
+  `SerialBusinessTask.IssuanceFrame, `SerialBusinessTask.OperationAllowed, `SerialBusinessTask.frontierFields,
+  `SerialBusinessTask.operationVertex?, `SerialBusinessTask.scalar, `admitStimulus, `boundedScopeDefinitionForChild?,
+  `compensationTargetDeclaredForFamily, `completeBoundedScope?, `completeOrdinaryUserTaskWithCompensation?,
+  `completeSelectedScope?, `completeSerialActivityScope?, `completeSerialEffect?, `completeUserTask,
+  `declaredByExactlyOneOwnedOperation, `dispatchStimulus, `effectIdNamesWait, `exactLiveOccurrence,
+  `isCallActivityProgram, `isMonitoredScopeDefinition, `operationControlPlaces, `operationDeclaresWaitKey,
+  `operationOutputs, `operationOwningScope?, `operationWaitDeclarationKeys, `serialRuntimeAssociationsValid,
+  `structuredCompositionOrdinaryCompletionAdmitted, `taskIdNamesWait, `uniqueControlPlace?, `uniqueDefinitionScope?,
+  `waitDeclarationsValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -19,7 +69,7 @@ theorem serial_activation_preserves_process (state : RuntimeState)
     (instanceId : SemanticId) (owner : ScopeOccurrenceId) (input output : ControlPlaceId)
     (effect : EffectDefinition) :
     (activateEffect state instanceId owner input output effect none).variables.process =
-      state.variables.process := rfl
+      state.variables.process := (rfl)
 
 inductive SerialEffectCompletionStep (program : Program) :
     RuntimeState → EffectOccurrenceId → EffectExecutionResult → RuntimeState → Prop where
@@ -480,6 +530,8 @@ def positionDepth (state : RuntimeState) (remaining : List Vertex) : Nat :=
   else if state.waits.isEmpty && state.effectWaits.isEmpty then
     match state.control with | .running _ => 1 | _ => 0
   else 0
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`positionDepth]
 
 /-- Every actual indexed phase has depth at most two, with zero precisely at a wait or committed completion. -/
 theorem position_depth_spec (program : Program) (ordered remaining : List Vertex)

@@ -9,7 +9,7 @@ Strict decoding for the optional hidden Program declaration. Operation and root 
 semantic validation performed after the complete Program is available.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

@@ -2,12 +2,16 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 public import BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact alternatives separate Merge input choice from canonical presentation order under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`exclusiveMergeInputTokens]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -40,6 +44,8 @@ def internalMergeInputAlternatives (state : RuntimeState) : SemanticOperation â†
         ((exclusiveMergeInputTokens state inputs).map fun token =>
           InternalAlternative.mergeInput id token.owner token.placeId).eraseDups
   | _ => []
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalMergeInputAlternatives]
 
 /-- Discovery includes exactly every offered owner/input key even when the unique-offer evaluator refuses. -/
 theorem mem_internalMergeInputAlternatives (state : RuntimeState)

@@ -6,12 +6,38 @@ import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Child completion preserves the complete candidate census for surviving Timers.
 Exact Activity body and tagged-handler selection keep a surviving Timer from naming
 the removed child, independently of activation-counter coincidences. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalSelectionReferenceRetention,
+  `MonitoredScopeTimerBinding, `activityBodyParallelTasks?, `activityBodyScope?, `activityBodyTask?,
+  `boundaryTimerWaitIdentity, `recordAttaches, `recordBodyNamesWait, `timerIdNamesWait, `timerWaitKeyMatches,
+  `waitIdentitiesUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

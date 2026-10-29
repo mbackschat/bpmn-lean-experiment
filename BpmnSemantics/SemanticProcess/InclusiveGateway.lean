@@ -2,13 +2,14 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
 public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Structured Inclusive Gateway runtime
 
 This module owns the occurrence-local selected-branch record and the split/join state transformations for the bounded structured Inclusive Gateway profile. Public observation deliberately excludes the record; scope completion and interruption still treat it as owned live state.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -55,6 +56,8 @@ def evaluateTrueInclusiveCandidates (bindings : List VariableBinding) :
       match ← evaluateSimpleBooleanExpression candidate.condition bindings with
       | true => pure (candidate :: selected)
       | false => pure selected
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`evaluateTrueInclusiveCandidates]
 
 /-- Successful evaluation retains a candidate exactly when that same candidate evaluates true under the shared bindings. -/
 theorem evaluated_true_candidate_membership_iff
@@ -109,6 +112,8 @@ def evaluateInclusiveBranches (candidates : List InclusiveCandidate)
   else
     pure (selected.map fun candidate =>
       (candidate.output, candidate.expectedJoinInput))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`evaluateInclusiveBranches]
 
 /-- Under successful evaluation and a distinct default address, the default pair is selected exactly when no candidate evaluates true. -/
 theorem evaluated_default_iff_no_candidate_true
@@ -306,6 +311,8 @@ inductive SynchronizeSelectedStep : RuntimeState → ControlPlaceId → String �
             (removeTokens before.tokens record.expectedInputs record.owner)
             output record.owner
           selectedBranchSets := before.selectedBranchSets.erase record }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`selectedBranchJoinReady]
 
 /-- A nonempty selected subset enables its join exactly when the key matches and every expected input has an occurrence-owned token. -/
 theorem nonempty_selected_subset_join_ready_iff

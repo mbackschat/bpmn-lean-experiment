@@ -11,12 +11,36 @@ public import BpmnSemantics.SemanticProcess.InternalMergePreparation
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalMergeCommutation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.WireNatural
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact Merge and ordinary End reuse token-removal frames beside Timer-task arming.
 The Merge choice remains explicit; these laws do not choose between competing offers.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalEndSelection.apply,
+  `InternalCommutation.InternalEndSelection.tokens, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalTimerTaskPatch, `InternalCommutation.internalEndStateFootprint,
+  `InternalCommutation.makeInternalEndPreparation, `InternalCommutation.makeInternalTimerTaskPatch,
+  `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.timerTaskStateFootprint, `TokenPatch.apply]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

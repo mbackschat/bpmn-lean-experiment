@@ -3,6 +3,9 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import Std.Data.DTreeMap.Internal.Balancing
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Called-tree position preservation
 
@@ -11,7 +14,9 @@ Call censuses, and reachability in the smaller graph must be derived from predec
 keeping the old traversal fuel or assuming successor association validity would miss that boundary.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`exactLiveOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

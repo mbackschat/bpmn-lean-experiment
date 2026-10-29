@@ -5,11 +5,63 @@ import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCollectionStorageProofs
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCounterLaws
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs
+import all BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SBT-AVAILABLE-01 and SBT-CLOSURE-01 share an accepted-start reachable invariant: exact root and local ownership, ordered remaining suffix, required-input presence and canonical Process data. The proof index is not serialized execution data.
 Discovery helpers also require the ordinary profile domain: InternalExecutionFrontier dispatches by identity, whereas programAnalysis checks structure. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.ordinaryExecutionFrontier,
+  `InternalCommutation.selectInternalEnd?, `SerialBusinessTask.ForeignRuntimeEmpty,
+  `SerialBusinessTask.IsSerialCompletion, `SerialBusinessTask.IssuanceFrame, `SerialBusinessTask.OperationAllowed,
+  `SerialBusinessTask.RootFrame, `SerialBusinessTask.RootLifecycle, `SerialBusinessTask.frontierFields,
+  `SerialBusinessTask.operationInputs, `SerialBusinessTask.operationVertex?, `SerialBusinessTask.positionDepth,
+  `SerialBusinessTask.requiredInputs, `StructuredComposition.isScopeCompletion, `activateEffect, `activateUserTask,
+  `admitStimulus, `awaitEffectState?, `awaitUserTaskState?, `completeQuiescentScope?, `completeScopeState?, `fire?,
+  `operationControlPlaces, `operationOutputs, `orderedBy, `programWellFormed, `reachNoneEndState?, `runningInstance?,
+  `scopeQuiescent, `step]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.SerialBusinessTask
 
@@ -65,6 +117,8 @@ def SerialFirePhase (before : RuntimeState) (operation : SemanticOperation) (own
     (∃ token, before.tokens = [token] ∧ token.placeId ∈ operationInputs operation) ∨
     (before.initiationPending = false ∧ before.tokens = [] ∧ before.waits = [] ∧ before.effectWaits = [] ∧
       StructuredComposition.isScopeCompletion operation = true ∧ before.control = .running owner.processInstanceId)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`SerialFirePhase]
 
 /-- Actual internal firing either retains the current waiting vertex or advances along its unique admitted output; its root frame and firing phase are derived from the same transition inversion. -/
 theorem fire_preserves_suffix_with_depth (program : Program) (analysis : Analysis)

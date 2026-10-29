@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Concurrent scope-occurrence entry
 
@@ -9,7 +11,7 @@ arriving token's owner, even while other occurrences of that definition are live
 refusing a second live occurrence for every other `enterScope`; the two agree whenever none is live.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -39,6 +41,8 @@ def enterConcurrentScopeState? (state : RuntimeState) (parent : ScopeOccurrenceI
             state.scopeOccurrences
           scopeActivations := setScopeActivationCount state.scopeActivations childScopeId child.activation }
   | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`concurrentScopeChild]
 
 /-- The sole owner of a place's tokens owns one of them. -/
 theorem onlyTokenOwner_mem (state : RuntimeState) (place : ControlPlaceId) (owner : ScopeOccurrenceId)

@@ -1,12 +1,16 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Scope and Call dependencies retain their complete typed identities under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`stateAtomBefore, `stateAtomRank]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -2,12 +2,14 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalPublication
 public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete regional preparation binds the selected removal, exact predecessor region,
 dependency footprint, and publication before invoking the existing evaluator.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -39,6 +41,9 @@ def applyPreparedInternalRegional? (program : Program) (state : RuntimeState)
   if prepareInternalRegional? program state prepared.selection.operation = some prepared then
     fire? program prepared.selection.operation state
   else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyPreparedInternalRegional?,
+  `prepareInternalRegional?]
 
 theorem prepareInternalRegional_facts (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalRegional)

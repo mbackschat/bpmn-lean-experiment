@@ -7,6 +7,12 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Regional controller lifetime preservation
 
@@ -15,7 +21,11 @@ inspected. Consequently every matching record of a surviving controller remains 
 lookup census. These laws provide the controller side of regional program-binding preservation.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityBodyTask?, `recordInRegion,
+  `retainedByRegion, `retainedCancellationRoot, `sameActivityOccurrence, `sequentialScopeActivityId,
+  `sequentialScopeStateValid, `taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

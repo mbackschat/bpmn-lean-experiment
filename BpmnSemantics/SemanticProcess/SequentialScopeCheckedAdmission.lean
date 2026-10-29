@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 
 /-! SMIS-ADMIT-01 checks source nodes directly; lowering is not an admission oracle. Generic scoped graph validation remains a separate conjunct. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.SequentialScopeChecked
 

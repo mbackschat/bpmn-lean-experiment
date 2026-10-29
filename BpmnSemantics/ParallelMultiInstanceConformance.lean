@@ -16,7 +16,7 @@ indexed controller partition. Parallel entry cannot be represented by the sequen
 a different schedule, and command-addressed child completion cannot be treated as an internal entry.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ParallelMultiInstanceConformance
 

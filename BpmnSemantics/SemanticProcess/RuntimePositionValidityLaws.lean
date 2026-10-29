@@ -2,10 +2,16 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Local token removal and insertion preserve runtime position under exact owner and place bindings. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`calledRootBindingValid, `exactLiveOccurrence,
+  `hostingRootCount, `programProjectionBindingsValid, `rootAssociationValid, `runningPositionValid,
+  `runtimeParentValid, `runtimePositionValid, `scopeOccurrenceValid, `tokenBindingValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

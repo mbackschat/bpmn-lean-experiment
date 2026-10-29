@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcessJson.Elements
 
 /-! # Strict checked Transaction declaration decoding -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 open BpmnSemantics.SemanticProcess

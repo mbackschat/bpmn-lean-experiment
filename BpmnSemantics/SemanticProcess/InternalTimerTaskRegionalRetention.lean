@@ -14,12 +14,47 @@ import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional cleanup must retain the complete newly inserted Activity group.
 Owner separation, fresh Timer identity, and the unchanged ownership graph determine the masks.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalTimerTaskPatch, `InternalCommutation.makeInternalTimerTaskPatch,
+  `InternalCommutation.regionalBaseFootprint?, `InternalCommutation.regionalCensusWrites,
+  `InternalCommutation.regionalSelectionLocalDataRetention, `InternalCommutation.regionalSelectionReferenceRetention,
+  `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.regionalStateFootprint?,
+  `InternalCommutation.regionalWithdrawnActivityWrites, `InternalCommutation.timerTaskStateFootprint,
+  `boundaryTimerWaitIdentity, `boundedCompletionReferenceRetention, `callReferenceRetention, `calledInstanceClosure,
+  `cancellationReferenceRetention, `monitoredCompletionReferenceRetention, `ordinaryCompletionReferenceRetention,
+  `recordInRegion, `runningInstance?, `timerIdNamesWait, `timerWaitKeyMatches, `withdrawnByRegion]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

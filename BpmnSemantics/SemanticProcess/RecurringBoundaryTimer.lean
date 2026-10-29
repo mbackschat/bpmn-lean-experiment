@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 The caller owns exact Program/body selection and maps capacity refusal to whole-command rollback.
 No successor exists on refusal, so neither a path token nor a replacement can escape that boundary. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

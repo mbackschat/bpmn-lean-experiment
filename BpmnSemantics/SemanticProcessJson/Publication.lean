@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotT
 This module owns one-way JSON projection for cross-target evidence: unnumbered committed transition records, control positions, and semantic occurrence lifecycles. The scenario runner supplies its canonical stimulus encoder for complete command schedules; the standalone parallel witness retains its manual-Start encoder. Private occurrence anchors are diagnostic evidence, never public Product 1 identities. Revisioning, state observation, and Temporal facts remain outside this owner.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson.Publication
 

@@ -11,10 +11,11 @@ import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
 import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic Process program structural validation
 
-This module owns definition, place, operation, initiation, and operation-specific admission for the Semantic Process IL. `GraphValidation` remains the owner of topology, reachability, scope-tree, and producer/consumer checks. Bodies are hidden so a body edit rebuilds only `import all` importers; a definition importers reduce definitionally is `@[expose]` with what its body calls ([module rules](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules)).
+This module owns definition, place, operation, initiation, and operation-specific admission for the Semantic Process IL. `GraphValidation` remains the owner of topology, reachability, scope-tree, and producer/consumer checks. Bodies are hidden so a body edit rebuilds only `import all` importers; a definition importers reduce definitionally is `@[expose]` with what its body calls ([module rules](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-rules)).
 -/
 
 public section
@@ -586,6 +587,8 @@ def programWellFormed (program : Program) : Bool :=
     programWaitDeclarersUnique program.operations &&
     compensationActivityRetentionDeclarationValid program &&
     compensationExecutionDeclarationValid program
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`programWellFormed]
 
 /-- Structural admission includes the complete graph invariant. -/
 theorem programWellFormed_graph (program : Program) (valid : programWellFormed program = true) :

@@ -11,6 +11,32 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservati
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.ValueDomain
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.ProfileCardinalities
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Composed Activity-data completion runtime-state preservation
 
@@ -18,7 +44,19 @@ Completing the joined User Task removes one wait, Activity record, and Activity-
 routes its output binding, and preserves the aggregate runtime-state predicate.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityBodyTask?,
+  `activityBodyTaskClaims, `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `associatedProcessBinding,
+  `attachedMessagesUnambiguous, `attachedTimersUnambiguous, `canonicalCollectionOrder, `controllerIdentitiesUnique,
+  `controllersNotExhausted, `controllersOwnLiveActivity, `dataInputOutputRuntimeJoinValid,
+  `effectIncidentAssociationValid, `effectIncidentAssociationsValid, `effectWaitOwnerAssociationValid,
+  `eventRaceAssociationsValid, `exactLiveOccurrence, `hiddenRecordDeclarationsValid,
+  `operationControlPlacesShareOwner, `parallelMultiInstanceUserTaskProfileId,
+  `programParallelMultiInstanceProfileMatches, `programSequentialMultiInstanceProfileMatches,
+  `programUndispatchedCapabilities, `runtimePositionValid, `runtimeStateIdentityBound, `runtimeStateWellFormed,
+  `sameActivityOccurrence, `sequentialMultiInstanceUserTaskProfileId, `userTaskWaitKeyMatches, `waitDeclarationsValid,
+  `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -35,6 +73,8 @@ private theorem all_erase [BEq α] [LawfulBEq α] (predicate : α → Bool)
 def completionLexStep [DecidableEq α] (less : α → α → Bool)
     (left right : α) (rest : Bool) : Bool :=
   if left ≠ right then less left right else rest
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completionLexStep]
 
 private theorem completionLexStep_false_iff [DecidableEq α] (less : α → α → Bool)
     (left right : α) (rest : Bool) : completionLexStep less left right rest = false ↔
@@ -88,6 +128,8 @@ private theorem completionLexStep_compose [DecidableEq α] (less : α → α →
 
 def completionStringBefore (left right : String) : Bool := decide (left < right)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completionStringBefore]
+
 private theorem completionString_total (left right : String) :
     left ≠ right → left < right ∨ right < left := by
   intro different
@@ -115,6 +157,8 @@ def completionTripleBefore (process element : α → String) (activation : α �
   completionLexStep completionStringBefore (process left) (process right)
     (completionLexStep completionStringBefore (element left) (element right)
       (decide (activation left < activation right)))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completionTripleBefore]
 
 private theorem completionTripleBefore_compose (process element : α → String)
     (activation : α → Nat) (a b c : α) :

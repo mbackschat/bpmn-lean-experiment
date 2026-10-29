@@ -9,6 +9,39 @@ public import BpmnSemantics.SemanticProcess.InternalSnapshotArming
 public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
 import BpmnSemantics.SemanticProcess.ScopeAncestryLaws
 import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.SemanticProcess.TransactionPhaseFrames
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction leaf-scope frontier classification
 
@@ -17,7 +50,13 @@ beside a quiescent child without assuming disabled completion, runtime validity,
 The classifier does not establish that execution reaches only these layouts.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attemptInternalOperation,
+  `boundedScopeDefinitionForChild?, `calledInstanceClosure, `canonicalEnabledInternalTransitions,
+  `completeBoundedScope?, `completeMonitoredScope?, `completeQuiescentScope?, `completeScopeState?,
+  `completeSelectedScope?, `isMonitoredScopeDefinition, `processInstanceClosureWithin,
+  `snapshotInternalTransitionFrontier]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -44,6 +83,8 @@ def leafCompletion (leaf : Option RuntimeScopeOccurrence) (operation : SemanticO
   match leaf, operation with
   | some occurrence, .completeScope _ _ scope _ => scope == occurrence.id.definitionScopeId
   | _, _ => false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`leafCompletion]
 
 theorem transaction_quiescent_scope_is_leaf (p : Program) (roles : TransactionAdmittedRoles p)
     (state : RuntimeState) (leaf : Option RuntimeScopeOccurrence) (shape : TransactionScopeShape roles state leaf)

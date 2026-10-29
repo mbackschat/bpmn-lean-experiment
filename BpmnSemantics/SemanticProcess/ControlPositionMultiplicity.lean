@@ -2,12 +2,17 @@ module
 
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Public token multiplicity counts private token units, as required by the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertTokenPosition, `projectTokens, `sameTokenPosition,
+  `tokenMultiplicityAt]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -15,6 +20,8 @@ def positionMass (positions : List PublicControlTokenPosition)
     (target : PublicControlTokenPosition) : Nat :=
   (positions.map fun position =>
     if sameTokenPosition target position then position.multiplicity else 0).sum
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`positionMass]
 
 theorem sameTokenPosition_key_congr (target left right : PublicControlTokenPosition)
     (same : tokenPositionKey left = tokenPositionKey right) :

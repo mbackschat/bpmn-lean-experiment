@@ -10,10 +10,64 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.BoundedTask
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.MessageMonitoredTask
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.MonitoredTask
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import all BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionDataProofs
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! MTCF-DATA-01 carries future writer-free read obligations through admitted graph edges and actual binding merges, avoiding a fixed topology or a caller-supplied successful input evaluation. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MixedTaskControlFlow.aritiesValid,
+  `MixedTaskControlFlow.consumer?, `MixedTaskControlFlow.edges, `MixedTaskControlFlow.operationInputs,
+  `MixedTaskControlFlow.operationOutputs, `MixedTaskControlFlow.operationVertex?,
+  `MixedTaskControlFlow.startBindingsAdmitted, `MixedTaskControlFlow.uniqueNames,
+  `MixedTaskControlFlow.writerBarrierEdges, `SerialBusinessTask.ForeignRuntimeEmpty,
+  `SerialBusinessTask.IsSerialCompletion, `SerialBusinessTask.scalar, `StructuredComposition.isScopeCompletion,
+  `admitStimulus, `awaitEffectState?, `awaitUserTaskState?, `boundedScopeDefinitionForChild?,
+  `callDataRuntimeStateValid, `chooseState?, `compensationTargetDeclaredForFamily,
+  `completeOrdinaryUserTaskWithCompensation?, `completeSelectedScope?, `completeSerialActivityScope?,
+  `dispatchStimulus, `effectActivationCount, `hasSequentialScopeDefinition,
+  `interruptingMessageEventSubProcessStateValid, `isCallActivityProgram, `isMonitoredScopeDefinition,
+  `reachNoneEndState?, `selectConditionalOutput, `sequentialScopeEntry?,
+  `structuredCompositionOrdinaryCompletionAdmitted]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 
@@ -225,6 +279,8 @@ def OperationAllowed : SemanticOperation → Prop
   | .initiate .. | .awaitUserTask .. | .awaitEffect ..
   | .choose .. | .mergeExclusive .. | .reachNoneEnd .. | .completeScope _ _ _ none => True
   | _ => False
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.MixedTaskControlFlow #[`OperationAllowed]
 
 private theorem mapM_member_some (values : List α) (project : α → Option β)
     (results : List β) (mapped : values.mapM project = some results)

@@ -3,6 +3,11 @@ module
 public import BpmnSemantics.SemanticProcess.CallVariableMapping
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
+import all BpmnSemantics.SemanticProcess.CallVariableMapping
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.CallDataTransfer
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Call variable mapping laws
 
@@ -12,7 +17,10 @@ covers, so it is stated over arbitrary scoped variables: resolution from a calle
 reads or writes the hosting Process binding and never selects a frame of another instance.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CallVariableMapping.calledRootFrame,
+  `CallVariableMapping.copyValue?, `CallVariableMapping.copyValues?, `NestedScopeData.writeAll?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

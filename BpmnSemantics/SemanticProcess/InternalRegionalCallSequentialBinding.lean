@@ -6,12 +6,19 @@ import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete SMI bindings survive whole-called-instance removal because controller identity,
 Activity identity, and the owned task/Timer pair agree on the deciding Process instance.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`controllerNamesActivityOccurrence,
+  `sequentialMultiInstanceProgramBindingsValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -11,7 +11,7 @@ Each evaluator rewrites a state for one operation shape from its unique input ow
 and dispatcher in `Transition` select among them and bridge them to `OperationStep`.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

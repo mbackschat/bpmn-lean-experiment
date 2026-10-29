@@ -8,6 +8,30 @@ public import BpmnSemantics.SemanticProcess.TransactionScopePhases
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
 import BpmnSemantics.SemanticProcess.TransactionCommandPhases
 import BpmnSemantics.SemanticProcess.TransactionPhaseInduction
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.NestedScopeDataCommand
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.TransactionBranchPhases
+import all BpmnSemantics.SemanticProcess.TransactionPhaseFrames
+import all BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+import all BpmnSemantics.SemanticProcess.TransactionScopePhases
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction execution-phase invariant
 
@@ -15,7 +39,10 @@ Exact initialization prefixes lead to the continuation invariant. Its live-scope
 inactive-family facts are derived locally; no constructor assumes a frontier bound or runtime validity.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`admitStimulusWithCompensationSnapshots,
+  `callDataRuntimeStateValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

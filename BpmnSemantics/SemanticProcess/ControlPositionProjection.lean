@@ -3,13 +3,15 @@ module
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.ControlPositionContract
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Public position projection and exact delta algebra depend on immutable Program bindings
 and RuntimeState rather than trace execution. This permits predecessor templates and
 actual publication checks to share the existing projection under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -29,6 +31,8 @@ def tokenPositionBefore (left right : PublicControlTokenPosition) : Bool :=
   else if left.owner.definitionScopeId.value ≠ right.owner.definitionScopeId.value then
     left.owner.definitionScopeId.value < right.owner.definitionScopeId.value
   else left.owner.activation < right.owner.activation
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`sameTokenPosition, `tokenPositionBefore]
 
 private theorem sequenceFlowId_eq_of_value_eq (left right : SequenceFlowId)
     (equal : left.value = right.value) : left = right := by cases left; cases right; congr
@@ -112,6 +116,8 @@ def tokenPositionKey (position : PublicControlTokenPosition) :
     SequenceFlowId × ScopeOccurrenceId :=
   (position.sequenceFlowId, position.owner)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`tokenPositionKey]
+
 theorem sameTokenPosition_iff_key_eq (left right : PublicControlTokenPosition) :
     sameTokenPosition left right = true ↔ tokenPositionKey left = tokenPositionKey right := by
   simp [sameTokenPosition, tokenPositionKey]
@@ -124,6 +130,8 @@ def insertTokenPosition (position : PublicControlTokenPosition) :
         { current with multiplicity := current.multiplicity + position.multiplicity } :: rest
       else if tokenPositionBefore position current then position :: current :: rest
       else current :: insertTokenPosition position rest
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertTokenPosition]
 
 theorem tokenPositionKey_mem_insert (key : SequenceFlowId × ScopeOccurrenceId)
     (position : PublicControlTokenPosition) (positions : List PublicControlTokenPosition) :
@@ -173,6 +181,8 @@ def tokenPositionsStrict : List PublicControlTokenPosition → Prop
   | current :: rest =>
       (∀ candidate ∈ rest, tokenPositionBefore current candidate = true) ∧
         tokenPositionsStrict rest
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`tokenPositionsStrict]
 
 theorem tokenPositionsStrict_insert (position : PublicControlTokenPosition) :
     ∀ positions, tokenPositionsStrict positions →
@@ -301,6 +311,8 @@ def controlPositionProjectable (program : Program) (expectedInstanceId : Semanti
     (state : RuntimeState) : Prop :=
   runtimePositionValid program expectedInstanceId state = true
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`projectControlPosition?]
+
 /-- Every admitted, binding-valid runtime position has one exact public projection. -/
 theorem projectControlPosition_total (program : Program) (expectedInstanceId : SemanticId)
     (state : RuntimeState)
@@ -318,6 +330,8 @@ def tokenMultiplicityAt (positions : List PublicControlTokenPosition)
   match positions.find? (sameTokenPosition target) with
   | some position => position.multiplicity
   | none => 0
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`tokenMultiplicityAt]
 
 theorem tokenMultiplicityAt_of_mem (positions : List PublicControlTokenPosition)
     (position : PublicControlTokenPosition) (strict : tokenPositionsStrict positions)

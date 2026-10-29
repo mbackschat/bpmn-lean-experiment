@@ -13,10 +13,18 @@ public import BpmnSemantics.SemanticProcess.Incident
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 public import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.Incident
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ENTER-01 and SMIS-END-01 establish position and identity for successful individual body creation and retirement below aggregate validity and history transport. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeCompletionResult.state,
+  `SequentialScopeEntryResult.state, `canonicalCollectionOrder, `completeSequentialScopeResult?, `effectIdNamesWait,
+  `effectWaitOccurrenceId, `exactLiveOccurrence, `orderedBy, `runtimeStateIdentityBound, `sequentialScopeEntryEnabled]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

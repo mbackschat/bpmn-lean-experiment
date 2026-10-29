@@ -61,6 +61,99 @@ public import BpmnSemantics.BooleanProcessDataConformanceCheckFixtures
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.ControlPosition
 public import BpmnSemantics.SemanticProcessJson.Observation
+import all BpmnSemantics.BooleanProcessDataConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.BoundedTask
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallActivityAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.ClosureLimit
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalLocalDataRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.MessageMonitoredTask
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.MonitoredTask
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.OpenWaitProjection
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.Scenario
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.SequentialScopeObservation
+import all BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+import all BpmnSemantics.SemanticProcess.TopologyFixtures
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcess.ValueDomain
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.SemanticProcessJson.CheckedProcess
+import all BpmnSemantics.SemanticProcessJson.Observation
+import all BpmnSemantics.SemanticProcessJson.Program
+import all BpmnSemantics.SequentialUserTaskFixtures
+import all BpmnSemantics.UserTaskMetadataConformanceCheckFixtures
+import all Lean.Data.Options
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # User Task assignment and form metadata conformance
 
@@ -69,7 +162,17 @@ runtime, public-observation, and strict-wire boundaries. It adds no transition f
 assignment authorization, form validation, or broader BPMN resource/rendering meaning.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics #[`SemanticProcess.InternalCommutation.ScheduledClosureResult.failed,
+  `SemanticProcess.InternalCommutation.ordinaryExecutionFrontier,
+  `SemanticProcess.ParallelScopeCommand.stimulusAdmitted, `SemanticProcess.StimulusResult.ofClosure,
+  `SemanticProcess.StimulusResult.ofScheduledClosure, `SemanticProcess.admitStimulus, `SemanticProcess.applyStimulus,
+  `SemanticProcess.completeOrdinaryUserTaskWithCompensation?, `SemanticProcess.completeUserTask,
+  `SemanticProcess.lowerCheckedProcess, `SemanticProcess.taskIdNamesWait, `SequentialUserTask.exactTaskInstanceId,
+  `SequentialUserTask.exactWait, `UserTaskMetadataConformance.checkedProcessFor,
+  `UserTaskMetadataConformance.programFor, `UserTaskMetadataConformance.taskDefinitionFor,
+  `UserTaskMetadataConformance.waitFor, `UserTaskMetadataConformance.waitingStateFor]
+
+public section
 
 namespace BpmnSemantics.UserTaskMetadataConformance
 
@@ -151,6 +254,8 @@ def completionOffer (before after : RuntimeState) (operation : SemanticOperation
     InternalCommutation.InternalExecutionOffer :=
   { alternative := .operation operation.id, operation, successor := after,
     preparation := InternalCommutation.prepareInternalTransition? (programFor exactMetadata) before operation }
+
+run_meta privateEquations `BpmnSemantics.UserTaskMetadataConformance #[`completionOffer]
 
 private theorem completionDiscovery (before after : RuntimeState) (operation : SemanticOperation)
     (selected : (match operation with

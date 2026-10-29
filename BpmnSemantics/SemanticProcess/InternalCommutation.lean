@@ -7,13 +7,32 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 public import BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Classified internal commutation
 
 Defines the public exact-two independence classifier and proves exact state and canonical-order commutation for every admitted classified pair.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.InternalArmingWrite.elementId, `InternalCommutation.InternalArmingWrite.kind,
+  `InternalCommutation.InternalArmingWrite.occurrence, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.effectWaitOccurrence, `InternalCommutation.footprintOfPatch,
+  `InternalCommutation.internalArmInput?, `InternalCommutation.internalArmOrigin?, `InternalCommutation.listsDisjoint,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
+  `InternalCommutation.prepareInternalArm?, `InternalCommutation.scopedEffectInputReads?,
+  `InternalCommutation.stateReadSetsDisjoint, `canonicalCollectionOrder, `canonicalPublicationAtomSet,
+  `canonicalStateAtomSet, `effectActivationCount, `evaluateEffectInputs?, `evaluateSequentialScopeInputs?,
+  `footprintsNonInterfering, `messageActivationCount]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -140,6 +159,8 @@ theorem effectActivationRead_set_other (state : RuntimeState) (target query : No
   simpa [effectActivationCount] using effectActivationCount_set_other state target query count (Ne.symm different)
 
 def internalActivationCount (state : RuntimeState) (kind : InternalWaitKind) (element : NodeId) : Nat := match kind with | .userTask => activationCount state ⟨element.value⟩ | .message => messageActivationCount state element | .timer => timerActivationCount state element | .effect => effectActivationCount state element
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalActivationCount]
 
 theorem armingActivationRead_frame (state : RuntimeState) (left : InternalArmingPatch) (queryKind : InternalWaitKind) (queryElement : NodeId) (different : left.write.kind = queryKind → left.write.elementId ≠ queryElement) : internalActivationCount (applyInternalArmingPatch state left) queryKind queryElement = internalActivationCount state queryKind queryElement := by
   cases left with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> cases queryKind <;> simp_all [internalActivationCount, applyInternalArmingPatch, InternalArmingWrite.kind, InternalArmingWrite.elementId, activationCount, messageActivationCount, timerActivationCount, effectActivationCount, taskActivationRead_set_other, messageActivationRead_set_other, timerActivationRead_set_other, effectActivationRead_set_other]
@@ -443,6 +464,8 @@ def internalOperationFrontierPairwiseIndependent? (program : Program)
 def fireInternalPair? (program : Program) (state : RuntimeState) (first second : SemanticOperation) : Option RuntimeState := do
   let intermediate ← fire? program first state
   fire? program second intermediate
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`internalOperationPairIndependent?]
 
 theorem classified_internal_pair_commutes (program : Program) (state : RuntimeState) (left right : SemanticOperation) (instanceId : SemanticId)
     (programAdmitted : programWellFormed program = true) (stateAdmitted : runtimeStateWellFormed program instanceId state = true) (openBefore : (projectOpenFlowNodeOccurrences? program state).isSome = true)

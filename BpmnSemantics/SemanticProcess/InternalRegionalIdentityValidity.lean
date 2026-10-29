@@ -1,12 +1,21 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional removal preserves occurrence uniqueness through sublists. Membership inclusion is
 insufficient for RSI-UNIQ-02 because it forgets multiplicity; the symbolic duplicate witness separates
 that weaker premise without assuming successor validity. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectWaitKeyMatches, `messageWaitKeyMatches, `occursOnce,
+  `sameActivityOccurrence, `sameSequentialMultiInstanceController, `timerWaitKeyMatches, `userTaskWaitKeyMatches,
+  `waitIdentitiesUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

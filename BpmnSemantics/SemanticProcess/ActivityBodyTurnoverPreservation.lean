@@ -5,6 +5,12 @@ public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.TransactionCompensationProvenance
+import all BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Activity body turnover preservation
 
@@ -13,7 +19,13 @@ conjunct-specific laws remain in `ActivityBodyTurnover`; this owner composes the
 mechanism owner past the reviewability ceiling.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyTask?, `activityTaskBodyOwnersAgree,
+  `attachedMessagesUnambiguous, `notStartedStateEmpty, `replaceActivityBodyTask, `replaceBodyIn, `replacedState,
+  `runtimeStateIdentityBound, `runtimeStateWellFormed, `sameActivityOccurrence, `scopeQuiescent,
+  `sequentialScopeBindingForEntry?, `sequentialScopeStateValid, `transactionTriggerProvenanceValid, `turnoverWait,
+  `userTaskWaitKeyMatches, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -22,6 +22,21 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-SELECT-01 separates discovery failure from dependent multi-offer selection.
 Actual reachability rules out failed discovery and duplicate alternatives even at
@@ -29,7 +44,14 @@ empty or singleton frontiers. Initial-entry blockers and scoped resumption suppl
 complete batches, so selection consumes no private choice directive.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `InternalCommutation.deriveInternalExecutionFrontier, `InternalCommutation.internalArmInput?,
+  `InternalCommutation.internalOperationOccurrenceOffers?, `InternalCommutation.ordinaryExecutionFrontier,
+  `InternalCommutation.selectInternalExecutionFrontier, `ParallelScopeStart.analyzeProgram,
+  `ParallelScopeStart.programSelected, `SemanticOperation.kind, `SequentialScopeControl.inputs, `bodyConsumedPorts,
+  `parallelScopeBinding?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

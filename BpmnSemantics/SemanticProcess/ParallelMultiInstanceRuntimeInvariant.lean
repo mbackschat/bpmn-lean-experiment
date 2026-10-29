@@ -15,7 +15,7 @@ Scope boundary: the family-local state relation and its executable predicate. It
 transition, public observation, shared runtime-state field, or host state.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -3,6 +3,8 @@ module
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateClosingTerminalPreservation
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance closing-route preservation
 
@@ -14,7 +16,9 @@ Scope boundary: route selection and result-publication framing only. The shared 
 progress, evaluator lifting, command traces, host behavior, and semantic account remain outside.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`publishSharedParallelResults]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

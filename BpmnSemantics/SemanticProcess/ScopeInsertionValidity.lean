@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Fresh scope insertion and existing ownership
 
@@ -9,7 +11,10 @@ The scope-creation validity proof needs singleton lookups to survive insertion, 
 membership. These laws preserve the existing ownership checks without assuming successor validity.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityRecordsOwnLiveWork,
+  `exactLiveOccurrence, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

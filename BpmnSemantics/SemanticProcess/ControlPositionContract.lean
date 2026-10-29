@@ -6,7 +6,7 @@ public import BpmnSemantics.CheckedProcessContract
 can retain exact publication templates under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

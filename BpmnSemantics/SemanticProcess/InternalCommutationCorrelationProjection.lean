@@ -7,13 +7,24 @@ public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Correlated-message internal commutation projections
 
 Proves the occurrence-projection facts specific to one prepared correlated Message catch arm.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalArmingWrite.occurrence, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.internalArmInput?, `InternalCommutation.internalArmOrigin?,
+  `InternalCommutation.messageWaitOccurrence, `InternalCommutation.prepareInternalArm?, `exactLiveOccurrence,
+  `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

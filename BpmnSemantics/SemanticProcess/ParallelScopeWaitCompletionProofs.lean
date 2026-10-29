@@ -1,7 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
-import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Wait declarations across parallel-scope command completion
 
@@ -10,7 +12,9 @@ RSI-BIND-04 therefore follows from the predecessor declaration census without
 assuming successful scheduling or a well-formed successor.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeSerialEffect?, `waitDeclarationsValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeCommand
 

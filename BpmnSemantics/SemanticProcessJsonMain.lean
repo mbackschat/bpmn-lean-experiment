@@ -5,13 +5,15 @@ public import BpmnSemantics.SemanticProcessJson.Publication
 public import BpmnSemantics.SemanticProcessJson.Observation
 public import BpmnSemantics.SemanticProcessJson.DefinitionInput
 public import BpmnSemantics.SemanticProcessJson.Scenario
+import all BpmnSemantics.SemanticProcessJson.Observation
+import all Lean.Data.Json.Basic
 
 /-! One-way canonical JSON-lines emitter for admitted Semantic Process scenarios.
 
 It strictly decodes the same answer-free scenario documents supplied to the other targets, then exposes results derived by the executable Lean interpreter so the external differential harness can compare them without parsing Lean's diagnostic `Repr` output.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJsonMain
 

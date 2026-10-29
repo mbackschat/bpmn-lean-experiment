@@ -15,7 +15,7 @@ Independent checked, Program, and JSON fixtures shared by the responsibility-spl
 owners for the owner-approved source checkpoint.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

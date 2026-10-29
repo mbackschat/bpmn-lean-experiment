@@ -6,7 +6,7 @@ public import BpmnSemantics.CallActivityConformanceFixtures
 
 /-! Executable publication probes and conformance proofs share these exact states and expected traces. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CommittedExecutionPublicationConformance
 

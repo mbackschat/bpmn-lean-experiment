@@ -7,6 +7,14 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual parallel reservation owner bounds
 
@@ -15,7 +23,10 @@ Its issued scope ordinal census therefore supplies reservation's owner bounds;
 actual continuation history retains those identities without allocating scopes.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.occurrenceOwnerRootValid,
+  `ParallelScopeStart.analyzeProgram, `nonempty, `programWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

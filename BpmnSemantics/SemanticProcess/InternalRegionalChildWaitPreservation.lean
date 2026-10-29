@@ -6,11 +6,25 @@ import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionOpenProjection
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete wait-family preservation for child completion uses the existing validators.
 The selected withdrawal and quiescence discharge Timer-host and live-owner frames. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`fire?, `flowNodeOccurrenceProgramValidity,
+  `flowNodeOccurrenceWaitProgramValidity, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

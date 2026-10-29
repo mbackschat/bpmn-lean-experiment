@@ -4,19 +4,41 @@ import BpmnSemantics.SemanticProcess.CyclicControlFlowLaws
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 public import BpmnSemantics.SemanticProcess.Transition
 public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-CONTINUE-01 follows the actual evaluator from a committed start through internal steps and accepted or rejected User Task completions. Admission excludes foreign operation families; the control-unit bound is derived at start and preserved across those transitions. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeCommand.stimulusAdmitted,
+  `ParallelScopeStart.analyzeProgram, `StructuredComposition.OperationAllowed, `activateDataInputOutputUserTask?,
+  `activateUserTask, `admitStimulus, `awaitUserTaskState?, `boundedScopeDefinitionForChild?, `chooseState?,
+  `compensationTargetDeclaredForFamily, `completeBoundedScope?, `completeDataInputOutputUserTask?,
+  `completeOrdinaryUserTaskWithCompensation?, `completeSelectedScope?, `dataInputOutputRuntimeJoinValid,
+  `dispatchStimulus, `hasSequentialScopeDefinition, `isMonitoredScopeDefinition, `programWellFormed,
+  `reachNoneEndState?, `selectConditionalOutput, `sequentialScopeEntry?, `taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
 def ControlUnitBound (state : RuntimeState) : Prop :=
   state.tokens.length + state.waits.length + (if state.initiationPending then 1 else 0) ≤ 1
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`ControlUnitBound]
 
 theorem enabled_token_under_bound_is_single
     (state : RuntimeState) (input : ControlPlaceId) (owner : ScopeOccurrenceId)
@@ -630,6 +652,8 @@ def RootOwnedControl (owner : ScopeOccurrenceId) (state : RuntimeState) : Prop :
   (∀ occurrence ∈ state.scopeOccurrences, occurrence.id = owner) ∧
     (∀ token ∈ state.tokens, token.owner = owner) ∧
     (∀ wait ∈ state.waits, wait.owner = owner)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`RootOwnedControl]
 
 theorem selected_token_has_root_owner (state : RuntimeState) (owner selected : ScopeOccurrenceId)
     (input : ControlPlaceId) (owned : RootOwnedControl owner state) (bounded : ControlUnitBound state)

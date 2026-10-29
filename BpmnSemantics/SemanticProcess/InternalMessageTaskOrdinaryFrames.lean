@@ -7,12 +7,35 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlRegionalDependencies
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Message-task and ordinary arming share the existing wait, counter, and owner-census frame laws.
 The selected subscription account requires both anchors and the joined Activity to remain atomic.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
+  `InternalCommutation.InternalArmingWrite.kind, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalMessageTaskPatch, `InternalCommutation.footprintOfPatch,
+  `InternalCommutation.internalActivationCount, `InternalCommutation.liftRegionalStateAtom,
+  `InternalCommutation.makeInternalMessageTaskPatch, `InternalCommutation.messageTaskStateFootprint,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
+  `InternalCommutation.prepareInternalMessageTaskContract?, `InternalCommutation.regionalStateAtomsConflict,
+  `InternalWaitKind.activationKind, `canonicalCollectionOrder, `canonicalStateAtomSet, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -4,6 +4,14 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
+import all BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Admitted parallel Program capacity certificates
 
@@ -12,7 +20,11 @@ this proof owner. Runtime admission and capacity selectors remain in Capacity,
 so extending a certificate does not change their import dependencies.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.programOperationAllowed,
+  `SequentialScopeControl.bodyVertex?, `SequentialScopeControl.parentPath, `SequentialScopeProgram.operationAllowed,
+  `operationOutputs]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 

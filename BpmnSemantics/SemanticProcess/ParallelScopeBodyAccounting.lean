@@ -5,6 +5,21 @@ import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual parallel-body lifetime firing accounting
 
@@ -13,7 +28,12 @@ and admitted dependency order bound each declaration's exact-owner firing count;
 these laws do not require the independent frontier-locality proof closure.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeReplay.bodyTransition,
+  `ParallelScopeReplay.declarationFiringCharge, `ParallelScopeReplay.declarationFiringCount, `SemanticOperation.kind,
+  `SequentialScopeControl.bodyVertex?, `SequentialScopeControl.inputs, `bodyConsumedPorts, `continuationMarking,
+  `ownedPortCount]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -377,7 +397,7 @@ theorem ContinuationCommandHistory.enabled_body_firing_count_zero
     rw [childEq]
     simpa only [owned, childScope] using population
   -- Derived from `completionEq` rather than restated: a module gives a restated `match` its own private
-  -- matcher (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
+  -- matcher (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
   have present := completionEq ▸ List.mem_singleton_self completion
   have completionMember : completion ∈ child := (List.mem_filter.mp present).1
   have completionKind : completion.kind = .completeParallelMultiInstanceScope := by

@@ -9,10 +9,59 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
 public import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.MergeTargetOperations
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionDataProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-CLOSURE-01 connects reachable lifecycle and data invariants to enabled transitions and exact task-command readiness. Reverse enablement is established before the bounded closure evaluator is assembled. Discovery also requires the selected profile because `ordinaryExecutionFrontier` and `mergeExecutionFrontier` dispatch by profile while structural analysis remains profile-independent. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CheckedSequenceFlow.toControlPlace,
+  `InternalCommutation.InternalMergeSelection.alternative, `InternalCommutation.InternalMergeSelection.apply,
+  `InternalCommutation.InternalMergeSelection.tokens, `InternalCommutation.PreparedInternalTransition.Prepared,
+  `InternalCommutation.PreparedInternalTransition.apply, `InternalCommutation.applyPreparedInternalTransition?,
+  `InternalCommutation.internalLocalControlPlaceOrigin?, `InternalCommutation.internalLocalControlPositionDelta?,
+  `InternalCommutation.internalLocalControlTokensAvailable, `InternalCommutation.internalMergeInputAlternatives,
+  `InternalCommutation.makeInternalMergePreparation, `InternalCommutation.mergeExecutionFrontier,
+  `InternalCommutation.ordinaryExecutionFrontier, `InternalCommutation.prepareInternalMerge?,
+  `InternalCommutation.selectInternalEnd?, `InternalCommutation.selectInternalMerge?,
+  `InternalCommutation.selectedInputOrigin?, `InternalCommutation.sortBy, `InternalCommutation.sortInsertBy,
+  `StructuredComposition.ControlUnitBound, `StructuredComposition.OperationAllowed,
+  `StructuredComposition.isScopeCompletion, `StructuredComposition.operationInputs, `TokenPatch.apply,
+  `activateDataInputOutputUserTask?, `awaitUserTaskState?, `chooseState?, `completeQuiescentScope?,
+  `completeScopeState?, `exactLiveOccurrence, `fire?, `flowControlPlaceId, `lowerCheckedProcess, `nonempty,
+  `programWellFormed, `reachNoneEndState?, `runningInstance?, `scopeQuiescent, `step]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 

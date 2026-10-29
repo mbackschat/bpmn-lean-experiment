@@ -16,7 +16,7 @@ value to Process scope in the same transition that removes the wait, Activity re
 input-bearing scope.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

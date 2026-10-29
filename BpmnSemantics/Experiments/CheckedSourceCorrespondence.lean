@@ -10,13 +10,28 @@ import all BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.Scenario
 public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.Experiments.CheckedSourceState
+import all BpmnSemantics.Experiments.CheckedSourceTransition
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
 
 /-! # Stage 1 checked-source correspondence
 
 This provisional module establishes the ordering substrate and a two-segment enabled-transition correspondence before any graph-admission proof is attempted. It compares the direct checked-source selector with the production operation evaluator; it does not claim closure or run preservation.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceCorrespondence
 

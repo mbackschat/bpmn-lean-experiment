@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcessContract
 /-! Independent IL admission for IMES-ARM-01 and IMES-CLOSE-01. Exact operation, port and scope
 partitions distinguish a declaration-triggered handler from an ordinary entered child with a continuation. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

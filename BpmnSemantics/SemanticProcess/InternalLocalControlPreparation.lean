@@ -3,12 +3,13 @@ module
 public import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete predecessor preparations for the five local-control families in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -134,6 +135,9 @@ def applyPreparedInternalLocalControl? (program : Program) (state : RuntimeState
   if prepareInternalLocalControl? program state prepared.selection.operation = some prepared then
     some (prepared.selection.apply state)
   else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalLocalControlRecordAvailable,
+  `internalLocalControlTokensAvailable]
 
 theorem prepareInternalLocalControl_facts (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalLocalControl)

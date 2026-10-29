@@ -6,6 +6,12 @@ import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Repeated-scope transition laws
 
@@ -13,7 +19,16 @@ SMIS-ENTER-01 distinguishes zero-item continuation from any issuance of Activity
 These local laws do not replace the capsule's admitted-source reachability and progress obligations.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeCompletionResult.state,
+  `SequentialScopeEntryResult.state, `activityBodyScopeClaims, `activityIdentityAdmittedAfter,
+  `activityIdentityIssuingDiscipline, `completeSequentialScopeEffect?, `completeSequentialScopeUserTask?,
+  `enterSequentialScopeResult?, `enterSequentialScopeState?, `evaluateEffectInputs?, `evaluateSequentialScopeInputs?,
+  `exactLiveOccurrence, `hasSequentialScopeDefinition, `issueSequentialScope?, `readSequentialScopeVariable?,
+  `sameActivityOccurrence, `scopeForestWellFormed, `scopeVariableScalar, `selectScopeVariables?,
+  `sequentialScopeBindingForEntry?, `sequentialScopeProgramSelected, `sequentialScopeStateValid,
+  `writeSequentialScopeValues?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

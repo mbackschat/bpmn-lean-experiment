@@ -11,11 +11,32 @@ import BpmnSemantics.SemanticProcess.InternalRegionalArmingSelectionFrame
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact pair equality requires canonical list order, including continuation-token
 insertion and owner-filtered cancellation, rather than equality of memberships. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.occurrence,
+  `InternalCommutation.InternalArmingWrite.owner, `InternalCommutation.PreparedInternalArming.apply,
+  `InternalCommutation.PreparedInternalArming.scopeFramePatch, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.effectWaitOccurrence,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors, `calledInstanceClosure,
+  `cancelScopeSubtree, `canonicalCollectionOrder]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

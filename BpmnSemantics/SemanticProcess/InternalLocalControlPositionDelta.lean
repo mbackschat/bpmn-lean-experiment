@@ -3,12 +3,13 @@ module
 public import BpmnSemantics.SemanticProcess.ControlPositionContract
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 public import BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Local-control publication templates retain signed token units from the immutable Program and
 patch, as required by the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -27,6 +28,9 @@ def internalLocalControlPlaceOrigin? (program : Program) (place : ControlPlaceId
   else if (program.controlPlaces.filter fun candidate =>
       decide (candidate.origin.elementId = origin.elementId)).length = 1 then some origin
   else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalLocalControlPlaceOrigin?,
+  `internalLocalControlTokenResidual]
 
 theorem internalLocalControlPlaceOrigin?_selectedInputOrigin
     (program : Program) (place : ControlPlaceId) (owner : ScopeOccurrenceId)

@@ -3,12 +3,18 @@ module
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete mixed templates sort before lifecycle numbering under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`numberTransitionPublicationTemplates,
+  `sortBy, `sortInsertBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

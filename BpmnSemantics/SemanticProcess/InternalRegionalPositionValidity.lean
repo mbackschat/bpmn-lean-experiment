@@ -6,6 +6,10 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
+import all BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Regional position preservation
 
@@ -14,7 +18,9 @@ actual cancellation masks must retain each surviving parent and token owner befo
 frame applies; arbitrary root deletion is not a position-preserving operation.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`processInstanceClosureWithin, `runtimePositionValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

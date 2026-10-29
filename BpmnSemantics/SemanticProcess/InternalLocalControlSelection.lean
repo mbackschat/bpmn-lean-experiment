@@ -3,12 +3,19 @@ module
 public import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
 public import BpmnSemantics.SemanticProcess.InternalLocalControlBranchSelection
 public import BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Predecessor selection for the five local-control families in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalSelectedBranchPatch.apply, `TokenPatch.apply,
+  `chooseState?, `duplicateState?, `selectManyState?, `synchronizeSelectedState?, `synchronizeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -95,6 +102,9 @@ def selectInternalLocalControl? (state : RuntimeState) (operation : SemanticOper
             branchResult := some (.selectedJoin record) }
       | _ => none
   | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalLocalControlSelection.apply,
+  `selectInternalLocalControl?]
 
 theorem localControlSelection_duplicate_enabled (state : RuntimeState)
     (operationId : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)

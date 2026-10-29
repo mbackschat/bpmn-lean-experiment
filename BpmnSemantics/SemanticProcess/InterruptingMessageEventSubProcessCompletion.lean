@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.ScopeCompletion
 /-! Token-free completion of a declared Message Event Sub-Process. Exact child/parent binding and the
 shared quiescence predicate gate disposal; ordinary scope continuation keeps its existing owner. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

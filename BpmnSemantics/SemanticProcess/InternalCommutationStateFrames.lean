@@ -7,13 +7,32 @@ public import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 public import BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Internal commutation state-frame proofs
 
 Collects the collection-order, owner, position, activation, declaration, and identity frames shared by the runtime-preservation and final commutation proofs.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.InternalArmingWrite.elementId, `InternalCommutation.InternalArmingWrite.kind,
+  `InternalCommutation.InternalArmingWrite.occurrence, `InternalCommutation.InternalArmingWrite.owner,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.effectWaitOccurrence,
+  `InternalCommutation.internalArmInput?, `InternalCommutation.internalArmOrigin?,
+  `InternalCommutation.messageWaitOccurrence, `InternalCommutation.openWaitAnchorAbsent,
+  `InternalCommutation.openWaitAnchors, `InternalCommutation.prepareInternalArm?,
+  `InternalCommutation.timerWaitOccurrence, `InternalCommutation.uniqueFamilyDeclarer?,
+  `InternalCommutation.userTaskWaitOccurrence, `activateEffect, `activateMessage, `activateTimer, `activateUserTask,
+  `awaitCorrelatedPayloadMessageState?, `canonicalCollectionOrder, `effectWaitKeyMatches, `messageWaitKeyMatches,
+  `occursOnce, `runtimeStateIdentityBound, `sequentialMultiInstanceControllerProgramBindingsValid,
+  `sequentialMultiInstanceProgramBindingsValid, `timerIdNamesWait, `timerWaitDeclarers, `timerWaitKeyMatches,
+  `userTaskWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -34,13 +53,15 @@ def runningStateInstance? (state : RuntimeState) : Option SemanticId := match st
   | .running instanceId => some instanceId
   | _ => none
 
-theorem awaitUserTaskState_eq (state : RuntimeState) (input output : ControlPlaceId) (task : UserTaskDefinition) : awaitUserTaskState? state input output task = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateUserTask state owner.processInstanceId owner input output task)) := rfl
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`runningStateInstance?]
 
-theorem awaitMessageState_eq (state : RuntimeState) (input output : ControlPlaceId) (message : MessageDefinition) : awaitMessageState? state input output message = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateMessage state owner.processInstanceId owner input output message)) := rfl
+theorem awaitUserTaskState_eq (state : RuntimeState) (input output : ControlPlaceId) (task : UserTaskDefinition) : awaitUserTaskState? state input output task = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateUserTask state owner.processInstanceId owner input output task)) := (rfl)
 
-theorem awaitTimerState_eq (state : RuntimeState) (input output : ControlPlaceId) (timer : TimerDefinition) : awaitTimerState? state input output timer = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateTimer state owner.processInstanceId owner input output timer)) := rfl
+theorem awaitMessageState_eq (state : RuntimeState) (input output : ControlPlaceId) (message : MessageDefinition) : awaitMessageState? state input output message = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateMessage state owner.processInstanceId owner input output message)) := (rfl)
 
-theorem awaitEffectState_eq (program : Program) (state : RuntimeState) (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute) : awaitEffectState? program state input output effect route = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; let arguments ← evaluateEffectInputs? program state owner effect.inputMappings; if state.variables.activities.any (activityScopeMatches ⟨owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount state effect.elementId + 1⟩) then none else pure (activateEffect state owner.processInstanceId owner input output effect route arguments)) := rfl
+theorem awaitTimerState_eq (state : RuntimeState) (input output : ControlPlaceId) (timer : TimerDefinition) : awaitTimerState? state input output timer = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateTimer state owner.processInstanceId owner input output timer)) := (rfl)
+
+theorem awaitEffectState_eq (program : Program) (state : RuntimeState) (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute) : awaitEffectState? program state input output effect route = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; let arguments ← evaluateEffectInputs? program state owner effect.inputMappings; if state.variables.activities.any (activityScopeMatches ⟨owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount state effect.elementId + 1⟩) then none else pure (activateEffect state owner.processInstanceId owner input output effect route arguments)) := (rfl)
 
 private theorem correlated_prepared_state_frame_facts (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)

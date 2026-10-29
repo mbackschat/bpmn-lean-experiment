@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcessJson.Elements
 
 /-! Closed Call data decoding preserves declarations; contextual admission owns correspondence. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

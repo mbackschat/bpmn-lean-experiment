@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 Endpoint, dependency direction, and effect identity remain independent negative decisions.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

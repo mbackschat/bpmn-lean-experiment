@@ -3,6 +3,10 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Prepared regions and actual Call cleanup
 
@@ -11,7 +15,10 @@ records exact scope-occurrence regions; predecessor ownership connects these two
 Quiescence separately constrains the region selected by a normal completion or Return.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrenceRegion.contains,
+  `runtimeStateWellFormed, `scopeQuiescent, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

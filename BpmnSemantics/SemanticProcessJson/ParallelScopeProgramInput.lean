@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcessJson.Program
 
 /-! PMIS-ADMIT-01 preserves declaration presence at private ingress because the syntax-only Program decoder merges omission and empty List declarations. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

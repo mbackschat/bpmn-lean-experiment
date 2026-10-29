@@ -12,7 +12,7 @@ import BpmnSemantics.SemanticProcess.CallActivity
 This module owns the executable fail-closed witnesses for anchor multiplicity and unpublishable commands.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

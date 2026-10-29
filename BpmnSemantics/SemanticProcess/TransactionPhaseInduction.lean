@@ -4,6 +4,27 @@ public import BpmnSemantics.SemanticProcess.TransactionScopePhases
 public import BpmnSemantics.SemanticProcess.TransactionBranchPhases
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingRefusalFrames
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationAttempt
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TransactionBranchPhases
+import all BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.SemanticProcess.TransactionScopePhases
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction phase preservation
 
@@ -11,7 +32,12 @@ The complete role inventory connects actual attempted operations to the local co
 Scope shape and leaf ownership exclude a normal parent completion beside live child work.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyPreparedSnapshotArming?,
+  `attemptInternalOperation, `awaitUserTaskState?, `boundedScopeDefinitionForChild?, `completeBoundedScope?,
+  `completeSelectedScope?, `fireSnapshotInternalBatch, `isMonitoredScopeDefinition, `reachNoneEndState?,
+  `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

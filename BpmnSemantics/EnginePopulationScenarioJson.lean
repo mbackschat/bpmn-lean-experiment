@@ -11,7 +11,7 @@ reuses the ordinary stimulus, resource-identity, and provenance decoders so thos
 have one admission meaning.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.EnginePopulationScenarioJson
 

@@ -5,7 +5,7 @@ public import BpmnSemantics.NonInterruptingBoundaryTimerConformance
 /-! ESL-TIMER finite command witnesses separate replacement identity, overlapping handlers,
 withdrawal and capacity refusal. The shared quantified Timer relation covers both host bodies. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.RecurringTimerLifetimeConformance
 

@@ -62,6 +62,39 @@ import all Lean.Data.Json.Parser
 import all Lean.Data.Json.Printer
 import all Lean.Data.Json.Stream
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.CallActivityAdmission
+import all BpmnSemantics.SemanticProcess.CallDataAdmission
+import all BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.ErrorDefinition
+import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessProgramAdmission
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
+import all BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.ProfileCardinalities
+import all BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SequentialMultiInstanceDataFixtures
+import all BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
+meta import BpmnSemantics.PrivateEquationLemmas
+
 /-! # Sequential Multi-Instance program binding conformance
 
 The checked fixture preserves the complete reviewed data-role graph and lowers it to the distinct
@@ -69,7 +102,11 @@ The checked fixture preserves the complete reviewed data-role graph and lowers i
 lowering, public command dispatch, strict trace replay, and the reference identities used at runtime.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics #[`SemanticProcess.programCapabilityDispatched,
+  `SemanticProcess.programUndispatchedCapabilities,
+  `SequentialMultiInstanceProgramBindingConformance.programForProfile]
+
+public section
 
 set_option Elab.async false
 

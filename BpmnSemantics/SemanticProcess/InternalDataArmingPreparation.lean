@@ -3,6 +3,11 @@ module
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 public import BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Prepared Activity-data arming
 
@@ -10,7 +15,11 @@ One predecessor selects any copied input and both occurrence identities. Applyin
 realize the existing activation before any commutation or publication claim can use it.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityDataPropertyOwner, `dataInputOutputActivityRecord,
+  `dataInputOutputRunningInstance?, `dataInputOutputSourceBinding?, `readActivityDataInput?,
+  `readProcessInterfaceInput?, `selectProcessInterface?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -90,6 +99,9 @@ def dataArmingBindings? (policy : PropertyPathValuePolicy) (state : RuntimeState
         pure [{ name := directInput.targetDataInputId, value := source.value }]
   else none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`dataArmingBindings?,
+  `dataArmingEndpointKindsValid, `dataArmingHostValid]
+
 theorem dataArmingBindings_process_frame (policy : PropertyPathValuePolicy)
     (before after : RuntimeState) (owner : ScopeOccurrenceId) (data : InternalDataArmingData)
     (control : after.control = before.control)
@@ -125,6 +137,8 @@ def dataArmingContract? : SemanticOperation → Option InternalDataArmingContrac
         { operationId, origin, input, output, taskId, taskName,
           data := .inputOutput directInput directOutput }
   | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`dataArmingContract?]
 
 theorem dataArmingContract_roundtrip (contract : InternalDataArmingContract) :
     dataArmingContract? contract.operation = some contract := by
@@ -194,6 +208,9 @@ def prepareInternalDataArm? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option InternalDataArmingPatch := do
   let contract ← dataArmingContract? operation
   prepareInternalDataArmingContract? program state contract
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`makeInternalDataArmingPatch,
+  `prepareInternalDataArmingContract?]
 
 /-- Successful decoding retains the exact selected operation, including its declared associations. -/
 theorem dataArmingContract_operation (operation : SemanticOperation)

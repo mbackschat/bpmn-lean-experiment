@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOc
 
 /-! Retained ordinary preparations connect snapshot-aware attempts to the focused closure without widening the declaration-free evaluator. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

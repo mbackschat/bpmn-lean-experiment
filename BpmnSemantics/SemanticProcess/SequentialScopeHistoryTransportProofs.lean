@@ -1,10 +1,14 @@
 module
 
 public import BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ADMIT-01 owns actual command and internal-prefix reachability with one invariant transport through the shared scheduler cursor induction. Individual certificate preservation remains below this owner. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`applyStimulus]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

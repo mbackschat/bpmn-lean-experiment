@@ -12,7 +12,7 @@ relation. It uses the shared destructive cleanup only after the successor profil
 identities select one hosting root.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

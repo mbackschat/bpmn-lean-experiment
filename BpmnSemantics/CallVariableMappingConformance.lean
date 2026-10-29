@@ -20,7 +20,7 @@ checks only read its result; the quantified laws are in
 is the [Call variable mapping specification](../docs/capsules/CALL-VARIABLE-MAPPING-SPEC.md#separating-witnesses)'s.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CallVariableMappingConformance
 

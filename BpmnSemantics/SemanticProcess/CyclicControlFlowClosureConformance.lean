@@ -19,13 +19,54 @@ public import BpmnSemantics.SemanticProcess.CyclicControlFlowExecutionConformanc
 public import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformanceCheckFixtures
 import BpmnSemantics.SemanticProcess.CyclicControlFlowConformance
 import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformance
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandStartBindings
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowExecutionConformance
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
+import all BpmnSemantics.SemanticProcess.ExecutionRuntime
+import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.MergeTargetOperations
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual cyclic automatic-closure conformance
 
 This module owns arbitrary finite traces of the selected program's actual internal evaluator actions, their correspondence to the retained resumption-cut DAG, and the representative schedule specialization. It proves no termination or fairness claim.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CyclicRouteValue.output, `DirectedPath, `cyclicOperations,
+  `cyclicProgram, `cyclicProgramCutEdges, `cyclicProgramEdges, `directedPathEdges]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -169,6 +210,8 @@ def cyclicClosureRank (operationId : OperationId) : Nat :=
   else if operationId = ⟨"operation:Merge"⟩ ∨
       operationId = ⟨"operation:End"⟩ then 1
   else 2
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cyclicClosureRank]
 
 private theorem retained_cut_edge_ranks_increase
     (first second : OperationId)

@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.RuntimeState
 This module owns the profile-independent Message Start initiation relation and executable state transformation. External trigger admission and profile cardinality remain separate owners.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

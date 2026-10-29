@@ -7,13 +7,20 @@ import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.TopologyFixtures
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.TopologyFixtures
 
 /-! # BpmnSemantics.SemanticProcessAdmissionConformance: admission and lowering contract checks
 
 These checks own the generic checked-graph admission, program validation, profile capability, definition binding, and canonical lowering fixtures. Runtime closure and evaluator checks remain in `SemanticProcessConformance` so each kernel-decided lane has an independent build boundary.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessConformance
 

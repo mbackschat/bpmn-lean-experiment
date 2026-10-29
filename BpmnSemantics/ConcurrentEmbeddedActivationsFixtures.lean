@@ -10,7 +10,7 @@ Sub-Process, the intake, whose three checks merge into one Assess Sub-Process, a
 are named by element and activation. This module states no theorem, so each conformance module decides only
 its own facts. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ConcurrentEmbeddedActivationsConformance
 

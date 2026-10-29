@@ -5,6 +5,18 @@ import BpmnSemantics.SemanticProcess.ParallelScopeCollectionDataProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel subprocess collection provenance
 
@@ -14,7 +26,11 @@ collection captured at entry can be traced back to Start without assuming that
 an arbitrary stored Service wait has the admitted declaration's output mappings.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeReplay.committedTransitions?,
+  `ParallelScopeReplay.internalTransition?, `ParallelScopeReplay.internalTransitions?,
+  `ParallelScopeReplay.waitCompletionStimulus, `admitStimulus]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 

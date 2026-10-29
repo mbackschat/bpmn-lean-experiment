@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
 
 /-! # Interrupting Activity boundary Message
 
@@ -10,7 +11,7 @@ same Activity occurrence; the handler tag is part of that resolution, so an iden
 Timer identity cannot stand in for the Message subscription.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

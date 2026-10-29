@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 /-! IMES-ARM/TRIGGER/EXPIRE state phases for the bounded application-withdrawal account.
 The family predicate adds listener lifetime and interruption constraints to the unchanged generic invariant. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

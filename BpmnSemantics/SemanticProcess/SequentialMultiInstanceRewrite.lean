@@ -33,7 +33,7 @@ relation, no evaluator, no admission of a source or program, no public observati
 projection.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

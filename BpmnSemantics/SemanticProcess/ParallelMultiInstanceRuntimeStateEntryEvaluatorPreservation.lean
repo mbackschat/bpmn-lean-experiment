@@ -11,7 +11,7 @@ This module owns the evaluator corollary of the nonempty and empty shared entry-
 proofs. The relation-level owner remains independently buildable and below its source bound.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

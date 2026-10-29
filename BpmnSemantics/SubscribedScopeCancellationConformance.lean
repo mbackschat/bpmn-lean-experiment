@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.ScopeCancellation
 /-! ESL-RETAIN finite ownership witnesses distinguish retaining a subscribed child body from
 removing its contents. These constructed states exercise cleanup, not broader source admission. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SubscribedScopeCancellationConformance
 

@@ -2,6 +2,12 @@ module
 
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Activity body turnover
 
@@ -25,7 +31,13 @@ rather than restored by a re-sort, and `RSI-ORDER-01` follows from the frame rat
 own argument.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityBodyTask?,
+  `activityBodyTaskClaims, `activityIdentitiesUnique, `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree,
+  `attachedTimersUnambiguous, `canonicalCollectionOrder, `controllersOwnLiveActivity, `occursOnce,
+  `runtimeStateIdentityBound, `sameActivityOccurrence, `taskIdNamesWait, `userTaskWaitKeyMatches,
+  `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -47,6 +59,8 @@ def replaceBodyIn (records : List ActivityOccurrence) (target : ActivityOccurren
     if sameActivityOccurrence candidate target then
       { candidate with body := .userTask incoming }
     else candidate
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`replaceBodyIn]
 
 /-- Replacing the one record selected by exact Activity identity preserves body-claim uniqueness
 when its incoming task claim is fresh from every unselected record. -/
@@ -147,6 +161,8 @@ def replaceActivityBodyTask (state : RuntimeState) (record : ActivityOccurrence)
       | _ => none
     else none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`replacedState, `turnoverBodyId, `turnoverWait]
+
 /-- Any view of a record that ignores its body is unchanged by replacement.
 
 The general form of `AOO-TURNOVER-03`. Stating it over an arbitrary `key` rather than over the frame
@@ -214,32 +230,32 @@ theorem runtimePositionValid_replacedState (program : Program) (instanceId : Sem
     (state : RuntimeState) (record : ActivityOccurrence) (wait : UserTaskWait)
     (body : OccurrenceId) :
     runtimePositionValid program instanceId (replacedState state record wait body) =
-      runtimePositionValid program instanceId state := rfl
+      runtimePositionValid program instanceId state := (rfl)
 
 theorem eventRaceAssociationsValid_replacedState (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
     eventRaceAssociationsValid (replacedState state record wait body) =
-      eventRaceAssociationsValid state := rfl
+      eventRaceAssociationsValid state := (rfl)
 
 theorem effectIncidentAssociationsValid_replacedState (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
     effectIncidentAssociationsValid (replacedState state record wait body) =
-      effectIncidentAssociationsValid state := rfl
+      effectIncidentAssociationsValid state := (rfl)
 
 theorem hiddenRecordDeclarationsValid_replacedState (program : Program) (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
     hiddenRecordDeclarationsValid program (replacedState state record wait body) =
-      hiddenRecordDeclarationsValid program state := rfl
+      hiddenRecordDeclarationsValid program state := (rfl)
 
 theorem controllerIdentitiesUnique_replacedState (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
     controllerIdentitiesUnique (replacedState state record wait body) =
-      controllerIdentitiesUnique state := rfl
+      controllerIdentitiesUnique state := (rfl)
 
 theorem controllersNotExhausted_replacedState (state : RuntimeState)
     (record : ActivityOccurrence) (wait : UserTaskWait) (body : OccurrenceId) :
     controllersNotExhausted (replacedState state record wait body) =
-      controllersNotExhausted state := rfl
+      controllersNotExhausted state := (rfl)
 
 /-! ## The record-side conjuncts
 
@@ -573,6 +589,8 @@ def recordBodyExcludesWait (wait : UserTaskWait) (record : ActivityOccurrence) :
   | .parallelUserTasks first rest =>
       (first :: rest).all fun task => taskIdNamesWait task wait == false
   | .childScope _ | .parallelChildScopes .. => true
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`recordBodyExcludesWait]
 
 /-- Claim uniqueness supplies the sole-owner fact that body turnover previously carried as an
 independent premise. -/

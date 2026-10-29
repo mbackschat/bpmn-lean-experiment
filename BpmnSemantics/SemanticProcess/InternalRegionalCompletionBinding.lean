@@ -4,6 +4,8 @@ import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.GraphValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Bounded completion declaration binding
 
@@ -11,7 +13,10 @@ Checked graph admission gives each control place one producer. A projected bound
 therefore identifies its declaring operation independently of Activity-to-Program completeness.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`operationDeclaresWaitKey, `operationOutputs,
+  `operationWaitDeclarationKeys]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

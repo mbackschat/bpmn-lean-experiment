@@ -8,10 +8,23 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SBT-CHAIN-01, SBT-INPUT-01 and SBT-RESULT-01 connect independent chain/read analysis to immutable containing-context evaluation, canonical mapped results and non-target frames. These quantified laws supply the unified reachable suffix invariant. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.follow,
+  `SerialBusinessTask.operationVertex?, `SerialBusinessTask.requiredInputs, `SerialBusinessTask.scalar,
+  `SerialBusinessTask.startBindingsAdmitted, `StructuredComposition.unique?, `activateEffect,
+  `completeQuiescentScope?, `completeScopeState?, `operationDeclaresWaitKey, `operationWaitDeclarationKeys,
+  `scopeQuiescent, `sequentialScopeEntry?, `serialEffectPatch?, `strictlySortedStrings]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -139,6 +152,8 @@ def OperationAllowed : SemanticOperation → Prop
   | .reachNoneEnd .. | .completeScope _ _ _ none => True
   | _ => False
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`OperationAllowed]
+
 theorem unique_some {values : List α} {value : α}
     (found : StructuredComposition.unique? values = some value) : values = [value] := by
   cases values with
@@ -213,6 +228,8 @@ def ChainLinks : List Vertex → Prop
   | [] => True
   | [vertex] => vertex.kind = .finish ∧ vertex.outputs = []
   | vertex :: next :: rest => vertex.outputs = [next.id] ∧ ChainLinks (next :: rest)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`ChainLinks]
 
 /-- One traversal certificate supplies exact head selection, whole-chain coverage and adjacent links from the same recursive admission. -/
 theorem follow_certificate (fuel : Nat) (vertices ordered : List Vertex) (id : String)
@@ -724,6 +741,8 @@ def RootFrame (owner : ScopeOccurrenceId) (state : RuntimeState) : Prop :=
   (∀ wait ∈ state.effectWaits, wait.owner = owner ∧ wait.processInstanceId = owner.processInstanceId) ∧
   RootLifecycle owner state ∧ ForeignRuntimeEmpty state ∧ IssuanceFrame state
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`ForeignRuntimeEmpty]
+
 
 /-- A quiescent serial root has one actual completion rewrite, shared by the frame and progress proofs. -/
 theorem root_completion_shape (before after : RuntimeState) (owner : ScopeOccurrenceId) (scope : DefinitionScopeId)
@@ -840,7 +859,7 @@ theorem serial_patch_exists (handlers : List String) (outputs : List VariableMap
     if !(names.eraseDups.length == patch.length && names.all (fun name => patch.any (·.name == name))) then none
     else (outputs.mapM write).bind (fun writes => some (mergeProcessVariableBindings parent writes))) = some bindings
   -- `erw`: `collected` carries the statement's matcher and the `change` above this proof's private one
-  -- (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
+  -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
   erw [collected]
   simp only [Option.bind_some, count, beq_self_eq_true, covered, Bool.and_self, Bool.not_true, Bool.false_eq_true, ↓reduceIte]
   change ∃ bindings, (outputs.mapM write).bind (fun writes => some (mergeProcessVariableBindings parent writes)) = some bindings

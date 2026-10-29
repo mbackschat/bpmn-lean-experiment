@@ -7,12 +7,21 @@ import BpmnSemantics.SemanticProcess.InternalRegionalCallRemoval
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionValidity
 import BpmnSemantics.SemanticProcess.ScopePositionInsertion
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Return publication binds the selected Call cleanup to the prepared occurrence region.
 Quiescence protects the caller; continuation insertion preserves existing output multiplicity.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrenceRegion.contains,
+  `InternalCommutation.regionalPositionDelta?, `controlPositionDelta?, `fire?, `projectControlPosition?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 
 /-! What an accepted mixed-task program analysis projects from its Program: the vertex projection it analyzed, its graph, and the absent compensation and Event Sub-Process declarations. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 

@@ -3,12 +3,14 @@ module
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.Transition
 public import BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact operation metadata and strict replay remain independent of closure selection so
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md) can validate
 prepared publications without importing the closure that consumes them. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -51,7 +53,7 @@ inductive SemanticOperationKind where
   | choose
   | selectMany
   | synchronizeSelected
-  | throwError
+  | «throwError»
   | reachNoneEnd
   | terminateScope
   | completeScope
@@ -144,6 +146,8 @@ def internalTransitionRecord? (program : Program) (state : RuntimeState)
         origin := selected.origin
         owner }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SemanticOperation.kind, `uniqueOperation?]
+
 /-- Reconstruct the record without exposing the private exact-ID selector. -/
 theorem internalTransitionRecord_of_selection (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
@@ -194,6 +198,8 @@ def fireRecordedOperation? (program : Program) (state : RuntimeState)
       else none
   | some _, _ => none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`fireRecordedOperation?, `selectedRecordedOperationOwner?]
+
 private theorem fireRecordedOperation_sound (program : Program) (before after : RuntimeState)
     (operation : SemanticOperation) (record : InternalTransitionRecord)
     (fired : fireRecordedOperation? program before operation record = some after) :
@@ -221,6 +227,8 @@ def replayInternalTransition? (program : Program) (state : RuntimeState)
     let owner ← selectedRecordedOperationOwner? state operation record
     if owner ≠ record.owner then none
     else fireRecordedOperation? program state operation record
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`replayInternalTransition?]
 
 /-- An exact retained Merge input replays even when another input or another indistinguishable unit is offered. -/
 theorem replayInternalTransition_merge_input (program : Program) (state : RuntimeState)
@@ -326,6 +334,8 @@ def replayCommittedTransitions (program : Program) (initial : RuntimeState)
   | none =>
       replayCommittedTransitionsWithoutCompensationSnapshots program initial transitions
   | some _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`replayCommittedTransitions]
 
 theorem replayCommittedTransitions_withSnapshotDeclaration_is_disabled
     (program : Program) (initial : RuntimeState)

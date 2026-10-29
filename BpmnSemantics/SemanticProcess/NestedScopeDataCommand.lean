@@ -6,6 +6,7 @@ public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
 public import BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
 public import BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Nested scope-data command writes
 
@@ -16,7 +17,7 @@ completion patch may name only frame-declared names on that chain (`NSD-TASK-01`
 profile admission restriction: CIB would create a root binding for an undeclared name.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -80,6 +81,8 @@ embedded completion Program (CSD-ADMIT-01), otherwise the nested scope-data prof
 def programAdmitted (program : Program) : Bool :=
   if embeddedScopeDataBearing program then (NestedScopeControl.programAnalysis program).isSome
   else (programAnalysis program).isSome
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`programAdmitted]
 
 /-- Neither analysis admits a single scope, so a one-scope Program completes no task through this path. -/
 theorem programAdmitted_one_scope (program : Program) (one : program.definitionScopes.length = 1) :

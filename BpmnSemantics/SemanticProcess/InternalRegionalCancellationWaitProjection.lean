@@ -8,13 +8,24 @@ import BpmnSemantics.SemanticProcess.InternalRegionalCancellationTimerFrames
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Cancellation compares public anchors only after private Timer classification.
 The predecessor projection supplies the cross-family identity census needed to preserve
 unrelated waits with the same raw identity as a private deadline (RHP-PRIVATE-01).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.effectWaitOccurrence,
+  `InternalCommutation.messageWaitOccurrence, `InternalCommutation.openWaitAnchorAbsent,
+  `InternalCommutation.openWaitAnchors, `InternalCommutation.timerWaitOccurrence,
+  `InternalCommutation.userTaskWaitOccurrence, `messageIdNamesWait, `projectOpenFlowNodeOccurrences?, `projectWaits?,
+  `scopeCancellationWithdrawsHandler, `timerIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

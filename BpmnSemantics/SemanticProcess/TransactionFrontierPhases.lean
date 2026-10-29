@@ -5,6 +5,18 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.WaitCompletion
 public import BpmnSemantics.SemanticProcess.TransactionProgramRoles
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction scope barriers between frontier phases
 
@@ -14,7 +26,11 @@ scope completion independently of operation ordering. Reachability must derive t
 lemmas here do not assume or establish a complete reachable-frontier classification.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attemptInternalOperation, `attemptTransactionCancellation,
+  `awaitUserTaskState?, `completeBoundedScope?, `completeMonitoredScope?, `completeUserTask, `duplicateState?,
+  `enterScopeWithCompensationRetention?, `initializeTransactionRetention, `reachNoneEndState?, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

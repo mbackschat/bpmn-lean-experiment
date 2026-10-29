@@ -10,7 +10,7 @@ attribution check, and the reachable positive race state independently of the or
 reduction families.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.RuntimeStateWellFormedConformance
 

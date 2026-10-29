@@ -9,7 +9,7 @@ disturbing recovery work, as an executable check that
 [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
 

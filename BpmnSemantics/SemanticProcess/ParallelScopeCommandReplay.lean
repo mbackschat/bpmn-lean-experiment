@@ -3,14 +3,26 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopePopulationPreservation
 import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-SELECT-01 checks command publication with the same exact-owner executor as closure; operation-only replay retains its existing ProgramStep domain. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `ParallelScopeReplay.committedTransitions?, `ParallelScopeReplay.internalTransition?,
+  `ParallelScopeReplay.internalTransitions?, `SemanticOperation.kind, `SequentialScopeControl.bodyVertex?,
+  `SequentialScopeControl.inputs, `admitStimulus, `bodyConsumedPorts, `bodyProducedPorts, `operationOutputs,
+  `ownedPortCount, `parallelScopeEntry?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeReplay
 
@@ -128,6 +140,9 @@ def bodyTransition : CommittedTransition → Prop
 def waitCompletionStimulus : Stimulus → Prop
   | .completeUserTaskInstance .. | .completeEffect _ _ (.success _) => True
   | _ => False
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeReplay #[`bodyTransition, `transitionPortCharge,
+  `waitCompletionStimulus]
 
 private theorem resolved_scope_binding (program : Program) (state : RuntimeState)
     (candidate : InternalCommutation.InternalOperationOccurrence) (operation : SemanticOperation)
@@ -267,6 +282,9 @@ def retirementParentsOutside (program : Program) (initial : RuntimeState)
     record.operationKind = .completeParallelMultiInstanceScope →
     ∀ entry binding, parallelScopeBinding? entry middle record.owner = some binding →
       owner ≠ binding.activity.owner
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeReplay #[`bodyOrRetirementTransition,
+  `retirementParentsOutside]
 
 private theorem replayed_retirement_le (program : Program) (before after : RuntimeState)
     (record : InternalTransitionRecord)
@@ -517,6 +535,8 @@ def declarationFiringCharge (owner : ScopeOccurrenceId) (id : OperationId) : Com
 
 def declarationFiringCount (records : List CommittedTransition) (owner : ScopeOccurrenceId) (id : OperationId) : Nat :=
   (records.map (declarationFiringCharge owner id)).sum
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeReplay #[`declarationFiringCharge]
 
 private theorem sum_map_mono (values : List CommittedTransition) (left right : CommittedTransition → Nat)
     (bound : ∀ value ∈ values, left value ≤ right value) :

@@ -1,6 +1,10 @@
 module
 
 public import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Bounded completion withdrawal selection
 
@@ -9,7 +13,10 @@ removes their child. REG-OWN-CLOSE-01 adds no Activity-to-Program binding: the L
 representation deliberately carries no TypeScript operation-id field.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScope?, `boundedScopeChildOccurrence?,
+  `completeBoundedScope?, `completeMonitoredScope?, `completeSelectedScope?, `timerIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -60,6 +67,8 @@ def selectSubscribedCompletionWithdrawal? (program : Program) (state : RuntimeSt
       some (.monitored pair.val.record pair.val.timer)
     else none
   else selectInternalCompletionWithdrawal? program state scopeId
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalCompletionWithdrawal?]
 
 theorem boundedWithdrawal_not_monitored (program : Program) (state : RuntimeState)
     (scopeId : DefinitionScopeId) (record : ActivityOccurrence) (timer : Option TimerWait) :

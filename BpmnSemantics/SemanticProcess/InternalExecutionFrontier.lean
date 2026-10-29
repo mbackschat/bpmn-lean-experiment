@@ -1,13 +1,18 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Discovery retains every exact Merge offer before classification under the
 [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).
 Families outside the prepared account retain their existing singleton evaluator path.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyInternalOperationOccurrence?,
+  `internalOperationOccurrenceOffers?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -95,6 +100,9 @@ def findInternalExecutionOffer? (frontier : InternalExecutionFrontier) (alternat
     Option InternalExecutionOffer :=
   frontier.offers.find? (fun offer => offer.alternative == alternative)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`mergeExecutionFrontier,
+  `ordinaryExecutionFrontier]
+
 private theorem fold_empty_discoveries (operations : List SemanticOperation)
     (next : SemanticOperation → InternalExecutionFrontier)
     (empty : ∀ operation ∈ operations, next operation = {}) (initial : InternalExecutionFrontier) :
@@ -120,7 +128,9 @@ theorem deriveInternalExecutionFrontier_empty (program : Program) (state : Runti
   · rfl
   · rfl
   · dsimp only
-    rw [fold_empty_discoveries _ _ empty]
+    -- `erw`: the hidden definition's body and this proof carry different private matchers
+    -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    erw [fold_empty_discoveries _ _ empty]
     rfl
 
 /-- Unique declaration membership is necessary: discovering the same singleton twice must still fail the duplicate-alternative check. -/
@@ -164,7 +174,7 @@ theorem deriveInternalExecutionFrontier_singleton (program : Program) (state : R
   · cases state.control <;> simp_all
   · cases state.control <;> simp_all
   · dsimp only
-    -- `erw`: the unfolded definition's fold and `folded` carry different matchers (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
+    -- `erw`: the unfolded definition's fold and `folded` carry different matchers (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
     erw [folded]
     rfl
 

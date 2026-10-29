@@ -8,7 +8,7 @@ Kernel-decided witnesses for root and child reservation refusal, promotion refus
 empty publication on rollback, and canonical simultaneous-refusal selection.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
 

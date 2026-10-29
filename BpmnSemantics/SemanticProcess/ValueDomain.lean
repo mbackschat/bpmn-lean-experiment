@@ -5,11 +5,15 @@ public import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmissio
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic Process value-domain admission
 
 This module owns the profile-sensitive boundary between the shared typed variable domain and the two external Process-data ingress surfaces. It does not define variable merge, effect mapping, or control-flow expression behavior.
 -/
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`messageKeyCorrelationProfileId]
 
 @[expose] public section
 

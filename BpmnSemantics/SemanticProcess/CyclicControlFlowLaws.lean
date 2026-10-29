@@ -2,10 +2,11 @@ module
 
 public import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
 
 /-! Exclusive merge preserves token and active-unit counts; these storage laws are separate from executable selection. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -7,6 +7,12 @@ public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.ActivityDataInput
 import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 import BpmnSemantics.SemanticProcess.ProcessInterfaceData
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Composed Activity data relations and laws
 
@@ -14,7 +20,12 @@ The runtime owner supplies the atomic evaluators; these relations and laws retai
 Activity contract independently of its module placement.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateDataInputOutputUserTask?,
+  `activityDataOutputValueAdmitted, `associatedProcessBinding, `completeDataInputOutputUserTask?,
+  `dataInputOutputActivityOwner, `dataInputOutputActivityRecord, `dataInputOutputRunningInstance?,
+  `dataInputOutputSourceBinding?, `runtimeStateIdentityBound, `taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -2,10 +2,28 @@ module
 
 public import BpmnSemantics.SemanticProcess.CommandAdmission
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+import all BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.ActivityDataInput
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.BoundedTask
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.MessageMonitoredTask
+import all BpmnSemantics.SemanticProcess.MonitoredTask
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-STRUCTURE-01 and SPC-AVAILABLE-01 derive complete forward order and input obligations from actual admission. Operation projection and committed-start facts link that analysis to execution without assuming control uniqueness or input availability. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredComposition.accumulateDataFacts,
+  `StructuredComposition.burstFacts, `StructuredComposition.consumer?, `StructuredComposition.incoming,
+  `StructuredComposition.operationInputs, `StructuredComposition.operationVertex?,
+  `StructuredComposition.topologicalOrder, `StructuredComposition.unique?, `admitStimulus, `operationOutputs,
+  `structuredCompositionStartBindingsAdmitted]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
@@ -13,6 +31,8 @@ def OperationAllowed : SemanticOperation → Prop
   | .initiate .. | .awaitUserTask .. | .awaitDataInputOutputUserTask ..
   | .choose .. | .mergeExclusive .. | .reachNoneEnd .. | .completeScope _ _ _ none => True
   | _ => False
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`OperationAllowed]
 
 private theorem eraseDups_sublist (names : List String) : List.Sublist names.eraseDups names := by
   cases names with
@@ -737,6 +757,8 @@ theorem committed_start_supplies_required_bindings
 
 def burstRank (ordered : List Vertex) (id : String) : Nat :=
   (((burstFacts ordered).find? (·.id == id)).map (·.remaining)).getD 0
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`burstRank]
 
 private theorem maximum_fold_congr (ids : List String) (left right : String → Nat)
     (same : ∀ id ∈ ids, left id = right id) (initial : Nat) :

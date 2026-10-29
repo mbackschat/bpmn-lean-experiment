@@ -5,6 +5,12 @@ import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Reachable reservation ordinal headroom
 
@@ -14,7 +20,9 @@ the cumulative Start counter bound then leaves safe wire headroom for every
 partial reservation accumulator. No successful batch preparation is assumed.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeStart #[`analyzeProgram]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

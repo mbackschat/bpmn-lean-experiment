@@ -4,12 +4,20 @@ import BpmnSemantics.SemanticProcess.InternalRegionalLifecycleCorrespondence
 public import BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The regional selection supplies the actual lifecycle selector's owner and parent facts.
 These bridges preserve the existing evaluator's selection and publication contracts.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalLifecycleTemplate?,
+  `errorPropagationCancellationDelta?, `flowNodeOccurrenceThrowingScopeParent?, `terminateScopeCancellationDelta?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -50,7 +58,7 @@ theorem regionalSelection_lifecycle_owner (program : Program) (state : RuntimeSt
             simp_all)
         | split at found
         | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
       split at found
       · contradiction
@@ -115,7 +123,7 @@ theorem regionalSelection_lifecycle_facts (program : Program) (state : RuntimeSt
         | (solve | cases found; assumption)
         | split at found
         | obtain ⟨_, _, found⟩ := Option.bind_eq_some_iff.mp found
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
       split at found
       · contradiction
@@ -204,7 +212,7 @@ theorem regionalLifecycleTemplate_candidate (program : Program) (before after : 
                 simp only [byOwner]
                 rfl
               · contradiction
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       cases kind : selected.kind <;> simp only [kind] at facts <;> try contradiction
       rename_i parent
       simp only [regionalLifecycleTemplate?, selectedOperation, kind] at lifecycle

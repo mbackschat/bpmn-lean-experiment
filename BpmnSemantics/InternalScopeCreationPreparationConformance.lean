@@ -8,7 +8,7 @@ Constructed Programs and predecessor states distinguish local preparation and re
 They establish no source admission, aggregate preservation, or regional batch execution.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.InternalScopeCreationPreparationConformance
 

@@ -1,12 +1,18 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete predecessor read frames for the five local-control selectors in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalLocalControlSelection.censusReads,
+  `InternalCommutation.selectInternalLocalControl?, `InternalSelectedBranchPatch.selectionKey,
+  `selectedBranchJoinReady, `selectedInputOwnedReady]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

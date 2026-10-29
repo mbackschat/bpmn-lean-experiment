@@ -18,10 +18,11 @@ import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
 public import BpmnSemantics.SemanticProcessJson.DefinitionInput
 public import BpmnSemantics.SemanticProcessJson.Scenario
+import all BpmnSemantics.SemanticProcessJson.Scenario
 
 /-! Executable locks for language-neutral JSON and ordering behavior. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJsonConformance
 

@@ -2,17 +2,24 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! RSI-OWN-01 gives every Activity a live owning scope independently of its body.
 REG-OWN-CLOSE-01 must retain that owner whenever it retains the Activity record. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`exactLiveOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
 def regionalActivityOwnersClosed (state : RuntimeState) (keep : RegionalReferenceRetention) : Bool :=
   state.activityOccurrences.all fun record => !keep.activity record ||
     allMatchingRetained state.scopeOccurrences keep.scope (fun scope => decide (scope.id = record.owner))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`regionalActivityOwnersClosed]
 
 theorem regionalActivityOwnersClosed_preserves_owners (before after : RuntimeState)
     (keep : RegionalReferenceRetention)

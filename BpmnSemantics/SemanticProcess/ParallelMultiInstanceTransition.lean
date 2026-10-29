@@ -4,6 +4,8 @@ public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance transitions
 
@@ -16,7 +18,9 @@ Scope boundary: bounded family transitions. Shared runtime dispatch, JSON, Tempo
 admission, and public observation belong to their existing integration owners.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -307,6 +311,8 @@ def removeParallelRecord (records : List ActivityOccurrence)
     (record : ActivityOccurrence) : List ActivityOccurrence :=
   records.filter fun candidate => !sameActivityOccurrence candidate record
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`replaceParallelRecordBody]
+
 private theorem replaceParallelRecordBody_identity_witness (records : List ActivityOccurrence)
     (record : ActivityOccurrence) (pending : List UserTaskInstanceId) :
     ∀ successor ∈ replaceParallelRecordBody records record pending,
@@ -460,6 +466,8 @@ def closeSharedParallelRegion (state : RuntimeState)
     parallelMultiInstanceControllers := removeParallelController
       state.parallelMultiInstanceControllers controller
     variables }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`closeSharedParallelRegion]
 
 private theorem closeSharedParallelRegion_activity_identity_discipline (state : RuntimeState)
     (controller : ParallelMultiInstanceController) (record : ActivityOccurrence)

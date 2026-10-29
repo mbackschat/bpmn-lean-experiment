@@ -4,15 +4,18 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
 public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 public import BpmnSemantics.SemanticProcess.OccurrenceReservationState
 public import BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-ADMIT-01 binds private command capacity to the original decoded Program and its retained collection. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 
 def programSelected (program : Program) : Bool :=
   program.identity.semanticProfile.value == "cibseven-2.2.0-parallel-multi-instance-subprocess-draft"
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeStart #[`programSelected]
 
 @[simp] theorem programSelected_of_other_profile (program : Program)
     (different : program.identity.semanticProfile.value ≠
@@ -144,6 +147,8 @@ def commandClosureLimit? (program : Program) (state : RuntimeState) (stimulus : 
   else match state.control, stimulus with
     | .notStarted, .startProcess _ _ _ bindings => (programStartCapacity program bindings).map (·.closureBound)
     | _, _ => (programStateCapacity program state).map (·.closureBound)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeStart #[`analyzeProgram]
 
 /-- An admitted parallel Multi-Instance Program has no merge target, so its scope completion stays
 definition-addressed. -/

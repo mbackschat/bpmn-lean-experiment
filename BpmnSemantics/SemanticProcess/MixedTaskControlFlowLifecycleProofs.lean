@@ -8,10 +8,78 @@ import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAnalysisProjectionProofs
 public import BpmnSemantics.SemanticProcess.MixedTaskBusinessErrorCompletionProofs
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowDataProofs
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCollectionStorageProofs
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCounterLaws
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! MTCF-PROGRESS-01 and MTCF-REPEAT-01 require one graph-indexed control unit with exact wait ownership and an actual Start-derived root frame, independent of any assumed serial traversal order. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MixedTaskControlFlow.OperationAllowed,
+  `MixedTaskControlFlow.operationInputs, `MixedTaskControlFlow.operationOutputs,
+  `MixedTaskControlFlow.operationVertex?, `MixedTaskControlFlow.programOwnershipValid,
+  `SerialBusinessTask.ForeignRuntimeEmpty, `SerialBusinessTask.IsSerialCompletion, `SerialBusinessTask.IssuanceFrame,
+  `SerialBusinessTask.RootFrame, `SerialBusinessTask.RootLifecycle, `SerialBusinessTask.frontierFields,
+  `activityBodyClaimsUnique, `activityIdentitiesUnique, `activityRecordsOwnLiveWork, `admitStimulus,
+  `attachedMessagesUnambiguous, `attachedTimersUnambiguous, `awaitEffectState?, `awaitUserTaskState?,
+  `canonicalCollectionOrder, `chooseState?, `compensationActivityRetentionDeclarationValid,
+  `compensationActivityRetentionStateValid, `compensationEventSubProcessSnapshotDeclarationValid,
+  `compensationEventSubProcessSnapshotStateValid, `compensationExecutionDeclarationValid,
+  `compensationExecutionStateValid, `completeBusinessEffect?, `completeSerialActivityScope?, `completeSerialEffect?,
+  `completeUserTask, `controllerIdentitiesUnique, `controllersNotExhausted, `controllersOwnLiveActivity,
+  `declaredByExactlyOneOwnedOperation, `dispatchStimulus, `effectIdNamesWait, `effectIncidentAssociationsValid,
+  `effectResultOutput, `effectWaitKeyMatches, `eventRaceAssociationsValid, `exactLiveOccurrence,
+  `hiddenRecordDeclarationsValid, `occursOnce, `operationControlPlaces, `operationDeclaresWaitKey, `operationOutputs,
+  `operationWaitDeclarationKeys, `orderedBy, `parallelMultiInstanceControllersOrdered, `programWellFormed,
+  `reachNoneEndState?, `runtimeStateIdentityBound, `runtimeStateWellFormed,
+  `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
+  `sequentialMultiInstanceProgramBindingsValid, `sequentialScopeEntry?, `sequentialScopeStateValid,
+  `serialRuntimeAssociationsValid, `taskIdNamesWait, `uniqueControlPlace?, `uniqueDefinitionScope?,
+  `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 

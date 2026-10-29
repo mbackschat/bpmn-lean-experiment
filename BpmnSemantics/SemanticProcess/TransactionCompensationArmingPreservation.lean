@@ -5,11 +5,19 @@ import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Transaction arming preserves active Compensation ownership from the selected input token.
 The two-Task composition carries the same child-retention state through both actual arming steps. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.owner,
+  `InternalCommutation.applyInternalArmingPatch, `scopeQuiescent, `transactionTriggerProvenanceValid,
+  `triggerLifecycleValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

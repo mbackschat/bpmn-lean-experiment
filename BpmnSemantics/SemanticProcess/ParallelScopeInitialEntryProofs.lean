@@ -10,6 +10,30 @@ public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Initial parallel entry blockers
 
@@ -18,7 +42,15 @@ strict predecessor order makes disappearance of every continuation imply a Task
 firing; without external ingress its issued wait still blocks retirement.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `ParallelScopeReplay.bodyTransition, `ParallelScopeReplay.declarationFiringCharge,
+  `ParallelScopeReplay.internalTransition?, `ParallelScopeReplay.internalTransitions?,
+  `ParallelScopeReplay.transitionPortCharge, `ParallelScopeStart.analyzeProgram, `SemanticOperation.kind,
+  `SequentialScopeControl.bodyVertex?, `SequentialScopeControl.inputs, `SequentialScopeProgram.operationAllowed,
+  `activateEffect, `activateUserTask, `bodyConsumedPorts, `bodyProducedPorts, `completeSelectedScope?,
+  `continuationMarking, `operationOutputs, `ownedPortCount, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -211,6 +243,8 @@ def taskArmCharge (owner : ScopeOccurrenceId) : CommittedTransition → Nat
   | .externalStimulus _ => 0
   | .internalOperation record => if record.owner == owner &&
       (record.operationKind == .awaitUserTask || record.operationKind == .awaitEffect) then 1 else 0
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`taskArmCharge, `taskWaitCount]
 
 private theorem body_step_waits (program : Program) (before after : RuntimeState)
     (record : InternalTransitionRecord) (body : bodyTransition (.internalOperation record))

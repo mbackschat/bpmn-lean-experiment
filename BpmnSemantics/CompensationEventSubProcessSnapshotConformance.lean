@@ -9,7 +9,7 @@ public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 Kernel-decided fixtures for the approved hidden parent-context snapshot lifecycle. Transition integration, source admission, handler execution, Temporal hosting, and public projection remain outside this pure runtime checkpoint.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotConformance
 

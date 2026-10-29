@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ADMIT-01 and SMIS-DATA-01 separate pre-entry Process requirements from initialized body lookup. -/
 
@@ -121,6 +122,8 @@ def stimulusAdmitted (program : Program) (stimulus : Stimulus) : Bool :=
       | .completeUserTaskInstance _ _ bindings => humanValuesAdmitted analysis bindings
       | .completeEffect _ _ (.success bindings) => bindingsValid analysis.handlers bindings
       | _ => false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SequentialScopeData #[`stimulusAdmitted]
 
 /-- SMIS-DATA-01 leaves command admission unchanged outside its selected profile. -/
 @[simp] theorem stimulusAdmitted_unselected (program : Program) (stimulus : Stimulus)

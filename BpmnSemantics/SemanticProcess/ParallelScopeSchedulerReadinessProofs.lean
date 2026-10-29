@@ -8,6 +8,23 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import BpmnSemantics.SemanticProcess.InternalTransitionAlternativeOrder
 import BpmnSemantics.SemanticProcess.ParallelScopeFrontierCorrespondenceProofs
 public import BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Reserved parallel batch readiness at scheduler selection
 
@@ -18,7 +35,11 @@ Application readiness, reachable-frontier classification and publication accepta
 remain separate.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.deriveInternalExecutionFrontier,
+  `InternalCommutation.selectInternalExecutionFrontier, `ParallelScopeCommand.stimulusAdmitted,
+  `ParallelScopeStart.programSelected, `admitStimulus, `applyStimulus]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

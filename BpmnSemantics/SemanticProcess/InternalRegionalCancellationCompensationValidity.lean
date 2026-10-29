@@ -8,12 +8,26 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Cancellation preserves Compensation validity through the exact retained-owner census.
 The selected operation must justify retention or removal; an empty result alone is not
 valid for a running Program that declares an Activity-retention register. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cancelScopeSubtree,
+  `compensationActivityRetentionDeclarationValid, `compensationActivityRetentionStateValid,
+  `compensationEventSubProcessSnapshotStateValid, `compensationExecutionDeclarationValid,
+  `compensationExecutionStateValid, `compensationSubjectDefinitionForOccurrence?, `runtimePositionValid,
+  `triggerLifecycleValid, `triggerMatchesDeclaration]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

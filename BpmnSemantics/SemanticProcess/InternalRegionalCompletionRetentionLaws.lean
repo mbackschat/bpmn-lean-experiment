@@ -4,10 +4,18 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
 import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
 public import BpmnSemantics.SemanticProcess.BoundedScope
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Bounded completion retention agrees with actual Activity and Timer withdrawal. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScope?, `boundedCompletionReferenceRetention,
+  `ordinaryCompletionReferenceRetention, `regionalReferenceFieldsMatch, `sameActivityOccurrence, `timerWaitKeyMatches,
+  `waitIdentitiesUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

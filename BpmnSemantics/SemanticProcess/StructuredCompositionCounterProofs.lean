@@ -4,12 +4,47 @@ public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
 import BpmnSemantics.SemanticProcess.RuntimeStateCollectionCounterLaws
 import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Structured composition reaches command boundaries with canonical retained counter storage.
 The separate counter component follows the existing execution relation; lifecycle and task shape
 supply the remaining collection facts without strengthening raw transition frame laws. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredComposition.ControlUnitBound,
+  `StructuredComposition.ForeignRuntimeEmpty, `StructuredComposition.OperationAllowed,
+  `activateDataInputOutputUserTask?, `activityIdentitiesUnique, `admitStimulus, `awaitUserTaskState?,
+  `callDataRuntimeStateValid, `canonicalCollectionOrder, `chooseState?, `committedStateCollectionAdmitted,
+  `committedStateCollectionDefects, `completeDataInputOutputUserTask?, `interruptingMessageEventSubProcessStateValid,
+  `occursOnce, `orderedBy, `parallelMultiInstanceControllersOrdered, `reachNoneEndState?, `sameActivityOccurrence,
+  `uniqueCollectionKeys, `userTaskWaitKeyMatches, `waitIdentitiesUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
@@ -22,6 +57,8 @@ def CounterStorageFrame (state : RuntimeState) : Prop :=
   (state.scopeActivations.map (·.scopeId)).Nodup ∧
   state.messageActivations = [] ∧ state.timerActivations = [] ∧
   state.effectActivations = [] ∧ state.callActivations = [] ∧ state.eventRaceActivations = []
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`CounterStorageFrame]
 
 theorem admitted_fire_preserves_counter_storage
     (program : Program) (analysis : Analysis) (before after : RuntimeState) (operation : SemanticOperation)

@@ -7,12 +7,19 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 public import BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete local-control preparation determines the actual record and accepted lifecycle
 publication under the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalLocalControlOrigin?,
+  `InternalCommutation.selectInternalLocalControl?, `acceptFlowNodeOccurrenceCandidate?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

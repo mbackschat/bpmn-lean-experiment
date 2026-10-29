@@ -11,6 +11,27 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProof
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalPreparedFrontier
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel command scheduler success
 
@@ -19,7 +40,16 @@ readiness through terminal completion. Fuel sufficiency and complete publication
 are separate obligations; this owner excludes the other scheduler failures.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.ScheduledClosureResult.failed,
+  `InternalCommutation.applyInternalOperationOccurrence?, `InternalCommutation.closeScheduledTraced,
+  `InternalCommutation.deriveInternalExecutionFrontier, `InternalCommutation.internalOperationOccurrenceOffers?,
+  `InternalCommutation.internalOperationOccurrences?, `InternalCommutation.ordinaryExecutionFrontier,
+  `InternalCommutation.selectInternalExecutionFrontier, `InternalCommutation.sortBy,
+  `ParallelScopeStart.analyzeProgram, `ParallelScopeStart.programOperationAllowed,
+  `ParallelScopeStart.programSelected, `SequentialScopeProgram.operationAllowed, `completeSelectedScope?,
+  `scopedOwnershipComplete]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

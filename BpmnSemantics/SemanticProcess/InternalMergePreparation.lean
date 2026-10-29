@@ -3,12 +3,17 @@ module
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 public import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact Merge selection reuses owned token patches and publication provenance under the
 [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TokenPatch.apply, `runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -54,6 +59,9 @@ def fireInternalAlternative? (program : Program) (state : RuntimeState) (operati
   | .mergeInput .. =>
       if program.compensationEventSubProcessSnapshots.isSome then none
       else (selectInternalMerge? state operation alternative).map (·.apply state)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalMergeSelection.alternative,
+  `InternalMergeSelection.apply, `InternalMergeSelection.tokens, `fireInternalAlternative?, `selectInternalMerge?]
 
 @[simp] theorem fireInternalAlternative_operation (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) :
@@ -104,6 +112,9 @@ def applyPreparedInternalMerge? (program : Program) (state : RuntimeState)
   if prepareInternalMerge? program state prepared.selection.operation prepared.selection.alternative =
       some prepared then some (prepared.selection.apply state)
   else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`makeInternalMergePreparation,
+  `prepareInternalMerge?]
 
 theorem selectInternalMerge_facts (state : RuntimeState) (operation : SemanticOperation)
     (alternative : InternalAlternative) (selected : InternalMergeSelection)

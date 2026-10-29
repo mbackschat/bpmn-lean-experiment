@@ -1,12 +1,18 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMI reverse binding requires a finite partition of pending children rather than equal raw
 population counts. These correspondence laws preserve multiplicity and assign completed slots
 zero weight, as required by the existing Program-binding validator. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyParallelTasks?, `activityBodyTaskClaims,
+  `anyTimerIdNamesWait, `parallelControllerNamesIdentity, `pendingParallelTaskIds]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -135,6 +141,8 @@ structure RegionalParallelBindingTuple (program : Program) (state : RuntimeState
   timerCensus : state.timerWaits.filter (timerIdNamesWait timerId) = [timer]
   timerOwner : timer.owner = record.owner
   timerElement : timer.elementId = arm.boundaryTimer.elementId
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`regionalParallelNamesRecord, `regionalParallelNamesTimer]
 
 theorem regional_parallel_binding_tuple (program : Program) (state : RuntimeState)
     (controller : ParallelMultiInstanceController) (entry : SemanticOperation)

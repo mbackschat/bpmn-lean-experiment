@@ -8,34 +8,20 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeStartAdmission
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 public import BpmnSemantics.SemanticProcess.CommandAdmission
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
-import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
-import all BpmnSemantics.SemanticProcess.CallActivity
-import all Init.Data.Repr
-import all Init.Data.List.Sort.Basic
-import all Init.Data.Ord.String
-import all Lean.Data.Json.Basic
-import all Std.Data.TreeMap.Raw.Basic
-import all Std.Data.DTreeMap.Raw.Basic
-import all Std.Data.DTreeMap.Internal.Def
-import all Std.Data.DTreeMap.Internal.Balancing
-import all Std.Data.DTreeMap.Internal.Operations
-import all Std.Data.DTreeMap.Internal.Queries
-import all BpmnSemantics.SemanticProcess.EffectDataAdmission
-import all BpmnSemantics.SemanticProcess.JsonSupport
-import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
-import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import all BpmnSemantics.SemanticProcess.MessageStartAdmission
-import all BpmnSemantics.SemanticProcess.ParallelScopeData
-import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SemanticProcess.Lowering
+import all BpmnSemantics.SemanticProcess.CompensationSourceLowering
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
+import all BpmnSemantics.SemanticProcess.LoweringIdentity
+import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
+import all BpmnSemantics.SemanticProcess.GraphReachability
 
 /-! PMIS-END-01 checks paired parallel-scope declarations independently of private runtime execution. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ParallelScopeGraphConformance
 open SemanticProcess

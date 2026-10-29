@@ -12,6 +12,18 @@ import BpmnSemantics.SemanticProcess.ParallelScopeTokenReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitReservationProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Disjoint token keys of reserved parallel members
 
@@ -21,7 +33,12 @@ ports, and actual output freshness separates produced ports from ready inputs.
 These facts precede collective batch acceptance.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatch.operation,
+  `InternalCommutation.internalArmInput?, `InternalCommutation.prepareOccurrenceTokenPatch?,
+  `ParallelScopeReplay.ReservedArmWriteShape, `SemanticOperation.kind, `SequentialScopeControl.inputs,
+  `bodyConsumedPorts, `continuationMarking, `operationOutputs]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

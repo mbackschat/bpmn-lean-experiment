@@ -75,14 +75,14 @@ test("a `meta import` importer loads the whole import closure of what it imports
 test("a hidden edit also reaches the loaders of an `import all` importer that rewrites with a hidden definition", () => {
   const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
   const fanouts = leanHiddenEditFanouts([
-    module("Pkg/Hub.lean", "public section\n\ndef hidden : Nat := 0\n\n@[expose] def shown : Nat := 0\n\nend"),
-    module("Pkg/Simp.lean", "import all Pkg.Hub\n\ntheorem t : hidden = 0 := by simp only [hidden]"),
+    module("Pkg/Hub.lean", "public section\n\nnamespace Hub\n\ndef hidden : Nat := 0\n\n@[expose] def shown : Nat := 0\n\nend Hub\n\nend"),
+    module("Pkg/Simp.lean", "import all Pkg.Hub\n\nopen Hub\n\ntheorem t : hidden = 0 := by simp only [hidden]"),
     module("Pkg/AboveSimp.lean", "import Pkg.Simp"),
-    module("Pkg/Rw.lean", "import all Pkg.Hub\n\ntheorem t : hidden = 0 := by\n  rw [Hub.hidden]"),
+    module("Pkg/Rw.lean", "import all Pkg.Hub\n\ntheorem t : Hub.hidden = 0 := by\n  rw [Hub.hidden]"),
     module("Pkg/AboveRw.lean", "import Pkg.Rw"),
-    module("Pkg/Unfolds.lean", "import all Pkg.Hub\n\ntheorem t : hidden = 0 := by unfold hidden; rfl"),
+    module("Pkg/Unfolds.lean", "import all Pkg.Hub\n\nopen Hub\n\ntheorem t : hidden = 0 := by unfold hidden; rfl"),
     module("Pkg/AboveUnfolds.lean", "import Pkg.Unfolds"),
-    module("Pkg/Shown.lean", "import all Pkg.Hub\n\ntheorem t : shown = 0 := by simp [shown]"),
+    module("Pkg/Shown.lean", "import all Pkg.Hub\n\nopen Hub\n\ntheorem t : shown = 0 := by simp [shown]"),
     module("Pkg/AboveShown.lean", "import Pkg.Shown"),
   ]);
   assert.deepEqual(fanouts.get("Pkg.Hub"), ["Pkg.AboveRw", "Pkg.AboveSimp", "Pkg.Rw", "Pkg.Shown", "Pkg.Simp", "Pkg.Unfolds"]);
@@ -143,6 +143,97 @@ test("a grind argument and an unfold of a recursive hidden definition are rewrit
     module("Pkg/Flat.lean", "import all Pkg.Hub\n\ntheorem t : flat = 0 := by unfold flat; rfl"),
   ]);
   assert.deepEqual([...rewrites].filter(([, sites]) => sites.length > 0), [["Pkg.Grind", ["Pkg.Hub.flat"]], ["Pkg.Recursive", ["Pkg.Hub.count"]]]);
+});
+
+// A qualified argument names only the definitions whose full name ends with it; `simp` unfolds a reducible definition
+// without equation lemmas (Lean/Meta/Tactic/Simp/SimpTheorems.lean:534), while `rw` and `grind` request them
+// regardless (Lean/Elab/Tactic/Rewrite.lean:93, Lean/Meta/Tactic/Grind/Theorems.lean:150).
+// Lean resolves a written name against the enclosing namespaces and the opened ones, so a name another module's
+// definition only shares the last component with is no site of that definition.
+test("an argument names only the definitions it resolves to, and simp realizes nothing for a reducible one", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const hub = "public section\n\nnamespace Pkg.Patch\n\ndef apply : Nat := 0\n\n@[reducible] def shallow : Nat := 0\n\nend Pkg.Patch";
+  const rewrites = leanHiddenRewrites([
+    module("Pkg/Hub.lean", hub),
+    module("Pkg/Other.lean", "import all Pkg.Hub\n\ntheorem t : True := by simp [Prepared.apply]"),
+    module("Pkg/Same.lean", "import all Pkg.Hub\n\nnamespace Pkg\n\ntheorem t : True := by simp [Patch.apply]\n\nend Pkg"),
+    module("Pkg/Unresolved.lean", "import all Pkg.Hub\n\nopen Other in\ntheorem t : True := by simp [apply]"),
+    module("Pkg/Short.lean", "import all Pkg.Hub\n\nopen Pkg.Patch in\ntheorem t : True := by simp [apply]"),
+    module("Pkg/SimpReducible.lean", "import all Pkg.Hub\n\ntheorem t : True := by simp only [Pkg.Patch.shallow]"),
+    module("Pkg/RwReducible.lean", "import all Pkg.Hub\n\ntheorem t : True := by rw [Pkg.Patch.shallow]; trivial"),
+    module("Pkg/GrindReducible.lean", "import all Pkg.Hub\n\ntheorem t : True := by grind [Pkg.Patch.shallow]"),
+  ]);
+  assert.deepEqual([...rewrites].filter(([, sites]) => sites.length > 0), [
+    ["Pkg.Same", ["Pkg.Hub.apply"]],
+    ["Pkg.Short", ["Pkg.Hub.apply"]],
+    ["Pkg.RwReducible", ["Pkg.Hub.shallow"]],
+    ["Pkg.GrindReducible", ["Pkg.Hub.shallow"]],
+  ]);
+});
+
+// `privateEquations` declares a definition's equation lemmas as ordinary private declarations, which Lean reuses
+// instead of realizing exported ones (BpmnSemantics/PrivateEquationLemmas.lean); a functional induction principle it
+// does not declare is still realized and exported.
+test("a rewrite with a definition whose equation lemmas the module declares privately is no rewrite site", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const hub = "public section\n\nnamespace Pkg\n\ndef hidden : Nat := 0\n\ndef other : Nat := 0\n\nend Pkg";
+  const rewrites = leanHiddenRewrites([
+    module("Pkg/Hub.lean", hub),
+    module("Pkg/Declared.lean", [
+      "import all Pkg.Hub",
+      "",
+      "run_meta privateEquations `Pkg #[`hidden]",
+      "theorem t : Pkg.hidden = 0 := by simp only [Pkg.hidden]",
+      "theorem u : Pkg.other = 0 := by simp [Pkg.other]",
+    ].join("\n")),
+    module("Pkg/SplitCall.lean", [
+      "import all Pkg.Hub",
+      "",
+      "run_meta privateEquations `Pkg #[`hidden,",
+      "  `other]",
+      "theorem t : Pkg.hidden = Pkg.other := by rw [Pkg.hidden, Pkg.other]",
+    ].join("\n")),
+    module("Pkg/OtherScope.lean", "import all Pkg.Hub\n\nrun_meta privateEquations `Elsewhere #[`hidden]\ntheorem t : Pkg.hidden = 0 := by simp [Pkg.hidden]"),
+    module("Pkg/Induction.lean", [
+      "import all Pkg.Hub",
+      "",
+      "run_meta privateEquations `Pkg #[`hidden]",
+      "theorem t : True := by induction 0 using Pkg.hidden.induct <;> trivial",
+    ].join("\n")),
+  ]);
+  assert.deepEqual([...rewrites].filter(([, sites]) => sites.length > 0), [
+    ["Pkg.Declared", ["Pkg.Hub.other"]],
+    ["Pkg.OtherScope", ["Pkg.Hub.hidden"]],
+    ["Pkg.Induction", ["Pkg.Hub.hidden"]],
+  ]);
+});
+
+// A module that rewrites with its own hidden definition realizes the definition's equation lemmas in itself, and Lean
+// v4.34.1 exports every realized constant (Environment.lean:723-724), so its body edit changes its public interface.
+test("a module that rewrites with its own hidden definition rebuilds its interface fanout unless it declares the equations privately", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const sources = [
+    module("Pkg/Leaks.lean", "public section\n\nnamespace Pkg\n\ndef hidden : Nat := 0\n\ntheorem t : hidden = 0 := by simp [hidden]\n\nend Pkg"),
+    module("Pkg/AboveLeaks.lean", "import Pkg.Leaks"),
+    module("Pkg/Declares.lean", [
+      "public section",
+      "",
+      "namespace Pkg",
+      "",
+      "def kept : Nat := 0",
+      "",
+      "run_meta privateEquations `Pkg #[`kept]",
+      "",
+      "theorem t : kept = 0 := by simp [kept]",
+      "",
+      "end Pkg",
+    ].join("\n")),
+    module("Pkg/AboveDeclares.lean", "import Pkg.Declares"),
+  ];
+  const fanouts = leanHiddenEditFanouts(sources);
+  assert.deepEqual(fanouts.get("Pkg.Leaks"), ["Pkg.AboveLeaks"]);
+  assert.deepEqual(fanouts.get("Pkg.Declares"), []);
+  assert.deepEqual([...leanHiddenRewrites(sources)].filter(([, sites]) => sites.length > 0), [["Pkg.Leaks", ["Pkg.Leaks.hidden"]]]);
 });
 
 test("a hidden edit also reaches each `meta import` importer whose import closure holds the edited module", () => {
@@ -220,7 +311,7 @@ test("the ratchet reports growth, an unlisted wide module, a stale entry and an 
   ]);
 });
 
-// The ratchet itself: required item 6 of docs/LEAN-BUILD-MODULARITY-SPEC.md. The oracle is the graph scan
+// The ratchet itself: required item 6 of docs/LEAN-BUILD-MODULARITY-PROPOSAL.md. The oracle is the graph scan
 // above; it bounds graph shape, so a family-start kernel change needs no exemption.
 const librarySources = () =>
   readWorktreeSources(worktreeLeanSourceFiles().filter((path) => path.startsWith("BpmnSemantics/") || !path.includes("/")));
@@ -269,7 +360,7 @@ test("no importer adds a rewrite with a hidden definition", () => {
 test("one added rewrite with a hidden definition fails the rewrite ratchet", () => {
   const path = "BpmnSemantics/SemanticProcess/ParallelScopeCommandReplay.lean";
   const sources = librarySources().map((file) => file.path === path
-    ? { path, source: `${file.source}\ntheorem mutationProbe : True := by simp only [operationWellFormed]\n` }
+    ? { path, source: `${file.source}\ntheorem mutationProbe : True := by simp only [parallelScopeBodyBound]\n` }
     : file);
   const findings = leanFanoutViolations(leanHiddenRewrites(sources), leanHiddenRewriteBounds, 0, [], "rewrite sites");
   assert.ok(findings.some((finding) => finding.startsWith("BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay: ")), findings.join("\n"));
@@ -279,10 +370,12 @@ test("one added rewrite with a hidden definition fails the rewrite ratchet", () 
 // closure bounded interface and hidden-edit fanouts but no body edit of an exposed module, so 988 exposed files made
 // every such edit an interface edit (Finding 83). The oracle is a container probe: a body edit to `NestedScopeData`
 // rebuilt exactly the 61 modules of its public cone one target loads, which this model predicts (2026-10-27).
-// A rewrite site is any bracketed argument list after a word, not a list of tactic names: a cold review recreated the
+// A rewrite site is the argument list of a rewriting tactic, however it is spelled: a cold review recreated the
 // documented 82-module equation-lemma leak with `simp only` and its list on the next line, and with `rw_mod_cast`,
-// while every guard stayed green (2026-10-28). Counting a term-level list application too only over-approximates.
-test("every spelling of a rewrite argument list, and a local simp attribute, is a rewrite site", () => {
+// while every guard stayed green (2026-10-28). Lean puts the configuration and discharger before `only` (`Init/Tactics.lean:685`), a spelling the HIGH review of the
+// conversion found uncounted (2026-10-29). `dsimp [f]` only marks `f` to unfold and realizes no equation lemma
+// (`Lean/Elab/Tactic/Simp.lean:281-282`), so its lists are no sites.
+test("every spelling of a rewrite argument list, and a local simp attribute, is a rewrite site, and a term's list is not", () => {
   const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
   const proofs = [
     "by simp only\n    [hidden]",
@@ -294,6 +387,14 @@ test("every spelling of a rewrite argument list, and a local simp attribute, is 
     "by simp [foo (bar [1, 2]), hidden]",
     "by simp (config := {}) [hidden]",
     "by nth_rewrite 2 [hidden]",
+    "by simp +contextual [hidden]",
+    "by simp_all only [hidden]",
+    "by simp +contextual only [hidden]",
+    "by simp (config := {}) only [hidden]",
+    "by simp (disch := omega) only [hidden]",
+    "by simp_all +arith only [hidden]",
+    // A named equation lemma realizes itself, whichever tactic names it.
+    "by dsimp only [hidden.eq_1]",
   ];
   const rewrites = leanHiddenRewrites([
     module("Pkg/Hub.lean", "public section\n\ndef hidden : Nat := 0\n\nend"),
@@ -303,7 +404,12 @@ test("every spelling of a rewrite argument list, and a local simp attribute, is 
       "theorem ascribed (n : Nat) : (hidden n : Nat) = 0 := by simp [hidden]",
       "theorem inBinder (n : Nat) (h : (hidden n : Nat) = 0) : True := by simp [hidden] at h",
       "theorem aliased : True := by simp [(hidden ·), @hidden]",
-      "def listed : List Nat := [hidden]"].join("\n")),
+      "def listed : List Nat := [hidden]",
+      // A list a term applies a function to realizes nothing.
+      "theorem applied : True := by have := List.length [hidden]; trivial",
+      "theorem handed : withHandlers [hidden] = 0 := rfl",
+      "theorem unfoldedOnly : hidden = 0 := by dsimp only [hidden]",
+      "theorem unfoldedWithFlags : hidden = 0 := by dsimp +instances only [hidden]"].join("\n")),
   ]);
   assert.equal(rewrites.get("Pkg.Proofs")!.length, proofs.length + 5);
 });

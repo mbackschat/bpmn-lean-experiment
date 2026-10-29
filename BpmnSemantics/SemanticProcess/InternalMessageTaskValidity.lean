@@ -7,11 +7,23 @@ public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidit
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! ESL-OWN-01 requires joint Task/Message/Activity preservation. The existing insertion and
 association laws discharge each family without assuming an intermediate composite state is valid. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMessageTaskContract.operation,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalMessageTaskPatch,
+  `InternalCommutation.makeInternalMessageTaskPatch, `InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.regionalActivityBodyTasks, `InternalCommutation.uniqueFamilyDeclarer?, `activityBodyLive,
+  `activityBodyTask?, `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `exactLiveOccurrence,
+  `flowNodeOccurrenceWaitProgramValidity, `messageIdNamesWait, `recordAttaches, `recordBodyNamesWait,
+  `taskIdNamesWait, `userTaskWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

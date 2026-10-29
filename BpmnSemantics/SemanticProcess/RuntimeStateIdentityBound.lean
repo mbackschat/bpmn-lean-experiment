@@ -8,7 +8,7 @@ This module owns the implemented, consumer-required part of `RSI-BOUND-01`. It i
 aggregate predicate because one numeric relation spans otherwise independent runtime collections.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

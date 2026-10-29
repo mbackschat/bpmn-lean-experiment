@@ -2,11 +2,23 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchDependencies
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The complete regional read set protects the owner region and place-wide selectors from
 local-control writes. These are the dependencies required by INTERNAL-COMMUTATION's frame law. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalLocalControlExtraWrites,
+  `InternalCommutation.internalLocalControlStateFootprint, `InternalCommutation.liftRegionalStateAtom,
+  `InternalCommutation.regionalOwnsAtom, `InternalCommutation.regionalOwnsOrdinaryAtom,
+  `InternalCommutation.regionalStateAtomsConflict, `canonicalStateAtomSet]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

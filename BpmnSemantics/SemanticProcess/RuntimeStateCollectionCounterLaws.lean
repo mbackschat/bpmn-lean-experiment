@@ -3,11 +3,12 @@ module
 import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorageLaws
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalArmingOrder
 
 /-! Retained Task and effect counter replacements preserve canonical order and unique name keys.
 Serial and structured composition consume these storage facts at actual reached command boundaries. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

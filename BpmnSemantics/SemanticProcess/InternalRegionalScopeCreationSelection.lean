@@ -16,10 +16,39 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Scope creation preserves regional selectors through their exact queried populations. Fresh identity alone is insufficient: independence also protects the inserted parent and Call edges, token censuses, and quiescence. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrenceRegion.ownsCall,
+  `InternalCommutation.InternalScopeCreationSelection.apply, `InternalCommutation.internalScopeCreationStateFootprint,
+  `InternalCommutation.liftRegionalStateAtom, `InternalCommutation.regionalBaseFootprint?,
+  `InternalCommutation.regionalStateAtomsConflict, `MonitoredScopeOwnership, `MonitoredScopeTimerBinding,
+  `NonInterruptingBoundaryTimerBinding, `canonicalStateAtomSet, `runningInstance?, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -102,7 +131,7 @@ private theorem selection_query_frame (program : Program) (before after : Runtim
           all_goals simp_all only [Bool.and_eq_true, Bool.and_self, and_self, Bool.false_eq_true, ↓reduceIte,
             Option.bind_eq_bind, Option.bind_some]
       · contradiction
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       dsimp only at found ⊢
       rw [inputs.1]
       obtain ⟨owner, offered, found⟩ := Option.bind_eq_some_iff.mp found
@@ -469,7 +498,7 @@ theorem scopeCreation_regional_selection
   · have read := regionalStateFootprint_selector_read state regional.selection regional.region regional.footprint footprint
     rw [operationEq] at read
     cases operation with
-    | throwError id errorOrigin input error handler =>
+    | «throwError» id errorOrigin input error handler =>
         have filter := inputFilter input read
         refine ⟨?_, ?_⟩
         · simp only [onlyTokenOwner?, tokenOwners, filter]

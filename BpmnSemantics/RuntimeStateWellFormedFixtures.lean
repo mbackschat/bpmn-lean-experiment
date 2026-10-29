@@ -8,7 +8,7 @@ This module owns the shared boundary-Timer program, instance, reachable state, a
 states used by the independent runtime-state well-formedness proof leaves.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.RuntimeStateWellFormedConformance
 

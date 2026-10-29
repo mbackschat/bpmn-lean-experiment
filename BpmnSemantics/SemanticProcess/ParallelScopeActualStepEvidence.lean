@@ -6,13 +6,26 @@ import BpmnSemantics.SemanticProcess.ParallelScopeInstanceIdentityProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual PMIS singleton and Start evidence is shared by position and publication
 preservation, as required by AA-01. The classification retains the resolved
 declaration and canonical replay; each consumer still owns its field invariants.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `SemanticOperation.kind, `admitStimulus]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

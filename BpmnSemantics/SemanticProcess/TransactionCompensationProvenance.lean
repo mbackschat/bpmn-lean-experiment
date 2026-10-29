@@ -3,11 +3,15 @@ module
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Monotone Task activation issuance preserves the provenance of retained Transaction
 handler subjects, including tombstones whose child scope has been disposed. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`transactionTriggerProvenanceValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

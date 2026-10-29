@@ -6,11 +6,20 @@ import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional removal preserves each surviving parallel controller's complete pending-child and
 lifetime-Timer binding. The operation-wide weighted reverse census is a separate obligation. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityBodyParallelTasks?,
+  `parallelMultiInstanceProgramBindingsValid, `parallelMultiInstanceRuntimeWellFormed, `parallelSlotIdentityValid,
+  `pendingParallelTaskIds, `taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -14,13 +14,46 @@ import BpmnSemantics.SemanticProcess.NestedScopeChainBridge
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.EffectDataMapping
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.StrictJson
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Mixed scope/arming frames retain the complete predecessor artifact required by the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). Scope insertion
 preserves an already-live arming owner; arbitrary absent-owner queries need not be preserved.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.InternalScopeCreationSelection.apply, `InternalCommutation.PreparedInternalArming.apply,
+  `InternalCommutation.PreparedInternalArming.scopeFramePatch, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.dataArmingHostValid,
+  `InternalCommutation.footprintOfPatch, `InternalCommutation.internalArmInput?,
+  `InternalCommutation.internalArmOrigin?, `InternalCommutation.localControlStateFootprintsNonInterfering,
+  `InternalCommutation.makeInternalDataArmingPatch, `InternalCommutation.openWaitAnchorAbsent,
+  `InternalCommutation.openWaitAnchors, `InternalCommutation.prepareInternalArm?,
+  `InternalCommutation.prepareInternalDataArmingContract?, `InternalCommutation.scopedEffectInputReads?,
+  `NestedScopeData.occurrenceChain, `NestedScopeData.occurrenceChainWithin, `canonicalStateAtomSet,
+  `dataInputOutputActivityRecord, `dataInputOutputRunningInstance?, `effectActivationCount, `evaluateEffectInputs?,
+  `evaluateInputMappingsInOrderUnder, `evaluateInputMappingsUnder?, `evaluateSequentialScopeInputs?,
+  `messageActivationCount, `readSequentialScopeVariable?, `sequentialScopeBindingForEntry?,
+  `sequentialScopeBindingForOwner?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

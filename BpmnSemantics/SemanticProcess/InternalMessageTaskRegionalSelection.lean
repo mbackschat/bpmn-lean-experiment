@@ -12,12 +12,38 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
 public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The joined Message-host insertion preserves regional selection outside its live owner.
 Message insertion preserves the existing Timer census and exact child-Activity lookup.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalMessageTaskPatch, `InternalCommutation.makeInternalMessageTaskPatch,
+  `InternalCommutation.messageTaskStateFootprint, `InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.regionalOwnsAtom, `InternalCommutation.regionalOwnsOrdinaryAtom,
+  `InternalCommutation.regionalStateAtomsConflict, `MonitoredScopeOwnership, `MonitoredScopeTimerBinding,
+  `NonInterruptingBoundaryTimerBinding, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -230,7 +256,7 @@ theorem regionalSelection_after_independent_message_task (program : Program) (st
     rw [tokens, filterTokens_removeToken_other _ _ _ _
       (messageTask_regional_input_distinct footprint patch input read independent)]
   cases operation with
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       refine ⟨onlyTokenOwner_read_frame state _ input (census input inputRead), ?_⟩
       rw [tokens]
       apply filter_removeToken_of_rejected

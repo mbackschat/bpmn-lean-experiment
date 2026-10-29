@@ -9,13 +9,18 @@ import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.TopologyFixtures
 public import BpmnSemantics.Experiments.CheckedSourceTransition
+import all BpmnSemantics.Experiments.CheckedSourceGraph
+import all BpmnSemantics.Experiments.CheckedSourceState
+import all BpmnSemantics.Experiments.CheckedSourceTransition
+import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.TopologyFixtures
 
 /-! # Checked-source frontier witnesses
 
 This module instantiates the single-token and two-token frontier characterizations on the retained parallel checked process. It also retains the node-order discriminators that force the two-token result to be stated up to permutation.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceFrontierConformance
 

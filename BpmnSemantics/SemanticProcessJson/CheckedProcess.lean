@@ -9,7 +9,7 @@ public import BpmnSemantics.SemanticProcessJson.CompensationSource
 Owns one public contract: the checked BPMN graph the TypeScript compiler emits. Decoding admits the
 exact current shape and establishes neither structural validity nor profile capability. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

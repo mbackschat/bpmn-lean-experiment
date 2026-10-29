@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeLocalFrameProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
 
 /-! # Activity-local frame absence along actual parallel histories
 
@@ -10,7 +11,7 @@ PMIS-SELECT-01 needs absence of Activity-owned local frames before Human
 reservation. Start establishes it; actual operations preserve or remove frames.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

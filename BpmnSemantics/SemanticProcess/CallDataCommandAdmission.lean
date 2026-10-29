@@ -11,7 +11,7 @@ caller Property inventory. CDATA-OWNER-01 permits a called Task completion only 
 exact Call/root association; hosting Workflow identity is not the called Task's semantic identity.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 
 /-! # Regional Activity lifetime regression witnesses
 
@@ -11,7 +12,7 @@ These literal ownership graphs exercise cancellation without claiming new profil
 Called-Process cleanup also supplies exact predecessor membership for the Activity issuing census.
 -/
 
-@[expose] public section
+public section
 
 set_option Elab.async false
 

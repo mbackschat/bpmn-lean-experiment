@@ -1,13 +1,19 @@
 module
 
 public import BpmnSemantics.Experiments.CheckedSourceChain
+import all BpmnSemantics.Experiments.CheckedSourceDecomposition
+import all BpmnSemantics.Experiments.CheckedSourceGraph
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Whole-process checked-source coverage
 
 This module relates successful structured decomposition to graph-derived Start, End, chain, node-coverage, and Sequence-Flow-coverage facts. Parser state remains private proof plumbing.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.Experiments.CheckedSourceAdmission #[`coversEveryNode, `endIds, `nodeAt,
+  `nodeExists, `outgoingFlows, `parseFrom, `startIds]
+
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 
@@ -25,6 +31,8 @@ def decompositionNodes (decomposition : StructuredDecomposition) : List NodeId :
 def decompositionFlows (source : CheckedProcess)
     (decomposition : StructuredDecomposition) : List CheckedSequenceFlow :=
   (decompositionNodes decomposition).flatMap (outgoingFlows source)
+
+run_meta privateEquations `BpmnSemantics.Experiments.CheckedSourceAdmission #[`decompositionNodes, `segmentNodes]
 
 private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
     (entry : NodeId) (tail : ParsedTail)

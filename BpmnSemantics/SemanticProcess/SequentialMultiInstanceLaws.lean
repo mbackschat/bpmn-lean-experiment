@@ -2,6 +2,10 @@ module
 
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.ActivityBodyTurnover
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Sequential Multi-Instance laws
 
@@ -40,7 +44,12 @@ the start state; this module does not derive it from Start or from any scheduler
 human-completion fairness, Timer-delivery fairness, or unconditional liveness.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyTask?, `activityOccurrenceFrame,
+  `completedInstanceCount, `controllerNamesActivityOccurrence, `enteredController, `iteratedState, `replaceBodyIn,
+  `replacedState, `sameSequentialMultiInstanceController, `sequentialMultiInstanceControllerFrame,
+  `storeIterationResult]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -407,6 +416,8 @@ inductive SequentialMultiInstanceTargetAcceptedEvent (arm : SequentialMultiInsta
       SequentialMultiInstanceTargetAcceptedEvent arm target before none
         (interruptionState arm before record body deadline target)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`sequentialMultiInstanceControllerRemainingCount]
+
 /-- Every target-indexed event is an event of the original semantic relation. -/
 theorem targetAcceptedEvent_isAccepted {arm : SequentialMultiInstanceArm}
     {target : SequentialMultiInstanceController} {before after : RuntimeState}
@@ -564,7 +575,7 @@ def SequentialMultiInstanceInterruptionReady (arm : SequentialMultiInstanceArm)
         timer.elementId.value = arm.boundaryTimer.elementId.value ∧
         ∃ deadline ∈ state.timerWaits, timerIdNamesWait timer deadline = true
 
-instance (arm : SequentialMultiInstanceArm) (target : SequentialMultiInstanceController)
+@[no_expose] instance (arm : SequentialMultiInstanceArm) (target : SequentialMultiInstanceController)
     (instanceId : SemanticId) (state : RuntimeState) :
     Decidable (SequentialMultiInstanceInterruptionReady arm target instanceId state) := by
   unfold SequentialMultiInstanceInterruptionReady

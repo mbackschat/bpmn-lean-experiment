@@ -16,7 +16,7 @@ discharge a quantified law; see the
 [nested scope-control specification](../docs/capsules/NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#separating-witnesses).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.NestedScopeControlConformance
 

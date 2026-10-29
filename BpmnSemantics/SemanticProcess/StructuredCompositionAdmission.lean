@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.ClosureLimit
 
 /-! The approved structured-composition proposal requires independent graph contraction, definite-write intersection and task-cut closure bounds. These private analysis vertices carry no serialized or runtime authority. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

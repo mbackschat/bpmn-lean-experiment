@@ -2,13 +2,19 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete artifact frames preserve issuance populations and differently owned token buckets;
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md) requires exact
 footprints and numbering-free publication as well as successful selection.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalScopeCreationCounterSafe,
+  `internalScopeCreationDefinitionMatches, `internalScopeCreationPredecessorChecks,
+  `makeInternalScopeCreationPreparation, `prepareInternalScopeCreation?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

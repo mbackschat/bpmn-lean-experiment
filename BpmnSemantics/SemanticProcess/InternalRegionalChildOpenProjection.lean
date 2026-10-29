@@ -13,12 +13,36 @@ import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionRemoval
 import BpmnSemantics.SemanticProcess.InternalScopeCreationOpenProjection
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The actual child-completion projection removes exactly the completed scope anchor.
 All admission predicates and component projections come from predecessor validity and
 the selected evaluator; canonical filtering preserves the predecessor anchor census. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalLifecycleTemplate?,
+  `acceptFlowNodeOccurrenceCandidate?, `fire?, `flowNodeOccurrenceProgramValidity, `projectOpenFlowNodeOccurrences?,
+  `removeEndedFlowNodeOccurrences]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

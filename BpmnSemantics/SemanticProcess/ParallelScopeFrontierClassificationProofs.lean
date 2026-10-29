@@ -3,6 +3,9 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Admitted Fork and Join scope classification
 
@@ -12,7 +15,10 @@ owner therefore belongs to the child; the existing ancestry check supplies that
 declaration premise before preparation without assuming a successor.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.occurrenceOwnerRootValid,
+  `ParallelScopeStart.ParentSpineStep, `SemanticOperation.kind]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 

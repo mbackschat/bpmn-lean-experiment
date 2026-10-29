@@ -4,6 +4,10 @@ import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Admitted reservation identity provenance
 
@@ -12,7 +16,11 @@ Reservation validity alone does not bind arbitrary retained waits to those
 declarations; these laws supply the Program side of that reachable-state obligation.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.uniqueFamilyDeclarer?,
+  `ParallelScopeStart.programOperationAllowed, `SequentialScopeProgram.operationAllowed,
+  `SequentialScopeProgram.sourceNode?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 

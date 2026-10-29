@@ -10,7 +10,7 @@ existing neutral effect operation. Admission supplies the one input, one output,
 and exact Probe descriptor.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

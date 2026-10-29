@@ -7,7 +7,7 @@ public import BpmnSemantics.Experiments.CheckedSourceGraph
 This module owns the deterministic serial-wait and balanced-parallel decomposition probe used by the provisional structured-admission experiment.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 

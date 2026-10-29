@@ -1,12 +1,13 @@
 module
 
 public import BpmnSemantics.SemanticProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The approved repeatable-subscription proposal selects a fork forest and an eight-operation
 whole-burst limit. These independent representation readers supplement generic validation;
 they neither replace reference validation nor grant public scheduling or hosting capability. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -305,6 +306,8 @@ def vertexShape (forest : Forest) (vertex : SubscriptionVertex) : Bool :=
         (fun scope => decide (scope.parentScopeId = some vertex.owner))).getD false
     | _ => vertex.outputs.length == 1)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`repeatableSubscriptionProgramShape]
+
 -- Traversal exhaustion rejects: malformed cyclic inputs never receive a successful bound.
 def descendants (forest : Forest) (allowed : SubscriptionVertex → Bool) : Nat → VertexKey → Bool
   | 0, _ => false
@@ -397,6 +400,8 @@ def repeatableSubscriptionProgramGraph (program : Program) : Bool :=
       let entries ← (program.operations.filter fun op => (repeatableSubscriptionChildScope? op).isSome).mapM (programEntryVertex? program)
       let forest := { scopes := program.definitionScopes, root, vertices := ordinary ++ boundaries ++ entries : Forest }
       pure (forestShape forest && forestBursts forest)).getD false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`repeatableSubscriptionProgramGraph]
 
 theorem repeatableSubscriptionProgramGraph_operation (program : Program)
     (admitted : repeatableSubscriptionProgramGraph program = true)

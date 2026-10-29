@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcessJson.Elements
 
 /-! # Strict checked Compensation source decoding -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

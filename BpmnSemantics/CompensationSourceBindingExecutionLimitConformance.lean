@@ -9,7 +9,7 @@ Trigger-count, handler-count, and canonical-byte limits remain three separately 
 obligations.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

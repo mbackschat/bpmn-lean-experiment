@@ -3,10 +3,14 @@ module
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 public import BpmnSemantics.SemanticProcess.InternalMergePreparation
 public import BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Family publication values stay below the unified prepared dispatcher, so its pair laws can reuse acceptance without an import cycle. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation.InternalAlternative #[`operationId]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -146,6 +150,8 @@ def internalRecordAlternative (record : InternalTransitionRecord) : InternalAlte
   match record.mergeInput with
   | none => .operation record.operationId
   | some input => .mergeInput record.operationId record.owner input
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalRecordAlternative]
 
 @[simp] theorem internalRecordAlternative_operationId (record : InternalTransitionRecord) :
     (internalRecordAlternative record).operationId = record.operationId := by

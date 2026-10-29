@@ -3,13 +3,29 @@ module
 import BpmnSemantics.SemanticProcess.InternalMergePreparationLaws
 public import BpmnSemantics.SemanticProcess.InternalMergePreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact Merge uses the existing local token-patch algebra without inheriting its unique-owner
 selector. The [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome)
 keeps preparation tied to the chosen owned input.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalLocalControlSelection.censusReads,
+  `InternalCommutation.InternalLocalControlSelection.owner,
+  `InternalCommutation.InternalLocalControlSelection.variableReads,
+  `InternalCommutation.InternalMergeSelection.tokens, `InternalCommutation.internalLocalControlExtraReads,
+  `InternalCommutation.internalLocalControlExtraWrites, `InternalCommutation.internalLocalControlStateFootprint,
+  `InternalCommutation.internalMergeStateFootprint, `InternalCommutation.makeInternalLocalControlPreparation,
+  `InternalCommutation.makeInternalMergePreparation, `SemanticOperation.kind]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -19,8 +35,10 @@ open BpmnSemantics
 def InternalMergeSelection.localControlPatch (selected : InternalMergeSelection) : InternalLocalControlSelection :=
   { operation := selected.operation, tokens := selected.tokens }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation.InternalMergeSelection #[`localControlPatch]
+
 @[simp] theorem InternalMergeSelection.localControlPatch_apply (selected : InternalMergeSelection) (state : RuntimeState) :
-    selected.localControlPatch.apply state = selected.apply state := rfl
+    selected.localControlPatch.apply state = selected.apply state := (rfl)
 
 theorem InternalMergeSelection.localControlPatch_footprint (selected : InternalMergeSelection)
     (state : RuntimeState) (instanceId : SemanticId) (merge : selected.operation.kind = .mergeExclusive) :

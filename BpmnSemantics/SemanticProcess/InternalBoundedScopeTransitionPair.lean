@@ -18,11 +18,56 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
 import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
+import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.WireNatural
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The selected subscription child-entry pairs reuse complete raw preparation laws.
 The immutable admission certificate excludes other composite and child declarations. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeContract.entryOperation,
+  `InternalCommutation.InternalBoundedScopeContract.operation,
+  `InternalCommutation.InternalTimerTaskContract.operation, `InternalCommutation.PreparedInternalTransition.operation,
+  `InternalCommutation.boundedScopeStateFootprint, `InternalCommutation.internalScopeCreationDefinitionMatches,
+  `InternalCommutation.internalScopeCreationStateFootprint, `InternalCommutation.liftRegionalStateAtom,
+  `InternalCommutation.liftRegionalStateFootprint, `InternalCommutation.regionalStateAtomsConflict,
+  `InternalCommutation.selectInternalRegional?, `canonicalStateAtomSet, `repeatableSubscriptionBoundaryOperation,
+  `repeatableSubscriptionOperationAllowed, `repeatableSubscriptionProgramGraph, `repeatableSubscriptionProgramShape,
+  `runningInstance?, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -139,7 +184,7 @@ private theorem bounded_subscription_regional_dependent (program : Program) (sta
       rw [ownerId] at inside
       rw [inside, outside] at mask
       contradiction
-  | returnProcess _ _ _ | throwError _ _ _ _ _ =>
+  | returnProcess _ _ _ | «throwError» _ _ _ _ _ =>
       simp [PreparedInternalTransition.operation, operation, repeatableSubscriptionOperationAllowed] at allowed
   | _ => simp [operation, selectInternalRegional?] at selected
 

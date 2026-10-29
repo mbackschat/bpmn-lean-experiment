@@ -3,11 +3,19 @@ module
 public import BpmnSemantics.SemanticProcess.MonitoredScope
 import BpmnSemantics.SemanticProcess.RecurringBoundaryTimerLaws
 import Std.Data.DTreeMap.Internal.Balancing
+import all BpmnSemantics.SemanticProcess.BoundedScopeArming
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Quantified monitored-child lifetime laws establish exact subscription withdrawal and arbitrary
 parent-handler preservation under the ESL-OWN, ESL-CLOSE and ESL-TIMER account. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MonitoredScopeTimerBinding, `boundaryTimerWaitIdentity,
+  `completeMonitoredScope?, `completeMonitoredScopePair, `completeQuiescentScope?, `completeScopeState?,
+  `removeMonitoredScopeTimer, `sameActivityOccurrence, `timerIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

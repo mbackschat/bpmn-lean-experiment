@@ -5,12 +5,23 @@ import BpmnSemantics.SemanticProcess.InternalRegionalChildWaitValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalProjectionFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Return removes one parentless scope and its owned Activities. Surviving Timer and
 Message waits retain their exact candidate censuses, including rejected candidates;
 the parentless root cannot be a bounded-scope Timer host. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceWaitProgramValidity]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

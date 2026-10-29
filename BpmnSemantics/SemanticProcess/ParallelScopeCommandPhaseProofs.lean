@@ -11,6 +11,27 @@ import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel command phase provenance
 
@@ -21,7 +42,16 @@ certificate supplies its premises without claiming future scheduling or publicat
 success. Pending initiation is explicit and accepts no completion ingress.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `InternalCommutation.internalOperationOccurrenceOffers?, `InternalCommutation.internalOperationOccurrences?,
+  `InternalCommutation.ordinaryExecutionFrontier, `InternalCommutation.resolveInternalOperationOccurrence?,
+  `InternalCommutation.sortBy, `InternalCommutation.sortInsertBy, `ParallelScopeCommand.completeEffect?,
+  `ParallelScopeCommand.completeTask?, `ParallelScopeCommand.stimulusAdmitted,
+  `ParallelScopeReplay.waitCompletionStimulus, `ParallelScopeStart.analyzeProgram,
+  `ParallelScopeStart.programSelected, `SemanticOperation.kind, `admitStimulus, `applyParallelScopeOperation?,
+  `enterParallelScope?, `parallelScopeBinding?, `parallelScopeEntry?, `scopedOwnershipComplete]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 open BpmnSemantics InternalCommutation ParallelScopeReplay
@@ -373,6 +403,8 @@ def ParallelScopeCommandCertificate (program : Program) (analysis : ParallelScop
   ∃ seed : ParallelScopeAcceptedStart program, state.compensationHandlerEffectWaits = [] ∧
     ∀ owner, owner.definitionScopeId = analysis.entry.childScopeId →
       ParallelScopeStartedPhase program analysis seed owner state
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeAcceptedStart #[`parent]
 
 theorem parallelScope_committed_ingress_kind (program : Program)
     (selected : ParallelScopeStart.programSelected program = true)

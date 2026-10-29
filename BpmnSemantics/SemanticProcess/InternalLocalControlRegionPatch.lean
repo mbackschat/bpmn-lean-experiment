@@ -8,11 +8,21 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 public import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional removal filters canonical collections. Local-control patches commute with that
 filter only when every changed value survives and the predecessor has canonical order. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalLocalControlSelection.apply,
+  `InternalCommutation.InternalLocalControlSelection.owner, `InternalSelectedBranchPatch.apply,
+  `canonicalCollectionOrder, `completeQuiescentScope?, `completeScopeState?, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

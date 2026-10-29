@@ -4,6 +4,7 @@ import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence cancellation exactness laws
 
@@ -18,7 +19,11 @@ separate responsibility of [`FlowNodeOccurrenceLifecycleProofs`](FlowNodeOccurre
 which this module consumes. Concrete executable witnesses remain in the conformance module.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalFlowNodeOccurrenceDelta,
+  `instantaneousFlowNodeOccurrenceDelta, `instantaneousFlowNodeOccurrenceDeltaWithEnds,
+  `ownedSubtreeCancellationEnds?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -235,6 +240,8 @@ def flowNodeOccurrenceRemovedByTermination (program : Program) (state : RuntimeS
     (root : ScopeOccurrenceId) (occurrence : OpenSemanticFlowNodeOccurrence) : Bool :=
   flowNodeOccurrenceOwnedBySubtree program state root occurrence .retain &&
     decide (occurrence.anchor ≠ .scope root)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceRemovedByTermination]
 
 private theorem termination_cancelled_map_eq (program : Program) (state : RuntimeState)
     (root : ScopeOccurrenceId) (current : List OpenSemanticFlowNodeOccurrence) :

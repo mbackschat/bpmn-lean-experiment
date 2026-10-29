@@ -2,6 +2,10 @@ module
 
 import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceProgramBindingFacts
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance shared runtime well-formedness
 
@@ -14,7 +18,10 @@ executable invariant are imported from `ParallelMultiInstanceRuntimeInvariant`; 
 no transition, public observation, shared runtime-state field, or host state.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyParallelTasks?,
+  `parallelMultiInstanceRuntimeWellFormed, `parallelSlotIdentityValid, `pendingParallelTaskIds, `timerIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -113,6 +120,9 @@ def parallelMultiInstanceProgramBindingsValid (program : Program) (state : Runti
                   (fun count controller =>
                     count + (pendingParallelTaskIds controller.slots).length) 0
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`parallelMultiInstanceProgramBindingsValid,
+  `parallelWaitTaskId, `sameParallelControllerIdentity]
+
 /-- Construct the complete Program binding for one parallel Multi-Instance controller from its exact
 record, operation, child-wait, Timer-wait, family-state, and Program-wide census facts. -/
 theorem parallelMultiInstanceProgramBindingsValid_singleton (program : Program)
@@ -200,7 +210,9 @@ theorem parallelMultiInstanceProgramBindingsValid_singleton (program : Program)
       have binding := List.all_eq_true.mp childWaitBindings wait waitMember
       simpa only [Bool.and_eq_true, beq_iff_eq] using binding
     unfold parallelControllerProgramBindingValid parallelRecordForController?
-    rw [controllerRecord, matchingOperation]
+    -- `erw`: the hidden definition's body and this proof carry different private matchers
+    -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    erw [controllerRecord, matchingOperation]
     simp only [projects]
     rw [ownerScope, attachedTimer, privateWaits]
     simp [familyWellFormed, body, childWaitLength, privateWaitIdsUnique,

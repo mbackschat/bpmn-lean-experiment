@@ -8,7 +8,7 @@ join, so a region `fork → branches → merge → target → after → End` is 
 task vertex before that analysis runs. The scan has no quantified certificate; each retained model and
 refusal fixes it by kernel decision. It carries no runtime or serialized authority. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.MergeRegion
 

@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Direct Activity data output
 
@@ -11,7 +13,7 @@ BPMN 2.0.2 Clause 10.4.1 places an Activity's output Data Associations after its
 Availability of the single required output is decided entirely by the command's shape in this slice, so the fill and the requirement fail together. They are kept as separate steps regardless, because the association is what routes the value: the submitted name identifies the `DataOutput` inside the Activity and the association alone decides which Process `Property` receives it.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -22,6 +24,8 @@ def dataOutputRunningInstance? (state : RuntimeState) :
   match state.control with
   | .running instanceId => some instanceId
   | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`dataOutputRunningInstance?]
 
 theorem dataOutputRunningInstance_of_running {state : RuntimeState}
     {instanceId : SemanticId} (running : state.control = .running instanceId) :
@@ -262,6 +266,8 @@ def dataOutputActivityOwner (state : RuntimeState) (instanceId : SemanticId)
     activityElementId := ⟨taskId.value⟩
     activation := activityActivationCount state taskId + 1 }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`dataOutputActivityOwner]
+
 /-- `ADOUTPUT-ENTRY-01`. The activated Activity occurrence owns exactly one local scope and that scope is empty: this family arms the container, and the completion supplies its content.
 
 Owner freshness stays a hypothesis so the law speaks only about the armed scope; the input family's `issuedCountBoundSuppliesFreshOwner` derives the same obligation from a bound both families' arming preserves. -/
@@ -462,6 +468,8 @@ def dataOutputActivityRecord (state : RuntimeState) (instanceId : SemanticId)
         elementId := ⟨taskId.value⟩
         activation := activationCount state taskId + 1 }
     attachedHandlers := [] }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`dataOutputActivityRecord]
 
 /-- The successor's exact Activity collection, expressed over the record above. -/
 theorem activateDataOutputUserTask_activityOccurrences {state after : RuntimeState}

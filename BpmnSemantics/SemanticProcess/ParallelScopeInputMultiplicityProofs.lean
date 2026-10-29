@@ -7,6 +7,22 @@ import BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeContinuationMarking
+import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.ParallelScopeParentProgress
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Reachable Human and Service input multiplicity
 
@@ -17,7 +33,11 @@ Token multiplicity follows from token-or-wait credit, independently of any futur
 application, reservation or successful frontier discovery.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.analyzeProgram,
+  `SemanticOperation.kind, `SequentialScopeControl.bodyVertex?, `SequentialScopeControl.inputs, `bodyConsumedPorts,
+  `continuationMarking, `ownedPortCount]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

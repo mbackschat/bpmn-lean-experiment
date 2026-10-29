@@ -3,6 +3,9 @@ module
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Interrupting Sub-Process boundary Timer: victory
 
@@ -15,7 +18,7 @@ The pair is recovered through the [Activity occurrence record](ActivityOccurrenc
 The retired form joined the two by requiring the child occurrence's activation to equal the deadline's under the parent as owner. That held only because the profile admits exactly one such Sub-Process with exactly one boundary Timer and arming is atomic, which is a property of the admission rather than a fact the state carried.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -163,6 +166,8 @@ def completeBoundedScope? (program : Program) (state : RuntimeState)
                           activityOccurrences :=
                             completed.activityOccurrences.filter fun record =>
                               !decide (record.body = .childScope occurrence.1) }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`boundedScopeDeadlineWait?]
 
 /-- Completing a scope that no bounded-scope operation entered is exactly the shared completion, so this family adds no behavior to an ordinary Sub-Process. -/
 theorem completeBoundedScope_eq_completeScope_of_unbounded (program : Program)

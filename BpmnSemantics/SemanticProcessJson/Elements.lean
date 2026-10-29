@@ -10,7 +10,7 @@ A checked BPMN graph and a Semantic Process program describe the same data-mappi
 scope elements, so these decoders have exactly two callers and one meaning. They are public because
 that sharing crosses a module boundary, not because the wire shape is an extension point. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

@@ -9,11 +9,25 @@ import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetentionLaws
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Child completion's projection associations retain exact Call roots, incident owners,
 and event-race member censuses. Each predicate is preserved from its predecessor account. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMessageTaskContract.operation,
+  `effectIncidentAssociationValid, `effectIncidentAssociationsValid, `effectWaitOwnerAssociationValid, `fire?,
+  `messageBoundedOperationProjectionValid, `messageBoundedProjectionValid, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -13,11 +13,12 @@ import BpmnSemantics.SemanticProcess.MonitoredScope
 import BpmnSemantics.SemanticProcess.MonitoredTask
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceFlowNodeOccurrence
 import BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence lifecycle -/
 
 -- Bodies are hidden so a body edit rebuilds only `import all` importers; a definition importers reduce
--- definitionally is `@[expose]` with what its body calls ([module rules](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules)).
+-- definitionally is `@[expose]` with what its body calls ([module rules](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-rules)).
 public section
 
 namespace BpmnSemantics.SemanticProcess
@@ -816,6 +817,8 @@ def flowNodeOccurrenceDeltaForOperation? (program : Program) (before after : Run
   candidateFlowNodeOccurrenceDeltaForOperation? program before after operation commandId
       transitionIndex >>= fun candidate =>
     acceptFlowNodeOccurrenceCandidate? program before after candidate
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertBy]
 
 private theorem insertBy_perm (before : α → α → Bool) (value : α) : ∀ values, (insertBy before value values).Perm (value :: values) := by
   intro values

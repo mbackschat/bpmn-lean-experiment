@@ -11,6 +11,23 @@ import BpmnSemantics.SemanticProcess.ParallelScopeParentFrontierProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitArmingPublicationProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel command fuel sufficiency
 
@@ -19,7 +36,15 @@ capacity, which pays for scheduler work including Start initiation and terminal
 completion. Publication completeness remains a separate obligation.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.ScheduledClosureResult.failed,
+  `InternalCommutation.applyInternalOperationOccurrence?, `InternalCommutation.closeScheduledTraced,
+  `InternalCommutation.deriveInternalExecutionFrontier, `ParallelScopeAcceptedStart.ready,
+  `ParallelScopeReplay.waitCompletionStimulus, `ParallelScopeStart.analyzeProgram,
+  `ParallelScopeStart.commandClosureLimit?, `ParallelScopeStart.programSelected,
+  `ParallelScopeStart.programStateCapacity, `StimulusResult.ofClosure, `StimulusResult.ofScheduledClosure,
+  `admitStimulus, `applyStimulus]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

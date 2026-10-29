@@ -8,7 +8,7 @@ These Programs remain structurally valid, so their later rejection isolates chec
 definition binding rather than generic Program admission.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

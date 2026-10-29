@@ -1,12 +1,18 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Actual PMIS command boundaries and internal prefixes share one invariant
 transport. Handlers consume predecessor invariants and actual evaluator results;
 rejected and rolled-back commands retain the predecessor. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.programSelected, `applyStimulus]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

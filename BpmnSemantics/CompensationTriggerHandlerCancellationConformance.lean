@@ -3,10 +3,12 @@ module
 public import BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
 import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletionSoundness
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
+import all BpmnSemantics.CompensationTriggerHandlerSemanticFixtures
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCompletion
 
 /-! # Compensation handler failure cancellation conformance -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerCancellationConformance
 

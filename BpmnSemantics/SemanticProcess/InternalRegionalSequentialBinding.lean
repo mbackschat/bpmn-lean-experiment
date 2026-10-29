@@ -2,6 +2,11 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstance
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMI reverse binding under regional cancellation.
 
@@ -10,7 +15,12 @@ because forward binding and claim uniqueness establish a finite correspondence w
 tuples are withdrawn together, rather than because arbitrary filters preserve equal lengths.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyTask?, `anyTimerIdNamesWait,
+  `controllerNamesActivityOccurrence, `occursOnce, `recordBodyNamesWait, `recordInRegion,
+  `sameSequentialMultiInstanceController, `sequentialMultiInstanceOperationBindingComplete,
+  `sequentialMultiInstanceProgramBindingsValid, `timerIdNamesWait, `withdrawnByRegion]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -296,6 +306,8 @@ def controllerTimerRelated (state : RuntimeState)
   state.activityOccurrences.any fun record =>
     controllerNamesActivityOccurrence controller record &&
       anyTimerIdNamesWait record.timerHandlerOccurrences wait
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`controllerTaskRelated, `controllerTimerRelated]
 
 private theorem tuple_task_relation (program : Program) (state : RuntimeState)
     (controller : SequentialMultiInstanceController) (id : OperationId)

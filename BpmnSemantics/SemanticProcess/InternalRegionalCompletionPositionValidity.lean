@@ -5,6 +5,12 @@ import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
 import BpmnSemantics.SemanticProcess.RuntimePositionValidityLaws
 public import BpmnSemantics.SemanticProcess.DeclaredScopeTransition
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Completion continuation position
 
@@ -13,7 +19,10 @@ continuation's declared static place binding is separate from the raw completion
 which receives only a scope identifier and optional output identifier.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`exactLiveOccurrence, `runtimePositionValid,
+  `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

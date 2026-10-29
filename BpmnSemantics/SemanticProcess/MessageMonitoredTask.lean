@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcess.MessageBoundedTask
 completion. Only atomic arming is shared with the interrupting family; definition selection and
 both lifetime transitions are separate, without changing the Program or runtime representation. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -97,7 +97,7 @@ def MessageMonitoredBinding (program : Program) (state : RuntimeState)
   pair.record.owner.processInstanceId = pair.record.processInstanceId ∧
   state.control = .running pair.record.processInstanceId
 
-instance (program : Program) (state : RuntimeState) (pair : MessageMonitoredPair) :
+@[no_expose] instance (program : Program) (state : RuntimeState) (pair : MessageMonitoredPair) :
     Decidable (MessageMonitoredBinding program state pair) := by
   unfold MessageMonitoredBinding MessageMonitoredCensus MessageMonitoredDefinitionBinding
   infer_instance

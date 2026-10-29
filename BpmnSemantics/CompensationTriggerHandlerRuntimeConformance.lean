@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 
 /-! # Compensation trigger and handler runtime invariant conformance -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerRuntimeConformance
 

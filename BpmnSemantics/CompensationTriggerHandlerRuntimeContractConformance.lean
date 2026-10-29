@@ -5,10 +5,17 @@ import BpmnSemantics.SemanticProcessJsonMain
 public import Lean.Data.Json
 public import BpmnSemantics.SemanticProcess.ControlPosition
 public import BpmnSemantics.SemanticProcessJson.Observation
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.Scenario
+import all BpmnSemantics.SemanticProcess.ScenarioAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeObservation
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcessJson.Observation
+import all Lean.Data.Json.Basic
 
 /-! # Compensation trigger and handler runtime contract checkpoint -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationTriggerHandlerRuntimeContractConformance
 

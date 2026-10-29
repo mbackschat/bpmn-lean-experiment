@@ -4,6 +4,22 @@ import BpmnSemantics.SemanticProcess.TransactionPhaseInduction
 public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TransactionFrontierCardinality
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Exact Transaction entry prefixes
 
@@ -11,7 +27,12 @@ Actual offered transitions select the reader's Start, entry and split in sequenc
 prefix selects the other Task. These facts supply the early cases of reachable-phase induction.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TransactionInitialTask.arm, `activateUserTask,
+  `attemptInternalOperation, `completeQuiescentScope?, `completeScopeState?, `scopeQuiescent,
+  `transactionEnteredState, `transactionInitialArmingState, `transactionInitiatedState, `transactionRootStartState,
+  `transactionSplitState]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -11,4 +11,4 @@ public import BpmnSemantics.TransactionCancellationFailurePublicationConformance
 /-! Complete finite Transaction publication journey, checked at resource-bounded command boundaries. -/
 
 
-@[expose] public section
+public section

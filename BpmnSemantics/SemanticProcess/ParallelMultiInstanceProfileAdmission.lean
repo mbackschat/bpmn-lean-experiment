@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract
 public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Multi-Instance profile-family admission
 
@@ -11,7 +12,7 @@ profile. The parallel profile additionally fixes its checked completion expressi
 entry/completion operation payload.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -65,6 +66,8 @@ def parallelMultiInstanceCompletionOperation : SemanticOperation → Bool
   | .completeParallelMultiInstanceUserTask .. => true
   | _ => false
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`parallelMultiInstanceExactEntry]
+
 theorem parallelMultiInstanceCompletionOperation_projects (operation : SemanticOperation) :
     parallelMultiInstanceCompletionOperation operation =
       (ParallelMultiInstanceCompletionArm.ofOperation? operation).isSome := by
@@ -90,6 +93,8 @@ def programParallelMultiInstanceProfileMatches (program : Program) : Bool :=
       | [entry], [completion] => parallelMultiInstanceOperationsPair entry completion
       | _, _ => false
     else true
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`programParallelMultiInstanceProfileMatches]
 
 /-- A selected valid profile exposes exactly one exact entry and its one paired completion. -/
 theorem programParallelMultiInstanceProfile_pair_census (program : Program)

@@ -5,10 +5,15 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeData
 public import BpmnSemantics.SemanticProcess.WaitCompletion
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 public import BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-DATA-01 admits selected command data and routes exact live waits through the existing scoped writers. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeSerialEffect?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeCommand
 
@@ -34,6 +39,8 @@ def stimulusAdmitted (program : Program) (state : RuntimeState) (stimulus : Stim
           (ParallelScopeStart.programStateCapacity program state).isSome && SerialBusinessTask.bindingsValid analysis.handlers bindings
       | _ => false
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeCommand #[`stimulusAdmitted]
+
 @[simp] theorem stimulusAdmitted_of_unselected (program : Program) (state : RuntimeState)
     (stimulus : Stimulus) (unselected : ParallelScopeStart.programSelected program = false) :
     stimulusAdmitted program state stimulus = true := by
@@ -53,6 +60,8 @@ def completeEffect? (program : Program) (state : RuntimeState) (id : EffectOccur
   let [wait] := state.effectWaits.filter (effectIdNamesWait id) | none
   if hasParallelScopeDefinition program wait.owner then completeParallelScopeEffect? program state id result
   else completeSerialEffect? program state id result
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeCommand #[`completeEffect?, `completeTask?]
 
 /-- Ordinary parent Human completion only changes its wait, continuation token and Process values. -/
 theorem completeTask_preserves_clean_entry (program : Program) (before after : RuntimeState)

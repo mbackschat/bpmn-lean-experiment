@@ -1,10 +1,11 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation trigger and single-effect handler declaration validity -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -253,6 +254,9 @@ def compensationExecutionDeclarationValid (program : Program) : Bool :=
         declaration.limits.maxCanonicalBytes ≥ 7 &&
         declaration.limits.maxCanonicalBytes ≤ 65536 &&
         safeNat declaration.limits.maxCanonicalBytes
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`bodyElementsUnavailableToOperations,
+  `compensationExecutionDeclarationValid, `operationOriginElementId]
 
 /-- COMPEMPTY-CAPACITY-01 requires room for the unchanged empty execution pair. -/
 theorem compensationExecutionDeclarationValid_minimumBytes (program : Program)

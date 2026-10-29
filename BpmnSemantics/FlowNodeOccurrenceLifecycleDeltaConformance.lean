@@ -9,7 +9,7 @@ import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 This module owns the generic executable laws for folding flow-node occurrence starts and terminals.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

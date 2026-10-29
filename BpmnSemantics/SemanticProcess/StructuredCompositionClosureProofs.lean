@@ -2,13 +2,24 @@ module
 
 public import BpmnSemantics.SemanticProcess.StructuredCompositionDataProofs
 import BpmnSemantics.SemanticProcess.CommandAdmissionLaws
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.StructuredCompositionDataProofs
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-AVAILABLE-01 and SPC-CLOSURE-01 connect admitted starts and local preservation laws to finite actual execution. This owner assembles reachable-state consequences without replacing the existing evaluator or its transition relations. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredComposition.ControlUnitBound,
+  `StructuredComposition.OperationAllowed, `StructuredComposition.WaitMatchesOperation,
+  `StructuredComposition.isScopeCompletion, `StructuredComposition.operationInputs,
+  `StructuredComposition.operationVertex?, `admitStimulus, `callDataRuntimeStateValid,
+  `interruptingMessageEventSubProcessStateValid, `isCallActivityProgram, `operationDeclaresWaitKey, `operationOutputs,
+  `operationWaitDeclarationKeys, `scopeQuiescent, `structuredCompositionOrdinaryCompletionAdmitted,
+  `userTaskWaitDeclarationKey]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
@@ -334,6 +345,8 @@ def runtimeBurstRank (program : Program) (analysis : Analysis) (state : RuntimeS
     | [] => if state.waits.isEmpty then
         match state.control with | .running _ => 1 | _ => 0
       else 0
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`runtimeBurstRank]
 
 theorem routing_frame_decreases_runtime_burst_rank
     (program : Program) (vertices : List Vertex) (analysis : Analysis) (before after : RuntimeState)

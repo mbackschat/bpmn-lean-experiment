@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Non-interrupting boundary Timer
 
@@ -16,7 +18,9 @@ What changed is the join itself. The deadline is now reached through the [Activi
 Arming on Activity activation is the recorded project interpretation shared with the sibling family, so only the pre-due firing witness discriminates that instant.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -46,6 +50,8 @@ inductive MonitoredTaskArmingStep : RuntimeState → ControlPlaceId →
       (running : monitoredRunningInstance? before = some instanceId) :
       MonitoredTaskArmingStep before input task boundaryTimer
         (activateBoundedUserTask before owner.processInstanceId owner input task boundaryTimer)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`armMonitoredUserTaskState?, `monitoredRunningInstance?]
 
 /-- Both Timer-task families use the containing Process for occurrence identity, including called
 Processes; root runtime control supplies only the running-state precondition. -/
@@ -253,6 +259,8 @@ def spawnFromMonitoredUserTask? (program : Program) (state : RuntimeState)
             logicalTimeMs := timer.deadlineMs }
     | _ => none
   else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`detachConsumedTimer]
 
 private theorem monitoredTaskForTimer_pairing (program : Program)
     (state : RuntimeState) (timer : TimerWait) (monitored : MonitoredTask)

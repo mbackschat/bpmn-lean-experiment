@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.Scenario
 This module owns the direct Lean account for one exact-code Error End caught by the single interrupting boundary Error on its directly enclosing embedded Sub-Process. It locks both child-command orders, regional sibling cancellation, the unreachable normal route, exact stale refusal, recovery completion, and the deliberate internal End-history difference behind one equal public recovery observation.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SubProcessErrorPropagationConformance
 

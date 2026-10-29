@@ -14,7 +14,7 @@ The existing finite-batch theorem then supplies complete-state and canonical pai
 for every permutation of that frontier, with no assumed successor validity or preparation premise.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

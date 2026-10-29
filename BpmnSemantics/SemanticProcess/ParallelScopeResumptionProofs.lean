@@ -10,6 +10,43 @@ import BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReplayFrames
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.WireNatural
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Scoped parallel subprocess resumption
 
@@ -20,7 +57,17 @@ a structural phase transition. Entry-population drain, refusal-free reservation,
 complete command progress and publication acceptance remain separate obligations.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatch.apply,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalOperationOccurrence?,
+  `InternalCommutation.internalArmInput?, `InternalCommutation.internalOperationOccurrences?,
+  `InternalCommutation.resolveInternalOperationOccurrence?, `ParallelScopeCommand.completeEffect?,
+  `ParallelScopeCommand.completeTask?, `ParallelScopeReplay.ReservedArmWriteShape,
+  `ParallelScopeStart.programSelected, `SemanticOperation.kind, `SequentialScopeControl.inputs,
+  `SequentialScopeProgram.operationAllowed, `admitStimulus, `bodyConsumedPorts, `completeDeclaredScope?,
+  `completeParallelScopeEffect?, `completeParallelScopeUserTask?, `completeQuiescentScope?, `completeScopeState?,
+  `completeSelectedScope?, `enterParallelScope?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -203,6 +250,8 @@ def scopedWaitCompletionOwner (program : Program) (state : RuntimeState)
       state.effectWaits.filter (effectIdNamesWait id) = [wait] ∧
       hasParallelScopeDefinition program wait.owner = true ∧ wait.owner = owner
   | _ => False
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`scopedWaitCompletionOwner]
 
 private theorem scopedWaitCompletionOwner_child (program : Program)
     (analysis : ParallelScopeStart.ProgramAnalysis) (state : RuntimeState) (stimulus : Stimulus) (owner : ScopeOccurrenceId)

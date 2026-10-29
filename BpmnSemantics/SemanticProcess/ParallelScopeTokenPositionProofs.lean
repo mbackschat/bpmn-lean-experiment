@@ -4,9 +4,13 @@ import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
 public import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Admitted token-patch position totality
 
@@ -16,7 +20,10 @@ origin check of local-control position construction, independently of token
 availability, successful preparation, or a future publication.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalLocalControlPlaceOrigin?,
+  `nonempty, `programWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.ParallelScopeStart
 

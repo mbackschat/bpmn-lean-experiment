@@ -1,13 +1,17 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic Process effect incidents
 
 This module owns the private incident association, the one literal-generation report and retry relations, and their executable transitions. It preserves the complete suspended effect wait and does not define host failure, CIB identity, cancellation, or general BPMN fault meaning.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -52,6 +56,9 @@ def effectIncidentAssociationsValid (state : RuntimeState) : Bool :=
   | [] => true
   | [incident] => effectIncidentAssociationValid state incident
   | _ => false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectIncidentAssociationValid,
+  `effectIncidentAssociationsValid, `effectWaitOccurrenceId, `effectWaitOwnerAssociationValid]
 
 /-- Incident association validity is framed by the runtime fields its owner predicate reads. -/
 theorem effectIncidentAssociationsValid_frame (before after : RuntimeState)

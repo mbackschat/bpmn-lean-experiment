@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Interrupting Activity boundary Timer
 
@@ -13,7 +15,7 @@ The retired form joined the two waits by requiring equal activation ordinals und
 Arming on Activity activation is a recorded project interpretation. BPMN 2.0.2 Clause 13.5.2 starts a catch Event's wait when a token *reaches* it, and a Boundary Event is never reached, so only the pre-due firing witness discriminates that instant.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -41,6 +43,8 @@ inductive BoundedTaskArmingStep : RuntimeState → ControlPlaceId →
       (running : boundedRunningInstance? before = some instanceId) :
       BoundedTaskArmingStep before input task boundaryTimer
         (activateBoundedUserTask before owner.processInstanceId owner input task boundaryTimer)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`armBoundedUserTaskState?, `boundedRunningInstance?]
 
 /-- A called Process owns its task, Timer, and Activity identities even while runtime control names
 the root Process; `flowNodeOccurrenceProgramValidity_wait_owner_ids` requires this identity equality. -/

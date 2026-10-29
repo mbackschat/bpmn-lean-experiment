@@ -1,13 +1,14 @@
 module
 
 public import BpmnSemantics.Experiments.CheckedSourceState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Checked-source transitions
 
 This module owns the provisional checked-node relation, executable selector, stimulus admission, and bounded closure. It is written directly in BPMN checked-graph vocabulary and does not depend on Semantic Process lowering or execution.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceSemantics
 
@@ -132,6 +133,8 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
           else none
       | .notStarted
       | .completed _ => none
+
+run_meta privateEquations `BpmnSemantics.Experiments.CheckedSourceSemantics #[`fireNode?]
 
 theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
     (before after : SourceRuntimeState)

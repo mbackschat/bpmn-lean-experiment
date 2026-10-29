@@ -4,7 +4,7 @@ public import Lean.Data.Json.Parser
 
 /-! A JSON parser that preserves wire facts erased by `Lean.Json.parse`. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.StrictJson
 

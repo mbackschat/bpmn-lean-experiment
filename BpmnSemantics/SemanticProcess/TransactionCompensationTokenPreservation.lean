@@ -4,11 +4,19 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Token patches preserve active Transaction quiescence only when their produced owners
 are separate. Actual input tokens supply that separation for existing local-control callers. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`compensationExecutionDeclarationValid, `scopeQuiescent,
+  `triggerLifecycleValid, `triggerMatchesDeclaration]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -94,6 +102,8 @@ def TokenPatch.SeparatesActiveCancelOwners
             ∀ place ∈ patch.produced, patch.owner ≠ trigger.owner
       | _ => True
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.TokenPatch #[`SeparatesActiveCancelOwners]
+
 theorem TokenPatch.separatesActiveCancelOwners_of_root
     (patch : TokenPatch) (program : Program) (state : RuntimeState)
     (domain : RootCompensationExecutionDomain program) :
@@ -171,7 +181,7 @@ theorem TokenPatch.preserves_transactionTriggerOwnerLive
 theorem TokenPatch.transaction_provenance_frame
     (state : RuntimeState) (patch : TokenPatch) (trigger : CompensationTriggerExecution) :
     transactionTriggerProvenanceValid { state with tokens := patch.apply state.tokens } trigger =
-      transactionTriggerProvenanceValid state trigger := rfl
+      transactionTriggerProvenanceValid state trigger := (rfl)
 
 theorem TokenPatch.succeeded_transaction_lifecycle_frame
     (state : RuntimeState) (patch : TokenPatch) (trigger : CompensationTriggerExecution)

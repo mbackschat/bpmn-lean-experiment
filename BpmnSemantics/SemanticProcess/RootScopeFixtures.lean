@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.RuntimeState
 This module owns reusable constructors for root definition ownership, root runtime ownership, and root-owned control tokens. It deliberately contains no retained model, scenario runner, profile admission, lowering, or conformance claim.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

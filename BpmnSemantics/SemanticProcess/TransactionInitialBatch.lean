@@ -8,6 +8,31 @@ public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
 public import BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalSnapshotArmingPublication
+import all BpmnSemantics.SemanticProcess.CallDataAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
+import all BpmnSemantics.SemanticProcess.InternalSnapshotArmingBatch
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.TransactionReachableFrontier
+import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Transaction initial Task batch
 
@@ -16,7 +41,23 @@ in both Task orders. `TransactionInitialValidity` supplies the predecessor contr
 the existing snapshot batch laws for complete state and canonical paired-publication equality.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
+  `InternalCommutation.InternalArmingWrite.elementId, `InternalCommutation.InternalArmingWrite.kind,
+  `InternalCommutation.InternalArmingWrite.occurrence, `InternalCommutation.PreparedInternalArming.Independent,
+  `InternalCommutation.PreparedInternalArming.footprint, `InternalCommutation.exactProgramSelection,
+  `InternalCommutation.footprintOfPatch, `InternalCommutation.internalArmInput?,
+  `InternalCommutation.internalArmOrigin?, `InternalCommutation.listsDisjoint,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
+  `InternalCommutation.prepareInternalArm?, `InternalCommutation.prepareSnapshotArmingBatch?,
+  `InternalCommutation.scopedEffectInputReads?, `InternalCommutation.selectedInputOrigin?,
+  `InternalCommutation.snapshotArmingAnchorFresh, `InternalCommutation.stateReadSetsDisjoint,
+  `InternalCommutation.uniqueFamilyDeclarer?, `InternalCommutation.userTaskWaitOccurrence,
+  `InternalWaitKind.activationKind, `TransactionInitialTask.operation, `canonicalPublicationAtomSet,
+  `canonicalStateAtomSet, `footprintsNonInterfering, `insertBy, `programWellFormed, `sortBy,
+  `sortFlowNodeOccurrenceStarts, `transactionChildOwner, `transactionEnteredState, `transactionInitiatedState,
+  `transactionRootStartState, `transactionSplitState]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -100,6 +141,8 @@ def initialTaskPatch (p : Program) (roles : TransactionAdmittedRoles p)
         activation := 1
         output := head.output
         metadata := head.task.metadata } }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`initialTaskPatch]
 
 private theorem initial_task_prepares (p : Program) (roles : TransactionAdmittedRoles p)
     (valid : programWellFormed p = true) (head : TransactionInitialTask) (instanceId : SemanticId)

@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.CompensationStartDataAdmission
 The checkpoint-only profile's String value-kind cell, exact Program-derived start binding, prospective downstream capacities, and every physically absent legacy declaration are decided independently of the larger admission fixtures.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationSourceLoweringConformance
 

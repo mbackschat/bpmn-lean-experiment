@@ -4,6 +4,11 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingExecution
 import BpmnSemantics.SemanticProcess.InternalDataArmingPublication
 public import BpmnSemantics.SemanticProcess.InternalCommutationPublication
 import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import all BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import all BpmnSemantics.SemanticProcess.TransitionTrace
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Complete accepted data-arming publication
 
@@ -11,7 +16,10 @@ Prepared footprints share the traced evaluator's record, lifecycle acceptance, p
 canonical numbering. Their availability to the production classifier is a separate boundary.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`acceptedInternalPublicationForFootprint?,
+  `internalPublicationPairForFootprint?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

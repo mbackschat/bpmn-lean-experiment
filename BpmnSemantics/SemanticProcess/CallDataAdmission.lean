@@ -10,7 +10,7 @@ The caller and called Task endpoints must close over their respective Process de
 global retained identities and the canonical caller Property inventory remain independently checked.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -2,15 +2,20 @@ module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence Process-identity proofs
 
 Connects immutable definition-scope Process identity with the runtime owner identity already checked by flow-node occurrence projection. The production selectors remain in their owning modules.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique,
+  `processIdForDefinitionScopeWithFuel?, `programWellFormed, `scopeForestWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -37,6 +42,8 @@ noncomputable def graphReachesBool (edges : List (GraphEdge α))
     (source target : α) : Bool :=
   letI := Classical.propDecidable
   decide (GraphReaches edges source target)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`graphReachesBool]
 
 private theorem graphReachesBool_eq_true_iff [DecidableEq α]
     (edges : List (GraphEdge α)) (source target : α) :

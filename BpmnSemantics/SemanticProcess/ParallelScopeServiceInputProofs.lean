@@ -10,6 +10,24 @@ import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.EffectDataAdmission
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.NestedScopeDataCommand
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.StrictJson
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Service input admission and availability
 
@@ -18,7 +36,12 @@ required before Start, including empty collections. These proofs connect that
 immutable analysis to lookup and preserve scalar availability through accepted writes.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.analyzeProgram,
+  `ParallelScopeStart.programSelected, `SequentialScopeData.startBindingValueValid,
+  `SequentialScopeData.startBindingsAdmitted, `SerialBusinessTask.scalar, `completeSerialEffect?,
+  `evaluateEffectInputs?, `scopeVariableScalar, `sequentialScopeProgramSelected]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

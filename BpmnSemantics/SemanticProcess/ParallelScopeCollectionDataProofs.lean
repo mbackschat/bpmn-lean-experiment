@@ -4,11 +4,20 @@ public import BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
-import all BpmnSemantics.SemanticProcess.ParallelScopeData
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-DATA-01: collection preservation and provenance proofs remain outside the executable command dependency graph. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeCommand.completeEffect?,
+  `ParallelScopeCommand.completeTask?, `ParallelScopeCommand.humanValuesAdmitted,
+  `ParallelScopeCommand.stimulusAdmitted, `ParallelScopeStart.analyzeProgram,
+  `SequentialScopeData.startBindingValueValid, `SequentialScopeData.startBindingsAdmitted, `SerialBusinessTask.scalar,
+  `completeParallelScopeEffect?, `completeParallelScopeUserTask?, `scopeVariableScalar]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

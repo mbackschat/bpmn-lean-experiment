@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.Scenario
 This module owns the retained sequential and parallel checked graphs, independent expected programs, discriminating runtime states, and generic parallel laws used by the current conformance capsules. The expected programs are authored separately from lowering so the exact-lowering laws can detect a changed lowering result, as required by AA-25 in the assurance architecture repair proposal.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

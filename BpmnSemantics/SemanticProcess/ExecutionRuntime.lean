@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.Transition
 /-! Explicit operation-choice execution and isolated refusal-law states are executable data.
 The refusal guarantees remain in `Execution`; the stimulus boundary is owned by `TransitionTrace`. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

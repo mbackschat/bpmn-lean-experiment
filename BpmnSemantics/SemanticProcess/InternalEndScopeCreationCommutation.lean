@@ -10,11 +10,26 @@ import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.InternalEndPreparation
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.TokenPatch
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! End commutes with child-scope creation and Call invocation when both consumed and created
 token places are separate. Existing scope-selection laws retain issuance and owner freshness. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalEndSelection.apply,
+  `InternalCommutation.InternalEndSelection.tokens, `InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.internalEndStateFootprint, `InternalCommutation.liftRegionalStateAtom,
+  `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

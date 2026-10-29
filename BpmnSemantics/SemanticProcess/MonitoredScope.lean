@@ -3,12 +3,14 @@ module
 public import BpmnSemantics.SemanticProcess.BoundedScopeArming
 public import BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! ESL-OWN/CLOSE and the monitored-child account retain the child on firing and retire its exact
 Activity/deadline on normal completion. Declaration selection is independent of the interrupting
 family; the shared arming and primitive completion owners remain unchanged. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -102,7 +104,9 @@ def MonitoredScopeTimerBinding (state : RuntimeState) (pair : MonitoredScopePair
 def MonitoredScopeBinding (program : Program) (state : RuntimeState) (pair : MonitoredScopePair) : Prop :=
   MonitoredScopeDefinitionBinding program pair ∧ MonitoredScopeOwnership state pair ∧ MonitoredScopeTimerBinding state pair
 
-instance (program : Program) (state : RuntimeState) (pair : MonitoredScopePair) :
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MonitoredScopeTimerBinding]
+
+@[no_expose] instance (program : Program) (state : RuntimeState) (pair : MonitoredScopePair) :
     Decidable (MonitoredScopeBinding program state pair) := by
   unfold MonitoredScopeBinding MonitoredScopeDefinitionBinding MonitoredScopeOwnership MonitoredScopeTimerBinding
   cases pair.timer with
@@ -134,6 +138,9 @@ def monitoredScopePairForChild? (program : Program) (state : RuntimeState) (scop
     Option { pair : MonitoredScopePair // MonitoredScopeBinding program state pair } := do
   let pair ← monitoredScopeCandidate? program state scopeId
   if bound : MonitoredScopeBinding program state pair then some ⟨pair, bound⟩ else none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`monitoredScopeCandidate?, `monitoredScopeOnly?,
+  `monitoredScopePairForChild?]
 
 /-- The independently stated exact binding is sufficient for child selection, including consumed
 one-shot deadlines. The selector does not require a future validity or completion premise. -/

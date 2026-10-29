@@ -25,7 +25,7 @@ consequence belongs with the boundary-Timer family, and because `BoundedTask` ca
 invariant without a cycle through the lifecycle owners.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

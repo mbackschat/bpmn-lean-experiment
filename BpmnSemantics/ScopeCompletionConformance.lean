@@ -9,7 +9,7 @@ An active trigger blocks its exact owner even before a frontier owns an effect w
 tokens are absent from these witnesses so they cannot mask an omitted Compensation conjunct.
 -/
 
-@[expose] public section
+public section
 
 set_option Elab.async false
 

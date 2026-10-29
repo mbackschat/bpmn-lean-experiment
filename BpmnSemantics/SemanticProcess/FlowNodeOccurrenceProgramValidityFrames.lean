@@ -1,13 +1,17 @@
 module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence Program-validity frames
 
 This module lifts the four ordinary prepared-wait family preservation results into complete flow-node occurrence Program validity. It adds no validator or admission algorithm.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceProgramValidity]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

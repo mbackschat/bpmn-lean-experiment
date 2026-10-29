@@ -2,12 +2,16 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 public import BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The selected-join dependency checkpoint protects InclusiveGateway's unique-ready filter across
 independent token patches; complete preparation and publication preservation remain separate obligations.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.listsDisjoint, `canonicalStateAtomSet]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -30,6 +34,9 @@ def selectedBranchWriteAtoms (owner : ScopeOccurrenceId) (selectionKey : String)
 def tokenPatchWriteAtoms (patch : TokenPatch) : List InternalStateAtom :=
   canonicalStateAtomSet ((patch.consumed ++ patch.produced).flatMap fun place =>
     [.controlToken patch.owner place, .tokenOwners place])
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectedBranchWriteAtoms,
+  `selectedJoinReadAtoms, `tokenPatchWriteAtoms]
 
 theorem selectedBranchOwners_mem_selectedJoinReadAtoms (state : RuntimeState)
     (selectionKey : String) :
@@ -127,7 +134,7 @@ theorem selectedJoin_tokenPatch_bucket_ne (state : RuntimeState) (selectionKey :
 theorem selectedJoinReadAtoms_tokenPatch_frame (state : RuntimeState) (selectionKey : String)
     (patch : TokenPatch) :
     selectedJoinReadAtoms { state with tokens := patch.apply state.tokens } selectionKey =
-      selectedJoinReadAtoms state selectionKey := rfl
+      selectedJoinReadAtoms state selectionKey := (rfl)
 
 end InternalCommutation
 

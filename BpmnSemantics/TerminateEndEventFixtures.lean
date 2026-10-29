@@ -9,7 +9,7 @@ public import BpmnSemantics.SemanticProcess.InternalExecutionFrontier
 This module owns the exact checked graph, independent expected program, and synthetic root program used by the proved Terminate End checkpoint. The representative source is one nested parallel Trigger/Sibling region followed by one Outer User Task. The root program exercises the same generic operation without registering a second source profile. The expected program is separate from lowering so the exact-lowering law can detect a changed result, as required by AA-25 in the assurance architecture repair proposal.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.TerminateEndEventFixtures
 

@@ -2,13 +2,14 @@ module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 public import BpmnSemantics.SemanticProcess.ValueDomain
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 
 /-! # Compensation checkpoint start-data admission
 
 This module projects the exact activation-one promoted snapshot and first compensation frontier before start. It derives every identity from the immutable Program and reuses the production snapshot, trigger, frontier, and canonical-byte constructors.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

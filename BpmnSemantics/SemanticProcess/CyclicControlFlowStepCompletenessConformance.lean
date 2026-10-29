@@ -17,13 +17,47 @@ import all Std.Data.DTreeMap.Internal.Operations
 import all Std.Data.DTreeMap.Internal.Queries
 public import BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformanceCheckFixtures
 public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
+import all BpmnSemantics.SemanticProcess.BoundedScope
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandStartBindings
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowExecutionConformance
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowFixtures
+import all BpmnSemantics.SemanticProcess.CyclicControlFlowReachabilityConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
+import all BpmnSemantics.SemanticProcess.ExecutionRuntime
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.MessageStartAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Selected cyclic evaluator-step completeness
 
 This module proves that the classified internal-action relation contains every successful evaluator step from an actually reachable selected-program state. It adds no transition or profile behavior.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CyclicRouteValue.bindings, `CyclicRouteValue.output,
+  `awaitUserTaskState?, `chooseState?, `cyclicChoiceOperation, `cyclicCompletionOperation, `cyclicEndOperation,
+  `cyclicMergeOperation, `cyclicOperations, `cyclicPostChooseWithBindings, `cyclicPostCompletionWithBindings,
+  `cyclicProgram, `cyclicReviewOperation, `cyclicScopedVariables, `cyclicStartOperation, `cyclicWaitingWithBindings,
+  `mergeExclusiveState?, `reachNoneEndState?, `singletonWaitingState, `step]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

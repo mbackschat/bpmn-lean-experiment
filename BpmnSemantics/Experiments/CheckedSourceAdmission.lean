@@ -8,13 +8,19 @@ import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.TopologyFixtures
 public import BpmnSemantics.Experiments.CheckedSourceChain
+import all BpmnSemantics.Experiments.CheckedSourceDecomposition
+import all BpmnSemantics.Experiments.CheckedSourceGraph
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.TopologyFixtures
 
 /-! # Stage 2 structured-admission witnesses
 
 This module owns adversarial executable witnesses for the provisional structured-admission experiment. It does not participate in production source admission.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceAdmission
 

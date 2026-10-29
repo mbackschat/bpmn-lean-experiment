@@ -17,21 +17,11 @@ public import BpmnSemantics.SemanticProcess.Scenario
 import BpmnSemantics.SemanticProcess.StructuredCompositionFixtures
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.CallActivity
-import all Init.Data.Repr
-import all Init.Data.List.Sort.Basic
-import all Init.Data.Ord.String
-import all Lean.Data.Json.Basic
-import all Std.Data.TreeMap.Raw.Basic
-import all Std.Data.DTreeMap.Raw.Basic
-import all Std.Data.DTreeMap.Internal.Def
-import all Std.Data.DTreeMap.Internal.Balancing
-import all Std.Data.DTreeMap.Internal.Operations
-import all Std.Data.DTreeMap.Internal.Queries
 
 /-! Fixture definitions and executable checks of [`InterruptingMessageEventSubProcessConformance`](InterruptingMessageEventSubProcessConformance.lean), apart from its theorems so that
 the check driver's closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.InterruptingMessageEventSubProcessConformance
 

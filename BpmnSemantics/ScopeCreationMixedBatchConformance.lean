@@ -8,7 +8,7 @@ public import BpmnSemantics.SemanticProcess.Lowering
 
 /-! A document review witnesses production closure across ordinary scope creation, a local fork, and a deadline under the [mixed batch account](../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite). Both constructed Programs use the Call profile's structural graph policy but deliberately fail its capability admission. These executable checks, which [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively for both creators, cover actual Start admission and closure for those Programs; they establish neither checked XML admission, a generalized closure-fuel theorem, nor Temporal refinement. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ScopeCreationMixedBatchConformance
 

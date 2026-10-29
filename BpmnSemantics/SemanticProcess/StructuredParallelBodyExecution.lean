@@ -1,10 +1,14 @@
 module
 
 public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+import all BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ADMIT-01 connects task-barrier cuts and exact graph conservation to the admitted automatic-step bounds. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredParallelBody #[`incomingCount]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredParallelBody
 
@@ -32,6 +36,8 @@ def TaskBarrierCut.blocked (cut : TaskBarrierCut vertices) (vertex : Vertex) : N
 def TaskBarrierCut.continuationCredit (cut : TaskBarrierCut vertices) (target : String) : Nat :=
   cut.enabled target +
     (vertices.map (fun predecessor => cut.blocked predecessor * predecessor.outputs.count target)).sum
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredParallelBody.TaskBarrierCut #[`blocked, `released]
 
 private theorem sum_map_add {α : Type} (values : List α) (left right : α → Nat) :
     (values.map (fun value => left value + right value)).sum =

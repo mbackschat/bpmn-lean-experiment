@@ -7,7 +7,7 @@ public import BpmnSemantics.SemanticProcess.MessageStart
 This module owns the profile-independent Timer Start initiation relation and executable state transformation. External resolved-occurrence admission and profile cardinality remain separate owners.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

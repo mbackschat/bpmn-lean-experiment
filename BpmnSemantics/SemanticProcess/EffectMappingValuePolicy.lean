@@ -3,6 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
 public import BpmnSemantics.SemanticProcess.JsonSupport
 public import BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Effect-mapping value policy
 
@@ -15,7 +17,9 @@ It is the effect-side analogue of `PropertyPathValuePolicy`; the two are indepen
 may widen one path only.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.PropertyPathValuePolicy #[`admits]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -65,6 +69,9 @@ def programEffectMappingValuePolicy (program : Program) : EffectMappingValuePoli
   if embeddedScopeDataBearing program then .boundedString
   else effectMappingValuePolicy program.identity.semanticProfile
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`EffectMappingValuePolicy.admits,
+  `effectMappingValuePolicy, `programEffectMappingValuePolicy]
+
 theorem programEffectMappingValuePolicy_eq_scalar {program : Program}
     (other : program.identity.semanticProfile ≠ portableEffectDataProfileId)
     (otherNested : program.identity.semanticProfile ≠ nestedScopeDataProfileId)
@@ -93,7 +100,7 @@ theorem programEffectMappingValuePolicy_eq_scalar_of_value {program : Program} {
     (embeddedScopeDataBearing_of_profile_value same otherScope)
 
 /-- The item policy of the two profiles that select it, whatever their Program carries. -/
-theorem programEffectMappingValuePolicy_of_item_profile {program : Program}
+private theorem programEffectMappingValuePolicy_of_item_profile {program : Program}
     (item : program.identity.semanticProfile = portableEffectDataProfileId ∨
       program.identity.semanticProfile = nestedScopeDataProfileId) :
     programEffectMappingValuePolicy program = .singletonBusinessItem := by
@@ -117,7 +124,7 @@ theorem singletonBusinessItem_refuses_overlong_string (allowNull : Bool) {value 
   omega
 
 /-- CSD-VALUE-01 shares that bound. -/
-theorem boundedString_refuses_overlong_string (allowNull : Bool) {value : String}
+private theorem boundedString_refuses_overlong_string (allowNull : Bool) {value : String}
     (over : 1024 < value.utf8ByteSize) :
     EffectMappingValuePolicy.boundedString.admits allowNull (.string value) = false := by
   simp [EffectMappingValuePolicy.admits]

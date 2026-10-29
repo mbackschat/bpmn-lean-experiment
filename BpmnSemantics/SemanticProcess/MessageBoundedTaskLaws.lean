@@ -4,6 +4,10 @@ import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 public import BpmnSemantics.SemanticProcess.MessageBoundedTask
 import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.MessageBoundedTask
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Interrupting Activity boundary Message laws
 
@@ -13,7 +17,11 @@ runtime well-formedness and wait-identity uniqueness hypotheses; preservation of
 across all reachable transitions is intentionally not claimed here.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateMessageBoundedUserTask,
+  `completeMessageBoundedUserTask?, `interruptMessageBoundedUserTask?, `messageBoundedPairForSubscription?,
+  `messageWaitKeyMatches, `occursOnce, `runtimeStateIdentityBound, `taskIdNamesWait, `waitIdentitiesUnique]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

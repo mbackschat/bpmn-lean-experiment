@@ -1,12 +1,18 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+import all BpmnSemantics.SemanticProcess.BoundedScopeArming
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Bounded Sub-Process preparation reuses child-entry selection and retains its parent-owned
 deadline and Activity as one patch for interrupting and ESL-OWN noninterrupting boundaries under the [complete-family account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
+  `armBoundedScopeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -44,6 +50,9 @@ def boundedScopeContract? : SemanticOperation → Option InternalBoundedScopeCon
   | .enterMonitoredScope operationId origin input entry definition timer =>
       some { operationId, origin, input, entry, definition, timer, disposition := .nonInterrupting }
   | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalBoundedScopeContract.entryOperation,
+  `InternalBoundedScopeContract.operation, `boundedScopeContract?]
 
 theorem boundedScopeContract_operation (operation : SemanticOperation)
     (contract : InternalBoundedScopeContract) (found : boundedScopeContract? operation = some contract) :

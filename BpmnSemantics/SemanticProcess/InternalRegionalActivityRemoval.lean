@@ -2,6 +2,10 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Activity and handler removal agreement
 
@@ -10,7 +14,10 @@ withdraws handlers through their Activity records, including records whose owner
 their child body is cancelled. Predecessor validity connects those records to the prepared region.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `cancelScopeSubtree,
+  `runtimeStateWellFormed, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

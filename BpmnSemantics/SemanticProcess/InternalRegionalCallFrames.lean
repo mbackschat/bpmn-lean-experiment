@@ -4,12 +4,16 @@ import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 public import BpmnSemantics.SemanticProcess.CallActivity
 import Std.Data.DTreeMap.Internal.Balancing
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! REG-OWN-FRAME-01 requires re-derived Call masks, not just closure under a fixed mask.
 Disjoint forward closures preserve every reachable Call edge, including the selected-ID filter;
 the filtered graph is evaluated with its own record-count fuel. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`callReferenceRetention]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

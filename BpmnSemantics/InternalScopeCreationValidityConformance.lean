@@ -17,7 +17,7 @@ These constructed runtime predecessors reuse the retained admitted Programs; the
 source reachability of the nonzero retained counters.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.InternalScopeCreationValidityConformance
 

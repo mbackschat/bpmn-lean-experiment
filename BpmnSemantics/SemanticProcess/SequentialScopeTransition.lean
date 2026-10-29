@@ -6,6 +6,12 @@ public import BpmnSemantics.SemanticProcess.CommandAdmission
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Repeated-scope preservation and reachability
 
@@ -13,7 +19,13 @@ SMIS-ADMIT-01 connects accepted data and ownership to actual enabled entry and b
 The low-level constructor relation remains beside its evaluator in SequentialScopeRuntime.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeControl.bodyVertex?,
+  `SequentialScopeEntryResult.state, `awaitEffectState?, `awaitUserTaskState?, `duplicateState?, `fire?,
+  `reachNoneEndState?, `selectScopeVariables?, `sequentialScopeActivityId, `sequentialScopeBindingForEntry?,
+  `sequentialScopeCollection?, `sequentialScopeCollectionWithinLimits, `sequentialScopeEntryEnabled,
+  `sequentialScopeStateValid, `synchronizeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

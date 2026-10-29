@@ -6,12 +6,22 @@ import BpmnSemantics.SemanticProcess.InternalRegionalParallelReverseBinding
 import BpmnSemantics.SemanticProcess.InternalRegionalControllerValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalParallelBinding
 import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Completion removes a child-scope Activity, never a Multi-Instance task body.
 REG-OWN-CLOSE-01 keeps the lifetime Timers of surviving task bodies. The existing
 tuple correspondence laws then preserve both directions of each Multi-Instance binding. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalSelectionReferenceRetention,
+  `activityBodyParallelTasks?, `activityBodyTask?, `boundedCompletionReferenceRetention,
+  `monitoredCompletionReferenceRetention, `ordinaryCompletionReferenceRetention,
+  `sequentialMultiInstanceControllerProgramBindingsValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

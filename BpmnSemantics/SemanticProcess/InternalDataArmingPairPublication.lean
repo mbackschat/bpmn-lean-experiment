@@ -10,6 +10,12 @@ import BpmnSemantics.SemanticProcess.InternalDataArmingExecution
 import BpmnSemantics.SemanticProcess.InternalDataArmingFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalDataArmingFrames
 import BpmnSemantics.SemanticProcess.InternalDataArmingMixedCommutation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Accepted mixed and data-pair publication
 
@@ -17,7 +23,10 @@ One admitted predecessor supplies every preparation, intermediate invariant, eva
 accepted publication. Canonical numbering follows only after complete publications agree.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalDataArmingContract.operation,
+  `internalArmInput?, `internalArmOrigin?, `prepareInternalArm?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -2,10 +2,13 @@ module
 
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerCancellation
 public import BpmnSemantics.SemanticProcess.TransactionCancellation
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation handler completion and fail-fast Process failure -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -175,6 +178,9 @@ def compensationFailureSuccessor (state : RuntimeState)
       compensationTriggers :=
         replaceTrigger selected.trigger failedTrigger state.compensationTriggers }
   successor
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`compensationFailureSuccessor, `failOtherHandler,
+  `terminalHandler]
 
 private theorem failOtherHandler_sound (failed candidate : CompensationHandlerExecution) :
     CompensationHandlerFailureDisposition failed.identity.id candidate

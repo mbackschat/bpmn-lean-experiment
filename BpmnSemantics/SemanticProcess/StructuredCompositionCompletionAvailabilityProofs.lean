@@ -8,12 +8,42 @@ public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
 import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
 import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessRegistrationLaws
+import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+import all BpmnSemantics.SemanticProcess.ActivityDataOutput
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
+import all BpmnSemantics.SemanticProcess.NestedScopeData
+import all BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionCounterProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact task lifetime and declaration ownership provide concrete admitted completion commands.
 Reached completion availability derives committed collection storage from the existing execution,
 control-unit and lifecycle invariants; arbitrary-state construction names storage as a premise. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredComposition.ForeignRuntimeEmpty,
+  `activityBodyTask?, `activityDataOutputValueAdmitted, `activityDataPropertyOwner, `activityOccurrenceForTaskWait?,
+  `activityOwnerForRecord, `admitStimulus, `callDataRuntimeStateValid, `compensationTargetDeclaredForFamily,
+  `completeDataInputOutputUserTask?, `completeOrdinaryUserTaskWithCompensation?, `completeUserTask,
+  `dataInputOutputLocalScope?, `dataInputOutputRuntimeJoinValid, `dataInputOutputTaskContracts,
+  `dataInputOutputTaskWait?, `filledDeclaredOutput?, `interruptingMessageEventSubProcessStateValid,
+  `isCallActivityProgram, `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `processInterfaceScalar,
+  `recordBodyNamesWait, `taskIdNamesWait, `userTaskWaitDeclarationKey, `writeActivityDataOutput?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 

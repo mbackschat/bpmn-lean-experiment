@@ -14,10 +14,50 @@ public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidit
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
 import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
+import all BpmnSemantics.SemanticProcess.CallActivityAdmission
+import all BpmnSemantics.SemanticProcess.ClosureLimit
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.Incident
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.SequentialScopeCheckedAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ADMIT-01 derives admitted Start validity and projectability together with static Program-to-runtime correspondence; this foundation imports no SMIS lifecycle, aggregate validity or scheduler owner. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.Called, `InternalCommutation.Hosting,
+  `SemanticOperation.kind, `SequentialScopeData.stimulusAdmitted, `SequentialScopeProgram.admitted,
+  `SequentialScopeProgram.operationAllowed, `bodyConsumedPorts, `effectIncidentAssociationsValid,
+  `enteredChildScopeId?, `eventRaceAssociationsValid, `exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique,
+  `flowNodeOccurrenceProgramValidity, `flowNodeOccurrenceStructuralProgramValidity,
+  `flowNodeOccurrenceWaitProgramValidity, `lifecyclePositionValid, `nonempty, `operationControlPlacesShareOwner,
+  `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `programWellFormed, `projectOpenFlowNodeOccurrences?,
+  `projectWaits?, `runningPositionValid, `runtimePositionValid, `runtimeStateWellFormed, `scopeOperationBindingValid,
+  `scopedOwnershipComplete, `sequentialScopeEntry?, `sortBy, `sortFlowNodeOccurrenceStarts, `uniqueDefinitionScope?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

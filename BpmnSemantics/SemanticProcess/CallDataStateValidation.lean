@@ -11,7 +11,7 @@ phase boundary. The checkpoint composes this family predicate with the unchanged
 input snapshots and caller frames remain two-state obligations in the transfer laws.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

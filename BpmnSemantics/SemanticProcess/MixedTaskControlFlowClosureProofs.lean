@@ -2,10 +2,32 @@ module
 
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowProgressProofs
 import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
+import all BpmnSemantics.SemanticProcess.BusinessTaskCommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowDataProofs
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowLifecycleProofs
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! MTCF-PROGRESS-01 bounds whole scheduled runs: from the per-firing position progress in [`MixedTaskControlFlowProgressProofs`](MixedTaskControlFlowProgressProofs.lean), every scheduled closure from an admitted start is finite and its counters only grow. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`step]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 

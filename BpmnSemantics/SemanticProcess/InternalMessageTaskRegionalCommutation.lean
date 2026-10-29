@@ -13,11 +13,39 @@ import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Regional retirement and joined Message-host insertion commute from predecessor preparations.
 The selected admission binds actual completion and Terminate execution, including continuations. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalMessageTaskPatch, `InternalCommutation.applyPreparedInternalRegional?,
+  `InternalCommutation.messageTaskStateFootprint, `InternalCommutation.regionalBaseFootprint?,
+  `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.selectInternalRegional?,
+  `canonicalCollectionOrder, `fire?, `repeatableSubscriptionOperationAllowed, `runtimeStateWellFormed,
+  `terminateScopeState?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -144,7 +172,7 @@ private theorem regional_messageTask_successors_equal (program : Program) (befor
           endOccurrences := before.endOccurrences + 1 } patch
       rw [ends, cancelled]
       cases write : patch.arm.write <;> simp only [applyInternalMessageTaskPatch, applyInternalArmingPatch, write]
-  | returnProcess _ _ _ _ _ | throwError _ _ _ _ _ =>
+  | returnProcess _ _ _ _ _ | «throwError» _ _ _ _ _ =>
       simp [repeatableSubscriptionOperationAllowed] at allowed
   | _ => simp [selectInternalRegional?] at selected
 

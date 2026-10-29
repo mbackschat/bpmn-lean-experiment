@@ -4,6 +4,10 @@ public import BpmnSemantics.Experiments.CheckedSourceTransition
 public import BpmnSemantics.Experiments.CheckedSourceGraph
 public import BpmnSemantics.SemanticProcess.EffectCompletion
 import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.Experiments.CheckedSourceGraph
+import all BpmnSemantics.Experiments.CheckedSourceState
+import all BpmnSemantics.Experiments.CheckedSourceTransition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Shared checked-source frontier laws and single-token frontiers
 
@@ -14,7 +18,12 @@ This module owns two things. First, the frontier laws that are independent of ho
 Nothing here depends on structured decomposition or parser state.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.Experiments #[`CheckedSourceAdmission.allDistinct,
+  `CheckedSourceAdmission.incomingFlows, `CheckedSourceAdmission.nodeArityValid,
+  `CheckedSourceSemantics.enabledTransitions, `CheckedSourceSemantics.fireNode?, `CheckedSourceSemantics.hasToken,
+  `CheckedSourceSemantics.tokenMultiplicity]
+
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceFrontier
 

@@ -1,6 +1,8 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Occurrence-owned body data witnesses
 
@@ -8,7 +10,9 @@ SMIS-DATA-01 requires pre-entry mapping, present-null shadowing and nearest-exis
 These separating controls cover owner collisions and turnover without claiming MI execution.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`initializeScopeVariables?]
+
+public section
 
 namespace BpmnSemantics.ScopeVariableDataConformance
 
@@ -33,6 +37,9 @@ def before : ScopedVariables :=
 
 def initialized : Option ScopedVariables :=
   initializeScopeVariables? before owner [literal "a" "seed", input "b" "a", input "status" "status"]
+
+run_meta privateEquations `BpmnSemantics.ScopeVariableDataConformance #[`before, `foreign, `initialized, `input,
+  `literal, `owner]
 
 theorem inputs_use_pre_entry_context_and_ignore_declaration_order :
     (initialized.bind fun variables => readScopeVariable? variables owner "b") = some (.string "outer") ∧

@@ -10,6 +10,8 @@ public import BpmnSemantics.SemanticProcess.CompensationSourceLowering
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 public import BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.GraphValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Canonical checked-process lowering
 
@@ -18,7 +20,7 @@ This module owns the total project-authored lowering from a checked BPMN graph t
 `lowerCheckedProcess` is total as required by the reviewed preservation proposition, but only `checkedWellFormed` inputs are admitted. Its arbitrary result outside that domain is never a semantic outcome.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -595,6 +597,8 @@ def lowerNode (source : CheckedProcess) :
         { elementId := id }
         (firstPlace (incomingPlaces source id)), scopeId)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CheckedSequenceFlow.toControlPlace, `lowerNode]
+
 /-- Exclusive Merge lowering has no topology inventory besides checked Sequence Flow endpoints. -/
 theorem lower_exclusive_merge_uses_checked_flow_endpoints
     (source : CheckedProcess) (id : NodeId) :
@@ -735,6 +739,8 @@ def lowerCheckedProcess (source : CheckedProcess) : Program :=
       lowerCheckedCompensationSnapshots source
     compensationExecution := if source.transactionCancellation.isSome then lowerTransactionExecution source
       else lowerCheckedCompensationExecution source }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`lowerCheckedProcess]
 
 theorem lower_preserves_definition_identity (source : CheckedProcess) :
     (lowerCheckedProcess source).identity.semanticProfile =

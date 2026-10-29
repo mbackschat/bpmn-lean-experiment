@@ -5,6 +5,18 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Frozen arming preparation through raw prefixes
 
@@ -13,7 +25,16 @@ Population and input frames below connect the actual preparer to the
 certificate's token, anchor and local-frame separation without execution premises.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatch.tokenKeys,
+  `InternalCommutation.InternalOccurrencePatchStep, `InternalCommutation.applyInternalOccurrenceBatch?,
+  `InternalCommutation.applyReservedOccurrencePrefix?, `InternalCommutation.internalOperationOccurrences?,
+  `InternalCommutation.occurrenceMemberRevalidated, `InternalCommutation.occurrenceReservationStateValid,
+  `InternalCommutation.prepareInternalOccurrenceBatch?, `InternalCommutation.prepareReservedOccurrenceArm?,
+  `InternalCommutation.resolveInternalOperationOccurrence?, `ParallelScopeReplay.ReservedArmWriteShape,
+  `evaluateEffectInputs?, `evaluateParallelScopeInputs?, `exactLiveOccurrence, `readScopeVariable?,
+  `selectScopeVariables?, `sequentialScopeProgramSelected]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -12,4 +12,4 @@ cross-artifact binding checks of the owner-approved source checkpoint.
 -/
 
 
-@[expose] public section
+public section

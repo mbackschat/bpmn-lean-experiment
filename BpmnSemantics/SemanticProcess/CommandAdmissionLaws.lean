@@ -1,10 +1,14 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Admission inversion laws expose the committed-storage ingress guard without unfolding its dispatch. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`admitStimulus]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,4 +1,5 @@
 module
+meta import BpmnSemantics.PrivateEquationLemmas
 
 
 /-! # Bounded graph reachability
@@ -6,7 +7,7 @@ module
 Finite search and saturation certificates shared by semantic graph admission and its laws.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -31,6 +32,18 @@ def DirectedCycle [DecidableEq α] (edges : List (GraphEdge α))
     (vertices : List α) : Prop :=
   ∃ start middle,
     vertices = start :: middle ++ [start] ∧ DirectedPath edges vertices
+
+/-- What a directed path means, for consumers that reason without opening this module's bodies: an edit that keeps
+this meaning then rebuilds none of them. -/
+theorem directed_path_iff [DecidableEq α] {edges : List (GraphEdge α)} {vertices : List α} :
+    DirectedPath edges vertices ↔ ∀ edge ∈ directedPathEdges vertices, edge ∈ edges :=
+  Iff.rfl
+
+/-- What a directed cycle means, for consumers that reason without opening this module's bodies. -/
+theorem directed_cycle_iff [DecidableEq α] {edges : List (GraphEdge α)} {vertices : List α} :
+    DirectedCycle edges vertices ↔
+      ∃ start middle, vertices = start :: middle ++ [start] ∧ DirectedPath edges vertices :=
+  Iff.rfl
 
 /-- Distinct direct successors of the current frontier. -/
 def successors [DecidableEq α] (edges : List (GraphEdge α))
@@ -58,6 +71,12 @@ def reachableWithin [DecidableEq α] (edges : List (GraphEdge α))
 def allReachableWithin [DecidableEq α] (nodes : List α)
     (edges : List (GraphEdge α)) (fuel : Nat) (source : α) : Bool :=
   nodes.all (reachableWithin edges fuel source)
+
+/-- What an accepted all-reachable search means, for consumers that reason without opening this module's bodies. -/
+theorem all_reachable_within_iff [DecidableEq α] {nodes : List α} {edges : List (GraphEdge α)} {fuel : Nat}
+    {source : α} :
+    allReachableWithin nodes edges fuel source = true ↔ ∀ node ∈ nodes, reachableWithin edges fuel source node = true :=
+  List.all_eq_true
 
 def allCoreachableWithin [DecidableEq α] (nodes : List α)
     (edges : List (GraphEdge α)) (fuel : Nat) (targets : List α) : Bool :=
@@ -90,6 +109,8 @@ def CycleWitnessWithin [DecidableEq α] (edges : List (GraphEdge α))
     (fuel : Nat) : Prop :=
   ∃ edge ∈ edges,
     reachableWithin edges fuel edge.target edge.source = true
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`acyclicClosed]
 
 /-- Saturation-certified acyclicity rules out every cycle that survives a profile-selected edge cut. Therefore any full-graph cycle must contain at least one removed edge. -/
 theorem saturation_certified_cut_excludes_uncut_cycle

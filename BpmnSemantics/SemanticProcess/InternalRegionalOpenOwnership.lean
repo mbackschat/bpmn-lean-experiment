@@ -5,12 +5,17 @@ import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleLaws
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Projected open occurrences carry live ownership. A scope anchor additionally carries its
 actual parent edge, which makes region membership agree with cancellation's anchor-based account.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceOwnerLiveUnique,
+  `projectOpenFlowNodeOccurrences?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

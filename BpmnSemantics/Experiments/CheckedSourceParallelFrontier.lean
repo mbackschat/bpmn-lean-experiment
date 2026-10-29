@@ -4,13 +4,19 @@ import BpmnSemantics.Experiments.CheckedSourceFrontier
 public import BpmnSemantics.Experiments.CheckedSourceGraph
 public import BpmnSemantics.Experiments.CheckedSourceTransition
 public import BpmnSemantics.SemanticProcess.EffectCompletion
+import all BpmnSemantics.Experiments.CheckedSourceGraph
+import all BpmnSemantics.Experiments.CheckedSourceTransition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Two-token checked-source frontiers
 
 This module owns order-independent facts about enabled checked-source transitions at two distinct Sequence Flow tokens aimed at two distinct checked nodes, plus the generic two-anchor `filterMap` isolation law used by that account. It adds no runtime state, observation, or selector.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.Experiments #[`CheckedSourceAdmission.allDistinct,
+  `CheckedSourceSemantics.enabledTransitions]
+
+public section
 
 namespace BpmnSemantics.Experiments.CheckedSourceParallelFrontier
 

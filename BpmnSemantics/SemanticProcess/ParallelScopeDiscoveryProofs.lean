@@ -12,6 +12,25 @@ import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacityProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
+import all BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Total discovery for reachable parallel scopes
 
@@ -21,7 +40,14 @@ reachable wait readiness supplies native arming when an input token is present.
 This does not assume successful reservation of the complete frontier.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+  `InternalCommutation.deriveInternalOccurrenceFrontier?, `InternalCommutation.internalArmInput?,
+  `InternalCommutation.internalOperationOccurrenceOffers?, `InternalCommutation.internalOperationOccurrences?,
+  `InternalCommutation.resolveInternalOperationOccurrence?, `ParallelScopeStart.analyzeProgram,
+  `ParallelScopeStart.programOperationAllowed, `SemanticOperation.kind, `SequentialScopeControl.inputs,
+  `SequentialScopeProgram.operationAllowed, `bodyConsumedPorts, `scopedOwnershipComplete]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

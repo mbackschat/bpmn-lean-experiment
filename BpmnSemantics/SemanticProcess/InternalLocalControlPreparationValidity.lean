@@ -5,12 +5,22 @@ public import BpmnSemantics.SemanticProcess.InternalSelectedBranchPatchValidity
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
 import BpmnSemantics.SemanticProcess.InternalLocalControlTokenValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalSelectedBranchPatchValidity
+import all BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Composed preparation validity for the five local-control families in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.selectInternalLocalControl?,
+  `runtimeStateWellFormed, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

@@ -7,7 +7,7 @@ public import BpmnSemantics.CompensationEventSubProcessSnapshotLifecycleIntegrat
 Selected and unselected root closure, as executable checks that
 [`ConformanceChecksMain`](ConformanceChecksMain.lean) runs natively. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.CompensationEventSubProcessSnapshotIntegrationConformance
 

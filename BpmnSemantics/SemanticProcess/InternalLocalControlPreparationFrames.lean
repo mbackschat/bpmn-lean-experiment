@@ -2,12 +2,20 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlSelectionFrames
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete preparation frames use the exact predecessor dependencies retained by the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalLocalControlRecordAvailable,
+  `InternalCommutation.internalLocalControlStateFootprint, `InternalCommutation.makeInternalLocalControlPreparation,
+  `InternalCommutation.prepareInternalLocalControl?, `InternalCommutation.selectedJoinReadAtoms,
+  `InternalSelectedBranchPatch.selectionKey, `exactLiveOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

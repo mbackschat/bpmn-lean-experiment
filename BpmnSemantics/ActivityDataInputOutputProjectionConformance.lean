@@ -12,7 +12,7 @@ These witnesses bind the existing data-operation wait contract to the independen
 Effect-local exactness remains confined to its tagged owner family.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ActivityDataInputOutputProjectionConformance
 

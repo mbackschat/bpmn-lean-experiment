@@ -3,12 +3,16 @@ module
 import BpmnSemantics.SemanticProcess.ControlPositionMultiplicity
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact public deltas retain positive multiplicities in canonical key order, as required by
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`tokenDifference, `tokenMultiplicityAt, `tokenPositionKey]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

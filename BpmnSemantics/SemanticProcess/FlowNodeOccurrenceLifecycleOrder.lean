@@ -3,13 +3,17 @@ module
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Flow-node occurrence lifecycle ordering laws
 
 Proves the strict total-order laws behind canonical open-occurrence sorting and the resulting invariance under permutation.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceAnchorBefore, `insertBy,
+  `occurrenceBefore, `scalarBefore, `scopeBefore, `sortBy, `startBefore]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -18,6 +22,8 @@ open BpmnSemantics
 def lifecycleLexStep [DecidableEq α] (before : α → α → Bool)
     (left right : α) (rest : Bool) : Bool :=
   if left ≠ right then before left right else rest
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`lifecycleLexStep]
 
 theorem lifecycleLexStep_asymm [DecidableEq α] (before : α → α → Bool)
     (asymm : ∀ left right, before left right = true → before right left = false)
@@ -77,6 +83,8 @@ private theorem scalarBefore_trans (left middle right : String) :
   exact String.lt_trans
 
 def natBefore (left right : Nat) : Bool := left < right
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`natBefore]
 
 private theorem natBefore_asymm (left right : Nat) :
     natBefore left right = true → natBefore right left = false := by
@@ -198,6 +206,8 @@ def transitionBefore (leftCommand : SemanticId) (leftTransition leftLocal : Nat)
     leftCommand rightCommand
     (lifecycleLexStep natBefore leftTransition rightTransition
       (natBefore leftLocal rightLocal))
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`transitionBefore]
 
 private theorem transitionBefore_eq (leftCommand : SemanticId)
     (leftTransition leftLocal : Nat) (rightCommand : SemanticId)

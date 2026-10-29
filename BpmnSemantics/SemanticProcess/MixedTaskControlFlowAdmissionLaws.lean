@@ -3,10 +3,20 @@ module
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 public import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! MTCF-DATA-01 and MTCF-PROGRESS-01 connect the executable graph certificates to declarative paths and ranks so runtime proofs need not trust a finite search result without its saturation evidence. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MixedTaskControlFlow.aritiesValid,
+  `MixedTaskControlFlow.checkedVertex?, `MixedTaskControlFlow.cutEdges, `MixedTaskControlFlow.cutTopologicalOrder,
+  `MixedTaskControlFlow.deriveRanks, `MixedTaskControlFlow.edges, `MixedTaskControlFlow.isWait,
+  `MixedTaskControlFlow.maximumBurst?, `MixedTaskControlFlow.rank?, `MixedTaskControlFlow.ranksValid,
+  `MixedTaskControlFlow.readNames, `MixedTaskControlFlow.requiredInputs, `MixedTaskControlFlow.vertexRank?,
+  `MixedTaskControlFlow.writerSearchesClosed, `StructuredComposition.unique?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 

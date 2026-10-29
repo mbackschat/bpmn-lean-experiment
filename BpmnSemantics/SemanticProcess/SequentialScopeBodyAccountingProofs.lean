@@ -10,10 +10,21 @@ import BpmnSemantics.SemanticProcess.SequentialScopeTransition
 import BpmnSemantics.SemanticProcess.TokenStorage
 public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 public import BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ENTER-01 and SMIS-END-01 establish actual body birth, retirement and fresh-body conservation, including current-body population and parent credit, below certificate preservation and history transport. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ContinuationMarkingLaws.tokenCount,
+  `SequentialScopeControl.bodyVertex?, `SequentialScopeEntryResult.state, `continuationMarking, `exactLiveOccurrence,
+  `ownedPortCount, `runtimeStateWellFormed, `scopeQuiescent, `selectScopeVariables?, `sequentialScopeActivityId,
+  `sequentialScopeEntryEnabled, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

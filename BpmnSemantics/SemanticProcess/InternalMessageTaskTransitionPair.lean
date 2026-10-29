@@ -10,11 +10,23 @@ import BpmnSemantics.SemanticProcess.InternalMessageTaskOrdinaryFrames
 import BpmnSemantics.SemanticProcess.InternalMessageTaskRegionalRetention
 import BpmnSemantics.SemanticProcess.InternalPreparedTransitionLaws
 public import BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The subscription proof-domain amendment requires complete Message-host pairs with ordinary
 waits, local control, child entry, None End and regional retirement. Admission excludes other families. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMessageTaskContract.operation,
+  `InternalCommutation.InternalTimerTaskContract.operation, `InternalCommutation.PreparedInternalTransition.apply,
+  `InternalCommutation.PreparedInternalTransition.operation, `repeatableSubscriptionBoundaryOperation]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

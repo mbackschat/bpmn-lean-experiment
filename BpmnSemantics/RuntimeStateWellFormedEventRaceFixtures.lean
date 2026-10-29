@@ -4,7 +4,7 @@ public import BpmnSemantics.EventBasedGatewayFixtures
 
 /-! The malformed race state preserves its real association, isolating declaration refusal. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.RuntimeStateWellFormedConformance
 

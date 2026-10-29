@@ -8,7 +8,7 @@ This module owns correlation-specific payload, channel, selector, and identity c
 and operation cardinalities remain in `ProfileAdmission`.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

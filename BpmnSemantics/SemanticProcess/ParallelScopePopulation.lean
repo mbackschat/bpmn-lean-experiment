@@ -2,13 +2,14 @@ module
 
 public import BpmnSemantics.Scenario
 public import BpmnSemantics.WireNatural
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Sub-Process population retirement
 
 PMIS-END-01 and PMIS-CANCEL-01 require exact child ownership and separate completed from cancelled bodies. This account establishes local membership, retirement dispatch and accounting laws; callers establish quiescence and perform runtime cleanup.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -89,6 +90,10 @@ def retireParallelScopeIteration (controller : ParallelScopeController)
   if !validParallelScopePopulation controller iterations then none else do
     let (before, selected, after) ← selectParallelScopeIteration target iterations
     pure (finishParallelScopeRetirement controller selected (before ++ after) condition)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeRetirement.controller,
+  `ParallelScopeRetirement.siblings, `finishParallelScopeRetirement, `retireParallelScopeIteration,
+  `selectParallelScopeIteration, `validParallelScopeIterations, `validParallelScopePopulation]
 
 /-- Every present exact owner has an executable selection; no ordering premise is needed. -/
 theorem selectParallelScopeIteration_total (target : ScopeOccurrenceId)

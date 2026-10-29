@@ -2,6 +2,11 @@ module
 
 public import BpmnSemantics.SemanticProcess.CallDataStateValidation
 public import BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.SemanticProcess.CallDataStateValidation
+import all BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Scalar Call state-domain laws
 
@@ -9,7 +14,10 @@ CDATA-OWNER-01 requires every live task to have its composed declaration. This e
 completion from the private Call account while preserving predecessor execution propositions.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`callDataRuntimeStateValid, `callDataTaskValid,
+  `taskIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

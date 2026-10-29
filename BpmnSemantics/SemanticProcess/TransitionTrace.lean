@@ -2,13 +2,19 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 public import BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Committed semantic transition traces
 
 This module owns the revision-free trace produced at the external evaluator boundary. It records the exact admitted stimulus and the metadata of each operation selected by bounded internal closure. The trace never changes `RuntimeState`, and strict replay resolves and checks an operation before firing it.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.sortBy,
+  `InternalCommutation.sortInsertBy, `admitStimulus]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -72,6 +78,8 @@ def canonicalPublicationPairs :
   | [] => []
   | pair :: rest => canonicalPublicationPair pair (canonicalPublicationPairs rest)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalPublicationPair, `canonicalPublicationPairs]
+
 private theorem canonicalPublicationPair_eq_sortInsert (pair : InternalPublicationPair)
     (values : List InternalPublicationPair) :
     canonicalPublicationPair pair values =
@@ -117,6 +125,9 @@ def fireInternalBatch? (program : Program) (commandId : SemanticId) :
       let tail ← fireInternalBatch? program commandId successor rest
       pure { state := tail.state, publications := publication :: tail.publications }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`internalPublicationPair?,
+  `internalPublicationPairForFootprint?]
+
 /-- A returned pair is the actual accepted record and lifecycle for the same operation step. -/
 theorem internalPublicationPair_defined (program : Program)
     (footprintState before after : RuntimeState) (operation : SemanticOperation)
@@ -149,6 +160,8 @@ def StimulusResult.ofClosure (before successor : RuntimeState)
     state := if hitBound || ambiguous then before else successor
     internalStepBoundExceeded := hitBound
     ambiguousInternalChoice := ambiguous }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StimulusResult #[`ofClosure]
 
 theorem StimulusResult.ofClosure_failure_rolls_back
     (before successor : RuntimeState) (hitBound ambiguous : Bool)
@@ -236,6 +249,9 @@ def evaluateStimulus (closureLimit : Nat) (program : Program)
     (state : RuntimeState) (stimulus : Stimulus) : EvaluatedStimulus :=
   evaluateStimulusScheduled closureLimit program state stimulus []
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StimulusResult.ofScheduledClosure, `evaluateStimulus,
+  `evaluateStimulusScheduled]
+
 private theorem evaluateStimulusScheduled_failure_is_atomic
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
     (schedule : InternalCommutation.InternalChoiceSchedule)
@@ -265,6 +281,8 @@ def replayCheckedTransitions (program : Program) (initial result : RuntimeState)
   | some candidate =>
       if ParallelScopeReplay.committedTransitions? program initial candidate = some result then candidate else []
   | none => []
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`replayCheckedTransitions]
 
 private theorem replayCheckedTransitions_sound (program : Program)
     (initial result : RuntimeState) (candidate : Option (List CommittedTransition))
@@ -327,6 +345,9 @@ def applyStimulus (closureLimit : Nat) (program : Program)
   | outcome =>
       { outcome, state := admission.state
         internalStepBoundExceeded := false, ambiguousInternalChoice := false }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`applyStimulus, `applyStimulusScheduledTraced,
+  `applyStimulusTraced, `publishEvaluatedLifecycles, `publishEvaluatedTransitions]
 
 private theorem evaluateStimulus_result_eq_applyStimulus
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus) :

@@ -5,12 +5,19 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationWaitValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Cancellation preserves immutable Program correspondence by retaining each surviving
 owner census. The selected child may itself survive; singleton preservation handles that
 case without requiring it to lie outside its own cancellation region. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceOwnerLiveUnique,
+  `flowNodeOccurrenceProgramValidity, `flowNodeOccurrenceStructuralProgramValidity]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

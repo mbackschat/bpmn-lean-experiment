@@ -2,6 +2,9 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Directed occurrence-region closure laws
 
@@ -9,7 +12,11 @@ The existing occurrence-count evaluator computes the least parent/forward-Call c
 laws concern predecessor graph membership, not agreement with a transition's removal algorithm.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`canonicalScopeMembers,
+  `expandOccurrenceRegionMembers, `occurrenceRegionMembersWithin, `scopeBefore, `scopeOwnershipGraphExact, `sortBy,
+  `sortInsertBy]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -123,6 +130,8 @@ def OccurrenceRegionEdge (state : RuntimeState) (source target : ScopeOccurrence
     occurrence.parent = some source ∧ occurrence.id = target) ∨
   (∃ record ∈ state.calledProcessOccurrences,
     record.caller = source ∧ record.calledRoot = target)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`OccurrenceRegionEdge]
 
 theorem expandOccurrenceRegionMembers_mem (state : RuntimeState)
     (members : List ScopeOccurrenceId) (value : ScopeOccurrenceId) :

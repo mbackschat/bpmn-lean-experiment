@@ -8,12 +8,19 @@ import BpmnSemantics.SemanticProcess.InternalRegionalPositionValidity
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import BpmnSemantics.SemanticProcess.ScopePositionInsertion
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Error publication follows the actual child cancellation and parent continuation.
 The parent lies outside the derived region, including when its output bucket is populated.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalPositionDelta?,
+  `controlPositionDelta?, `fire?, `projectControlPosition?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

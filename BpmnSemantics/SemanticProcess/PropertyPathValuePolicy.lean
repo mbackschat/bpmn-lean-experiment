@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ProcessInterfaceRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Property-path value policy
 
@@ -11,7 +12,7 @@ derived from the exact Program profile and is never a wire flag, per the
 Process-interface and Call ports keep `processInterfaceScalar`; this owner does not reach them.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -44,12 +45,14 @@ def propertyPathValuePolicy (profile : ProfileId) : PropertyPathValuePolicy :=
 abbrev programPropertyPathValuePolicy (program : Program) : PropertyPathValuePolicy :=
   propertyPathValuePolicy program.identity.semanticProfile
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`propertyPathValuePolicy]
+
 theorem programPropertyPathValuePolicy_eq_scalar {program : Program}
     (other : program.identity.semanticProfile ≠ portableHandoffProfileId) :
     programPropertyPathValuePolicy program = .scalar := by
   simp [programPropertyPathValuePolicy, propertyPathValuePolicy, other]
 
 @[simp] theorem PropertyPathValuePolicy.scalar_admits (value : VariableValue) :
-    PropertyPathValuePolicy.scalar.admits value = processInterfaceScalar value := rfl
+    PropertyPathValuePolicy.scalar.admits value = processInterfaceScalar value := (rfl)
 
 end BpmnSemantics.SemanticProcess

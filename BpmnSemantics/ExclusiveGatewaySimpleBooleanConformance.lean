@@ -5,16 +5,6 @@ public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.CallActivity
-import all Init.Data.Repr
-import all Init.Data.List.Sort.Basic
-import all Init.Data.Ord.String
-import all Lean.Data.Json.Basic
-import all Std.Data.TreeMap.Raw.Basic
-import all Std.Data.DTreeMap.Raw.Basic
-import all Std.Data.DTreeMap.Internal.Def
-import all Std.Data.DTreeMap.Internal.Balancing
-import all Std.Data.DTreeMap.Internal.Operations
-import all Std.Data.DTreeMap.Internal.Queries
 public meta import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
@@ -22,13 +12,17 @@ public import BpmnSemantics.SemanticProcess.MonitoredScope
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
 public import BpmnSemantics.SemanticProcess.EventBasedGateway
 public import BpmnSemantics.SemanticProcess.MessageMonitoredTask
+import all BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Exclusive Gateway with Simple Boolean conditions
 
 This module supplies executable locks and reusable laws for the project-owned Simple Boolean v1 evaluator and declaration-ordered conditional choice. It establishes neither XPath nor JUEL support.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`selectConditionalOutput]
+
+public section
 
 namespace BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance
 

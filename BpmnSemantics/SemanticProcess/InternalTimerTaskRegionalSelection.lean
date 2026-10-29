@@ -13,12 +13,42 @@ import BpmnSemantics.SemanticProcess.InternalTimerTaskValidity
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 public import BpmnSemantics.SemanticProcess.InternalRegionalFootprint
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalPreparedArming
+import all BpmnSemantics.SemanticProcess.InternalRegionalCompletionSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalFootprint
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.TerminateEnd
+import all BpmnSemantics.SemanticProcess.TransitionStates
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The joined Timer-task insertion preserves regional selection outside its live owner.
 Fresh Timer identities preserve the exact deadline census used by bounded scope completion.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalTimerTaskContract.operation,
+  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalTimerTaskPatch,
+  `InternalCommutation.makeInternalTimerTaskPatch, `InternalCommutation.regionalActivityAssociationsConflict,
+  `InternalCommutation.regionalOwnsAtom, `InternalCommutation.regionalOwnsOrdinaryAtom,
+  `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.timerTaskStateFootprint,
+  `InternalCommutation.uniqueFamilyDeclarer?, `MonitoredScopeOwnership, `MonitoredScopeTimerBinding,
+  `NonInterruptingBoundaryTimerBinding, `monitoredScopeTimerNames, `scopeQuiescent, `timerIdNamesWait,
+  `timerWaitDeclarers, `timerWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -268,7 +298,7 @@ theorem regionalSelection_after_independent_timer_task (program : Program) (stat
     rw [tokens, filterTokens_removeToken_other _ _ _ _
       (timerTask_regional_input_distinct footprint patch input read independent)]
   cases operation with
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       refine ⟨onlyTokenOwner_read_frame state _ input (census input inputRead), ?_⟩
       rw [tokens]
       apply filter_removeToken_of_rejected

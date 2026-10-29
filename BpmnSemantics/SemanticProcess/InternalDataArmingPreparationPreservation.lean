@@ -3,6 +3,8 @@ module
 public import BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Data-arming preparation preservation
 
@@ -10,7 +12,13 @@ The predecessor-selected copy and both independent issuers survive the other tas
 update. Complete preparation, including association freshness, is reconstructed from those reads.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.makeInternalDataArmingPatch,
+  `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
+  `InternalCommutation.prepareInternalDataArmingContract?, `activityBodyTaskClaims, `dataInputOutputActivityRecord,
+  `dataInputOutputRunningInstance?, `sameActivityOccurrence]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

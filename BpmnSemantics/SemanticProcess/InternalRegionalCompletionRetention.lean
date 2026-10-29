@@ -2,13 +2,19 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
 public import BpmnSemantics.SemanticProcess.MonitoredScope
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.MonitoredScope
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! REG-OWN-CLOSE-01 uses completion's selected root/child mask and exact deadline withdrawal.
 The bounded evaluator's Timer erase requires predecessor identity uniqueness. ESL-CLOSE monitored
 completion instead supplies exact child-body and optional Timer censuses, including the consumed
 one-shot case, which derive retention masks without assuming successor validity. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MonitoredScopeTimerBinding, `regionalReferenceFieldsMatch,
+  `removeMonitoredScopeTimer]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -37,6 +43,8 @@ def boundedCompletionReferenceRetention (occurrence : RuntimeScopeOccurrence)
     activity := fun record => !decide (record.body = .childScope child)
     timer := fun wait => wait != deadline }
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ordinaryCompletionReferenceRetention]
+
 theorem ordinaryCompletionReferenceRetention_matches_completion (state completed : RuntimeState)
     (scopeId : DefinitionScopeId) (parentOutput : Option ControlPlaceId)
     (occurrence : RuntimeScopeOccurrence)
@@ -60,6 +68,8 @@ def monitoredCompletionReferenceRetention (occurrence : RuntimeScopeOccurrence)
     timer := fun wait => match deadline with
       | none => true
       | some timer => !timerIdNamesWait (boundaryTimerWaitIdentity timer) wait }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`monitoredCompletionReferenceRetention]
 
 theorem erase_matches_singleton_mask {α : Type} [DecidableEq α]
     (values : List α) (predicate : α → Bool) (value : α)

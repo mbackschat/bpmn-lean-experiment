@@ -9,7 +9,7 @@ Family-shaped construction of the paired entry and external child-completion ope
 lowerer still owns graph traversal, scope lookup, and canonical sorting.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

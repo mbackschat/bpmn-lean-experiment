@@ -11,7 +11,7 @@ rewrite and delegates every absent-declaration or non-target case to the legacy 
 It defines no handler execution, source admission, public observation, or hosting behavior.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

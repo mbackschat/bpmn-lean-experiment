@@ -1,12 +1,13 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact directive consumption follows the fixed failure precedence in the
 [explicit-choice account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#explicit-observable-choice).
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -37,6 +38,8 @@ def consumeInternalChoiceDirective (ordinal : Nat) (alternatives : List Internal
       else if directive.alternatives ≠ alternatives then .error .alternativesMismatch
       else if directive.selected ∉ alternatives then .error .selectedAlternativeMissing
       else .ok (directive.selected, remaining)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`consumeInternalChoiceDirective]
 
 /-- Success consumes exactly one matching head and preserves every remaining directive verbatim. -/
 theorem consumeInternalChoiceDirective_iff (ordinal : Nat) (alternatives : List InternalAlternative)

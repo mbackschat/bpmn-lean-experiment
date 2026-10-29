@@ -9,6 +9,17 @@ import BpmnSemantics.SemanticProcess.TokenOrder
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
+import all BpmnSemantics.SemanticProcess.MessageKeyCorrelation
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.MessageKeyCorrelationProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
+import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
+import all BpmnSemantics.SemanticProcess.ProfileCardinalities
+import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Message key-correlation preservation laws
 
@@ -17,7 +28,17 @@ This module states the quantified state-frame laws of exact target delivery. Com
 wait-declaration cases, which are integrated by their existing exhaustive owners.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityIdentitiesUnique,
+  `activityRecordsOwnLiveWork, `attachedMessagesUnambiguous, `attachedTimersUnambiguous, `canonicalCollectionOrder,
+  `controllerIdentitiesUnique, `controllersNotExhausted, `controllersOwnLiveActivity, `correlatedDeliveryRechecks,
+  `eventRaceAssociationsValid, `exactLiveOccurrence, `hiddenRecordDeclarationsValid, `messageKeyCorrelationProfileId,
+  `messageWaitKeyMatches, `notStartedStateEmpty, `parallelMultiInstanceUserTaskProfileId,
+  `programParallelMultiInstanceProfileMatches, `programUndispatchedCapabilities, `runtimeStateWellFormed,
+  `sequentialMultiInstanceControllerProgramBindingValid, `sequentialMultiInstanceControllerProgramBindingsValid,
+  `sequentialMultiInstanceOperationBindingComplete, `sequentialMultiInstanceProgramBindingsValid,
+  `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

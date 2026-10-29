@@ -8,12 +8,20 @@ import BpmnSemantics.SemanticProcess.InternalRegionalCallFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
 import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
+import all BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import all BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ScopeAncestryLaws
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! REG-OWN-FRAME-01 preserves cancellation ownership through exact owner reachability and
 monotone handler retention. Removing an Activity can erase its handler claim, so equality of
 every re-derived target mask would demand a false invariant. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrenceRegion.contains,
+  `cancellationReferenceRetention, `occurrenceInSubtreeWithin]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

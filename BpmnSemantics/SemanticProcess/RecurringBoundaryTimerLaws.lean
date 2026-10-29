@@ -2,12 +2,19 @@ module
 
 public import BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
 public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
+import all BpmnSemantics.SemanticProcess.RecurringBoundaryTimer
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Quantified recurrence laws use exact predecessor censuses and Timer high-water bounds.
 The checked mutation changes one attachment and one wait; arbitrary prior handler populations
 and unrelated Activity records frame without assuming a successor well-formedness result. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`boundaryTimerWaitIdentity,
+  `fireNonInterruptingBoundaryTimer, `recurringBoundaryTimerSuccessor, `replaceBoundaryTimerAttachment,
+  `replaceSelectedBoundaryTimerAttachment, `sameActivityOccurrence, `timerIdNamesWait]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -1,10 +1,11 @@
 module
 
 public import BpmnSemantics.SemanticProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Checked-node and operation counts remain separate from profile selection so new capabilities do not duplicate the exhaustive constructor classification. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -220,6 +221,8 @@ def operationCardinalities (operations : List SemanticOperation) : ShapeCardinal
 def isEventRaceOperation : SemanticOperation → Bool
   | .awaitEventRace .. => true
   | _ => false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addOperationCardinality, `isEventRaceOperation]
 
 theorem operationCardinalities_eventRaces (operations : List SemanticOperation) :
     (operationCardinalities operations).eventRaces =

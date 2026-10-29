@@ -6,12 +6,26 @@ import BpmnSemantics.SemanticProcess.InternalCommutationActivityOwnership
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceWaitProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceEffectProgramValidity
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Timer-task validity derives the inserted task's declaration from complete predecessor
 preparation; the shared User Task insertion law keeps the family census in its existing owner.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.boundaryTimerOperationMatches,
+  `FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+  `InternalCommutation.InternalTimerTaskContract.operation, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalTimerTaskPatch, `InternalCommutation.makeInternalTimerTaskPatch,
+  `InternalCommutation.regionalActivityAssociationsConflict, `InternalCommutation.regionalActivityBodyTasks,
+  `InternalCommutation.timerWaitOccurrence, `InternalCommutation.uniqueFamilyDeclarer?, `activityBodyLive,
+  `activityBodyTask?, `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `exactLiveOccurrence,
+  `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceWaitProgramValidity, `recordAttaches, `recordBodyNamesWait,
+  `taskIdNamesWait, `timerIdNamesWait, `timerWaitDeclarers, `timerWaitKeyMatches, `userTaskWaitKeyMatches]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

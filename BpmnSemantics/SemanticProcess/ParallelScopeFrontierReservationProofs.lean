@@ -8,6 +8,19 @@ import BpmnSemantics.SemanticProcess.ParallelScopeWaitReservationProofs
 public import BpmnSemantics.SemanticProcess.ParallelScopeSchedulerReadinessProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationHeadroomProofs
+import all BpmnSemantics.SemanticProcess.CommandAdmission
+import all BpmnSemantics.SemanticProcess.ContinuationMarking
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcess.ParallelScopeBatchReadinessProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeCommandPhaseProofs
+import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Complete frontier member reservation
 
@@ -16,7 +29,13 @@ Discovery supplies actual native applications and bounds every partial cohort;
 reservation totality must precede the independent collective acceptance checks.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatch.waitOccurrence?,
+  `InternalCommutation.applyInternalOperationOccurrence?, `InternalCommutation.internalOperationOccurrenceOffers?,
+  `InternalCommutation.occurrenceReservationStateValid, `InternalCommutation.prepareOccurrenceTokenPatch?,
+  `InternalCommutation.reserveOccurrenceMembers?, `SemanticOperation.kind, `SequentialScopeControl.inputs,
+  `bodyConsumedPorts]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

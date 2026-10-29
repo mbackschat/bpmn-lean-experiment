@@ -9,7 +9,7 @@ transition footprints. Scope-parent edges and caller-to-called-root edges are di
 classification applies no transition and proves no commutation theorem by itself.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

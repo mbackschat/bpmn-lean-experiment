@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
 public import BpmnSemantics.SemanticProcess.InternalRegionalSelectedRetention
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Regional predecessor footprints
 
@@ -10,7 +12,9 @@ global population censuses, bounded deadlines, and every actually withdrawn Acti
 No successor state supplies a dependency.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`runningInstance?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -98,6 +102,9 @@ def regionalStateFootprint? (state : RuntimeState) (selected : InternalRegionalS
   pure
     { reads := canonicalRegionalStateAtoms base.reads
       writes := canonicalRegionalStateAtoms (base.writes ++ regionalWithdrawnActivityWrites state selected) }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`regionalBaseFootprint?,
+  `regionalCensusWrites, `regionalStateFootprint?]
 
 /-- Every predecessor-selected regional operation has a footprint; the dependency classifier
 cannot silently disable one of the selected Return, Complete, Error, or Terminate branches. -/

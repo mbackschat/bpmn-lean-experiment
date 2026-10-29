@@ -6,7 +6,7 @@ public import BpmnSemantics.InternalRegionalCancellationProjectionConformance
 These constructed Program/state witnesses check cancellation without claiming profile reachability.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation.PrivateTimerAliasWitness
 

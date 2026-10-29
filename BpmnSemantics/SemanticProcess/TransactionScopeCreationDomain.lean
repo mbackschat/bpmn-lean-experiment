@@ -2,11 +2,22 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.TransactionCompensationTokenPreservation
+import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Prepared scope entry retains the existing root-only Compensation laws: the approved
 Transaction shape excludes another child creation while its retention declaration is selected. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalScopeCreationDefinitionMatches,
+  `InternalCommutation.internalScopeCreationPredecessorChecks,
+  `InternalCommutation.internalScopeCreationRetentionUnchanged, `compensationActivityRetentionDeclarationValid,
+  `compensationExecutionDeclarationValid, `compensationExecutionStateValid, `runtimeStateWellFormed]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

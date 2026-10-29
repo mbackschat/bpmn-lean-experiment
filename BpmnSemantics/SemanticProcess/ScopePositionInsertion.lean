@@ -2,12 +2,16 @@ module
 
 public import BpmnSemantics.SemanticProcess.ControlPositionProjection
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.ControlPositionProjection
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Fresh scope insertion retains the complete public payload. The proof uses permutations and
 identity freshness, not comparator equality for potentially different same-id payloads, under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`projectScopes, `scopeDifference]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -19,6 +23,8 @@ def scopePosition (program : Program) (occurrence : RuntimeScopeOccurrence) :
     bpmnElementId := match uniqueDefinitionScope? program occurrence.id.definitionScopeId with
       | some scope => scope.originElementId
       | none => ⟨""⟩ }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`scopePosition]
 
 private theorem insertion_perm (before : α → α → Bool) (value : α) (values : List α) :
     (canonicalInsertBy before value values).Perm (value :: values) := by

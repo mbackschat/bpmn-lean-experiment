@@ -4,10 +4,14 @@ public import BpmnSemantics.SemanticProcess.ScopeCancellation
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
 public import BpmnSemantics.SemanticProcess.ScopeVariableData
 public import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-ENTER-01, PMIS-END-01 and PMIS-CANCEL-01: atomic population entry and exact quiescent retirement. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`removeScopeVariables?]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -117,6 +121,8 @@ def parallelScopeBinding? (entry : ParallelScopeEntry) (state : RuntimeState)
         !(iterations.all fun iteration => parallelScopeBodyBound entry state record iteration.scope) then none
     else some ⟨record, controller, iterations⟩
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`parallelCompletionCondition?]
+
 /-- Successful binding certifies every member's local frame and population accounting. -/
 theorem parallelScopeBinding_population (entry : ParallelScopeEntry) (state : RuntimeState)
     (target : ScopeOccurrenceId) (binding : ParallelScopeBinding)
@@ -173,6 +179,8 @@ def completeParallelScope? (entry : ParallelScopeEntry) (state : RuntimeState)
           let cancelled := (first :: rest).foldl
             (fun current iteration => cancelScopeSubtree current iteration.scope .remove) retired
           some { cancelled with tokens := addToken cancelled.tokens entry.normalOutput record.owner }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeParallelScope?]
 
 /-- PMIS-END-01 retirement is executable once exact binding, body quiescence and typed Process condition data hold. -/
 theorem completeParallelScope_ready (entry : ParallelScopeEntry) (state : RuntimeState)

@@ -12,11 +12,22 @@ import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlPreparation
+import all BpmnSemantics.SemanticProcess.InternalLocalControlSelection
+import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
+import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.Transition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete local-control preparation survives an independent regional execution. The frame
 includes competing selected-join populations, exact token buckets, and index-free publication. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.selectInternalRegional?, `fire?,
+  `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -50,7 +61,7 @@ theorem preparedRegional_removed_censuses (program : Program) (before : RuntimeS
       obtain ⟨record, kind, _, _⟩ := regionalSelection_return_record program before id origin process definition output prepared.selection selected
       rw [kind] at census
       exact ofCensus [output] census
-  | throwError id origin input error handler =>
+  | «throwError» id origin input error handler =>
       obtain ⟨after, fired, _⟩ := prepareInternalRegional_executes program before _ prepared found
       have raw : throwErrorState? before input error handler = some after := by
         simp only [fire?, snapshots] at fired

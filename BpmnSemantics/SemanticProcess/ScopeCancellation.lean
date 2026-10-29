@@ -5,6 +5,9 @@ public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 public import BpmnSemantics.SemanticProcess.CallInstanceClosure
 public import BpmnSemantics.SemanticProcess.SequentialMultiInstance
 import Std.Data.DTreeMap.Internal.Balancing
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.CallInstanceClosure
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Scope-subtree cancellation
 
@@ -16,7 +19,10 @@ boundary route. Activation counters, Process variables, End history, and logical
 cancellation targets.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScopeClaims, `processInstanceClosureWithin,
+  `recordInRegion, `retainedByRegion, `withdrawnByRegion]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -173,6 +179,9 @@ def cancelScopeSubtree (state : RuntimeState) (root : ScopeOccurrenceId)
               activityScopeMatches (cancelledEffectOccurrenceId wait) activity) &&
             !(cancelledIncidents.any fun incident =>
               activityScopeMatches incident.id.effectId activity) } }
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`calledInstanceClosure, `cancelScopeSubtree,
+  `keepScopeOccurrence, `occurrenceInSubtree, `occurrenceInSubtreeWithin, `retainedCancellationRoot]
 
 /-- Regional cancellation preserves exactly the snapshot records whose complete parent occurrences survive its selected disposition. -/
 theorem mem_cancelScopeSubtree_compensationParentContextRetentions_iff

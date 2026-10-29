@@ -1,13 +1,14 @@
 module
 
 public import BpmnSemantics.SemanticProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Operation control places
 
 The token-carrying input and output places of each Semantic Process operation, shared by graph validation and its scope consequences. A place listed here is one the operation reads or produces in a committed run; scope ownership of those places is decided by graph validation.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -129,6 +130,9 @@ def operationControlPlacesShareOwner : SemanticOperation → Bool
   | .completeScope ..
   | .throwError .. | .cancelTransaction .. => false
   | _ => true
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`operationControlPlaces, `operationInputPlaces,
+  `operationOutputs]
 
 /-- A payload-bearing Message Catch Event's outgoing place is one of its same-scope token ports. -/
 theorem awaitPayloadMessage_output_mem_operationControlPlaces (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId) (message : MessageDefinition) (directOutput : DirectCatchEventPayloadOutput) :

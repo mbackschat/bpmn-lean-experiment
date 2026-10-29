@@ -6,7 +6,7 @@ public import BpmnSemantics.TransactionCancellationPublicationFixtures
 kernel reduction reached the 3 GiB ceiling on 2026-09-26. Each module retains the complete
 preceding command chain and its exact publication oracle. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.TransactionCancellationPublicationConformance
 

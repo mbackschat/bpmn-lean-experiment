@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! Public User Task and Timer occurrences are projected independently of scenario admission and execution. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

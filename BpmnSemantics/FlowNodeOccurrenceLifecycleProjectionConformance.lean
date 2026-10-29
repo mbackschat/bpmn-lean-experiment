@@ -13,7 +13,7 @@ public import BpmnSemantics.EventBasedGatewayFixtures
 This module owns independent open-set projection witnesses for boundary subscriptions, event races, and reused wait shapes.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.FlowNodeOccurrenceLifecycleConformance
 

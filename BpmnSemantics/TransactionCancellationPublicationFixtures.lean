@@ -11,7 +11,7 @@ TXC-CANCEL-01, TXC-EMPTY-01, TXC-JOIN-01 and TXC-FAIL-01 before source/profile r
 they establish neither general conformance nor host refinement.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.TransactionCancellationPublicationConformance
 

@@ -3,6 +3,10 @@ module
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
 import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation removal and prepared regions
 
@@ -11,7 +15,10 @@ the additional called-instance ownership test when it uses a region of currently
 Parent-context retention also distinguishes retaining a selected root from removing it.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrenceRegion.contains,
+  `cancelScopeSubtree]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

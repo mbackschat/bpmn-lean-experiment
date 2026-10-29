@@ -19,11 +19,12 @@ public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore
 public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.ValueDomain
+import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
 
 /-! Fixture definitions and executable checks of [`FiniteInternalTransitionConformance`](FiniteInternalTransitionConformance.lean), apart from its theorems so that
 the check driver's closure reaches no proof owner ([AA-05](../docs/ASSURANCE-IMPROVEMENT-REGISTER.md#aa-05)). -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.FiniteInternalTransitionConformance
 

@@ -3,13 +3,23 @@ module
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
 public import BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
+import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.TransitionRecord
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-SELECT-01: exact occurrence execution over the discovery in `InternalOperationOccurrenceDiscovery`,
 which CEA-OCCUR-01 and CEA-QUIESCE-01 reuse for merge-target scope operations. This changing execution
 boundary stays separate from the established alternative-order proof closure.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.internalOperationOccurrences?, `InternalCommutation.resolveInternalOperationOccurrence?,
+  `SemanticOperation.kind]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
@@ -66,6 +76,8 @@ def applyInternalOperationOccurrence? (program : Program) (state : RuntimeState)
   | .reachNoneEnd _ _ input =>
       if unit input then some (reachNoneEndToken state owner input) else none
   | _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyInternalOperationOccurrence?]
 
 /-- Token-offer readiness reads exact scope resolution and owned units, independently of shared data and counters. -/
 theorem applyInternalOperationOccurrence_token_offer_read_frame
@@ -369,6 +381,9 @@ def applyInternalOccurrenceBatch? (program : Program) (state : RuntimeState)
   if batch.program != program || batch.predecessor != state ||
       prepareInternalOccurrenceBatch? program state != some batch then none
   else applyReservedOccurrencePrefix? program state batch.members
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalOccurrencePatch.apply,
+  `applyReservedOccurrencePrefix?, `occurrenceCounterBase?, `occurrenceMemberRevalidated]
 
 /-- Successful reservation rejects repeated public anchors before any member is applied. -/
 theorem prepareInternalOccurrenceBatch_distinct_anchors (program : Program) (state : RuntimeState)

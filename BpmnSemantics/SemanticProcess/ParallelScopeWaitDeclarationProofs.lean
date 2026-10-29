@@ -3,6 +3,9 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 import BpmnSemantics.SemanticProcess.InternalRegionalRemovalValidity
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel scope wait-declaration preservation
 
@@ -10,7 +13,9 @@ RSI-BIND-04 must survive PMIS entry and retirement so later issuance can use
 retained declaration provenance rather than assume reservation freshness.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`issueParallelBodies?, `waitDeclarationsValid]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

@@ -9,7 +9,7 @@ owners. Its runtime arm is projected from the checked operation, so the chain ex
 execution identities and the selected profile.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SequentialMultiInstanceConformance
 

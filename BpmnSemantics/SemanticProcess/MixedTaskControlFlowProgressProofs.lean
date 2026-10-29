@@ -6,10 +6,54 @@ import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAnalysisProjectionProofs
 import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmissionLaws
 import BpmnSemantics.SemanticProcess.StructuredCompositionProgressProofs
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+import all BpmnSemantics.SemanticProcess.ClosureLimit
+import all BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability
+import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
+import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
+import all BpmnSemantics.SemanticProcess.InternalCommutationCore
+import all BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.InternalEndPreparation
+import all BpmnSemantics.SemanticProcess.InternalExecutionFrontier
+import all BpmnSemantics.SemanticProcess.InternalMergePreparation
+import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
+import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
+import all BpmnSemantics.SemanticProcess.InternalTransitionAlternative
+import all BpmnSemantics.SemanticProcess.MergeTargetOperations
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowDataProofs
+import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowLifecycleProofs
+import all BpmnSemantics.SemanticProcess.OperationControlPlaces
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.ScopeDataBearing
+import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCollectionStorageProofs
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskCounterLaws
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
+import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
+import all BpmnSemantics.SemanticProcess.Transition
+import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! MTCF-PROGRESS-01 connects the admitted wait-cut ranks to actual routing transitions; graph certificates alone cannot establish bounded runtime closure. Discovery helpers also require the ordinary profile domain: InternalExecutionFrontier dispatches by identity, whereas programAnalysis checks structure. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalMergeInputAlternatives,
+  `InternalCommutation.mergeExecutionFrontier, `InternalCommutation.ordinaryExecutionFrontier,
+  `InternalCommutation.selectInternalEnd?, `InternalCommutation.sortBy, `InternalCommutation.sortInsertBy,
+  `MixedTaskControlFlow.FirePhase, `MixedTaskControlFlow.OperationAllowed, `MixedTaskControlFlow.isWait,
+  `MixedTaskControlFlow.operationInputs, `MixedTaskControlFlow.operationOutputs,
+  `MixedTaskControlFlow.operationVertex?, `MixedTaskControlFlow.vertexRank?, `SerialBusinessTask.ForeignRuntimeEmpty,
+  `SerialBusinessTask.IssuanceFrame, `SerialBusinessTask.RootFrame, `SerialBusinessTask.RootLifecycle,
+  `SerialBusinessTask.frontierFields, `StructuredComposition.isScopeCompletion, `activateEffect, `activateUserTask,
+  `awaitEffectState?, `awaitUserTaskState?, `chooseState?, `completeQuiescentScope?, `completeScopeState?, `fire?,
+  `reachNoneEndState?, `runningInstance?, `scenarioClosureLimit, `scopeQuiescent]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 
@@ -20,6 +64,8 @@ def positionDepth (analysis : Analysis) (state : RuntimeState) (frontier : Optio
   else match frontier with
     | some vertex => (rank? analysis.ranks vertex.id).getD 0
     | none => match state.control with | .running _ => 1 | _ => 0
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.MixedTaskControlFlow #[`positionDepth]
 
 theorem position_depth_bounded (program : Program) (analysis : Analysis) (state : RuntimeState)
     (frontier : Option Vertex) (analyzed : programAnalysis program = some analysis)
@@ -96,6 +142,8 @@ theorem routed_token_preserves_position (program : Program) (analysis : Analysis
 def RoutingOperation : SemanticOperation → Prop
   | .choose .. | .mergeExclusive .. => True
   | _ => False
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.MixedTaskControlFlow #[`RoutingOperation]
 
 /-- Actual ordered Choice and offered-token Merge firing preserve the same invariant and strictly decrease the admitted rank. -/
 theorem routing_fire_preserves_position (program : Program) (analysis : Analysis)

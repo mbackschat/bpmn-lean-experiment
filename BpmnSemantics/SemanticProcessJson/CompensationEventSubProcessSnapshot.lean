@@ -9,7 +9,7 @@ Strict decoding for the optional hidden Program declaration. Structural scope an
 validity remain semantic admission obligations over the complete Program.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcessJson
 

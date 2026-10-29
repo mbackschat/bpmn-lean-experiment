@@ -7,7 +7,7 @@ public import BpmnSemantics.Experiments.SemanticRepresentations
 This executable checks only the separating witnesses documented for the semantic-representation spike. It makes no BPMN conformance or CIB Seven compatibility claim.
 -/
 
-@[expose] public section
+public section
 
 open BpmnSemantics.Experiments.SemanticRepresentations
 

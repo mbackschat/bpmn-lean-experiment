@@ -2,7 +2,6 @@ module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalRootTerminationValidity
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProjectionShapeProofs
-import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.InternalRegionalCancellationMessageValidity
@@ -13,11 +12,21 @@ import BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
 import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosureLaws
 import BpmnSemantics.SemanticProcess.InternalRegionalReferencePreservation
 public import BpmnSemantics.SemanticProcess.InternalRegionalOwnershipClosure
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
+import all BpmnSemantics.SemanticProcess.InternalRegionalOpenOwnership
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Hosting-root termination retains its parentless root while cancelling all live
 owners. The root is not a public scope start, so the resulting open projection is empty. -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceOwnedBySubtree,
+  `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity,
+  `flowNodeOccurrenceStructuralProgramValidity, `projectOpenFlowNodeOccurrences?, `projectWaits?,
+  `runtimePositionValid, `sortBy, `sortFlowNodeOccurrenceStarts, `transitionAnchor, `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 

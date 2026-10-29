@@ -3,6 +3,10 @@ module
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstancePreservation
 import BpmnSemantics.SemanticProcess.ProfileAdmission
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
+import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
+import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel Multi-Instance shared runtime-state closing selection
 
@@ -11,7 +15,11 @@ controller and region. This module proves those exact selection facts for the pr
 and Timer lookups. It owns no rewrite-preservation or evaluator-lifting result.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyParallelTasks?, `activityBodyTaskClaims,
+  `parallelControllerNamesIdentity, `pendingParallelSlotCount, `pendingParallelTaskIds, `runtimeStateWellFormed,
+  `waitOwnersLive]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

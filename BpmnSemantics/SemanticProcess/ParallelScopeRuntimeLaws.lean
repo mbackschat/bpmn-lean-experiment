@@ -2,11 +2,18 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel scope runtime laws
 
-The preservation laws of Parallel Multi-Instance population entry and retirement, apart from the definitions in [`ParallelScopeRuntime`](ParallelScopeRuntime.lean): a proof edit here rebuilds only the proofs that consume these laws ([interface fanout](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract)).
+The preservation laws of Parallel Multi-Instance population entry and retirement, apart from the definitions in [`ParallelScopeRuntime`](ParallelScopeRuntime.lean): a proof edit here rebuilds only the proofs that consume these laws ([interface fanout](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#contract)).
 -/
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`issueParallelBodies?, `parallelRuntimeActivityId,
+  `parallelScopeBinding?, `parallelScopeBodyBound, `validParallelScopeIterations, `validParallelScopePopulation]
 
 public section
 

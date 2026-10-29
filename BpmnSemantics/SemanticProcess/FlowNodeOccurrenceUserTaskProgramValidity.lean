@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # User Task wait Program validity
 
@@ -10,7 +12,11 @@ aggregate exposes frame and insertion facts to `FlowNodeOccurrenceWaitProgramVal
 without duplicating that account in the other wait-family proofs.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+  `flowNodeOccurrenceOwnerLiveUnique, `operationControlPlaces, `operationControlPlacesShareOwner, `operationOutputs,
+  `userTaskWaitDeclarers]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
@@ -63,6 +69,9 @@ def UserTaskDirectContinuationDomain (program : Program) : Prop :=
   ∀ operation ∈ program.operations, match operation with
     | .awaitParallelMultiInstanceUserTask .. => False
     | _ => True
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceUserTaskProgramValidity,
+  `userTaskWaitValid]
 
 /-- Valid waits retain a real owned declaring port, so completion can restore its continuation token. -/
 theorem flowNodeOccurrenceUserTaskProgramValidity_output_binding (program : Program)

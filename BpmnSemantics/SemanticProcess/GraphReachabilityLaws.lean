@@ -2,13 +2,19 @@ module
 
 public import BpmnSemantics.SemanticProcess.GraphValidation
 import Std.Data.DTreeMap.Internal.Operations
+import all BpmnSemantics.SemanticProcess.GraphValidation
+import all BpmnSemantics.SemanticProcess.GraphReachability
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Graph-reachability laws
 
 This module relates executable bounded search and saturation certificates to declarative paths. It does not participate in semantic transitions.
 -/
 
-@[expose] public section
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`acyclicClosed, `directedPathEdges, `operationOutputs,
+  `reachableNodesWithin, `reachableWithin, `reachedClosed, `reachedSet, `successors]
+
+public section
 
 namespace BpmnSemantics.SemanticProcess
 

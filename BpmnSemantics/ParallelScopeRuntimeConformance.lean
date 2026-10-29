@@ -9,16 +9,6 @@ public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.CheckedGraphValidation
 import BpmnSemantics.SemanticProcess.CallActivity
-import all Init.Data.Repr
-import all Init.Data.List.Sort.Basic
-import all Init.Data.Ord.String
-import all Lean.Data.Json.Basic
-import all Std.Data.TreeMap.Raw.Basic
-import all Std.Data.DTreeMap.Raw.Basic
-import all Std.Data.DTreeMap.Internal.Def
-import all Std.Data.DTreeMap.Internal.Balancing
-import all Std.Data.DTreeMap.Internal.Operations
-import all Std.Data.DTreeMap.Internal.Queries
 public meta import BpmnSemantics.Scenario
 public meta import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 public meta import BpmnSemantics.SemanticProcess.ParallelScopeData
@@ -26,10 +16,15 @@ public meta import BpmnSemantics.SemanticProcessContract
 public meta import BpmnSemantics.SemanticProcess.InternalTransitionAlternative
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceUserTaskProgramValidity
 public import BpmnSemantics.SemanticProcess.InternalCommutationRegion
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
+import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ScopeCompletion
 
 /-! PMIS lifecycle fixtures distinguish exact body retirement from whole-Activity cancellation and retain unrelated ownership. -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.ParallelScopeRuntimeConformance
 

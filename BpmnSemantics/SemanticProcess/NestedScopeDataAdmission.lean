@@ -14,7 +14,7 @@ availability scan needs; the walk is analysis evidence, never serialized executa
 Mapping grammar, name policy and literal bounds are `SerialBusinessTask`'s and `EffectData`'s.
 -/
 
-@[expose] public section
+public section
 
 namespace BpmnSemantics.SemanticProcess
 
