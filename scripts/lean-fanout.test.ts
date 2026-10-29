@@ -374,6 +374,22 @@ test("an anonymous instance is named by its class, without binders, across heade
     ["instance : Decidable (n = n)", "instance : Inhabited (Fin (n + 1))", "instance : Repr (Fin n)"]);
 });
 
+// `@[no_expose]` hides a body Lean would expose by default, an abbrev's or a non-Prop instance's as well as a def's in an
+// `@[expose]` section (Lean 4.34.1 Elab/MutualDef.lean:1381-1384); counting those as exposed listed hidden instances in
+// the allowance (2026-10-29).
+test("`@[no_expose]` hides an instance, an abbrev, and a def in an `@[expose]` section", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const sources = [
+    module("Pkg/Hub.lean", [
+      "public section", "", "@[no_expose] instance : Decidable (1 = 1) := inferInstance", "",
+      "@[no_expose]", "abbrev quiet : Nat := 0", "", "abbrev loud : Nat := 0", "", "end", "",
+      "@[expose] public section", "", "@[no_expose] def inner : Nat := 0", "", "def outer : Nat := 0", "", "end"].join("\n")),
+    module("Pkg/Uses.lean", "import all Pkg.Hub\n\ntheorem t : inner = quiet := by rw [inner, outer, quiet, loud]"),
+  ];
+  assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Hub"), ["loud"]);
+  assert.deepEqual(leanHiddenRewrites(sources).get("Pkg.Uses"), ["Pkg.Hub.inner", "Pkg.Hub.quiet"]);
+});
+
 // An indented command is still a command, and attributes and modifiers may span lines before their keyword; a cold
 // review hid exposures behind each (2026-10-28).
 test("indented commands and attributes or modifiers split across lines expose as Lean reads them", () => {

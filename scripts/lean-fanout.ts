@@ -140,8 +140,9 @@ function hiddenDefinitions(source: string): HiddenDefinitions {
   const recursive = new Set<string>();
   if (!leanHeader(source).isModule) return { names, recursive };
   const lines = source.split("\n");
-  for (const { line: index, keyword, name, attributes, inExposedScope } of declarations(source)) {
-    if (keyword !== "def" || inExposedScope || exposes(attributes)) continue;
+  for (const declaration of declarations(source)) {
+    if (bodyExported(declaration)) continue;
+    const { line: index, name } = declaration;
     names.add(name);
     const end = lines.findIndex((next, at) => at > index && /^[^\s|]/u.test(next) && !/^(?:termination_by|decreasing_by)\b/u.test(next));
     const block = lines.slice(index, end === -1 ? lines.length : end).join("\n");
@@ -333,8 +334,8 @@ export function leanBodyEditFanouts(sources: LeanSources): Map<string, string[]>
  */
 export function leanExposedDefinitions(sources: LeanSources): Map<string, string[]> {
   return new Map(sources.map(({ path, source }) => {
-    const names = leanHeader(source).isModule ? declarations(source).filter(({ attributes, keyword, isPrivate, inExposedScope }) =>
-      !isPrivate && !inExposedScope && (keyword !== "def" || exposes(attributes))).map(({ name }) => name) : [];
+    const names = leanHeader(source).isModule ? declarations(source).filter((declaration) =>
+      !declaration.isPrivate && !declaration.inExposedScope && bodyExported(declaration)).map(({ name }) => name) : [];
     return [path.replace(/\.lean$/u, "").replaceAll("/", "."), names.sort()];
   }));
 }
@@ -355,7 +356,15 @@ const declarationLine = new RegExp(String.raw`^((?:@\[[^\]]*\]\s*)*)((?:${modifi
 const declarationPrefix = new RegExp(String.raw`^(?:@\[[^\]]*\]\s*)+(?:${modifier}\s*)*$|^(?:${modifier}\s*)+$`, "u");
 /** Whether an attribute list opened on this line is still unclosed. */
 const openAttribute = (line: string) => /@\[[^\]]*$/u.test(line);
-const exposes = (attributes: string) => /(?<![\w])expose\b/u.test(attributes);
+/**
+ * Whether a declaration's body is exported, as Lean 4.34.1 decides it (Elab/MutualDef.lean:1346-1384): `@[no_expose]`
+ * hides it, `@[expose]` exports it, and otherwise an abbrev, an instance or a def in an `@[expose]` section is exported.
+ * A Prop-valued instance is hidden too, which this reading of the source cannot tell, so it counts as exported.
+ */
+function bodyExported({ keyword, attributes, inExposedScope }: Declaration): boolean {
+  if (/\bno_expose\b/u.test(attributes)) return false;
+  return /(?<![\w])expose\b/u.test(attributes) || keyword !== "def" || inExposedScope;
+}
 
 /**
  * Every `def`, `instance` and `abbrev` with its attributes, including attributes and modifiers on the lines above its
