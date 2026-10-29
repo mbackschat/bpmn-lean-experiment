@@ -7,8 +7,34 @@ import {
   type SourceMeasurement,
 } from "./source-measure.ts";
 
-/** Narrow large-file exceptions, fixed by the immutable owner-approval baseline below. */
+/** Narrow large-file exceptions in force; each must equal an approval the baseline below records. */
 export const reviewedLargeFiles: ReadonlyMap<string, string> = new Map();
+
+/**
+ * Large-file exceptions the owner approved, recorded in a commit of their own. They take effect only once a later
+ * commit names that commit as the baseline and lists them in `reviewedLargeFiles`, so no commit approves the
+ * exceptions it activates.
+ */
+export const ownerApprovedLargeFiles: ReadonlyMap<string, string> = new Map([
+  ["BpmnSemantics/SemanticProcess/InternalCommutationStateFrames.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/InternalRegionalPairLifecycleFrame.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/MixedTaskControlFlowLifecycleProofs.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/ParallelMultiInstanceRuntimeStateEntryPreservation.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/ParallelScopeCommandReplay.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/ParallelScopeLifetimeAccounting.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/ParallelScopeParentAccounting.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/ParallelScopeProgress.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/ParallelScopeRetirementProgress.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/SequentialScopeRuntimeValidityProofs.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/SequentialScopeTransition.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/SerialBusinessTaskLifecycleProofs.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/SerialBusinessTaskProgressProofs.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/StructuredCompositionAdmissionProofs.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/StructuredCompositionClosureProofs.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/StructuredCompositionControlProofs.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+  ["BpmnSemantics/SemanticProcess/StructuredCompositionDataProofs.lean", "Owner decision A (2026-10-29): the hidden-bodies conversion grew only this module's import header, with `import all` lines the minimizer proved necessary; its declarations did not grow, so a split would only shorten the header."],
+]);
 const sourceHygieneExceptionApprovalBaseline = "3467377";
 
 export type SourceHygieneAssessment = Readonly<{
@@ -87,15 +113,26 @@ export function baselineReviewedLargeFileApprovals(): ReadonlyMap<string, string
     0,
     "the source-hygiene approval baseline must remain an ancestor of HEAD",
   );
-  const baselinePolicy = execFileSync(
+  return ownerApprovalsIn(execFileSync(
     "git",
     ["show", `${sourceHygieneExceptionApprovalBaseline}:scripts/source-hygiene-policy.ts`],
     { encoding: "utf8" },
-  );
-  assert.match(
-    baselinePolicy,
-    /export const reviewedLargeFiles: ReadonlyMap<string, string> = new Map\(\);/u,
-    "the immutable owner-approved baseline must declare the empty exception set",
-  );
-  return new Map();
+  ));
+}
+
+/**
+ * The `ownerApprovedLargeFiles` entries a policy source records, or none when it records no such constant. The source
+ * is read as text, because a committed revision cannot import its workspace dependencies; an entry that is not a pair
+ * of string literals throws rather than reading as no approval.
+ */
+export function ownerApprovalsIn(policySource: string): ReadonlyMap<string, string> {
+  const declaration = /export const ownerApprovedLargeFiles: ReadonlyMap<string, string> = new Map\((?:\[([\s\S]*?)\n\])?\);/u
+    .exec(policySource);
+  if (declaration?.[1] === undefined) return new Map();
+  const literal = String.raw`"((?:[^"\\]|\\.)*)"`;
+  return new Map(declaration[1].split("\n").filter((line) => line.trim() !== "").map((line) => {
+    const entry = new RegExp(String.raw`^\s*\[${literal},\s*${literal}\],?\s*$`, "u").exec(line);
+    if (entry === null) throw new Error(`unreadable owner approval: ${line.trim()}`);
+    return [JSON.parse(`"${entry[1]}"`), JSON.parse(`"${entry[2]}"`)] as const;
+  }));
 }

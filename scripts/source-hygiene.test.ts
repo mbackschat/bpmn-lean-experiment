@@ -27,6 +27,8 @@ import {
 import {
   assessSourceHygiene,
   baselineReviewedLargeFileApprovals,
+  ownerApprovalsIn,
+  ownerApprovedLargeFiles,
   reviewedLargeFiles,
   sourceHygieneApprovalFindings,
 } from "./source-hygiene-policy.ts";
@@ -197,6 +199,25 @@ test("rejects a large-source exception absent from owner approval", () => {
     ),
     ["large.ts: exception lacks owner approval"],
   );
+});
+
+// An approval is recorded in its own commit, which a later commit names as the baseline, so no commit approves the
+// exceptions it activates; a baseline that records none approves none.
+test("reads the owner approvals a baseline policy records", () => {
+  assert.deepEqual(ownerApprovalsIn("export const reviewedLargeFiles: ReadonlyMap<string, string> = new Map();\n"), new Map());
+  assert.deepEqual(ownerApprovalsIn([
+    "export const ownerApprovedLargeFiles: ReadonlyMap<string, string> = new Map([",
+    '  ["Pkg/Large.lean", "header growth, \\"quoted\\""],',
+    '  ["Pkg/Other.lean", "second"],',
+    "]);",
+  ].join("\n")), new Map([["Pkg/Large.lean", 'header growth, "quoted"'], ["Pkg/Other.lean", "second"]]));
+  assert.throws(() => ownerApprovalsIn("export const ownerApprovedLargeFiles: ReadonlyMap<string, string> = new Map([\n  [path, rationale],\n]);"),
+    /unreadable owner approval/u);
+});
+
+// A later commit reads these approvals from this file's text, so the text must read back as the declared map.
+test("the recorded owner approvals read back from the policy text as declared", () => {
+  assert.deepEqual(ownerApprovalsIn(readFileSync("scripts/source-hygiene-policy.ts", "utf8")), ownerApprovedLargeFiles);
 });
 
 test("binds large-source exceptions to the owner-approved baseline", () => {
