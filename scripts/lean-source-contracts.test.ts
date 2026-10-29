@@ -32,7 +32,9 @@ import {
 } from "./worktree-source-read.ts";
 
 /** The line that ends a declaration block: the next declaration or an `end`. Callers scan comment-masked code. */
-const nextDeclaration = new RegExp(`^${leanDeclarationPrefix()}(?:def|theorem|structure|inductive|abbrev|end)\\b`, "u");
+// A command that starts a new top-level item ends the previous declaration's extent, `run_meta` included: step D of the
+// hidden-bodies conversion (2026-10-29) declares an evaluator's equations privately right after its relation.
+const nextDeclaration = new RegExp(`^${leanDeclarationPrefix()}(?:def|theorem|lemma|structure|inductive|abbrev|instance|example|end|run_meta)\\b`, "u");
 
 export type SourceViolation = Readonly<{
   path: string;
@@ -471,6 +473,21 @@ inductive CompensationFrontierRefusalStep : Prop where
   | refused : CompensationFrontierRefusalStep
 `;
   assert.deepEqual(leanSourceViolations(path, independent), []);
+
+  // A relation ends at the next command: a `run_meta` that declares the evaluator's equations privately
+  // (BpmnSemantics/PrivateEquationLemmas.lean) names the evaluator outside the relation.
+  const followedByCommand = `/-! Compensation frontier. -/
+
+inductive CompensationFrontierStep : Nat → Prop where
+  | activate (selected : activateHandlers = some 1) :
+      CompensationFrontierStep 1
+
+run_meta privateEquations \`BpmnSemantics.SemanticProcess #[\`activateCompensationFrontier]
+
+inductive CompensationFrontierRefusalStep : Prop where
+  | refused : CompensationFrontierRefusalStep
+`;
+  assert.deepEqual(leanSourceViolations(path, followedByCommand), []);
 });
 
 test("Transition relations reject evaluator-defined successors", () => {
