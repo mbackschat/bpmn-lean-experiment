@@ -6,9 +6,12 @@ import test from "node:test";
 
 import {
   droppedTargets, importAllLevels, importAllSearch, importAllTargets, importAllVariant, leanBuildRoots, leanEnvironment, lostOpens,
-  minimizeImportAlls, type MinimizeHost, withImports,
+  minimizeImportAlls, type MinimizeHost, type MinimizeRun, withImports,
 } from "./lean-import-all-minimize.ts";
 import { leanHeader } from "./lean-source-analysis.ts";
+
+// Generous for the fake trees; a real run declares its cost (Rule 2).
+const run: MinimizeRun = { parallel: 2, maxCompiles: 1000 };
 
 /** Drives the search against a compile oracle that succeeds exactly when every needed line is kept. */
 function minimize(candidates: string[], needed: ReadonlySet<string>): { kept: string[]; compiles: number } {
@@ -182,7 +185,7 @@ test("a module keeps what its upstream dropped, so every module still compiles a
   const texts = { A: ["module", "import all B"], B: ["module", "import all X"], X: ["module"] };
   const root = fakeTree(texts);
   const { host, compiles } = fakeBuild(root, new Map([["A", { bodies: ["X"] }], ["B", {}], ["X", {}]]));
-  await minimizeImportAlls(root, files(texts), files(texts), host, 2, { libraries: Object.keys(texts), executables: [] });
+  await minimizeImportAlls(root, files(texts), files(texts), host, run, { libraries: Object.keys(texts), executables: [] });
   assert.ok(["A", "B", "X"].every(compiles));
   assert.deepEqual(snapshot(root, ["A.lean", "B.lean"]),
     [["module", "import all X", "", "def x := 1"].join("\n"), ["module", "", "def x := 1"].join("\n")]);
@@ -194,7 +197,7 @@ test("a chain importer keeps the declarations its opened module stopped importin
   const texts = { A: ["module", "import all B"], B: ["module", "import all Y"], Y: ["module"] };
   const root = fakeTree(texts);
   const { host, compiles } = fakeBuild(root, new Map([["A", { bodies: ["B"], declarations: ["Y"] }], ["B", {}], ["Y", {}]]));
-  await minimizeImportAlls(root, files(texts), ["B.lean"], host, 2, { libraries: Object.keys(texts), executables: [] });
+  await minimizeImportAlls(root, files(texts), ["B.lean"], host, run, { libraries: Object.keys(texts), executables: [] });
   assert.ok(compiles("A"));
 });
 
@@ -206,7 +209,7 @@ test("a level's build never compiles a run module that is still waiting for its 
   };
   const root = fakeTree(texts);
   const { host, compiles } = fakeBuild(root, new Map([["B", {}], ["X", {}], ["C", {}], ["H", { bodies: ["X"] }], ["L", {}]]));
-  await minimizeImportAlls(root, files(texts), ["B.lean"], host, 2, { libraries: Object.keys(texts), executables: [] });
+  await minimizeImportAlls(root, files(texts), ["B.lean"], host, run, { libraries: Object.keys(texts), executables: [] });
   assert.ok(["B", "C", "H", "L"].every(compiles));
 });
 
@@ -215,7 +218,7 @@ test("a file outside the module system keeps its whole import closure", async ()
   const texts = { F: ["import M"], M: ["module", "import all X"], X: ["module"] };
   const root = fakeTree(texts);
   const { host, compiles, closure } = fakeBuild(root, new Map([["F", { declarations: ["X"] }], ["M", {}], ["X", {}]]));
-  await minimizeImportAlls(root, files(texts), ["M.lean"], host, 2, { libraries: Object.keys(texts), executables: [] });
+  await minimizeImportAlls(root, files(texts), ["M.lean"], host, run, { libraries: Object.keys(texts), executables: [] });
   assert.ok(closure("F").has("X") && compiles("F"));
   assert.deepEqual(snapshot(root, ["F.lean"]), [["import M", "import X", "", "def x := 1"].join("\n")]);
 });
@@ -226,11 +229,11 @@ test("only files the build compiles change, and a file outside the module system
   const root = fakeTree(texts);
   const { host, closure } = fakeBuild(root, new Map([["F1", {}], ["F2", {}], ["Legacy", {}], ["M", {}], ["X", {}]]));
   const legacy = snapshot(root, ["Legacy.lean"]);
-  await minimizeImportAlls(root, files(texts), ["M.lean"], host, 2, { libraries: [], executables: ["F2", "X"] });
+  await minimizeImportAlls(root, files(texts), ["M.lean"], host, run, { libraries: [], executables: ["F2", "X"] });
   assert.deepEqual(snapshot(root, ["Legacy.lean", "F1.lean", "F2.lean"]),
     [...legacy, ["import M", "import X", "", "def x := 1"].join("\n"), ["import F1", "", "def x := 1"].join("\n")]);
   assert.ok(closure("F2").has("X"));
-  await assert.rejects(minimizeImportAlls(root, files(texts), ["F1.lean"], host, 2, { libraries: [], executables: ["F2", "X"] }),
+  await assert.rejects(minimizeImportAlls(root, files(texts), ["F1.lean"], host, run, { libraries: [], executables: ["F2", "X"] }),
     /not a module the build compiles/u);
   assert.ok(!existsSync(path.join(root, ".minimize", "originals")));
 });
@@ -241,7 +244,7 @@ test("a driver no root imports still gets back what it no longer reaches", async
   const texts = { Lib: ["module", "import Lib.M"], "Lib.M": ["module", "import all X"], X: ["module"], "Lib.Driver": ["import Lib.M"] };
   const root = fakeTree(texts);
   const { host, closure } = fakeBuild(root, new Map([["Lib", {}], ["Lib.M", {}], ["X", {}], ["Lib.Driver", {}]]));
-  await minimizeImportAlls(root, files(texts), ["Lib.M.lean"], host, 2, { libraries: ["Lib"], executables: [] });
+  await minimizeImportAlls(root, files(texts), ["Lib.M.lean"], host, run, { libraries: ["Lib"], executables: [] });
   assert.ok(closure("Lib.Driver").has("X"));
 });
 
@@ -257,7 +260,7 @@ test("a run changes only import lines of its modules and leaves every other file
   const root = fakeTree(texts);
   const { host } = fakeBuild(root, new Map([["A", { bodies: ["X"] }], ["B", {}], ["X", {}], ["Q", {}], ["O", {}]]));
   const untouched = snapshot(root, ["O.lean", "Q.lean", "X.lean"]);
-  await minimizeImportAlls(root, files(texts), ["B.lean"], host, 2, { libraries: Object.keys(texts), executables: [] });
+  await minimizeImportAlls(root, files(texts), ["B.lean"], host, run, { libraries: Object.keys(texts), executables: [] });
   assert.deepEqual(snapshot(root, ["O.lean", "Q.lean", "X.lean"]), untouched);
   for (const file of ["A.lean", "B.lean"]) {
     assert.deepEqual(readFileSync(path.join(root, file), "utf8").split("\n").filter((line) => !line.startsWith("import ")),
@@ -270,18 +273,18 @@ test("a known failing module and its importers keep their environment without be
   const texts = { A: ["module", "import all B"], B: ["module", "import all X"], X: ["module"], D: ["module", "import A"] };
   const root = fakeTree(texts);
   const { host, builds } = fakeBuild(root, new Map([["A", { bodies: ["X", "Never"] }], ["B", {}], ["X", {}], ["D", {}]]));
-  await minimizeImportAlls(root, files(texts), files(texts), host, 2, { libraries: Object.keys(texts), executables: [] }, new Set(["A"]));
+  await minimizeImportAlls(root, files(texts), files(texts), host, run, { libraries: Object.keys(texts), executables: [] }, new Set(["A"]));
   assert.deepEqual(importAllTargets(readFileSync(path.join(root, "A.lean"), "utf8")), ["B", "X"]);
   assert.ok(builds.every((modules) => !modules.includes("A") && !modules.includes("D")));
 });
 
 async function assertRestoredFailure(texts: Readonly<Record<string, ReadonlyArray<string>>>, named: ReadonlyArray<string>,
   needs: ReadonlyMap<string, Readonly<{ bodies?: string[]; declarations?: string[] }>>, message: RegExp,
-  statuses?: ReadonlyMap<string, string>) {
+  statuses?: ReadonlyMap<string, string>, limits: MinimizeRun = run) {
   const root = fakeTree(texts);
   const { host } = fakeBuild(root, needs, statuses);
   const before = snapshot(root, files(texts));
-  await assert.rejects(minimizeImportAlls(root, files(texts), named, host, 2, { libraries: Object.keys(texts), executables: [] }), message);
+  await assert.rejects(minimizeImportAlls(root, files(texts), named, host, limits, { libraries: Object.keys(texts), executables: [] }), message);
   assert.deepEqual(snapshot(root, files(texts)), before);
   assert.ok(!existsSync(path.join(root, ".minimize", "originals")));
 }
@@ -301,7 +304,7 @@ test("a module that does not build before the run stops it before any search", a
   const root = fakeTree(texts);
   const { host } = fakeBuild(root, new Map([["A", { bodies: ["Never"] }], ["X", {}]]));
   const searched = { ...host, startWorker: () => assert.fail("the search started") };
-  await assert.rejects(minimizeImportAlls(root, files(texts), ["A.lean"], searched, 2, { libraries: ["A", "X"], executables: [] }),
+  await assert.rejects(minimizeImportAlls(root, files(texts), ["A.lean"], searched, run, { libraries: ["A", "X"], executables: [] }),
     /must build before the run/u);
   assert.deepEqual(snapshot(root, files(texts)), [["module", "import all X", "", "def x := 1"].join("\n"), ["module", "", "def x := 1"].join("\n")]);
   assert.ok(!existsSync(path.join(root, ".minimize", "originals")));
@@ -313,5 +316,12 @@ test("a run refuses `import all` lines it cannot edit and the originals of an in
   const texts = { A: ["module", "import all X"], X: ["module"] };
   const root = fakeTree(texts);
   mkdirSync(path.join(root, ".minimize", "originals"), { recursive: true });
-  await assert.rejects(minimizeImportAlls(root, files(texts), ["A.lean"], fakeBuild(root, new Map([["A", {}], ["X", {}]])).host, 2, { libraries: ["A", "X"], executables: [] }), /interrupted/u);
+  await assert.rejects(minimizeImportAlls(root, files(texts), ["A.lean"], fakeBuild(root, new Map([["A", {}], ["X", {}]])).host, run, { libraries: ["A", "X"], executables: [] }), /interrupted/u);
+});
+
+// A run is declared with its cost and stops at it instead of compiling on for days (owner direction, 2026-10-29).
+test("a run that would exceed its declared compiles stops and restores every file", async () => {
+  await assertRestoredFailure({ A: ["module", "import all X", "import all Y", "import all Z"], X: ["module"], Y: ["module"], Z: ["module"] },
+    ["A.lean"], new Map([["A", { bodies: ["X"] }], ["X", {}], ["Y", {}], ["Z", {}]]), /above its declared 2 compiles/u, undefined,
+    { parallel: 2, maxCompiles: 2 });
 });

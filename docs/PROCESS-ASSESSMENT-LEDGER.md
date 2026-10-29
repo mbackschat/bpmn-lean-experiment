@@ -50,7 +50,7 @@ Dispositions are a closed set:
 
 | Task | Current findings | Retained recurrence evidence |
 |---|---|---|
-| Plan scope, bounds and required consumers | [01](#finding-01), [05](#finding-05), [07](#finding-07), [16](#finding-16), [17](#finding-17), [26](#finding-26), [27](#finding-27), [52](#finding-52), [58](#finding-58), [77](#finding-77) | [01](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-01), [17](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-17), [58](process-assessment/VERIFICATION-LEDGER.md#finding-58) |
+| Plan scope, bounds and required consumers | [01](#finding-01), [05](#finding-05), [07](#finding-07), [16](#finding-16), [17](#finding-17), [26](#finding-26), [27](#finding-27), [52](#finding-52), [58](#finding-58), [77](#finding-77), [87](#finding-87) | [01](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-01), [17](process-assessment/PLANNING-AND-OWNERSHIP-LEDGER.md#finding-17), [58](process-assessment/VERIFICATION-LEDGER.md#finding-58) |
 | Establish claims and independent semantic evidence | [02](#finding-02), [11](#finding-11), [12](#finding-12), [41](#finding-41), [42](#finding-42), [43](#finding-43), [44](#finding-44), [46](#finding-46), [47](#finding-47), [48](#finding-48), [51](#finding-51), [54](#finding-54), [62](#finding-62) | [02](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-02), [12](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-12), [46](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-46), [47](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-47), [54](process-assessment/SEMANTIC-EVIDENCE-LEDGER.md#finding-54) |
 | Read gate results and measure resources | [03](#finding-03), [09](#finding-09), [18](#finding-18), [19](#finding-19), [24](#finding-24), [32](#finding-32), [40](#finding-40), [57](#finding-57), [60](#finding-60), [75](#finding-75), [76](#finding-76), [78](#finding-78), [82](#finding-82), [85](#finding-85) | [03](process-assessment/VERIFICATION-LEDGER.md#finding-03), [09](process-assessment/VERIFICATION-LEDGER.md#finding-09), [24](process-assessment/VERIFICATION-LEDGER.md#finding-24), [32](process-assessment/VERIFICATION-LEDGER.md#finding-32) |
 | Build guards and trustworthy harnesses | [08](#finding-08), [13](#finding-13), [21](#finding-21), [22](#finding-22), [25](#finding-25), [31](#finding-31), [33](#finding-33), [34](#finding-34), [38](#finding-38), [39](#finding-39), [66](#finding-66), [67](#finding-67), [68](#finding-68), [72](#finding-72) | [08](process-assessment/VERIFICATION-LEDGER.md#finding-08), [13](process-assessment/VERIFICATION-LEDGER.md#finding-13), [22](process-assessment/VERIFICATION-LEDGER.md#finding-22), [25](process-assessment/VERIFICATION-LEDGER.md#finding-25), [31](process-assessment/VERIFICATION-LEDGER.md#finding-31), [34](process-assessment/VERIFICATION-LEDGER.md#finding-34), [68](process-assessment/VERIFICATION-LEDGER.md#finding-68) |
@@ -1645,6 +1645,23 @@ Evidence
 **First observed:** the `import all` minimizer of the build modularity conversion on 2026-10-28.
 
 The minimizer assumed a module's imports change only its own private scope, but `import all` opens transitively along chains and a plain file opens its whole closure (Lean v4.34.1 `Environment.lean:2125-2182`, `Elab/Import.lean:150-156`), so its trim broke importers it never compiled; tests now lock chains, drivers and build scope. The step B repair driver then assumed a stuck `decide` means a decision that does not reduce inside a module, and made 125 fixtures plain, although Lean names only the outermost stuck definition and an `import all` of the hidden callee below it repairs the decision; one plain fixture then exceeded the `-M2048` ceiling, and a round that could not change a plain file repeated for nine rounds. Both results were reverted in full. Each script did what its declaration said, so a declaration check cannot see the class, and the driver is a one-off that Rule 3 keeps out of the repository; question 17 stands in for the guard.
+
+### Finding 87
+
+A long bulk run started without an estimate of its cost, so it would have compiled for days and then discarded its work at its deadline.
+
+Instances
+: 1
+
+Disposition
+: `executable guard`
+
+Evidence
+: [minimizer compile budget](../scripts/lean-import-all-minimize.test.ts), [Rule 2](../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change)
+
+**First observed:** step C of the build modularity conversion on 2026-10-28 and 2026-10-29.
+
+The `import all` minimizer started over 11,331 lines in 16 levels, sized by the light first levels. After 2 h 16 min it had spent 3,261 compiles on 1,064 lines, its throughput had fallen from about 1,960 to about 200 compiles an hour, and the remaining levels, with 4,381 lines in the conformance fixtures of level 11, projected to 50 to 150 hours; each level's ten-hour worker deadline would have stopped the run and restored every file. It was stopped through its stop marker. The controls: Rule 2 declares every bulk script's cost, extrapolated from its heaviest units, and every other run expected to exceed 30 minutes declares its cost as well; the minimizer refuses to run without `--max-compiles` and stops and restores before it would compile more.
 
 ## Update rule
 

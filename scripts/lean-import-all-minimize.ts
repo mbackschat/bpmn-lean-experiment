@@ -45,9 +45,12 @@
  *   the run does not search loses any part of its environment; the `import all` lines and the import lines of the
  *   files it touches never grow in total. The run checks the totals after every level and everything at the end, and
  *   restores every file when a check fails.
+ * - Cost: the caller declares the run's compiles with `--max-compiles`, estimated from timed compiles of its heaviest
+ *   modules; the run stops and restores every file before it would compile more. The conversion's run spent 3,261
+ *   compiles on its first 1,064 candidate lines, and each compile grows with the module (2026-10-29).
  *
- * Usage: node scripts/lean-import-all-minimize.ts [--parallel 2] [--deadline-seconds 36000] [--failing <list>]
- *   <Module.lean>...
+ * Usage: node scripts/lean-import-all-minimize.ts --max-compiles <declared cost> [--parallel 2] [--deadline-seconds 36000]
+ *   [--failing <list>] <Module.lean>...
  */
 
 import { spawn } from "node:child_process";
@@ -292,13 +295,16 @@ export type MinimizeHost = Readonly<{
   build: (modules: ReadonlyArray<string>) => Promise<number>;
 }>;
 
+/** How a run spends its compiles: at most `parallel` at once and its declared cost, `maxCompiles`, in all. */
+export type MinimizeRun = Readonly<{ parallel: number; maxCompiles: number }>;
+
 /**
  * Minimizes the named files and every module whose chains open one, level by level, and returns a one-line summary.
  * `sources` lists every Lean file of the tree relative to `root`, `buildRoots` what the build compiles from, and
  * `failing` the modules that do not compile.
  */
 export async function minimizeImportAlls(root: string, sources: ReadonlyArray<string>, files: ReadonlyArray<string>,
-  host: MinimizeHost, parallel: number, buildRoots: Readonly<{ libraries: ReadonlyArray<string>; executables: ReadonlyArray<string> }>,
+  host: MinimizeHost, run: MinimizeRun, buildRoots: Readonly<{ libraries: ReadonlyArray<string>; executables: ReadonlyArray<string> }>,
   failing: ReadonlySet<string> = new Set()): Promise<string> {
   const moduleOf = (file: string) => file.replace(/\.lean$/u, "").replaceAll("/", ".");
   const fileOf = new Map(sources.map((file) => [moduleOf(file), file]));
@@ -385,6 +391,7 @@ export async function minimizeImportAlls(root: string, sources: ReadonlyArray<st
           searched.add(module);
           return;
         }
+        if (jobs >= run.maxCompiles) throw new Error(`the run would compile above its declared ${run.maxCompiles} compiles`);
         const job = `j${jobs++}`;
         write(module, step.value);
         writeFileSync(path.join(directory, "queue", `${job}.tmp`), host.jobPath(fileOf.get(module)!));
@@ -394,7 +401,7 @@ export async function minimizeImportAlls(root: string, sources: ReadonlyArray<st
       const pending = [...level];
       while (pending.length > 0 || active.size > 0) {
         if (workerExited) throw new Error("the compile worker exited before the level's search finished");
-        while (pending.length > 0 && active.size < parallel) {
+        while (pending.length > 0 && active.size < run.parallel) {
           const module = pending.shift()!;
           const start = withImports(originals.get(module)!, "all ", lostOpens(before, after, module));
           if (blocked.has(module)) {
@@ -454,11 +461,12 @@ async function main(): Promise<void> {
     return at === -1 ? undefined : args.splice(at, 2)[1];
   };
   const parallel = Number(option("--parallel") ?? 2);
+  const maxCompiles = Number(option("--max-compiles"));
   const deadline = Number(option("--deadline-seconds") ?? 36000);
   const failingList = option("--failing");
   const files = args;
-  if (files.length === 0 || !Number.isInteger(parallel) || parallel < 1) {
-    throw new Error("usage: node scripts/lean-import-all-minimize.ts [--parallel 2] [--deadline-seconds 36000] [--failing <list>] <Module.lean>...");
+  if (files.length === 0 || !Number.isInteger(parallel) || parallel < 1 || !Number.isInteger(maxCompiles) || maxCompiles < 1) {
+    throw new Error("usage: node scripts/lean-import-all-minimize.ts --max-compiles <declared cost> [--parallel 2] [--deadline-seconds 36000] [--failing <list>] <Module.lean>...");
   }
   const failing = new Set(failingList === undefined ? [] : readFileSync(failingList, "utf8").split("\n").filter(Boolean));
   const leanArgs = leanArguments(readFileSync("lakefile.toml", "utf8"));
@@ -474,7 +482,7 @@ async function main(): Promise<void> {
     }),
     build: (modules) => exit(spawn("./scripts/lake.sh", ["build", ...modules], { stdio: "inherit" })),
   };
-  process.stdout.write(`${await minimizeImportAlls(".", worktreeLeanSourceFiles(), files, host, parallel,
+  process.stdout.write(`${await minimizeImportAlls(".", worktreeLeanSourceFiles(), files, host, { parallel, maxCompiles },
     leanBuildRoots(readFileSync("lakefile.toml", "utf8")), failing)}\n`);
 }
 
