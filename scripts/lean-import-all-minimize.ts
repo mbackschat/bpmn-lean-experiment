@@ -38,8 +38,9 @@
  *   without.
  * - Scope: among the files the build compiles, the import lines of the named modules, of every module whose `import all`
  *   chains open one of them, and of every file outside the module system. A searched module's `import all` lines stay,
- *   become plain imports or disappear, and its inherited lines are searched the same way; any other file only gains
- *   the inherited lines that keep its environment. No other line or file changes, as
+ *   become plain imports or disappear, and its inherited lines are searched the same way, with `--inherited-only`
+ *   only the inherited lines of a module not named; any other file only gains the inherited lines that keep its
+ *   environment. No other line or file changes, as
  *   `lean-import-all-minimize.test.ts` locks.
  * - Target effect: no module opens a module it did not open before, so no body-edit fan-out grows; no compiled file
  *   the run does not search loses any part of its environment; the `import all` lines and the import lines of the
@@ -49,8 +50,8 @@
  *   modules; the run stops and restores every file before it would compile more. The conversion's run spent 3,261
  *   compiles on its first 1,064 candidate lines, and each compile grows with the module (2026-10-29).
  *
- * Usage: node scripts/lean-import-all-minimize.ts --max-compiles <declared cost> [--parallel 2] [--deadline-seconds 36000]
- *   [--failing <list>] <Module.lean>...
+ * Usage: node scripts/lean-import-all-minimize.ts --max-compiles <declared cost> [--inherited-only] [--parallel 2]
+ *   [--deadline-seconds 36000] [--failing <list>] <Module.lean>...
  */
 
 import { spawn } from "node:child_process";
@@ -225,8 +226,8 @@ export function* importAllSearch(candidates: ReadonlyArray<string>): Generator<s
  * The search for one module from its start text: yields each variant and receives whether it compiled; returns the
  * final text, or `undefined` when the start does not compile.
  */
-export function* moduleSearch(start: string): Generator<string, string | undefined, boolean> {
-  const candidates = [...new Set(importAllTargets(start))];
+export function* moduleSearch(start: string, fixed: ReadonlySet<string> = new Set()): Generator<string, string | undefined, boolean> {
+  const candidates = [...new Set(importAllTargets(start))].filter((target) => !fixed.has(target));
   if (candidates.length === 0) return start;
   if (!(yield start)) return undefined;
   const drive = function* (search: Generator<string[], string[], boolean>, variant: (keep: Set<string>) => string) {
@@ -234,7 +235,8 @@ export function* moduleSearch(start: string): Generator<string, string | undefin
     while (!step.done) step = search.next(yield variant(new Set(step.value)));
     return new Set(step.value);
   };
-  const kept = yield* drive(importAllSearch(candidates), (keep) => importAllVariant(start, keep));
+  const kept = yield* drive(importAllSearch(candidates), (keep) => importAllVariant(start, new Set([...fixed, ...keep])));
+  for (const target of fixed) kept.add(target);
   const keptPlain = yield* drive(importAllSearch(droppedTargets(start, kept)), (keep) => importAllVariant(start, kept, keep));
   return importAllVariant(start, kept, keptPlain);
 }
@@ -295,8 +297,12 @@ export type MinimizeHost = Readonly<{
   build: (modules: ReadonlyArray<string>) => Promise<number>;
 }>;
 
-/** How a run spends its compiles: at most `parallel` at once and its declared cost, `maxCompiles`, in all. */
-export type MinimizeRun = Readonly<{ parallel: number; maxCompiles: number }>;
+/**
+ * How a run spends its compiles: at most `parallel` at once and its declared cost, `maxCompiles`, in all. `search` says
+ * which lines of a module the run's chains reach but that is not named may drop: every `import all` line, or only the
+ * lines it inherits, keeping its own, for instance exact owners from Lean's diagnostics that a search only confirms.
+ */
+export type MinimizeRun = Readonly<{ parallel: number; maxCompiles: number; search: "every line" | "inherited lines" }>;
 
 /**
  * Minimizes the named files and every module whose chains open one, level by level, and returns a one-line summary.
@@ -408,7 +414,8 @@ export async function minimizeImportAlls(root: string, sources: ReadonlyArray<st
             write(module, start);
             continue;
           }
-          const search = moduleSearch(start);
+          const own = run.search === "inherited lines" && !named.includes(module) ? importAllTargets(originals.get(module)!) : [];
+          const search = moduleSearch(start, new Set(own));
           settle(module, search, search.next());
         }
         const done = new Set(readdirSync(path.join(directory, "done")));
@@ -464,9 +471,11 @@ async function main(): Promise<void> {
   const maxCompiles = Number(option("--max-compiles"));
   const deadline = Number(option("--deadline-seconds") ?? 36000);
   const failingList = option("--failing");
+  const inheritedOnly = args.indexOf("--inherited-only");
+  if (inheritedOnly !== -1) args.splice(inheritedOnly, 1);
   const files = args;
   if (files.length === 0 || !Number.isInteger(parallel) || parallel < 1 || !Number.isInteger(maxCompiles) || maxCompiles < 1) {
-    throw new Error("usage: node scripts/lean-import-all-minimize.ts --max-compiles <declared cost> [--parallel 2] [--deadline-seconds 36000] [--failing <list>] <Module.lean>...");
+    throw new Error("usage: node scripts/lean-import-all-minimize.ts --max-compiles <declared cost> [--inherited-only] [--parallel 2] [--deadline-seconds 36000] [--failing <list>] <Module.lean>...");
   }
   const failing = new Set(failingList === undefined ? [] : readFileSync(failingList, "utf8").split("\n").filter(Boolean));
   const leanArgs = leanArguments(readFileSync("lakefile.toml", "utf8"));
@@ -482,7 +491,8 @@ async function main(): Promise<void> {
     }),
     build: (modules) => exit(spawn("./scripts/lake.sh", ["build", ...modules], { stdio: "inherit" })),
   };
-  process.stdout.write(`${await minimizeImportAlls(".", worktreeLeanSourceFiles(), files, host, { parallel, maxCompiles },
+  process.stdout.write(`${await minimizeImportAlls(".", worktreeLeanSourceFiles(), files, host,
+    { parallel, maxCompiles, search: inheritedOnly === -1 ? "every line" : "inherited lines" },
     leanBuildRoots(readFileSync("lakefile.toml", "utf8")), failing)}\n`);
 }
 

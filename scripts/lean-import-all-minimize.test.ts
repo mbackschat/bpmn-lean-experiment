@@ -11,7 +11,7 @@ import {
 import { leanHeader } from "./lean-source-analysis.ts";
 
 // Generous for the fake trees; a real run declares its cost (Rule 2).
-const run: MinimizeRun = { parallel: 2, maxCompiles: 1000 };
+const run: MinimizeRun = { parallel: 2, maxCompiles: 1000, search: "every line" };
 
 /** Drives the search against a compile oracle that succeeds exactly when every needed line is kept. */
 function minimize(candidates: string[], needed: ReadonlySet<string>): { kept: string[]; compiles: number } {
@@ -323,5 +323,18 @@ test("a run refuses `import all` lines it cannot edit and the originals of an in
 test("a run that would exceed its declared compiles stops and restores every file", async () => {
   await assertRestoredFailure({ A: ["module", "import all X", "import all Y", "import all Z"], X: ["module"], Y: ["module"], Z: ["module"] },
     ["A.lean"], new Map([["A", { bodies: ["X"] }], ["X", {}], ["Y", {}], ["Z", {}]]), /above its declared 2 compiles/u, undefined,
-    { parallel: 2, maxCompiles: 2 });
+    { ...run, maxCompiles: 2 });
+});
+
+// A chain module's own lines can be exact owners from Lean's diagnostics, which searching again only confirms at the
+// cost of compiles; such a run searches what the module inherits and keeps what it had (2026-10-29).
+test("a run that searches inherited lines keeps an unnamed module's own lines and drops what it does not inherit", async () => {
+  const texts = { A: ["module", "import all B", "import all Y"], B: ["module", "import all X"], X: ["module"], Y: ["module"] };
+  const root = fakeTree(texts);
+  const { host, compiles } = fakeBuild(root, new Map([["A", {}], ["B", {}], ["X", {}], ["Y", {}]]));
+  await minimizeImportAlls(root, files(texts), ["B.lean"], host, { ...run, search: "inherited lines" },
+    { libraries: Object.keys(texts), executables: [] });
+  assert.ok(["A", "B"].every(compiles));
+  assert.deepEqual(importAllTargets(readFileSync(path.join(root, "A.lean"), "utf8")), ["B", "Y"]);
+  assert.deepEqual(importAllTargets(readFileSync(path.join(root, "B.lean"), "utf8")), []);
 });
