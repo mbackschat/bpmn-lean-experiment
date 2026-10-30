@@ -44,6 +44,8 @@ def selectInternalEnd? (state : RuntimeState) (operation : SemanticOperation) : 
       | _ => none
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalEnd?]
+
 def internalEndOrigin? : SemanticOperation → Option BpmnElementOrigin
   | .reachNoneEnd _ origin _ => some origin
   | _ => none

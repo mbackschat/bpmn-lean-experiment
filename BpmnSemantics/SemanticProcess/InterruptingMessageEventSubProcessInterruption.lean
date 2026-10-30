@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exact Message selection and retained-parent interruption for IMES-TRIGGER-01. Selection uses the
 predecessor; the rewrite composes regional cleanup with fresh handler creation in that order. -/
@@ -61,6 +62,8 @@ def selectEventSubProcessMessageDelivery? (program : Program) (state : RuntimeSt
       else none
     | _, _ => none
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`selectEventSubProcessMessageDelivery?]
 
 def deliverEventSubProcessMessage (program : Program) (state : RuntimeState)
     (subscriptionId : MessageSubscriptionId) (channel : MessageChannel) : Option RuntimeState :=

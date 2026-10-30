@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.CallActivityIdentity
 public import BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 public import BpmnSemantics.SemanticProcess.CallInstanceClosure
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Called-Process Call Activity runtime semantics
 
@@ -198,6 +199,8 @@ def invokeProcessState? (state : RuntimeState) (origin : BpmnElementOrigin)
         else none
       else none
   | _, _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`invokeProcessState?]
 
 /-- Return one exact quiescent called root after counting every record associated with the return identity. -/
 def returnProcessState? (state : RuntimeState) (id : OperationId)

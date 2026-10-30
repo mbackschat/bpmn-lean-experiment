@@ -75,6 +75,8 @@ def exactOperationOwner? (program : Program) (operation : SemanticOperation) :
     | [binding] => some binding.scopeId
     | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`exactOperationOwner?]
+
 def definitionScope? (program : Program) (scopeId : DefinitionScopeId) :
     Option DefinitionScope :=
   match program.definitionScopes.filter fun scope => decide (scope.id = scopeId) with
@@ -333,6 +335,8 @@ def candidateScopeStart? (program : Program) (operation : SemanticOperation)
         elementId := origin.elementId
         owner }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`candidateScopeStart?]
+
 /-- Candidate Call Activity start from the exact invocation record created by the selected operation. -/
 def candidateCallStart? (program : Program) (operation : SemanticOperation)
     (owner : ScopeOccurrenceId) (record : CalledProcessOccurrence) :
@@ -352,6 +356,8 @@ def candidateCallStart? (program : Program) (operation : SemanticOperation)
             elementId := origin.elementId
             owner }
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`candidateCallStart?]
 
 /-- SMIS-IDENTITY-01 selects the generated body through its unique outer Activity. -/
 def sequentialScopeFlowNodeOwner? (state : RuntimeState) (elementId : NodeId) : Option ScopeOccurrenceId := do

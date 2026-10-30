@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-IDENTITY-01 binds controllers and generated bodies in both directions; SMIS-ENTER-01 fixes their collection index. -/
 
@@ -26,5 +27,7 @@ def sequentialScopeStateValid (program : Program) (state : RuntimeState) : Bool 
           items[binding.controller.completed]? == some binding.controller.currentItem
       | _, _ => false
     | _, _ => false)
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`sequentialScopeStateValid] (congruence := true)
 
 end BpmnSemantics.SemanticProcess

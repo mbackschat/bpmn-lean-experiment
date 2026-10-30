@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Token-free completion of a declared Message Event Sub-Process. Exact child/parent binding and the
 shared quiescence predicate gate disposal; ordinary scope continuation keeps its existing owner. -/
@@ -36,6 +37,8 @@ def completeEventSubProcessState? (program : Program) (state : RuntimeState)
           scopeOccurrences := state.scopeOccurrences.filter (fun occurrence => decide (occurrence.id ≠ child.id)) }
       else none
   | _, _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`completeEventSubProcessState?]
 
 /-- IMES-CLOSE-01 binds disposal to one declared child, its live parent and actual quiescence. -/
 inductive EventSubProcessCompletionStep : Program → RuntimeState → DefinitionScopeId → NodeId → RuntimeState → Prop where

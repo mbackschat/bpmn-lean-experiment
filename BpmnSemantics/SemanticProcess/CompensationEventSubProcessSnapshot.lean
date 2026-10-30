@@ -54,6 +54,8 @@ def canonicalRuntimeScopeOccurrenceUtf8Bytes
        | some parent => canonicalScopeOccurrenceIdUtf8Bytes parent) +
     "}".utf8ByteSize
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`canonicalRuntimeScopeOccurrenceUtf8Bytes] (congruence := true)
+
 def canonicalVariableValueUtf8Bytes : VariableValue → Nat
   | .string value =>
       "{\"kind\":\"string\",\"value\":".utf8ByteSize +
@@ -205,6 +207,8 @@ def snapshotFramesValid (parent : RuntimeScopeOccurrence)
         parentFrame.bindings.isEmpty
   | _, _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`snapshotFramesValid]
+
 def exactRuntimeOccurrenceLive (state : RuntimeState)
     (target : RuntimeScopeOccurrence) : Bool :=
   (state.scopeOccurrences.filter fun occurrence => occurrence == target).length = 1
@@ -251,6 +255,8 @@ def runningLifecycleValid (program : Program) (instanceId : SemanticId)
               (selectedLiveParentReserved retentions) &&
             retentions.all (runningRetentionValid state root.id)
       | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`runningLifecycleValid] (congruence := true)
 
 def completedRootRetentions (rootScopeId : DefinitionScopeId)
     (instanceId : SemanticId)
@@ -465,6 +471,8 @@ def reserveCompensationParentContext (program : Program) (state : RuntimeState)
     else .refused .invalidState state
   else .refused .invalidProgram state
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`reserveCompensationParentContext] (congruence := true)
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`reserveCompensationParentContext]
 
 theorem reserveCompensationParentContext_refusal_preserves_state
@@ -516,6 +524,8 @@ def constructCompensationParentContextSnapshot? (program : Program)
       else none
   | none, _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`constructCompensationParentContextSnapshot?] (congruence := true)
+
 def captureCompensationParentContextWhileNotFailed? (program : Program)
     (state : RuntimeState) (parent : RuntimeScopeOccurrence) :
     Option CompensationParentContextSnapshot :=
@@ -537,6 +547,8 @@ def captureCompensationParentContext? (program : Program)
   match state.control with
   | .failed .. => none
   | _ => captureCompensationParentContextWhileNotFailed? program state parent
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`captureCompensationParentContext?] (congruence := true)
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`captureCompensationParentContext?,
   `captureCompensationParentContextWhileNotFailed?, `constructCompensationParentContextSnapshot?]

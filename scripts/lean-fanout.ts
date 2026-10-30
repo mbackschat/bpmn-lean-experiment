@@ -2,6 +2,21 @@ import { leanHeader, type LeanHeader } from "./lean-source-analysis.ts";
 
 type LeanSources = ReadonlyArray<Readonly<{ path: string; source: string }>>;
 
+/**
+ * A module whose public `.olean` carries lemmas Lean generated for a hidden definition of `ownerModule`, as the
+ * olean-level check `scripts/lean-realized-leaks.lean` records them in `scripts/lean-realized-leaks.tsv`.
+ */
+export type RealizedLeak = Readonly<{ module: string; ownerModule: string }>;
+
+/** The recorded leaks of a `scripts/lean-realized-leaks.tsv` text: `<module>\t<owner module>\t<owner>` per line. */
+export function parseRealizedLeaks(text: string): RealizedLeak[] {
+  return text.split("\n").filter((line) => line !== "").map((line) => {
+    const [module, ownerModule, owner] = line.split("\t");
+    if (owner === undefined) throw new Error(`a recorded leak needs three tab-separated fields: ${line}`);
+    return { module: module!, ownerModule: ownerModule! };
+  });
+}
+
 /** Each scanned module's header, and the scanned modules a module's imports reach transitively. */
 function importGraph(sources: LeanSources) {
   const moduleOf = (path: string) => path.replace(/\.lean$/u, "").replaceAll("/", ".");
@@ -103,12 +118,19 @@ export function leanFanouts(sources: LeanSources): Map<string, string[]> {
  * none. The module rewriting with its own hidden definition exports them the same way. A source scan cannot see which
  * rewrites survive elaboration, so every such rewrite counts, unless the rewriting module declares the definition's
  * equation lemmas privately first.
+ *
+ * Lean also exports the other lemmas it generates for a hidden body (a `match`'s equations, splitter and congruence
+ * equations, a sparse case split's `else_eq`), private ones included (Lean v4.34.1 `Environment.lean:723`). A source
+ * scan cannot see which proofs generate them, so `leaks` brings in what the built `.olean` files show: a rebuilt
+ * module recorded as leaking the edited module's lemmas rebuilds its whole public cone as well.
  */
-export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[]> {
+export function leanHiddenEditFanouts(sources: LeanSources, leaks: ReadonlyArray<RealizedLeak> = []): Map<string, string[]> {
   const { headers, closure, reexported } = importGraph(sources);
   const interfaceFanouts = leanFanouts(sources);
   const text = new Map(sources.map(({ path, source }) => [path.replace(/\.lean$/u, "").replaceAll("/", "."), source]));
   const candidates = rewriteCandidateCache();
+  const leaking = new Map<string, Set<string>>();
+  for (const { module, ownerModule } of leaks) leaking.set(ownerModule, (leaking.get(ownerModule) ?? new Set()).add(module));
   const hiddenLoaders = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
   const plainReach = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
   const compiledReexports = new Map<string, Set<string>>();
@@ -145,7 +167,9 @@ export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[
     }
     const hidden = hiddenDefinitions(text.get(module)!);
     for (const importer of [module, ...rebuilt]) {
-      if (rewritesWith(candidates(text.get(importer)!), hidden)) for (const loader of interfaceFanouts.get(importer)!) rebuilt.add(loader);
+      if (rewritesWith(candidates(text.get(importer)!), hidden) || leaking.get(module)?.has(importer)) {
+        for (const loader of interfaceFanouts.get(importer)!) rebuilt.add(loader);
+      }
     }
     for (const importer of plainReach.get(module)!) rebuilt.add(importer);
     rebuilt.delete(module);
@@ -466,9 +490,9 @@ export function leanHiddenRewrites(sources: LeanSources): Map<string, string[]> 
  * (pinned container, 2026-10-27). A definition exposed on its own is an interface edit by necessity and is named by
  * {@link leanExposedDefinitions} instead.
  */
-export function leanBodyEditFanouts(sources: LeanSources): Map<string, string[]> {
+export function leanBodyEditFanouts(sources: LeanSources, leaks: ReadonlyArray<RealizedLeak> = []): Map<string, string[]> {
   const interfaceFanouts = leanFanouts(sources);
-  const hiddenFanouts = leanHiddenEditFanouts(sources);
+  const hiddenFanouts = leanHiddenEditFanouts(sources, leaks);
   return new Map(sources.map(({ path, source }) => {
     const module = path.replace(/\.lean$/u, "").replaceAll("/", ".");
     const hidden = hiddenFanouts.get(module)!;

@@ -87,6 +87,8 @@ def dataArmingHostValid (state : RuntimeState) (owner : ScopeOccurrenceId)
         | .inputOutput _ _ => true
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`dataArmingHostValid]
+
 /-- ADOUTPUT entry owns an empty local scope without reading the Property written at completion.
 Copied values use the full selected owner; null is available while absence or ambiguity refuses. -/
 def dataArmingBindings? (policy : PropertyPathValuePolicy) (state : RuntimeState)

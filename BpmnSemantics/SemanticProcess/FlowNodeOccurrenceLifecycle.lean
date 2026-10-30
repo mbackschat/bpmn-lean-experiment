@@ -374,6 +374,8 @@ def lifecycleEventRaceForMessage? (state : RuntimeState)
   | [race] => some race
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`lifecycleEventRaceForMessage?]
+
 def lifecycleEventRaceForTimer? (state : RuntimeState)
     (id : TimerOccurrenceId) : Option EventRace :=
   match state.eventRaces.filter fun race => decide (race.timerOccurrenceId = id) with
@@ -419,6 +421,8 @@ def flowNodeOccurrenceThrowingScopeParent? (state : RuntimeState)
   match state.scopeOccurrences.filter fun occurrence => decide (occurrence.id = owner) with
   | [{ parent := some parent, .. }] => some parent
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceThrowingScopeParent?]
 
 def errorPropagationCancellationDelta? (program : Program) (before : RuntimeState)
     (operation : SemanticOperation) (commandId : SemanticId) (transitionIndex : Nat)

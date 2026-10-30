@@ -53,6 +53,8 @@ def runningStateInstance? (state : RuntimeState) : Option SemanticId := match st
   | .running instanceId => some instanceId
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`runningStateInstance?]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`runningStateInstance?]
 
 theorem awaitUserTaskState_eq (state : RuntimeState) (input output : ControlPlaceId) (task : UserTaskDefinition) : awaitUserTaskState? state input output task = (do let owner ← onlyTokenOwner? state input; let _ ← runningStateInstance? state; pure (activateUserTask state owner.processInstanceId owner input output task)) := (rfl)

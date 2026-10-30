@@ -105,6 +105,8 @@ def selectInternalRegional? (program : Program) (state : RuntimeState)
       | _ => none
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalRegional?]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalRegional?]
 
 /-- CDATA-OUTPUT-01 requires scalar return to prepare its required output before disposal. -/

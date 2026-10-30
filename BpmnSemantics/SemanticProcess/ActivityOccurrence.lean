@@ -44,6 +44,8 @@ def parallelScopeControllersConsistent (state : RuntimeState) : Bool :=
         decide ((state.parallelScopeControllers.filter (fun controller => names controller record)).length = 1)
     | _ => true)
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`parallelScopeControllersConsistent]
+
 def operationOwningScope? (program : Program) (id : OperationId) : Option DefinitionScopeId :=
   match program.operationScopes.filter fun ownership => decide (ownership.operationId = id) with
   | [ownership] => some ownership.scopeId

@@ -96,6 +96,8 @@ def deriveInternalExecutionFrontier (program : Program) (state : RuntimeState) :
         preparationFailed := discovered.preparationFailed ||
           !decide (offers.Pairwise (fun left right => left.alternative ≠ right.alternative)) }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`deriveInternalExecutionFrontier]
+
 def findInternalExecutionOffer? (frontier : InternalExecutionFrontier) (alternative : InternalAlternative) :
     Option InternalExecutionOffer :=
   frontier.offers.find? (fun offer => offer.alternative == alternative)

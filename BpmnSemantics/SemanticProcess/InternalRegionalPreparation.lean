@@ -36,6 +36,8 @@ def prepareInternalRegional? (program : Program) (state : RuntimeState)
     let publication ← regionalPublicationTemplate? program state selected region
     pure { selection := selected, region, footprint, publicationTemplate := publication }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareInternalRegional?]
+
 def applyPreparedInternalRegional? (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalRegional) : Option RuntimeState :=
   if prepareInternalRegional? program state prepared.selection.operation = some prepared then

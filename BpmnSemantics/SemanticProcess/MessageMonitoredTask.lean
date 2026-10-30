@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.MessageBoundedTask
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! ESL-MESSAGE-01 and ESL-CLOSE-01 select a persistent Message subscription and exact host
 completion. Only atomic arming is shared with the interrupting family; definition selection and
@@ -25,6 +26,8 @@ def messageMonitoredTaskDefinitions (program : Program) : List MessageMonitoredD
     | .awaitMessageMonitoredUserTask id origin input task boundary =>
         some { id, origin, input, task, boundary }
     | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`messageMonitoredTaskDefinitions]
 
 def isMessageMonitoredTaskDefinition (program : Program) (taskId : TaskDefinitionId) : Bool :=
   (messageMonitoredTaskDefinitions program).any fun definition => decide (definition.task.id = taskId)

@@ -51,6 +51,8 @@ def selectCompensationHandler? (state : RuntimeState)
         if activeEffectId == effectId then some { wait, trigger, handler } else none
     | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`selectCompensationHandler?]
+
 /-- A selected handler always refers to a retained trigger in the submitted state. -/
 theorem selectCompensationHandler_trigger_member (state : RuntimeState) (effectId : EffectOccurrenceId)
     (selected : SelectedCompensationHandler)
@@ -266,6 +268,8 @@ def compensationHandlerCompletionStateRejected (program : Program)
     (state : RuntimeState) : Bool :=
   !compensationTriggerHandlerStateValid program state ||
     (match state.control with | .running _ => false | _ => true)
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`compensationHandlerCompletionStateRejected]
 
 /-- Decides whether a completion attempts a forbidden variable mutation. -/
 def compensationHandlerCompletionPatchRejected (result : EffectExecutionResult) : Bool :=

@@ -112,6 +112,8 @@ def InternalSelectedBranchPatch.SeparatesActiveCancelOwners
             ∀ record, patch = .insert record → record.owner ≠ trigger.owner
       | _ => True
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch #[`SeparatesActiveCancelOwners]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalSelectedBranchPatch #[`SeparatesActiveCancelOwners]
 
 theorem InternalSelectedBranchPatch.preserves_scopeQuiescent

@@ -30,6 +30,8 @@ def uniqueControlPlace? (program : Program) (placeId : ControlPlaceId) :
       | _ => none
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`uniqueControlPlace?]
+
 def controlPlaceScope? (program : Program) (placeId : ControlPlaceId) :
     Option DefinitionScopeId :=
   match program.controlPlaceScopes.filter fun ownership =>
@@ -46,6 +48,8 @@ def uniqueDefinitionScope? (program : Program) (scopeId : DefinitionScopeId) :
       | [_] => some scope
       | _ => none
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`uniqueDefinitionScope?] (congruence := true)
 
 def programProjectionBindingsValid (program : Program) : Bool :=
   (program.controlPlaces.all fun place =>
@@ -90,6 +94,8 @@ def runtimeParentValid (program : Program) (instanceId : SemanticId)
         exactLiveOccurrence state runtimeParent
   | _, _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`runtimeParentValid]
+
 def scopeOccurrenceValid (program : Program) (instanceId : SemanticId)
     (state : RuntimeState) (occurrence : RuntimeScopeOccurrence) : Bool :=
   match uniqueDefinitionScope? program occurrence.id.definitionScopeId with
@@ -98,6 +104,8 @@ def scopeOccurrenceValid (program : Program) (instanceId : SemanticId)
       decide (occurrence.id.processInstanceId.value ≠ "") &&
         occurrence.id.activation > 0 &&
         runtimeParentValid program instanceId state scope occurrence
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`scopeOccurrenceValid] (congruence := true)
 
 def tokenBindingValid (program : Program) (state : RuntimeState)
     (token : ControlToken) : Bool :=

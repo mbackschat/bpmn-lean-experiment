@@ -24,6 +24,8 @@ def selectProcessInterface? (variables : ScopedVariables) (owner : ScopeOccurren
   | [scope] => some scope
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`selectProcessInterface?]
+
 /-- The scalar domain treats a present null as available; wire admission separately bounds strings. -/
 def processInterfaceScalar : VariableValue → Bool
   | .string _ | .null => true

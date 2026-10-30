@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcessContract
 public import BpmnSemantics.SemanticProcess.ClosureLimit
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! The approved structured-composition proposal requires independent graph contraction, definite-write intersection and task-cut closure bounds. These private analysis vertices carry no serialized or runtime authority. -/
 
@@ -134,6 +135,8 @@ def burstFacts (ordered : List Vertex) : List BurstFact :=
       | _ => 1 + tail
     { id := vertex.id, remaining } :: facts
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`burstFacts]
+
 def maximumBurst (vertices ordered : List Vertex) : Nat :=
   let facts := burstFacts ordered
   vertices.foldl (init := 0) fun maximum vertex =>
@@ -197,6 +200,8 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
   | .reachNoneEnd .. => return { id, kind := .finish, outputs := [] }
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`operationVertex?]
+
 def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Vertex := do
   let id := node.id.value
   let outputs := (source.sequenceFlows.filter (·.sourceId == node.id)).map (·.targetId.value)
@@ -253,6 +258,8 @@ def isScopeCompletion : SemanticOperation → Bool
   | .completeScope .. => true
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`isScopeCompletion]
+
 def programAnalysis (program : Program) : Option Analysis := do
   if !(program.definitionScopes.length == 1 &&
       program.internalSchedulingMode == .rejectObservableChoice &&
@@ -269,6 +276,8 @@ def programAnalysis (program : Program) : Option Analysis := do
           (operationVertex? program)
         analyze vertices
     | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`programAnalysis]
 
 end StructuredComposition
 

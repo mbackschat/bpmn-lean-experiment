@@ -78,6 +78,8 @@ def evaluateParallelScopeInputs? (program : Program) (state : RuntimeState)
   evaluateInputMappings? (fun name => if handlers.contains name then none
     else readScopeVariable? itemContext owner name) mappings
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`evaluateParallelScopeInputs?]
+
 /-- PMIS-DATA-01 validates the complete population before applying the shared nearest-scope write policy. -/
 def writeParallelScopeValues? (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)
     (values : List VariableBinding) (kind : MultiInstanceScopeWriteKind) : Option ScopedVariables := do
@@ -104,6 +106,8 @@ def completeParallelScopeEffect? (program : Program) (state : RuntimeState)
       variables := { variables with activities := variables.activities.filter fun scope => !activityScopeMatches effectId scope }
       effectWaits := state.effectWaits.erase wait
       tokens := addToken state.tokens wait.output wait.owner }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`completeParallelScopeEffect?]
 
 /-- PMIS-DATA-01 binds human writes and continuation to one exact live wait and body. -/
 def completeParallelScopeUserTask? (program : Program) (state : RuntimeState)

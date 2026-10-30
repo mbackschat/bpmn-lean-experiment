@@ -439,6 +439,8 @@ def internalOperationPairIndependent? (program : Program) (state : RuntimeState)
         | _, _ => false
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`internalOperationPairIndependent?]
+
 def internalOperationIndependentFrom? (program : Program)
     (state : RuntimeState) (left : SemanticOperation) :
     List SemanticOperation → Bool

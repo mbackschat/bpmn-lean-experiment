@@ -99,6 +99,8 @@ def completeQuiescentScope? (state : RuntimeState)
       else none
   | _, _, _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`completeQuiescentScope?]
+
 def completeScopeState? (state : RuntimeState) (scopeId : DefinitionScopeId)
     (parentOutput : Option ControlPlaceId) : Option RuntimeState :=
   match state.scopeOccurrences.filter fun occurrence =>
@@ -107,6 +109,8 @@ def completeScopeState? (state : RuntimeState) (scopeId : DefinitionScopeId)
       if !scopeQuiescent state occurrence.id then none
       else completeQuiescentScope? state occurrence parentOutput
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`completeScopeState?]
 
 /-- CEA-QUIESCE-01: completion of the named occurrence, whatever other occurrences of its definition are
 live. It looks the occurrence up by id, requires its quiescence, and then applies the shared rewrite. -/

@@ -63,6 +63,8 @@ def requirementsFor (program : Program) (collection item : String) (childScope :
         | _ => some []
       return (handlers, (initialReads ++ reads.flatten).eraseDups)
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SequentialScopeData #[`requirementsFor]
+
 def requirements (program : Program) : Option Analysis := do
   let [entry] := program.operations.filterMap sequentialScopeEntry? | none
   let (handlers, required) ← requirementsFor program entry.collectionName entry.itemName entry.childScopeId
@@ -84,6 +86,8 @@ def startBindingValueValid (collection : String) (condition : Option String) (bi
     | .boolean _ => true
     | _ => false
   else scalar binding.value
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SequentialScopeData #[`startBindingValueValid]
 
 def startValueValid (entry : SequentialScopeEntry) (binding : VariableBinding) : Bool :=
   startBindingValueValid entry.collectionName entry.completionBooleanName binding

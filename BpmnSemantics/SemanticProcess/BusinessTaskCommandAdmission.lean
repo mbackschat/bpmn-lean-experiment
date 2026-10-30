@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.EffectCompletion
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SBT-REFUSE-01 and MBERR-REFUSE-01 require complete declaration/wait/local ownership checks before any public command can mutate a business-task state. -/
 
@@ -30,6 +31,8 @@ def serialBusinessCommandAdmitted (program : Program) (state : RuntimeState)
     | .startProcess _ _ instanceId _ => !instanceId.value.isEmpty
     | .completeUserTaskInstance .. | .completeEffect .. => true
     | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`serialBusinessCommandAdmitted]
 
 @[simp] theorem serialBusinessCommandAdmitted_of_other_profile
     (program : Program) (state : RuntimeState) (stimulus : Stimulus)

@@ -2,6 +2,7 @@ module
 
 import BpmnSemantics.SemanticProcess.TimerStartAdmission
 public import BpmnSemantics.SemanticProcess.RuntimeState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Message Start Event external admission
 
@@ -26,6 +27,8 @@ def ordinaryStartMatchesProgram (program : Program) : Bool :=
   | [.initiate ..] => true
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`ordinaryStartMatchesProgram]
+
 /-- Match one resolved Message Start target to the sole admitted Message initiation operation. -/
 def messageStartTargetMatchesProgram (program : Program)
     (processId startEventId : SemanticId) (channel : MessageChannel) : Bool :=
@@ -40,6 +43,8 @@ def messageStartTargetMatchesProgram (program : Program)
     | [(originId, expectedChannel)] =>
         originId.value = startEventId.value && expectedChannel = channel
     | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`messageStartTargetMatchesProgram]
 
 /-- Pair the closed external start family and Process identity with the start operation admitted by a program. -/
 def startStimulusMatchesProgram (program : Program) : Stimulus → Bool

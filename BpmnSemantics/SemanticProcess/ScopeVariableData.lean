@@ -22,6 +22,8 @@ def selectScopeVariables? (variables : ScopedVariables) (owner : ScopeOccurrence
   | [scope] => some scope
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`selectScopeVariables?]
+
 /-- String/null is the selected body-local domain; Boolean condition writes belong to command policy. -/
 def scopeVariableScalar : VariableValue → Bool
   | .string _ | .null => true

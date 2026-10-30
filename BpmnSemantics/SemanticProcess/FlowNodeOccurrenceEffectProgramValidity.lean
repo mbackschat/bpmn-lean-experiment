@@ -36,6 +36,8 @@ def effectWaitValid (program : Program) (state : RuntimeState)
             route = wait.bpmnErrorRoute
       | _ => false).length = 1
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`effectWaitValid]
+
 def effectLocalScopesExact (state : RuntimeState) : Bool :=
   let waits := state.effectWaits ++ state.effectIncidents.map (·.wait)
   waits.all (fun wait =>
@@ -49,6 +51,8 @@ def effectLocalScopesExact (state : RuntimeState) : Bool :=
       | .effectOccurrence _ =>
           (waits.filter fun wait => activityScopeMatches (effectWaitOccurrenceId wait) activity).length = 1
       | .activityOccurrence _ => true
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`effectLocalScopesExact]
 
 /-- Program correspondence and exact Activity-local scope ownership for Effect waits and incidents. -/
 def flowNodeOccurrenceEffectProgramValidity (program : Program) (state : RuntimeState) : Bool :=

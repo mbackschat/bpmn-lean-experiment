@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
 import BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 import BpmnSemantics.SemanticProcess.EffectCompletion
 import BpmnSemantics.SemanticProcess.NestedScopeData
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Sequential repeated embedded scopes
 
@@ -46,6 +47,8 @@ def sequentialScopeCollection? (entry : SequentialScopeEntry) (state : RuntimeSt
   let .stringList items := binding.value | none
   if sequentialScopeCollectionWithinLimits items then some items else none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`sequentialScopeCollection?]
+
 def sequentialScopeEntryEnabled (entry : SequentialScopeEntry) (state : RuntimeState)
     (parent : ScopeOccurrenceId) : Bool :=
   state.control == .running parent.processInstanceId &&
@@ -66,6 +69,8 @@ def issueSequentialScope? (entry : SequentialScopeEntry) (state : RuntimeState)
       tokens := addToken state.tokens entry.childEntry child,
       scopeOccurrences := insertScopeOccurrence { id := child, parent := some parent } state.scopeOccurrences,
       scopeActivations := setScopeActivationCount state.scopeActivations entry.childScopeId child.activation }, child)
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`issueSequentialScope?]
 
 def sequentialScopeActivityId (record : ActivityOccurrence) : ActivityOccurrenceId :=
   ⟨record.processInstanceId, ⟨record.activityElementId.value⟩, record.activation⟩
@@ -96,6 +101,8 @@ def sequentialScopeBindingForEntry? (entry : SequentialScopeEntry) (state : Runt
         !(state.scopeOccurrences.any fun occurrence => occurrence.id == record.owner) ||
         controller.total > 16 || controller.completed ≥ controller.total then none
     else some ⟨entry, record, controller, body, locals⟩
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`sequentialScopeBindingForEntry?]
 
 def sequentialScopeBindingForOwner? (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) : Option SequentialScopeBinding := do
@@ -180,6 +187,8 @@ def completeSequentialScopeEffect? (program : Program) (state : RuntimeState)
       effectWaits := state.effectWaits.erase wait
       variables
       tokens := addToken state.tokens wait.output wait.owner }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`completeSequentialScopeEffect?]
 
 def sequentialScopeTaskWaits (state : RuntimeState) (taskId : UserTaskInstanceId) : List UserTaskWait :=
   state.waits.filter (taskIdNamesWait taskId)

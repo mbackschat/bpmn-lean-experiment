@@ -25,6 +25,8 @@ def dataOutputRunningInstance? (state : RuntimeState) :
   | .running instanceId => some instanceId
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dataOutputRunningInstance?]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`dataOutputRunningInstance?]
 
 theorem dataOutputRunningInstance_of_running {state : RuntimeState}
@@ -79,6 +81,8 @@ def dataOutputTaskOperations (program : Program) :
         some (taskId, directOutput)
     | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dataOutputTaskOperations]
+
 /-- True when the task identity is declared by exactly one data-output entry operation. -/
 def isDataOutputTaskDefinition (program : Program) (taskId : TaskDefinitionId) :
     Bool :=
@@ -92,6 +96,8 @@ def dataOutputAssociation? (program : Program) (taskId : TaskDefinitionId) :
       decide (entry.1 = taskId) with
   | [entry] => some entry.2
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dataOutputAssociation?]
 
 /-- `ADOUTPUT-FILL-01` and `ADOUTPUT-REQUIRE-01`. The Activity-local binding this submission writes into the declared `DataOutput`, or `none`.
 

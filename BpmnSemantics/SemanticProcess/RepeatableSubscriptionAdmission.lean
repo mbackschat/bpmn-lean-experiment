@@ -18,6 +18,8 @@ abbrev repeatableSubscriptionCheckpointProfileId : ProfileId :=
 def one? (values : List α) : Option α :=
   match values with | [value] => some value | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`one?]
+
 def distinct [DecidableEq α] (values : List α) : Bool := decide values.Nodup
 
 def operationMessage : MessageChannel → Bool
@@ -88,6 +90,8 @@ def repeatableSubscriptionProgramShape (operations : List SemanticOperation) (sc
     (operations.filter (fun op => match op with | .completeScope .. => true | _ => false)).length == scopeCount &&
     (operations.filter (fun op => (repeatableSubscriptionChildScope? op).isSome)).length + 1 == scopeCount &&
     (operations.filter repeatableSubscriptionBoundaryOperation).length ≤ 1 && (operations.filter programTimer).length ≤ 1
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`repeatableSubscriptionProgramShape]
 
 inductive VertexKey where
   | node (id : String)

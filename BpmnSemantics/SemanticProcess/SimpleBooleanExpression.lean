@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcessContract
 public import BpmnSemantics.StrictJson
 public import Lean.Data.Json.Printer
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Simple Boolean expression language
 
@@ -146,6 +147,8 @@ def evaluateSimpleBooleanExpression
       | [{ value := .list _, .. }] => some false
       | [{ value := .map _, .. }] => some false
       | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`evaluateSimpleBooleanExpression]
 
 /-- Select the first true candidate in declaration order, or the default when every candidate is false. -/
 def selectConditionalOutput

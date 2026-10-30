@@ -49,6 +49,8 @@ def checkedChain (s : CheckedProcess) (child : DefinitionScopeId) :
       | .noneEndEvent _ | .cancelEndEvent _ => pure ([], id)
       | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`checkedChain]
+
 /-- Complete bounded checked grammar, including exact ownership and both disjoint branches. -/
 def transactionCancellationCheckedGraph (s : CheckedProcess) : Bool := Id.run do
   let some d := s.transactionCancellation | return false
@@ -112,6 +114,8 @@ def transactionCancellationCheckedGraph (s : CheckedProcess) : Bool := Id.run do
     transactionDescriptorValid body && identities.all nonempty && decide identities.Nodup &&
     d.retentionLimits == { maxRecords := 1, maxCanonicalBytes := 4096 } &&
     d.executionLimits == { maxTriggers := 1, maxHandlers := 1, maxCanonicalBytes := 20480 }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`transactionCancellationCheckedGraph]
 
 /-- Old profiles physically omit the new declaration and constructors. -/
 def transactionSourceAbsent (s : CheckedProcess) : Bool :=
@@ -235,6 +239,8 @@ def transactionCancellationProgramGraph (p : Program) : Bool := Id.run do
     body.descriptor.protocol == "urn:bpmn-lean:effect-protocol:activity-v1" &&
     body.descriptor.operation == "urn:bpmn-lean:effect-operation:compensation-single-effect-v1" &&
     elements.all nonempty && decide elements.Nodup
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`transactionCancellationProgramGraph]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`only?]
 

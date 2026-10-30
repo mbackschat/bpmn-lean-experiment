@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 public import BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ADMIT-01 selects the complete mixed-body contract; generic graph validation remains a separate admission conjunct. -/
 
@@ -54,5 +55,7 @@ def admitted (program : Program) : Bool :=
       let identities := program.processId.value ::
         program.operations.filterMap sourceNode? ++ program.controlPlaces.map (·.origin.elementId.value)
       identities.eraseDups.length == identities.length
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SequentialScopeProgram #[`admitted]
 
 end BpmnSemantics.SemanticProcess.SequentialScopeProgram

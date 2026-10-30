@@ -37,6 +37,8 @@ def enterScopeWithCompensationRetention? (program : Program) (state : RuntimeSta
     | _ => none
   else pure successor
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`enterScopeWithCompensationRetention?]
+
 /-- Ordinary retained scope patches remain exact only when entry creates no Compensation register. -/
 theorem enterScopeWithCompensationRetention_unselected
     (program : Program) (state : RuntimeState) (input childEntry : ControlPlaceId)
@@ -137,6 +139,8 @@ def compensationCompletionRoute? (program : Program) (state : RuntimeState)
       some { state with tokens := addToken state.tokens trigger.output trigger.owner }
   | [.cancelTransaction ..] => finishTransactionCancellation? state trigger.owner trigger.output
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`compensationCompletionRoute?]
 
 /-- Operation kind determines the completion's scope contract, independently of its evaluator. -/
 inductive CompensationCompletionRouting (program : Program) (before : RuntimeState)
@@ -240,5 +244,7 @@ def attemptTransactionCancellation (program : Program) (operation : SemanticOper
             | _ => .refused .invalidState
       | _, _ => .disabled state
   | _, _ => .refused .invalidProgram
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`attemptTransactionCancellation]
 
 end BpmnSemantics.SemanticProcess

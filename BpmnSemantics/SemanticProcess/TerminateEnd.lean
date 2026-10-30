@@ -81,6 +81,8 @@ def selectedTerminateOwner? (program : Program) (before : RuntimeState)
         else none
     | _, _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`selectedTerminateOwner?]
+
 /-- Execute one exact containing-scope termination, producing no continuation token. -/
 def terminateScopeState? (program : Program) (before : RuntimeState)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)

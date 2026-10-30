@@ -53,6 +53,8 @@ def ScopeFacts (program : Program) (instanceId : SemanticId)
         parent.definitionScopeId = staticParent ∧ exactLiveOccurrence state parent = true
     | _, _ => False
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`ScopeFacts]
+
 def TokenFacts (program : Program) (state : RuntimeState) (token : ControlToken) : Prop :=
   (match uniqueControlPlace? program token.placeId,
       (match program.controlPlaceScopes.filter (fun ownership =>
@@ -62,6 +64,8 @@ def TokenFacts (program : Program) (state : RuntimeState) (token : ControlToken)
     | some _, some staticOwner =>
         staticOwner = token.owner.definitionScopeId && exactLiveOccurrence state token.owner
     | _, _ => false) = true
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`TokenFacts]
 
 def PositionFacts (program : Program) (expected hosting : SemanticId)
     (state : RuntimeState) : Prop :=

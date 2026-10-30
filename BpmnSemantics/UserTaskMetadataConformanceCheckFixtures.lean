@@ -6,6 +6,7 @@ public import BpmnSemantics.BooleanProcessDataConformanceCheckFixtures
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
 public import BpmnSemantics.SemanticProcess.ControlPosition
 public import BpmnSemantics.SemanticProcessJson.Observation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # UserTaskMetadataConformance check fixtures
 
@@ -54,6 +55,8 @@ def checkedProcessFor (metadata : UserTaskMetadata) : CheckedProcess :=
     nodes := sequentialCheckedProcess.nodes.map fun
       | .userTask id name _ => .userTask id name (some metadata)
       | node => node }
+
+run_meta privateMatchEquations `BpmnSemantics.UserTaskMetadataConformance #[`checkedProcessFor]
 
 def programFor (metadata : UserTaskMetadata) : Program :=
   lowerCheckedProcess (checkedProcessFor metadata)

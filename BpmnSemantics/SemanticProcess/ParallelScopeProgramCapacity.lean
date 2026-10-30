@@ -96,6 +96,8 @@ def analyzeProgram (program : Program) : Option ProgramAnalysis := do
             parent.any (fun operation => match operation with | .awaitUserTask .. | .awaitEffect .. => true | _ => false),
             parent.any (fun operation => match operation with | .awaitEffect .. => true | _ => false), width⟩
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.ParallelScopeStart #[`analyzeProgram]
+
 /-- Required inputs are checked before collection cardinality, including the empty collection. -/
 def programStartCapacity (program : Program) (bindings : List VariableBinding) : Option ProgramCapacity := do
   let analysis ← analyzeProgram program
@@ -109,6 +111,8 @@ def programStartCapacity (program : Program) (bindings : List VariableBinding) :
     let frontier ← boundedFrontier waits effects
     let bound ← boundedClosureBound analysis.parentCount analysis.childCount items.length
     pure ⟨bound, frontier.waits, frontier.effects⟩
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.ParallelScopeStart #[`programStartCapacity]
 
 /-- The retained Process collection and exact surviving controller population settle resumption capacity. -/
 def programStateCapacity (program : Program) (state : RuntimeState) : Option ProgramCapacity := do
@@ -140,6 +144,8 @@ def programStateCapacity (program : Program) (state : RuntimeState) : Option Pro
       else some capacity
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.ParallelScopeStart #[`programStateCapacity]
+
 def commandClosureLimit? (program : Program) (state : RuntimeState) (stimulus : Stimulus) : Option Nat :=
   if !programSelected program then some scenarioClosureLimit
   else if !committedStateCollectionAdmitted state ||
@@ -147,6 +153,8 @@ def commandClosureLimit? (program : Program) (state : RuntimeState) (stimulus : 
   else match state.control, stimulus with
     | .notStarted, .startProcess _ _ _ bindings => (programStartCapacity program bindings).map (·.closureBound)
     | _, _ => (programStateCapacity program state).map (·.closureBound)
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.ParallelScopeStart #[`commandClosureLimit?]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeStart #[`analyzeProgram]
 

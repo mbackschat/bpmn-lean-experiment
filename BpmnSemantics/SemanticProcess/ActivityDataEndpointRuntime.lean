@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.PropertyPathValuePolicy
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Owned Activity data endpoints
 
@@ -20,6 +21,8 @@ def activityDataPropertyOwner (state : RuntimeState) (owner : ScopeOccurrenceId)
   | .running instanceId => decide (owner.processInstanceId = instanceId)
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`activityDataPropertyOwner]
+
 def readActivityDataInput? (policy : PropertyPathValuePolicy) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (input : DirectActivityDataInput) : Option VariableBinding :=
   match input.source with
@@ -31,6 +34,8 @@ def readActivityDataInput? (policy : PropertyPathValuePolicy) (state : RuntimeSt
       else none
   | .processDataInput dataInputId =>
       readProcessInterfaceInput? state.variables owner dataInputId
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`readActivityDataInput?]
 
 /-- A Property target follows the Program's Property-path policy; a Process DataOutput keeps the
 scalar interface domain whatever the policy. -/

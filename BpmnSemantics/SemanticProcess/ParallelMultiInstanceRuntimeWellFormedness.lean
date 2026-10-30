@@ -35,6 +35,8 @@ def parallelRecordForController? (state : RuntimeState)
   | [record] => some record
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`parallelRecordForController?]
+
 def parallelWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
   { processInstanceId := wait.processInstanceId
     elementId := ⟨wait.task.id.value⟩

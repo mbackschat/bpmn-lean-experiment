@@ -31,6 +31,8 @@ def monitoredRunningInstance? (state : RuntimeState) : Option SemanticId :=
   | .running instanceId => some instanceId
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`monitoredRunningInstance?]
+
 def armMonitoredUserTaskState? (state : RuntimeState) (input : ControlPlaceId)
     (task : BoundedTaskArm) (boundaryTimer : BoundaryTimerArm) :
     Option RuntimeState := do
@@ -88,6 +90,8 @@ def monitoredTaskOperations (program : Program) :
     | .awaitMonitoredUserTask _ _ input task boundaryTimer =>
         some (input, task, boundaryTimer)
     | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`monitoredTaskOperations]
 
 /-- True when the occurrence names the monitored Activity of a committed monitored-task operation. -/
 def isMonitoredTaskDefinition (program : Program) (taskId : TaskDefinitionId) :

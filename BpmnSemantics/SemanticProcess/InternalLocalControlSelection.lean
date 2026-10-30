@@ -103,6 +103,8 @@ def selectInternalLocalControl? (state : RuntimeState) (operation : SemanticOper
       | _ => none
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalLocalControl?]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalLocalControlSelection.apply,
   `selectInternalLocalControl?]
 

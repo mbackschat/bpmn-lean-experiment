@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalSelection
 import all BpmnSemantics.SemanticProcess.BoundedScope
 import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
 import all BpmnSemantics.SemanticProcess.MonitoredScope
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! ADINPUT-SCOPE-01 and ADIO-SCOPE-01 require retained Activity-local data to keep its exact
 live Activity owner. This private preparation condition leaves the global Effect-only predicate
@@ -32,6 +33,8 @@ def regionalRetainedLocalDataClosed (state : RuntimeState)
           match state.activityOccurrences.filter (regionalLocalScopeNamesActivity scope) with
           | [record] => keepActivity record
           | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`regionalRetainedLocalDataClosed]
 
 def regionalSelectionLocalDataRetention (state : RuntimeState)
     (selected : InternalRegionalSelection) : ActivityVariableScope → Bool :=

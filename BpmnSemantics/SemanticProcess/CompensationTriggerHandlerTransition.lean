@@ -48,6 +48,8 @@ def findUnique? (candidates : List α) : Option α :=
   | [candidate] => some candidate
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`findUnique?]
+
 def boundaryDefinitionFor? (declaration : CompensationExecutionDeclaration)
     (activity : ActivityOccurrenceId) : Option CompensationSubjectDefinition :=
   findUnique? (declaration.subjects.filter fun definition =>
@@ -201,6 +203,8 @@ def compensationTriggerOwnerRejected (state : RuntimeState)
     (state.scopeOccurrences.filter fun occurrence =>
       occurrence.id == owner && occurrence.parent.isNone).length != 1
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`compensationTriggerOwnerRejected]
+
 /-- Constructs the production trigger and activates its first maximal frontier atomically. -/
 def constructCompensationTriggerFrontier (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (owner : ScopeOccurrenceId)
@@ -221,6 +225,8 @@ def constructCompensationTriggerFrontier (program : Program) (state : RuntimeSta
             handlers
             dependencies := occurrenceDependencies program declaration handlers }
   | _, _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`constructCompensationTriggerFrontier]
 
 /-- Constructs every prospective record before consuming the throw token or eligible sources. -/
 def attemptCompensationTrigger (program : Program) (operation : SemanticOperation)

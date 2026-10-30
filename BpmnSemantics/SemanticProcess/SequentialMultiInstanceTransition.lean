@@ -217,6 +217,8 @@ def enterSequentialMultiInstance? (arm : SequentialMultiInstanceArm) (state : Ru
           some (firstIterationEntryState arm state instanceId owner (first :: rest))
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`enterSequentialMultiInstance?]
+
 /-- `SMI-ITERATE-01` and `SMI-COMPLETE-01`, which are one evaluator with two arms.
 
 One function because the deciding fact is one read: whether this completion filled the last slot.
@@ -251,6 +253,8 @@ def completeSequentialMultiInstanceInnerTask? (arm : SequentialMultiInstanceArm)
         | _ => none
       else none
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`completeSequentialMultiInstanceInnerTask?]
 
 /-- `SMI-CANCEL-01`. Answers `none` for a stale deadline, a foreign element, a deadline no record
 lists, a child-scope body, a missing controller, or an instant other than the committed one. -/

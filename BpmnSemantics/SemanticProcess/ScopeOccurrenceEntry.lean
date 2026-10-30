@@ -42,6 +42,8 @@ def enterConcurrentScopeState? (state : RuntimeState) (parent : ScopeOccurrenceI
           scopeActivations := setScopeActivationCount state.scopeActivations childScopeId child.activation }
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`enterConcurrentScopeState?]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`concurrentScopeChild]
 
 /-- The sole owner of a place's tokens owns one of them. -/

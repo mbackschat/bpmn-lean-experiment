@@ -24,6 +24,7 @@ verify_common() {
 verify_lean_library() {
   LEAN_FULL_GATE=verify-lean-library ./scripts/lake.sh test
   LEAN_FULL_GATE=verify-lean-conformance ./scripts/lake.sh build BpmnConformance
+  ./scripts/lake.sh run scripts/lean-realized-leaks.lean BpmnSemantics.RealizedLeakFixtures scripts/lean-realized-leaks.tsv BpmnSemantics BpmnConformance
 }
 
 verify_lean_checks() {

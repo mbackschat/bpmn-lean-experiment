@@ -128,6 +128,8 @@ def parentContinuationMarking (entry : ParallelScopeEntry) (parent : ScopeOccurr
       (match record.body with | .parallelChildScopes .. => true | _ => false) &&
       entry.normalOutput == place).length
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`parentContinuationMarking]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`parentContinuationMarking]
 
 /-- PMIS-ENTER-01 supplies exactly the issued bodies' entry-port credits, preserving every prior continuation. -/

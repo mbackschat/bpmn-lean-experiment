@@ -29,6 +29,8 @@ def boundedCompletionDeclarations (program : Program) (scopeId : DefinitionScope
         if child = scopeId then some timer else none
     | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`boundedCompletionDeclarations]
+
 inductive InternalCompletionWithdrawal where
   | unbounded
   | bounded (record : ActivityOccurrence) (deadline : TimerWait)
@@ -56,6 +58,8 @@ def selectInternalCompletionWithdrawal? (program : Program) (state : RuntimeStat
             | _ => none
       | _ => none
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalCompletionWithdrawal?]
 
 /-- A monitored child retains its exact Activity even after consuming a one-shot deadline.
 The immutable completion route is checked during preparation, before any runtime mutation. -/

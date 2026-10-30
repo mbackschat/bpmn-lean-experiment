@@ -82,6 +82,8 @@ def boundedTaskOperations (program : Program) :
         some (input, task, boundaryTimer)
     | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`boundedTaskOperations]
+
 /-- True when the occurrence names the bounded Activity of a committed bounded-task operation. -/
 def isBoundedTaskDefinition (program : Program) (taskId : TaskDefinitionId) :
     Bool :=

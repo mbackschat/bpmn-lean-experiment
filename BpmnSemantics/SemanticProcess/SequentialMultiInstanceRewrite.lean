@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityBodyTurnover
 public import BpmnSemantics.SemanticProcess.WaitActivation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Sequential Multi-Instance definition facts and state rewrites
 
@@ -97,6 +98,8 @@ def sequentialMultiInstanceOperationForTask? (program : Program)
       | _ => false with
   | [operation] => some operation
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`sequentialMultiInstanceOperationForTask?]
 
 /-- The unique committed sequential Multi-Instance operation declaring this lifetime deadline. -/
 def sequentialMultiInstanceOperationForTimer? (program : Program)

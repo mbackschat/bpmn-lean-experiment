@@ -112,6 +112,8 @@ def selectInternalScopeCreation? (state : RuntimeState) (operation : SemanticOpe
       else none
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalScopeCreation?] (congruence := true)
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalScopeCreationSelection.apply,
   `selectInternalScopeCreation?]
 

@@ -133,6 +133,8 @@ def childRetentionStateValid (declaration : CompensationActivityRetentionDeclara
           | _ => false
     | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`childRetentionStateValid]
+
 /-- Program-aware state validity. Lean's list represents both physical omission and empty collection;
 the Program declaration supplies the distinction at the strict wire boundary. -/
 def compensationActivityRetentionStateValid (program : Program)
@@ -333,6 +335,8 @@ def retainCompletedCompensableActivity (program : Program)
                               record
                     | _ => .refused .registerAbsent state
                 | none => .refused .malformedCompletion state
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`retainCompletedCompensableActivity]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completionOwnerValid, `retainCompletedCompensableActivity]
 

@@ -27,6 +27,8 @@ def dataInputRunningInstance? (state : RuntimeState) :
   | .running instanceId => some instanceId
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dataInputRunningInstance?]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`dataInputRunningInstance?]
 
 theorem dataInputRunningInstance_of_running {state : RuntimeState}
@@ -44,6 +46,8 @@ def dataInputSourceBinding? (state : RuntimeState)
       | [binding] => some binding
       | _ => none
   | .processDataInput _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dataInputSourceBinding?]
 
 /-- `ADINPUT-READY-01` and `ADINPUT-COPY-01`. Consumes the incoming token and produces the task occurrence, its Activity record, and the occurrence-owned copy in one step.
 
@@ -92,6 +96,8 @@ def dataInputTaskOperations (program : Program) :
   program.operations.filterMap fun
     | .awaitDataInputUserTask _ _ _ output taskId _ _ => some (taskId, output)
     | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dataInputTaskOperations]
 
 /-- True when the task identity is declared by exactly one data-input entry operation. -/
 def isDataInputTaskDefinition (program : Program) (taskId : TaskDefinitionId) :

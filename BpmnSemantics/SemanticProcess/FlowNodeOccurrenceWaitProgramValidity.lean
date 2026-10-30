@@ -234,6 +234,8 @@ def timerWaitValid (program : Program) (state : RuntimeState)
           boundaryTimerOperationMatches program state wait operation
       | _ => false).length = 1
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`timerWaitValid]
+
 /-- Exact immutable-Program correspondence for every wait family used by open projection. -/
 def flowNodeOccurrenceWaitProgramValidity (program : Program) (state : RuntimeState) : Bool :=
   flowNodeOccurrenceUserTaskProgramValidity program state &&

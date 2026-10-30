@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! IMES-ARM/TRIGGER/EXPIRE state phases for the bounded application-withdrawal account.
 The family predicate adds listener lifetime and interruption constraints to the unchanged generic invariant. -/
@@ -16,6 +17,8 @@ def scopeCount? (state : RuntimeState) (scope : DefinitionScopeId) : Option Nat 
   | [] => some 0
   | [counter] => some counter.count
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`scopeCount?]
 
 def messageCount? (state : RuntimeState) (element : NodeId) : Option Nat :=
   match state.messageActivations.filter (·.elementId == element) with
@@ -69,6 +72,8 @@ def interruptingMessageEventSubProcessStateValid (program : Program) (state : Ru
         unselectedWorkAbsent state && state.eventSubProcessMessageSubscriptions.isEmpty &&
           state.scopeOccurrences.isEmpty && state.tokens.isEmpty && state.waits.isEmpty &&
           state.activityOccurrences.isEmpty && !state.initiationPending
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`interruptingMessageEventSubProcessStateValid]
 
 /-- The bounded handler account retains every generic state obligation and adds its phase constraints. -/
 def interruptingMessageEventSubProcessCheckpointStateWellFormed (program : Program)

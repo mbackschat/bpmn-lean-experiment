@@ -306,6 +306,8 @@ def sequentialMultiInstanceControllerProgramBindingValid (program : Program)
       | _ => false
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`sequentialMultiInstanceControllerProgramBindingValid]
+
 /-- Every open controller satisfies the exact program-to-runtime binding. -/
 def sequentialMultiInstanceControllerProgramBindingsValid (program : Program)
     (state : RuntimeState) : Bool :=
@@ -653,6 +655,8 @@ def hiddenRecordDeclarationsValid (program : Program) (state : RuntimeState) : B
 
 /-! ## The predicate -/
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`hiddenRecordDeclarationsValid]
+
 /-- Which `RuntimeState` values the semantic account admits, for one program and one expected
 semantic instance identity.
 
@@ -688,6 +692,8 @@ def runtimeStateWellFormed (program : Program) (instanceId : SemanticId)
       compensationActivityRetentionStateValid program state &&
       compensationEventSubProcessSnapshotStateValid program state &&
       compensationExecutionStateValid program state && sequentialScopeStateValid program state)
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`runtimeStateWellFormed] (congruence := true)
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`runtimeStateWellFormed]
 

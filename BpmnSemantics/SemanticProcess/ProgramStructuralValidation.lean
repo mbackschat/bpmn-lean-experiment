@@ -527,6 +527,8 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
         nonempty boundaryEventElementId.value && boundaryEventElementId != origin.elementId &&
         placeExists places input && placeExists places output
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`operationWellFormed] (congruence := true)
+
 def isInitiate : SemanticOperation → Bool
   | .initiate .. => true
   | .initiateMessage .. => true

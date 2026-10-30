@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ScopeVariableData
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-DATA-01/PMIS-DATA-01: shared write policy after validating the exact repeated-body binding. -/
 
@@ -30,6 +31,8 @@ def writeBoundMultiInstanceScopeValues? (variables : ScopedVariables) (owner : S
     let variables ← writeScopeVariables? variables owner (values.filter fun value => condition != some value.name)
     let processValues := values.filter fun value => condition == some value.name
     some { variables with process := { bindings := mergeProcessVariableBindings variables.process.bindings processValues } }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`writeBoundMultiInstanceScopeValues?]
 
 /-- Both writer kinds preserve every nonselected body frame, including its order and multiplicity. -/
 theorem writeBoundMultiInstanceScopeValues_preserves_other_scopes

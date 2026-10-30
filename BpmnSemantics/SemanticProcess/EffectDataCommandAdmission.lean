@@ -44,6 +44,8 @@ def serialEffectPatchUnder? (policy : EffectMappingValuePolicy) (handlers : List
         | _ => none
       return mergeProcessVariableBindings bindings writes
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`serialEffectPatchUnder?]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`serialEffectPatchUnder?]
 
 theorem serialEffectPatchUnder?_scalar (handlers : List String) (outputs : List VariableMapping)
@@ -79,6 +81,8 @@ def completeSerialActivityScopeUnder? (policy : EffectMappingValuePolicy) (handl
         process := { bindings }
         activities := variables.activities.filter fun scope => !activityScopeMatches owner scope }
   | _, _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`completeSerialActivityScopeUnder?]
 
 def completeSerialEffectUnder? (policy : EffectMappingValuePolicy) (program : Program)
     (state : RuntimeState) (effectId : EffectOccurrenceId) (result : EffectExecutionResult) :

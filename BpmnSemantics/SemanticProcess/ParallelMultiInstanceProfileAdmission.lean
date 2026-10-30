@@ -34,6 +34,8 @@ def programSequentialMultiInstanceProfileMatches (program : Program) : Bool :=
     | _ => false) ==
       decide (program.identity.semanticProfile = sequentialMultiInstanceUserTaskProfileId)
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`programSequentialMultiInstanceProfileMatches]
+
 def exactParallelCheckedNode : CheckedNode → Bool
   | .parallelMultiInstanceUserTask _ _ _ _ condition _ boundaryTimer =>
       condition.language = simpleBooleanExpressionLanguage &&
@@ -93,6 +95,8 @@ def programParallelMultiInstanceProfileMatches (program : Program) : Bool :=
       | [entry], [completion] => parallelMultiInstanceOperationsPair entry completion
       | _, _ => false
     else true
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`programParallelMultiInstanceProfileMatches]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`programParallelMultiInstanceProfileMatches]
 

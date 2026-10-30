@@ -76,6 +76,8 @@ def enterParallelScope? (entry : ParallelScopeEntry) (state : RuntimeState)
             parallelScopeControllers := issued.parallelScopeControllers ++
               [⟨⟨parent.processInstanceId, ⟨entry.elementId.value⟩, activation⟩, items.length, 0⟩] }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`enterParallelScope?]
+
 def parallelRuntimeActivityId (record : ActivityOccurrence) : ActivityOccurrenceId :=
   ⟨record.processInstanceId, ⟨record.activityElementId.value⟩, record.activation⟩
 
@@ -120,6 +122,8 @@ def parallelScopeBinding? (entry : ParallelScopeEntry) (state : RuntimeState)
     if controller.total > 16 || !validParallelScopePopulation controller iterations ||
         !(iterations.all fun iteration => parallelScopeBodyBound entry state record iteration.scope) then none
     else some ⟨record, controller, iterations⟩
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`parallelScopeBinding?]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`parallelCompletionCondition?]
 
@@ -246,5 +250,7 @@ def applyParallelScopeOperation? (program : Program) (operationId : OperationId)
             body.parent.map (·.definitionScopeId) != some entryOwner.scopeId then none
         else completeParallelScope? entry state owner
     | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`applyParallelScopeOperation?]
 
 end BpmnSemantics.SemanticProcess

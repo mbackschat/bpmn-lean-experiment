@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.ContinuationMarking
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SMIS-ADMIT-01 composes body bursts with the outer lifecycle; generic graph and data admission remain separate conjuncts. -/
 
@@ -16,6 +17,8 @@ def consumer? (operations : List SemanticOperation) (place : ControlPlaceId) : O
   let [operation] := operations.filter (fun operation => (inputs operation).contains place) | none
   return operation.id.value
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SequentialScopeControl #[`consumer?]
+
 def bodyVertex? (operations : List SemanticOperation) (operation : SemanticOperation) : Option StructuredParallelBody.Vertex := do
   let (kind, outputs) ← match operation with
     | .awaitUserTask _ _ _ output _ | .awaitEffect _ _ _ output _ none => some (.task, [output])
@@ -24,6 +27,8 @@ def bodyVertex? (operations : List SemanticOperation) (operation : SemanticOpera
     | .reachNoneEnd .. => some (.finish, [])
     | _ => none
   return ⟨operation.id.value, kind, ← outputs.mapM (consumer? operations)⟩
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SequentialScopeControl #[`bodyVertex?]
 
 def parentPath : Nat → List SemanticOperation → OperationId → ControlPlaceId → Bool → Nat → Nat → Option (Nat × Nat)
   | 0, _, _, _, _, _, _ => none
@@ -38,6 +43,8 @@ def parentPath : Nat → List SemanticOperation → OperationId → ControlPlace
       | .reachNoneEnd .. => if entered && rest.isEmpty then some (before, after) else none
       | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SequentialScopeControl #[`parentPath]
+
 def parentWaits? (operations : List SemanticOperation) (entryId : OperationId) : Option (Nat × Nat) := do
   let [start] := operations.filter (fun operation => match operation with | .initiate .. => true | _ => false) | none
   let [completion] := operations.filter (fun operation => match operation with | .completeScope .. => true | _ => false) | none
@@ -45,6 +52,8 @@ def parentWaits? (operations : List SemanticOperation) (entryId : OperationId) :
   let .completeScope _ _ _ none := completion | none
   parentPath operations.length (operations.filter fun operation => operation.id != start.id && operation.id != completion.id)
     entryId output false 0 0
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SequentialScopeControl #[`parentWaits?]
 
 /-- Turnover includes the old body's final steps, replacement, and the next body's arming in one resumption. -/
 def maximumBurst (bursts : StructuredParallelBody.Bursts) (before after : Nat) : Nat :=
@@ -92,6 +101,8 @@ def analyze (program : Program) : Option Analysis := do
           let maximum := maximumBurst bursts before after
           if maximum > scenarioClosureLimit then none
           else return ⟨entry.id, entry.childScopeId, maximum⟩
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SequentialScopeControl #[`analyze] (congruence := true)
 
 /-- SMIS-ADMIT-01 retains the exact graph and parent spine used to calculate the accepted command bound. -/
 theorem analyze_body_certificate (program : Program) (analysis : Analysis)

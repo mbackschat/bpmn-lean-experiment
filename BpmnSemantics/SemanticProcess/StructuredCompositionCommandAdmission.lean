@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ValueDomain
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-AVAILABLE-01 binds starts to the independently computed input requirements. SPC-COMMAND-01 prevents the profile's scalar completion domain from granting ordinary tasks a Process-data write. Composed completion retains its existing declaration-bound output validation. -/
 
@@ -26,6 +27,8 @@ def structuredCompositionOrdinaryCompletionAdmitted (program : Program)
     (program.operations.filter fun op => match op with
       | .awaitUserTask _ _ _ _ task => task.id.value == taskId.elementId.value
       | _ => false).length == 1
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`structuredCompositionOrdinaryCompletionAdmitted]
 
 def structuredCompositionScenarioStartAdmitted (program : Program)
     (stimuli : List Stimulus) : Bool :=

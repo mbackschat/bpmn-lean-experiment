@@ -34,6 +34,8 @@ def mergeExclusiveState? (state : RuntimeState)
             output token.owner }
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`mergeExclusiveState?]
+
 /-- General declarative Exclusive Merge relation: each offered token occurrence permits one ownership-preserving pass-through without synchronization or input priority. -/
 inductive MergeExclusiveStep : RuntimeState -> List ControlPlaceId ->
     ControlPlaceId -> RuntimeState -> Prop where

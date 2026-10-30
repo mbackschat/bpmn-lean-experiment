@@ -101,6 +101,8 @@ def completeUserTask? (program : Program) (state : RuntimeState) (taskId : UserT
     let variables ← writeAll? program successor.scopeOccurrences successor.variables wait.owner values
     some { successor with variables }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`completeUserTask?]
+
 theorem completeUserTask?_unadmitted (program : Program) (state : RuntimeState) (taskId : UserTaskInstanceId)
     (values : List VariableBinding) (unadmitted : programAdmitted program = false) :
     completeUserTask? program state taskId values = none := by

@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Parent-owned Message listener registration for IMES-ARM-01. This owner reserves the exact shared
 Message identity without creating an executing handler; command admission owns when registration runs. -/
@@ -24,6 +25,8 @@ def eventSubProcessMessageCount? (state : RuntimeState) (element : NodeId) : Opt
   | [] => some 0
   | [counter] => some counter.count
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`eventSubProcessMessageCount?]
 
 /-- Registration changes the passive collection and its issuance history only; no child scope is created. -/
 def installEventSubProcessListener (state : RuntimeState)

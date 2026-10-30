@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
 public import BpmnSemantics.SemanticProcess.ValueDomain
 import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation checkpoint start-data admission
 
@@ -121,6 +122,8 @@ def compensationStartDataAdmitted (program : Program) (instanceId : SemanticId)
           compensationExecutionCapacityRefusal? execution [projection.trigger]
             projection.waits = none
     | _, _, _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`compensationStartDataAdmitted]
 
 /-- Exact admission implies both inherited canonical-byte inequalities. -/
 theorem compensationStartDataAdmitted_implies_canonical_capacities

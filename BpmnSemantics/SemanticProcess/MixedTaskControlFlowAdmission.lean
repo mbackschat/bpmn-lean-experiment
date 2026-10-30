@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.GraphReachability
 import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
 public import BpmnSemantics.SemanticProcessContract
 import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! MTCF-SOURCE-01, MTCF-DATA-01 and MTCF-PROGRESS-01 require independent checked-graph and Program analysis; writer barriers and wait cuts prevent later writes or resumptions from justifying first-entry data or internal progress. -/
 
@@ -113,6 +114,8 @@ def maximumBurst? (vertices : List Vertex) (ranks : List Rank) : Option Nat := d
     | _ => []
   return (← entries.mapM (rank? ranks)).foldl max 0
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.MixedTaskControlFlow #[`maximumBurst?]
+
 def readNames (vertices : List Vertex) : List String :=
   (vertices.flatMap (·.reads)).eraseDups
 
@@ -147,6 +150,8 @@ def analyze (vertices : List Vertex) : Option Analysis := do
       if !(ranksValid vertices ranks && maximumBurst ≤ scenarioClosureLimit) then none
       else return { vertices, startId := start.id, finishId := finish.id, cutOrder, ranks,
                     required := requiredInputs vertices start.id, maximumBurst }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.MixedTaskControlFlow #[`analyze]
 
 def checkedConditionValid : Option CheckedCondition → Bool
   | none => false
@@ -392,6 +397,8 @@ def programAnalysis (program : Program) : Option Analysis := do
           if !uniqueNames identities then none
           else analyze (← operations.mapM (operationVertex? program))
     | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.MixedTaskControlFlow #[`programAnalysis]
 
 def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) : Bool :=
   match programAnalysis program with

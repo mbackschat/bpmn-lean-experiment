@@ -57,6 +57,8 @@ def selectInternalExecutionFrontier (mode : InternalSchedulingMode) (ordinal : N
                   | none => .ambiguous
       | _ => .ambiguous
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalExecutionFrontier]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`selectInternalExecutionFrontier]
 
 /-- A singleton uses no scheduling directive when its preparation names that same discovered alternative. -/
@@ -240,6 +242,8 @@ def singletonClosureStep (program : Program) (commandId : SemanticId)
           let publication ← actualInternalAlternativePublication? program instanceId state offer.successor
             offer.operation offer.alternative commandId first
           some [publication.lifecycle] }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`singletonClosureStep]
 
 def acceptOccurrencePublicationPrefixes? (program : Program) (state : RuntimeState) :
     List InstantiatedInternalTransitionPublication → List RuntimeState → Option Unit

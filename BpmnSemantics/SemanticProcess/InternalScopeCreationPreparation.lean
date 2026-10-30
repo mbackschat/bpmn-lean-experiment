@@ -151,6 +151,8 @@ def prepareInternalScopeCreation? (program : Program) (state : RuntimeState)
       let delta ← internalScopeCreationPositionDelta? program selected
       some (makeInternalScopeCreationPreparation state selected instanceId ownerRecord start delta)
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareInternalScopeCreation?]
+
 def applyPreparedInternalScopeCreation? (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalScopeCreation) : Option RuntimeState :=
   if prepareInternalScopeCreation? program state prepared.selection.operation = some prepared then

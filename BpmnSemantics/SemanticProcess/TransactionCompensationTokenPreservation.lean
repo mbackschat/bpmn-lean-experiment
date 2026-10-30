@@ -102,6 +102,8 @@ def TokenPatch.SeparatesActiveCancelOwners
             ∀ place ∈ patch.produced, patch.owner ≠ trigger.owner
       | _ => True
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.TokenPatch #[`SeparatesActiveCancelOwners]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.TokenPatch #[`SeparatesActiveCancelOwners]
 
 theorem TokenPatch.separatesActiveCancelOwners_of_root

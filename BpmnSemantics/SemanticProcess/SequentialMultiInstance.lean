@@ -111,6 +111,8 @@ def activeInstanceCount (state : RuntimeState)
       | .childScope _ | .parallelChildScopes .. => 0
   | _ => 0
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`activeInstanceCount]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activeInstanceCount]
 
 /-- Generated equals active plus completed, for a controller bound to one live task-bodied record.

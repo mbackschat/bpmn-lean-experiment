@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.BoundedScopeArming
 public import BpmnSemantics.SemanticProcess.BoundedScope
 public import BpmnSemantics.SemanticProcess.InternalOperationAttempt
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation Event Sub-Process snapshot-aware scope transitions -/
 
@@ -22,6 +23,8 @@ def childOccurrenceAfterEntry? (state : RuntimeState)
         occurrence.id.definitionScopeId == childScopeId with
   | [child] => some child
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`childOccurrenceAfterEntry?]
 
 /-- Apply child entry only after its selected snapshot reservation has been decided. -/
 def applyPreparedReservation (program : Program)
@@ -151,5 +154,7 @@ def attemptCompleteScope (program : Program)
               applyValidSnapshotSuccessor program operation
                 (finishRootCompletion successor occurrence .retainPromoted)
   | _, _ => .disabled operation
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`attemptCompleteScope]
 
 end BpmnSemantics.SemanticProcess

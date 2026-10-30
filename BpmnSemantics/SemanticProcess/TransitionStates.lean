@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.WaitActivation
 public import BpmnSemantics.SemanticProcess.EventBasedGateway
 public import BpmnSemantics.SemanticProcess.SimpleBooleanExpression
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Single-operation state evaluators
 
@@ -21,6 +22,8 @@ def runningInstance? (state : RuntimeState) : Option SemanticId :=
   match state.control with
   | .running instanceId => some instanceId
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`runningInstance?]
 
 def awaitUserTaskState? (state : RuntimeState) (input output : ControlPlaceId)
     (task : UserTaskDefinition) : Option RuntimeState := do
@@ -105,5 +108,7 @@ def throwErrorState? (state : RuntimeState) (input : ControlPlaceId)
     if state.scopeOccurrences.any fun candidate => candidate.id == parent then
       some (interruptScope state owner parent handler.output)
     else none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`throwErrorState?]
 
 end BpmnSemantics.SemanticProcess

@@ -21,6 +21,8 @@ def uniqueScopeWithId? (program : Program) (id : DefinitionScopeId) :
   | [scope] => some scope
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`uniqueScopeWithId?]
+
 def subjectElementId? (program : Program) :
     CompensationSubjectDefinition → Option NodeId
   | .boundaryActivity subjectElementId _ => some subjectElementId
@@ -169,6 +171,8 @@ def declarationBodyIdentitiesValid (program : Program)
           (subjectIds ++ triggerIds) [] declaration.subjects
   | none => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`declarationBodyIdentitiesValid]
+
 def bodyElementsUnavailableToOperations (program : Program)
     (subjects : List CompensationSubjectDefinition) : Bool :=
   let bodyIds := subjects.flatMap bodyElementIds
@@ -208,6 +212,8 @@ def declarationScopeValid (program : Program)
             compensationTransactionRetentionShapeValid program retention
       | none => false
   | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`declarationScopeValid]
 
 def successorIds (dependencies : List CompensationDependency) (id : NodeId) : List NodeId :=
   (dependencies.filter fun dependency =>

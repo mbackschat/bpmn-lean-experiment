@@ -36,6 +36,8 @@ def producers (operations : List SemanticOperation)
     else
       none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`producers]
+
 def consumers (operations : List SemanticOperation)
     (place : ControlPlaceId) : List OperationId :=
   operations.filterMap fun operation =>
@@ -154,6 +156,8 @@ def operationRespectsScopes (program : Program)
           placesOwnedBy program
             (operationInputPlaces operation ++ operationOutputs operation) owner
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`operationRespectsScopes]
+
 def scopeEdges (program : Program) :
     List (GraphEdge DefinitionScopeId) :=
   program.definitionScopes.filterMap fun scope =>
@@ -219,6 +223,8 @@ def messageHandlerEdges (program : Program) : List (GraphEdge OperationId) :=
     | some start, [entry], some handlerCompletion, some parentCompletion =>
         [{ source := start, target := entry }, { source := handlerCompletion, target := parentCompletion }]
     | _, _, _, _ => []
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`messageHandlerEdges]
 
 def programEdges (program : Program) : List (GraphEdge OperationId) :=
   messageHandlerEdges program ++ placeEdges program ++ completionEdges program ++ parallelMultiInstanceCompletionEdges program ++

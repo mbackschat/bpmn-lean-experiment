@@ -41,6 +41,8 @@ def compensationHandlerIsMaximal (trigger : CompensationTriggerExecution)
   (match handler.lifecycle with | .pending _ => true | _ => false) &&
     !handlerHasUnfinishedSuccessor trigger handler
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`compensationHandlerIsMaximal]
+
 /-- Reads the activation counter used to construct the next compensation effect identity. -/
 def compensationEffectActivationCountIn (activations : List EffectActivation)
     (elementId : NodeId) : Nat :=

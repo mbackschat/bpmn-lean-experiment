@@ -146,6 +146,8 @@ def compensationSubjectMatches (left right : CompensationSubjectOccurrence) : Bo
   | .eventSubProcess left, .eventSubProcess right => left == right
   | _, _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`compensationSubjectMatches]
+
 def compensationSubjectValid : CompensationSubjectOccurrence → Bool
   | .boundaryActivity activity => activityOccurrenceIdValid activity
   | .eventSubProcess parent => scopeOccurrenceIdValid parent
@@ -162,6 +164,8 @@ def compensationSubjectDefinitionForOccurrence? (program : Program)
       | _, _ => false with
   | [subject] => some subject
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`compensationSubjectDefinitionForOccurrence?]
 
 def CompensationSubjectDefinition.body :
     CompensationSubjectDefinition → SingleEffectCompensationHandlerBody
@@ -215,6 +219,8 @@ def restoredContextMatchesInput (body : SingleEffectCompensationHandlerBody)
         parentFrame.bindings.isEmpty &&
         (processFrame.bindings.filter fun binding => binding.name == sourceName).length = 1
   | _, _, _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`restoredContextMatchesInput]
 
 def handlerMatchesDeclaration (program : Program) (triggerOwner : ScopeOccurrenceId)
     (handler : CompensationHandlerExecution) : Bool :=
@@ -301,6 +307,8 @@ def triggerLifecycleValid (transaction : Bool) (state : RuntimeState)
           handler.lifecycle == .compensated || handler.lifecycle == .failed ||
             handler.lifecycle == .terminated)
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`triggerLifecycleValid]
+
 def triggerMatchesDeclaration (program : Program) (state : RuntimeState)
     (declaration : CompensationExecutionDeclaration)
     (trigger : CompensationTriggerExecution) : Bool :=
@@ -321,6 +329,8 @@ def triggerMatchesDeclaration (program : Program) (state : RuntimeState)
         trigger.dependencies == expectedCompensationDependencies program declaration trigger.handlers &&
         triggerLifecycleValid (match operation with | .cancelTransaction .. => true | _ => false) state trigger
   | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`triggerMatchesDeclaration]
 
 def triggerIdentityBefore
     (left right : CompensationTriggerExecution) : Bool :=
@@ -348,6 +358,8 @@ def handlerArgumentsMatch (body : SingleEffectCompensationHandlerBody)
             | _ => false
         | _, _, _ => false
   | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`handlerArgumentsMatch]
 
 def waitMatchesHandler (program : Program)
     (triggers : List CompensationTriggerExecution)

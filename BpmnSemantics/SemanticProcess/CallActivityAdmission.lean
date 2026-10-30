@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 public import BpmnSemantics.SemanticProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Call Activity program admission
 
@@ -72,6 +73,8 @@ def processRootWithin (scopes : List DefinitionScope) :
           | some parent => processRootWithin scopes fuel parent
       | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`processRootWithin]
+
 /-- Count every identity-associated invoke/return before validating its other fields. Each invocation
 crosses from the scope that holds it into one exact called-root return pair, the called root never
 the entry root nor the root of the caller's own Process tree (CALLN-ADMIT-01). Stage B admits that
@@ -130,6 +133,8 @@ def callOperationsPaired (program : Program) : Bool :=
             (invokes.filter fun invoke =>
               invoke.returnOperationId = returned.id).length = 1
     | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`callOperationsPaired]
 
 /-- Paired invocation and Return declarations place the continuation in the invocation's scope.
 The returned operation is counted by identity before its output payload is used. -/
@@ -233,6 +238,8 @@ def callCompletionPairs (program : Program) : List (OperationId × OperationId) 
         | _ => none
     | _ => none
 
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`callCompletionPairs]
 
 theorem invoke_return_count (operations : List SemanticOperation) (returned : OperationId) :
     (operations.filter fun

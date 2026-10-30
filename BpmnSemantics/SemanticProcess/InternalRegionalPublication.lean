@@ -107,6 +107,8 @@ def regionalPositionDelta? (program : Program) (selected : InternalRegionalSelec
         exitedScopes := removedScopes.filter fun scope => scope.id != selected.root.id }
   | _, _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`regionalPositionDelta?]
+
 def regionalLifecycleTemplate? (program : Program) (state : RuntimeState) (selected : InternalRegionalSelection)
     (region : InternalOccurrenceRegion) (current : List OpenSemanticFlowNodeOccurrence) :
     Option (List FlowNodeIdentity × List UnnumberedFlowNodeOccurrenceEnd) :=

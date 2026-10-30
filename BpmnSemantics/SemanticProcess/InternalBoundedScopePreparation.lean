@@ -127,6 +127,8 @@ def prepareInternalBoundedScope? (program : Program) (state : RuntimeState)
       let delta ← internalScopeCreationPositionDelta? program selected.creation
       some (makeInternalBoundedScopePreparation state selected instanceId ownerRecord start delta)
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareInternalBoundedScope?]
+
 def applyPreparedInternalBoundedScope? (program : Program) (state : RuntimeState)
     (contract : InternalBoundedScopeContract) (prepared : PreparedInternalBoundedScope) : Option RuntimeState :=
   if prepareInternalBoundedScope? program state contract = some prepared then

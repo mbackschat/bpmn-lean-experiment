@@ -67,6 +67,8 @@ def sequentialScopeContinuation? (operations : List SemanticOperation)
         if id == entryId then some output else none
     | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`sequentialScopeContinuation?]
+
 /-- Each repeated body has exactly one completion with the same source Activity and child owner. -/
 def sequentialScopeOperationsPaired (program : Program) : Bool :=
   let entries := program.operations.filter fun
@@ -87,6 +89,8 @@ def sequentialScopeOperationsPaired (program : Program) : Bool :=
                 operationScope? program completionId == some childScopeId
           | _ => false).length == 1
     | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`sequentialScopeOperationsPaired]
 
 def hasRepeatedScopeEntry (program : Program) (scopeId : DefinitionScopeId) : Bool :=
   program.operations.any fun
@@ -130,6 +134,8 @@ def ordinaryScopeLifecycleValid (program : Program)
         program.operations.all fun operation =>
           enteredChildScopeId? operation ≠ some scope.id
     | some _ => scopeHasOneEntry program scope.id
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`ordinaryScopeLifecycleValid]
 
 /-- Ordinary graph lifecycle: every non-root scope has one entry and one completion strategy. -/
 def ordinaryScopeLifecycleWellFormed (program : Program)
@@ -242,6 +248,8 @@ def declaredScopeLifecycleValid (program : Program)
         | .completeEventSubProcess _ _ candidate => candidate == scope.id
         | _ => false).length == 1)
   else ordinaryScopeLifecycleValid program entryRootId scope
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`declaredScopeLifecycleValid]
 
 /-- Program-aware lifecycle admission derives exactly the valid declaration's handler scopes; callers cannot supply exemptions. -/
 def compensationEventSubProcessSnapshotScopeLifecycleWellFormed

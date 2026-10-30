@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Timer Start Event external admission
 
@@ -30,6 +31,8 @@ def timerStartTargetMatchesProgram (program : Program)
     | [(originId, durationMs)] =>
         originId.value = startEventId.value && durationMs = 1000
     | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`timerStartTargetMatchesProgram]
 
 /-- Admit one resolved Timer Start occurrence against one exact checked IL start. -/
 def admitTimerStart? (program : Program) (state : RuntimeState)

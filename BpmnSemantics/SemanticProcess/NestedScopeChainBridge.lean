@@ -28,6 +28,8 @@ def parentScope? (scopes : List DefinitionScope) (scopeId : DefinitionScopeId) :
   | [scope] => scope.parentScopeId
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`parentScope?]
+
 /-- `scopeId` and its ancestors, innermost first; the fuel bound terminates a cyclic parent relation. -/
 def chainWithin (scopes : List DefinitionScope) : Nat → DefinitionScopeId → List DefinitionScopeId
   | 0, _ => []

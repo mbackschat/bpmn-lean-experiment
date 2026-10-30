@@ -25,6 +25,8 @@ def humanValuesAdmitted (analysis : ParallelScopeStart.ProgramAnalysis) (binding
       match binding.value with | .boolean _ => true | _ => false
     else SerialBusinessTask.scalar binding.value)
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.ParallelScopeCommand #[`humanValuesAdmitted]
+
 def stimulusAdmitted (program : Program) (state : RuntimeState) (stimulus : Stimulus) : Bool :=
   if !ParallelScopeStart.programSelected program then true
   else if !InternalCommutation.occurrenceReservationStateValid state then false
@@ -38,6 +40,8 @@ def stimulusAdmitted (program : Program) (state : RuntimeState) (stimulus : Stim
       | .completeEffect _ _ (.success bindings) =>
           (ParallelScopeStart.programStateCapacity program state).isSome && SerialBusinessTask.bindingsValid analysis.handlers bindings
       | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.ParallelScopeCommand #[`stimulusAdmitted]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeCommand #[`stimulusAdmitted]
 
@@ -54,6 +58,8 @@ def completeTask? (program : Program) (state : RuntimeState) (id : UserTaskInsta
     let completed ← completeUserTask state id.processInstanceId ⟨id.elementId.value⟩ id.activation
     pure { completed with variables := { completed.variables with process := {
       bindings := mergeProcessVariableBindings completed.variables.process.bindings values } } }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.ParallelScopeCommand #[`completeTask?]
 
 def completeEffect? (program : Program) (state : RuntimeState) (id : EffectOccurrenceId)
     (result : EffectExecutionResult) : Option RuntimeState := do

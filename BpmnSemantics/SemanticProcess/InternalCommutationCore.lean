@@ -355,6 +355,8 @@ def exactProgramSelection (program : Program) (operation : SemanticOperation) (o
     | [binding] => decide (binding.scopeId = owner.definitionScopeId)
     | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`exactProgramSelection]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`exactProgramSelection]
 
 /-- Internal proof API connecting a prepared exact selection to the runtime declaration census. -/
@@ -399,6 +401,8 @@ def internalArmInput? : SemanticOperation → Option ControlPlaceId
   | .awaitTimer _ _ input _ _ | .awaitEffect _ _ input _ _ _ => some input
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalArmInput?]
+
 def internalArmOrigin? : SemanticOperation → Option BpmnElementOrigin
   | .awaitUserTask _ origin _ _ _ | .awaitMessage _ origin _ _ _
   | .awaitPayloadMessage _ origin _ _ _ _
@@ -434,6 +438,8 @@ def InternalArmingWrite.available (state : RuntimeState) : InternalArmingWrite �
   | .effect wait _ => !state.variables.activities.any (activityScopeMatches (effectWaitOccurrence wait))
   | _ => true
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation.InternalArmingWrite #[`available]
+
 /-- SMIS-DATA-01 binds prepared reads to the same selected body as input evaluation. NSD-READ-01
 reads scope frames, which no footprint atom names individually; like the SMIS read, a nested read
 therefore claims the Activity population, which keeps it out of the Process-only read-frame law. -/
@@ -457,6 +463,8 @@ def scopedEffectInputReads? (program : Program) (state : RuntimeState) (owner : 
       .sequentialScopeController (sequentialScopeActivityId binding.activity) binding.activity.owner,
       .scopeVariableScope owner, .scopeParent owner binding.body.parent,
       .scopeOccurrence binding.activity.owner] ++ processReads)
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`scopedEffectInputReads?]
 
 def prepareInternalArm? (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) : Option InternalArmingPatch := do
@@ -533,6 +541,8 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
         owner := owner
         write := write
         inputReads := scopedEffectInputReads? program state owner operation }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareInternalArm?]
 
 def applyInternalArmingPatch (state : RuntimeState)
     (patch : InternalArmingPatch) : RuntimeState :=
@@ -614,6 +624,8 @@ def footprintOfPatch (patch : InternalArmingPatch) : InternalTransitionFootprint
         .publicationPair patch.operation.id occurrence] ++ correlationPublications) }
 
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`footprintOfPatch]
+
 end InternalCommutation
 
 def internalTransitionFootprint? (program : Program) (state : RuntimeState) (operation : SemanticOperation) : Option InternalTransitionFootprint :=
@@ -630,6 +642,8 @@ def stateReadSetsDisjoint (writes reads : List InternalStateAtom) : Bool :=
     (!reads.contains .activityPopulation || !(writes.any fun atom => match atom with
       | .activityOccurrence _ | .activityPopulation => true
       | _ => false))
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`stateReadSetsDisjoint]
 
 end InternalCommutation
 

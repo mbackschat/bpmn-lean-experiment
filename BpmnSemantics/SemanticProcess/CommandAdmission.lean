@@ -64,6 +64,8 @@ def dispatchCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
   | .notStarted | .completed _ | .cancelled _ | .failed .. =>
       { outcome := .rejected, state }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dispatchCorrelatedPayloadMessage] (congruence := true)
+
 def admitCorrelatedPayloadMessage (program : Program) (state : RuntimeState)
     (delivery : DeliverCorrelatedPayloadMessageStimulus) : ExternalAdmission :=
   if program.identity.semanticProfile = messageKeyCorrelationProfileId &&
@@ -445,6 +447,8 @@ def dispatchStimulus (program : Program) (state : RuntimeState)
   | none => dispatchStimulusWithoutCompensationSnapshots program state stimulus
   | some _ => { outcome := .rejected, state }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dispatchStimulus] (congruence := true)
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`admitCorrelatedPayloadMessage, `dispatchStimulus]
 
 theorem dispatchStimulus_withSnapshotDeclaration_rejects (program : Program)
@@ -507,6 +511,8 @@ def reserveRootCompensationParentContextBeforeStart (program : Program)
                     reserved.compensationParentContextRetentions }
           | .refused reason _ => .refused reason before
       | _ => .refused .invalidState before
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`reserveRootCompensationParentContextBeforeStart] (congruence := true)
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`reserveRootCompensationParentContextBeforeStart]
 

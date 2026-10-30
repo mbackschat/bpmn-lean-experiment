@@ -33,6 +33,8 @@ def operationOwnedBy (program : Program) (operation : SemanticOperation)
   | [binding] => binding.scopeId = owner.definitionScopeId
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity.Internal #[`operationOwnedBy]
+
 /-- Internal proof API for the owner identity shared by occurrence families. -/
 def occurrenceOwnerValid (state : RuntimeState) (processInstanceId : SemanticId)
     (owner : ScopeOccurrenceId) (elementId : NodeId) (activation : Nat) : Bool :=
@@ -73,6 +75,8 @@ def scopeOperationBindingValid (program : Program) (occurrence : RuntimeScopeOcc
               origin.elementId = definition.originElementId
         | _ => false).length = 1
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`scopeOperationBindingValid]
+
 def runtimeScopeBindingValid (program : Program) (state : RuntimeState)
     (occurrence : RuntimeScopeOccurrence) : Bool :=
   match program.definitionScopes.filter fun scope =>
@@ -96,6 +100,8 @@ def runtimeScopeBindingValid (program : Program) (state : RuntimeState)
         | _, _, _ => false
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`runtimeScopeBindingValid]
+
 def callRecordValid (program : Program) (state : RuntimeState)
     (record : CalledProcessOccurrence) : Bool :=
   occurrenceOwnerValid state record.id.processInstanceId record.caller
@@ -109,6 +115,8 @@ def callRecordValid (program : Program) (state : RuntimeState)
             calledRootScopeId = record.calledRoot.definitionScopeId &&
             returnOperationId = record.returnOperationId
       | _ => false).length = 1
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`callRecordValid]
 
 /-- Structural scope and Call Activity correspondence for open-occurrence projection. -/
 def flowNodeOccurrenceStructuralProgramValidity (program : Program)

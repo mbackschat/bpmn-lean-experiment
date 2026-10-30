@@ -460,6 +460,8 @@ def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : Checke
     | _ => none
   return (⟨id, kind, outputs⟩, child)
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`checkedVertex?]
+
 /-- The parentless definition scope of the Process a Call names. -/
 def calledRoot? (source : CheckedProcess) (calledProcessId : ProcessId) : Option String := do
   let root ← StructuredComposition.unique? (source.definitionScopes.filter fun scope =>
@@ -535,6 +537,8 @@ def controlParentOutput? (program : Program) (child : DefinitionScopeId) : Optio
       if controlOperationScope? program completion == some child.value then some output else none
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`controlParentOutput?]
+
 /-- The caller output of the one empty-data return an invocation names, owned by its called root. -/
 def callerOutput? (program : Program) (calledRoot : DefinitionScopeId) (returnOperationId : OperationId) :
     Option ControlPlaceId := do
@@ -543,6 +547,8 @@ def callerOutput? (program : Program) (calledRoot : DefinitionScopeId) (returnOp
   | .returnProcess _ _ _ root output .empty =>
       if root == calledRoot && controlOperationScope? program returned == some calledRoot.value then some output else none
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`callerOutput?]
 
 def isCallReturn : SemanticOperation → Bool
   | .returnProcess .. => true
@@ -607,6 +613,8 @@ def programBodies (program : Program) (data : Option Data) : Option (List RawBod
              calls := members.filterMap fun op => match op with
                | .invokeProcess id _ _ _ calledRoot .. => some (id.value, calledRoot.value)
                | _ => none }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`programBodies]
 
 /-- A data-bearing embedded completion Program's declarations, handlers and mapped Service Tasks. -/
 private def programData (program : Program) : Option Data :=

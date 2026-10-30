@@ -249,7 +249,7 @@ test("the semantic package gate uses the library test driver without a duplicate
   ) as { scripts?: Record<string, string> };
   assert.equal(
     manifest.scripts?.["test:semantic"],
-    "LEAN_FULL_GATE=test-semantic ./scripts/lake.sh test && LEAN_FULL_GATE=test-semantic ./scripts/lake.sh build BpmnConformance && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
+    "LEAN_FULL_GATE=test-semantic ./scripts/lake.sh test && LEAN_FULL_GATE=test-semantic ./scripts/lake.sh build BpmnConformance && ./scripts/lake.sh run scripts/lean-realized-leaks.lean BpmnSemantics.RealizedLeakFixtures scripts/lean-realized-leaks.tsv BpmnSemantics BpmnConformance && pnpm build:semantic-core && tsc -p packages/semantic-core/tsconfig.type-test.json && node --test --test-concurrency=1 packages/semantic-core/test/*.test.ts",
   );
 });
 
@@ -618,6 +618,8 @@ test("Lean checks interpret their own witnesses and build package drivers native
   }
   await assertLineOccursOnce(verifyScriptPath, ".lake/build/bin/checkCallFamilyFixtures");
   await assertLineOccursOnce(verifyScriptPath, ".lake/build/bin/checkConformanceFixtures");
+  // The realized-constant check reads the `.olean` files both roots built, so it follows the second build directly.
+  assert.match(source, /LEAN_FULL_GATE=verify-lean-conformance \.\/scripts\/lake\.sh build BpmnConformance\n {2}\.\/scripts\/lake\.sh run scripts\/lean-realized-leaks\.lean BpmnSemantics\.RealizedLeakFixtures scripts\/lean-realized-leaks\.tsv BpmnSemantics BpmnConformance\n/u);
   assert.doesNotMatch(source, /lake\.sh exe/u);
 });
 

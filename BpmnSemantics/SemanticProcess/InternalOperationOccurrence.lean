@@ -77,6 +77,8 @@ def applyInternalOperationOccurrence? (program : Program) (state : RuntimeState)
       if unit input then some (reachNoneEndToken state owner input) else none
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyInternalOperationOccurrence?]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyInternalOperationOccurrence?]
 
 /-- Token-offer readiness reads exact scope resolution and owned units, independently of shared data and counters. -/
@@ -209,6 +211,8 @@ def occurrenceOwnerRootValid (program : Program) (state : RuntimeState) :
           | _, _ => false
       | _, _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`occurrenceOwnerRootValid]
+
 def occurrenceCounterBase? (state : RuntimeState) (operation : SemanticOperation) : Option Nat := do
   let (element, counters) ← match operation with
     | .awaitUserTask _ _ _ _ task => some (task.id.value, state.activations.map fun counter =>
@@ -287,6 +291,8 @@ def prepareReservedOccurrenceArm? (program : Program) (state : RuntimeState)
       owner := owner
       write := write }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareReservedOccurrenceArm?]
+
 /-- Exact-owner token controls retain immutable provenance and check every affected bucket. -/
 def prepareOccurrenceTokenPatch? (program : Program) (state : RuntimeState)
     (candidate : InternalOperationOccurrence) : Option InternalOccurrenceTokenPatch := do
@@ -314,6 +320,8 @@ def prepareOccurrenceTokenPatch? (program : Program) (state : RuntimeState)
   else pure ()
   let _ ← internalLocalControlPositionDelta? program tokens
   some { operation, tokens, endIncrement }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareOccurrenceTokenPatch?]
 
 def reserveOccurrenceMembers? (program : Program) (state : RuntimeState)
     (reserved : List InternalOccurrencePatch) : List InternalOperationOccurrence → Option (List InternalOccurrencePatch)

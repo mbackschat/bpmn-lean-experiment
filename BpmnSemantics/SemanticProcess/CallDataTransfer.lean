@@ -32,6 +32,8 @@ def scalarReturnRecord? (state : RuntimeState) (id : OperationId)
   | [record] => some record
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`scalarReturnRecord?]
+
 def invokeProcessWithDataState? (state : RuntimeState) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (calledProcessId : ProcessId)
     (calledRootScopeId : DefinitionScopeId) (calledEntry : ControlPlaceId)

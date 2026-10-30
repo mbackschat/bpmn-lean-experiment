@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -12,13 +12,14 @@ import {
 } from "./lean-fanout-bounds.ts";
 import {
   leanBodyEditFanouts, leanExposedDefinitions, leanFanouts, leanFanoutViolations, leanHiddenEditFanouts,
-  leanHiddenRewrites, leanLibraryModules, leanOpeningImportLines, brokenDebtRecords, needlessRaises, settledOwnerDecisions,
+  leanHiddenRewrites, leanLibraryModules, leanOpeningImportLines, brokenDebtRecords, needlessRaises, parseRealizedLeaks, settledOwnerDecisions,
   unexplainedAllowanceRises, unexplainedBoundRises, undecidedSettingRises, type LeanFanoutBound,
 } from "./lean-fanout.ts";
 import { worktreeLeanSourceFiles } from "./lean-source-analysis.ts";
 import { readWorktreeSources } from "./worktree-source-read.ts";
 
 const source = (path: string, header: string) => ({ path, source: `${header}\n\ndef value : Nat := 0\n` });
+const realizedLeaks = parseRealizedLeaks(readFileSync(new URL("./lean-realized-leaks.tsv", import.meta.url), "utf8"));
 
 test("a direct import of any form depends on the imported module", () => {
   const fanouts = leanFanouts([
@@ -308,6 +309,25 @@ test("a hidden edit also reaches every module loading a re-exporter of a `public
   ]);
 });
 
+// Lean exports the lemmas it generates for a hidden body, private ones included (Lean v4.34.1 Environment.lean:723),
+// so a recorded leak makes the leaking module's public interface follow the owner module's hidden edits (#55).
+test("a hidden edit also reaches the public cone of a rebuilt module recorded as leaking the edited module's lemmas", () => {
+  const sources = [
+    source("Pkg/Hub.lean", "module"),
+    source("Pkg/User.lean", "module\n\nimport Pkg.Hub"),
+    source("Pkg/Other.lean", "module"),
+    source("Pkg/All.lean", "module\n\nimport all Pkg.Hub"),
+    source("Pkg/AboveAll.lean", "module\n\nimport Pkg.All"),
+    source("Pkg/AllBoth.lean", "module\n\nimport all Pkg.Hub\nimport all Pkg.Other"),
+    source("Pkg/AboveAllBoth.lean", "module\n\nimport Pkg.AllBoth"),
+  ];
+  const leaks = [{ module: "Pkg.All", ownerModule: "Pkg.Hub" }, { module: "Pkg.AllBoth", ownerModule: "Pkg.Other" }];
+  assert.deepEqual(leanHiddenEditFanouts(sources, leaks).get("Pkg.Hub"), ["Pkg.AboveAll", "Pkg.All", "Pkg.AllBoth"]);
+  assert.deepEqual(leanHiddenEditFanouts(sources, leaks).get("Pkg.Other"), ["Pkg.AboveAllBoth", "Pkg.AllBoth"]);
+  assert.deepEqual(leanHiddenEditFanouts(sources, [{ module: "Pkg.Hub", ownerModule: "Pkg.Hub" }]).get("Pkg.Hub"),
+    ["Pkg.All", "Pkg.AllBoth", "Pkg.User"]);
+});
+
 test("a plain file sees its whole import closure, and its own imports re-export", () => {
   const fanouts = leanFanouts([
     source("Pkg/Kernel.lean", "module"),
@@ -410,7 +430,8 @@ test("a widely imported module that starts re-exporting another module fails the
 // bound an over-approximation for proof edits, which export no equation lemmas. These bounds only shrink: by
 // replacing an `import all` with a bridge lemma the hub exports, or a kernel-decided witness with an executable check.
 test("every library module stays within its recorded hidden-edit fanout bound", () => {
-  assert.deepEqual(leanFanoutViolations(leanHiddenEditFanouts(librarySources()), leanHiddenEditBounds, leanHiddenEditDefaultBound), []);
+  assert.deepEqual(leanFanoutViolations(leanHiddenEditFanouts(librarySources(), realizedLeaks), leanHiddenEditBounds,
+    leanHiddenEditDefaultBound), []);
 });
 
 // Item 2 of the build modularity specification forbids `simp [f]` over a hidden `f`, but the hidden-edit fanout already
@@ -579,7 +600,7 @@ test("a section header Lean's grammar does not admit fails closed", () => {
 // Bounds only shrink, and a module may keep an exposed body only through a recorded entry whose reason the bounds
 // file states; kernel type modules are exempt as for the interface ratchet.
 test("every module's body edit stays within its recorded body-edit bound", () => {
-  assert.deepEqual(leanFanoutViolations(leanBodyEditFanouts(librarySources()), leanBodyEditBounds,
+  assert.deepEqual(leanFanoutViolations(leanBodyEditFanouts(librarySources(), realizedLeaks), leanBodyEditBounds,
     leanBodyEditDefaultBound, leanFanoutKernel, "body-edit importers"), []);
 });
 
@@ -592,7 +613,7 @@ test("re-exposing a hidden hub's bodies fails the body-edit ratchet in every spe
     const sources = librarySources().map((file) => file.path === path
       ? { path, source: file.source.replace(/^public section$/mu, header) }
       : file);
-    const findings = leanFanoutViolations(leanBodyEditFanouts(sources), leanBodyEditBounds, leanBodyEditDefaultBound,
+    const findings = leanFanoutViolations(leanBodyEditFanouts(sources, realizedLeaks), leanBodyEditBounds, leanBodyEditDefaultBound,
       leanFanoutKernel, "body-edit importers");
     assert.ok(findings.some((finding) => finding.startsWith("BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle: ")), header);
   }

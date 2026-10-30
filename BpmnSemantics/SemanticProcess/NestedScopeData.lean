@@ -69,6 +69,8 @@ def recordFor? (program : Program) (scopeId : DefinitionScopeId) : Option ScopeL
     | _ => none
   else none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`recordFor?]
+
 /-- `owner` and its live ancestors, innermost first, ending at the parentless instance root. An
 occurrence that is not live exactly once, or a parent walk the fuel cannot finish, refuses rather than
 resolving past a gap. -/
@@ -263,6 +265,8 @@ def writeOutputs? (program : Program) (state : RuntimeState) (scopeId : Definiti
         | _ => none
       let variables ← writeAll? program state.scopeOccurrences state.variables parent values
       some { state with variables }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`writeOutputs?]
 
 /-- Frame installation touches only data, so every control, wait and occurrence fact survives it. -/
 theorem initializeFrame?_variables_only (program : Program) (state written : RuntimeState)

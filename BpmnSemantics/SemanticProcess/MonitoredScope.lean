@@ -60,6 +60,8 @@ def monitoredScopeCompletionOperations (program : Program) (scopeId : Definition
     | .completeScope _ _ scope _ => decide (scope = scopeId)
     | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`monitoredScopeCompletionOperations]
+
 /-- Entry, origin, child scope and normal continuation have independent immutable bindings. -/
 def MonitoredScopeDefinitionBinding (program : Program) (pair : MonitoredScopePair) : Prop :=
   (monitoredScopeDefinitions program).filter (fun definition => decide (definition.childScopeId = pair.definition.childScopeId)) =
@@ -119,6 +121,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MonitoredScopeTimerB
 def monitoredScopeOnly? (values : List α) : Option α :=
   match values with | [value] => some value | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`monitoredScopeOnly?]
+
 def monitoredScopeCandidate? (program : Program) (state : RuntimeState)
     (scopeId : DefinitionScopeId) : Option MonitoredScopePair := do
   let definition ← monitoredScopeOnly? ((monitoredScopeDefinitions program).filter fun definition =>
@@ -133,6 +137,8 @@ def monitoredScopeCandidate? (program : Program) (state : RuntimeState)
     | [.timer identity] => (monitoredScopeOnly? (state.timerWaits.filter (timerIdNamesWait identity))).map some
     | _ => none
   pure { definition, child, parent, record, timer, completionId, output }
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`monitoredScopeCandidate?]
 
 def monitoredScopePairForChild? (program : Program) (state : RuntimeState) (scopeId : DefinitionScopeId) :
     Option { pair : MonitoredScopePair // MonitoredScopeBinding program state pair } := do

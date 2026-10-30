@@ -57,6 +57,8 @@ def effectIncidentAssociationsValid (state : RuntimeState) : Bool :=
   | [incident] => effectIncidentAssociationValid state incident
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`effectIncidentAssociationsValid]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectIncidentAssociationValid,
   `effectIncidentAssociationsValid, `effectWaitOccurrenceId, `effectWaitOwnerAssociationValid]
 

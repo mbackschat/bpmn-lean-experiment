@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ProfileShapeCatalog
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Boundary Compensation Activity retention declaration
 
@@ -74,6 +75,8 @@ def operationOwnedByScope (program : Program) (operation : SemanticOperation)
   | [ownership] => ownership.scopeId == scopeId
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`operationOwnedByScope]
+
 /-- Exact supported operation family for one declared target in its declared definition scope. -/
 def compensationActivityTargetFamily? (program : Program)
     (declaration : CompensationActivityRetentionDeclaration)
@@ -141,6 +144,8 @@ def compensationTransactionRetentionShapeValid (program : Program)
                 [{ controlPlaceId := output, scopeId := parent }]
         | _ => false)
   | _, _, _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`compensationTransactionRetentionShapeValid] (congruence := true)
 
 def declarationHasFlatRoot (program : Program)
     (declaration : CompensationActivityRetentionDeclaration) : Bool :=

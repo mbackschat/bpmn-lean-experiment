@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Internal commutation occurrence regions
 
@@ -72,6 +73,8 @@ def deriveInternalOccurrenceRegion? (state : RuntimeState)
             members := occurrenceRegionMembersWithin state [occurrence.id]
               (state.scopeOccurrences.length + 1) }
     | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`deriveInternalOccurrenceRegion?]
 
 def InternalOccurrenceRegion.contains (region : InternalOccurrenceRegion)
     (candidate : ScopeOccurrenceId) : Bool :=

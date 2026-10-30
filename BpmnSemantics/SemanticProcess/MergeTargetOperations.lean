@@ -21,6 +21,8 @@ def mergeTargetEntry (program : Program) : SemanticOperation → Bool
       | _ => false
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`mergeTargetEntry]
+
 def isMergeTargetOperation (program : Program) (operation : SemanticOperation) : Bool :=
   program.identity.semanticProfile.value == "cibseven-2.2.0-embedded-subprocess-completion-draft" &&
     match operation with

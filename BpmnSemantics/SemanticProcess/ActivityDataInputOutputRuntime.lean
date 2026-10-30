@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityDataOutput
 public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Composed direct Activity data input and output
 
@@ -26,6 +27,8 @@ def dataInputOutputRunningInstance? (state : RuntimeState) : Option SemanticId :
   match state.control with
   | .running instanceId => some instanceId
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dataInputOutputRunningInstance?]
 
 /-- Source selection is keyed by the selected token owner, not hosting control (CDATA-OWNER-01). -/
 def dataInputOutputSourceBinding? (policy : PropertyPathValuePolicy) (state : RuntimeState)
@@ -98,6 +101,8 @@ def dataInputOutputTaskContracts (program : Program) :
         some { operationId, input, output, taskId, taskName, directInput, directOutput }
     | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dataInputOutputTaskContracts]
+
 /-- The unique composed declaration for one task, or `none` for absent or ambiguous definitions. -/
 def dataInputOutputTaskContract? (program : Program) (taskId : TaskDefinitionId) :
     Option DataInputOutputTaskContract :=
@@ -105,6 +110,8 @@ def dataInputOutputTaskContract? (program : Program) (taskId : TaskDefinitionId)
       decide (contract.taskId = taskId) with
   | [contract] => some contract
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`dataInputOutputTaskContract?]
 
 /-- `ADIO-REFUSE-01`: ambiguous declarations still belong to composed completion, where the
 unique-contract lookup refuses them before ordinary completion can consume the wait. -/

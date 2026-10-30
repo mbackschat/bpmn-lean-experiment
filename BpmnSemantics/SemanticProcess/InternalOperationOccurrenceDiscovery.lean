@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalCommutationCore
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-SELECT-01 operation/owner discovery and exact resolution. Execution of a resolved occurrence
 belongs to `InternalOperationOccurrence`; this module only decides which occurrences exist and which
@@ -25,6 +26,8 @@ def internalOperationOccurrences? (program : Program) (state : RuntimeState) (id
   let owners := sortBy scopeBefore
     ((state.scopeOccurrences.map (·.id)).filter (·.definitionScopeId == binding.scopeId))
   if owners.Nodup then some (owners.map fun owner => ⟨id, owner⟩) else none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalOperationOccurrences?]
 
 /-- A removed owner never rebinds to a remaining occurrence of the same definition. -/
 def resolveInternalOperationOccurrence? (program : Program) (state : RuntimeState)

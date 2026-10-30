@@ -50,6 +50,8 @@ def admittedParallelSnapshot? (arm : ParallelMultiInstanceArm)
       | _ => none
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`admittedParallelSnapshot?]
+
 def acceptedParallelResult? (arm : ParallelMultiInstanceArm)
     (submitted : List VariableBinding) : Option String :=
   match submitted with

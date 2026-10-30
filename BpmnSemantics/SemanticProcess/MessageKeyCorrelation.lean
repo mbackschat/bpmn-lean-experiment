@@ -294,6 +294,8 @@ def soleCorrelatedPayloadMessageOperation? (program : Program) : Option Semantic
   | [operation] => some operation
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`soleCorrelatedPayloadMessageOperation?]
+
 def selectedCorrelatedMessageWait? (program : Program) (state : RuntimeState)
     (instanceId : SemanticId) (operation : SemanticOperation)
     (message : MessageDefinition) (output : ControlPlaceId) : Option MessageWait :=

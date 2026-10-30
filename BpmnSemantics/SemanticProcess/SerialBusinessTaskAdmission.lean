@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SBT-CHAIN-01 and SBT-AVAILABLE-01 independently analyze the checked graph and IL. The transient chain is analysis evidence, never serialized executable authority. -/
 
@@ -37,6 +38,8 @@ def metadataValid (handlers : List String) : Option UserTaskMetadata → Bool
       match metadata.form with
       | some { fields := [{ key, type := .string }] } => nameAllowed handlers key
       | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`metadataValid]
 
 def scalar : VariableValue → Bool
   | .string _ | .null => true
@@ -127,6 +130,8 @@ def analyze (vertices : List Vertex) : Option Analysis := do
     let ordered ← follow vertices.length vertices start.id
     return { ordered, required := (requiredInputs ordered []).eraseDups }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`analyze]
+
 def readNames (inputs : List VariableMapping) : List String :=
   inputs.filterMap fun m => match m.expression with
     | .enclosingVariable name => some name
@@ -157,6 +162,8 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
                     writes := mappings.map (·.target) }
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`checkedVertex?]
+
 def operationInputs : SemanticOperation → List ControlPlaceId
   | .awaitUserTask _ _ input .. | .awaitEffect _ _ input ..
   | .reachNoneEnd _ _ input => [input]
@@ -181,6 +188,8 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
       else return { id, kind := .service, outputs := [← consumer? program output],
                     reads := readNames effect.inputMappings, writes := effect.outputMappings.map (·.target) }
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`operationVertex?]
 
 def checkedAnalysis (source : CheckedProcess) : Option Analysis := do
   let identities := source.processId.value :: source.nodes.map (·.id.value) ++
@@ -209,6 +218,8 @@ def programAnalysis (program : Program) : Option Analysis := do
         if identities.eraseDups.length != identities.length then none
         else analyze (← operations.mapM (operationVertex? program))
     | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.SerialBusinessTask #[`programAnalysis]
 
 def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) : Bool :=
   match programAnalysis program with

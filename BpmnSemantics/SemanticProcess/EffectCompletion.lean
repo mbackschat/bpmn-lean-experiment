@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic Process effect completion
 
@@ -124,6 +125,8 @@ def serialRuntimeAssociationsValid (program : Program) (state : RuntimeState)
       (state.effectWaits.filter (fun wait => activityScopeMatches
         ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩ scope)).length == 1)
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`serialRuntimeAssociationsValid]
+
 /-- SBT-RESULT-01 requires each distinct source exactly once before mapping any target. -/
 def serialEffectPatch? (handlers : List String) (outputs : List VariableMapping)
     (bindings patch : List VariableBinding) : Option (List VariableBinding) := do
@@ -142,6 +145,8 @@ def serialEffectPatch? (handlers : List String) (outputs : List VariableMapping)
         | _ => none
       return mergeProcessVariableBindings bindings writes
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`serialEffectPatch?]
+
 /-- Only the selected occurrence loses its local scope; explicit result bindings take precedence over all parent and input bindings. -/
 def completeSerialActivityScope? (handlers : List String) (variables : ScopedVariables)
     (owner : EffectOccurrenceId) (outputs : List VariableMapping)
@@ -153,6 +158,8 @@ def completeSerialActivityScope? (handlers : List String) (variables : ScopedVar
         process := { bindings }
         activities := variables.activities.filter fun scope => !activityScopeMatches owner scope }
   | _, _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`completeSerialActivityScope?]
 
 def completeSerialEffect? (program : Program) (state : RuntimeState)
     (effectId : EffectOccurrenceId) (result : EffectExecutionResult) : Option RuntimeState := do

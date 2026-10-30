@@ -32,6 +32,8 @@ def boundedScopeOperations (program : Program) :
         some (childScopeId, boundaryTimer)
     | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`boundedScopeOperations]
+
 /-- True when the occurrence names the boundary Timer of a committed bounded-scope operation. This routes an arriving deadline into this family instead of to the ordinary Timer transition, which would emit a token and leave the child region live. -/
 def isBoundedScopeDeadlineDefinition (program : Program) (elementId : NodeId) :
     Bool :=

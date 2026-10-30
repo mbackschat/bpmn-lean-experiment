@@ -346,6 +346,8 @@ def runtimeBurstRank (program : Program) (analysis : Analysis) (state : RuntimeS
         match state.control with | .running _ => 1 | _ => 0
       else 0
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`runtimeBurstRank]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`runtimeBurstRank]
 
 theorem routing_frame_decreases_runtime_burst_rank

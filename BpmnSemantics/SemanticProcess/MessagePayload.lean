@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.EventBasedGateway
 public import BpmnSemantics.SemanticProcess.ValueDomain
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Direct Message Catch Event payload mediation
 
@@ -32,6 +33,8 @@ def payloadMessageOperation? (program : Program) (wait : MessageWait) :
       | _ => none with
   | [entry] => some entry
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`payloadMessageOperation?]
 
 /-- A resolved payload declarer is an actual payload operation whose wait-facing fields and owning
 scope agree exactly with the live subscription. -/

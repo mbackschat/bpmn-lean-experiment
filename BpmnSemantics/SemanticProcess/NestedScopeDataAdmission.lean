@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.EffectDataAdmission
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Nested scope-data profile admission
 
@@ -279,6 +280,8 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
                kind := .call calledRoot.id.value entry.value calledProcess.value copiedIn copiedOut }
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`checkedVertex?]
+
 def checkedAnalysis (source : CheckedProcess) : Option Analysis := do
   let identities := source.processId.value :: source.nodes.map (·.id.value) ++
     source.sequenceFlows.map (·.id.value)
@@ -304,6 +307,8 @@ def childCompletion? (program : Program) (child : DefinitionScopeId) : Option Co
       | _ => false) with
   | [.completeScope _ _ _ (some output)] => some output
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`childCompletion?]
 
 def operationInputs : SemanticOperation → List ControlPlaceId
   | .enterScope _ _ input .. | .invokeProcess _ _ input .. => [input]
@@ -343,6 +348,8 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
       | _ => none
   | _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`operationVertex?]
+
 def programAnalysis (program : Program) : Option Analysis := do
   if !(program.identity.sourceOverlay.isSome &&
       program.internalSchedulingMode == .rejectObservableChoice &&
@@ -373,6 +380,8 @@ def programAnalysis (program : Program) : Option Analysis := do
         | _ => false)
       analyze (← operations.mapM (operationVertex? program)) program.scopeLocalData
         program.definitionScopes root.id.value start.id.value (SerialBusinessTask.programHandlers program)
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`programAnalysis]
 
 /-- A one-scope Program is never admitted: the profile requires at least one Sub-Process. -/
 theorem programAnalysis_one_scope (program : Program) (one : program.definitionScopes.length = 1) :

@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.ActivityOccurrence
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Interrupting Activity boundary Message
 
@@ -141,6 +142,8 @@ def messageBoundedTaskOperations (program : Program) :
     | .awaitMessageBoundedUserTask _ _ input task boundaryMessage =>
         some (input, task, boundaryMessage)
     | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`messageBoundedTaskOperations]
 
 def isMessageBoundedTaskDefinition (program : Program) (taskId : TaskDefinitionId) : Bool :=
   (messageBoundedTaskOperations program).any fun operation =>

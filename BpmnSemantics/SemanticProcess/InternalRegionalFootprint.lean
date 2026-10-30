@@ -93,6 +93,8 @@ def regionalBaseFootprint? (state : RuntimeState) (hosting : SemanticId)
           writes := regionalCensusWrites state region [] ++ [regionAtom, consumed, .endIncrement] }
   | _, _ => none
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`regionalBaseFootprint?]
+
 /-- Shared Activity withdrawals are added for every family before canonicalization, because
 owner and child-body removal can reach the same record from otherwise disjoint regions. -/
 def regionalStateFootprint? (state : RuntimeState) (selected : InternalRegionalSelection)

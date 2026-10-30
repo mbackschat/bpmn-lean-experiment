@@ -263,6 +263,8 @@ def ScopeBinding (program : Program) (state : RuntimeState)
         | _, _, _ => false
   | _ => false
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`ScopeBinding]
+
 def CallBinding (program : Program) (state : RuntimeState)
     (record : CalledProcessOccurrence) : Bool :=
   occurrenceOwnerValid state record.id.processInstanceId record.caller

@@ -245,6 +245,8 @@ def evaluateStimulusScheduled (closureLimit : Nat) (program : Program)
         candidateTransitions := none
         candidateLifecycles := none }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`evaluateStimulusScheduled]
+
 def evaluateStimulus (closureLimit : Nat) (program : Program)
     (state : RuntimeState) (stimulus : Stimulus) : EvaluatedStimulus :=
   evaluateStimulusScheduled closureLimit program state stimulus []

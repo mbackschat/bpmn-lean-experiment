@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.Incident
 public import BpmnSemantics.SemanticProcess.CallActivity
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.ScopeCancellation
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic Process incident cancellation
 
@@ -82,6 +83,8 @@ def incidentProcessCancellationEligibility? (program : Program)
               else none
           | _, _ => none
     | .notStarted | .completed _ | .cancelled _ | .failed .. => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`incidentProcessCancellationEligibility?]
 
 /-- Project only the root from the exact cancellation eligibility result. -/
 def incidentProcessCancellationRoot? (program : Program) (state : RuntimeState)

@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 public import BpmnSemantics.SemanticProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Independent IL admission for IMES-ARM-01 and IMES-CLOSE-01. Exact operation, port and scope
 partitions distinguish a declaration-triggered handler from an ordinary entered child with a continuation. -/
@@ -14,6 +15,8 @@ def uniqueOperationOwner? (program : Program) (id : OperationId) : Option Defini
   match program.operationScopes.filter (fun ownership => ownership.operationId == id) with
   | [ownership] => some ownership.scopeId
   | _ => none
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`uniqueOperationOwner?]
 
 def placeOwner? (program : Program) (id : ControlPlaceId) : Option DefinitionScopeId :=
   match program.controlPlaceScopes.filter (fun ownership => ownership.controlPlaceId == id) with
@@ -101,6 +104,8 @@ def interruptingMessageEventSubProcessProgramGraph (program : Program) : Bool :=
             distinctNonempty sourceIds && withdrawalProgramTopology program declaration
       | _ => false
   | _ => false
+
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`interruptingMessageEventSubProcessProgramGraph]
 
 /-- IMES-CLOSE-01 binds completion to its declared child and the child's parent, without a token port. -/
 def completeEventSubProcessOperationWellFormed (program : Program)

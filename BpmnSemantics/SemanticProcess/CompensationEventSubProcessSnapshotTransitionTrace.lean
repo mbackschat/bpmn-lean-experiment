@@ -319,6 +319,8 @@ def evaluateStimulusWithCompensationSnapshots (closureLimit : Nat)
         candidateTransitions := none
         candidateLifecycles := none }
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`evaluateStimulusWithCompensationSnapshots]
+
 private theorem evaluateStimulusWithCompensationSnapshots_failure_rolls_back
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
     (failed : ((evaluateStimulusWithCompensationSnapshots closureLimit program state

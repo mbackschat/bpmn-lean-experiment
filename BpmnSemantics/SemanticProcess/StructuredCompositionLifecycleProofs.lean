@@ -58,6 +58,8 @@ def TaskLifetimeShape (program : Program) (state : RuntimeState) : Prop :=
           bindings := [binding] }]
     | _ => False
 
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`TaskLifetimeShape]
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`TaskLifetimeShape]
 
 theorem no_wait_has_no_activity_lifetime
