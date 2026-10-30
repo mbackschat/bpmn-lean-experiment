@@ -544,6 +544,8 @@ export const leanOpeningImportBound = 11946;
 export const leanOwnerDecidedRises: ReadonlyArray<LeanOwnerDecidedRise> = [
   { setting: "leanOpeningImportBound", from: 2179, to: 11946,
     decision: "Owner decision B (2026-10-29): the hidden-bodies conversion hides definition bodies by default, so the proofs that unfold a body open its module with `import all`; the minimizer proved each line necessary (11,322 `import all`, 624 `meta import`, 612 of them for the `privateEquations` helper), and their rebuild cost is counted in the restated body-edit target (mean 118, p90 490 modules)" },
+  { setting: "leanOpeningImportBound", from: 11946, to: 11986,
+    decision: "Owner-delegated decision (2026-10-30; owner: \"Decide in this session autonomously, but please always double check your recommendations\" and, on fixing the expensive generated-lemma leaks in source, \"You know my demand of build speed fix. I trust you!\"): 40 more lines for #55; 37 owner modules and one fixture `meta import` the `privateEquations` helper so that a hidden body's generated lemmas stay out of public interfaces (hidden-edit fan-out mean 56.9 to 26.3, modules above 500 from 42 to 6, by the leak-aware model tier 2 row 9 calibrated), and the helper itself `meta import`s two Lean modules for sparse case splits" },
 ];
 
 /** Set on 2026-10-28 equal to the hidden-edit default: a body edit should rebuild no more than a hidden one. */
