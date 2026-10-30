@@ -146,7 +146,19 @@ The owner approved a proof-level workaround on 2026-10-24. Each affected proof e
 
 ## Current boundary
 
-**Hidden-by-default bodies are converted, not yet proven.** Contract item 2 stays open until the probe matrix that [PLAN](PLAN.md#exact-resume-point) owns measures body edits across the core and every family. After the conversion (owner decisions of 2026-10-29), 15 of the 1,023 library files still open an `@[expose] public section` and 6 stay plain. 214 modules exceed the body-edit default of 10; the widest are a body edit of `ActivityOccurrence` at 624 importers and of the `privateEquations` helper at 784, whose every loader re-runs its meta code. Over the 67 history commits the fan-out model predicts a mean of 118 and a p90 of 490 rebuilt modules, with 6 commits above 500; that is the restated target of owner decision 1, not a measurement. One real build backs it so far: comment and module-doc edits to 19 modules rebuilt 499 modules where the model allows 561 (scratch tree, pinned container, 2026-10-29). The first conversion attempt was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)).
+**Hidden-by-default bodies are converted and probed.** After the conversion (owner decisions of 2026-10-29), 15 of the 1,023 library files still open an `@[expose] public section` and 6 stay plain. Real builds checked edits against the fan-out model (probe scripts and outputs not retained):
+
+- **Interface stability (tier 1, pinned container, 2026-10-29).** 154 edits covered a core and a member module of each of the 72 families plus 10 hubs, and 15 proof or private edits replaced the 14 body edits that did not compile. Every proof and private edit and 53 of the 56 compiling body edits left the edited module's public `.olean` byte-identical. The other three leaked generated lemmas: `TransactionCompensationTokenPreservation`, `InternalScopeCreationSelection` and `MergeTargetOperations`.
+- **Rebuild sets (tier 2, pinned container, 2026-10-30).** Nine full builds ranged from a median family proof edit to a proof edit of the widest hub.
+  - Seven rebuilt within the model's prediction; the widest hub rebuilt 567 of the 568 predicted.
+  - Two had named exceptions. A `public meta import` re-export mixes its `.ir` closure into its importers' traces, which rebuilt one module outside the prediction; the model counts this since `3a977697`. Generated lemmas leaked in the other: 595 modules rebuilt where 55 were predicted, the class [generated lemmas](#module-rules) now removes and ratchets.
+  - One body edit of `ProgramStructuralValidation` did not compile, so its rebuild set is unmeasured.
+- **After the fix (host, 2026-10-30).** The same body edits left the public `.olean` of all three owners byte-identical.
+  - `MergeTargetOperations` rebuilt 54 modules instead of 595, all inside the 58 the leak-aware model predicts.
+  - `TransactionCompensationTokenPreservation` rebuilt 4 of 4.
+  - The `InternalScopeCreationSelection` edit fails to compile in an `import all` importer that unfolds the body, so its rebuild set is unmeasured.
+
+Under the leak-aware model, a hidden edit rebuilds a mean of 26.3 modules per module, with a p90 of 82; with no leak left the figures would be 26.0 and 80. Six hub modules exceed 500, and [PLAN](PLAN.md#lean-build-follow-ups) schedules their structural fix. [`lean-realized-leaks.tsv`](../scripts/lean-realized-leaks.tsv) records the remaining 39 leaking (module, owner) pairs. The 67-commit replay target of owner decision 1 (mean 118, p90 490, 6 commits above 500) predates the leak-aware model. The first conversion attempt was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)).
 
 The first family-shaped increment was [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md), measured in the pinned container on one CPU, 2026-10-26.
 

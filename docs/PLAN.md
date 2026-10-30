@@ -56,6 +56,9 @@ The [module rules](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-rules) own the rules
 - At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each, and drop the simp arguments Lean's linter reports unused, inside the same complete rebuild.
 - Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
+- Hubs whose hidden edits rebuild over 500 modules (owner acknowledgement, 2026-10-29): propose lemmas in owners and self-registering registries, reconciling the registry sentence of [the code style guide](CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries). `ProgramStructuralValidationLaws` carries the largest recorded generated-lemma leak.
+- Recorded generated-lemma leaks ([`lean-realized-leaks.tsv`](../scripts/lean-realized-leaks.tsv)): remove each by consuming its owner through lemmas when that owner is next edited.
+- Split [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts), now 827 lines under an owner-approved exception, into one file per ratchet; the rise, debt and owner-decision guards read it at the base commit, so the split is a change of its own.
 
 ### Scheduled delivery batches
 
@@ -90,13 +93,13 @@ Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-PROPOSAL.md#p
 
 Deliverable: bodies hidden by default in every family, so a body edit rebuilds only the modules that load the body, re-checked by container rebuild probes across the core and every family.
 
-Acceptance blockers: the probe matrix. Tier 1 edits a core and a member of all 72 families plus 10 hubs, and the public `.olean` must stay byte-identical; tier 2's full builds must not exceed the model's rebuild count.
+Acceptance blockers: one closure run of the heavy Lean lanes and the cold closure review.
 
-Current result: the conversion landed under owner decisions of 2026-10-29; the [current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary) holds its measured state.
+Current result: the conversion and the generated-lemma fix (`4b963dc9`) landed, and the probe matrix is done ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)). Two owner-delegated decisions await ratification: the opening-import total at 11,986 and the 827-line size exception of `lean-fanout-bounds.ts`.
 
 Effort budget: 80 hours; the owner lifted the cap on 2026-10-27, so reaching it records progress and continues.
 
-Next action: run the probe matrix, then close out. Then, by owner acknowledgement of 2026-10-29, propose lemmas in owners and self-registering registries for hubs whose edits rebuild over 500 modules, reconciling the registry sentence of [the code style guide](CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries).
+Next action: the heavy Lean lanes, the cold closure review, graduation, then the concurrent scope data family.
 
 Oracle: a container body-edit probe that rebuilds more than the body-edit model predicts, or any weakened lane shape, claim or gate.
 
