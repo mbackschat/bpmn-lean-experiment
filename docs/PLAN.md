@@ -56,9 +56,10 @@ The [module rules](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-rules) own the rules
 - At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each, and drop the simp arguments Lean's linter reports unused, inside the same complete rebuild.
 - Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
-- Hubs whose hidden edits rebuild over 500 modules (owner acknowledgement, 2026-10-29): propose lemmas in owners and self-registering registries, reconciling the registry sentence of [the code style guide](CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries). `ProgramStructuralValidationLaws` carries the largest recorded generated-lemma leak.
-- Recorded generated-lemma leaks ([`lean-realized-leaks.tsv`](../scripts/lean-realized-leaks.tsv)): remove each by consuming its owner through lemmas when that owner is next edited.
-- Split [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts), now 827 lines under an owner-approved exception, into one file per ratchet; the rise, debt and owner-decision guards read it at the base commit, so the split is a change of its own.
+- After owner approval: an upstream Lean report that `sparseCasesOnExt` exports private owners' sparse case-split names (`AuxRecursor.lean:53`, unlike `sparseCasesOnInfoExt`); remove `backward.match.sparseCases = false` and its two local exceptions once the pinned Lean filters them.
+- Hubs whose hidden edits rebuild over 500 modules (owner acknowledgement, 2026-10-29): propose lemmas in owners and self-registering registries, reconciling the registry sentence of [the code style guide](CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries).
+- Recorded generated-lemma leaks ([`lean-realized-leaks.tsv`](../scripts/lean-realized-leaks.tsv)): remove each generated-lemma line by consuming its owner through lemmas when that owner is next edited; the sparse case-split lines go only with the upstream fix above.
+- Split [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts), above 800 lines under an owner-approved exception, into one file per ratchet; the rise, debt and owner-decision guards read it at the base commit, so the split is a change of its own.
 
 ### Scheduled delivery batches
 

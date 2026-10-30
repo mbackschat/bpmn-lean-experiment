@@ -4,8 +4,12 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 /-!
 The definitions and proofs of `RealizedLeakFixtures`, with `privateMatchEquations` declaring what the proofs realize
-before they run, so the realized-constant check (`scripts/lean-realized-leaks.lean`) finds nothing here.
+before they run. Its definitions keep sparse case splits, which the library turns off but two of its definitions
+keep, so the helpers' `else_eq` path stays exercised; the check finds only the exported sparse case-split names here,
+which no declaration can keep private.
 -/
+
+set_option backward.match.sparseCases true
 
 public section
 

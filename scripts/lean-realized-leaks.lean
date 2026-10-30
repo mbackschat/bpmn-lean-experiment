@@ -8,8 +8,11 @@ is (`Environment.lean:723-724`, an upstream `TODO`): the equation, unfolding and
 `rw` or `induction` realizes for a hidden definition, and the equations, splitters and congruence equations of its
 `match`es and a sparse case split's `else_eq`. Their statements follow the owning body, so an edit inside it would
 rebuild the module's public cone; `privateEquations` and `privateMatchEquations`
-(`BpmnSemantics/PrivateEquationLemmas.lean`) declare them privately first. A source scan cannot tell which proofs
-realize what, so the check reads the built `.olean` files.
+(`BpmnSemantics/PrivateEquationLemmas.lean`) declare them privately first. Lean also exports the name of every sparse
+case split, a private owner's included (`sparseCasesOnExt`, `AuxRecursor.lean:53`), which no declaration can keep
+private, so an edit adding or removing one changes the interface; the library therefore builds with
+`backward.match.sparseCases` off, and the check counts each exported sparse case split like a realized constant. A
+source scan cannot tell which proofs realize what, so the check reads the built `.olean` files.
 
 Only a hidden body is guarded. A realized constant whose matcher or sparse case split the owner's public declaration
 already states, in an exposed body or in a theorem's statement, changes only with an edit that changes that
@@ -119,12 +122,28 @@ private prefix, which a private owner's equations and `else_eq` carry.
 private def ownerModule? (facts : Std.HashMap Name PublicFacts) (n : Name) : Option Name :=
   (facts.get? (ownerOf n)).map (·.module) <|> privateModule? n
 
-/-- The realized private constants in a module-system module's public `.olean`; a plain file exports everything. -/
+/--
+The sparse case splits a module's `.olean` tags; the tag extension stores each entry as a `Name`. It also tags each
+inductive type's constructor eliminators (`CtorElim.lean:206`), which belong to the type's interface, so only
+`_sparseCasesOn_` auxiliaries of a body count.
+-/
+private unsafe def sparseCaseSplitsImpl (data : ModuleData) : Array Name :=
+  data.entries.foldl (init := #[]) fun found (extension, entries) =>
+    if extension.componentsRev.head? == some `sparseCasesOnExt then found ++ entries.map (unsafeCast ·) else found
+
+@[implemented_by sparseCaseSplitsImpl]
+private opaque sparseCaseSplits (data : ModuleData) : Array Name
+
+/--
+The realized private constants and the sparse case splits in a module-system module's public `.olean`; a plain file
+exports everything.
+-/
 private def leaks (module : Name) : IO (Array Name) := do
   let olean ← findOLean module
   unless ← (olean.addExtension "private").pathExists do return #[]
   let (data, _) ← readModuleData olean
-  return data.constNames.filter fun n => isPrivateName n && isRealized n
+  return data.constNames.filter (fun n => isPrivateName n && isRealized n) ++
+    (sparseCaseSplits data).filter (auxiliaryOf? · |>.isSome)
 
 def main (args : List String) : IO UInt32 := do
   let witness :: recordedPath :: roots@(_ :: _) := args | throw <| IO.userError "usage: <witness module> <recorded leaks> <root module>..."

@@ -147,6 +147,10 @@ theorem serial_read_has_required_or_prior_output
 
 namespace SerialBusinessTask
 
+-- Keeps sparse case splits (proposal, module rules): with full splits over `SemanticOperation`, `simp_all` over this
+-- predicate's equations in `SerialBusinessTaskLifecycleProofs`' absence proofs exceeds the heartbeat limit (scratch
+-- trial, 2026-10-30).
+set_option backward.match.sparseCases true in
 def OperationAllowed : SemanticOperation → Prop
   | .initiate .. | .awaitUserTask .. | .awaitEffect _ _ _ _ _ none
   | .reachNoneEnd .. | .completeScope _ _ _ none => True

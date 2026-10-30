@@ -264,7 +264,7 @@ test("Lake testing builds the semantic library instead of a native executable", 
 
 function synchronousPackageElaboration(lakefile: string): boolean {
   const packageFields = lakefile.split(/^\s*\[/mu, 1)[0] ?? "";
-  return /^leanOptions = \{ Elab\.async = false \}$/mu.test(packageFields);
+  return /^leanOptions = \{ (?:[^}]*, )?Elab\.async = false(?:, [^}]*)? \}$/mu.test(packageFields);
 }
 
 test("the Lake package defaults every module target to synchronous theorem elaboration", async () => {

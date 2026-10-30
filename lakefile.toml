@@ -3,7 +3,11 @@ version = "0.1.0"
 license = "MIT"
 defaultTargets = ["BpmnSemantics"]
 testDriver = "BpmnSemantics"
-leanOptions = { Elab.async = false }
+# Sparse case splits stay off (owner-delegated workaround, 2026-10-30): Lean v4.34.1 exports the name of every one,
+# a private owner's included (`sparseCasesOnExt`, AuxRecursor.lean:53, unlike `sparseCasesOnInfoExt`, which keeps
+# hidden bodies' entries private), so a body edit adding or removing one rebuilt the module's public cone. Remove the
+# option once Lean filters those tags by exposed body; the build modularity proposal lists the definitions that keep it.
+leanOptions = { Elab.async = false, backward.match.sparseCases = false }
 # Lean's own per-process memory limit in MiB: a module whose elaboration or kernel check exceeds 2 GiB
 # fails the build (owner decision 2026-10-25). It is a command-line argument because Lake v4.34.1 passes
 # `leanOptions` through `--setup` (Lake/Build/Actions.lean), which the shell does not read for `max_memory`.

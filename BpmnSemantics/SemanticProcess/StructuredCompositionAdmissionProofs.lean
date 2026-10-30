@@ -27,6 +27,9 @@ public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
+-- Keeps sparse case splits (proposal, module rules): with full splits over `SemanticOperation`, `simp_all` over this
+-- predicate's equations in the absence proofs below exceeds the heartbeat limit (scratch trial, 2026-10-30).
+set_option backward.match.sparseCases true in
 def OperationAllowed : SemanticOperation → Prop
   | .initiate .. | .awaitUserTask .. | .awaitDataInputOutputUserTask ..
   | .choose .. | .mergeExclusive .. | .reachNoneEnd .. | .completeScope _ _ _ none => True

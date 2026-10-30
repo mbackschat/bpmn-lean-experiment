@@ -4,9 +4,11 @@ module
 The leak the realized-constant check (`scripts/lean-realized-leaks.lean`) must find: without `privateEquations` and
 `privateMatchEquations`, these proofs realize hidden definitions' equation lemmas and their sparse case splits'
 `else_eq`, which Lean v4.34.1 exports although they are private (`Environment.lean:723-724`). The check fails unless
-this module, and only this one, carries such constants; `PrivateMatchEquationFixtures` states the same proofs with
-the helpers.
+this module carries such constants; `PrivateMatchEquationFixtures` states the same proofs with the helpers. Its definitions keep sparse case splits, which the library turns off, so the check also sees their
+exported names.
 -/
+
+set_option backward.match.sparseCases true
 
 public section
 
