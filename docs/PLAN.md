@@ -93,9 +93,9 @@ Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-PROPOSAL.md#p
 
 Deliverable: bodies hidden by default in every family, so a body edit rebuilds only the modules that load the body, re-checked by container rebuild probes across the core and every family.
 
-Acceptance blockers: one closure run of the heavy Lean lanes and the cold closure review.
+Acceptance blockers: the interface-changing body edits of the [current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary), then the closure review's correction audit.
 
-Current result: the conversion and the generated-lemma fix (`4b963dc9`) landed, and the probe matrix is done ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)). Two owner-delegated decisions await ratification: the opening-import total at 11,986 and the 827-line size exception of `lean-fanout-bounds.ts`.
+Current result: the conversion and the generated-lemma fix (`4b963dc9`) landed, and the probe matrix is done ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)). The cold closure review of `c5add868` rejected the closure; its corrections are in progress. The owner confirmed on 2026-10-30 that the session decides autonomously, which ratifies the opening-import total at 11,986 and the 827-line size exception of `lean-fanout-bounds.ts`.
 
 Effort budget: 80 hours; the owner lifted the cap on 2026-10-27, so reaching it records progress and continues.
 

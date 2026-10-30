@@ -585,7 +585,7 @@ export const leanBodyEditDefaultBound = 10;
  * Re-seeded on 2026-10-29 at the graph of the hidden-bodies conversion (owner decisions 1-3) under the same rule.
  */
 export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
-  { module: "BpmnSemantics.PrivateEquationLemmas", bound: 784, raisedFrom: 10, raised: hiddenBodiesConversion.body },
+  { module: "BpmnSemantics.PrivateEquationLemmas", bound: 784, raisedFrom: 10, raised: "the hidden-bodies conversion (owner decisions 1-3, 2026-10-29): the modules that rewrite with a hidden definition `meta import` this helper to declare its equation lemmas privately, and a `meta import` loads the helper's whole compiled closure, so a body edit here reaches every loader and its `import all` loaders" },
   { module: "BpmnSemantics.SemanticProcess.ActivityOccurrence", bound: 624 },
   { module: "BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration", bound: 554 },
   { module: "BpmnSemantics.SemanticProcess.OperationControlPlaces", bound: 550 },

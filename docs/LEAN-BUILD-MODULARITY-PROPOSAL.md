@@ -74,6 +74,7 @@ Excluded:
 
 ## Module rules
 
+- **Private by default.** A new declaration starts private until another module names it, because a public one joins the module's interface and adding it rebuilds every module that loads it (owner decision 3, 2026-10-29). [`lean-private-by-default.ts`](../scripts/lean-private-by-default.ts) checks this against the merge base; a declaration that a public statement of its own module names, an instance and a declaration with a registering attribute are exempt.
 - **New declarations.** A new declaration lives in a family-owned leaf module, never appended to a hub. Existing families move into the family shape when next touched, and profile identity branches become per-family descriptors as their families move.
 - **Imports.**
   - A module re-exports only the modules its public declarations name.
@@ -150,7 +151,7 @@ The owner approved a proof-level workaround on 2026-10-24. Each affected proof e
 
 - **Interface stability (tier 1, pinned container, 2026-10-29).** 154 edits covered a core and a member module of each of the 72 families plus 10 hubs, and 15 proof or private edits replaced the 14 body edits that did not compile. Every proof and private edit and 53 of the 56 compiling body edits left the edited module's public `.olean` byte-identical. The other three leaked generated lemmas: `TransactionCompensationTokenPreservation`, `InternalScopeCreationSelection` and `MergeTargetOperations`.
 - **Rebuild sets (tier 2, pinned container, 2026-10-30).** Nine full builds ranged from a median family proof edit to a proof edit of the widest hub.
-  - Seven rebuilt within the model's prediction; the widest hub rebuilt 567 of the 568 predicted.
+  - Six rebuilt within the model's prediction; the widest hub rebuilt 567 of the 568 predicted.
   - Two had named exceptions. A `public meta import` re-export mixes its `.ir` closure into its importers' traces, which rebuilt one module outside the prediction; the model counts this since `3a977697`. Generated lemmas leaked in the other: 595 modules rebuilt where 55 were predicted, the class [generated lemmas](#module-rules) now removes and ratchets.
   - One body edit of `ProgramStructuralValidation` did not compile, so its rebuild set is unmeasured.
 - **After the fix (host, 2026-10-30).** The same body edits left the public `.olean` of all three owners byte-identical.
@@ -158,7 +159,14 @@ The owner approved a proof-level workaround on 2026-10-24. Each affected proof e
   - `TransactionCompensationTokenPreservation` rebuilt 4 of 4.
   - The `InternalScopeCreationSelection` edit fails to compile in an `import all` importer that unfolds the body, so its rebuild set is unmeasured.
 
-Under the leak-aware model, a hidden edit rebuilds a mean of 26.3 modules per module, with a p90 of 82; with no leak left the figures would be 26.0 and 80. Six hub modules exceed 500, and [PLAN](PLAN.md#lean-build-follow-ups) schedules their structural fix. [`lean-realized-leaks.tsv`](../scripts/lean-realized-leaks.tsv) records the remaining 39 leaking (module, owner) pairs. The 67-commit replay target of owner decision 1 (mean 118, p90 490, 6 commits above 500) predates the leak-aware model. The first conversion attempt was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)).
+Under the leak-aware model at `c5add868`, a hidden edit rebuilds a mean of 26.3 modules per module, with a p90 of 80. Six modules exceed 500: the `PrivateEquationLemmas` helper, whose every `meta import` loader re-runs it, and five hubs whose structural fix [PLAN](PLAN.md#lean-build-follow-ups) schedules. [`lean-realized-leaks.tsv`](../scripts/lean-realized-leaks.tsv) records the remaining 39 leaking (module, owner) pairs. The 67-commit replay target of owner decision 1 (mean 118, p90 490, 6 commits above 500) predates the leak-aware model. The first conversion attempt was reverted unmerged on 2026-10-28 ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84)).
+
+**Body edits that still change the public interface** (Lean v4.34.1; scratch probes, 2026-10-29 and 2026-10-30, not retained). Each rebuilds the module's interface cone, which neither the fan-out model nor a guard counts yet:
+
+- **Kernel and contract modules.** The 15 modules that open `@[expose] public section` export every body, so a body edit in one of them rebuilds about 1,000 of 1,032 modules. By a scan for type-like lines, 13 of the 39 commits that touched them since 2026-09-01 changed no type.
+- **Sparse case splits.** `sparseCasesOnExt` (`AuxRecursor.lean:53`) exports the name of every sparse case split, a private owner's included, so an edit that adds or removes one, such as a new `matches` or an `if let` with a nested pattern, changes the public `.olean`. 649 of 1,094 built modules carry such names. Adding a `match` arm or an inner `match` changes nothing public, because a hidden body's matchers stay private.
+- **Compiled bodies.** A template-like hidden definition (instance argument, `@[inline]` or `@[specialize]`) exports its compiled body, and so does a small arity-reducing wrapper (49 definitions on 2026-10-29); an edit that changes a body's axiom set or a parameter's borrow inference changes the public `.olean` too.
+- **Instances** export their bodies.
 
 The first family-shaped increment was [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md), measured in the pinned container on one CPU, 2026-10-26.
 
