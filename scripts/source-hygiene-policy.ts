@@ -31,9 +31,12 @@ export const ownerApprovedLargeFiles: ReadonlyMap<string, string> = new Map([
   ["BpmnSemantics/SemanticProcess/StructuredCompositionClosureProofs.lean", "Owner decision A, corrected on 2026-10-29: the hidden-bodies conversion grew this module only by `import all` lines the minimizer proved necessary and by `run_meta privateEquations` calls (owner decision 2) that keep its rewrites' equation lemmas private; its declarations did not grow."],
   ["BpmnSemantics/SemanticProcess/StructuredCompositionControlProofs.lean", "Owner decision A, corrected on 2026-10-29: the hidden-bodies conversion grew this module only by `import all` lines the minimizer proved necessary and by `run_meta privateEquations` calls (owner decision 2) that keep its rewrites' equation lemmas private; its declarations did not grow."],
   ["BpmnSemantics/SemanticProcess/StructuredCompositionDataProofs.lean", "Owner decision A, corrected on 2026-10-29: the hidden-bodies conversion grew this module only by `import all` lines the minimizer proved necessary and by `run_meta privateEquations` calls (owner decision 2) that keep its rewrites' equation lemmas private; its declarations did not grow."],
+  ["scripts/lean-fanout-bounds.ts", "Owner approval of every size exception found in the session of 2026-10-29/30 (\"I confirm all 18 exceptions with the corrected reason, yes and all exceptions you find in this session!\"); measured 827 nonblank lines on 2026-10-30: the #55 re-seed added the ratchet entries and reason constants for the recorded generated-lemma leaks, the helper's new importers and the leak witness's rewrite allowance (+28 over 799: 797 at 3a977697 plus the 2-line owner-decision entry). A split per ratchet must keep the rise, debt and owner-decision guards, which read this one file at the base commit, so it is a change of its own."],
 ]);
 /** Narrow large-file exceptions in force; each must equal an approval the baseline below records. */
-export const reviewedLargeFiles: ReadonlyMap<string, string> = new Map(ownerApprovedLargeFiles);
+export const reviewedLargeFiles: ReadonlyMap<string, string> = new Map(
+  [...ownerApprovedLargeFiles].filter(([path]) => path !== "scripts/lean-fanout-bounds.ts"),
+);
 const sourceHygieneExceptionApprovalBaseline = "576dc2f9";
 
 export type SourceHygieneAssessment = Readonly<{
