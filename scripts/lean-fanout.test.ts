@@ -69,6 +69,20 @@ test("a `meta import` importer loads the whole import closure of what it imports
   assert.deepEqual(fanouts.get("Pkg.Kernel"), ["Pkg.Hide", "Pkg.Meta"]);
 });
 
+// Lake mixes an exported meta import's whole closure into the importing module's public import trace (Lake v4.34.1
+// Build/Module.lean:366-374), so the modules loading a `public meta import` re-exporter load that closure too.
+test("an exported `meta import` re-exports the whole import closure of what it imports", () => {
+  const fanouts = leanFanouts([
+    source("Pkg/Kernel.lean", "module"),
+    source("Pkg/Hide.lean", "module\n\nimport Pkg.Kernel"),
+    source("Pkg/Meta.lean", "module\n\npublic meta import Pkg.Hide"),
+    source("Pkg/AboveMeta.lean", "module\n\nimport Pkg.Meta"),
+    source("Pkg/PrivateMeta.lean", "module\n\nmeta import Pkg.Hide"),
+    source("Pkg/AbovePrivateMeta.lean", "module\n\nimport Pkg.PrivateMeta"),
+  ]);
+  assert.deepEqual(fanouts.get("Pkg.Kernel"), ["Pkg.AboveMeta", "Pkg.Hide", "Pkg.Meta", "Pkg.PrivateMeta"]);
+});
+
 // Locks the leak the first family-shape measurement found (pinned container, 2026-10-26): `simp only
 // [operationWellFormed]` in nine `import all` importers exported the hidden body's equation lemmas, so a body edit
 // changed each importer's public `.olean` and rebuilt everything loading it, while `unfold` left it unchanged.
@@ -208,6 +222,33 @@ test("a rewrite with a definition whose equation lemmas the module declares priv
   ]);
 });
 
+// `privateEquations` declares the lemmas `getEqnsFor?` and `getUnfoldEqnFor?` return: `eq_1`… always, `eq_def` only for a
+// recursive definition (Lean v4.34.1 Meta/Eqns.lean:307-312) and never `eq_unfold`, so a named lemma it leaves out is
+// still realized and exported.
+test("a named equation lemma that `privateEquations` does not declare stays a rewrite site", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const hub = "public section\n\nnamespace Pkg\n\ndef hidden : Nat := 0\n\ndef rec : Nat → Nat\n  | 0 => 0\n  | n + 1 => rec n\n\nend Pkg";
+  const declaring = (path: string, name: string, lemma: string) => module(path, [
+    "import all Pkg.Hub",
+    "",
+    `run_meta privateEquations \`Pkg #[\`${name}]`,
+    `theorem t := @Pkg.${name}.${lemma}`,
+  ].join("\n"));
+  const rewrites = leanHiddenRewrites([
+    module("Pkg/Hub.lean", hub),
+    declaring("Pkg/EqN.lean", "hidden", "eq_1"),
+    declaring("Pkg/EqDef.lean", "hidden", "eq_def"),
+    declaring("Pkg/EqUnfold.lean", "hidden", "eq_unfold"),
+    declaring("Pkg/RecEqDef.lean", "rec", "eq_def"),
+    declaring("Pkg/RecEqUnfold.lean", "rec", "eq_unfold"),
+  ]);
+  assert.deepEqual([...rewrites].filter(([, sites]) => sites.length > 0), [
+    ["Pkg.EqDef", ["Pkg.Hub.hidden"]],
+    ["Pkg.EqUnfold", ["Pkg.Hub.hidden"]],
+    ["Pkg.RecEqUnfold", ["Pkg.Hub.rec"]],
+  ]);
+});
+
 // A module that rewrites with its own hidden definition realizes the definition's equation lemmas in itself, and Lean
 // v4.34.1 exports every realized constant (Environment.lean:723-724), so its body edit changes its public interface.
 test("a module that rewrites with its own hidden definition rebuilds its interface fanout unless it declares the equations privately", () => {
@@ -244,6 +285,27 @@ test("a hidden edit also reaches each `meta import` importer whose import closur
     source("Pkg/AllOfMeta.lean", "module\n\nimport all Pkg.Meta"),
   ]);
   assert.deepEqual(fanouts.get("Pkg.Hub"), ["Pkg.AllOfMeta", "Pkg.Meta"]);
+});
+
+// Locks the under-prediction of the depth probe's row 5 (pinned container, 2026-10-30): a private edit changed
+// `CompensationTriggerHandlerDeclaration`'s `.ir`, and `ConformanceChecksMain` rebuilt because it imports a module
+// that re-exports a `meta import` of the edited module's importers (Lake v4.34.1 Build/Module.lean:366-374).
+test("a hidden edit also reaches every module loading a re-exporter of a `public meta import` that reaches it", () => {
+  const fanouts = leanHiddenEditFanouts([
+    source("Pkg/Hub.lean", "module"),
+    source("Pkg/Mid.lean", "module\n\nimport Pkg.Hub"),
+    source("Pkg/Meta.lean", "module\n\npublic meta import Pkg.Mid"),
+    source("Pkg/AboveMeta.lean", "module\n\nimport Pkg.Meta"),
+    source("Pkg/AboveAboveMeta.lean", "module\n\nimport Pkg.AboveMeta"),
+    source("Pkg/AllOfAboveMeta.lean", "module\n\nimport all Pkg.AboveMeta"),
+    source("Pkg/Reexport.lean", "module\n\npublic import Pkg.Meta"),
+    source("Pkg/AboveReexport.lean", "module\n\nimport Pkg.Reexport"),
+    source("Pkg/PrivateMeta.lean", "module\n\nmeta import Pkg.Mid"),
+    source("Pkg/AbovePrivateMeta.lean", "module\n\nimport Pkg.PrivateMeta"),
+  ]);
+  assert.deepEqual(fanouts.get("Pkg.Hub"), [
+    "Pkg.AboveMeta", "Pkg.AboveReexport", "Pkg.AllOfAboveMeta", "Pkg.Meta", "Pkg.PrivateMeta", "Pkg.Reexport",
+  ]);
 });
 
 test("a plain file sees its whole import closure, and its own imports re-export", () => {

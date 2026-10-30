@@ -12,7 +12,23 @@ function importGraph(sources: LeanSources) {
     }
     return seen;
   };
-  return { headers, closure };
+  // What a module's public import trace covers: itself, what its public imports re-export and, for an exported
+  // `meta import`, that import's whole closure, which Lake mixes into the trace (Lake v4.34.1 Build/Module.lean:366-374).
+  const reexports = new Map<string, Set<string>>();
+  const reexported = (module: string): Set<string> => {
+    const known = reexports.get(module);
+    if (known !== undefined) return known;
+    const visible = new Set([module]);
+    reexports.set(module, visible);
+    const header = headers.get(module)!;
+    for (const { module: imported, isPublic, isMeta } of header.imports) {
+      if (!headers.has(imported) || !(isPublic || !header.isModule)) continue;
+      for (const reached of reexported(imported)) visible.add(reached);
+      if (isPublic && isMeta) for (const reached of closure(imported)) visible.add(reached);
+    }
+    return visible;
+  };
+  return { headers, closure, reexported };
 }
 
 /**
@@ -35,26 +51,14 @@ export function leanLibraryModules(sources: LeanSources, root: string): Set<stri
  * record. An `import all` or `meta import` opens the imported module's private part, so it also loads everything
  * that module loads, private imports included: a private import of the family admission module into the profile
  * registry let an interface edit rebuild the registry's ten `import all` importers (pinned container, 2026-10-26).
+ * A `public meta import` re-exports that whole closure as well, so its importer's loaders load it too.
  * A plain file loads its whole import closure and re-exports every import, so a hidden-body edit still rebuilds it.
  *
  * This is an upper bound: an importer whose own artifact comes out unchanged stops propagation in Lake, which a
  * graph scan cannot see. Imports of modules outside `sources`, such as Lean core, are ignored.
  */
 export function leanFanouts(sources: LeanSources): Map<string, string[]> {
-  const { headers, closure } = importGraph(sources);
-  const reexports = new Map<string, Set<string>>();
-  const reexported = (module: string): Set<string> => {
-    const known = reexports.get(module);
-    if (known !== undefined) return known;
-    const visible = new Set([module]);
-    reexports.set(module, visible);
-    const header = headers.get(module)!;
-    for (const { module: imported, isPublic } of header.imports) {
-      if (!headers.has(imported) || !(isPublic || !header.isModule)) continue;
-      for (const reached of reexported(imported)) visible.add(reached);
-    }
-    return visible;
-  };
+  const { headers, closure, reexported } = importGraph(sources);
   const loads = new Map<string, Set<string>>();
   const loadedBy = (module: string): Set<string> => {
     const known = loads.get(module);
@@ -90,6 +94,8 @@ export function leanFanouts(sources: LeanSources): Map<string, string[]> {
  * imported module's whole import closure, and a plain file loads every module of its import closure whole, so each
  * of them that reaches the module rebuilds too (the
  * [mechanism observations](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#mechanism-observations-lean-v4341-2026-10-23)).
+ * A `public meta import` carries that compiled closure into the re-exporting module's public trace, so every module
+ * loading the re-exporter rebuilds as well (the depth probe's row 5, pinned container, 2026-10-30).
  *
  * An `import all` importer that rewrites with one of the module's hidden definitions (`simp [f]`, `rw [f]` and
  * their siblings, or a named `f.eq_…` lemma) generates that definition's equation lemmas and exports them, so the
@@ -99,17 +105,31 @@ export function leanFanouts(sources: LeanSources): Map<string, string[]> {
  * equation lemmas privately first.
  */
 export function leanHiddenEditFanouts(sources: LeanSources): Map<string, string[]> {
-  const { headers, closure } = importGraph(sources);
+  const { headers, closure, reexported } = importGraph(sources);
   const interfaceFanouts = leanFanouts(sources);
   const text = new Map(sources.map(({ path, source }) => [path.replace(/\.lean$/u, "").replaceAll("/", "."), source]));
   const candidates = rewriteCandidateCache();
   const hiddenLoaders = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
   const plainReach = new Map([...headers.keys()].map((module) => [module, [] as string[]]));
+  const compiledReexports = new Map<string, Set<string>>();
+  const compiledReexported = (module: string): Set<string> => {
+    const known = compiledReexports.get(module);
+    if (known !== undefined) return known;
+    const compiled = new Set<string>();
+    for (const reexporter of reexported(module)) {
+      for (const { module: imported, isPublic, isMeta } of headers.get(reexporter)!.imports) {
+        if (isPublic && isMeta && headers.has(imported)) for (const reached of [imported, ...closure(imported)]) compiled.add(reached);
+      }
+    }
+    compiledReexports.set(module, compiled);
+    return compiled;
+  };
   for (const [importer, header] of headers) {
     for (const { module: imported, importsAll, isMeta } of header.imports) {
       if (!headers.has(imported)) continue;
       if (importsAll) hiddenLoaders.get(imported)!.push(importer);
       if (isMeta) for (const reached of [imported, ...closure(imported)]) hiddenLoaders.get(reached)!.push(importer);
+      for (const reached of compiledReexported(imported)) hiddenLoaders.get(reached)!.push(importer);
     }
     if (!header.isModule) for (const reached of closure(importer)) plainReach.get(reached)!.push(importer);
   }
@@ -289,11 +309,12 @@ function rewritesWith(candidates: RewriteCandidates, hidden: HiddenDefinitions):
 /**
  * What a source writes that may realize equation lemmas, whichever module's hidden definitions it turns out to name:
  * each written name with whether `simp` or a sibling wrote it and whether its enclosing declaration binds it, in
- * source order, then the `unfold` and induction names. `bound` is asked only of a name that denotes a hidden
+ * source order, then each named equation lemma's definition with its suffix, then the `unfold` and induction names. `bound` is asked only of a name that denotes a hidden
  * definition and answered once, because {@link boundIn} compiles its patterns per call.
  */
 type RewriteCandidates = Readonly<{ declared: ReadonlySet<string>; prefixes: ReadonlyArray<string>;
   realizing: ReadonlyArray<Readonly<{ written: string; bySimp: boolean; bound: () => boolean }>>;
+  lemmas: ReadonlyArray<Readonly<{ written: string; suffix: string }>>;
   unfolded: ReadonlyArray<string>; induction: ReadonlyArray<string> }>;
 
 /**
@@ -311,7 +332,7 @@ function rewriteCandidateCache(): (text: string) => RewriteCandidates {
 }
 
 // A dotted name starts only after a character that cannot continue one, so a scan does not restart inside each name.
-const equationLemma = /(?<![A-Za-z0-9_'?!.])((?:[A-Za-z0-9_'?!]+\.)*[A-Za-z0-9_'?!]+)\.eq_(?:\d+|def|unfold)\b/gu;
+const equationLemma = /(?<![A-Za-z0-9_'?!.])((?:[A-Za-z0-9_'?!]+\.)*[A-Za-z0-9_'?!]+)\.(eq_(?:\d+|def|unfold))\b/gu;
 const inductionPrinciple = /(?<![A-Za-z0-9_'?!.])((?:[A-Za-z0-9_'?!]+\.)*[A-Za-z0-9_'?!]+)\.(?:induct|fun_cases)\b/gu;
 
 /** The {@link RewriteCandidates} of one source. */
@@ -335,11 +356,12 @@ function rewriteCandidates(text: string): RewriteCandidates {
   }));
   const attributed = [...source.matchAll(/^attribute\s*\[[^\]]*\bsimp\b[^\]]*\]([^\n]*)/gmu)]
     .flatMap(([, list]) => list!.trim().split(/\s+/u)).map((written) => ({ written, bySimp: true, bound: unbound }));
-  const lemmas = [...source.matchAll(equationLemma)].map(([, written]) => ({ written: written!, bySimp: false, bound: unbound }));
+  const lemmas = [...source.matchAll(equationLemma)].map(([, written, suffix]) => ({ written: written!, suffix: suffix! }));
   return {
     declared: privatelyDeclaredEquations(source),
     prefixes: resolutionPrefixes(source),
-    realizing: [...arguments_, ...attributed, ...lemmas],
+    realizing: [...arguments_, ...attributed],
+    lemmas,
     unfolded: [...source.matchAll(/\bunfold\b([^\n;)]*)/gu)].flatMap(([, list]) => list!.split(/\s+at\s+/u)[0]!.trim().split(/\s+/u)),
     // Functional induction principles are realized on demand like equation lemmas, so they count as well.
     induction: [
@@ -352,10 +374,11 @@ function rewriteCandidates(text: string): RewriteCandidates {
 /**
  * The name each rewrite with a hidden definition uses, once per occurrence: an element of an argument list, a local
  * `simp` attribute, a named `f.eq_…` or functional-induction lemma, or an `unfold` of a recursive one. A definition
- * whose equation lemmas the source declares privately is a site only through its functional induction principle,
- * which `privateEquations` does not declare.
+ * whose equation lemmas the source declares privately is a site only through a lemma `privateEquations` does not
+ * declare: its functional induction principle, its `eq_unfold`, and its `eq_def` unless it is recursive (Lean v4.34.1
+ * Meta/Eqns.lean:307-312).
  */
-function hiddenRewriteSites({ declared, prefixes, realizing, unfolded, induction }: RewriteCandidates,
+function hiddenRewriteSites({ declared, prefixes, realizing, lemmas, unfolded, induction }: RewriteCandidates,
   { names, recursive, definitions }: HiddenDefinitions): string[] {
   if (names.size === 0) return [];
   // The definitions a written name can denote: those it resolves to under one of the source's namespaces.
@@ -371,6 +394,8 @@ function hiddenRewriteSites({ declared, prefixes, realizing, unfolded, induction
     .some(({ qualifiedName, reducible }) => !declared.has(qualifiedName) && !(bySimp && reducible));
   return [
     ...realizing.filter(({ written, bySimp, bound }) => realizes(written, bySimp) && !bound()).map(({ written }) => written),
+    ...lemmas.filter(({ written, suffix }) => /^eq_\d+$/u.test(suffix) || (suffix === "eq_def" && recursive.has(written.split(".").at(-1)!))
+      ? realizes(written, false) : denoted(written).length > 0).map(({ written }) => written),
     ...unfolded.filter((name) => recursive.has(name.split(".").at(-1)!) && realizes(name, false)),
     ...induction.filter((name) => denoted(name).length > 0),
   ].map((name) => name.split(".").at(-1)!);
