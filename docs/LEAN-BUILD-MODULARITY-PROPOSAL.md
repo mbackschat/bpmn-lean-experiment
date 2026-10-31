@@ -185,7 +185,7 @@ The first family-shaped increment was [concurrent scope Service Tasks](capsules/
 |---|---|---|---|---|
 | Proposal | `056241144bd4e3828355e2e88f3a2de715815c93` | `fork-turns-none` | `approve-with-required-edits` | `c46dcce614d999e0a9976339f405f2cfdfcf5c8d, 02ff88ba6cda59a67119dc3a536b175ab14b6ae5` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `afd2b1ba257a2507607e46eeac843e2fe088040b` | `fork-turns-none` | `reject` | `not-required` |
+| Closure | `afd2b1ba257a2507607e46eeac843e2fe088040b` | `fork-turns-none` | `reject` | `7c391101862328c19e3534859b52173b4955c526, b691a20982ae244a71362980a9336abb1302b4c0` |
 
 The cold review of `05624114` (baseline `af8828a9`, packet `3b1bf9ed3419574012cf3d79c850381590c41bec006c3997945b68ffe61aee5b`) required eight edits: kernel types that enumerate families, cross-family operations, global whole-model fixtures, the fixture classification, the ratchet measure, guard migration, retained mechanism evidence and the rule-ID claim. The first audit closed them at `c46dcce6` and required the resume point to order guard migration first. The second audit approved `02ff88ba`. The owner adopted the proposal on 2026-10-23 after the hosted thread measurement.
 
@@ -217,3 +217,5 @@ The new closure review of `afd2b1ba` (baseline `2d8db0e7`, packet file SHA-256 `
 - contract item 5's 15-minute fixture trigger fires for a closed-world body edit (856 to 1,052 serial seconds from the recorded cost rows);
 - the kernel body hiding has no real-build probe;
 - the body-edit bounds of `BusinessValue`, `ParallelMultiInstanceContract` and `VariableMappingContract` record no root cause.
+
+The owner then chose to restate the contract to its measured residual rather than keep the branch open for the hub fix. The same reviewer audited the corrections: the first audit, at `7c391101`, required the review's own replay figures in this receipt, review-policy text that admits an audited rejection, and the owner's quoted acceptance; the second approved them at `b691a209`, judging none of the corrections material.
