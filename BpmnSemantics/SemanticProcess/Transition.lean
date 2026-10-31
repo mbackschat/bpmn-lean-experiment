@@ -684,7 +684,7 @@ theorem attemptInternalOperation_withoutSnapshotDeclaration
       | some successor => .applied { operation, successor } := by
   simp [attemptInternalOperation, fire?, absent, executionAbsent]
   -- `exact rfl`: the left side keeps the definition's matcher and the statement this proof's private one
-  -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+  -- (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
   exact rfl
 
 /-- Program relation keeps the explicit selected operation identity as semantic input. -/

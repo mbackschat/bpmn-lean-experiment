@@ -1,6 +1,6 @@
 /**
  * Prints the exact `import all` lines a module needs so that its kernel decisions and definitional reductions see
- * the hidden bodies they unfold, as the [module rules](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-rules) require
+ * the hidden bodies they unfold, as the [module rules](../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules) require
  * ("Kernel decision through hidden bodies needs `import all` of every module on the reduction path").
  *
  * A stuck decision names only the outermost definition it could not reduce, never the hidden callee below it, and a

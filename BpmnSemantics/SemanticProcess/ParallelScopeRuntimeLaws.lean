@@ -9,7 +9,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel scope runtime laws
 
-The preservation laws of Parallel Multi-Instance population entry and retirement, apart from the definitions in [`ParallelScopeRuntime`](ParallelScopeRuntime.lean): a proof edit here rebuilds only the proofs that consume these laws ([interface fanout](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#contract)).
+The preservation laws of Parallel Multi-Instance population entry and retirement, apart from the definitions in [`ParallelScopeRuntime`](ParallelScopeRuntime.lean): a proof edit here rebuilds only the proofs that consume these laws ([interface fanout](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract)).
 -/
 run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat]
 

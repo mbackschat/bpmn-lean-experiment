@@ -131,7 +131,7 @@ theorem deriveInternalExecutionFrontier_empty (program : Program) (state : Runti
   · rfl
   · dsimp only
     -- `erw`: the hidden definition's body and this proof carry different private matchers
-    -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    -- (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
     erw [fold_empty_discoveries _ _ empty]
     rfl
 
@@ -176,7 +176,7 @@ theorem deriveInternalExecutionFrontier_singleton (program : Program) (state : R
   · cases state.control <;> simp_all
   · cases state.control <;> simp_all
   · dsimp only
-    -- `erw`: the unfolded definition's fold and `folded` carry different matchers (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    -- `erw`: the unfolded definition's fold and `folded` carry different matchers (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
     erw [folded]
     rfl
 

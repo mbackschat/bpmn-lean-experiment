@@ -216,7 +216,7 @@ theorem parallelMultiInstanceProgramBindingsValid_singleton (program : Program)
       simpa only [Bool.and_eq_true, beq_iff_eq] using binding
     unfold parallelControllerProgramBindingValid parallelRecordForController?
     -- `erw`: the hidden definition's body and this proof carry different private matchers
-    -- (docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect).
+    -- (docs/LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect).
     erw [controllerRecord, matchingOperation]
     simp only [projects]
     rw [ownerScope, attachedTimer, privateWaits]

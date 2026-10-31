@@ -50,9 +50,9 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 ### Lean build follow-ups
 
-The [module rules](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-rules) own the rules; this list owns the class repairs the module conversion left.
+The [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules) own the rules; this list owns the class repairs the module conversion left.
 
-- Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
+- Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
 - At the next kernel-type change: merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each, and drop the simp arguments Lean's linter reports unused, inside the same complete rebuild.
 - Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
@@ -93,18 +93,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-PROPOSAL.md#problem) promise (owner direction, 2026-10-27). The [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md) family pauses after `2d8db0e7` until this outcome closes (owner direction, 2026-10-28); CSD-3 and CSD-4 remain. Pull request #38 is the owner's to land.
+Current task: implement the approved [concurrent scope data proposal](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md), primary `PC-DATA-04` with `PC-SCOPE-02` and `PC-SCOPE-01`, resumed after the [build modularity](LEAN-BUILD-MODULARITY-SPEC.md) closure. Multi-Instance closure stays held at qualification. Pull request #38 is the owner's to land.
 
-Deliverable: bodies hidden by default in every family, so a body edit rebuilds only the modules that load the body, re-checked by container rebuild probes across the core and every family.
+Deliverable: the family through registration and its closure review, built under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
 
-Acceptance blockers: the closure review of `afd2b1ba` rejected the closure ([receipt](LEAN-BUILD-MODULARITY-PROPOSAL.md#independent-cold-review-receipt)): ordinary edits are not covered as the owner's closure scope assumed, and its four required findings stay open.
+Acceptance blockers: none recorded.
 
-Current result: the conversion, the generated-lemma fix and the probe matrix landed ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)), and eleven kernel modules hide their operation bodies (`726db247`, `6f6b3217`). The owner ratified the delegated opening-import rises, the sparse-case workaround and the bounds file's size exception on 2026-10-31.
+Current result: occurrence-chain resolution and the Program-gated scope data admission (CSD-1, CSD-2) are green in TypeScript and Lean (`99cb3861`), and the core prepares declared entries and frames merge-target scopes (`2d8db0e7`). The build modularity specification graduated with its [measured residual](LEAN-BUILD-MODULARITY-SPEC.md#acceptance): a CSD-3 Lean commit still rebuilds about 450 modules (fan-out model, 2026-10-31).
 
-Effort budget: 6 hours from 2026-10-31 for the closure review's corrections (owner extension by half a day, 2026-10-31); reaching it stops and records the result.
+Effort budget: 16 hours of working time to family closure; stop and reassess at the limit.
 
-Next action: the same reviewer's audit of the corrections to the `afd2b1ba` review (restated residual, kernel-hiding probes, exposure reasons), then graduation and the concurrent scope data family.
+Next action: CSD-3 in Lean, the merge-target hooks, prepared declared entry and arming read atoms that `2d8db0e7` added to the core; then CSD-4 models, scenarios and registration.
 
-Oracle: a container body-edit probe that rebuilds more than the body-edit model predicts, or any weakened lane shape, claim or gate.
+Oracle: a Parallel fork into two declaring Sub-Processes that rolls back as `ambiguousInternalChoice`, or a `DATA` profile scenario whose committed states change.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

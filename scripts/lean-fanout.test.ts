@@ -396,7 +396,7 @@ test("the ratchet reports growth, an unlisted wide module, a stale entry and an 
   ]);
 });
 
-// The ratchet itself: required item 6 of docs/LEAN-BUILD-MODULARITY-PROPOSAL.md. The oracle is the graph scan
+// The ratchet itself: required item 6 of docs/LEAN-BUILD-MODULARITY-SPEC.md. The oracle is the graph scan
 // above; it bounds graph shape, so a family-start kernel change needs no exemption.
 const librarySources = () =>
   readWorktreeSources(worktreeLeanSourceFiles().filter((path) => path.startsWith("BpmnSemantics/") || !path.includes("/")));

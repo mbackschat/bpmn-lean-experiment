@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.CallActivity
 
 /-! # CallActivity laws
 
-The laws that proofs consume, apart from the definitions in [`CallActivity`](CallActivity.lean): a proof edit here rebuilds no module that imports those definitions with `import all` to reduce their bodies ([hidden-edit fanout](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#contract)).
+The laws that proofs consume, apart from the definitions in [`CallActivity`](CallActivity.lean): a proof edit here rebuilds no module that imports those definitions with `import all` to reduce their bodies ([hidden-edit fanout](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract)).
 -/
 
 public section

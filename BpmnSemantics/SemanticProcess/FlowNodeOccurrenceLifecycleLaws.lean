@@ -6,7 +6,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # FlowNodeOccurrenceLifecycle laws
 
-The laws that proofs consume, apart from the definitions in [`FlowNodeOccurrenceLifecycle`](FlowNodeOccurrenceLifecycle.lean): a proof edit here rebuilds no module that imports those definitions with `import all` to reduce their bodies ([hidden-edit fanout](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#contract)).
+The laws that proofs consume, apart from the definitions in [`FlowNodeOccurrenceLifecycle`](FlowNodeOccurrenceLifecycle.lean): a proof edit here rebuilds no module that imports those definitions with `import all` to reduce their bodies ([hidden-edit fanout](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#contract)).
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertBy, `removeEndedFlowNodeOccurrences, `sortBy]

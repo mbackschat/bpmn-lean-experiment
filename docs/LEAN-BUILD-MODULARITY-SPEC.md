@@ -1,9 +1,9 @@
-# Lean build modularity proposal
+# Lean build modularity specification
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
-Review: approved-with-required-edits
+Lifecycle: implemented
+Review: closure-approved
 
 ## Problem
 

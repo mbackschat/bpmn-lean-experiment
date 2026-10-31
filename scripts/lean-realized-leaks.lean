@@ -1,7 +1,7 @@
 import Lean
 
 /-!
-The realized-constant check of the [build modularity proposal](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#module-rules):
+The realized-constant check of the [build modularity specification](../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules):
 no module-system module this project builds for the given roots may carry a realized private constant in its public
 `.olean`. An ordinary private declaration is never exported (Lean v4.34.1 `AddDecl.lean:138-143`), but a realized one
 is (`Environment.lean:723-724`, an upstream `TODO`): the equation, unfolding and functional induction lemmas a `simp`,

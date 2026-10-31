@@ -1591,7 +1591,7 @@ Disposition
 Evidence
 : [body-edit fanout ratchet](../scripts/lean-fanout.test.ts), [guard relaxations in the review packet](../scripts/semantic-review-packet.ts), [goal-fidelity review prompt](REVIEW-POLICY.md#review-prompt)
 
-**First observed:** the concurrent scope data Lean increment `99cb3861` on 2026-10-27, after the [build modularity](LEAN-BUILD-MODULARITY-PROPOSAL.md) closure of 2026-10-26.
+**First observed:** the concurrent scope data Lean increment `99cb3861` on 2026-10-27, after the [build modularity](LEAN-BUILD-MODULARITY-SPEC.md) closure of 2026-10-26.
 
 The owner directed that ordinary work never need a complete Lean rebuild. The whole-library conversion `ce2c3715` exposed every body, and only 12 hubs were hidden afterwards; the specification admitted a body "kept exposed" and the modules that load it, the stopping measure was a replay median over past commits, and the closure review approved the admission itself. No guard measured what a body edit costs in an exposed module, and failing hidden-edit bounds were raised rather than root-caused. The next family's body edits then invalidated 782 of about 865 modules. The controls: a body-edit fanout ratchet computes the rebuild set of every module's body edit; the review packet lists each changed guard-bound line as a relaxation; and the review prompt requires the reviewer to judge the acceptance against the quoted owner direction, measure every exception clause's worst case with a self-chosen probe, and reject medians and single instances as evidence for universal claims.
 

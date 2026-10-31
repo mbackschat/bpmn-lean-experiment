@@ -1,6 +1,6 @@
 /**
  * Replays ordinary semantic commits against the fan-out model of the checked-out tree, the measure of the
- * [build modularity residual](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary) and of the hub fix
+ * [build modularity residual](../docs/LEAN-BUILD-MODULARITY-SPEC.md#current-boundary) and of the hub fix
  * that [PLAN](../docs/PLAN.md#lean-build-follow-ups) schedules against it.
  *
  * The sample is fixed by its anchor: the `count` most recent commits reachable from the anchor whose Conventional
