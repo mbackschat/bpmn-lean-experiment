@@ -57,7 +57,9 @@ The [module rules](LEAN-BUILD-MODULARITY-PROPOSAL.md#module-rules) own the rules
 - Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
 - After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
 - After owner approval: an upstream Lean report that `sparseCasesOnExt` exports private owners' sparse case-split names (`AuxRecursor.lean:53`, unlike `sparseCasesOnInfoExt`); remove `backward.match.sparseCases = false` and its two local exceptions once the pinned Lean filters them.
-- Hubs whose hidden edits rebuild over 500 modules (owner acknowledgement, 2026-10-29): propose lemmas in owners and self-registering registries, reconciling the registry sentence of [the code style guide](CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries).
+- Hub fix, a task of its own after the build-modularity branch, because it refactors proofs rather than build infrastructure (owner direction, 2026-10-31): consume the hubs whose hidden edits rebuild over 500 modules through lemmas in their owners instead of `import all`, and replace the `ValueDomain` profile registry with self-registering family entries, reconciling the registry sentence of [the code style guide](CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries). `RuntimeState` (606 since `6f6b3217`) is carried by `ActivityOccurrence` (569) and `RuntimePositionValidity` (481), `Data` (365) by core operations such as `addActivityVariableScope`, and the registry by `CommandAdmission` (433) and `PropertyPathValuePolicy` (302); estimated targets about 105 and 126 (fan-out model, 2026-10-31). Keeping `insertActivityOccurrence` and `onlyTokenOwner?` exposed instead would lower `RuntimeState` to about 360 at the price of interface edits for those two (model only, unbuilt).
+- At the next kernel-type change: move each kernel module's operations out of its `@[expose] public section` into a plain section, and teach the fan-out model that rule, so that Lean's warnings that `@[expose]` has no effect (`initialState`, `emptyScopedVariables`, `SemanticProcessContract`'s two contract predicates, inside exposed sections) and the per-definition `@[no_expose]` marks go; the model reads the redundant attribute today to treat those four as individually exposed.
+- When next edited: wrap the 35 helper-call lines wider than 120 columns that the hidden-bodies conversion (`3268d719`) and the generated-lemma fix (`4b963dc9`) wrote, as the header calls around them wrap.
 - Recorded generated-lemma leaks ([`lean-realized-leaks.tsv`](../scripts/lean-realized-leaks.tsv)): remove each generated-lemma line by consuming its owner through lemmas when that owner is next edited; the sparse case-split lines go only with the upstream fix above.
 - Split [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts), above 800 lines under an owner-approved exception, into one file per ratchet; the rise, debt and owner-decision guards read it at the base commit, so the split is a change of its own.
 
@@ -94,13 +96,13 @@ Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-PROPOSAL.md#p
 
 Deliverable: bodies hidden by default in every family, so a body edit rebuilds only the modules that load the body, re-checked by container rebuild probes across the core and every family.
 
-Acceptance blockers: the interface-changing body edits of the [current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary), then the closure review's correction audit.
+Acceptance blockers: the closure review's correction audit, then the heavy Lean lanes.
 
-Current result: the conversion and the generated-lemma fix (`4b963dc9`) landed, and the probe matrix is done ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)). The cold closure review of `c5add868` rejected the closure; its corrections are in progress. The owner confirmed on 2026-10-30 that the session decides autonomously, which ratifies the opening-import total at 11,986 and the 827-line size exception of `lean-fanout-bounds.ts`.
+Current result: the conversion and the generated-lemma fix (`4b963dc9`) landed, and the probe matrix is done ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)). The cold closure review of `c5add868` rejected the closure; its corrections landed, F2 as eleven kernel modules hiding their operation bodies (`726db247`, `6f6b3217`) without a kernel body-edit exemption (`dae12833`). Each recorded opening-import rise and size exception since 2026-10-30 rests on the owner's delegation of decisions to the session.
 
 Effort budget: 80 hours; the owner lifted the cap on 2026-10-27, so reaching it records progress and continues.
 
-Next action: the heavy Lean lanes, the cold closure review, graduation, then the concurrent scope data family.
+Next action: the cold closure reviewer's correction audit, the heavy Lean lanes, graduation, then the concurrent scope data family.
 
 Oracle: a container body-edit probe that rebuilds more than the body-edit model predicts, or any weakened lane shape, claim or gate.
 
