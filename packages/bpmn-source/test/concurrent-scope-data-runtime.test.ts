@@ -20,7 +20,7 @@ const { PreparedInternalTransitionFamily, applyPreparedInternalTransition, deriv
   preparedInternalTransitionsAreIndependent } = await import(
   new URL("../../semantic-core/dist/internal-transition-batch.js", import.meta.url).href) as
   typeof import("../../semantic-core/src/internal-transition-batch.ts");
-const { deriveInternalTransitionFootprint } = await import(
+const { InternalTransitionStateAtomKind, deriveInternalTransitionFootprint } = await import(
   new URL("../../semantic-core/dist/internal-transition-footprint.js", import.meta.url).href) as
   typeof import("../../semantic-core/src/internal-transition-footprint.ts");
 
@@ -142,12 +142,15 @@ const operationAt = (program: SemanticProcessProgram, elementId: string, kind: s
   return matching[0]!;
 };
 
+type FootprintAtom = NonNullable<ReturnType<typeof deriveInternalTransitionFootprint>>["reads"][number];
+
 /** Every chain link a nested read set walks is read for its liveness as well as its parent, as the Lean footprint states. */
-function assertLinksReadLive(reads: ReadonlyArray<{ kind: string; occurrence?: { definitionScopeId: string };
-  owner?: unknown }>): void {
-  const live = new Set(reads.flatMap(atom => atom.kind === "scopeOccurrence"
-    ? [(atom.owner as { definitionScopeId: string }).definitionScopeId] : []));
-  for (const atom of reads) if (atom.kind === "scopeParent") assert.ok(live.has(atom.occurrence!.definitionScopeId));
+function assertLinksReadLive(reads: readonly FootprintAtom[]): void {
+  const live = new Set(reads.flatMap(atom =>
+    atom.kind === InternalTransitionStateAtomKind.ScopeOccurrence ? [atom.owner.definitionScopeId] : []));
+  for (const atom of reads) {
+    if (atom.kind === InternalTransitionStateAtomKind.ScopeParent) assert.ok(live.has(atom.occurrence.definitionScopeId));
+  }
 }
 
 test("each prepared declared entry equals the evaluator's entry, and the two sibling entries are independent", async () => {
