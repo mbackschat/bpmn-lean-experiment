@@ -6,7 +6,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! # Data-bearing embedded completion Programs
 
 Whether an embedded completion Program carries data: a scope declaration or a mapped Service Task, per the
-[concurrent scope data proposal](../../docs/capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#profile-and-public-contract).
+[concurrent scope data specification](../../docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#profile-and-public-contract).
 Only such a Program resolves frames by the occurrence chain and takes the bounded String domain; a
 data-free Program of that profile keeps its empty value domains and the scalar effect policy, so every
 earlier admission of the profile is unchanged.

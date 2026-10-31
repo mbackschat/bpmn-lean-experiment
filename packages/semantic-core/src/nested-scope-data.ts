@@ -23,7 +23,7 @@ import { compareCanonicalStrings } from "./wire.js";
  * nested scope data specification's stable rules (NSD-INIT-01 to NSD-RETIRE-01).
  *
  * The chain is walked over live scope occurrences, from the performing occurrence through its parents to its instance
- * root, selecting each frame by exact owner (CSD-CHAIN-01 of the concurrent scope data proposal). Two live occurrences
+ * root, selecting each frame by exact owner (CSD-CHAIN-01 of the concurrent scope data specification). Two live occurrences
  * of one definition are therefore two owners, and a sibling's frame is never on the chain. Every operation reads only
  * the Program, the live occurrences and the scoped variables, matching the independent Lean account in `NestedScopeData`.
  */

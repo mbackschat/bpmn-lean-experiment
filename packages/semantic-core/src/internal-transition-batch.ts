@@ -196,7 +196,7 @@ export function prepareInternalTransitionBatch(
 /**
  * The declared entry's batch premise (CSD-PREPARE-01), as Lean's `PreparedInternalTransition.Independent` states it: its
  * commutation is established only beside declared entries, scope creations, ordinary armings and local control, so any
- * other companion is dependent and the frontier rolls back as an observable choice instead of committing unproved order.
+ * other companion is dependent and never batched with it, so no unproved order is committed.
  */
 const declaredEntryCompanions: ReadonlySet<PreparedInternalTransitionFamily> = new Set([
   PreparedInternalTransitionFamily.DeclaredScopeEntry, PreparedInternalTransitionFamily.ScopeCreation,

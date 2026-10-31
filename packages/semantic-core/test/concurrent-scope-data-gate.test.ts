@@ -11,7 +11,7 @@ const { VariableWriteSurface, profileAllowsVariableBindings } = await import(
   new URL("../dist/semantic-profile-value-domain.js", import.meta.url).href) as typeof import("../src/semantic-profile-value-domain.ts");
 
 /**
- * The data-bearing gate of the concurrent scope data proposal: an embedded completion Program carries data exactly when
+ * The data-bearing gate of the concurrent scope data specification: an embedded completion Program carries data exactly when
  * it has a scope declaration or a mapped Service Task, and only then do its surfaces take the bounded String domain
  * (CSD-VALUE-01). A data-free Program of that profile keeps its empty domains and the scalar effect policy.
  */

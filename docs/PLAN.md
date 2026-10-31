@@ -93,18 +93,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: close the [concurrent scope data proposal](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md), primary `PC-DATA-04` with `PC-SCOPE-02` and `PC-SCOPE-01`. Multi-Instance closure stays held at qualification. Pull request #38 is the owner's to land.
+Current task: the hub fix in [Lean build follow-ups](#lean-build-follow-ups), scheduled after the [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-SPEC.md) family, which closed approved at `484f358d` (`PC-DATA-04`, `PC-SCOPE-02` and `PC-SCOPE-01` stay open on other mechanisms). Multi-Instance closure stays held at qualification. Pull request #38 is the owner's to land.
 
-Deliverable: the family's closure review, its correction audit and the graduation of the proposal to a specification, under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
+Deliverable: the hub fix's first increment, the leading closed-world functions consumed through lemmas in their owners, under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
 
 Acceptance blockers: none recorded.
 
-Current result: CSD-1 to CSD-4 are implemented in Lean and the core, registered, calibrated on CIB and measured against every hosted budget. Every closure gate the [capsule](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#evidence-and-acceptance) lists is green except the Temporal stage's TD-001 recurrence. `14cbc55a` corrected Lean's publication replay of merge-target records, which the pipeline exposed, and now compares Lean and core publications on every registered schedule.
+Current result: the family's closure gates are green except the Temporal stage's recorded TD-001 recurrence; the closure also corrected Lean's merge-target publication replay (`14cbc55a`) and the core's declared-entry batch premise (`484f358d`).
 
-Effort budget: 16 hours of working time to family closure, nearly spent; stop and reassess at the limit.
+Effort budget: 12 hours of working time for the first increment; stop and reassess at the limit.
 
-Next action: the cold closure review of the committed closure target, then graduation; afterwards the hub fix below.
+Next action: rank the hub modules with [`lean-fanout-replay.ts`](../scripts/lean-fanout-replay.ts) at the current head and pick the first closed-world function and its consumers.
 
-Oracle: the closure verdict and, for each required finding, its correction audit.
+Oracle: the replay's per-module rebuild counts, mean and p90 at the increment's commit against `afd2b1ba`.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

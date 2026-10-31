@@ -7,7 +7,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! # Occurrence-chain bridge
 
 The `CSD-CHAIN-01` bridge of the
-[concurrent scope data proposal](../../docs/capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#lean-assurance-lane):
+[concurrent scope data specification](../../docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#lean-assurance-lane):
 under its three premises the live occurrence chain names the same frames as the definition chain that
 nested scope data resolved over before concurrent activations, so moving resolution onto occurrences
 changes nothing for a state in which every chain definition is activated once.

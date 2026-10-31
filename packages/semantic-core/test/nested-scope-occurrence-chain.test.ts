@@ -7,7 +7,7 @@ const { readNestedScopeVariable, writeNestedScopeVariables } =
   await import(new URL("../dist/nested-scope-data.js", import.meta.url).href) as typeof import("../src/nested-scope-data.ts");
 
 /**
- * CSD-CHAIN-01 and CSD-ISOLATE-01 of the concurrent scope data proposal: resolution walks the performing occurrence's
+ * CSD-CHAIN-01 and CSD-ISOLATE-01 of the concurrent scope data specification: resolution walks the performing occurrence's
  * live parent chain and selects each frame by exact owner, so two live occurrences of one declaring definition are
  * separate owners. The definition-chain account refused this state because one definition had two live frames.
  */

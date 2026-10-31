@@ -5,7 +5,7 @@ import type { ScopeLocalData, VariableMapping } from "./semantic-value-contract.
 import { compareCanonicalStrings } from "./wire.js";
 
 /**
- * CSD-AVAILABLE-01 of the concurrent scope data proposal, an independent transcription of the Lean availability walk.
+ * CSD-AVAILABLE-01 of the concurrent scope data specification, an independent transcription of the Lean availability walk.
  *
  * A name declared by an input of the reader's scope chain is always available, because every local of this profile is
  * an input. Any other name resolves to the Process, so the analysis tracks only Process-landing definite writes: a

@@ -7,7 +7,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! # Concurrent scope data availability
 
 CSD-AVAILABLE-01 of the
-[concurrent scope data proposal](../../docs/capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#admission).
+[concurrent scope data specification](../../docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#admission).
 A name declared by an input of the reader's scope chain is always available, because every local of the
 profile is an input. Any other name resolves to the Process, so the walk tracks only Process-landing
 definite writes: a Service or Sub-Process output whose target no enclosing scope declares. The set at a

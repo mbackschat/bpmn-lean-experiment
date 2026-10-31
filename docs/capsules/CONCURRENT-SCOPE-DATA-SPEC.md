@@ -1,15 +1,15 @@
-# Concurrent scope data proposal
+# Concurrent scope data specification
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and delivery boundary
 
 Can scope-local data live in concurrently live Sub-Process occurrences, including two live occurrences of one definition, so that every read, write, input and output resolves through the occurrence that performs it and never through another occurrence of the same definition?
 
-This is the next family of batch 2 in [PLAN](../PLAN.md#exact-resume-point). Its shared mechanism is per-occurrence scope data resolved along the live occurrence chain. Under the owner direction of 2026-10-27, the family takes every open row of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) that shares it:
+This is a family of batch 2 in [PLAN](../PLAN.md#scheduled-delivery-batches). Its shared mechanism is per-occurrence scope data resolved along the live occurrence chain. Under the owner direction of 2026-10-27, the family takes every open row of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) that shares it:
 
 - `PC-DATA-04`, primary: concurrent embedded owners, present-null shadowing and sibling isolation in concurrent occurrences;
 - `PC-SCOPE-02`: distinct data lifetimes for two live occurrences of one embedded definition;
@@ -116,9 +116,9 @@ For admitted Programs of this profile, the singleton argument below establishes 
 - the profile admits no Message, Timer or bounded-scope family;
 - regional completion, End and merge input are never co-enabled with an entry.
 
-That establishment is not proved. Both languages encode the premise in prepared independence: Lean's `PreparedInternalTransition.Independent` and the core's `preparedInternalTransitionsAreIndependent` make a declared entry dependent on every companion outside declared entries, scope creations, armings and local control. The production frontier rule therefore rolls such a frontier back as an observable choice instead of committing it, and a [core test](../../packages/bpmn-source/test/concurrent-scope-data-runtime.test.ts) locks that refusal for every other family. Admitting Message, Timer, interruption or wait-free paths beside data reopens it, together with the singleton argument.
+That establishment is not proved. Both languages encode the premise in prepared independence: Lean's `PreparedInternalTransition.Independent` and the core's `preparedInternalTransitionsAreIndependent` make a declared entry dependent on every companion outside declared entries, scope creations, armings and local control. The production frontier rule therefore never batches a declared entry with such a companion, and a [core test](../../packages/bpmn-source/test/concurrent-scope-data-runtime.test.ts) locks that refusal for every other family. Admitting Message, Timer, interruption or wait-free paths beside data reopens it, together with the singleton argument.
 
-The commutation proposal's scope-creation section is amended to name the declared constructor.
+The [commutation proposal](../INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite)'s scope-creation section names the declared constructor.
 
 **Completion and merge-target entry stay unprepared singletons.** A command ends exactly one wait, so a closure starts from one token, and co-enabled offers arise only after a fork. Admission guarantees that each such offer is a task arming or a Sub-Process entry:
 - every structured body holds a task on every Start-to-End path (`parallel-body-burst-analysis.ts`, consumed whole by `structured-parallel-body-analysis.ts`);
@@ -225,12 +225,12 @@ Two whole models with business purposes and one measurement model carry the witn
 
 Lane shape: proved
 
-Evidence: the occurrence-chain mechanism and its prepared entry are proved. Admission, availability and value bounds are checked, and capacity is a TypeScript component measurement. The proved laws generalize [NestedScopeDataLaws](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean) and the preparation laws:
+Evidence: the occurrence-chain mechanism and its prepared entry are proved. Admission, availability and value bounds are checked, and capacity is a TypeScript component measurement. The guaranteeing declarations are [`resolveOwner?_frame_nearest`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#resolveOwner?_frame_nearest), [`write?_frame`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#write?_frame), [`initializeFrame?_reads_parent_chain`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#initializeFrame?_reads_parent_chain), [`completeScopeState?_retires_frame`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#completeScopeState?_retires_frame), [`applyInternalOperationOccurrence_mergeTarget_sound`](../../BpmnSemantics/SemanticProcess/MergeTargetOccurrenceLaws.lean#applyInternalOperationOccurrence_mergeTarget_sound), [`prepareInternalDeclaredEntry_refines`](../../BpmnSemantics/SemanticProcess/InternalDeclaredEntryLaws.lean#prepareInternalDeclaredEntry_refines), [`prepared_declared_entry_pair`](../../BpmnSemantics/SemanticProcess/InternalDeclaredEntryCommutation.lean#prepared_declared_entry_pair) and [`read?_kept`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean#read?_kept). The proved laws generalize [NestedScopeDataLaws](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean) and the preparation laws:
 
 - **Nearest owner.** Resolution selects the first frame on the occurrence chain that declares the name, otherwise the Process. This restates `resolveOwner?_frame_nearest`.
 - **Exact write and off-chain isolation.** A write changes exactly the resolved frame or binding (`write?_frame`, `write?_process`). A new law adds that every frame whose owner is not on the writer's chain is unchanged.
 - **Initialization and retirement on both paths.** The `initializeFrame?_reads_parent_chain` and `completeScopeState?_retires_frame` laws carry over to `enterConcurrentScopeState?` and `completeScopeOccurrenceState?` with their declared hooks. The [merge-target occurrence laws](../../BpmnSemantics/SemanticProcess/MergeTargetOccurrenceLaws.lean) gain the frame facts.
-- **Bridge.** Under the three premises of `CSD-CHAIN-01`, occurrence-chain resolution equals definition-chain resolution.
+- **Bridge.** Under the three premises of `CSD-CHAIN-01`, occurrence-chain resolution equals definition-chain resolution, stated against the restated definition-chain reference `definitionResolveOwner?` by `occurrenceChain_bridge`, private to [its module](../../BpmnSemantics/SemanticProcess/NestedScopeChainBridge.lean).
 - **Prepared entry.** The composed declared-entry patch re-establishes the laws listed under representation: refinement, aggregate validity, footprint frames, commutation, batch membership and unchanged publication. Each one composes the existing `apply` law with a variables-only law for the frame insertion.
 - **Frame read law.** Nested input evaluation and entry input evaluation are unchanged when the consulted frames, chain links and Process names are unchanged. It discharges the `effectInputsFrame` premise of `prepared_arm_read_frame` and the corresponding premise of the scope-creation read frames.
 
@@ -284,16 +284,14 @@ Closure gates, 2026-10-31:
 
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy). The profile identity, the Program and checked shapes and the schemas stay unchanged. Admission accepts the existing `scopeLocalData` table and effect mappings under one more profile, the value policy gains one arm, and the footprint of nested arming changes. No legacy reader or migration is added.
 
-Before the first edit, `node scripts/what-binds.ts` on every grown path names the binding guards. The decisive ones are:
+The decisive binding guards are:
 - **Commutation and IL:** the [internal commutation census](../../scripts/internal-commutation-census.test.ts) and the [operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts).
 - **Hosting:** [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts).
 - **Values:** the [cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts).
 - **Registration:** the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts) and the [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) for `CIB-EXT-0020`.
 - **Structure:** [Lean import boundaries](../../scripts/lean-import-boundaries.test.ts) and [source hygiene](../../scripts/source-hygiene.test.ts).
 
-### Owners this implementation grows
-
-An owner that `what-binds` reports near its 800-line review target has its touched responsibility extracted into a cohesive owner before it grows.
+### Owners this implementation grew
 
 - **Resolution:** [NestedScopeData](../../BpmnSemantics/SemanticProcess/NestedScopeData.lean) and its [laws](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean), the TypeScript [nested scope data](../../packages/semantic-core/src/nested-scope-data.ts), and [CallVariableMapping](../../BpmnSemantics/SemanticProcess/CallVariableMapping.lean) for its changed caller argument.
 - **Occurrence-addressed scopes:**
@@ -320,6 +318,8 @@ An owner that `what-binds` reports near its 800-line review target has its touch
 |---|---|---|---|---|
 | Proposal | `8fd67bb1` | `fork-turns-none` | `approve-with-required-edits` | `fda4a8a4, 01f536a9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `22a9e88a` | `fork-turns-none` | `approve-with-required-edits` | `484f358d` |
 
-The first proposal review of `0359b168` rejected an earlier account that included concurrent mapped Calls and a static capacity envelope and lacked the merge-target data path. The redesign `8fd67bb1` took a new cold review with seven required findings. The same reviewer's first correction audit of `fda4a8a4` closed five of them. Its second audit, of `01f536a9`, closed the batch-premise and bridge-premise gaps and approved. Proposal packet digest: `0c6df762783fa7bcbc426b70ebcd1050a125d732a75e77e96ef87c52c773f8f7`. Approval selects this account only; implementation, Lean compilation, hosting and public qualification remain open.
+The first proposal review of `0359b168` rejected an earlier account that included concurrent mapped Calls and a static capacity envelope and lacked the merge-target data path. The redesign `8fd67bb1` took a new cold review with seven required findings. The same reviewer's first correction audit of `fda4a8a4` closed five of them. Its second audit, of `01f536a9`, closed the batch-premise and bridge-premise gaps and approved. Proposal packet digest: `0c6df762783fa7bcbc426b70ebcd1050a125d732a75e77e96ef87c52c773f8f7`. Proposal approval selected this account only.
+
+The closure review of `22a9e88a` approved with two required corrections; closure packet digest: `dd09afe741bf809ce288dac5b69571c2682ffb9ef36f489b6c0c6e732a370135`. The first correction put the core's declared-entry batch premise on the production frontier path. The second recorded why two fan-out entries wait for the hub fix. The same reviewer's audit of `484f358d` closed both and approved.

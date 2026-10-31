@@ -1,5 +1,5 @@
 /**
- * The core journeys of the concurrent scope data proposal over its retained models (CSD-INIT-01, CSD-RETIRE-01,
+ * The core journeys of the concurrent scope data specification over its retained models (CSD-INIT-01, CSD-RETIRE-01,
  * CSD-PREPARE-01, CSD-ISOLATE-01). Frame contents are runtime-only, so this test reads committed state directly; the
  * expected values are read off the proposal's separating-witness table, not off a run.
  */

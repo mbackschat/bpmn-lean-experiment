@@ -14,7 +14,7 @@ Program's `scopeLocalData` record for its definition.
 
 The chain is walked over live scope occurrences, from the performing occurrence through its parents to
 its instance root, selecting each frame by exact owner (CSD-CHAIN-01 of the
-[concurrent scope data proposal](../../docs/capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#stable-rules)).
+[concurrent scope data specification](../../docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#stable-rules)).
 Two live occurrences of one definition are two owners, so a sibling's frame is never on the chain.
 Every operation depends only on the Program, the live occurrences and `ScopedVariables`.
 -/

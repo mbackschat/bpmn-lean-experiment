@@ -15,7 +15,7 @@ import org.cibseven.bpm.engine.delegate.JavaDelegate;
 import org.junit.Test;
 
 /**
- * Calibrates `CIB-EXT-0020`'s concurrent widening (concurrent scope data proposal, `CSD-CHAIN-01`, `CSD-ISOLATE-01`,
+ * Calibrates `CIB-EXT-0020`'s concurrent widening (concurrent scope data specification, `CSD-CHAIN-01`, `CSD-ISOLATE-01`,
  * `CSD-INIT-01`, `CSD-RETIRE-01`) on the two retained models. Each live Price damage execution owns its estimate and
  * adjuster, so each Fetch rates input reads its own occurrence's values and the later completer's output wins; the
  * Fire safety check's input reads the enclosing Inspection's result, not its concurrently entered sibling's literal.

@@ -9,7 +9,7 @@ patch refusals of CSD-REFUSE-01 in the cumulative embedded completion profile. T
 model transcribes the retained `scenarios/concurrent-scope-data` source model, and its expectations are the
 TypeScript analysis's values for the same graph; the serial review model carries the value refusals. Each
 refused model differs from an admitted control in the one fact its name states; see the
-[concurrent scope data proposal](../docs/capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#separating-witnesses).
+[concurrent scope data specification](../docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#separating-witnesses).
 -/
 
 public section

@@ -20,7 +20,7 @@ import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Commutation of the prepared declared entry (CSD-PREPARE-01 of the
-[concurrent scope data proposal](../../docs/capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#representation-and-runtime-ownership))
+[concurrent scope data specification](../../docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#representation-and-runtime-ownership))
 with another declared entry, an undeclared scope creation, local control and an arming. Each pair composes the
 control's existing pair law with the frame insertion, which changes only variables: the inserted frame
 belongs to the fresh child, which is on no other reader's chain, and the two frames of a declared pair have

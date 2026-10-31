@@ -7,7 +7,7 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
 
 /-! Laws of the prepared declared entry (CSD-PREPARE-01 of the
-[concurrent scope data proposal](../../docs/capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#representation-and-runtime-ownership)),
+[concurrent scope data specification](../../docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#representation-and-runtime-ownership)),
 each composed from the unchanged scope-creation control's law and a law of the frame insertion. -/
 
 public section
