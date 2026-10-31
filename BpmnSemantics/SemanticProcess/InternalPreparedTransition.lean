@@ -37,6 +37,7 @@ inductive PreparedInternalTransition where
   | boundedScope (contract : InternalBoundedScopeContract) (prepared : PreparedInternalBoundedScope)
   | localControl (prepared : PreparedInternalLocalControl)
   | scopeCreation (prepared : PreparedInternalScopeCreation)
+  | declaredEntry (prepared : PreparedInternalDeclaredEntry)
   | regional (prepared : PreparedInternalRegional)
   | ordinaryEnd (prepared : PreparedInternalEnd)
   | mergeInput (prepared : PreparedInternalMerge)
@@ -49,6 +50,7 @@ def PreparedInternalTransition.operation : PreparedInternalTransition → Semant
   | .boundedScope contract _ => contract.operation
   | .localControl prepared => prepared.operation
   | .scopeCreation prepared => prepared.selection.operation
+  | .declaredEntry prepared => prepared.control.selection.operation
   | .regional prepared => prepared.selection.operation
   | .ordinaryEnd prepared => prepared.operation
   | .mergeInput prepared => prepared.selection.operation
@@ -65,6 +67,7 @@ def PreparedInternalTransition.apply (program : Program) (state : RuntimeState) 
   | .boundedScope _ prepared => prepared.selection.apply state
   | .localControl prepared => prepared.selection.apply state
   | .scopeCreation prepared => prepared.selection.apply state
+  | .declaredEntry prepared => prepared.apply state
   | .regional prepared => (applyPreparedInternalRegional? program state prepared).getD state
   | .ordinaryEnd prepared => prepared.selection.apply state
   | .mergeInput prepared => prepared.selection.apply state
@@ -77,6 +80,7 @@ def PreparedInternalTransition.stateFootprint :
   | .boundedScope _ prepared => prepared.footprint
   | .localControl prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
   | .scopeCreation prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
+  | .declaredEntry prepared => liftRegionalStateFootprint prepared.control.selection.owner prepared.footprint
   | .regional prepared => prepared.footprint
   | .ordinaryEnd prepared => prepared.footprint
   | .mergeInput prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
@@ -103,7 +107,10 @@ def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeStat
   | .localControl prepared =>
       prepareInternalLocalControl? program state prepared.operation = some prepared
   | .scopeCreation prepared =>
-      prepareInternalScopeCreation? program state prepared.selection.operation = some prepared
+      prepareInternalScopeCreation? program state prepared.selection.operation = some prepared ∧
+        internalScopeCreationUndeclared program prepared.selection.operation = true
+  | .declaredEntry prepared =>
+      prepareInternalDeclaredEntry? program state prepared.control.selection.operation = some prepared
   | .regional prepared =>
       prepareInternalRegional? program state prepared.selection.operation = some prepared
   | .ordinaryEnd prepared =>
@@ -155,6 +162,14 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .scopeCreation first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .mergeInput first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .mergeInput first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .declaredEntry first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .declaredEntry first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .scopeCreation first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .declaredEntry first, .localControl second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .localControl first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  -- CSD-PREPARE-01's batch premise: a declared entry's commutation is established only beside scope
+  -- creations and local control, so every other companion refuses the batch.
+  | .declaredEntry _, _ | _, .declaredEntry _ => False
   | .messageTask .., _ | _, .messageTask .. | .boundedScope .., _ | _, .boundedScope ..
   | .timerTask .., _ | _, .timerTask .. | .regional _, _ | _, .regional _ | .ordinaryEnd _, _ | _, .ordinaryEnd _ =>
       regionalStateFootprintsIndependent left.stateFootprint right.stateFootprint = true
@@ -170,7 +185,10 @@ def prepareOrdinaryInternalTransition? (program : Program) (state : RuntimeState
       else (prepareInternalLocalControl? program state operation).map .localControl
   | none =>
       match internalScopeCreationOrigin? operation with
-      | some _ => (prepareInternalScopeCreation? program state operation).map .scopeCreation
+      | some _ =>
+          if internalScopeCreationUndeclared program operation then
+            (prepareInternalScopeCreation? program state operation).map .scopeCreation
+          else (prepareInternalDeclaredEntry? program state operation).map .declaredEntry
       | none => (prepareInternalArming? program state operation).map .arming
 
 def prepareTimerTaskInternalTransition? (program : Program) (state : RuntimeState)
@@ -264,17 +282,27 @@ private theorem prepareOrdinaryInternalTransition_sound (program : Program) (sta
           exact prepareInternalArming_sound program state operation arm selected
       | some origin =>
           simp only [prepareOrdinaryInternalTransition?, originFound, scopeOrigin] at found
-          obtain ⟨scope, selected, rfl⟩ := Option.map_eq_some_iff.mp found
-          have operationEq := (prepareInternalScopeCreation_operation program state operation
-            scope selected).1
-          have snapshots : program.compensationEventSubProcessSnapshots = none := by
-            obtain ⟨_, _, _, _, _, _, _, _, _, excluded, _⟩ :=
-              prepareInternalScopeCreation_facts program state operation scope selected
-            exact excluded
-          refine ⟨?_, operationEq, snapshots⟩
-          change prepareInternalScopeCreation? program state scope.selection.operation = some scope
-          rw [operationEq]
-          exact selected
+          split at found
+          · next undeclared =>
+              obtain ⟨scope, selected, rfl⟩ := Option.map_eq_some_iff.mp found
+              have operationEq := (prepareInternalScopeCreation_operation program state operation
+                scope selected).1
+              have snapshots : program.compensationEventSubProcessSnapshots = none := by
+                obtain ⟨_, _, _, _, _, _, _, _, _, excluded, _⟩ :=
+                  prepareInternalScopeCreation_facts program state operation scope selected
+                exact excluded
+              refine ⟨?_, operationEq, snapshots⟩
+              change prepareInternalScopeCreation? program state scope.selection.operation = some scope ∧
+                internalScopeCreationUndeclared program scope.selection.operation = true
+              rw [operationEq]
+              exact ⟨selected, undeclared⟩
+          · obtain ⟨declared, selected, rfl⟩ := Option.map_eq_some_iff.mp found
+            obtain ⟨operationEq, snapshots⟩ :=
+              prepareInternalDeclaredEntry_operation program state operation declared selected
+            refine ⟨?_, operationEq, snapshots⟩
+            change prepareInternalDeclaredEntry? program state declared.control.selection.operation = some declared
+            rw [operationEq]
+            exact selected
   | some origin =>
       cases snapshots : program.compensationEventSubProcessSnapshots with
       | some _ => simp [prepareOrdinaryInternalTransition?, originFound, snapshots] at found
@@ -429,9 +457,15 @@ private theorem prepareOrdinaryInternalTransition_snapshots_refused (program : P
     prepareOrdinaryInternalTransition? program state operation = none := by
   have scopeRefused := prepareInternalScopeCreation_snapshots_refused program state operation
     (by simp [declared])
+  have declaredRefused : prepareInternalDeclaredEntry? program state operation = none := by
+    cases found : prepareInternalDeclaredEntry? program state operation with
+    | none => rfl
+    | some entry =>
+        have absent := (prepareInternalDeclaredEntry_operation program state operation entry found).2
+        simp [declared] at absent
   cases origin : internalLocalControlOrigin? operation <;>
     cases scopeOrigin : internalScopeCreationOrigin? operation <;>
-    simp [prepareOrdinaryInternalTransition?, origin, scopeOrigin, scopeRefused,
+    simp [prepareOrdinaryInternalTransition?, origin, scopeOrigin, scopeRefused, declaredRefused,
       prepareInternalArming?, declared]
 
 theorem prepareInternalTransition_snapshots_refused (program : Program) (state : RuntimeState)

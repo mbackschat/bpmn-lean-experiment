@@ -7,7 +7,10 @@ import all BpmnSemantics.SemanticProcess.InternalScopeCreationSelection
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Complete predecessor preparations for ordinary child entry and Call invocation under the
-[Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
+[Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). The preparation is the
+entry's control, TypeScript's `deriveInternalEnterScopeControl`: it also succeeds for a child that
+declares locals, whose frame the declared-entry family adds (CSD-PREPARE-01), so the ordinary family
+admits it only with `internalScopeCreationUndeclared`.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalScopeCreationRetentionUnchanged,
@@ -162,6 +165,53 @@ def applyPreparedInternalScopeCreation? (program : Program) (state : RuntimeStat
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyPreparedInternalScopeCreation?,
   `internalScopeCreationCounterSafe, `internalScopeCreationPredecessorChecks, `internalScopeCreationTokensAvailable]
 
+/-- CSD-PREPARE-01: the declared entry of an ordinary Sub-Process, the unchanged entry `control` plus the
+frame evaluated against the predecessor. Every law over the control stays as it is; the composition adds
+one frame insertion that changes only `variables.scopes`. -/
+structure PreparedInternalDeclaredEntry where
+  control : PreparedInternalScopeCreation
+  frame : ScopeVariableScope
+  footprint : InternalTransitionStateFootprint
+  deriving Repr, DecidableEq
+
+def internalDeclaredEntryInputNames (record : ScopeLocalData) : List String :=
+  record.localInputs.filterMap fun mapping => match mapping.expression with
+    | .enclosingVariable name => some name
+    | _ => none
+
+/-- The control footprint plus what the frame evaluation consults: each chain link's liveness and parent,
+each consulted frame, each fall-through Process name, and the absence of the child's frame, which the
+entry then writes. -/
+def internalDeclaredEntryFootprint (control : PreparedInternalScopeCreation) (reads : NestedScopeData.ReadSet) :
+    InternalTransitionStateFootprint :=
+  let written : InternalStateAtom := .scopeVariableScope control.selection.created.id
+  { reads := canonicalStateAtomSet (control.footprint.reads ++
+      reads.links.flatMap (fun link => [.scopeOccurrence link.id, .scopeParent link.id link.parent]) ++
+      reads.frames.map .scopeVariableScope ++ reads.processNames.map .processVariable ++ [written])
+    writes := canonicalStateAtomSet (control.footprint.writes ++ [written]) }
+
+def prepareInternalDeclaredEntry? (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) : Option PreparedInternalDeclaredEntry := do
+  let .enterScope _ _ _ _ scope := operation | none
+  let record ← NestedScopeData.recordFor? program scope
+  let control ← prepareInternalScopeCreation? program state operation
+  let frame ← NestedScopeData.evaluateFrame? program state record control.selection.created.id
+    control.selection.owner
+  let reads ← NestedScopeData.readSet? state control.selection.owner (internalDeclaredEntryInputNames record)
+  some { control, frame, footprint := internalDeclaredEntryFootprint control reads }
+
+def PreparedInternalDeclaredEntry.apply (prepared : PreparedInternalDeclaredEntry) (state : RuntimeState) :
+    RuntimeState :=
+  let entered := prepared.control.selection.apply state
+  { entered with variables := NestedScopeData.insertFrame entered.variables prepared.frame }
+
+theorem PreparedInternalDeclaredEntry.apply_eq (prepared : PreparedInternalDeclaredEntry) (state : RuntimeState) :
+    prepared.apply state =
+      { prepared.control.selection.apply state with
+        variables := NestedScopeData.insertFrame (prepared.control.selection.apply state).variables prepared.frame } := by
+  unfold PreparedInternalDeclaredEntry.apply
+  rfl
+
 theorem prepareInternalScopeCreation_facts (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
     (found : prepareInternalScopeCreation? program state operation = some prepared) :
@@ -202,6 +252,48 @@ theorem prepareInternalScopeCreation_facts (program : Program) (state : RuntimeS
                   startFound, deltaFound, rfl⟩ <;> simp_all
           · contradiction
   | _ => simp [control] at found
+
+theorem prepareInternalDeclaredEntry_facts (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalDeclaredEntry)
+    (found : prepareInternalDeclaredEntry? program state operation = some prepared) :
+    ∃ id origin input entry scope record reads,
+      operation = .enterScope id origin input entry scope ∧
+      NestedScopeData.recordFor? program scope = some record ∧
+      prepareInternalScopeCreation? program state operation = some prepared.control ∧
+      NestedScopeData.evaluateFrame? program state record prepared.control.selection.created.id
+        prepared.control.selection.owner = some prepared.frame ∧
+      NestedScopeData.readSet? state prepared.control.selection.owner
+        (internalDeclaredEntryInputNames record) = some reads ∧
+      prepared.footprint = internalDeclaredEntryFootprint prepared.control reads := by
+  unfold prepareInternalDeclaredEntry? at found
+  cases operation with
+  | enterScope id origin input entry scope =>
+      simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.some.injEq] at found
+      obtain ⟨record, recorded, control, controlFound, frame, framed, reads, read, rfl⟩ := found
+      exact ⟨id, origin, input, entry, scope, record, reads, rfl, recorded, controlFound, framed, read, rfl⟩
+  | _ => simp at found
+
+/-- The converse of `prepareInternalDeclaredEntry_facts`: a state on which the control, the frame and the
+read set evaluate as before prepares the same entry. -/
+theorem prepareInternalDeclaredEntry_of_facts (program : Program) (state : RuntimeState)
+    (prepared : PreparedInternalDeclaredEntry) (id : OperationId) (origin : BpmnElementOrigin)
+    (input entry : ControlPlaceId) (scope : DefinitionScopeId) (record : ScopeLocalData)
+    (reads : NestedScopeData.ReadSet)
+    (recorded : NestedScopeData.recordFor? program scope = some record)
+    (control : prepareInternalScopeCreation? program state (.enterScope id origin input entry scope) =
+      some prepared.control)
+    (evaluated : NestedScopeData.evaluateFrame? program state record prepared.control.selection.created.id
+      prepared.control.selection.owner = some prepared.frame)
+    (read : NestedScopeData.readSet? state prepared.control.selection.owner
+      (internalDeclaredEntryInputNames record) = some reads)
+    (footprint : prepared.footprint = internalDeclaredEntryFootprint prepared.control reads) :
+    prepareInternalDeclaredEntry? program state (.enterScope id origin input entry scope) = some prepared := by
+  cases prepared with
+  | mk entryControl frame entryFootprint =>
+      dsimp only at control evaluated read footprint
+      subst footprint
+      unfold prepareInternalDeclaredEntry?
+      simp only [Option.bind_eq_bind, recorded, control, evaluated, read, Option.bind_some]
 
 theorem internalScopeCreationPredecessorChecks_facts (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
@@ -281,16 +373,40 @@ theorem prepareInternalScopeCreation_operation (program : Program) (state : Runt
   have exactOperation := selectInternalScopeCreation_operation state operation selected selection
   exact ⟨exactOperation, exactOperation⟩
 
-/-- Predecessor checks exclude both snapshot creation and the Transaction's child-register write. -/
+theorem prepareInternalDeclaredEntry_operation (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalDeclaredEntry)
+    (found : prepareInternalDeclaredEntry? program state operation = some prepared) :
+    prepared.control.selection.operation = operation ∧
+      program.compensationEventSubProcessSnapshots = none := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, control, _⟩ :=
+    prepareInternalDeclaredEntry_facts program state operation prepared found
+  obtain ⟨_, _, _, _, _, _, _, _, _, snapshots, _⟩ :=
+    prepareInternalScopeCreation_facts program state operation prepared.control control
+  exact ⟨(prepareInternalScopeCreation_operation program state operation prepared.control control).1, snapshots⟩
+
+/-- The retained selection and the two exclusions that make it the evaluator's entry patch. -/
+theorem prepareInternalScopeCreation_selection_facts (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
+    (found : prepareInternalScopeCreation? program state operation = some prepared) :
+    selectInternalScopeCreation? state operation = some prepared.selection ∧
+      program.compensationEventSubProcessSnapshots = none ∧
+      internalScopeCreationRetentionUnchanged program operation = true := by
+  obtain ⟨_, _, _, _, _, _, _, selection, _, snapshots, _, _, _, _, checks, _, _, rfl⟩ :=
+    prepareInternalScopeCreation_facts program state operation prepared found
+  exact ⟨selection, snapshots, (Bool.and_eq_true_iff.mp checks).1⟩
+
+/-- Predecessor checks exclude both snapshot creation and the Transaction's child-register write; an
+undeclared child adds no frame. -/
 theorem prepareInternalScopeCreation_refines (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
+    (undeclared : internalScopeCreationUndeclared program operation = true)
     (found : prepareInternalScopeCreation? program state operation = some prepared) :
     fire? program operation state = some (prepared.selection.apply state) := by
   obtain ⟨selected, instanceId, ownerRecord, origin, definition, start, delta,
     selection, _, snapshots, _, _, _, _, checks, _, _, rfl⟩ :=
       prepareInternalScopeCreation_facts program state operation prepared found
   exact selectInternalScopeCreation_refines program state operation selected snapshots
-    (Bool.and_eq_true_iff.mp checks).1 selection
+    (Bool.and_eq_true_iff.mp checks).1 undeclared selection
 
 theorem applyPreparedInternalScopeCreation_of_preparation (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)

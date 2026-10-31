@@ -141,6 +141,14 @@ const operationAt = (program: SemanticProcessProgram, elementId: string, kind: s
   return matching[0]!;
 };
 
+/** Every chain link a nested read set walks is read for its liveness as well as its parent, as the Lean footprint states. */
+function assertLinksReadLive(reads: ReadonlyArray<{ kind: string; occurrence?: { definitionScopeId: string };
+  owner?: unknown }>): void {
+  const live = new Set(reads.flatMap(atom => atom.kind === "scopeOccurrence"
+    ? [(atom.owner as { definitionScopeId: string }).definitionScopeId] : []));
+  for (const atom of reads) if (atom.kind === "scopeParent") assert.ok(live.has(atom.occurrence!.definitionScopeId));
+}
+
 test("each prepared declared entry equals the evaluator's entry, and the two sibling entries are independent", async () => {
   const facility = await program("facility-inspection");
   const start: Stimulus = { kind: StimulusKind.StartProcess, commandId: "start", processId: "Process_FacilityInspection",
@@ -163,6 +171,7 @@ test("each prepared declared entry equals the evaluator's entry, and the two sib
     atom.kind === "scopeVariableScope" ? [atom.owner.definitionScopeId] : []);
   assert.deepEqual(frameReads(1), ["scope:FireSafetyCheck", "scope:Inspection"]);
   assert.deepEqual(frameReads(0), ["scope:ElectricalCheck"]);
+  for (const member of prepared) assertLinksReadLive(member!.footprint.reads);
 });
 
 test("nested effect arming reads its precise frame, chain and Process atoms instead of the Activity population", async () => {
@@ -187,4 +196,5 @@ test("nested effect arming reads its precise frame, chain and Process atoms inst
   assert.ok(reads.some(atom => atom.kind === "scopeVariableScope" && atom.owner.definitionScopeId === "scope:PriceDamage"));
   assert.deepEqual(reads.flatMap(atom => atom.kind === "scopeParent" ? [atom.occurrence.definitionScopeId] : []).sort(),
     ["scope:HandleClaim", "scope:PriceDamage", "scope:Process_ClaimDamageAssessment"]);
+  assertLinksReadLive(reads);
 });

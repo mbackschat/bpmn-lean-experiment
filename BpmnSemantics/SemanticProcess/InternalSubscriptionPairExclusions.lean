@@ -44,6 +44,17 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
+/-- The entry control's operation is a declared operation of the Program, whether or not its child
+declares locals. -/
+private theorem prepared_scope_creation_operation_member (program : Program) (state : RuntimeState)
+    (creation : PreparedInternalScopeCreation)
+    (found : prepareInternalScopeCreation? program state creation.selection.operation = some creation) :
+    creation.selection.operation ∈ program.operations := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, census, _⟩ :=
+    prepareInternalScopeCreation_facts program state creation.selection.operation creation found
+  exact (List.mem_filter.mp (show creation.selection.operation ∈ program.operations.filter _ by
+    rw [census]; simp)).1
+
 theorem prepared_transition_operation_member (program : Program) (state : RuntimeState)
     (prepared : PreparedInternalTransition) (valid : programWellFormed program = true)
     (found : prepared.Prepared program state) : prepared.operation ∈ program.operations := by
@@ -82,10 +93,11 @@ theorem prepared_transition_operation_member (program : Program) (state : Runtim
         prepareInternalLocalControl_facts program state control.operation control found
       exact candidateOperationFlowNodeIdentity?_operation_member program control.operation
         selection.owner selection.owner origin.elementId identity selected
-  | scopeCreation scope =>
-      obtain ⟨_, _, _, _, _, _, _, _, _, _, census, _⟩ :=
-        prepareInternalScopeCreation_facts program state scope.selection.operation scope found
-      exact fromCensus scope.selection.operation _ census
+  | scopeCreation scope => exact prepared_scope_creation_operation_member program state scope found.1
+  | declaredEntry declared =>
+      obtain ⟨_, _, _, _, _, _, _, _, _, control, _⟩ :=
+        prepareInternalDeclaredEntry_facts program state _ declared found
+      exact prepared_scope_creation_operation_member program state declared.control control
   | regional regional =>
       exact fromCensus regional.selection.operation _
         (prepareInternalRegional_facts program state regional.selection.operation regional found).2.1
@@ -203,7 +215,8 @@ theorem prepared_subscription_scope_creation_is_child (program : Program) (state
     (creation : PreparedInternalScopeCreation) (admitted : subscriptionPreparationAdmitted program)
     (found : prepareInternalScopeCreation? program state creation.selection.operation = some creation) :
     (repeatableSubscriptionChildScope? creation.selection.operation).isSome = true := by
-  have allowed := prepared_subscription_operation_allowed program state (.scopeCreation creation) admitted found
+  have allowed := repeatableSubscriptionProgramGraph_operation program admitted.2.2 creation.selection.operation
+    (prepared_scope_creation_operation_member program state creation found)
   obtain ⟨_, _, _, origin, _, _, _, _, _, _, _, _, originFound, _⟩ :=
     prepareInternalScopeCreation_facts program state creation.selection.operation creation found
   cases operation : creation.selection.operation <;>
@@ -218,8 +231,7 @@ theorem prepared_bounded_scope_creation_impossible (program : Program) (state : 
     (creationFound : prepareInternalScopeCreation? program state creation.selection.operation = some creation) : False := by
   have member := prepared_transition_operation_member program state (.boundedScope contract bounded)
     boundedFound.1.2.1 boundedFound
-  have otherMember := prepared_transition_operation_member program state (.scopeCreation creation)
-    boundedFound.1.2.1 creationFound
+  have otherMember := prepared_scope_creation_operation_member program state creation creationFound
   have child := prepared_subscription_scope_creation_is_child program state creation boundedFound.1 creationFound
   have same := repeatableSubscriptionProgramGraph_child_unique program boundedFound.1.2.2
     contract.operation creation.selection.operation member otherMember

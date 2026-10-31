@@ -47,7 +47,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.makeInternalDataArmingPatch, `InternalCommutation.openWaitAnchorAbsent,
   `InternalCommutation.openWaitAnchors, `InternalCommutation.prepareInternalArm?,
   `InternalCommutation.prepareInternalDataArmingContract?, `InternalCommutation.scopedEffectInputReads?,
-  `NestedScopeData.occurrenceChain, `NestedScopeData.occurrenceChainWithin, `canonicalStateAtomSet,
+  `NestedScopeData.evaluateFrame?, `NestedScopeData.occurrenceChain, `NestedScopeData.occurrenceChainWithin,
+  `NestedScopeData.occurrenceWithParent?, `NestedScopeData.readSet?, `canonicalStateAtomSet,
+  `InternalCommutation.internalDeclaredEntryFootprint,
   `dataInputOutputActivityRecord, `dataInputOutputRunningInstance?, `effectActivationCount, `evaluateEffectInputs?,
   `evaluateInputMappingsInOrderUnder, `evaluateInputMappingsUnder?, `evaluateSequentialScopeInputs?,
   `messageActivationCount, `readSequentialScopeVariable?, `sequentialScopeBindingForEntry?,
@@ -225,6 +227,92 @@ private theorem evaluateInputMappingsUnder?_of_widened (policy : EffectMappingVa
   simp only [evaluateInputMappingsUnder?, bind, Option.bind_eq_some_iff] at evaluated ⊢
   obtain ⟨ordered, canonical, evaluated⟩ := evaluated
   exact ⟨ordered, canonical, evaluateInputMappingsInOrderUnder_of_widened policy before after widened ordered bindings evaluated⟩
+
+/-- CSD-PREPARE-01: a frame evaluated before a fresh occurrence's insertion evaluates the same after it,
+because its reads walk only live links (CSD-CHAIN-01) and the data is unchanged. -/
+theorem evaluateFrame?_insert_fresh (program : Program) (state after : RuntimeState)
+    (created : RuntimeScopeOccurrence)
+    (fresh : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id ≠ created.id)
+    (occurrences : after.scopeOccurrences = insertScopeOccurrence created state.scopeOccurrences)
+    (variables : after.variables = state.variables)
+    (record : ScopeLocalData) (child parent : ScopeOccurrenceId) (frame : ScopeVariableScope)
+    (evaluated : NestedScopeData.evaluateFrame? program state record child parent = some frame) :
+    NestedScopeData.evaluateFrame? program after record child parent = some frame := by
+  simp only [NestedScopeData.evaluateFrame?, Option.bind_eq_bind, Option.bind_eq_some_iff] at evaluated ⊢
+  obtain ⟨bindings, evaluatedBindings, framed⟩ := evaluated
+  refine ⟨bindings, ?_, by rw [variables]; exact framed⟩
+  rw [occurrences, variables]
+  exact evaluateInputMappingsUnder?_of_widened _ _ _
+    (fun name value read => read?_insert_fresh _ program _ created fresh parent name value read) _ _ evaluatedBindings
+
+private theorem find?_insert_fresh (occurrences : List RuntimeScopeOccurrence) (created : RuntimeScopeOccurrence)
+    (fresh : ∀ occurrence ∈ occurrences, occurrence.id ≠ created.id) (id : ScopeOccurrenceId)
+    (live : ∃ occurrence ∈ occurrences, occurrence.id = id) :
+    (insertScopeOccurrence created occurrences).find? (·.id == id) = occurrences.find? (·.id == id) := by
+  obtain ⟨occurrence, present, same⟩ := live
+  rw [← List.head?_filter, ← List.head?_filter, insertScopeOccurrence,
+    filter_canonicalInsertBy_rejected _ _ created occurrences
+      (by simpa only [beq_eq_false_iff_ne, ← same] using Ne.symm (fresh occurrence present))]
+
+/-- CSD-PREPARE-01: a read set taken before a fresh occurrence's insertion is the read set after it, because
+its chain and links are live identities, which the insertion keeps. -/
+theorem readSet?_insert_fresh (state after : RuntimeState) (created : RuntimeScopeOccurrence)
+    (fresh : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id ≠ created.id)
+    (occurrences : after.scopeOccurrences = insertScopeOccurrence created state.scopeOccurrences)
+    (scopes : after.variables.scopes = state.variables.scopes)
+    (reader : ScopeOccurrenceId) (names : List String) (reads : NestedScopeData.ReadSet)
+    (read : NestedScopeData.readSet? state reader names = some reads) :
+    NestedScopeData.readSet? after reader names = some reads := by
+  unfold NestedScopeData.readSet? at read ⊢
+  rw [occurrences, scopes]
+  cases chained : NestedScopeData.occurrenceChain state.scopeOccurrences reader with
+  | none => simp [chained] at read
+  | some chain =>
+      have live := NestedScopeData.occurrenceChain_live _ reader chain chained
+      have links : ∀ ids : List ScopeOccurrenceId, (∀ id ∈ ids, ∃ occurrence ∈ state.scopeOccurrences, occurrence.id = id) →
+          ids.mapM (fun id => (insertScopeOccurrence created state.scopeOccurrences).find? (·.id == id)) =
+            ids.mapM (fun id => state.scopeOccurrences.find? (·.id == id)) := by
+        intro ids
+        induction ids with
+        | nil => intro _; rfl
+        | cons id rest ih =>
+            intro all
+            simp only [List.mapM_cons, find?_insert_fresh _ created fresh id (all id (by simp)),
+              ih (fun member inside => all member (List.mem_cons_of_mem _ inside))]
+      simp only [chained, bind, Option.bind] at read
+      simp only [occurrenceChain_insert_fresh _ created fresh reader chain chained, bind, Option.bind, links chain live]
+      exact read
+
+/-- The declared entry's footprint extends its control's and names the written frame on both sides. -/
+theorem internalDeclaredEntryFootprint_extends (control : PreparedInternalScopeCreation)
+    (reads : NestedScopeData.ReadSet) :
+    control.footprint.reads ⊆ (internalDeclaredEntryFootprint control reads).reads ∧
+      control.footprint.writes ⊆ (internalDeclaredEntryFootprint control reads).writes ∧
+      .scopeVariableScope control.selection.created.id ∈ (internalDeclaredEntryFootprint control reads).reads ∧
+      .scopeVariableScope control.selection.created.id ∈ (internalDeclaredEntryFootprint control reads).writes := by
+  simp only [internalDeclaredEntryFootprint, canonicalStateAtomSet, mem_sortBy, List.mem_eraseDups,
+    List.mem_append, List.mem_singleton, or_true, and_true]
+  exact ⟨fun atom member => by simp [mem_sortBy, member], fun atom member => by simp [mem_sortBy, member]⟩
+
+/-- The first live occurrence of a definition, inserted under `parent`, is that definition's unique live
+occurrence. -/
+theorem occurrenceWithParent?_insert_created (occurrences : List RuntimeScopeOccurrence) (state : RuntimeState)
+    (created : RuntimeScopeOccurrence) (parent : ScopeOccurrenceId)
+    (scopes : state.scopeOccurrences = insertScopeOccurrence created occurrences)
+    (parentOf : created.parent = some parent)
+    (noneLive : (occurrences.any fun occurrence =>
+      occurrence.id.definitionScopeId == created.id.definitionScopeId) = false) :
+    NestedScopeData.occurrenceWithParent? state created.id.definitionScopeId = some (created.id, parent) := by
+  have empty : occurrences.filter (·.id.definitionScopeId == created.id.definitionScopeId) = [] := by
+    simpa [List.filter_eq_nil_iff, List.any_eq_false] using noneLive
+  have perm := filter_canonicalInsertBy_perm scopeOccurrenceBefore
+    (·.id.definitionScopeId == created.id.definitionScopeId) created occurrences (by simp)
+  rw [empty] at perm
+  have filtered : state.scopeOccurrences.filter (·.id.definitionScopeId == created.id.definitionScopeId) =
+      [created] := by
+    rw [scopes, insertScopeOccurrence]
+    exact List.perm_singleton.mp perm
+  simp only [NestedScopeData.occurrenceWithParent?, filtered, parentOf, bind, Option.bind]
 
 /-- Scope creation keeps the arming's own snapshot: a nested read walks only live links, which a fresh
 occurrence never replaces (CSD-CHAIN-01). Other mappings may differ, because a walk that failed before

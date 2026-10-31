@@ -76,8 +76,9 @@ theorem prepared_message_task_transition_pair (program : Program) (state : Runti
       exact ⟨pair.2.1, ⟨messageFound.1, pair.1⟩, pair.2.2.symm⟩
   | scopeCreation creation =>
       have pair := prepared_message_task_scope_creation_pair program state contract message creation.selection.operation creation
-        messageFound.2 otherFound canonical independent
-      exact ⟨pair.2.1, ⟨messageFound.1, pair.1⟩, pair.2.2.symm⟩
+        messageFound.2 otherFound.1 canonical independent
+      exact ⟨⟨pair.2.1, otherFound.2⟩, ⟨messageFound.1, pair.1⟩, pair.2.2.symm⟩
+  | declaredEntry _ => exact (independent : False).elim
   | ordinaryEnd ending =>
       have pair := prepared_message_task_end_pair_commutes program state ending.operation ending contract message
         otherFound messageFound.2 independent

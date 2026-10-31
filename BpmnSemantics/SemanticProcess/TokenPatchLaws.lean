@@ -176,6 +176,12 @@ theorem TokenPatch.filter_untouched (tokens : List ControlToken) (patch : TokenP
   rw [filter_addTokens_of_rejected _ _ _ predicate produced,
     filter_removeTokens_of_rejected _ _ _ predicate consumed]
 
+/-- The owner census reads only the tokens. -/
+theorem tokenOwners_frame (before after : RuntimeState) (tokens : after.tokens = before.tokens)
+    (queried : ControlPlaceId) : tokenOwners after queried = tokenOwners before queried := by
+  unfold tokenOwners
+  rw [tokens]
+
 theorem TokenPatch.owner_census_frame (state : RuntimeState) (patch : TokenPatch)
     (queried : ControlPlaceId)
     (consumed : queried ∉ patch.consumed) (produced : queried ∉ patch.produced) :

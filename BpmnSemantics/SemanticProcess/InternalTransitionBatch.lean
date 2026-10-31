@@ -30,6 +30,7 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutatio
 import BpmnSemantics.SemanticProcess.InternalTimerTaskRegionalRetention
 import BpmnSemantics.SemanticProcess.InternalArmingBatch
 import BpmnSemantics.SemanticProcess.InternalCommutationPublication
+import BpmnSemantics.SemanticProcess.InternalDeclaredEntryCommutation
 import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
 import all BpmnSemantics.SemanticProcess.InternalCommutationCore
@@ -124,14 +125,16 @@ private theorem prepared_regional_transition_pair (program : Program) [Interrupt
   | scopeCreation creation =>
       have running : state.control = .running creation.runtimeInstanceId := by
         obtain ⟨_, _, _, _, _, _, _, _, running, _, _, _, _, _, _, _, _, rfl⟩ :=
-          prepareInternalScopeCreation_facts program state creation.selection.operation creation otherFound
+          prepareInternalScopeCreation_facts program state creation.selection.operation creation otherFound.1
         exact running
       obtain ⟨frame, after, applied, creationFrame, commute, _⟩ := prepared_regional_scope_creation_pair_commutes
         program state regional.selection.operation creation.selection.operation regional creation programValid
-          (validFor _ running) regionalFound otherFound independent
+          (validFor _ running) regionalFound otherFound.1 independent
       refine ⟨?_, frame, ?_⟩
-      · simpa only [PreparedInternalTransition.Prepared, PreparedInternalTransition.apply, applied, Option.getD_some] using creationFrame
+      · simp only [PreparedInternalTransition.Prepared, PreparedInternalTransition.apply, applied, Option.getD_some]
+        exact ⟨creationFrame, otherFound.2⟩
       · simp only [PreparedInternalTransition.apply, applied, commute, Option.getD_some]
+  | declaredEntry _ => exact (independent : False).elim
   | ordinaryEnd ending =>
       have running : state.control = .running ending.runtimeInstanceId := by
         obtain ⟨_, _, _, _, _, _, _, _, running, _, _, _, _, _, rfl⟩ :=
@@ -202,8 +205,9 @@ private theorem prepared_end_transition_pair (program : Program) [InterruptionIn
       exact ⟨pair.2.1, pair.1, pair.2.2⟩
   | scopeCreation creation =>
       have pair := prepared_end_scope_creation_pair_commutes program state ending.operation creation.selection.operation
-        ending creation endFound otherFound canonical independent
-      exact ⟨pair.2.1, pair.1, pair.2.2⟩
+        ending creation endFound otherFound.1 canonical independent
+      exact ⟨⟨pair.2.1, otherFound.2⟩, pair.1, pair.2.2⟩
+  | declaredEntry _ => exact (independent : False).elim
   | ordinaryEnd other =>
       have pair := prepared_end_pair_commutes program state ending.operation other.operation ending other
         endFound otherFound independent
@@ -249,9 +253,10 @@ private theorem prepared_merge_transition_pair (program : Program) [Interruption
       exact ⟨pair.2.1, pair.1, pair.2.2⟩
   | scopeCreation creation =>
       have pair := prepared_merge_scope_creation_pair_commutes program state merge.selection.operation creation.selection.operation
-        merge.selection.alternative merge creation mergeFound otherFound canonical
+        merge.selection.alternative merge creation mergeFound otherFound.1 canonical
           (localControlStateFootprintsNonInterfering_symm _ _ independent)
-      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+      exact ⟨⟨pair.2.1, otherFound.2⟩, pair.1, pair.2.2.symm⟩
+  | declaredEntry _ => exact (independent : False).elim
   | mergeInput right =>
       have pair := prepared_merge_pair_commutes program state merge.selection.operation right.selection.operation
         merge.selection.alternative right.selection.alternative merge right mergeFound otherFound canonical independent
@@ -311,9 +316,10 @@ theorem prepared_transition_pair (program : Program) [InterruptionInvocationsRoo
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | scopeCreation right =>
           have pair := prepared_scope_creation_arming_pair program state right.selection.operation
-            right left rightPrepared leftPrepared canonical
+            right left rightPrepared.1 leftPrepared canonical
             (localControlStateFootprintsNonInterfering_symm _ _ independent)
-          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+          exact ⟨⟨pair.2.1, rightPrepared.2⟩, pair.1, pair.2.2.symm⟩
+      | declaredEntry _ => exact (independent : False).elim
       | regional right =>
           have pair := prepared_regional_transition_pair program state instanceId right (.arming left)
             programValid stateValid rightPrepared leftPrepared (PreparedInternalTransition.independent_symm independent)
@@ -349,8 +355,13 @@ theorem prepared_transition_pair (program : Program) [InterruptionInvocationsRoo
           exact ⟨pair.2.1, pair.1, pair.2.2⟩
       | scopeCreation right =>
           have pair := prepared_scope_creation_local_control_pair program state
-            right.selection.operation left.operation right left rightPrepared leftPrepared
+            right.selection.operation left.operation right left rightPrepared.1 leftPrepared
             canonical (localControlStateFootprintsNonInterfering_symm _ _ independent)
+          exact ⟨⟨pair.2.1, rightPrepared.2⟩, pair.1, pair.2.2.symm⟩
+      | declaredEntry right =>
+          have pair := prepared_declared_entry_local_control_pair program state right.control.selection.operation
+            left.operation right left rightPrepared leftPrepared canonical
+            (localControlStateFootprintsNonInterfering_symm _ _ independent)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | regional right =>
           have pair := prepared_regional_transition_pair program state instanceId right (.localControl left)
@@ -379,16 +390,23 @@ theorem prepared_transition_pair (program : Program) [InterruptionInvocationsRoo
             programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | arming right =>
-          exact prepared_scope_creation_arming_pair program state left.selection.operation
-            left right leftPrepared rightPrepared canonical independent
+          have pair := prepared_scope_creation_arming_pair program state left.selection.operation
+            left right leftPrepared.1 rightPrepared canonical independent
+          exact ⟨pair.1, ⟨pair.2.1, leftPrepared.2⟩, pair.2.2⟩
       | localControl right =>
-          exact prepared_scope_creation_local_control_pair program state left.selection.operation
-            right.operation left right leftPrepared rightPrepared canonical independent
+          have pair := prepared_scope_creation_local_control_pair program state left.selection.operation
+            right.operation left right leftPrepared.1 rightPrepared canonical independent
+          exact ⟨pair.1, ⟨pair.2.1, leftPrepared.2⟩, pair.2.2⟩
       | scopeCreation right =>
           have pair := prepared_scope_creation_pair_complete program instanceId state
             left.selection.operation right.selection.operation left right programValid stateValid
-            leftPrepared rightPrepared independent
-          exact ⟨pair.2.1, pair.1, pair.2.2.2.2.2.2⟩
+            leftPrepared.1 rightPrepared.1 independent
+          exact ⟨⟨pair.2.1, rightPrepared.2⟩, ⟨pair.1, leftPrepared.2⟩, pair.2.2.2.2.2.2⟩
+      | declaredEntry right =>
+          have pair := prepared_declared_entry_scope_creation_pair program instanceId state
+            right.control.selection.operation left.selection.operation right left programValid stateValid
+            rightPrepared leftPrepared.1 (localControlStateFootprintsNonInterfering_symm _ _ independent)
+          exact ⟨pair.2.1, ⟨pair.1, leftPrepared.2⟩, pair.2.2.symm⟩
       | regional right =>
           have pair := prepared_regional_transition_pair program state instanceId right (.scopeCreation left)
             programValid stateValid rightPrepared leftPrepared (PreparedInternalTransition.independent_symm independent)
@@ -401,6 +419,21 @@ theorem prepared_transition_pair (program : Program) [InterruptionInvocationsRoo
           have pair := prepared_merge_transition_pair program state instanceId right (.scopeCreation left)
             programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+  | declaredEntry left =>
+      cases right with
+      | messageTask _ _ | boundedScope _ _ | timerTask _ _ | arming _ | regional _ | ordinaryEnd _
+      | mergeInput _ => exact (independent : False).elim
+      | localControl right =>
+          exact prepared_declared_entry_local_control_pair program state left.control.selection.operation
+            right.operation left right leftPrepared rightPrepared canonical independent
+      | scopeCreation right =>
+          have pair := prepared_declared_entry_scope_creation_pair program instanceId state
+            left.control.selection.operation right.selection.operation left right programValid stateValid
+            leftPrepared rightPrepared.1 independent
+          exact ⟨⟨pair.1, rightPrepared.2⟩, pair.2.1, pair.2.2⟩
+      | declaredEntry right =>
+          exact prepared_declared_entry_pair program instanceId state left.control.selection.operation
+            right.control.selection.operation left right programValid stateValid leftPrepared rightPrepared independent
   | regional left =>
       exact prepared_regional_transition_pair program state instanceId left right programValid stateValid
         leftPrepared rightPrepared independent
@@ -422,7 +455,7 @@ theorem prepared_transition_pair_control_read_only (program : Program) (state : 
       (runtimeStateWellFormed_position program instanceId state valid) selectedRunning
   cases left with
   | messageTask _ _ | boundedScope _ _ | timerTask _ _ | arming _ | localControl _
-  | scopeCreation _ | ordinaryEnd _ | mergeInput _ => trivial
+  | scopeCreation _ | declaredEntry _ | ordinaryEnd _ | mergeInput _ => trivial
   | regional regional =>
       change .ordinary (.runtimeControl instanceId) ∉ regional.footprint.writes
       cases right with
@@ -476,7 +509,7 @@ theorem prepared_transition_pair_control_read_only (program : Program) (state : 
       | scopeCreation creation =>
           obtain ⟨selection, hosting, ownerRecord, origin, definition, start, delta,
             _, selectedRunning, _, _, _, _, _, _, _, _, rfl⟩ :=
-            prepareInternalScopeCreation_facts program state creation.selection.operation creation rightFound
+            prepareInternalScopeCreation_facts program state creation.selection.operation creation rightFound.1
           have same := instanceEq hosting selectedRunning
           subst hosting
           have read : liftRegionalStateAtom selection.owner (.runtimeControl instanceId) ∈
@@ -487,6 +520,7 @@ theorem prepared_transition_pair_control_read_only (program : Program) (state : 
           intro written
           have conflict := regional_independent_read_write _ _ independent _ _ written read
           simp [liftRegionalStateAtom, regionalStateAtomsConflict] at conflict
+      | declaredEntry _ => exact (independent : False).elim
       | regional other =>
           exact regional_pair_read_key_not_written _ _ independent _
             (regionalStateFootprint_control_read state other.selection other.region other.footprint instanceId running

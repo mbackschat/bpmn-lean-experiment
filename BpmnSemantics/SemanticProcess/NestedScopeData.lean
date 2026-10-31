@@ -149,6 +149,26 @@ def resolveOwner? (scopes : List ScopeVariableScope) : List ScopeOccurrenceId �
           else resolveOwner? scopes rest name
       | _ => none
 
+/-- What resolving `names` from `reader` consults: every chain link, the chain occurrences up to the
+deepest one whose frame declares a name (all of them when a name falls through), and the names that fall
+through to the Process. These are the precise read atoms of a nested input evaluation (CSD-PREPARE-01). -/
+structure ReadSet where
+  links : List RuntimeScopeOccurrence
+  frames : List ScopeOccurrenceId
+  processNames : List String
+  deriving Repr, DecidableEq
+
+def readSet? (state : RuntimeState) (reader : ScopeOccurrenceId) (names : List String) : Option ReadSet := do
+  let chain ← occurrenceChain state.scopeOccurrences reader
+  let owners ← names.mapM (resolveOwner? state.variables.scopes chain)
+  let links ← chain.mapM fun id => state.scopeOccurrences.find? (·.id == id)
+  let depth := owners.foldl (fun depth owner => max depth (match owner with
+    | .frame occurrence => chain.idxOf occurrence + 1
+    | .process => chain.length)) 0
+  some { links, frames := chain.take depth
+         processNames := (names.zip owners).filterMap fun (name, owner) =>
+           if owner == .process then some name else none }
+
 /-- NSD-READ-01 from the occurrence `reader`; every value is re-validated under the Program's effect
 policy, so a stored binding is never trusted for having been written earlier. -/
 def read? (program : Program) (occurrences : List RuntimeScopeOccurrence) (variables : ScopedVariables)
@@ -243,6 +263,14 @@ def evaluateFrame? (program : Program) (state : RuntimeState) (record : ScopeLoc
 def insertFrame (variables : ScopedVariables) (frame : ScopeVariableScope) : ScopedVariables :=
   let scopes := canonicalInsertBy (fun left right => scopeOwnerBefore left.owner right.owner) frame variables.scopes
   { variables with scopes }
+
+theorem insertFrame_scopes (variables : ScopedVariables) (frame : ScopeVariableScope) :
+    insertFrame variables frame =
+      { variables with
+        scopes := canonicalInsertBy (fun left right => scopeOwnerBefore left.owner right.owner) frame
+          variables.scopes } := by
+  unfold insertFrame
+  rfl
 
 def initializeFrameAt? (program : Program) (state : RuntimeState) (record : ScopeLocalData)
     (child parent : ScopeOccurrenceId) : Option RuntimeState := do

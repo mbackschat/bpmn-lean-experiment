@@ -23,14 +23,14 @@ private theorem messageTask_independent_iff (contract : InternalMessageTaskContr
     (PreparedInternalTransition.messageTask contract patch).Independent other ↔
       other.Independent (.messageTask contract patch) := by
   cases other <;> constructor <;> intro separated <;>
-    exact regionalStateFootprintsIndependent_symmetric _ _ separated
+    first | exact regionalStateFootprintsIndependent_symmetric _ _ separated | exact separated
 
 private theorem boundedScope_independent_iff (contract : InternalBoundedScopeContract)
     (prepared : PreparedInternalBoundedScope) (other : PreparedInternalTransition) :
     (PreparedInternalTransition.boundedScope contract prepared).Independent other ↔
       other.Independent (.boundedScope contract prepared) := by
   cases other <;> constructor <;> intro separated <;>
-    exact regionalStateFootprintsIndependent_symmetric _ _ separated
+    first | exact regionalStateFootprintsIndependent_symmetric _ _ separated | exact separated
 
 theorem PreparedInternalTransition.independent_symm {left right : PreparedInternalTransition}
     (separated : left.Independent right) : right.Independent left := by
@@ -46,5 +46,6 @@ theorem PreparedInternalTransition.independent_symm {left right : PreparedIntern
           | exact PreparedInternalArming.independent_symm separated
           | exact localControlStateFootprintsNonInterfering_symm _ _ separated
           | exact regionalStateFootprintsIndependent_symmetric _ _ separated
+          | exact separated
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

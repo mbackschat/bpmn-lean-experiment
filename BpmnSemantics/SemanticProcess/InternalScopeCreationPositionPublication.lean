@@ -224,4 +224,13 @@ theorem internalScopeCreationPositionDelta_corresponds (program : Program) (inst
   all_goals cases kind : selected.kind <;>
     simp only [makeInternalScopeCreationPreparation, InternalScopeCreationSelection.apply, kind]
 
+/-- Positions project tokens and occurrences, never frames, so a frame insertion leaves every position delta
+as it was (CSD-PREPARE-01). -/
+theorem controlPositionDelta?_scope_frames (program : Program) (instanceId : SemanticId)
+    (before after : RuntimeState) (scopes : List ScopeVariableScope) :
+    controlPositionDelta? program instanceId before { after with variables := { after.variables with scopes } } =
+      controlPositionDelta? program instanceId before after := by
+  cases after
+  rfl
+
 end BpmnSemantics.SemanticProcess.InternalCommutation

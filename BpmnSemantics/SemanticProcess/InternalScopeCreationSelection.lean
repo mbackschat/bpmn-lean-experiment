@@ -193,20 +193,65 @@ theorem selectInternalScopeCreation_running (state : RuntimeState)
 /-- TXC-RETAIN-01 adds a register write outside the ordinary retained scope patch. -/
 def internalScopeCreationRetentionUnchanged (program : Program) : SemanticOperation → Bool
   | .enterScope _ _ _ _ scope =>
-      decide (program.compensationActivityRetention.map (·.definitionScopeId) ≠ some scope) &&
-        (NestedScopeData.recordFor? program scope).isNone
+      decide (program.compensationActivityRetention.map (·.definitionScopeId) ≠ some scope)
   | _ => true
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalScopeCreationRetentionUnchanged]
+/-- NSD-INIT-01 adds a frame write outside the ordinary retained scope patch; a declared entry composes
+that write onto the unchanged patch as its own prepared family (CSD-PREPARE-01). -/
+def internalScopeCreationUndeclared (program : Program) : SemanticOperation → Bool
+  | .enterScope _ _ _ _ scope => (NestedScopeData.recordFor? program scope).isNone
+  | _ => true
 
-/-- Retained patches agree with the evaluator when neither snapshot nor child retention is created;
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalScopeCreationRetentionUnchanged,
+  `internalScopeCreationUndeclared]
+
+/-- A selected child entry without child retention is the retained entry patch. -/
+private theorem selectInternalScopeCreation_enters (program : Program) (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (input entry : ControlPlaceId) (definition : DefinitionScopeId)
+    (selected : InternalScopeCreationSelection)
+    (retentionUnchanged : internalScopeCreationRetentionUnchanged program (.enterScope id origin input entry definition) = true)
+    (found : selectInternalScopeCreation? state (.enterScope id origin input entry definition) = some selected) :
+    enterScopeWithCompensationRetention? program state input entry definition = some (selected.apply state) := by
+  obtain ⟨hosting, running⟩ := selectInternalScopeCreation_running state _ selected found
+  unfold selectInternalScopeCreation? at found
+  simp only [running, bind, Option.bind] at found
+  obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
+  split at found
+  · contradiction
+  · next fresh =>
+      cases found
+      simp only [internalScopeCreationRetentionUnchanged, decide_eq_true_eq] at retentionUnchanged
+      rw [enterScopeWithCompensationRetention_unselected program state input entry definition retentionUnchanged]
+      simp only [enterScopeState?, owned, running, bind, Option.bind, fresh, Bool.false_eq_true, ↓reduceIte,
+        InternalScopeCreationSelection.apply]
+
+/-- CSD-PREPARE-01: a declared child's entry is the retained entry patch followed by its frame
+initialization. -/
+theorem selectInternalScopeCreation_fires_declared (program : Program) (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (input entry : ControlPlaceId) (definition : DefinitionScopeId)
+    (selected : InternalScopeCreationSelection) (record : ScopeLocalData)
+    (snapshotAbsent : program.compensationEventSubProcessSnapshots = none)
+    (retentionUnchanged : internalScopeCreationRetentionUnchanged program (.enterScope id origin input entry definition) = true)
+    (recorded : NestedScopeData.recordFor? program definition = some record)
+    (found : selectInternalScopeCreation? state (.enterScope id origin input entry definition) = some selected) :
+    fire? program (.enterScope id origin input entry definition) state =
+      NestedScopeData.initializeFrame? program (selected.apply state) definition := by
+  unfold fire?
+  rw [snapshotAbsent]
+  change enterDeclaredScope? program state input entry definition = _
+  simp only [enterDeclaredScope?, recorded, selectInternalScopeCreation_enters program state id origin input entry
+    definition selected retentionUnchanged found, bind, Option.bind]
+
+/-- Retained patches agree with the evaluator when neither snapshot, child retention nor frame is created;
 this is not a footprint, validity-preservation, or commutation claim. -/
 theorem selectInternalScopeCreation_refines (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (selected : InternalScopeCreationSelection)
     (snapshotAbsent : program.compensationEventSubProcessSnapshots = none)
     (retentionUnchanged : internalScopeCreationRetentionUnchanged program operation = true)
+    (undeclared : internalScopeCreationUndeclared program operation = true)
     (found : selectInternalScopeCreation? state operation = some selected) :
     fire? program operation state = some (selected.apply state) := by
+  have original := found
   obtain ⟨hosting, running⟩ := selectInternalScopeCreation_running state operation selected found
   unfold selectInternalScopeCreation? at found
   simp only [running, bind, Option.bind] at found
@@ -214,20 +259,11 @@ theorem selectInternalScopeCreation_refines (program : Program) (state : Runtime
   rw [snapshotAbsent]
   cases operation with
   | enterScope id origin input entry definition =>
-      obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
-      split at found
-      · contradiction
-      · next fresh =>
-          cases found
-          simp only [internalScopeCreationRetentionUnchanged, Bool.and_eq_true, decide_eq_true_eq,
-            Option.isNone_iff_eq_none] at retentionUnchanged
-          change enterDeclaredScope? program state input entry definition = _
-          simp only [enterDeclaredScope?, retentionUnchanged.2]
-          rw [enterScopeWithCompensationRetention_unselected program state input entry definition
-            retentionUnchanged.1]
-          simp only [enterScopeState?, owned, running, bind, Option.bind, fresh, Bool.false_eq_true,
-            ↓reduceIte,
-            InternalScopeCreationSelection.apply]
+      simp only [internalScopeCreationUndeclared, Option.isNone_iff_eq_none] at undeclared
+      change enterDeclaredScope? program state input entry definition = _
+      simp only [enterDeclaredScope?, undeclared]
+      exact selectInternalScopeCreation_enters program state id origin input entry definition selected
+        retentionUnchanged original
   | invokeProcess id origin input process definition entry returnOperation data =>
       cases data with
       | scalar => simp at found

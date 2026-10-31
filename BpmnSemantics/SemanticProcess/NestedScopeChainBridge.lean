@@ -166,6 +166,13 @@ private theorem within_live : ∀ (fuel : Nat) (owner : ScopeOccurrenceId) (chai
         | none => simp [root parented] at later
         | some parent => exact within_live fuel' parent tail (linked parent parented) member later
 
+/-- Every member of a resolved chain is a live identity, so an identity no live occurrence carries is on
+no chain (CSD-PREPARE-01). -/
+theorem occurrenceChain_live (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId)
+    (chained : occurrenceChain occurrences owner = some chain) :
+    ∀ member ∈ chain, ∃ occurrence ∈ occurrences, occurrence.id = member :=
+  within_live occurrences _ owner chain chained
+
 end Walk
 
 /-- CSD-CHAIN-01's three premises for the chain `chain` of `reader`, each read over the chain alone:

@@ -16,6 +16,7 @@ import BpmnSemantics.SemanticProcess.InternalRegionalControlFields
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
+import BpmnSemantics.SemanticProcess.InternalDeclaredEntryLaws
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
@@ -41,12 +42,43 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`
   `InternalScopeCreationSelection.apply, `PreparedInternalTransition.alternative, `PreparedInternalTransition.apply,
   `PreparedInternalTransition.operation, `applyPreparedInternalTransition?, `makeInternalBoundedScopePreparation,
   `makeInternalBoundedScopeSelection]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`acceptFlowNodeOccurrenceCandidate?,
+  `candidateFlowNodeOccurrenceDeltaForOperation?, `flowNodeOccurrenceDeltaForOperation?]
 
 public section
 
 namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
+
+/-- The open projection reads no scope frame, so the declared entry's frame insertion keeps it. -/
+private theorem projectOpenFlowNodeOccurrences_scope_frames (program : Program) (state : RuntimeState)
+    (scopes : List ScopeVariableScope) :
+    projectOpenFlowNodeOccurrences? program { state with variables := { state.variables with scopes } } =
+      projectOpenFlowNodeOccurrences? program state := by
+  cases state
+  rfl
+
+/-- An entry's lifecycle projects waits, occurrences and records, never frames, so the declared entry's frame
+insertion keeps its control's lifecycle. Multi-instance operations pass the whole successor on and are not
+covered. -/
+theorem flowNodeOccurrenceDeltaForOperation?_scope_frames (program : Program) (before after : RuntimeState)
+    (operation : SemanticOperation) (commandId : SemanticId) (transitionIndex : Nat)
+    (scopes : List ScopeVariableScope)
+    (entry : ∃ id origin input childEntry childScopeId, operation = .enterScope id origin input childEntry childScopeId) :
+    flowNodeOccurrenceDeltaForOperation? program before { after with variables := { after.variables with scopes } }
+        operation commandId transitionIndex =
+      flowNodeOccurrenceDeltaForOperation? program before after operation commandId transitionIndex := by
+  obtain ⟨id, origin, input, childEntry, childScopeId, rfl⟩ := entry
+  have candidate (owner : ScopeOccurrenceId) : candidateFlowNodeOccurrenceDeltaForOwnedOperation? program before
+      { after with variables := { after.variables with scopes } } (.enterScope id origin input childEntry childScopeId)
+        owner commandId transitionIndex =
+      candidateFlowNodeOccurrenceDeltaForOwnedOperation? program before after
+        (.enterScope id origin input childEntry childScopeId) owner commandId transitionIndex := by
+    unfold candidateFlowNodeOccurrenceDeltaForOwnedOperation?
+    dsimp only
+  simp only [flowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOperation?,
+    acceptFlowNodeOccurrenceCandidate?, projectOpenFlowNodeOccurrences_scope_frames, candidate]
 
 /-- Root completion writes hosting control. A genuinely independent batch supplies another
 member's protected control read, deriving this condition before prefix induction. -/
@@ -80,6 +112,9 @@ theorem prepared_transition_control_frame (program : Program) (state : RuntimeSt
   | ordinaryEnd _ => rfl
   | mergeInput _ => rfl
   | scopeCreation scope => exact scopeCreation_apply_control state scope.selection
+  | declaredEntry declared =>
+      simp only [PreparedInternalTransition.apply, PreparedInternalDeclaredEntry.apply_eq]
+      exact scopeCreation_apply_control state declared.control.selection
   | regional regional =>
       obtain ⟨after, _, applied⟩ := prepareInternalRegional_executes program state _ regional found
       have frame := preparedRegional_control_filters program state after instanceId _ regional valid running
@@ -144,14 +179,28 @@ theorem prepared_transition_preserves (program : Program) [InterruptionInvocatio
       exact openBefore
   | scopeCreation scope =>
       refine ⟨prepareInternalScopeCreation_preserves_runtimeStateWellFormed program instanceId state
-        scope.selection.operation scope programValid stateValid selected, control, ?_⟩
+        scope.selection.operation scope programValid stateValid selected.1, control, ?_⟩
       cases projected : projectOpenFlowNodeOccurrences? program state with
       | none => simp [projected] at openBefore
       | some current =>
           obtain ⟨start, _, afterProjected⟩ := prepared_scope_creation_open_projection program state
-            scope.selection.operation scope instanceId current programValid stateValid projected selected
+            scope.selection.operation scope instanceId current programValid stateValid projected selected.1
           change (projectOpenFlowNodeOccurrences? program (scope.selection.apply state)).isSome = true
           simp only [afterProjected, Option.isSome_some]
+  | declaredEntry declared =>
+      refine ⟨prepareInternalDeclaredEntry_preserves_runtimeStateWellFormed program instanceId state
+        declared.control.selection.operation declared programValid stateValid selected, control, ?_⟩
+      cases projected : projectOpenFlowNodeOccurrences? program state with
+      | none => simp [projected] at openBefore
+      | some current =>
+          obtain ⟨_, _, _, _, _, _, _, _, _, controlFound, _⟩ :=
+            prepareInternalDeclaredEntry_facts program state _ declared selected
+          obtain ⟨start, _, afterProjected⟩ := prepared_scope_creation_open_projection program state
+            _ declared.control instanceId current programValid stateValid projected controlFound
+          change (projectOpenFlowNodeOccurrences? program (declared.apply state)).isSome = true
+          rw [PreparedInternalDeclaredEntry.apply_eq, NestedScopeData.insertFrame_scopes,
+            projectOpenFlowNodeOccurrences_scope_frames, afterProjected]
+          rfl
   | regional regional =>
       obtain ⟨after, applied, published⟩ := prepareInternalRegional_execution_publication program state _ regional
         instanceId instanceId 0 programValid stateValid selected
@@ -181,7 +230,9 @@ theorem prepared_transition_applies (program : Program) (state : RuntimeState)
         exact prepareInternalLocalControl_refines program state localPrepared.operation
           localPrepared snapshots selected
     case scopeCreation scope =>
-        exact prepareInternalScopeCreation_refines program state scope.selection.operation scope selected
+        exact prepareInternalScopeCreation_refines program state scope.selection.operation scope selected.2 selected.1
+    case declaredEntry declared =>
+        exact prepareInternalDeclaredEntry_refines program state _ declared selected
     case ordinaryEnd ending =>
         exact prepareInternalEnd_refines program state ending.operation ending selected
     case regional regional =>

@@ -26,7 +26,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.internalLocalControlExtraWrites, `InternalCommutation.internalLocalControlStateFootprint,
   `InternalCommutation.localControlStateFootprintsNonInterfering, `InternalCommutation.selectInternalLocalControl?,
   `InternalCommutation.tokenPatchWriteAtoms, `InternalSelectedBranchPatch.selectionKey, `canonicalCollectionOrder,
-  `canonicalStateAtomSet]
+  `canonicalStateAtomSet, `InternalCommutation.listsDisjoint]
 
 public section
 
@@ -38,6 +38,29 @@ theorem localControlStateFootprintsNonInterfering_symm
     localControlStateFootprintsNonInterfering right left = true := by
   simpa only [localControlStateFootprintsNonInterfering, Bool.and_eq_true, and_assoc,
     and_left_comm, and_comm] using separated
+
+/-- Non-interference survives shrinking one footprint, so a composed family's separation yields its
+component's. -/
+theorem localControlStateFootprintsNonInterfering_of_subsets
+    (left larger right : InternalTransitionStateFootprint)
+    (reads : left.reads ⊆ larger.reads) (writes : left.writes ⊆ larger.writes)
+    (separated : localControlStateFootprintsNonInterfering larger right = true) :
+    localControlStateFootprintsNonInterfering left right = true := by
+  simp only [localControlStateFootprintsNonInterfering, listsDisjoint, Bool.and_eq_true, List.all_eq_true,
+    Bool.not_eq_true', List.contains_eq_mem, decide_eq_false_iff_not] at separated ⊢
+  obtain ⟨⟨⟨writeRead, writeWrite⟩, readWrite⟩, writtenWrite⟩ := separated
+  exact ⟨⟨⟨fun atom member => writeRead atom (writes member), fun atom member => writeWrite atom (writes member)⟩,
+    fun atom member found => readWrite atom member (reads found)⟩,
+    fun atom member found => writtenWrite atom member (writes found)⟩
+
+/-- A separated pair never reads what the other writes. -/
+theorem localControlStateFootprintsNonInterfering_write_read
+    (left right : InternalTransitionStateFootprint)
+    (separated : localControlStateFootprintsNonInterfering left right = true)
+    (atom : InternalStateAtom) (written : atom ∈ left.writes) (read : atom ∈ right.reads) : False := by
+  simp only [localControlStateFootprintsNonInterfering, listsDisjoint, Bool.and_eq_true, List.all_eq_true,
+    Bool.not_eq_true', List.contains_eq_mem, decide_eq_false_iff_not] at separated
+  exact separated.1.1.1 atom written read
 
 private theorem localControlStateFootprintsNonInterfering_parts
     (left right : InternalTransitionStateFootprint)

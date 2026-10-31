@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.NestedScopeData
 public import BpmnSemantics.SemanticProcess.ScopeCompletion
+import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.NestedScopeChainBridge
 import all BpmnSemantics.SemanticProcess.NestedScopeData
 import all BpmnSemantics.SemanticProcess.ScopeVariableData
 meta import BpmnSemantics.PrivateEquationLemmas
@@ -18,7 +20,8 @@ choose.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`evaluateFrame?, `framesAt,
-  `initializeFrame?, `initializeFrameAt?, `insertFrame, `readOutcome?, `resolveOwner?, `write?, `writeAll?]
+  `initializeFrame?, `initializeFrameAt?, `insertFrame, `read?, `readOutcome?, `readSet?, `resolveOwner?, `write?,
+  `writeAll?]
 
 public section
 
@@ -402,6 +405,171 @@ theorem initializeFrame?_reads_parent_chain (program : Program) (state result : 
   obtain ⟨bindings, evaluated, rfl⟩ :=
     initializeFrameAt?_reads_parent_chain program state result record child parent initialized
   exact ⟨child, parent, bindings, located, evaluated, rfl⟩
+
+/-- NSD-INIT-01 by occurrence before insertion: an evaluated frame belongs to `child`, which held none,
+and holds exactly the inputs evaluated against `parent`'s chain. -/
+theorem evaluateFrame?_facts (program : Program) (state : RuntimeState) (record : ScopeLocalData)
+    (child parent : ScopeOccurrenceId) (frame : ScopeVariableScope)
+    (evaluated : evaluateFrame? program state record child parent = some frame) :
+    frame.owner = child ∧ state.variables.scopes.any (·.owner == child) = false ∧
+      ∃ bindings, evaluateInputMappingsUnder? (programEffectMappingValuePolicy program)
+          (read? program state.scopeOccurrences state.variables parent) record.localInputs = some bindings ∧
+        frame.bindings = mergeProcessVariableBindings [] bindings := by
+  simp only [evaluateFrame?, Option.bind_eq_bind, Option.bind_eq_some_iff] at evaluated
+  obtain ⟨bindings, evaluatedBindings, framed⟩ := evaluated
+  split at framed
+  · contradiction
+  · next fresh =>
+      cases framed
+      simp only [Bool.or_eq_true, Bool.not_eq_true', not_or, Bool.not_eq_true] at fresh
+      exact ⟨rfl, fresh.2, bindings, evaluatedBindings, rfl⟩
+
+/-- NSD-INIT-01 on the entered state: the unique live occurrence of the definition and its parent select
+the evaluated frame, which entry installs. -/
+theorem initializeFrame?_of_evaluated (program : Program) (state : RuntimeState) (scope : DefinitionScopeId)
+    (record : ScopeLocalData) (child parent : ScopeOccurrenceId) (frame : ScopeVariableScope)
+    (recorded : recordFor? program scope = some record)
+    (located : occurrenceWithParent? state scope = some (child, parent))
+    (evaluated : evaluateFrame? program state record child parent = some frame) :
+    initializeFrame? program state scope = some { state with variables := insertFrame state.variables frame } := by
+  simp only [initializeFrame?, recorded, located, initializeFrameAt?, evaluated, bind, Option.bind]
+
+/-- Inserting the frame of an occurrence that holds none keeps every selected frame, so a frame insertion
+for a fresh child (CSD-PREPARE-01) changes no other occurrence's data. -/
+theorem selectScopeVariables?_insertFrame (variables : ScopedVariables) (frame found : ScopeVariableScope)
+    (owner : ScopeOccurrenceId) (absent : variables.scopes.any (·.owner == frame.owner) = false)
+    (selected : selectScopeVariables? variables owner = some found) :
+    selectScopeVariables? (insertFrame variables frame) owner = some found := by
+  unfold selectScopeVariables? at selected ⊢
+  have distinct : decide (frame.owner = owner) = false := by
+    split at selected
+    · next scope filtered =>
+        have member : scope ∈ variables.scopes.filter (fun candidate => decide (candidate.owner = owner)) := by
+          rw [filtered]; simp
+        obtain ⟨present, sameOwner⟩ := List.mem_filter.mp member
+        simp only [decide_eq_true_eq] at sameOwner
+        apply decide_eq_false
+        intro same
+        have held : variables.scopes.any (·.owner == frame.owner) = true :=
+          List.any_eq_true.mpr ⟨scope, present, by simp [sameOwner, same]⟩
+        simp [held] at absent
+    · contradiction
+  rw [insertFrame_scopes]
+  dsimp only
+  rw [filter_canonicalInsertBy_rejected _ (fun scope => decide (scope.owner = owner)) frame variables.scopes distinct]
+  exact selected
+
+/-! ## Frame insertion off every chain
+
+A frame inserted for an identity that no live occurrence carries lies on no resolving chain
+(`occurrenceChain_live`), so every nested read, frame evaluation and read set stays as it was. Two
+declared entries of one batch rely on this for each other's frames (CSD-PREPARE-01). -/
+
+private theorem resolveOwner?_insertFrame_off (variables : ScopedVariables) (frame : ScopeVariableScope)
+    (name : String) :
+    ∀ chain : List ScopeOccurrenceId, (∀ member ∈ chain, member ≠ frame.owner) →
+      resolveOwner? (insertFrame variables frame).scopes chain name = resolveOwner? variables.scopes chain name
+  | [], _ => by simp [resolveOwner?]
+  | occurrence :: rest, off => by
+      have later := resolveOwner?_insertFrame_off variables frame name rest
+        (fun member inside => off member (List.mem_cons_of_mem _ inside))
+      have frames : framesAt (insertFrame variables frame).scopes occurrence = framesAt variables.scopes occurrence := by
+        rw [insertFrame_scopes]
+        simp only [framesAt]
+        exact filter_canonicalInsertBy_rejected _ _ frame variables.scopes
+          (by simpa only [beq_eq_false_iff_ne] using Ne.symm (off occurrence (by simp)))
+      simp only [resolveOwner?, frames, later]
+
+private theorem selectScopeVariables?_insertFrame_other (variables : ScopedVariables) (frame : ScopeVariableScope)
+    (owner : ScopeOccurrenceId) (distinct : frame.owner ≠ owner) :
+    selectScopeVariables? (insertFrame variables frame) owner = selectScopeVariables? variables owner := by
+  unfold selectScopeVariables?
+  rw [insertFrame_scopes]
+  dsimp only
+  rw [filter_canonicalInsertBy_rejected _ (fun scope => decide (scope.owner = owner)) frame variables.scopes
+    (decide_eq_false distinct)]
+
+private theorem read?_insertFrame_dead (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (variables : ScopedVariables) (frame : ScopeVariableScope)
+    (dead : ∀ occurrence ∈ occurrences, occurrence.id ≠ frame.owner) (reader : ScopeOccurrenceId) (name : String) :
+    read? program occurrences (insertFrame variables frame) reader name = read? program occurrences variables reader name := by
+  unfold read?
+  cases chained : occurrenceChain occurrences reader with
+  | none => rfl
+  | some chain =>
+      have off : ∀ member ∈ chain, member ≠ frame.owner := by
+        intro member inside
+        obtain ⟨occurrence, live, same⟩ := occurrenceChain_live occurrences reader chain chained member inside
+        exact same ▸ dead occurrence live
+      simp only [Option.bind_eq_bind, Option.bind_some, resolveOwner?_insertFrame_off variables frame name chain off]
+      cases resolved : resolveOwner? variables.scopes chain name with
+      | none => rfl
+      | some owner =>
+          cases owner with
+          | process => simp [insertFrame_scopes]
+          | frame owner =>
+              have onChain := resolveOwner?_frame_on_chain variables chain name owner resolved
+              simp [selectScopeVariables?_insertFrame_other variables frame owner (Ne.symm (off owner onChain))]
+
+/-- CSD-PREPARE-01: inserting a frame for a dead identity other than `child` keeps `child`'s evaluated frame. -/
+theorem evaluateFrame?_insertFrame_dead (program : Program) (state : RuntimeState) (frame : ScopeVariableScope)
+    (dead : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id ≠ frame.owner)
+    (record : ScopeLocalData) (child parent : ScopeOccurrenceId) (distinct : frame.owner ≠ child) :
+    evaluateFrame? program { state with variables := insertFrame state.variables frame } record child parent =
+      evaluateFrame? program state record child parent := by
+  have reads : read? program state.scopeOccurrences (insertFrame state.variables frame) parent =
+      read? program state.scopeOccurrences state.variables parent :=
+    funext fun name => read?_insertFrame_dead program _ _ frame dead parent name
+  have absent : (insertFrame state.variables frame).scopes.any (·.owner == child) =
+      state.variables.scopes.any (·.owner == child) := by
+    rw [insertFrame_scopes]
+    apply Bool.eq_iff_iff.mpr
+    simp only [List.any_eq_true, mem_canonicalInsertBy]
+    constructor
+    · rintro ⟨scope, inserted | member, same⟩
+      · subst inserted
+        exact absurd (by simpa only [beq_iff_eq] using same) distinct
+      · exact ⟨scope, member, same⟩
+    · rintro ⟨scope, member, same⟩
+      exact ⟨scope, Or.inr member, same⟩
+  unfold evaluateFrame?
+  dsimp only
+  rw [reads, absent]
+
+/-- CSD-PREPARE-01: inserting a frame for a dead identity keeps every read set. -/
+theorem readSet?_insertFrame_dead (state : RuntimeState) (frame : ScopeVariableScope)
+    (dead : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id ≠ frame.owner)
+    (reader : ScopeOccurrenceId) (names : List String) :
+    readSet? { state with variables := insertFrame state.variables frame } reader names = readSet? state reader names := by
+  unfold readSet?
+  dsimp only
+  cases chained : occurrenceChain state.scopeOccurrences reader with
+  | none => rfl
+  | some chain =>
+      have off : ∀ member ∈ chain, member ≠ frame.owner := by
+        intro member inside
+        obtain ⟨occurrence, live, same⟩ := occurrenceChain_live _ reader chain chained member inside
+        exact same ▸ dead occurrence live
+      have owners : (fun name => resolveOwner? (insertFrame state.variables frame).scopes chain name) =
+          fun name => resolveOwner? state.variables.scopes chain name :=
+        funext fun name => resolveOwner?_insertFrame_off state.variables frame name chain off
+      simp only [Option.bind_eq_bind, Option.bind_some, owners]
+
+/-- Frame evaluation reads only the occurrences and the variables. -/
+theorem evaluateFrame?_frame (program : Program) (state after : RuntimeState)
+    (occurrences : after.scopeOccurrences = state.scopeOccurrences) (variables : after.variables = state.variables)
+    (record : ScopeLocalData) (child parent : ScopeOccurrenceId) :
+    evaluateFrame? program after record child parent = evaluateFrame? program state record child parent := by
+  unfold evaluateFrame?
+  rw [occurrences, variables]
+
+/-- A read set reads only the occurrences and the frames. -/
+theorem readSet?_frame (state after : RuntimeState)
+    (occurrences : after.scopeOccurrences = state.scopeOccurrences)
+    (scopes : after.variables.scopes = state.variables.scopes) (reader : ScopeOccurrenceId) (names : List String) :
+    readSet? after reader names = readSet? state reader names := by
+  unfold readSet?
+  rw [occurrences, scopes]
 
 /-! ## Nearest checked non-law
 

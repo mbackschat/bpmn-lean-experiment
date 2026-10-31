@@ -2,6 +2,8 @@ module
 
 public import BpmnSemantics.SemanticProcess.InternalTransitionPublication
 import BpmnSemantics.SemanticProcess.InternalTransitionPublicationAcceptance
+import BpmnSemantics.SemanticProcess.InternalTransitionPreservation
+import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalArmingAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalEndPublication
 import BpmnSemantics.SemanticProcess.InternalMergePublication
@@ -79,6 +81,26 @@ private theorem actualInternalAlternativePublication_operation (program : Progra
       actualInternalTransitionPublication? program instanceId before after operation commandId index := by
   simp [actualInternalAlternativePublication?]
 
+/-- Publication projects tokens and occurrences, never frames, so a declared entry publishes exactly its
+control's publication (CSD-PREPARE-01). -/
+private theorem actualInternalTransitionPublication_scope_frames (program : Program) (instanceId : SemanticId)
+    (before after : RuntimeState) (operation : SemanticOperation) (commandId : SemanticId) (index : Nat)
+    (scopes : List ScopeVariableScope)
+    (entry : ∃ id origin input childEntry childScopeId, operation = .enterScope id origin input childEntry childScopeId) :
+    actualInternalTransitionPublication? program instanceId before
+        { after with variables := { after.variables with scopes } } operation commandId index =
+      actualInternalTransitionPublication? program instanceId before after operation commandId index := by
+  simp only [actualInternalTransitionPublication?,
+    flowNodeOccurrenceDeltaForOperation?_scope_frames program before after operation commandId index scopes entry,
+    controlPositionDelta?_scope_frames]
+
+private theorem waitStart_scope_frames (program : Program) (state : RuntimeState) (scopes : List ScopeVariableScope)
+    (owner : ScopeOccurrenceId) (element : NodeId) (activation : Nat) :
+    waitStart? program { state with variables := { state.variables with scopes } } owner element activation =
+      waitStart? program state owner element activation := by
+  cases state
+  rfl
+
 /-- Every actual publication component is accepted at any later assigned index and equals the
 predecessor template; acceptance and position correspondence are derived, never premises. -/
 theorem prepared_transition_publication_template_accepted (program : Program) [InterruptionInvocationsRooted program] (state : RuntimeState)
@@ -136,7 +158,17 @@ theorem prepared_transition_publication_template_accepted (program : Program) [I
   case scopeCreation scopePrepared =>
       exact ⟨internalScopeCreationPublicationTemplate scopePrepared, rfl,
         prepared_scope_creation_publication_template_accepted program state scopePrepared instanceId
-          commandId transitionIndex programWF beforeWF projectable found⟩
+          commandId transitionIndex programWF beforeWF projectable found.1⟩
+  case declaredEntry entry =>
+      obtain ⟨id, origin, input, child, scope, _, _, entered, _, control, _⟩ :=
+        prepareInternalDeclaredEntry_facts program state _ entry found
+      refine ⟨internalScopeCreationPublicationTemplate entry.control, rfl, ?_⟩
+      change actualInternalTransitionPublication? program instanceId state (entry.apply state)
+        entry.control.selection.operation commandId transitionIndex = _
+      rw [PreparedInternalDeclaredEntry.apply_eq, NestedScopeData.insertFrame_scopes,
+        actualInternalTransitionPublication_scope_frames _ _ _ _ _ _ _ _ ⟨id, origin, input, child, scope, entered⟩]
+      exact prepared_scope_creation_publication_template_accepted program state entry.control instanceId
+        commandId transitionIndex programWF beforeWF projectable control
   case ordinaryEnd ending =>
       have record := prepareInternalEnd_record program state ending.operation ending found
       have lifecycle := prepareInternalEnd_accepted_lifecycle program state ending.operation ending
@@ -198,6 +230,7 @@ theorem prepared_transition_template_operation_id (program : Program) (state : R
           rfl
   | localControl localPrepared => cases found; rfl
   | scopeCreation scopePrepared => cases found; rfl
+  | declaredEntry entry => cases found; rfl
   | regional regional => cases found; rfl
   | ordinaryEnd ending => cases found; rfl
   | mergeInput merge => cases found; rfl
@@ -233,6 +266,7 @@ theorem prepared_transition_template_frame (program : Program) (before after : R
             starts _ _ _ _ started, Option.map_some, time]
   | localControl _ => exact found
   | scopeCreation _ => exact found
+  | declaredEntry _ => exact found
   | regional _ => exact found
   | ordinaryEnd _ => exact found
   | mergeInput _ => exact found
@@ -300,9 +334,21 @@ theorem prepared_transition_template_after_step (program : Program) [Interruptio
       intro owner element activation start prior
       obtain ⟨selected, hosting, ownerRecord, origin, definition, scopeStart, delta, selection,
         _, _, _, _, _, _, _, _, _, preparedEq⟩ :=
-        prepareInternalScopeCreation_facts program state creation.selection.operation creation stepPrepared
+        prepareInternalScopeCreation_facts program state creation.selection.operation creation stepPrepared.1
       simpa only [preparedEq, makeInternalScopeCreationPreparation] using
         scopeCreation_wait_start_preserved program state _ selected owner element activation start selection prior
+  | declaredEntry entry =>
+      obtain ⟨_, _, _, _, _, _, _, _, _, control, _⟩ :=
+        prepareInternalDeclaredEntry_facts program state _ entry stepPrepared
+      obtain ⟨selected, _, _, _, _, _, _, selection, _, _, _, _, _, _, _, _, _, preparedEq⟩ :=
+        prepareInternalScopeCreation_facts program state _ entry.control control
+      apply prepared_transition_template_frame program state (entry.apply state) query template _ _ found
+      · rw [PreparedInternalDeclaredEntry.apply_eq]
+        exact scopeCreation_apply_time state entry.control.selection
+      · intro owner element activation start prior
+        rw [PreparedInternalDeclaredEntry.apply_eq, NestedScopeData.insertFrame_scopes, waitStart_scope_frames]
+        simpa only [preparedEq, makeInternalScopeCreationPreparation] using
+          scopeCreation_wait_start_preserved program state _ selected owner element activation start selection prior
   | regional regional =>
       cases query with
       | messageTask contract patch =>
@@ -365,7 +411,8 @@ theorem prepared_transition_template_after_step (program : Program) [Interruptio
           have sameTemplate : actualTemplate = template := Option.some.inj (beforeFound.symm.trans found)
           simpa only [PreparedInternalTransition.apply, applied, Option.getD_some,
             preparedTransitionPublicationTemplate?, sameTemplate] using afterFound
-      | boundedScope _ _ | localControl _ | scopeCreation _ | regional _ | ordinaryEnd _ | mergeInput _ => exact found
+      | boundedScope _ _ | localControl _ | scopeCreation _ | declaredEntry _ | regional _ | ordinaryEnd _
+      | mergeInput _ => exact found
       | arming arm =>
           have facts := preparedArming_owner_facts program state arm queryPrepared
           have hosting := runtimePositionValid_running_instance program instanceId arm.scopeFramePatch.runtimeInstanceId state

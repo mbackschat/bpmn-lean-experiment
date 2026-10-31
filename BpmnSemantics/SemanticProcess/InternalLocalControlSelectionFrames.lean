@@ -8,7 +8,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalLocalControlSelection.censusReads,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalLocalControlSelection.apply,
+  `InternalCommutation.InternalLocalControlSelection.censusReads,
   `InternalCommutation.selectInternalLocalControl?, `InternalSelectedBranchPatch.selectionKey,
   `selectedBranchJoinReady, `selectedInputOwnedReady, `commonTokenOwner?, `onlyTokenOwner?]
 
@@ -39,6 +40,15 @@ theorem commonTokenOwner_read_frame (before after : RuntimeState) (inputs : List
         · rw [onlyTokenOwner_read_frame before after input (census input (by simp [member]))]
           exact ready input member
       simp only [commonTokenOwner?, head, tail]
+
+/-- Local control moves tokens and selected-branch records only, so it keeps occurrences and variables and
+commutes with any variables-only update. -/
+theorem localControl_apply_variables (state : RuntimeState) (selected : InternalLocalControlSelection)
+    (variables : ScopedVariables) :
+    (selected.apply state).scopeOccurrences = state.scopeOccurrences ∧
+      (selected.apply state).variables = state.variables ∧
+      selected.apply { state with variables } = { selected.apply state with variables } := by
+  simp [InternalLocalControlSelection.apply]
 
 private theorem selectedJoinReadyRecords_filter_key (state : RuntimeState) (key : String) :
     (state.selectedBranchSets.filter (fun record => decide (record.selectionKey = key))).filter

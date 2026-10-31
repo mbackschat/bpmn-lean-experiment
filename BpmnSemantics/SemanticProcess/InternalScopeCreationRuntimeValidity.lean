@@ -10,6 +10,7 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.CallReachability
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
@@ -35,6 +36,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`origin]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
+  `InternalCommutation.PreparedInternalDeclaredEntry.apply,
   `InternalCommutation.internalScopeCreationDefinitionMatches, `canonicalCollectionOrder,
   `compensationEventSubProcessSnapshotScopeLifecycleWellFormed, `compensationEventSubProcessSnapshotStateValid,
   `effectIncidentAssociationValid, `enteredChildScopeId?, `exactLiveOccurrence, `messageWaitDeclarationKey,
@@ -370,6 +372,87 @@ theorem sequentialScopeStateValid_insert_scope (program : Program) (state : Runt
         simpa only [bound, sequentialScopeBindingForEntry_insert_scope entry state created binding fresh bound, sequentialScopeCollection?] using before
     · contradiction
 
+/-- A sequential binding reads only its body's selected frame among the scope frames, so a frame change
+that keeps every selected frame keeps the binding. -/
+private theorem sequentialScopeBindingForEntry_frames (entry : SequentialScopeEntry) (state : RuntimeState)
+    (scopes : List ScopeVariableScope) (binding : SequentialScopeBinding)
+    (kept : ∀ owner frame, selectScopeVariables? state.variables owner = some frame →
+      selectScopeVariables? { state.variables with scopes } owner = some frame)
+    (bound : sequentialScopeBindingForEntry? entry state = some binding) :
+    sequentialScopeBindingForEntry? entry { state with variables := { state.variables with scopes } } =
+      some binding := by
+  unfold sequentialScopeBindingForEntry? at bound ⊢
+  cases control : state.control <;> simp only [control] at bound ⊢ <;> try contradiction
+  split at bound <;> try contradiction
+  rename_i records record recordsEq
+  split at bound <;> try contradiction
+  rename_i recordBody child bodyEq
+  split at bound <;> try contradiction
+  rename_i valid
+  split at bound <;> try contradiction
+  rename_i bodies body bodiesEq
+  split at bound <;> try contradiction
+  rename_i controllers controller controllersEq
+  obtain ⟨locals, localsEq, bound⟩ := Option.bind_eq_some_iff.mp bound
+  have localsAfter := kept child locals localsEq
+  simp_all
+
+/-- CSD-PREPARE-01: a scope-frame change that keeps every selected frame keeps sequential scope validity,
+whose bindings read only their bodies' selected frames. -/
+private theorem sequentialScopeStateValid_frames (program : Program) (state : RuntimeState)
+    (scopes : List ScopeVariableScope)
+    (kept : ∀ owner frame, selectScopeVariables? state.variables owner = some frame →
+      selectScopeVariables? { state.variables with scopes } owner = some frame)
+    (valid : sequentialScopeStateValid program state = true) :
+    sequentialScopeStateValid program { state with variables := { state.variables with scopes } } = true := by
+  simp only [sequentialScopeStateValid, Bool.and_eq_true] at valid ⊢
+  constructor
+  · apply List.all_eq_true.mpr
+    intro controller held
+    have before := List.all_eq_true.mp valid.1 controller held
+    split at before
+    · rename_i entry selected
+      cases bound : sequentialScopeBindingForEntry? entry state with
+      | none => simp [bound] at before
+      | some binding =>
+        simpa only [selected, bound, sequentialScopeBindingForEntry_frames entry state scopes binding kept bound]
+          using before
+    · contradiction
+  · apply List.all_eq_true.mpr
+    intro entry declared
+    have before := List.all_eq_true.mp valid.2 entry declared
+    split at before
+    · rfl
+    · rename_i activity body activities bodies
+      cases bound : sequentialScopeBindingForEntry? entry state with
+      | none => simp [bound] at before
+      | some binding =>
+        simpa only [bound, sequentialScopeBindingForEntry_frames entry state scopes binding kept bound,
+          sequentialScopeCollection?] using before
+    · contradiction
+
+/-- CSD-PREPARE-01: aggregate validity survives a scope-frame change that keeps every selected frame,
+because the frames enter well-formedness only through the sequential bindings. -/
+private theorem runtimeStateWellFormed_frames (program : Program) (domain : RootCompensationExecutionDomain program)
+    (instanceId hosting : SemanticId) (state : RuntimeState) (running : state.control = .running hosting)
+    (scopes : List ScopeVariableScope)
+    (kept : ∀ owner frame, selectScopeVariables? state.variables owner = some frame →
+      selectScopeVariables? { state.variables with scopes } owner = some frame)
+    (valid : runtimeStateWellFormed program instanceId state = true) :
+    runtimeStateWellFormed program instanceId { state with variables := { state.variables with scopes } } = true := by
+  simp only [runtimeStateWellFormed, Bool.and_eq_true] at valid ⊢
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, waitOwners⟩,
+    waitIds⟩, identity⟩, waits⟩, hidden⟩, order⟩, activities⟩, timers⟩, messages⟩,
+    activityIds⟩, controllers⟩, sequential⟩, parallel⟩, controllerIds⟩, exhausted⟩,
+    notStarted⟩, ⟨⟨⟨⟨claims, retention⟩, snapshots⟩, execution⟩, scopeValid⟩⟩ := valid
+  have executionFrame := compensationExecutionStateValid_running_frame program domain state
+    { state with variables := { state.variables with scopes } } hosting running rfl rfl rfl rfl rfl rfl
+  exact ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨position, races⟩, incidents⟩, waitOwners⟩,
+    waitIds⟩, identity⟩, waits⟩, hidden⟩, order⟩, activities⟩, timers⟩, messages⟩,
+    activityIds⟩, controllers⟩, sequential⟩, parallel⟩, controllerIds⟩, exhausted⟩,
+    notStarted⟩, ⟨⟨⟨⟨claims, retention⟩, snapshots⟩, executionFrame.trans execution⟩,
+    sequentialScopeStateValid_frames program state scopes kept scopeValid⟩⟩
+
 /-- Document-unique source identity separates every admitted Task declarer from repeated Sub-Processes. -/
 theorem sequentialScopeEntry_task_separate (program : Program) (operation : SemanticOperation)
     (taskId : TaskDefinitionId) (admitted : programWellFormed program = true)
@@ -538,5 +621,39 @@ theorem prepareInternalScopeCreation_preserves_runtimeStateWellFormed
     hosting ownerRecord origin definition delta valid selection running snapshots ownerExact
     definitionFound checks deltaFound repeatedSeparated (fun record kind => callSeparated record admitted found kind)
     (fun record kind => callDeclared record admitted found kind)
+
+/-- CSD-PREPARE-01: the declared entry preserves aggregate validity, composed from the control's
+preservation and the frame insertion for the fresh child, which held no frame. -/
+theorem prepareInternalDeclaredEntry_preserves_runtimeStateWellFormed
+    (program : Program) (instanceId : SemanticId) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalDeclaredEntry)
+    (admitted : programWellFormed program = true)
+    (valid : runtimeStateWellFormed program instanceId state = true)
+    (found : prepareInternalDeclaredEntry? program state operation = some prepared) :
+    runtimeStateWellFormed program instanceId (prepared.apply state) = true := by
+  obtain ⟨_, _, _, _, _, record, _, _, _, controlFound, evaluated, _⟩ :=
+    prepareInternalDeclaredEntry_facts program state operation prepared found
+  have entered := prepareInternalScopeCreation_preserves_runtimeStateWellFormed program instanceId state
+    operation prepared.control admitted valid controlFound
+  obtain ⟨selected, hosting, _, origin, definition, _, _, selection, running, _, operationExact, _, _,
+    definitionFound, checks, _, _, controlEq⟩ :=
+    prepareInternalScopeCreation_facts program state operation prepared.control controlFound
+  have domain := scopeCreation_runtime_rootCompensationDomain program instanceId state operation selected
+    origin definition valid checks definitionFound (by
+      intro _ _ _ _ _ _ _ _
+      have member : operation ∈ program.operations.filter (fun candidate => decide (candidate.id = operation.id)) := by
+        rw [operationExact]; simp
+      exact (List.mem_filter.mp member).1)
+  obtain ⟨owned, absent, _⟩ := NestedScopeData.evaluateFrame?_facts program state record _ _ prepared.frame evaluated
+  have variables : (prepared.control.selection.apply state).variables = state.variables := by
+    cases kind : prepared.control.selection.kind <;> simp [InternalScopeCreationSelection.apply, kind]
+  have enteredRunning : (prepared.control.selection.apply state).control = .running hosting := by
+    cases kind : prepared.control.selection.kind <;> simp [InternalScopeCreationSelection.apply, kind, running]
+  simp only [PreparedInternalDeclaredEntry.apply, NestedScopeData.insertFrame_scopes]
+  apply runtimeStateWellFormed_frames program domain instanceId hosting _ enteredRunning _ _ entered
+  intro owner frame selectedFrame
+  have kept := NestedScopeData.selectScopeVariables?_insertFrame (prepared.control.selection.apply state).variables
+    prepared.frame frame owner (by rw [variables, owned]; exact absent) selectedFrame
+  rwa [NestedScopeData.insertFrame_scopes] at kept
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

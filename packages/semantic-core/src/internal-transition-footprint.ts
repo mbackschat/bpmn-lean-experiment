@@ -451,7 +451,9 @@ export function deriveInternalTransitionFootprint(
         inputNames,
         [...new Set(nestedReads?.processNames ?? processNames)],
         binding === undefined
-          ? nestedReads === undefined ? [] : nestedScopeReadAtoms(nestedReads)
+          // The wait footprint claims the owner's liveness itself, and its reads refuse a duplicate atom.
+          ? nestedReads === undefined ? [] : nestedScopeReadAtoms(nestedReads).filter(atom =>
+            atom.kind !== InternalTransitionStateAtomKind.ScopeOccurrence || !sameScopeOccurrence(atom.owner, owner))
           : [
           // SMIS-IDENTITY-01 selects a unique declaration record across the Activity population.
           { kind: InternalTransitionStateAtomKind.ActivityPopulation },
@@ -514,11 +516,16 @@ export function internalTransitionFootprintsAreIndependent(
     publicationSetsAreDisjoint(left.publications, right.publications);
 }
 
-/** The chain links and consulted frames of a nested read set; its Process names are claimed by the caller. */
+/**
+ * The chain links and consulted frames of a nested read set; its Process names are claimed by the caller. Each link
+ * is read for its liveness as well as its parent, because the walk refuses a link that is no longer live.
+ */
 export function nestedScopeReadAtoms(reads: NestedScopeReadSet): InternalTransitionStateAtom[] {
   return [
-    ...reads.links.map(({ id, parent }) =>
-      ({ kind: InternalTransitionStateAtomKind.ScopeParent, occurrence: id, parent }) as const),
+    ...reads.links.flatMap(({ id, parent }) => [
+      { kind: InternalTransitionStateAtomKind.ScopeOccurrence, owner: id } as const,
+      { kind: InternalTransitionStateAtomKind.ScopeParent, occurrence: id, parent } as const,
+    ]),
     ...reads.frames.map(owner => ({ kind: InternalTransitionStateAtomKind.ScopeVariableScope, owner }) as const),
   ];
 }

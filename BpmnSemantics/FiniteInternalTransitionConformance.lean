@@ -107,6 +107,7 @@ theorem mixed_frontier_is_classified :
         | .boundedScope _ _ => "bounded-scope"
         | .localControl _ => "local-control"
         | .scopeCreation _ => "scope-creation"
+        | .declaredEntry _ => "declared-entry"
         | .regional _ => "regional"
         | .ordinaryEnd _ => "ordinary-end"
         | .mergeInput _ => "merge-input") =

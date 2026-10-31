@@ -27,6 +27,31 @@ theorem scopeCreation_apply_control (state : RuntimeState)
     (selected.apply state).control = state.control := by
   cases kind : selected.kind <;> simp [InternalScopeCreationSelection.apply, kind]
 
+theorem scopeCreation_apply_scopes (state : RuntimeState)
+    (selected : InternalScopeCreationSelection) :
+    (selected.apply state).scopeOccurrences = insertScopeOccurrence selected.created state.scopeOccurrences ∧
+      (selected.apply state).variables = state.variables := by
+  cases kind : selected.kind <;> simp [InternalScopeCreationSelection.apply, kind]
+
+/-- Scope creation reads and writes no variables, so it commutes with any variables-only update. -/
+theorem scopeCreation_apply_variables (state : RuntimeState) (selected : InternalScopeCreationSelection)
+    (variables : ScopedVariables) :
+    selected.apply { state with variables } = { selected.apply state with variables } := by
+  cases kind : selected.kind <;> simp [InternalScopeCreationSelection.apply, kind, setCallActivationCount]
+
+/-- A child entry selects the child kind of exactly its definition. -/
+theorem scopeCreation_enter_child (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
+    (input entry : ControlPlaceId) (definition : DefinitionScopeId) (selected : InternalScopeCreationSelection)
+    (found : selectInternalScopeCreation? state (.enterScope id origin input entry definition) = some selected) :
+    selected.kind = .child ∧ selected.created.id.definitionScopeId = definition := by
+  obtain ⟨hosting, running⟩ := selectInternalScopeCreation_running state _ selected found
+  unfold selectInternalScopeCreation? at found
+  simp only [running, bind, Option.bind] at found
+  obtain ⟨owner, _, found⟩ := Option.bind_eq_some_iff.mp found
+  split at found
+  · contradiction
+  · cases found; exact ⟨rfl, rfl⟩
+
 theorem scopeCreation_apply_time (state : RuntimeState)
     (selected : InternalScopeCreationSelection) :
     (selected.apply state).logicalTimeMs = state.logicalTimeMs := by

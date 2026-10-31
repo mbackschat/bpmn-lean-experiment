@@ -324,6 +324,7 @@ theorem prepared_regional_scope_creation_pair_execution_publication (program : P
     (valid : runtimeStateWellFormed program creation.runtimeInstanceId before = true)
     (regionalFound : prepareInternalRegional? program before operation = some regional)
     (creationFound : prepareInternalScopeCreation? program before creationOperation = some creation)
+    (undeclared : internalScopeCreationUndeclared program creationOperation = true)
     (independent : regionalStateFootprintsIndependent regional.footprint
       (liftRegionalStateFootprint creation.selection.owner creation.footprint) = true) :
     prepareInternalRegional? program (creation.selection.apply before) operation = some regional ∧
@@ -369,8 +370,8 @@ theorem prepared_regional_scope_creation_pair_execution_publication (program : P
     commandId creationIndex programValid afterValid (by simp [afterProjection]) afterFound
   rw [operationEq] at firstCreation secondCreation
   exact ⟨frame, afterRegional, applied, creationFrame, commute,
-    prepareInternalScopeCreation_refines program before creationOperation creation creationFound,
-    prepareInternalScopeCreation_refines program afterRegional creationOperation creation creationFrame,
+    prepareInternalScopeCreation_refines program before creationOperation creation undeclared creationFound,
+    prepareInternalScopeCreation_refines program afterRegional creationOperation creation undeclared creationFrame,
     firstRegional, secondRegional, firstCreation, secondCreation⟩
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

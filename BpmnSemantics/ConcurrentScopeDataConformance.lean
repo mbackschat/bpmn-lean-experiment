@@ -152,6 +152,15 @@ private def review_patch_is_bounded_and_declared : Bool :=
   refused [⟨"claim", .boolean true⟩] && refused [⟨"claim", text 1025⟩] && refused [⟨"other", .string "x"⟩] &&
     (completeReview started [⟨"claim", text 1024⟩]).outcome == .committed
 
+private def startFacility : StimulusResult :=
+  applyStimulus scenarioClosureLimit (lowerCheckedProcess facility) initialState (.startProcess ⟨"start"⟩ ⟨"P"⟩ ⟨"I"⟩ [])
+
+/-- CSD-PREPARE-01: the Parallel fork into the two declaring checks commits as one batch, each check holding its
+own frame, instead of rolling back as `ambiguousInternalChoice`. -/
+private def facility_fork_enters_both_declaring_checks : Bool :=
+  startFacility.outcome == .committed && ["E", "F"].all fun owner =>
+    startFacility.state.variables.scopes.any (·.owner.definitionScopeId == scope owner)
+
 /-- Every executable check of this module, named for the driver's failure report. -/
 def concurrentScopeDataConformanceChecks : List (String × Bool) := [
   ("facility_is_admitted", facility_is_admitted),
@@ -166,7 +175,8 @@ def concurrentScopeDataConformanceChecks : List (String × Bool) := [
   ("ninth_declaration_is_refused", ninth_declaration_is_refused),
   ("review_start_requires_a_bounded_claim", review_start_requires_a_bounded_claim),
   ("review_frame_holds_the_start_value", review_frame_holds_the_start_value),
-  ("review_patch_is_bounded_and_declared", review_patch_is_bounded_and_declared)
+  ("review_patch_is_bounded_and_declared", review_patch_is_bounded_and_declared),
+  ("facility_fork_enters_both_declaring_checks", facility_fork_enters_both_declaring_checks)
 ]
 
 end BpmnSemantics.ConcurrentScopeDataConformance
