@@ -167,7 +167,7 @@ Three owners change with this account:
 - the [lifecycle specification](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md)'s ordinary-effect paragraph: it names the post-commit refusal for data-bearing frontiers;
 - the [nested scope-data question](NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#question-and-delivery-boundary): its "concurrent-wait Start capacity account" premise for `PC-SCOPE-01` is replaced by this disclosed runtime limit.
 
-The retained models are measured within every budget with escape-heavy values: each of their data slots holds a 1,024-byte String of control characters, whose canonical encoding is about six bytes per byte. Every copy is counted, including effect arguments held both in the wait and in its Activity scope. The measurement is a protocol component test, not a claim about other Programs.
+The retained models are measured with a 1,024-byte String in every data slot, either of control characters, whose canonical encoding is about six bytes per byte, or of ASCII. Every copy is counted, including effect arguments held both in the wait and in its Activity scope. Measured on 2026-10-31, the facility inspection fits every budget with control characters and the claim assessment fits with ASCII. With control characters in every slot, the claim's two armed *Fetch rates* hold about fifteen escaped copies, so its committed state reaches about 94 KB against the 64 KiB budget, and the Workflow refuses that successor before commit with a typed capacity failure: the disclosed limit, witnessed. The measurement is a [Workflow component test](../../packages/temporal-adapter/workflow/test/concurrent-scope-data-capacity.test.ts), not a claim about other Programs.
 
 ## Stable rules
 
@@ -218,7 +218,7 @@ Two whole models with business purposes and one measurement model carry the witn
 | `CSD-VALUE-01`, `CSD-REFUSE-01` | A patch value of exactly 1,024 bytes commits. A 1,025-byte value and a Boolean are `rejected` with the state unchanged. | Compiled Lean and the value-domain matrix; core | Commit a partial patch; admit an unbounded String. |
 | `CSD-CHAIN-01` bridge | Under its three premises, occurrence-chain resolution equals definition-chain resolution. | A Lean law | Change resolution for single-occurrence chains. |
 | Preservation | Every registered `DATA` and data-free `SCOPE` scenario keeps its retained expectations. | Core; pipeline | Route a data-free Program through the nested-data arms. |
-| Capacity | Both models fit every budget with escape-heavy values in every slot. | Protocol component test | Count one copy of each effect argument; measure ASCII values. |
+| Capacity | The facility inspection fits every budget with escape-heavy values in every slot, and the claim assessment with ASCII values; the escape-heavy claim is refused before commit with a typed committed-state capacity failure. | Workflow component test | Count one copy of each effect argument; measure ASCII values. |
 | `CSD-ADMIT-01` | Each exclusion is refused, including a Call Activity in a data-bearing model and a re-entry cycle. The retained models compile. | Source; compiled Lean admission check | Admit a Call beside data. |
 
 ## Lean assurance lane
