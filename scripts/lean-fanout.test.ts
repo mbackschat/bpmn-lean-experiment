@@ -16,6 +16,14 @@ import { readWorktreeSources } from "./worktree-source-read.ts";
 const source = (path: string, header: string) => ({ path, source: `${header}\n\ndef value : Nat := 0\n` });
 const realizedLeaks = parseRealizedLeaks(readFileSync(new URL("./lean-realized-leaks.tsv", import.meta.url), "utf8"));
 
+// Locks R2 of the closure correction audit (2026-10-31): a line keyed without its kind let a realized lemma of an owner
+// match a recorded sparse case split of the same owner, so a `privateMatchEquations` regression passed silently.
+test("a recorded leak names its kind, realized lemma or sparse case split", () => {
+  assert.deepEqual(parseRealizedLeaks("Pkg.M\tPkg.O\tPkg.O.f\tsparse\n"), [{ module: "Pkg.M", ownerModule: "Pkg.O" }]);
+  assert.throws(() => parseRealizedLeaks("Pkg.M\tPkg.O\tPkg.O.f\n"), /four tab-separated fields/u);
+  assert.throws(() => parseRealizedLeaks("Pkg.M\tPkg.O\tPkg.O.f\tother\n"), /kind/u);
+});
+
 test("a direct import of any form depends on the imported module", () => {
   const fanouts = leanFanouts([
     source("Pkg/Kernel.lean", "module"),

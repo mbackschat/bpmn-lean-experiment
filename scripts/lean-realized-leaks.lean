@@ -21,14 +21,17 @@ declaration's interface anyway, and so does an equation lemma of a definition wh
 the roots reach, Lean's own included.
 
 The check is a ratchet over the recorded leaks in `scripts/lean-realized-leaks.tsv`, one
-`<module>\t<owner module>\t<owner>` line per module leaking lemmas of an owner's hidden body: a sweep that declared every
+`<module>\t<owner module>\t<owner>\t<kind>` line per module leaking constants of an owner's hidden body, the kind
+`realized` for a realized lemma and `sparse` for an exported sparse case split, so that a recorded sparse case split of an
+owner never covers a realized lemma of the same owner (correction audit R2, 2026-10-31): a sweep that declared every
 recorded leak privately was rejected (2026-10-30), because each realizing module needs its own declaration, a hidden
 copy makes importers that reused it generate their own, and a `@[simp] def` or a theorem whose own proof splits a
 `match` generates them before any declaration can. Recorded leaks go by consuming the owner through lemmas; the
 fan-out model (`scripts/lean-fanout.ts`) counts each one meanwhile, so an unrecorded leak would let the fan-out bounds
 under-predict, and a stale line would let them over-predict.
 
-The witness module must leak, so a check that reads nothing, or the wrong files, fails too.
+The witness module must leak a realized lemma, not only a sparse case split, so a check that reads nothing, the wrong
+files, or no realized constant fails too.
 
 Usage, after the owning gate built the roots:
 `./scripts/lake.sh run scripts/lean-realized-leaks.lean <witness> <recorded leaks> <root>...`. Prints each unrecorded
@@ -135,15 +138,15 @@ private unsafe def sparseCaseSplitsImpl (data : ModuleData) : Array Name :=
 private opaque sparseCaseSplits (data : ModuleData) : Array Name
 
 /--
-The realized private constants and the sparse case splits in a module-system module's public `.olean`; a plain file
-exports everything.
+The realized private constants and the sparse case splits in a module-system module's public `.olean`, each with its
+kind; a plain file exports everything.
 -/
-private def leaks (module : Name) : IO (Array Name) := do
+private def leaks (module : Name) : IO (Array (Name × String)) := do
   let olean ← findOLean module
   unless ← (olean.addExtension "private").pathExists do return #[]
   let (data, _) ← readModuleData olean
-  return data.constNames.filter (fun n => isPrivateName n && isRealized n) ++
-    (sparseCaseSplits data).filter (auxiliaryOf? · |>.isSome)
+  return (data.constNames.filter (fun n => isPrivateName n && isRealized n)).map (·, "realized") ++
+    ((sparseCaseSplits data).filter (auxiliaryOf? · |>.isSome)).map (·, "sparse")
 
 def main (args : List String) : IO UInt32 := do
   let witness :: recordedPath :: roots@(_ :: _) := args | throw <| IO.userError "usage: <witness module> <recorded leaks> <root module>..."
@@ -155,22 +158,22 @@ def main (args : List String) : IO UInt32 := do
   unless modules.contains witness do throw <| IO.userError s!"the roots do not reach the witness {witness}"
   let ordered := modules.toList.toArray.qsort Name.lt
   let realized ← ordered.mapM fun module => return (module, ← leaks module)
-  let owners := realized.foldl (init := ({} : NameSet)) fun owners (_, found) => found.foldl (init := owners) fun owners n =>
+  let owners := realized.foldl (init := ({} : NameSet)) fun owners (_, found) => found.foldl (init := owners) fun owners (n, _) =>
     owners.insert (ownerOf n)
   let facts ← publicFacts owners roots {} {}
   let mut failed := false
   let mut leaking : Std.HashSet String := {}
   for (module, all) in realized do
-    let found := all.filter (!statedPublicly facts ·)
+    let found := all.filter (!statedPublicly facts ·.1)
     if module == witness then
-      if found.isEmpty then
-        IO.eprintln s!"the witness {witness} carries no realized constant, so the check would not see one"
+      unless found.any (·.2 == "realized") do
+        IO.eprintln s!"the witness {witness} carries no realized lemma, so the check would not see one"
         failed := true
       continue
-    for constant in found do
+    for (constant, kind) in found do
       let some ownerModule := ownerModule? facts constant
         | IO.println s!"unattributed {module} {constant}"; failed := true; continue
-      let line := s!"{module}\t{ownerModule}\t{ownerOf constant}"
+      let line := s!"{module}\t{ownerModule}\t{ownerOf constant}\t{kind}"
       unless leaking.contains line || recorded.contains line do
         IO.println s!"new {line}\t{constant}"
         failed := true

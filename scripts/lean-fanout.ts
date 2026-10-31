@@ -8,11 +8,17 @@ type LeanSources = ReadonlyArray<Readonly<{ path: string; source: string }>>;
  */
 export type RealizedLeak = Readonly<{ module: string; ownerModule: string }>;
 
-/** The recorded leaks of a `scripts/lean-realized-leaks.tsv` text: `<module>\t<owner module>\t<owner>` per line. */
+/**
+ * The recorded leaks of a `scripts/lean-realized-leaks.tsv` text: `<module>\t<owner module>\t<owner>\t<kind>` per line,
+ * where the kind, `realized` or `sparse`, keeps a realized lemma from matching a recorded sparse case split of the same
+ * owner. Both kinds rebuild the leaking module's public cone on an owner edit, so the fan-out model reads them alike.
+ */
 export function parseRealizedLeaks(text: string): RealizedLeak[] {
   return text.split("\n").filter((line) => line !== "").map((line) => {
-    const [module, ownerModule, owner] = line.split("\t");
-    if (owner === undefined) throw new Error(`a recorded leak needs three tab-separated fields: ${line}`);
+    const [module, ownerModule, owner, kind, ...rest] = line.split("\t");
+    if (kind === undefined || rest.length > 0) throw new Error(`a recorded leak needs four tab-separated fields: ${line}`);
+    if (kind !== "realized" && kind !== "sparse") throw new Error(`a recorded leak's kind is realized or sparse: ${line}`);
+    if (owner === "") throw new Error(`a recorded leak names its owner: ${line}`);
     return { module: module!, ownerModule: ownerModule! };
   });
 }
