@@ -51,6 +51,15 @@ export function baselineGrandfatheredReviewDocuments(): ReadonlyArray<string> {
 }
 const commitPattern = /^[0-9a-f]{7,40}$/u;
 const approvedVerdicts = new Set(["approve", "approve-with-required-edits"]);
+
+/**
+ * A `reject` row that lists correction-audit rounds records corrections the same reviewer audited to
+ * approval, which the [corrections rule](../docs/REVIEW-POLICY.md#corrections) admits; with `not-required`
+ * it stays a blocking rejection.
+ */
+function isApprovedRow(row: ReviewReceipt): boolean {
+  return approvedVerdicts.has(row.verdict) || (row.verdict === "reject" && row.correctionAudit !== "not-required");
+}
 const transientReviewState = /\breview-pending\b|\bawaiting (?:its )?(?:mandatory )?(?:independent )?review\b|\bpending checkpoint approval\b/iu;
 
 export type TransientReviewStateFinding = Readonly<{
@@ -371,7 +380,7 @@ export function assertReceiptRow(row: ReviewReceipt, relativePath: string): void
         `${context} requires a fresh external session`,
       );
     }
-    if (row.verdict === "approve-with-required-edits") {
+    if (row.verdict === "approve-with-required-edits" || (row.verdict === "reject" && isApprovedRow(row))) {
       assertCorrectionAuditRounds(row, context);
     } else {
       assert.equal(row.correctionAudit, "not-required");
@@ -464,7 +473,7 @@ export function assertReviewContinuity(
   }
   assert.ok(checkpoint, `${relativePath} warm closure needs a semantic checkpoint`);
   assert.ok(
-    approvedVerdicts.has(checkpoint.verdict),
+    isApprovedRow(checkpoint),
     `${relativePath} warm closure needs an approved semantic checkpoint`,
   );
   assert.notEqual(
@@ -484,7 +493,7 @@ export function assertIndependentlyApproved(
   relativePath: string,
 ): void {
   assert.ok(
-    approvedVerdicts.has(row.verdict),
+    isApprovedRow(row),
     `${relativePath} cannot cross ${row.stage} with verdict ${row.verdict}`,
   );
 }

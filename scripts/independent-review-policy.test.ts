@@ -565,3 +565,28 @@ test("bounds correction-audit rounds and demands owner authorization past the bo
     /repeats correction-audit target/u,
   );
 });
+
+test("records a rejection the same reviewer audited to approval, and keeps a plain rejection blocking", () => {
+  // REVIEW-POLICY's corrections rule lets the same reviewer warm-audit the corrections of a `REJECT`, but the
+  // receipt grammar could only record `reject` with `not-required`, so a review approved that way had no
+  // truthful row (closure review of afd2b1ba, 2026-10-31).
+  const [first, second] = gitLines(["rev-list", "--max-count=2", "HEAD"]);
+  assert.ok(first && second);
+  const rejected = (correctionAudit: string): ReviewReceipt => ({
+    stage: ReviewStage.Closure,
+    target: subagentReviewPolicyBaseline,
+    isolation: "fork-turns-none",
+    verdict: "reject",
+    correctionAudit,
+  });
+
+  assertReceiptRow(rejected("not-required"), "plain-rejection");
+  assert.throws(() => assertIndependentlyApproved(rejected("not-required"), "plain-rejection"), /cannot cross/u);
+
+  assertReceiptRow(rejected(`${first}, ${second}`), "audited-rejection");
+  assert.doesNotThrow(() => assertIndependentlyApproved(rejected(`${first}, ${second}`), "audited-rejection"));
+  assert.throws(
+    () => assertReceiptRow(rejected("owner-authorized"), "rejection-marker-only"),
+    /required edits need a correction-audit target/u,
+  );
+});
