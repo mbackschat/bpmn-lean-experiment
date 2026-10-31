@@ -525,9 +525,12 @@ function exposedSectionDefinitions(source: string): boolean {
     !declaration.isPrivate && exposedBySection(declaration) && bodyExported(declaration));
 }
 
-/** Whether a declaration is a `def` inside an `@[expose]` section, whose export the section rather than the def decides. */
-function exposedBySection({ keyword, inExposedScope }: LeanDeclaration): boolean {
-  return keyword === "def" && inExposedScope;
+/**
+ * Whether a declaration is a `def` inside an `@[expose]` section whose export the section rather than the def decides:
+ * its own `@[expose]` or `@[no_expose]` overrides the section (Elab/MutualDef.lean:1346-1384).
+ */
+function exposedBySection({ keyword, inExposedScope, attributes }: LeanDeclaration): boolean {
+  return keyword === "def" && inExposedScope && !/(?<![\w])(?:no_)?expose\b/u.test(attributes);
 }
 
 /**

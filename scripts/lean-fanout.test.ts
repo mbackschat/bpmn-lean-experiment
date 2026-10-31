@@ -531,6 +531,20 @@ test("an `@[expose]` section whose every def is `@[no_expose]` keeps def bodies 
   assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Kernel"), ["alias", "instance : Inhabited Kind"]);
 });
 
+// A def's own `@[expose]` decides its export as `@[no_expose]` does, whatever the section says (Elab/MutualDef.lean:
+// 1346-1384), so a kernel module can keep a contract predicate its consumers `intro` exposed while hiding its operations.
+test("a def's own `@[expose]` inside an `@[expose]` section is named, not a section exposure", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const sources = [
+    module("Pkg/Kernel.lean", ["@[expose] public section", "", "@[expose] def spec : Prop := True", "",
+      "@[no_expose] def step : Nat := 0", "", "end"].join("\n")),
+    module("Pkg/Importer.lean", "public import Pkg.Kernel"),
+    module("Pkg/Opener.lean", "import all Pkg.Kernel"),
+  ];
+  assert.deepEqual(leanBodyEditFanouts(sources).get("Pkg.Kernel"), ["Pkg.Opener"]);
+  assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Kernel"), ["spec"]);
+});
+
 // The scanner follows Lean v4.34.1's own rules, so no spelling of an exposure escapes it: `sectionHeader` takes
 // `@[expose]? public? noncomputable? meta?` (Lean/Parser/Command.lean:308), every `section`, `namespace` and `mutual`
 // scope inherits its parent's attributes and `end Name` closes one scope per name component
