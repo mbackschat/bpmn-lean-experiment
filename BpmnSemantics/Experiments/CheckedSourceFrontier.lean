@@ -8,6 +8,7 @@ import all BpmnSemantics.Experiments.CheckedSourceGraph
 import all BpmnSemantics.Experiments.CheckedSourceState
 import all BpmnSemantics.Experiments.CheckedSourceTransition
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.CheckedProcessContract
 
 /-! # Shared checked-source frontier laws and single-token frontiers
 

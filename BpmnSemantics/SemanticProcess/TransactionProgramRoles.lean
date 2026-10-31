@@ -2,11 +2,14 @@ module
 
 public import BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.SemanticProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Roles derived from bounded Transaction admission
 
 The successful production reader supplies the complete owned role graph used by the scheduling proof. Keeping this derivation outside admission avoids rebuilding interpreter consumers when a proof changes.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 public section
 

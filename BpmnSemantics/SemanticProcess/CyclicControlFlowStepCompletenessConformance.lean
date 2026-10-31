@@ -50,6 +50,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 This module proves that the classified internal-action relation contains every successful evaluator step from an actually reachable selected-program state. It adds no transition or profile behavior.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CyclicRouteValue.bindings, `CyclicRouteValue.output,
   `awaitUserTaskState?, `chooseState?, `cyclicChoiceOperation, `cyclicCompletionOperation, `cyclicEndOperation,

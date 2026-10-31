@@ -78,6 +78,8 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.TokenPatch
 import all BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.TransitionStates
+import all BpmnSemantics.SemanticProcess.ActivityDataContract
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 /-! A structurally admitted claim-routing frontier runs beside human review and input-bound
 coverage assessment. Admission here is Program/runtime admission, not registered XML or reachability.
 -/

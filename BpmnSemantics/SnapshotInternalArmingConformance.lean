@@ -65,6 +65,9 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SnapshotInternalArmingConformanceCheckFixtures
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.CorrelationScalarPath
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 /-! Six ordinary wait families exercise retained preparation across a dormant snapshot declaration. -/
 
 public section

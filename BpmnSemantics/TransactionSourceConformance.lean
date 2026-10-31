@@ -19,6 +19,10 @@ import all BpmnSemantics.SemanticProcess.TransactionSourceLowering
 import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
 import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
 import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcessContract
+import all BpmnSemantics.WireNatural
 
 /-! # Transaction source grammar discriminators
 

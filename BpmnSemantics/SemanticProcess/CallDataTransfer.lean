@@ -6,12 +6,14 @@ import Std.Data.DTreeMap.Internal.Operations
 import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.CallDataContract
 
 /-! # Atomic scalar Call transfers
 
 CDATA-INPUT-01 and CDATA-OUTPUT-01 compose explicit owned data movement with the existing
 Call control relations. Empty interfaces retain the original control domain.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`callDataInterfaceValid]
 
 public section
 

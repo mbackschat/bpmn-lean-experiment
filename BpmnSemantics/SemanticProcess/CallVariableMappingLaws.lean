@@ -16,6 +16,7 @@ Isolation is a property of every state reachable while a call is live, which no 
 covers, so it is stated over arbitrary scoped variables: resolution from a called-owned scope never
 reads or writes the hosting Process binding and never selects a frame of another instance.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`callDataInterfaceValid, `variableMappingsValid]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CallVariableMapping.calledRootFrame,
   `CallVariableMapping.copyValue?, `CallVariableMapping.copyValues?, `NestedScopeData.writeAll?]

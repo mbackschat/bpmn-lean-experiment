@@ -94,6 +94,9 @@ import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import all BpmnSemantics.SequentialMultiInstanceDataFixtures
 import all BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Sequential Multi-Instance program binding conformance
 

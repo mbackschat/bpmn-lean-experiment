@@ -117,6 +117,7 @@ import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SequentialScopeGraphConformanceCheckFixtures
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! SMIS-ADMIT-01: a repeated body has one paired completion and cannot choose another scope's continuation. -/
 

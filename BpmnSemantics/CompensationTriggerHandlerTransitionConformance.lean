@@ -33,6 +33,7 @@ import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFrontier
 import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerTransition
+import all BpmnSemantics.SemanticProcessContract
 /-! # Compensation trigger construction and frontier conformance -/
 
 public section

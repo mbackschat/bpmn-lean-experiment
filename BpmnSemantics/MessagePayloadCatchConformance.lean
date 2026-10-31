@@ -84,6 +84,8 @@ import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 /-! # Message payload Catch Event conformance
 
 This module closes the bounded direct-output Message Catch Event account. Its settlement witness

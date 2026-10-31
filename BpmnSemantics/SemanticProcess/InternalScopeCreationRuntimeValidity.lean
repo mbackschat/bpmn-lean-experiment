@@ -32,6 +32,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Aggregate validity of actual scope creation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`origin]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
   `InternalCommutation.internalScopeCreationDefinitionMatches, `canonicalCollectionOrder,

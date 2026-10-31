@@ -41,6 +41,7 @@ import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! MTCF-PROGRESS-01 connects the admitted wait-cut ranks to actual routing transitions; graph certificates alone cannot establish bounded runtime closure. Discovery helpers also require the ordinary profile domain: InternalExecutionFrontier dispatches by identity, whereas programAnalysis checks structure. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalMergeInputAlternatives,
   `InternalCommutation.mergeExecutionFrontier, `InternalCommutation.ordinaryExecutionFrontier,

@@ -19,6 +19,7 @@ PMIS-ADMIT-01 retains exact declaration, graph and ordered-spine provenance in
 this proof owner. Runtime admission and capacity selectors remain in Capacity,
 so extending a certificate does not change their import dependencies.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.programOperationAllowed,
   `SequentialScopeControl.bodyVertex?, `SequentialScopeControl.parentPath, `SequentialScopeProgram.operationAllowed,

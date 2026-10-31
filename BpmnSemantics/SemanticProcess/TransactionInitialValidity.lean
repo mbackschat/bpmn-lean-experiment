@@ -44,6 +44,7 @@ import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 import all BpmnSemantics.SemanticProcess.TransactionReachableFrontier
 import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.WireNatural
 
 /-! # Transaction split-state validity
 

@@ -4,8 +4,10 @@ public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.ContinuationMarking
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcessContract
 
 /-! SMIS-ADMIT-01 composes body bursts with the outer lifecycle; generic graph and data admission remain separate conjuncts. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 public section
 

@@ -64,6 +64,8 @@ import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import all BpmnSemantics.SemanticProcess.ScopeDataBearing
 import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.SemanticProcess.CallDataContract
 /-! # Independent scope-creation preparation witnesses
 
 The [scope-creation account](../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite)

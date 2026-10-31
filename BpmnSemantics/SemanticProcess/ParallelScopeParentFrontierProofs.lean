@@ -35,6 +35,7 @@ incidence to exclude competing native occurrences before parallel entry. The
 result includes pending Start, parent prelude work and entry, and requires no
 reservation or successful collective preparation.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SemanticOperation.kind, `SequentialScopeControl.inputs,
   `bodyConsumedPorts, `continuationMarking, `ownedPortCount, `parallelScopeEntry?]

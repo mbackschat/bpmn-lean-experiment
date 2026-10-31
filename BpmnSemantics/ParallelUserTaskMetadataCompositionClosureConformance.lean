@@ -102,6 +102,7 @@ import all BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! # Parallel User Task metadata composition closure conformance
 

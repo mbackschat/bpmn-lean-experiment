@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.Scenario
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Closed scalar paths for Message correlation
 
@@ -14,7 +15,7 @@ selector.
 namespace BpmnSemantics.SemanticProcess
 
 /-- The sole language URI admitted for both correlation selectors. -/
-def correlationScalarPathLanguage : String :=
+@[no_expose] def correlationScalarPathLanguage : String :=
   "urn:bpmn-lean:correlation-scalar-path:v1"
 
 /-- The Message-side selector. Its fields mirror the checked and Semantic Process contracts. -/
@@ -32,34 +33,35 @@ structure CorrelationProcessPropertyPath where
   deriving Repr, DecidableEq
 
 /-- Decode only the complete delivered scalar payload selector. -/
-def decodeCorrelationMessagePath? (language body : String) :
+@[no_expose] def decodeCorrelationMessagePath? (language body : String) :
     Option CorrelationMessagePath :=
   if language = correlationScalarPathLanguage && body = "payload" then
     some { language, body }
   else none
 
 /-- Decode only `property:<resolved-id>` for the exact separately resolved Process Property. -/
-def decodeCorrelationProcessPropertyPath? (language body propertyId : String) :
+@[no_expose] def decodeCorrelationProcessPropertyPath? (language body propertyId : String) :
     Option CorrelationProcessPropertyPath :=
   if !propertyId.isEmpty && language = correlationScalarPathLanguage &&
       body = "property:" ++ propertyId then
     some { language, body, propertyId }
   else none
 
-def correlationMessagePathValid (path : CorrelationMessagePath) : Bool :=
+@[no_expose] def correlationMessagePathValid (path : CorrelationMessagePath) : Bool :=
   decodeCorrelationMessagePath? path.language path.body = some path
 
-def correlationProcessPropertyPathValid
+@[no_expose] def correlationProcessPropertyPathValid
     (path : CorrelationProcessPropertyPath) : Bool :=
   decodeCorrelationProcessPropertyPath? path.language path.body path.propertyId = some path
 
 /-- Evaluate the only Message-side scalar selector. Invalid selectors and empty runtime keys fail. -/
-def evaluateCorrelationMessagePath? (path : CorrelationMessagePath)
+@[no_expose] def evaluateCorrelationMessagePath? (path : CorrelationMessagePath)
     (payload : String) : Option String :=
   if correlationMessagePathValid path && !payload.isEmpty then some payload else none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`evaluateCorrelationMessagePath?]
 /-- Evaluate the only Process-side selector against one exact current Process binding. -/
-def evaluateCorrelationProcessPropertyPath? (path : CorrelationProcessPropertyPath)
+@[no_expose] def evaluateCorrelationProcessPropertyPath? (path : CorrelationProcessPropertyPath)
     (bindings : List VariableBinding) : Option String :=
   if correlationProcessPropertyPathValid path then
     match bindings.filter fun binding => binding.name = path.propertyId with

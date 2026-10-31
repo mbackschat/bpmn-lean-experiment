@@ -20,6 +20,10 @@ import all BpmnSemantics.SemanticProcess.RootScopeFixtures
 import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
 import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcessContract
 
 /-! Constructed checked graphs discriminate the selected subscription profile and its whole-burst
 limit. Exact XML provenance and independent lowering are owned by the source-bound pipeline. -/

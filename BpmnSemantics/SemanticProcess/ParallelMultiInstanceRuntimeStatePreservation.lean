@@ -14,6 +14,7 @@ import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Parallel Multi-Instance shared runtime-state preservation
 

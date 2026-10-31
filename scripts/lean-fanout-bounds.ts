@@ -41,7 +41,7 @@ const realizedLeakRecord = {
 
 /** Why the owner modules' new `meta import`s of the `privateEquations` helper (#55, 2026-10-30) raised a hidden-edit bound. */
 const helperMetaImports = {
-  hidden: "37 owner modules and one fixture newly `meta import` the helper to declare their definitions' generated lemmas privately (#55, 2026-10-30), so a hidden edit of the helper reaches them",
+  hidden: "37 owner modules and one fixture (#55, 2026-10-30) and two modules rewriting with hidden kernel bodies (F2 stage 1, 2026-10-31) `meta import` the helper to declare generated lemmas privately, so a hidden edit of the helper reaches them",
 } as const;
 
 /** Why a kernel module, which the body-edit ratchet exempted until F2 of the cold closure review (2026-10-31), records a bound. */
@@ -49,6 +49,13 @@ const kernelBodyExposure = {
   body: "the body-edit ratchet exempted the kernel until F2 of the cold closure review (2026-10-31); this kernel module still exports its operation bodies through its `@[expose]` section, so a body edit rebuilds its public cone, recorded so that it only shrinks",
   abbrevExposure: "the exposed-definition allowance exempted the kernel until F2 of the cold closure review (2026-10-31); Lean always exports an abbrev's body, so an edit of it is an interface edit of this kernel module",
   instanceExposure: "the exposed-definition allowance exempted the kernel until F2 of the cold closure review (2026-10-31); a non-Prop instance's body is exported, so an edit of it is an interface edit of this kernel module",
+} as const;
+
+/** Why a kernel module that hides its operation bodies (F2 of the cold closure review, stage 1, 2026-10-31) raised a bound. */
+const kernelBodyHiding = {
+  hidden: "F2 of the cold closure review, stage 1 (2026-10-31): this kernel module hides its operation bodies with `@[no_expose]`, so the importers whose proofs unfold them open it with `import all` lines (error-named or compile-trimmed), and a hidden edit reaches them and their `import all` loaders, besides `ConformanceChecksMain` through a public `meta import` re-export as before",
+  body: "F2 of the cold closure review, stage 1 (2026-10-31): this kernel module hides its operation bodies with `@[no_expose]`, so a body edit reaches only the importers whose proofs unfold them (error-named or compile-trimmed `import all` lines) and their `import all` loaders instead of its public cone of about 1,000 modules",
+  contractPredicates: "F2 of the cold closure review, stage 1 (2026-10-31): the two contract predicates keep `@[expose]` because consumers `intro` them (Transition.lean:711), so they are interface; opening SemanticProcessContract for them would put the hub Transition's cone of about 550 modules into its body edit",
 } as const;
 
 /** Why a module whose `OperationAllowed` keeps sparse case splits (owner-delegated workaround, 2026-10-30) raised a bound. */
@@ -302,7 +309,7 @@ export const leanHiddenEditDefaultBound = 10;
  * Re-seeded on 2026-10-29 at the graph of the hidden-bodies conversion (owner decisions 1-3) under the same rule.
  */
 export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
-  { module: "BpmnSemantics.PrivateEquationLemmas", bound: 749, raisedFrom: 10, raised: helperMetaImports.hidden },
+  { module: "BpmnSemantics.PrivateEquationLemmas", bound: 750, raisedFrom: 10, raised: helperMetaImports.hidden },
   { module: "BpmnSemantics.SemanticProcess.ActivityOccurrence", bound: 568, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration", bound: 504, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.OperationControlPlaces", bound: 501, raisedFrom: 10, raised: publicMetaReexport.hidden },
@@ -324,6 +331,7 @@ export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.WaitActivation", bound: 313, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.PropertyPathValuePolicy", bound: 302, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.EffectMappingValuePolicy", bound: 297, raisedFrom: 10, raised: publicMetaReexport.hidden },
+  { module: "BpmnSemantics.SemanticProcessContract", bound: 292, raisedFrom: 10, raised: kernelBodyHiding.hidden },
   { module: "BpmnSemantics.SemanticProcess.NestedScopeData", bound: 275, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.DeclaredScopeTransition", bound: 260, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.ScopeCompletion", bound: 256, raisedFrom: 10, raised: publicMetaReexport.hidden },
@@ -334,6 +342,7 @@ export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants", bound: 199, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle", bound: 199, raisedFrom: 198, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore", bound: 199, raisedFrom: 10, raised: publicMetaReexport.hidden },
+  { module: "BpmnSemantics.WireNatural", bound: 198, raisedFrom: 10, raised: kernelBodyHiding.hidden },
   { module: "BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot", bound: 197, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.RecurringBoundaryTimer", bound: 194, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.ScopeVariableData", bound: 184, raisedFrom: 10, raised: publicMetaReexport.hidden },
@@ -434,6 +443,7 @@ export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.Lowering", bound: 59, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.LoweringIdentity", bound: 59, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.SequentialScopeStateValidation", bound: 59, raisedFrom: 10, raised: publicMetaReexport.hidden },
+  { module: "BpmnSemantics.SemanticProcess.UserTaskMetadata", bound: 59, raisedFrom: 10, raised: kernelBodyHiding.hidden },
   { module: "BpmnSemantics.SemanticProcess.ActivityDataInput", bound: 58, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.CompensationActivityRetentionProducers", bound: 58, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.CompensationSourceLowering", bound: 58, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
@@ -455,16 +465,19 @@ export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.TransactionSourceAdmission", bound: 45, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection", bound: 44, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention", bound: 43, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
+  { module: "BpmnSemantics.CheckedProcessContract", bound: 43, raisedFrom: 10, raised: kernelBodyHiding.hidden },
   { module: "BpmnSemantics.SemanticProcess.ProfileCardinalities", bound: 40, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.SimpleBooleanExpression", bound: 40, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation", bound: 38, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta", bound: 38, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
+  { module: "BpmnSemantics.SemanticProcess.ActivityDataContract", bound: 37, raisedFrom: 10, raised: kernelBodyHiding.hidden },
   { module: "BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition", bound: 35, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.NestedScopeControlAdmission", bound: 34, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission", bound: 34, raisedFrom: 10, raised: publicMetaReexport.hidden },
+  { module: "BpmnSemantics.Scenario", bound: 34, raisedFrom: 10, raised: kernelBodyHiding.hidden },
   { module: "BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission", bound: 33, raisedFrom: 10, raised: publicMetaReexport.hidden },
+  { module: "BpmnSemantics.SemanticProcess.CallDataContract", bound: 33, raisedFrom: 10, raised: kernelBodyHiding.hidden },
   { module: "BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission", bound: 32, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.WireNatural", bound: 32, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore", bound: 31, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.ErrorDefinition", bound: 30, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.ParallelScopeSchedulerAccounting", bound: 30, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
@@ -487,7 +500,6 @@ export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability", bound: 22, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.InternalRegionalCompletionRetention", bound: 22, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompletion", bound: 22, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.Scenario", bound: 21, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.CallDataAdmission", bound: 21, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.TopologyFixtures", bound: 21, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.OpenWaitProjection", bound: 20, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
@@ -512,21 +524,17 @@ export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransition", bound: 14, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.NestedScopeDataCommand", bound: 14, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs", bound: 14, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
-  { module: "BpmnSemantics.SemanticProcess.UserTaskMetadata", bound: 14, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFlowNodeOccurrence", bound: 13, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.ControlPositionContract", bound: 13, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.IncidentCancellation", bound: 13, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.InternalChoiceSchedule", bound: 13, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
-  { module: "BpmnSemantics.SemanticProcess.CallDataContract", bound: 12, raisedFrom: 10, raised: publicMetaReexport.hidden },
+  { module: "BpmnSemantics.Contract", bound: 13, raisedFrom: 10, raised: kernelBodyHiding.hidden },
+  { module: "BpmnSemantics.SemanticProcess.CorrelationScalarPath", bound: 13, raisedFrom: 10, raised: kernelBodyHiding.hidden },
   { module: "BpmnSemantics.SemanticProcess.CompensationTriggerHandlerFrontier", bound: 12, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.SemanticProcess.CorrelationScalarPath", bound: 12, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.InternalMergeCommutation", bound: 12, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.Message", bound: 12, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.ValueDomain", bound: 12, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.BusinessValue", bound: 11, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.CheckedProcessContract", bound: 11, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.Contract", bound: 11, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.SemanticProcess.ActivityDataContract", bound: 11, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.CanonicalBusinessValue", bound: 11, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessInterruption", bound: 11, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.MessageKeyCorrelation", bound: 11, raisedFrom: 10, raised: publicMetaReexport.hidden },
@@ -536,7 +544,6 @@ export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.ScopeAncestryLaws", bound: 11, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs", bound: 11, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.VariableMappingContract", bound: 11, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.SemanticProcessContract", bound: 11, raisedFrom: 10, raised: publicMetaReexport.hidden },
 ];
 
 /**
@@ -561,10 +568,11 @@ export const leanHiddenRewriteBounds: ReadonlyArray<LeanFanoutBound> = [
  * The `import all` and `meta import` lines the library may hold in total, as
  * [`leanOpeningImportLines`](./lean-fanout.ts) counts them. Each opens a module's hidden part and so widens what a
  * body edit of that module rebuilds. Recorded at the graph of `7bedde10` (2026-10-28) and raised by owner decision B to
- * the hidden-bodies conversion's count (2026-10-29) and by the #55 decision (2026-10-30); the total keeps at most 50 lines
+ * the hidden-bodies conversion's count (2026-10-29), by the #55 decision (2026-10-30) and by the F2 stage-1 decision
+ * (2026-10-31); the total keeps at most 50 lines
  * of headroom and rises only by a decision in `leanOwnerDecidedRises`.
  */
-export const leanOpeningImportBound = 11986;
+export const leanOpeningImportBound = 12118;
 
 /**
  * The owner decisions that let a default or total above rise, each committed before the rise it allows and removed
@@ -593,15 +601,6 @@ export const leanBodyEditDefaultBound = 10;
  */
 export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.BusinessValue", bound: 1106, raisedFrom: 10, raised: kernelBodyExposure.body },
-  { module: "BpmnSemantics.Contract", bound: 1105, raisedFrom: 10, raised: kernelBodyExposure.body },
-  { module: "BpmnSemantics.SemanticProcess.UserTaskMetadata", bound: 1105, raisedFrom: 10, raised: kernelBodyExposure.body },
-  { module: "BpmnSemantics.Scenario", bound: 1104, raisedFrom: 10, raised: kernelBodyExposure.body },
-  { module: "BpmnSemantics.SemanticProcess.ActivityDataContract", bound: 1098, raisedFrom: 10, raised: kernelBodyExposure.body },
-  { module: "BpmnSemantics.SemanticProcess.CallDataContract", bound: 1096, raisedFrom: 10, raised: kernelBodyExposure.body },
-  { module: "BpmnSemantics.SemanticProcess.CorrelationScalarPath", bound: 1096, raisedFrom: 10, raised: kernelBodyExposure.body },
-  { module: "BpmnSemantics.CheckedProcessContract", bound: 1095, raisedFrom: 10, raised: kernelBodyExposure.body },
-  { module: "BpmnSemantics.SemanticProcessContract", bound: 1082, raisedFrom: 10, raised: kernelBodyExposure.body },
-  { module: "BpmnSemantics.WireNatural", bound: 1056, raisedFrom: 10, raised: kernelBodyExposure.body },
   { module: "BpmnSemantics.SemanticProcess.Data", bound: 1037, raisedFrom: 10, raised: kernelBodyExposure.body },
   { module: "BpmnSemantics.SemanticProcess.RuntimeState", bound: 1036, raisedFrom: 10, raised: kernelBodyExposure.body },
   { module: "BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract", bound: 888, raisedFrom: 10, raised: kernelBodyExposure.body },
@@ -628,6 +627,7 @@ export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.WaitActivation", bound: 344 },
   { module: "BpmnSemantics.SemanticProcess.PropertyPathValuePolicy", bound: 332 },
   { module: "BpmnSemantics.SemanticProcess.EffectMappingValuePolicy", bound: 326 },
+  { module: "BpmnSemantics.SemanticProcessContract", bound: 321, raisedFrom: 10, raised: kernelBodyHiding.body },
   { module: "BpmnSemantics.SemanticProcess.NestedScopeData", bound: 302 },
   { module: "BpmnSemantics.SemanticProcess.DeclaredScopeTransition", bound: 285 },
   { module: "BpmnSemantics.SemanticProcess.ScopeCompletion", bound: 281 },
@@ -638,6 +638,7 @@ export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants", bound: 218 },
   { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle", bound: 218 },
   { module: "BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore", bound: 218 },
+  { module: "BpmnSemantics.WireNatural", bound: 217, raisedFrom: 10, raised: kernelBodyHiding.body },
   { module: "BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot", bound: 216 },
   { module: "BpmnSemantics.SemanticProcess.RecurringBoundaryTimer", bound: 213 },
   { module: "BpmnSemantics.SemanticProcess.ScopeVariableData", bound: 202 },
@@ -735,6 +736,7 @@ export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.ParallelScopeReplayExecution", bound: 70 },
   { module: "BpmnSemantics.SemanticProcess.Lowering", bound: 69 },
   { module: "BpmnSemantics.SemanticProcess.LoweringIdentity", bound: 69 },
+  { module: "BpmnSemantics.SemanticProcess.UserTaskMetadata", bound: 69, raisedFrom: 10, raised: kernelBodyHiding.body },
   { module: "BpmnSemantics.SemanticProcess.CompensationSourceLowering", bound: 68 },
   { module: "BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering", bound: 68 },
   { module: "BpmnSemantics.SemanticProcess.SequentialScopeStateValidation", bound: 68 },
@@ -757,13 +759,17 @@ export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.TransactionSourceAdmission", bound: 54 },
   { module: "BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection", bound: 53 },
   { module: "BpmnSemantics.SemanticProcess.InternalRegionalOwnerRetention", bound: 53 },
+  { module: "BpmnSemantics.CheckedProcessContract", bound: 53, raisedFrom: 10, raised: kernelBodyHiding.body },
   { module: "BpmnSemantics.SemanticProcess.ProfileCardinalities", bound: 49 },
   { module: "BpmnSemantics.SemanticProcess.SimpleBooleanExpression", bound: 49 },
   { module: "BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation", bound: 48 },
   { module: "BpmnSemantics.SemanticProcess.InternalScopeCreationPositionDelta", bound: 48 },
+  { module: "BpmnSemantics.SemanticProcess.ActivityDataContract", bound: 47, raisedFrom: 10, raised: kernelBodyHiding.body },
   { module: "BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition", bound: 44 },
+  { module: "BpmnSemantics.Scenario", bound: 44, raisedFrom: 10, raised: kernelBodyHiding.body },
   { module: "BpmnSemantics.SemanticProcess.NestedScopeControlAdmission", bound: 43 },
   { module: "BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission", bound: 43 },
+  { module: "BpmnSemantics.SemanticProcess.CallDataContract", bound: 43, raisedFrom: 10, raised: kernelBodyHiding.body },
   { module: "BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission", bound: 42 },
   { module: "BpmnSemantics.SemanticProcess.InternalTransitionPublicationCore", bound: 41 },
   { module: "BpmnSemantics.SemanticProcess.RepeatableSubscriptionAdmission", bound: 41 },
@@ -813,6 +819,8 @@ export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.InternalChoiceSchedule", bound: 23 },
   { module: "BpmnSemantics.SemanticProcess.NestedScopeDataCommand", bound: 23 },
   { module: "BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs", bound: 23 },
+  { module: "BpmnSemantics.Contract", bound: 23, raisedFrom: 10, raised: kernelBodyHiding.body },
+  { module: "BpmnSemantics.SemanticProcess.CorrelationScalarPath", bound: 23, raisedFrom: 10, raised: kernelBodyHiding.body },
   { module: "BpmnSemantics.SemanticProcess.ControlPositionContract", bound: 22, raisedFrom: 10, raised: hiddenBodiesConversion.body },
   { module: "BpmnSemantics.SemanticProcess.IncidentCancellation", bound: 22 },
   { module: "BpmnSemantics.SemanticProcess.InternalMergeCommutation", bound: 22, raisedFrom: 10, raised: hiddenBodiesConversion.body },
@@ -859,4 +867,5 @@ export const leanExposedDefinitionAllowance: LeanExposureAllowance = {
   "BpmnSemantics.SemanticProcess.StructuredCompositionAdmission": { names: ["structuredCompositionCheckpointProfileId"], raised: hiddenBodiesConversion.abbrevExposure },
   "BpmnSemantics.SemanticProcess.TransactionSourceAdmission": { names: ["transactionCancellationCheckpointProfileId"], raised: hiddenBodiesConversion.abbrevExposure },
   "BpmnSemantics.SemanticProcess.ValueDomain": { names: ["activityDataInputOutputUserTaskProfileId", "activityDataInputUserTaskProfileId", "activityDataOutputUserTaskProfileId", "booleanProcessDataCheckpointProfileId", "compensationSourceCheckpointProfileId", "messagePayloadCatchProfileId", "parallelUserTaskMetadataCheckpointProfileId", "portableMessagePayloadProfileId", "profileIsOneOf", "profileValueDomain", "structuredHumanWorkProfileId", "userTaskAssignmentFormMetadataProfileId", "userTaskProcessDataPreservedNotationProfileId"], raised: kernelBodyExposure.abbrevExposure },
+  "BpmnSemantics.SemanticProcessContract": { names: ["evaluator_sound", "lower_preserves_supported_run"], raised: kernelBodyHiding.contractPredicates },
 };

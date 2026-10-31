@@ -19,6 +19,7 @@ import all BpmnSemantics.SemanticProcess.TokenPatch
 import all BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.WireNatural
 
 /-! # Parallel batch reservation provenance
 
@@ -26,6 +27,7 @@ PMIS-SELECT-01 freezes slots using the preceding members of the same cohort.
 The trace below retains the actual reservation calls and their accumulators;
 it supplies provenance for prefix revalidation without assuming application succeeds.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.elementId,
   `InternalCommutation.InternalArmingWrite.kind, `InternalCommutation.InternalArmingWrite.occurrence,

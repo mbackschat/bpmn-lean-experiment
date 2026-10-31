@@ -14,6 +14,7 @@ import all BpmnSemantics.SemanticProcess.Lowering
 import all BpmnSemantics.SemanticProcess.LoweringIdentity
 import all BpmnSemantics.SemanticProcess.RootScopeFixtures
 import all BpmnSemantics.SemanticProcess.TopologyFixtures
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # BpmnSemantics.SemanticProcessAdmissionConformance: admission and lowering contract checks
 

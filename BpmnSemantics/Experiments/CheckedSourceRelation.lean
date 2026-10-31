@@ -30,6 +30,8 @@ import all BpmnSemantics.SemanticProcess.OperationControlPlaces
 import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
 import all BpmnSemantics.SemanticProcess.RootScopeFixtures
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # BpmnSemantics.Experiments.CheckedSourceRelation — positional-lowering discriminator
 

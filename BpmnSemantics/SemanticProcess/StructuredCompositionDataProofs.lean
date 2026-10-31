@@ -9,6 +9,8 @@ import all BpmnSemantics.SemanticProcess.StructuredCompositionControlProofs
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-AVAILABLE-01 separates computed predecessor obligations from runtime lookup. Binding-presence and uniqueness laws connect actual start/completion rewrites to the data facts used by the reachable-state argument. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ActivityDataInputSource #[`id]
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ActivityDataOutputTarget #[`id]
 
 run_meta privateEquations `BpmnSemantics #[`SemanticProcess.StructuredComposition.ControlUnitBound,
   `SemanticProcess.StructuredComposition.OperationAllowed, `SemanticProcess.StructuredComposition.definiteInputs,

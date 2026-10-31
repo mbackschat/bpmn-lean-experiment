@@ -48,6 +48,9 @@ import all BpmnSemantics.SemanticProcess.ScopeDataBearing
 import all BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 import all BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
 import all BpmnSemantics.SemanticProcess.TopologyFixtures
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Message Start Event scenario conformance
 

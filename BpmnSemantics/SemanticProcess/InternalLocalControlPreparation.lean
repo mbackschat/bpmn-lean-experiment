@@ -4,10 +4,12 @@ public import BpmnSemantics.SemanticProcess.InternalLocalControlSelection
 public import BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.WireNatural
 
 /-! Complete predecessor preparations for the five local-control families in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat, `maxSafeWireNat]
 
 public section
 

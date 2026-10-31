@@ -23,7 +23,7 @@ inductive CommandOutcome where
 namespace CommandOutcome
 
 /-- Whether the outcome explicitly records a committed command. -/
-def isCommit : CommandOutcome → Bool
+@[no_expose] def isCommit : CommandOutcome → Bool
   | .committed => true
   | .rolledBack
   | .rejected

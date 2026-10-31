@@ -110,6 +110,7 @@ import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.CheckedProcessContract
 
 /-! # BpmnSemantics.IntermediateCatchTimerConformance — exact PT1S timer locks
 

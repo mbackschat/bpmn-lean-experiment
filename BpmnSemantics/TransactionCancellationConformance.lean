@@ -20,6 +20,8 @@ import all BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaratio
 import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration
 import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcessContract
+import all BpmnSemantics.WireNatural
 
 /-! # Bounded Transaction cancellation witnesses
 

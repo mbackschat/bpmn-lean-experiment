@@ -149,9 +149,11 @@ import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.WaitCompletion
 import all Lean.Data.Options
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! Bounded conformance for the interrupting Message Event Sub-Process account. Strict wire witnesses
 separate declaration storage from structural admission; composed execution witnesses belong to this same owner. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics #[`InterruptingMessageEventSubProcessConformance.ordinaryTaskOwner,
   `InterruptingMessageEventSubProcessConformance.ordinaryTaskWait,

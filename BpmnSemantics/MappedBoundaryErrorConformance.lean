@@ -120,6 +120,8 @@ import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.WaitCompletion
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! # Typed BPMN Error and interrupting boundary conformance
 

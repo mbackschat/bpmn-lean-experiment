@@ -121,6 +121,8 @@ import all BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 import all BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
 import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
 import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! # BpmnSemantics.NonInterruptingBoundaryTimerConformance — non-interrupting boundary Timer locks
 

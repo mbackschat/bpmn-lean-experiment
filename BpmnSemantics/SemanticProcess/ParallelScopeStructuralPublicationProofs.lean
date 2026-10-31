@@ -44,6 +44,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Actual Start and PMIS entry determine the complete structural owner census.
 Lifetime scope removal retains those Program bindings, so structural publication
 validity follows without assuming a successful occurrence projection. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy,
   `InternalCommutation.EntryBinding, `InternalCommutation.ScopeBinding, `ParallelScopeAcceptedStart.parent,

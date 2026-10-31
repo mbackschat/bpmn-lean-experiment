@@ -103,6 +103,7 @@ import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.WaitCompletion
 import all BpmnSemantics.SequentialUserTaskFixtures
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 /-! # Flow-node occurrence lifecycle happy-path conformance
 
 This module owns the executable witnesses for exact sequential, Call Activity, and embedded Sub-Process lifecycle pairing.

@@ -8,6 +8,7 @@ import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
 import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.WireNatural
 
 /-! # Admitted reservation identity provenance
 

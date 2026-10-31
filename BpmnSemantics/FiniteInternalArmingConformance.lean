@@ -57,6 +57,8 @@ import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
+import all BpmnSemantics.SemanticProcess.ActivityDataContract
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 /-! An admitted claim-assessment frontier separates retained finite arming from ID-only execution. -/
 
 public section

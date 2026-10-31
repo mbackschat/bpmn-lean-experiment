@@ -98,6 +98,7 @@ import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.CheckedProcessContract
 
 /-! # Mapped-success Service Task data and mapping locks
 

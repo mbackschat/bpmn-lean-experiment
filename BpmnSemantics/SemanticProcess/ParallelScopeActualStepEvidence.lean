@@ -21,6 +21,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 preservation, as required by AA-01. The classification retains the resolved
 declaration and canonical replay; each consumer still owns its field invariants.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
   `SemanticOperation.kind, `admitStimulus]

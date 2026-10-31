@@ -5,10 +5,12 @@ public import BpmnSemantics.SemanticProcess.Transition
 public import BpmnSemantics.SemanticProcess.CommandAdmission
 import all BpmnSemantics.SemanticProcess.Transition
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcessContract
 
 /-! Exact operation metadata and strict replay remain independent of closure selection so
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md) can validate
 prepared publications without importing the closure that consumes them. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`origin]
 
 public section
 

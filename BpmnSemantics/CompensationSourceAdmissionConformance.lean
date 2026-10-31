@@ -26,6 +26,10 @@ import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceProfileAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
 import all BpmnSemantics.SemanticProcess.ProfileCardinalities
 import all BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcessContract
+import all BpmnSemantics.WireNatural
 
 /-! # Compensation source admission and lowering conformance
 

@@ -25,6 +25,8 @@ import all BpmnSemantics.SemanticProcess.ScopeCompletion
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Stage 1 checked-source correspondence
 

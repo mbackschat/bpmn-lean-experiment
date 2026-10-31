@@ -38,6 +38,7 @@ PMIS-SELECT-01 rechecks identity, declaration provenance and fresh write ownersh
 in addition to native transition enabledness. Actual command-prefix certificates
 supply those checks before the scheduler constructs its reserved patch.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat, `maxSafeWireNat]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
   `InternalCommutation.InternalArmingWrite.elementId, `InternalCommutation.InternalArmingWrite.kind,

@@ -102,6 +102,7 @@ import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 import all BpmnSemantics.SemanticProcess.ScopeDataBearing
 import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! A concurrent document review witnesses production closure over a local fork, human review, and a deadline. The selected account is [Internal Commutation](../docs/INTERNAL-COMMUTATION-PROPOSAL.md#local-control-preparation-prerequisite). These kernel-decided facts cover this structurally admitted Program and its actual Start command, not checked XML admission, a generalized closure-fuel theorem, or scheduled choice. -/
 

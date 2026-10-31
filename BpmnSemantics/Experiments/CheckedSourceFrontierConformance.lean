@@ -14,6 +14,7 @@ import all BpmnSemantics.Experiments.CheckedSourceState
 import all BpmnSemantics.Experiments.CheckedSourceTransition
 import all BpmnSemantics.SemanticProcess.GraphReachability
 import all BpmnSemantics.SemanticProcess.TopologyFixtures
+import all BpmnSemantics.CheckedProcessContract
 
 /-! # Checked-source frontier witnesses
 

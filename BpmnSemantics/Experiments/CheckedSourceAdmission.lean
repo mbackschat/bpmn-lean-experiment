@@ -14,6 +14,7 @@ import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 import all BpmnSemantics.SemanticProcess.GraphReachability
 import all BpmnSemantics.SemanticProcess.RootScopeFixtures
 import all BpmnSemantics.SemanticProcess.TopologyFixtures
+import all BpmnSemantics.CheckedProcessContract
 
 /-! # Stage 2 structured-admission witnesses
 

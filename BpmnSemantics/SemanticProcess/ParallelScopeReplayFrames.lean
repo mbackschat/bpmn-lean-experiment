@@ -65,6 +65,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 PMIS-END-01 uses actual replay provenance and the shared root frame independently
 of pre-entry reachability and graph-progress proof consumers.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id, `origin]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatch.apply,
   `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalOperationOccurrence?,

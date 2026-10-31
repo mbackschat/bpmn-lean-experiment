@@ -34,6 +34,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 existing acceptance boundary; the attached deadline remains private under the
 [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeContract.entryOperation,
   `InternalCommutation.InternalBoundedScopeContract.operation,

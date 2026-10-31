@@ -42,6 +42,9 @@ import all BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Message Start Event closure conformance
 

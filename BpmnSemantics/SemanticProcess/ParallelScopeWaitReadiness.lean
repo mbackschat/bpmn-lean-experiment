@@ -39,6 +39,7 @@ PMIS-SELECT-01 requires fresh retained anchors as well as safe issuance counters
 Ordinary occurrence execution and reserved execution share these invariants;
 validity preservation is separate from successful preparation of the next wait.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat, `maxSafeWireNat]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
   `InternalCommutation.applyReservedOccurrencePrefix?, `InternalCommutation.effectWaitOccurrence,

@@ -21,6 +21,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Retained Merge records bind the exact offered bucket used by strict replay, as required by the
 [complete-frontier outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id, `origin]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMergeSelection.alternative,
   `InternalCommutation.InternalMergeSelection.apply, `InternalCommutation.InternalMergeSelection.record,

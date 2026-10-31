@@ -101,6 +101,7 @@ import all BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! A deadline-bound review runs beside an independent review and a standalone Timer.
 These constructed Program frontiers bind both Timer-task variants to finite batching;

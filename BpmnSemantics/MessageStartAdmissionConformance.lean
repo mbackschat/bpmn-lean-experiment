@@ -34,6 +34,10 @@ import all BpmnSemantics.SemanticProcess.ProfileCardinalities
 import all BpmnSemantics.SemanticProcess.RootScopeFixtures
 import all BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
 import all BpmnSemantics.SemanticProcess.TransactionSourceAdmission
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Message Start Event admission conformance
 

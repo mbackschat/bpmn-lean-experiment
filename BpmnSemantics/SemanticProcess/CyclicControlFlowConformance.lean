@@ -153,6 +153,7 @@ import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.WaitCompletion
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! # Resumption-bounded cyclic control-flow conformance
 

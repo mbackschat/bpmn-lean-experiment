@@ -6,10 +6,12 @@ public import BpmnSemantics.SemanticProcess.InternalRegionalDependencies
 import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
 import all BpmnSemantics.SemanticProcess.InternalRegionalDependencies
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcessContract
 
 /-! Complete bounded Sub-Process preparations combine the existing child-entry footprint with
 the joined Activity and parent-owned Timer for either explicit boundary disposition under the [complete-family account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#complete-operation-family-census).
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeContract.operation,
   `InternalCommutation.exactProgramSelection, `InternalCommutation.makeInternalBoundedScopeSelection,

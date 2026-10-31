@@ -50,6 +50,9 @@ import all BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
 import all BpmnSemantics.SemanticProcess.TopologyFixtures
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Message Start Event identity conformance
 

@@ -69,6 +69,7 @@ import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.WaitCompletion
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Actual cyclic reachability and closure conformance
 

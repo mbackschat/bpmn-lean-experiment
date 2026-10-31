@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.Contract
 public import BpmnSemantics.Scenario
 public import BpmnSemantics.SemanticProcessContract
+import all BpmnSemantics.Contract
 
 /-! # BpmnSemantics.Conformance — profile-independent contract locks
 

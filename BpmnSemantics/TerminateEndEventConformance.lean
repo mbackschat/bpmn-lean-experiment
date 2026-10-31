@@ -31,6 +31,8 @@ import all BpmnSemantics.SemanticProcess.ScopeCancellation
 import all BpmnSemantics.SemanticProcess.TerminateEnd
 import all BpmnSemantics.SemanticProcess.TerminateEndLowering
 import all BpmnSemantics.TerminateEndEventFixtures
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Terminate End Event conformance
 

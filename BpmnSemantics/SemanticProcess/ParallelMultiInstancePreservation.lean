@@ -14,6 +14,7 @@ import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import all BpmnSemantics.SemanticProcess.ProfileCardinalities
 import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Parallel Multi-Instance evaluator soundness and invariant preservation
 

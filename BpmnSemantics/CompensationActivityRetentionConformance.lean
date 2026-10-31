@@ -45,6 +45,8 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
 import all BpmnSemantics.SemanticProcess.RootScopeFixtures
 import all BpmnSemantics.SemanticProcess.TopologyFixtures
 import all BpmnSemantics.SemanticProcessJson.CompensationActivityRetention
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Compensation Activity retention checkpoint
 

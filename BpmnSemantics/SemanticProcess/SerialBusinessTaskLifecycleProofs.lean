@@ -48,6 +48,7 @@ import all BpmnSemantics.SemanticProcess.WaitCompletion
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SBT-RESULT-01 and SBT-REFUSE-01 expose actual atomic completion and predecessor-preserving refusal. The unified reachable invariant uses the exact root lifetime, foreign-state absence and issuance frame preserved by these real transitions. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.ForeignRuntimeEmpty,
   `SerialBusinessTask.IssuanceFrame, `SerialBusinessTask.OperationAllowed, `SerialBusinessTask.frontierFields,

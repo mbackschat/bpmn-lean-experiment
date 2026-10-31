@@ -14,8 +14,13 @@ import all BpmnSemantics.SemanticProcess.MonitoredTask
 import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 import all BpmnSemantics.SemanticProcess.StructuredCompositionCommandAdmission
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.ActivityDataContract
+import all BpmnSemantics.SemanticProcessContract
 
 /-! SPC-STRUCTURE-01 and SPC-AVAILABLE-01 derive complete forward order and input obligations from actual admission. Operation projection and committed-start facts link that analysis to execution without assuming control uniqueness or input availability. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ActivityDataInputSource #[`id]
+run_meta privateEquations `BpmnSemantics.SemanticProcess.ActivityDataOutputTarget #[`id]
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredComposition.accumulateDataFacts,
   `StructuredComposition.burstFacts, `StructuredComposition.consumer?, `StructuredComposition.incoming,

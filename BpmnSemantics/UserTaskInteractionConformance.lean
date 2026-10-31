@@ -113,6 +113,7 @@ import all BpmnSemantics.SemanticProcess.WaitCompletion
 import all BpmnSemantics.SequentialUserTaskFixtures
 import all BpmnSemantics.UserTaskInteractionConformanceCheckFixtures
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! # BpmnSemantics.UserTaskInteractionConformance — task-occurrence interaction locks
 

@@ -71,6 +71,7 @@ import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceTransition
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SequentialMultiInstanceDataFixtures
 import all BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Sequential Multi-Instance progress conformance
 

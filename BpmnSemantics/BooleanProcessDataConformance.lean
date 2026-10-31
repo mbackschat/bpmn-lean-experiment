@@ -103,6 +103,7 @@ import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitCompletion
 import all BpmnSemantics.SequentialUserTaskFixtures
 import all Lean.Data.Options
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 /-! # Boolean Process-data conformance
 
 This module proves the Boolean value-domain extension at the exact Process Start, User Task completion, effect-result, expression, closure, and public-projection boundaries selected by its semantic profile.

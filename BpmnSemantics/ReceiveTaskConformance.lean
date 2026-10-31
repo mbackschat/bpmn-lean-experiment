@@ -79,6 +79,8 @@ import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.Scenario
 
 /-! # Message-addressed Receive Task conformance
 

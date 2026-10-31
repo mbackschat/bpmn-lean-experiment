@@ -16,6 +16,7 @@ import all BpmnSemantics.SemanticProcess.Incident
 import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.WireNatural
 
 /-! # Runtime-state well-formedness at initialization
 
@@ -23,6 +24,7 @@ This module owns `RSI-OBL-01` and `RSI-OBL-02`: the complete invariant for the e
 
 These are initialization base cases. They neither establish position validity nor prove preservation through internal closure or subsequent transitions, and therefore do not justify installing a full-invariant admission gate.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyClaimsUnique, `activityIdentitiesUnique,
   `activityRecordsOwnLiveWork, `attachedMessagesUnambiguous, `attachedTimersUnambiguous, `canonicalCollectionOrder,

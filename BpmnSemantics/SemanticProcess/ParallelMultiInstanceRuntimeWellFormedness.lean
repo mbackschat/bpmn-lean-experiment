@@ -6,6 +6,7 @@ import all BpmnSemantics.SemanticProcess.ActivityOccurrence
 import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
 import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Parallel Multi-Instance shared runtime well-formedness
 
@@ -17,6 +18,7 @@ Scope boundary: shared `RuntimeState` binding validity and its proofs. The famil
 executable invariant are imported from `ParallelMultiInstanceRuntimeInvariant`; this module defines
 no transition, public observation, shared runtime-state field, or host state.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyParallelTasks?,
   `parallelMultiInstanceRuntimeWellFormed, `parallelSlotIdentityValid, `pendingParallelTaskIds, `timerIdNamesWait]

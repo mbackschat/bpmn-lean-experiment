@@ -90,6 +90,7 @@ import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitCompletion
 import all BpmnSemantics.SequentialUserTaskFixtures
 import all BpmnSemantics.UserTaskCompletionDataConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 /-! # BpmnSemantics.UserTaskCompletionDataConformance — exact completion-patch locks
 
 This module owns the selected CIB Seven completion-data extension over the existing exact User Task occurrence. It checks atomic Process-variable merge, enabledness independence, bounded outgoing closure, and complete variable-state preservation on refusal.

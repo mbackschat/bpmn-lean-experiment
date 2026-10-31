@@ -73,6 +73,7 @@ import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.CheckedProcessContract
 /-! # Populated regional removal ownership witnesses
 
 These direct remover and Terminate executions populate the five AA-21 collections with distinct

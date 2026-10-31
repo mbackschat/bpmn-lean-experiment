@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Regional continuation admission
 

@@ -97,6 +97,7 @@ import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.ActivityDataContract
 /-! # Activity data-input conformance
 
 Checked facts for the bounded Activity data-input account: the local-owner discriminator boundary and

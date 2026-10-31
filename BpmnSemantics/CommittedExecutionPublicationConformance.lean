@@ -81,6 +81,7 @@ import all BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 /-! # Committed execution publication conformance
 
 This module owns the separating executable facts for revision-free committed transition traces, strict replay, public control-position projection, and delta folding. Publication revisioning and hosting remain outside the Lean semantic authority lane.

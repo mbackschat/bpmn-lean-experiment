@@ -38,6 +38,8 @@ import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
 import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.Scenario
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! # Interrupting Activity boundary Message conformance
 

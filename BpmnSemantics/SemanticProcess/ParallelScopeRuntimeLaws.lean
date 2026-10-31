@@ -11,6 +11,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 The preservation laws of Parallel Multi-Instance population entry and retirement, apart from the definitions in [`ParallelScopeRuntime`](ParallelScopeRuntime.lean): a proof edit here rebuilds only the proofs that consume these laws ([interface fanout](../../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#contract)).
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`issueParallelBodies?, `parallelRuntimeActivityId,
   `parallelScopeBinding?, `parallelScopeBodyBound, `validParallelScopeIterations, `validParallelScopePopulation]

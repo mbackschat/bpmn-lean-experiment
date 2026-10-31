@@ -20,10 +20,10 @@ inductive ActivityDataOutputTarget where
   deriving Repr, DecidableEq
 
 /-- Exact declaration identity for global identity validation; the endpoint arm retains its meaning. -/
-def ActivityDataInputSource.id : ActivityDataInputSource → String
+@[no_expose] def ActivityDataInputSource.id : ActivityDataInputSource → String
   | .property id | .processDataInput id => id
 
-def ActivityDataOutputTarget.id : ActivityDataOutputTarget → String
+@[no_expose] def ActivityDataOutputTarget.id : ActivityDataOutputTarget → String
   | .property id | .processDataOutput id => id
 
 /-- Direct copy reads the typed containing-Process endpoint and fills this Activity's input ID.

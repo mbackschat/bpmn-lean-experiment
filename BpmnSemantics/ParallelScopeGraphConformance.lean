@@ -18,6 +18,8 @@ import all BpmnSemantics.SemanticProcess.LoweringIdentity
 import all BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
 import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
 import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.CheckedProcessContract
+import all BpmnSemantics.SemanticProcessContract
 
 /-! PMIS-END-01 checks paired parallel-scope declarations independently of private runtime execution. -/
 

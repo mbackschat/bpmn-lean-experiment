@@ -44,6 +44,8 @@ import all BpmnSemantics.SemanticProcess.TransitionStates
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-CLOSURE-01 connects reachable lifecycle and data invariants to enabled transitions and exact task-command readiness. Reverse enablement is established before the bounded closure evaluator is assembled. Discovery also requires the selected profile because `ordinaryExecutionFrontier` and `mergeExecutionFrontier` dispatch by profile while structural analysis remains profile-independent. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id, `origin]
+run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat, `maxSafeWireNat]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CheckedSequenceFlow.toControlPlace,
   `InternalCommutation.InternalMergeSelection.alternative, `InternalCommutation.InternalMergeSelection.apply,

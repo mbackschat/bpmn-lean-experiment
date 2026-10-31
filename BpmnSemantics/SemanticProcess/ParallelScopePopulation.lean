@@ -3,11 +3,13 @@ module
 public import BpmnSemantics.Scenario
 public import BpmnSemantics.WireNatural
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.WireNatural
 
 /-! # Parallel Sub-Process population retirement
 
 PMIS-END-01 and PMIS-CANCEL-01 require exact child ownership and separate completed from cancelled bodies. This account establishes local membership, retirement dispatch and accounting laws; callers establish quiescence and perform runtime cleanup.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat]
 
 public section
 

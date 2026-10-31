@@ -17,6 +17,7 @@ import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
 import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Parallel Multi-Instance terminal runtime-state preservation
 

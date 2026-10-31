@@ -45,6 +45,7 @@ PMIS-END-01 exchanges the pending outer continuation for a parent token. This
 accounting uses the existing replay history and does not assert published phase
 correspondence or parent at-most-once execution.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeReplay.transitionPortCharge,
   `ParallelScopeReplay.waitCompletionStimulus, `ParallelScopeStart.ParentSpineStep, `SemanticOperation.kind,

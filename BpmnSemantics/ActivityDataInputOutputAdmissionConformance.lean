@@ -34,6 +34,7 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import all BpmnSemantics.SemanticProcess.ScopeDataBearing
 import all BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.ActivityDataContract
 /-! # Composed Activity data-input/output admission conformance
 
 Exact start-binding and ready-input decisions for the claim-assessment profile. These decisions are

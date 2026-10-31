@@ -25,6 +25,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Ordinary End publishes an instantaneous occurrence and one consumed token. Acceptance is
 derived from the unchanged open projection, independently of later batch numbering. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat, `maxSafeWireNat]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalEndOrigin?,
   `acceptFlowNodeOccurrenceCandidate?]

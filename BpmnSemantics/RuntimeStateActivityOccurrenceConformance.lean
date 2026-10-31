@@ -77,6 +77,7 @@ import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.GraphReachability
+import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 
 /-! # Runtime-state Activity occurrence negative fixtures
 

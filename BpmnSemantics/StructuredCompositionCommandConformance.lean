@@ -17,6 +17,8 @@ import all BpmnSemantics.SemanticProcess.EffectDataCommandAdmission
 import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
 import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 import all BpmnSemantics.SemanticProcess.OccurrenceReservationState
+import all BpmnSemantics.SemanticProcessContract
+import all BpmnSemantics.WireNatural
 
 /-! Command witnesses exercise the actual external dispatcher, so a profile value-domain change alone cannot satisfy the required-input and ordinary-task write restrictions. -/
 

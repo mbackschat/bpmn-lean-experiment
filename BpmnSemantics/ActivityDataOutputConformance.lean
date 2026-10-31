@@ -96,6 +96,7 @@ import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.ActivityDataContract
 /-! # Activity data-output conformance
 
 Checked facts for the bounded Activity data-output account: the concrete credit-underwriting

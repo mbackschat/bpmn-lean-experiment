@@ -111,7 +111,7 @@ inductive VariableValue where
 namespace VariableValue
 
 /-- Place a portable value at the root; every portable arm has exactly one root counterpart. -/
-def ofBusiness : BusinessValue → VariableValue
+@[no_expose] def ofBusiness : BusinessValue → VariableValue
   | .string value => .string value
   | .null => .null
   | .boolean value => .boolean value
@@ -121,7 +121,7 @@ def ofBusiness : BusinessValue → VariableValue
   | .map entries => .map entries
 
 /-- The portable view of a root value; only legacy `stringList` has none. -/
-def toBusiness? : VariableValue → Option BusinessValue
+@[no_expose] def toBusiness? : VariableValue → Option BusinessValue
   | .string value => some (.string value)
   | .null => some .null
   | .boolean value => some (.boolean value)
@@ -210,7 +210,7 @@ structure DeliverCorrelatedPayloadMessageStimulus where
   deriving Repr, DecidableEq
 
 /-- The exact identifier requirements shared by checked and lowered Message waits. -/
-def MessageChannel.identifiersNonempty : MessageChannel → Bool
+@[no_expose] def MessageChannel.identifiersNonempty : MessageChannel → Bool
   | .operationMessage interfaceId interfaceOperationId messageId =>
       !interfaceId.value.isEmpty &&
         !interfaceOperationId.value.isEmpty &&

@@ -79,6 +79,7 @@ import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SequentialMultiInstanceDataFixtures
 import all BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcessContract
 
 /-! # Sequential Multi-Instance refusal conformance
 

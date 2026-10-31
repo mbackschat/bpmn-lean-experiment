@@ -645,6 +645,24 @@ test("re-exposing a hidden hub's bodies fails the body-edit ratchet in every spe
   }
 });
 
+// Anti-vacuity for the kernel, which the body-edit ratchet no longer exempts: dropping a kernel module's `@[no_expose]`
+// marks re-exposes its operation bodies through the `@[expose]` section and must fail its bound.
+test("re-exposing any kernel module's hidden operation bodies fails the body-edit ratchet", () => {
+  const library = librarySources();
+  const hiding = library.filter(({ path, source }) =>
+    leanFanoutKernel.includes(path.replace(/\.lean$/u, "").replaceAll("/", ".")) && source.includes("@[no_expose] def "));
+  assert.ok(hiding.length > 0);
+  for (const { path } of hiding) {
+    const module = path.replace(/\.lean$/u, "").replaceAll("/", ".");
+    const sources = library.map((file) => file.path === path
+      ? { path, source: file.source.replaceAll("@[no_expose] def ", "def ") }
+      : file);
+    const findings = leanFanoutViolations(leanBodyEditFanouts(sources, realizedLeaks), leanBodyEditBounds, leanBodyEditDefaultBound,
+      [], "body-edit importers");
+    assert.ok(findings.some((finding) => finding.startsWith(`${module}: `)), `${module}\n${findings.join("\n")}`);
+  }
+});
+
 // Each individually exposed body in a module whose interface edit rebuilds more than the body-edit default is an
 // interface edit by necessity, so the allowance names it; a name no longer exposed must leave the allowance.
 test("every exposed definition of a wide module is named in the reviewed allowance", () => {

@@ -407,7 +407,7 @@ inductive SemanticOperation where
       (boundaryEventElementId : NodeId)
   deriving Repr, DecidableEq
 
-def SemanticOperation.id : SemanticOperation → OperationId
+@[no_expose] def SemanticOperation.id : SemanticOperation → OperationId
   | .initiate id _ _
   | .initiateMessage id _ _ _
   | .initiateTimer id _ _ _
@@ -451,7 +451,7 @@ def SemanticOperation.id : SemanticOperation → OperationId
   | .triggerCompensation id _ _ _ _
   | .cancelTransaction id _ _ _ _ _ => id
 
-def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
+@[no_expose] def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .initiate _ origin _
   | .initiateMessage _ origin _ _
   | .initiateTimer _ origin _ _
@@ -601,7 +601,7 @@ structure Program where
 namespace Obligations
 
 /-- Proposition every executable evaluator must satisfy relative to the separately defined declarative relation. -/
-def evaluator_sound
+@[expose] def evaluator_sound
     {RuntimeState SemanticInput : Type}
     (programStep : Program → RuntimeState → SemanticInput → RuntimeState → Prop)
     (step : Program → RuntimeState → SemanticInput → Option RuntimeState) : Prop :=
@@ -610,7 +610,7 @@ def evaluator_sound
       programStep program state input successor
 
 /-- Reviewed observational preservation proposition for the checked-source lowering boundary. The signature does not itself claim that a particular source semantics has been supplied or the proposition proved. -/
-def lower_preserves_supported_run
+@[expose] def lower_preserves_supported_run
     {ProgramTrace Observation : Type}
     (wellFormed : CheckedProcess → Prop)
     (supportedScenario : CheckedProcess → Scenario → Prop)

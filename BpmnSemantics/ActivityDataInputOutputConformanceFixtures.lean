@@ -99,6 +99,7 @@ import all BpmnSemantics.SemanticProcess.StructuredHumanWorkAdmission
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
+import all BpmnSemantics.SemanticProcess.ActivityDataContract
 /-! # Composed Activity data-input/output conformance fixtures
 
 Shared exact-source and runtime fixtures for admission and lifetime witnesses. Literal fixtures are

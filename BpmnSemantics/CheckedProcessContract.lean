@@ -304,7 +304,7 @@ inductive CheckedNode where
   | noneEndEvent (id : NodeId)
   deriving Repr, DecidableEq
 
-def CheckedNode.id : CheckedNode → NodeId
+@[no_expose] def CheckedNode.id : CheckedNode → NodeId
   | .noneStartEvent id
   | .messageStartEvent id _
   | .timerStartEvent id _

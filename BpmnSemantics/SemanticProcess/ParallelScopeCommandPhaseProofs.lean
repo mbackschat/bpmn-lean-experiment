@@ -41,6 +41,7 @@ The broader accounting history remains separate from actual reachability; this
 certificate supplies its premises without claiming future scheduling or publication
 success. Pending initiation is explicit and accepts no completion ingress.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id, `origin]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
   `InternalCommutation.internalOperationOccurrenceOffers?, `InternalCommutation.internalOperationOccurrences?,
