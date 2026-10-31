@@ -80,7 +80,7 @@ inductive OperationStep (program : Program) :
   | enterConcurrentScope (id origin input childEntry childScopeId) (owner : ScopeOccurrenceId)
       (before after : RuntimeState)
       (target : isMergeTargetOperation program (.enterScope id origin input childEntry childScopeId) = true)
-      (transition : enterConcurrentScopeState? before owner input childEntry childScopeId = some after) :
+      (transition : enterDeclaredScopeOccurrence? program before owner input childEntry childScopeId = some after) :
       OperationStep program
         (.enterScope id origin input childEntry childScopeId) before after
   | enterSequentialScope (id origin input childEntry childScopeId output collection item inputs condition)
@@ -294,7 +294,7 @@ inductive OperationStep (program : Program) :
   | completeScopeOccurrence (id origin scopeId output) (owner : ScopeOccurrenceId)
       (before after : RuntimeState)
       (target : isMergeTargetOperation program (.completeScope id origin scopeId (some output)) = true)
-      (transition : completeScopeOccurrenceState? before owner scopeId (some output) = some after) :
+      (transition : completeDeclaredScopeOccurrence? program before owner scopeId (some output) = some after) :
       OperationStep program
         (.completeScope id origin scopeId (some output)) before after
 

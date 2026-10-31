@@ -229,68 +229,96 @@ def occurrenceWithParent? (state : RuntimeState) (scopeId : DefinitionScopeId) :
   let parent ← occurrence.parent
   some (occurrence.id, parent)
 
-/-- NSD-INIT-01 after the entry rewrite: inputs read the parent's whole chain before the new frame
-exists, so neither declaration order nor a sibling input can influence a value. A scope without a
-record installs no frame and leaves the state exactly as entry produced it. -/
+/-- NSD-INIT-01 for the occurrence `child` of `parent`: inputs read the parent's whole chain, which never
+holds `child`'s frame, so neither declaration order nor a sibling input can influence a value. Refuses a
+repeated name and a `child` that already holds a frame. -/
+def evaluateFrame? (program : Program) (state : RuntimeState) (record : ScopeLocalData)
+    (child parent : ScopeOccurrenceId) : Option ScopeVariableScope := do
+  let bindings ← evaluateInputMappingsUnder? (programEffectMappingValuePolicy program)
+    (read? program state.scopeOccurrences state.variables parent) record.localInputs
+  if !scopeVariableNamesUnique bindings || state.variables.scopes.any (·.owner == child) then none
+  else some { owner := child, bindings := mergeProcessVariableBindings [] bindings }
+
+/-- Inserts a frame at its canonical owner position; only `scopes` changes. -/
+def insertFrame (variables : ScopedVariables) (frame : ScopeVariableScope) : ScopedVariables :=
+  let scopes := canonicalInsertBy (fun left right => scopeOwnerBefore left.owner right.owner) frame variables.scopes
+  { variables with scopes }
+
+def initializeFrameAt? (program : Program) (state : RuntimeState) (record : ScopeLocalData)
+    (child parent : ScopeOccurrenceId) : Option RuntimeState := do
+  let frame ← evaluateFrame? program state record child parent
+  some { state with variables := insertFrame state.variables frame }
+
+/-- NSD-INIT-01 after a definition-addressed entry rewrite. A scope without a record installs no frame and
+leaves the state exactly as entry produced it. -/
 def initializeFrame? (program : Program) (state : RuntimeState) (childScopeId : DefinitionScopeId) :
     Option RuntimeState :=
   match recordFor? program childScopeId with
   | none => some state
   | some record => do
       let (child, parent) ← occurrenceWithParent? state childScopeId
-      let bindings ← evaluateInputMappingsUnder? (programEffectMappingValuePolicy program)
-        (read? program state.scopeOccurrences state.variables parent) record.localInputs
-      if !scopeVariableNamesUnique bindings || state.variables.scopes.any (·.owner == child) then none
-      else
-        let frame : ScopeVariableScope :=
-          { owner := child, bindings := mergeProcessVariableBindings [] bindings }
-        let scopes := canonicalInsertBy (fun left right => scopeOwnerBefore left.owner right.owner)
-          frame state.variables.scopes
-        some { state with variables := { state.variables with scopes } }
+      initializeFrameAt? program state record child parent
 
-/-- NSD-OUTPUT-01 before the completion rewrite disposes the frame: every source is read from the
-completing frame before any write, and the writes start at the parent, so no output can change
-another output's source. -/
+/-- NSD-OUTPUT-01 for the completing occurrence `child`, before the completion rewrite disposes its frame:
+every source is read from that frame before any write, and the writes start at `parent`, so no output can
+change another output's source. -/
+def writeOutputsAt? (program : Program) (state : RuntimeState) (record : ScopeLocalData)
+    (child parent : ScopeOccurrenceId) : Option RuntimeState := do
+  let frame ← selectScopeVariables? state.variables child
+  let values ← record.localOutputs.mapM fun mapping => match mapping.expression with
+    | .localVariable source => do
+        let value ← enclosingVariableUnder? (programEffectMappingValuePolicy program) frame.bindings source
+        some ({ name := mapping.target, value } : VariableBinding)
+    | _ => none
+  let variables ← writeAll? program state.scopeOccurrences state.variables parent values
+  some { state with variables }
+
+/-- NSD-OUTPUT-01 before a definition-addressed completion rewrite; a scope without a record writes nothing. -/
 def writeOutputs? (program : Program) (state : RuntimeState) (scopeId : DefinitionScopeId) :
     Option RuntimeState :=
   match recordFor? program scopeId with
   | none => some state
   | some record => do
       let (child, parent) ← occurrenceWithParent? state scopeId
-      let frame ← selectScopeVariables? state.variables child
-      let values ← record.localOutputs.mapM fun mapping => match mapping.expression with
-        | .localVariable source => do
-            let value ← enclosingVariableUnder? (programEffectMappingValuePolicy program) frame.bindings source
-            some ({ name := mapping.target, value } : VariableBinding)
-        | _ => none
-      let variables ← writeAll? program state.scopeOccurrences state.variables parent values
-      some { state with variables }
+      writeOutputsAt? program state record child parent
 
-run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`writeOutputs?]
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`writeOutputsAt?]
 
 /-- Frame installation touches only data, so every control, wait and occurrence fact survives it. -/
+private theorem initializeFrameAt?_variables_only (program : Program) (state written : RuntimeState)
+    (record : ScopeLocalData) (child parent : ScopeOccurrenceId)
+    (installed : initializeFrameAt? program state record child parent = some written) :
+    written = { state with variables := written.variables } := by
+  obtain ⟨_, _, installed⟩ := Option.bind_eq_some_iff.mp installed
+  cases installed; rfl
+
 theorem initializeFrame?_variables_only (program : Program) (state written : RuntimeState)
     (childScopeId : DefinitionScopeId) (installed : initializeFrame? program state childScopeId = some written) :
     written = { state with variables := written.variables } := by
   unfold initializeFrame? at installed
   split at installed
   · cases installed; rfl
-  · simp only [Option.bind_eq_bind, Option.bind_eq_some_iff] at installed
-    obtain ⟨_, _, _, _, installed⟩ := installed
-    split at installed
-    · contradiction
-    · cases installed; rfl
+  · obtain ⟨_, _, installed⟩ := Option.bind_eq_some_iff.mp installed
+    exact initializeFrameAt?_variables_only program state written _ _ _ installed
 
 /-- Output writes touch only data, so every control, wait and occurrence fact survives them. -/
+theorem writeOutputsAt?_variables_only (program : Program) (state written : RuntimeState)
+    (record : ScopeLocalData) (child parent : ScopeOccurrenceId)
+    (wrote : writeOutputsAt? program state record child parent = some written) :
+    written = { state with variables := written.variables } := by
+  unfold writeOutputsAt? at wrote
+  simp only [Option.bind_eq_bind, Option.bind_eq_some_iff] at wrote
+  obtain ⟨_, _, _, _, _, _, wrote⟩ := wrote
+  cases wrote; rfl
+
 theorem writeOutputs?_variables_only (program : Program) (state written : RuntimeState)
     (scopeId : DefinitionScopeId) (wrote : writeOutputs? program state scopeId = some written) :
     written = { state with variables := written.variables } := by
   unfold writeOutputs? at wrote
   split at wrote
   · cases wrote; rfl
-  · simp only [Option.bind_eq_bind, Option.bind_eq_some_iff] at wrote
-    obtain ⟨_, _, _, _, _, _, _, _, wrote⟩ := wrote
-    cases wrote; rfl
+  · obtain ⟨_, _, wrote⟩ := Option.bind_eq_some_iff.mp wrote
+    exact writeOutputsAt?_variables_only program state written _ _ _ wrote
 
 end NestedScopeData
 end BpmnSemantics.SemanticProcess

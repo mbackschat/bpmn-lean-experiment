@@ -17,8 +17,8 @@ well-formedness because an occurrence with more than one frame makes resolution 
 choose.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`framesAt, `initializeFrame?,
-  `readOutcome?, `resolveOwner?, `write?, `writeAll?]
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`evaluateFrame?, `framesAt,
+  `initializeFrame?, `initializeFrameAt?, `insertFrame, `readOutcome?, `resolveOwner?, `write?, `writeAll?]
 
 public section
 
@@ -362,6 +362,26 @@ theorem writeAll?_frames (program : Program) (occurrences : List RuntimeScopeOcc
           simp only [List.map_cons, List.mem_cons, not_or] at absent
           exact restKept keptBinding keptOwner absent.2 (kept keptBinding keptOwner absent.1 before)
 
+/-- NSD-INIT-01 by occurrence: the frame of `child` holds exactly the inputs evaluated against `parent`'s
+chain in the predecessor state, and initialization changes nothing else. -/
+private theorem initializeFrameAt?_reads_parent_chain (program : Program) (state result : RuntimeState)
+    (record : ScopeLocalData) (child parent : ScopeOccurrenceId)
+    (initialized : initializeFrameAt? program state record child parent = some result) :
+    ∃ bindings,
+      evaluateInputMappingsUnder? (programEffectMappingValuePolicy program)
+          (read? program state.scopeOccurrences state.variables parent)
+          record.localInputs = some bindings ∧
+      result = { state with variables := { state.variables with
+        scopes := canonicalInsertBy (fun left right => scopeOwnerBefore left.owner right.owner)
+          { owner := child, bindings := mergeProcessVariableBindings [] bindings }
+          state.variables.scopes } } := by
+  simp only [initializeFrameAt?, evaluateFrame?, Option.bind_eq_bind, Option.bind_eq_some_iff] at initialized
+  obtain ⟨frame, ⟨bindings, evaluated, framed⟩, installed⟩ := initialized
+  split at framed
+  · contradiction
+  · cases framed; cases installed
+    exact ⟨bindings, evaluated, rfl⟩
+
 /-- NSD-INIT-01: a declared scope's frame holds exactly the inputs evaluated against the parent
 occurrence's chain in the predecessor state, and entry initialization changes nothing else. -/
 theorem initializeFrame?_reads_parent_chain (program : Program) (state result : RuntimeState)
@@ -377,22 +397,11 @@ theorem initializeFrame?_reads_parent_chain (program : Program) (state result : 
         scopes := canonicalInsertBy (fun left right => scopeOwnerBefore left.owner right.owner)
           { owner := child, bindings := mergeProcessVariableBindings [] bindings }
           state.variables.scopes } } := by
-  simp only [initializeFrame?, recorded, bind, Option.bind] at initialized
-  cases located : occurrenceWithParent? state childScopeId with
-  | none => simp [located] at initialized
-  | some pair =>
-      obtain ⟨child, parent⟩ := pair
-      simp only [located] at initialized
-      cases evaluated : evaluateInputMappingsUnder? (programEffectMappingValuePolicy program)
-          (read? program state.scopeOccurrences state.variables parent)
-          record.localInputs with
-      | none => simp [evaluated] at initialized
-      | some bindings =>
-          refine ⟨child, parent, bindings, by first | rfl | exact located, by first | rfl | exact evaluated, ?_⟩
-          simp only [evaluated] at initialized
-          split at initialized
-          · simp at initialized
-          · exact (Option.some.inj initialized).symm
+  simp only [initializeFrame?, recorded, Option.bind_eq_bind, Option.bind_eq_some_iff] at initialized
+  obtain ⟨⟨child, parent⟩, located, initialized⟩ := initialized
+  obtain ⟨bindings, evaluated, rfl⟩ :=
+    initializeFrameAt?_reads_parent_chain program state result record child parent initialized
+  exact ⟨child, parent, bindings, located, evaluated, rfl⟩
 
 /-! ## Nearest checked non-law
 

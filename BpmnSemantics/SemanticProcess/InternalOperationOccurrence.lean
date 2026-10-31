@@ -38,13 +38,13 @@ def applyInternalOperationOccurrence? (program : Program) (state : RuntimeState)
   | .enterScope _ _ input childEntry childScopeId =>
       -- CEA-OCCUR-01: only a merge target is entered by owning occurrence.
       if isMergeTargetOperation program operation && unit input then
-        enterConcurrentScopeState? state owner input childEntry childScopeId
+        enterDeclaredScopeOccurrence? program state owner input childEntry childScopeId
       else none
   | .completeScope _ _ scopeId parentOutput =>
       -- CEA-QUIESCE-01 confines lookup by occurrence to merge targets; every other completion keeps the
       -- declared-scope wrapper, which also writes data outputs and withdraws bounded deadlines.
       if isMergeTargetOperation program operation then
-        completeScopeOccurrenceState? state owner scopeId parentOutput
+        completeDeclaredScopeOccurrence? program state owner scopeId parentOutput
       else do
         let [selected] := state.scopeOccurrences.filter (·.id.definitionScopeId == scopeId) | none
         if selected.id == owner then completeDeclaredScope? program state scopeId parentOutput else none

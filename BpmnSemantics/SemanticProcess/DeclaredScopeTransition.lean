@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.BoundedScope
 public import BpmnSemantics.SemanticProcess.MonitoredScope
 public import BpmnSemantics.SemanticProcess.TransactionCancellation
 public import BpmnSemantics.SemanticProcess.NestedScopeData
+public import BpmnSemantics.SemanticProcess.ScopeOccurrenceEntry
 import all BpmnSemantics.SemanticProcess.NestedScopeData
 meta import BpmnSemantics.PrivateEquationLemmas
 
@@ -12,8 +13,10 @@ meta import BpmnSemantics.PrivateEquationLemmas
 This module owns the scope-entry and scope-completion transformations that the `enterScope` and
 `completeScope` operations evaluate: monitored or bounded completion selection, and the nested
 scope-data hooks that initialize a declaring scope's frame on entry and write its outputs before
-completion disposes it. A Program without a `scopeLocalData` record for the scope keeps exactly the
-undeclared entry and completion, which the `_undeclared` and `_other_profile` equations state.
+completion disposes it. A merge target, entered and completed by occurrence beside live siblings of its
+definition (CEA-OCCUR-01, CEA-QUIESCE-01), takes the same hooks addressed by occurrence (CSD-INIT-01,
+CSD-RETIRE-01). A Program without a `scopeLocalData` record for the scope keeps exactly the undeclared
+entry and completion, which the `_undeclared` and `_other_profile` equations state.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`recordFor?]
@@ -52,7 +55,35 @@ def completeDeclaredScope? (program : Program) (state : RuntimeState) (scopeId :
         completeSelectedScope? program (← NestedScopeData.writeOutputs? program state scopeId) scopeId
           (some output)
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeDeclaredScope?, `enterDeclaredScope?]
+/-- CSD-INIT-01: a merge target's entry initializes the frame of the occurrence `enterConcurrentScopeState?`
+issues under `parent`, whose chain the inputs read. -/
+def enterDeclaredScopeOccurrence? (program : Program) (state : RuntimeState) (parent : ScopeOccurrenceId)
+    (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId) : Option RuntimeState :=
+  match NestedScopeData.recordFor? program childScopeId with
+  | none => enterConcurrentScopeState? state parent input childEntry childScopeId
+  | some record => do
+      NestedScopeData.initializeFrameAt? program
+        (← enterConcurrentScopeState? state parent input childEntry childScopeId) record
+        (concurrentScopeChild state parent.processInstanceId childScopeId) parent
+
+/-- CSD-RETIRE-01: the completing merge-target occurrence `owner` writes its outputs through its own
+parent's chain before `completeScopeOccurrenceState?` disposes exactly its frame. Root completion and
+undeclared scopes keep exactly that completion. -/
+def completeDeclaredScopeOccurrence? (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)
+    (scopeId : DefinitionScopeId) : Option ControlPlaceId → Option RuntimeState
+  | none => completeScopeOccurrenceState? state owner scopeId none
+  | some output => match NestedScopeData.recordFor? program scopeId with
+    | none => completeScopeOccurrenceState? state owner scopeId (some output)
+    | some record => do
+        let [occurrence] := state.scopeOccurrences.filter (·.id == owner) | none
+        let parent ← occurrence.parent
+        if owner.definitionScopeId ≠ scopeId then none
+        else
+          completeScopeOccurrenceState? (← NestedScopeData.writeOutputsAt? program state record owner parent)
+            owner scopeId (some output)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeDeclaredScope?, `completeDeclaredScopeOccurrence?,
+  `enterDeclaredScope?, `enterDeclaredScopeOccurrence?]
 
 theorem enterDeclaredScope?_undeclared (program : Program) (state : RuntimeState)
     (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
@@ -108,5 +139,38 @@ theorem completeDeclaredScope?_other_profile (program : Program) (state : Runtim
     completeDeclaredScope? program state scopeId output = completeSelectedScope? program state scopeId output :=
   completeDeclaredScope?_undeclared program state scopeId output
     (by simp only [NestedScopeData.recordFor?, other, Bool.false_eq_true, ↓reduceIte])
+
+/-- A declared merge target's entry is the occurrence entry followed by the frame of exactly the issued
+occurrence. -/
+theorem enterDeclaredScopeOccurrence_initializes (program : Program) (state after : RuntimeState)
+    (parent : ScopeOccurrenceId) (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
+    (record : ScopeLocalData) (recorded : NestedScopeData.recordFor? program childScopeId = some record)
+    (entered : enterDeclaredScopeOccurrence? program state parent input childEntry childScopeId = some after) :
+    ∃ issued, enterConcurrentScopeState? state parent input childEntry childScopeId = some issued ∧
+      NestedScopeData.initializeFrameAt? program issued record
+        (concurrentScopeChild state parent.processInstanceId childScopeId) parent = some after := by
+  simp only [enterDeclaredScopeOccurrence?, recorded, Option.bind_eq_bind, Option.bind_eq_some_iff] at entered
+  exact entered
+
+/-- A merge target's completion is the occurrence completion of a state that differs from `state` only in
+data. -/
+theorem completeDeclaredScopeOccurrence_factors (program : Program) (state completed : RuntimeState)
+    (owner : ScopeOccurrenceId) (scopeId : DefinitionScopeId) (output : ControlPlaceId)
+    (completion : completeDeclaredScopeOccurrence? program state owner scopeId (some output) = some completed) :
+    ∃ written : RuntimeState, written = { state with variables := written.variables } ∧
+      completeScopeOccurrenceState? written owner scopeId (some output) = some completed := by
+  simp only [completeDeclaredScopeOccurrence?] at completion
+  split at completion
+  · exact ⟨state, rfl, completion⟩
+  · next record _ =>
+      simp only [Option.bind_eq_bind] at completion
+      split at completion
+      · obtain ⟨_, _, completion⟩ := Option.bind_eq_some_iff.mp completion
+        split at completion
+        · contradiction
+        · obtain ⟨written, wrote, applied⟩ := Option.bind_eq_some_iff.mp completion
+          exact ⟨written, NestedScopeData.writeOutputsAt?_variables_only program state written record owner _ wrote,
+            applied⟩
+      · contradiction
 
 end BpmnSemantics.SemanticProcess

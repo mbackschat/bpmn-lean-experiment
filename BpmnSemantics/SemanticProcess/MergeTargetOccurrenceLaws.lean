@@ -58,6 +58,41 @@ theorem completeScopeOccurrenceState_frame (state completed : RuntimeState) (own
   subst same
   exact completeQuiescentScope_child_frame state completed occurrence parent output parentOf applied
 
+/-- CSD-INIT-01: a declared merge target's entry is the occurrence entry followed by the frame of exactly
+the issued occurrence, whose inputs `NestedScopeData.initializeFrameAt?_reads_parent_chain` reads from
+`parent`'s chain; every other occurrence's frame stays as it was. -/
+private theorem enterDeclaredScopeOccurrence_initializes_frame (program : Program) (state after : RuntimeState)
+    (parent : ScopeOccurrenceId) (input childEntry : ControlPlaceId) (childScopeId : DefinitionScopeId)
+    (record : ScopeLocalData) (recorded : NestedScopeData.recordFor? program childScopeId = some record)
+    (entered : enterDeclaredScopeOccurrence? program state parent input childEntry childScopeId = some after) :
+    ∃ issued, enterConcurrentScopeState? state parent input childEntry childScopeId = some issued ∧
+      issued.variables = state.variables ∧
+      NestedScopeData.initializeFrameAt? program issued record
+        (concurrentScopeChild state parent.processInstanceId childScopeId) parent = some after := by
+  obtain ⟨issued, entry, framed⟩ :=
+    enterDeclaredScopeOccurrence_initializes program state after parent input childEntry childScopeId record recorded
+      entered
+  exact ⟨issued, entry, (enterConcurrentScopeState_frame state issued parent input childEntry childScopeId
+    entry).2.2.2.2.2.1, framed⟩
+
+/-- CSD-RETIRE-01: a merge target's completion writes only data before the occurrence rewrite, which then
+removes exactly the completing occurrence's frames and continues its parent. -/
+private theorem completeDeclaredScopeOccurrence_retires_frame (program : Program) (state completed : RuntimeState)
+    (owner parent : ScopeOccurrenceId) (scopeId : DefinitionScopeId) (output : ControlPlaceId)
+    (child : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id = owner → occurrence.parent = some parent)
+    (completion : completeDeclaredScopeOccurrence? program state owner scopeId (some output) = some completed) :
+    ∃ written : RuntimeState, written = { state with variables := written.variables } ∧
+      completed.variables.scopes = written.variables.scopes.filter (fun scope => decide (scope.owner ≠ owner)) ∧
+      completed.tokens = addToken state.tokens output parent := by
+  obtain ⟨written, same, applied⟩ :=
+    completeDeclaredScopeOccurrence_factors program state completed owner scopeId output completion
+  have childWritten : ∀ occurrence ∈ written.scopeOccurrences, occurrence.id = owner →
+      occurrence.parent = some parent := by rw [same]; exact child
+  obtain ⟨tokens, _, scopes, _⟩ :=
+    completeScopeOccurrenceState_frame written completed owner parent scopeId output childWritten applied
+  refine ⟨written, same, scopes, ?_⟩
+  rw [tokens, same]
+
 namespace InternalCommutation
 
 /-- Every successful occurrence-addressed application of a merge-target scope operation is an
