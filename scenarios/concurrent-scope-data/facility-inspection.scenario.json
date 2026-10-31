@@ -1,0 +1,104 @@
+{
+  "kind": "scenario",
+  "id": "concurrent-scope-data-facility-inspection",
+  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "bpmn": {
+    "id": "facility-inspection",
+    "relativePath": "scenarios/concurrent-scope-data/facility-inspection.bpmn",
+    "sha256": "2d759a7ded2111cd3fde5e9f98d4b3011ba426602dc75482a82a88c0917e64e9",
+    "sourceOverlay": {
+      "id": "facility-inspection-handlers",
+      "sha256": "2f2a2083e6597f7360a356d7b3beb70bdbfe09469654c625e057af4d5addac23"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_FacilityInspection",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-record-electrical-findings",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "RecordElectricalFindings",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "findings",
+          "value": {
+            "kind": "string",
+            "value": "wiring-ok"
+          }
+        },
+        {
+          "name": "result",
+          "value": {
+            "kind": "string",
+            "value": "electrical-pass"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-record-fire-safety-findings",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "RecordFireSafetyFindings",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "findings",
+          "value": {
+            "kind": "string",
+            "value": "extinguishers-due"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:8b8ce269e47db92fd3258d2563f52791cc6cd9273b95914b66fbf0b3c5f2dbd0",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Summarize",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.4.1",
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0005",
+      "CIB-EXT-0015",
+      "CIB-EXT-0020"
+    ]
+  }
+}

@@ -666,8 +666,9 @@ test("binds repeated Sub-Process relationships to the live register", async () =
  * the `SCOPE` artifact's digest is pinned by the immutable cyclic preservation baseline, so the owner accepted naming
  * `CIB-EXT-0021` in the profile README and the Call scenarios instead (repeated, nested and concurrent Calls specification,
  * Versioning consequences). The concurrent scope Service Tasks family substitutes `CIB-EXT-0015` and `CIB-OP-0010` the
- * same way (its proposal's Normative basis and CIB classification). The entry also requires the artifact to still omit
- * it, so a re-pin retires the entry.
+ * same way (its proposal's Normative basis and CIB classification), and the concurrent scope data family substitutes
+ * `CIB-EXT-0020`, `CIB-EXT-0005` and `CIB-EXT-0006` for data-bearing Programs (its proposal's same section). The entry
+ * also requires the artifact to still omit it, so a re-pin retires the entry.
  */
 const relationshipSubstitutions: ReadonlyArray<Readonly<{ profile: string; relationship: string; boundary: string }>> = [
   { profile: "cibseven-2.2.0-embedded-subprocess-completion-draft", relationship: "CIB-EXT-0021",
@@ -676,6 +677,9 @@ const relationshipSubstitutions: ReadonlyArray<Readonly<{ profile: string; relat
     boundary: "Under the embedded completion profile only the binding clause applies" },
   { profile: "cibseven-2.2.0-embedded-subprocess-completion-draft", relationship: "CIB-OP-0010",
     boundary: "Under the embedded completion profile only" },
+  ...["CIB-EXT-0020", "CIB-EXT-0005", "CIB-EXT-0006"].map(relationship => ({
+    profile: "cibseven-2.2.0-embedded-subprocess-completion-draft", relationship,
+    boundary: "Under the embedded completion profile, in data-bearing Programs" })),
 ];
 
 test("binds every scenario CIB relationship to its profile artifact or a recorded substitution", async () => {

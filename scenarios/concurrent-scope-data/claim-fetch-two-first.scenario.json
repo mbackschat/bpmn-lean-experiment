@@ -1,0 +1,147 @@
+{
+  "kind": "scenario",
+  "id": "concurrent-scope-data-claim-fetch-two-first",
+  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "bpmn": {
+    "id": "claim-damage-assessment",
+    "relativePath": "scenarios/concurrent-scope-data/claim-damage-assessment.bpmn",
+    "sha256": "25b1d522b7233f3bd398f6620a6d2ab448eec71124b33a344c56de3a5ff95cb8",
+    "sourceOverlay": {
+      "id": "claim-damage-assessment-handlers",
+      "sha256": "e5d8a85644223c8fb4fdfc059452c03d6f8515647752b8b6dd9e89b68b517c65"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ClaimDamageAssessment",
+      "instanceId": "Instance_1",
+      "initialVariables": [
+        {
+          "name": "adjuster",
+          "value": {
+            "kind": "string",
+            "value": "desk"
+          }
+        },
+        {
+          "name": "noAdjuster",
+          "value": {
+            "kind": "null"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-inspect-vehicle",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "InspectVehicle",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-inspect-property",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "InspectProperty",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-assess-damage",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AssessDamage",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-assess-damage-2",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AssessDamage",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "estimate",
+          "value": {
+            "kind": "string",
+            "value": "4200"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:dff6cc4c9216fb018392dcfdb027190b17903138754425aeac8bf10e815cf2ce",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FetchRates",
+        "activation": 2
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:4e9bc1070aef2452d845c714e02b06102174f63660c3e53d8482850f86211b43",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FetchRates",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-claim",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewClaim",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.4.1",
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0015",
+      "CIB-EXT-0020"
+    ]
+  }
+}

@@ -512,7 +512,7 @@ jobs:
       - name: Verify integration pipeline
         env:
           CI: "true"
-          BPMN_PIPELINE_WARM_BUDGET_MS: "267150"
+          BPMN_PIPELINE_WARM_BUDGET_MS: "273000"
         run: ./scripts/verify.sh pipeline
 
   verify_composition_parity:
