@@ -96,13 +96,13 @@ Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-PROPOSAL.md#p
 
 Deliverable: bodies hidden by default in every family, so a body edit rebuilds only the modules that load the body, re-checked by container rebuild probes across the core and every family.
 
-Acceptance blockers: the closure review of `afd2b1ba` rejected the closure ([receipt](LEAN-BUILD-MODULARITY-PROPOSAL.md#independent-cold-review-receipt)): ordinary edits are not covered as the owner's closure scope assumed, and contract item 5's fixture decision is due.
+Acceptance blockers: the closure review of `afd2b1ba` rejected the closure ([receipt](LEAN-BUILD-MODULARITY-PROPOSAL.md#independent-cold-review-receipt)): ordinary edits are not covered as the owner's closure scope assumed, and its four required findings stay open.
 
-Current result: the conversion, the generated-lemma fix and the probe matrix landed ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)), and eleven kernel modules hide their operation bodies (`726db247`, `6f6b3217`). Each recorded opening-import rise and size exception since 2026-10-30 rests on the owner's delegation of decisions to the session.
+Current result: the conversion, the generated-lemma fix and the probe matrix landed ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)), and eleven kernel modules hide their operation bodies (`726db247`, `6f6b3217`). The owner ratified the delegated opening-import rises, the sparse-case workaround and the bounds file's size exception on 2026-10-31.
 
-Effort budget: 80 hours; the owner lifted the cap on 2026-10-27, so reaching it records progress and continues.
+Effort budget: 6 hours from 2026-10-31 for the closure review's corrections (owner extension by half a day, 2026-10-31); reaching it stops and records the result.
 
-Next action: the owner decides how to close the gap, the item 5 remedy and the ratification of the delegated rises; then the corrections, the same reviewer's audit and graduation.
+Next action: restate the contract to the measured residual and close (owner decision, 2026-10-31): kernel-hiding container probes, root causes for the two kernel modules that still export bodies, a pinned replay, the same reviewer's audit, graduation.
 
 Oracle: a container body-edit probe that rebuilds more than the body-edit model predicts, or any weakened lane shape, claim or gate.
 
