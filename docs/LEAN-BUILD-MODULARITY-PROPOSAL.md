@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved-with-required-edits
 
 ## Problem
@@ -184,7 +184,7 @@ The first family-shaped increment was [concurrent scope Service Tasks](capsules/
 |---|---|---|---|---|
 | Proposal | `056241144bd4e3828355e2e88f3a2de715815c93` | `fork-turns-none` | `approve-with-required-edits` | `c46dcce614d999e0a9976339f405f2cfdfcf5c8d, 02ff88ba6cda59a67119dc3a536b175ab14b6ae5` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `463ee3375951f98b35e264fb10ded4c890fa23b4` | `fork-turns-none` | `approve-with-required-edits` | `e86d21e6811e96292d9db122bd56a5530d8f25e1, 67abfe779f17034b9f2c5b226e9a50d19f3fffa4` |
+| Closure | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
 
 The cold review of `05624114` (baseline `af8828a9`, packet `3b1bf9ed3419574012cf3d79c850381590c41bec006c3997945b68ffe61aee5b`) required eight edits: kernel types that enumerate families, cross-family operations, global whole-model fixtures, the fixture classification, the ratchet measure, guard migration, retained mechanism evidence and the rule-ID claim. The first audit closed them at `c46dcce6` and required the resume point to order guard migration first. The second audit approved `02ff88ba`. The owner adopted the proposal on 2026-10-23 after the hosted thread measurement.
 
@@ -197,4 +197,15 @@ The closure review of `463ee337` (baseline `02ff88ba`, packet `a739be1916bc834d0
 - the accuracy of the evidence;
 - the graduation itself.
 
-The first audit approved those corrections at `e86d21e6` and required three more: a rewrite-site ratchet, the admission of modules that load an exposed closed-world body, and corrected prediction claims. The second audit approved them at `67abfe77`.
+The first audit approved those corrections at `e86d21e6` and required three more: a rewrite-site ratchet, the admission of modules that load an exposed closed-world body, and corrected prediction claims. The second audit approved them at `67abfe77`. The proposal then returned from spec to proposal status, because ordinary body edits still rebuilt most of the library.
+
+The closure review of `c5add868` (baseline `2d8db0e7`, packet file SHA-256 `f811e84b8f27dd94079f86c3140cb745a903cb44f236bf06fd1e20cbeab7924d`) rejected the closure with six findings:
+
+- body-edit classes that change the public interface without disclosure; the mechanism it named, exported matchers of hidden bodies, was refuted, and the correction removed a different exporting class, sparse case-split names;
+- the kernel modules' blanket body-edit exemption;
+- the unratified opening-import total and size exception;
+- the undocumented private-by-default rule;
+- the tier-2 count and the metrics;
+- the reason recorded for the equation-lemma helper.
+
+The same reviewer audited the corrections. The first audit, at `f10a1e6f`, required five more: the verification lanes a hosted Temporal read failure had cut short, a leak record that tells a realized lemma from a sparse case split, the acceptance exclusions, the metrics at the target and a stale size reason. The second audit approved them at `9495a9eb`. Because the corrections added module rules, acceptance exclusions and a leak-record strategy, and changed about 250 Lean files that no reviewer inspected, they need a new cold closure review, which the Closure row records.

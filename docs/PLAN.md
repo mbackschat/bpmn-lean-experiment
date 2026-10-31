@@ -96,13 +96,13 @@ Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-PROPOSAL.md#p
 
 Deliverable: bodies hidden by default in every family, so a body edit rebuilds only the modules that load the body, re-checked by container rebuild probes across the core and every family.
 
-Acceptance blockers: the closure review's correction audit, then the heavy Lean lanes.
+Acceptance blockers: a new cold closure review, because those corrections were material ([receipt](LEAN-BUILD-MODULARITY-PROPOSAL.md#independent-cold-review-receipt)).
 
-Current result: the conversion and the generated-lemma fix (`4b963dc9`) landed, and the probe matrix is done ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)). The cold closure review of `c5add868` rejected the closure; its corrections landed, F2 as eleven kernel modules hiding their operation bodies (`726db247`, `6f6b3217`) without a kernel body-edit exemption (`dae12833`). Each recorded opening-import rise and size exception since 2026-10-30 rests on the owner's delegation of decisions to the session.
+Current result: the conversion, the generated-lemma fix (`4b963dc9`) and the probe matrix landed ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)). The `c5add868` closure review's corrections, with eleven kernel modules hiding their operation bodies (`726db247`, `6f6b3217`), passed its second audit at `9495a9eb`. Each recorded opening-import rise and size exception since 2026-10-30 rests on the owner's delegation of decisions to the session.
 
 Effort budget: 80 hours; the owner lifted the cap on 2026-10-27, so reaching it records progress and continues.
 
-Next action: the cold closure reviewer's correction audit, the heavy Lean lanes, graduation, then the concurrent scope data family.
+Next action: `./scripts/verify.sh` at the review target, the new cold closure review, graduation, then the concurrent scope data family.
 
 Oracle: a container body-edit probe that rebuilds more than the body-edit model predicts, or any weakened lane shape, claim or gate.
 
