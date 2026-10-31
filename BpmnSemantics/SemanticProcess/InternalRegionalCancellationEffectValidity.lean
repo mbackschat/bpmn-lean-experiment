@@ -15,7 +15,8 @@ data; incident association supplies the identity used by the actual cleanup filt
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cancelScopeSubtree, `effectIncidentAssociationValid,
   `effectIncidentAssociationsValid, `effectWaitOccurrenceId, `flowNodeOccurrenceEffectProgramValidity,
-  `flowNodeOccurrenceWaitProgramValidity]
+  `flowNodeOccurrenceWaitProgramValidity, `LocalDataOwner.processInstanceId, `activityOccurrenceScopeMatches,
+  `localDataOwnerMatches]
 
 public section
 

@@ -21,6 +21,7 @@ import all BpmnSemantics.SemanticProcess.MergeRegionAdmission
 import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import all BpmnSemantics.SemanticProcess.ScopeCancellation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! Arming retains its newly allocated owners, so REG-OWN-CLOSE-01 can reuse the
 predecessor's regional reference-retention checks without inspecting a successor diff. -/
@@ -35,7 +36,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.userTaskWaitOccurrence, `activityOwnerForRecord, `allMatchingRetained, `callReferenceRetention,
   `calledInstanceClosure, `cancellationReferenceRetention, `dataInputOutputActivityRecord, `recordInRegion,
   `regionalActivityOwnersClosed, `regionalActivityReferencesClosed, `regionalOwnershipClosed, `sameActivityOccurrence,
-  `taskIdNamesWait, `withdrawnByRegion]
+  `taskIdNamesWait, `withdrawnByRegion, `activityOccurrenceScopeMatches, `addActivityOccurrenceVariableScope,
+  `insertEffectWait, `insertMessageWait, `insertTimerWait, `localDataOwnerMatches]
 
 public section
 

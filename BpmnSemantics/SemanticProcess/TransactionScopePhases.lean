@@ -54,7 +54,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attemptInternalOpera
   `boundedScopeDefinitionForChild?, `calledInstanceClosure, `canonicalEnabledInternalTransitions,
   `completeBoundedScope?, `completeMonitoredScope?, `completeQuiescentScope?, `completeScopeState?,
   `completeSelectedScope?, `isMonitoredScopeDefinition, `processInstanceClosureWithin,
-  `snapshotInternalTransitionFrontier]
+  `snapshotInternalTransitionFrontier, `addToken, `canonicalInsertBy, `onlyTokenOwner?, `tokenOwners]
 
 public section
 

@@ -3,8 +3,10 @@ module
 public import BpmnSemantics.SemanticProcess.CyclicControlFlow
 import BpmnSemantics.SemanticProcess.TokenStorage
 import all BpmnSemantics.SemanticProcess.CyclicControlFlow
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Exclusive merge preserves token and active-unit counts; these storage laws are separate from executable selection. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`removeToken]
 
 public section
 

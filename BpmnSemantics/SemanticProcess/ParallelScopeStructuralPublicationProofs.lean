@@ -50,7 +50,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrencePr
   `InternalCommutation.EntryBinding, `InternalCommutation.ScopeBinding, `ParallelScopeAcceptedStart.parent,
   `ParallelScopeStart.analyzeProgram, `admitStimulus, `enteredChildScopeId?, `flowNodeOccurrenceOwnerLiveUnique,
   `nonempty, `parallelScopeEntry?, `programWellFormed, `scopeOperationBindingValid, `scopedOwnershipComplete,
-  `uniqueDefinitionScope?]
+  `uniqueDefinitionScope?, `runningProgramStartState?]
 
 public section
 

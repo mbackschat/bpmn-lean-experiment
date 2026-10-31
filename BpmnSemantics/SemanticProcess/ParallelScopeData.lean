@@ -12,7 +12,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! PMIS-DATA-01: occurrence-bound input evaluation for parallel repeated bodies. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScopeClaims, `parallelScopeBinding?,
-  `parallelScopeBodyBound]
+  `parallelScopeBodyBound, `runningProgramStartState?, `runningStartState, `scopeActivationCount]
 
 public section
 

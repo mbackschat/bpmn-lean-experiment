@@ -43,7 +43,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `ParallelScopeCommand.completeEffect?, `ParallelScopeCommand.completeTask?,
   `ParallelScopeReplay.waitCompletionStimulus, `SemanticOperation.kind, `SequentialScopeControl.inputs,
   `admitStimulus, `bodyConsumedPorts, `completeParallelScopeEffect?, `completeParallelScopeUserTask?,
-  `completeSerialEffect?, `scopeQuiescent]
+  `completeSerialEffect?, `scopeQuiescent, `insertEffectWait, `insertMessageWait, `insertTimerWait]
 
 public section
 

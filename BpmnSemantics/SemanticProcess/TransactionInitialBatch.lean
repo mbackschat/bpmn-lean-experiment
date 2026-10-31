@@ -56,7 +56,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalWaitKind.activationKind, `TransactionInitialTask.operation, `canonicalPublicationAtomSet,
   `canonicalStateAtomSet, `footprintsNonInterfering, `insertBy, `programWellFormed, `sortBy,
   `sortFlowNodeOccurrenceStarts, `transactionChildOwner, `transactionEnteredState, `transactionInitiatedState,
-  `transactionRootStartState, `transactionSplitState]
+  `transactionRootStartState, `transactionSplitState, `addToken, `addTokens, `canonicalInsertBy, `insertScopeOccurrence,
+  `onlyTokenOwner?, `runningStartState, `tokenOwners]
 
 public section
 

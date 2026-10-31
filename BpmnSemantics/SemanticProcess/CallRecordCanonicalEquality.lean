@@ -14,7 +14,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 The comparator omits retained payload fields, so permutation and order alone are insufficient.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`armingLexStep, `callRecordBefore, `orderedBy]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`armingLexStep, `callRecordBefore, `orderedBy,
+  `scopeOwnerBefore]
 
 public section
 

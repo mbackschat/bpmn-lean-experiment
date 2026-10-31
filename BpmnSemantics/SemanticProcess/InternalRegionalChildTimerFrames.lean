@@ -35,7 +35,7 @@ the removed child, independently of activation-counter coincidences. -/
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalSelectionReferenceRetention,
   `MonitoredScopeTimerBinding, `activityBodyParallelTasks?, `activityBodyScope?, `activityBodyTask?,
   `boundaryTimerWaitIdentity, `recordAttaches, `recordBodyNamesWait, `timerIdNamesWait, `timerWaitKeyMatches,
-  `waitIdentitiesUnique]
+  `waitIdentitiesUnique, `ActivityOccurrence.timerHandlerOccurrences]
 
 public section
 

@@ -45,7 +45,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.internalOperationOccurrenceOffers?, `InternalCommutation.internalOperationOccurrences?,
   `InternalCommutation.resolveInternalOperationOccurrence?, `ParallelScopeStart.analyzeProgram,
   `ParallelScopeStart.programOperationAllowed, `SemanticOperation.kind, `SequentialScopeControl.inputs,
-  `SequentialScopeProgram.operationAllowed, `bodyConsumedPorts, `scopedOwnershipComplete]
+  `SequentialScopeProgram.operationAllowed, `bodyConsumedPorts, `scopedOwnershipComplete, `runningProgramStartState?]
 
 public section
 

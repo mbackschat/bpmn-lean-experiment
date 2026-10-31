@@ -41,7 +41,7 @@ Canonical filter and erase laws retain exact list order, not only collection mem
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.PreparedInternalArming.apply,
   `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalTimerTaskPatch,
   `InternalCommutation.makeInternalTimerTaskPatch, `MonitoredScopeTimerBinding, `canonicalCollectionOrder,
-  `completeQuiescentScope?, `completeScopeState?, `removeMonitoredScopeTimer, `timerWaitKeyMatches]
+  `completeQuiescentScope?, `completeScopeState?, `removeMonitoredScopeTimer, `timerWaitKeyMatches, `insertTimerWait]
 
 public section
 

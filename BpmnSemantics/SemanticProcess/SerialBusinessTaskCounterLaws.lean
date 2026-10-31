@@ -11,7 +11,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Serial task issuance retains canonical counter storage and high-water marks. These laws are
 shared by the serial chain and mixed-task graph reachability frames. -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateUserTask]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateUserTask, `activationCount, `insertUserTaskWait,
+  `setActivationCount]
 
 public section
 

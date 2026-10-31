@@ -70,6 +70,7 @@ import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.WaitCompletion
 meta import BpmnSemantics.PrivateEquationLemmas
 import all BpmnSemantics.SemanticProcessContract
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Actual cyclic reachability and closure conformance
 
@@ -83,7 +84,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CyclicReviewPatch.ap
   `cyclicPostCompletionWithBindings, `cyclicPostEndWithBindings, `cyclicPostMergeWithBindings, `cyclicPostStartState,
   `cyclicSameInputMultiplicityTwoState, `cyclicScopedVariables, `cyclicTwoInputState, `cyclicWait,
   `cyclicWaitingWithBindings, `evaluateSimpleBooleanExpression, `selectConditionalOutput, `singletonWaitingState,
-  `taskIdNamesWait]
+  `taskIdNamesWait, `addToken, `canonicalInsertBy, `chooseToken, `mergeProcessVariableBindings, `onlyTokenOwner?,
+  `removeToken, `runningStartState, `tokenOwners]
 
 public section
 

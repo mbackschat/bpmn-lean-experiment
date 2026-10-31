@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.EffectDataMapping
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Flow-node occurrence Effect Program validity
 
@@ -13,7 +14,8 @@ This module owns immutable-Program correspondence for Effect waits and incidents
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
   `effectWaitDeclarers, `flowNodeOccurrenceOwnerLiveUnique, `operationControlPlaces,
-  `operationControlPlacesShareOwner, `operationOutputs]
+  `operationControlPlacesShareOwner, `operationOutputs, `activityScopeMatches, `addActivityOccurrenceVariableScope,
+  `addActivityVariableScope, `localDataOwnerMatches]
 
 public section
 

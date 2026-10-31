@@ -17,7 +17,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`controllerNamesActiv
   `controllersOwnLiveActivity, `parallelControllerNamesIdentity, `parallelControllerProgramBindingValid,
   `parallelMultiInstanceProgramBindingsValid, `parallelRecordForController?,
   `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
-  `sequentialMultiInstanceProgramBindingsValid]
+  `sequentialMultiInstanceProgramBindingsValid, `activityActivationCount]
 
 public section
 

@@ -56,7 +56,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CyclicRouteValue.bin
   `awaitUserTaskState?, `chooseState?, `cyclicChoiceOperation, `cyclicCompletionOperation, `cyclicEndOperation,
   `cyclicMergeOperation, `cyclicOperations, `cyclicPostChooseWithBindings, `cyclicPostCompletionWithBindings,
   `cyclicProgram, `cyclicReviewOperation, `cyclicScopedVariables, `cyclicStartOperation, `cyclicWaitingWithBindings,
-  `mergeExclusiveState?, `reachNoneEndState?, `singletonWaitingState, `step]
+  `mergeExclusiveState?, `reachNoneEndState?, `singletonWaitingState, `step, `onlyTokenOwner?, `tokenOwners]
 
 public section
 

@@ -29,7 +29,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeCommand
   `compensationTargetDeclaredForFamily, `completeBoundedScope?, `completeDataInputOutputUserTask?,
   `completeOrdinaryUserTaskWithCompensation?, `completeSelectedScope?, `dataInputOutputRuntimeJoinValid,
   `dispatchStimulus, `hasSequentialScopeDefinition, `isMonitoredScopeDefinition, `programWellFormed,
-  `reachNoneEndState?, `selectConditionalOutput, `sequentialScopeEntry?, `taskIdNamesWait]
+  `reachNoneEndState?, `selectConditionalOutput, `sequentialScopeEntry?, `taskIdNamesWait, `addToken,
+  `canonicalInsertBy, `chooseToken, `initiateState?, `insertUserTaskWait, `onlyTokenOwner?, `reachNoneEndToken,
+  `removeToken, `runningProgramStartState?, `runningStartState, `tokenOwners]
 
 public section
 

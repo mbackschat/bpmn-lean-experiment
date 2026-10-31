@@ -9,7 +9,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Monotone Task activation issuance preserves the provenance of retained Transaction
 handler subjects, including tombstones whose child scope has been disposed. -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`transactionTriggerProvenanceValid]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`transactionTriggerProvenanceValid, `activationCount,
+  `taskActivationCount]
 
 public section
 

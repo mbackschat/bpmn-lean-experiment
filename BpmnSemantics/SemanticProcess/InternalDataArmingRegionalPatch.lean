@@ -31,7 +31,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalDataArmingPatch,
   `InternalCommutation.makeInternalDataArmingPatch, `activityOwnerForRecord, `calledInstanceClosure,
   `cancelScopeSubtree, `canonicalCollectionOrder, `dataInputOutputActivityRecord, `recordInRegion, `retainedByRegion,
-  `sameActivityOccurrence]
+  `sameActivityOccurrence, `LocalDataOwner.processInstanceId, `activityOccurrenceScopeMatches, `activityScopeMatches,
+  `addActivityOccurrenceVariableScope, `localDataOwnerMatches]
 
 public section
 

@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 import BpmnSemantics.SemanticProcess.ProcessInterfaceData
 import all BpmnSemantics.SemanticProcess.ActivityDataEndpointRuntime
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Typed Activity data endpoint laws
 

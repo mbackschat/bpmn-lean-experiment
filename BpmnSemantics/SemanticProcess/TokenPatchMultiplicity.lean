@@ -5,10 +5,12 @@ public import BpmnSemantics.SemanticProcess.TokenPatch
 import BpmnSemantics.SemanticProcess.TokenStorage
 import all BpmnSemantics.SemanticProcess.TokenPatch
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! Token patches retain complete unit counts for the publication bridge in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`removeTokens]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.TokenPatch #[`apply]
 

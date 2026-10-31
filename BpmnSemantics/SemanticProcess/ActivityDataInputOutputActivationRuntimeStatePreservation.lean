@@ -62,7 +62,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `a
   `occursOnce, `operationDeclaresWaitKey, `operationOwningScope?, `operationWaitDeclarationKeys,
   `parallelMultiInstanceProgramBindingsValid, `runtimePositionValid, `runtimeStateIdentityBound,
   `runtimeStateWellFormed, `sameActivityOccurrence, `taskIdNamesWait, `userTaskWaitDeclarationKey,
-  `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+  `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive,
+  `ActivityOccurrence.messageHandlerOccurrences, `ActivityOccurrence.timerHandlerOccurrences, `activityScopeMatches,
+  `localDataOwnerMatches, `setActivationCount]
 
 public section
 

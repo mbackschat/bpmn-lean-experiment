@@ -17,7 +17,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredCompositio
   `StructuredComposition.operationVertex?, `admitStimulus, `callDataRuntimeStateValid,
   `interruptingMessageEventSubProcessStateValid, `isCallActivityProgram, `operationDeclaresWaitKey, `operationOutputs,
   `operationWaitDeclarationKeys, `scopeQuiescent, `structuredCompositionOrdinaryCompletionAdmitted,
-  `userTaskWaitDeclarationKey]
+  `userTaskWaitDeclarationKey, `runningProgramStartState?]
 
 public section
 

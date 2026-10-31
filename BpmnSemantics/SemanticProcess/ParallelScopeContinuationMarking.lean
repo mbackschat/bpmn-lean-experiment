@@ -26,7 +26,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ContinuationMarkingL
   `InternalCommutation.prepareOccurrenceTokenPatch?, `InternalCommutation.prepareReservedOccurrenceArm?,
   `TokenPatch.apply, `cancelScopeSubtree, `completeSerialEffect?, `continuationMarking, `issueParallelBodies?,
   `occurrenceInSubtree, `ownedPortCount, `parallelScopeBinding?, `retainedByRegion, `validParallelScopeIterations,
-  `validParallelScopePopulation]
+  `validParallelScopePopulation, `addTokens, `insertActivityOccurrence, `insertEffectWait]
 
 public section
 

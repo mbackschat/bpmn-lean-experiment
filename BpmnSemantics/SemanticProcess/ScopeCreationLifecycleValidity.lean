@@ -16,7 +16,7 @@ Boundary-Timer classification additionally needs the static exclusion of the new
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
-  `InternalCommutation.InternalScopeCreationSelection.apply, `flowNodeOccurrenceProgramValidity]
+  `InternalCommutation.InternalScopeCreationSelection.apply, `flowNodeOccurrenceProgramValidity, `insertScopeOccurrence]
 
 public section
 

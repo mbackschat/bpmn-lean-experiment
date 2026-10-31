@@ -14,7 +14,8 @@ representation deliberately carries no TypeScript operation-id field.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScope?, `boundedScopeChildOccurrence?,
-  `completeBoundedScope?, `completeMonitoredScope?, `completeSelectedScope?, `timerIdNamesWait]
+  `completeBoundedScope?, `completeMonitoredScope?, `completeSelectedScope?, `timerIdNamesWait,
+  `ActivityOccurrence.timerHandlerOccurrences]
 
 public section
 

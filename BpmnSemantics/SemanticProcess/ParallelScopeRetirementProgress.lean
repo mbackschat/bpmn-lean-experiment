@@ -61,7 +61,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `activityRecordsAttachMessageWait, `anyTimerIdNamesWait, `attachedTimersOf, `bodyConsumedPorts, `cancelScopeSubtree,
   `completeDeclaredScope?, `completeQuiescentScope?, `completeScopeState?, `completeSelectedScope?,
   `enterParallelScope?, `exactLiveOccurrence, `occurrenceInSubtree, `occurrenceInSubtreeWithin, `recordInRegion,
-  `retainedCancellationRoot, `withdrawnByRegion]
+  `retainedCancellationRoot, `withdrawnByRegion, `initiateState?, `rootScopeOccurrence?]
 
 public section
 

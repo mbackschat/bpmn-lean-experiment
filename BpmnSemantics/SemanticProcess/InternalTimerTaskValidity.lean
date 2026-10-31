@@ -23,7 +23,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrencePr
   `InternalCommutation.timerWaitOccurrence, `InternalCommutation.uniqueFamilyDeclarer?, `activityBodyLive,
   `activityBodyTask?, `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `exactLiveOccurrence,
   `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceWaitProgramValidity, `recordAttaches, `recordBodyNamesWait,
-  `taskIdNamesWait, `timerIdNamesWait, `timerWaitDeclarers, `timerWaitKeyMatches, `userTaskWaitKeyMatches]
+  `taskIdNamesWait, `timerIdNamesWait, `timerWaitDeclarers, `timerWaitKeyMatches, `userTaskWaitKeyMatches,
+  `ActivityOccurrence.messageHandlerOccurrences, `ActivityOccurrence.timerHandlerOccurrences, `insertTimerWait]
 
 public section
 

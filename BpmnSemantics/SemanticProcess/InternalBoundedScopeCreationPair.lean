@@ -31,7 +31,7 @@ The retained Activity and deadline add no reads to ordinary scope creation.
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalBoundedScopeSelection.apply,
   `InternalCommutation.InternalScopeCreationSelection.apply, `InternalCommutation.makeInternalBoundedScopePreparation,
   `InternalCommutation.makeInternalBoundedScopeSelection, `InternalCommutation.makeInternalScopeCreationPreparation,
-  `runningInstance?]
+  `runningInstance?, `setCallActivationCount]
 
 public section
 

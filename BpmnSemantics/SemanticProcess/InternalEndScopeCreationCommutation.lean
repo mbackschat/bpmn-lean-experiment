@@ -27,7 +27,8 @@ token places are separate. Existing scope-selection laws retain issuance and own
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalEndSelection.apply,
   `InternalCommutation.InternalEndSelection.tokens, `InternalCommutation.InternalScopeCreationSelection.apply,
   `InternalCommutation.internalEndStateFootprint, `InternalCommutation.liftRegionalStateAtom,
-  `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply]
+  `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply, `addTokens, `removeTokens,
+  `setCallActivationCount]
 
 public section
 

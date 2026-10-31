@@ -37,7 +37,7 @@ profile-local facts supply the linear continuation part of the command-boundary 
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cancelScopeSubtree,
   `compensationHandlerCompletionStateRejected, `compensationTriggerHandlerStateValid, `occurrenceInSubtree,
-  `occurrenceInSubtreeWithin]
+  `occurrenceInSubtreeWithin, `addToken, `canonicalInsertBy, `onlyTokenOwner?, `tokenOwners]
 
 public section
 

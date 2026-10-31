@@ -50,7 +50,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `ParallelScopeCommand.completeTask?, `ParallelScopeCommand.stimulusAdmitted,
   `ParallelScopeReplay.waitCompletionStimulus, `ParallelScopeStart.analyzeProgram,
   `ParallelScopeStart.programSelected, `SemanticOperation.kind, `admitStimulus, `applyParallelScopeOperation?,
-  `enterParallelScope?, `parallelScopeBinding?, `parallelScopeEntry?, `scopedOwnershipComplete]
+  `enterParallelScope?, `parallelScopeBinding?, `parallelScopeEntry?, `scopedOwnershipComplete, `initiateState?,
+  `rootScopeOccurrence?, `runningProgramStartState?]
 
 public section
 

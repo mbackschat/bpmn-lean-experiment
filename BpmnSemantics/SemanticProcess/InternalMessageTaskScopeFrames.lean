@@ -26,6 +26,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Scope creation frames use complete input-place censuses, including the newly produced token.
 An already-live Message-task owner remains live after the fresh scope insertion.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`callActivationCount, `onlyTokenOwner?,
+  `scopeActivationCount, `setCallActivationCount]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalScopeCreationSelection.apply,
   `applyInternalArmingPatch, `messageTaskStateFootprint, `prepareInternalMessageTaskContract?,

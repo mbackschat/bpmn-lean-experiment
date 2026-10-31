@@ -62,7 +62,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeAccepte
   `ParallelScopeStart.analyzeProgram, `ParallelScopeStart.programSelected, `SemanticOperation.kind,
   `SequentialScopeData.startBindingValueValid, `SerialBusinessTask.nameAllowed, `SerialBusinessTask.scalar,
   `admitStimulus, `completeSerialEffect?, `flowNodeOccurrenceProgramValidity, `flowNodeOccurrenceWaitProgramValidity,
-  `parallelScopeEntry?, `scopeVariableScalar]
+  `parallelScopeEntry?, `scopeVariableScalar, `runningProgramStartState?, `runningStartState]
 
 public section
 

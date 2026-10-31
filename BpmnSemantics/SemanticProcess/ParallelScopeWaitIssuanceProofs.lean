@@ -16,7 +16,7 @@ preparation or claiming that foreign-instance waits belong to this Program.
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
   `SemanticOperation.kind, `activateEffect, `activateUserTask, `declaredByExactlyOneOwnedOperation,
-  `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `waitDeclarationsValid]
+  `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `waitDeclarationsValid, `insertEffectWait]
 
 public section
 

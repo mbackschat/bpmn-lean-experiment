@@ -12,6 +12,7 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Repeated-scope preservation and reachability
 
@@ -23,7 +24,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeContr
   `SequentialScopeEntryResult.state, `awaitEffectState?, `awaitUserTaskState?, `duplicateState?, `fire?,
   `reachNoneEndState?, `selectScopeVariables?, `sequentialScopeActivityId, `sequentialScopeBindingForEntry?,
   `sequentialScopeCollection?, `sequentialScopeCollectionWithinLimits, `sequentialScopeEntryEnabled,
-  `sequentialScopeStateValid, `synchronizeState?]
+  `sequentialScopeStateValid, `synchronizeState?, `runningStartState, `scopeActivationCount]
 
 public section
 

@@ -68,7 +68,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SemanticOperation.ki
   `sameActivityOccurrence, `scopeOperationBindingValid, `sequentialMultiInstanceControllerProgramBindingsValid,
   `sequentialMultiInstanceOperationBindingComplete, `sequentialMultiInstanceProgramBindingsValid,
   `sequentialScopeActivityId, `sequentialScopeEntry?, `sortBy, `sortFlowNodeOccurrenceStarts, `waitDeclarationsValid,
-  `waitIdentitiesUnique, `waitOwnersLive]
+  `waitIdentitiesUnique, `waitOwnersLive, `ActivityOccurrence.messageHandlerOccurrences,
+  `ActivityOccurrence.timerHandlerOccurrences, `canonicalInsertBy, `insertActivityOccurrence, `insertScopeOccurrence]
 
 public section
 

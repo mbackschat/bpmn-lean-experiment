@@ -33,7 +33,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.applyInternalOperationOccurrence?, `InternalCommutation.internalOperationOccurrenceOffers?,
   `InternalCommutation.occurrenceReservationStateValid, `InternalCommutation.prepareOccurrenceTokenPatch?,
   `InternalCommutation.reserveOccurrenceMembers?, `SemanticOperation.kind, `SequentialScopeControl.inputs,
-  `bodyConsumedPorts]
+  `bodyConsumedPorts, `activationCount, `runningProgramStartState?]
 
 public section
 

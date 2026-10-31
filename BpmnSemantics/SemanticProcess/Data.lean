@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.Scenario
 public import BpmnSemantics.SemanticProcess.VariableMappingContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic Process bounded data mappings
 
@@ -26,7 +27,7 @@ inductive LocalDataOwner where
   deriving Repr, DecidableEq
 
 /-- Semantic Process instance named by either local-data owner arm. -/
-def LocalDataOwner.processInstanceId : LocalDataOwner → SemanticId
+@[no_expose] def LocalDataOwner.processInstanceId : LocalDataOwner → SemanticId
   | .effectOccurrence id => id.processInstanceId
   | .activityOccurrence id => id.processInstanceId
 
@@ -57,13 +58,13 @@ structure ScopedVariables where
   scopes : List ScopeVariableScope
   deriving Repr, DecidableEq
 
-def emptyScopedVariables : ScopedVariables :=
+@[expose] def emptyScopedVariables : ScopedVariables :=
   { process := { bindings := [] }
     activities := []
     processInterfaces := []
     scopes := [] }
 
-def insertVariableBinding (binding : VariableBinding) :
+@[no_expose] def insertVariableBinding (binding : VariableBinding) :
     List VariableBinding → List VariableBinding
   | [] => [binding]
   | candidate :: remaining =>
@@ -72,13 +73,15 @@ def insertVariableBinding (binding : VariableBinding) :
       else
         candidate :: insertVariableBinding binding remaining
 
-def sortVariableBindings : List VariableBinding → List VariableBinding
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertVariableBinding]
+@[no_expose] def sortVariableBindings : List VariableBinding → List VariableBinding
   | [] => []
   | binding :: remaining =>
       insertVariableBinding binding (sortVariableBindings remaining)
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`sortVariableBindings]
 /-- Canonically merge a User Task completion patch into Process scope, replacing equal names and retaining all unrelated bindings. -/
-def mergeProcessVariableBindings
+@[no_expose] def mergeProcessVariableBindings
     (existing replacements : List VariableBinding) : List VariableBinding :=
   let replacedNames := replacements.map (·.name)
   sortVariableBindings
@@ -168,16 +171,16 @@ theorem mergeProcessVariableBindings_strictOrder (existing replacements : List V
     exact absent (by simpa [named, ← same] using leftMember)
 
 /-- Exact equality for discriminated local-data owners. -/
-def localDataOwnerMatches (left right : LocalDataOwner) : Bool :=
+@[no_expose] def localDataOwnerMatches (left right : LocalDataOwner) : Bool :=
   decide (left = right)
 
 /-- Match only the effect-owned arm retained by the existing effect APIs. -/
-def activityScopeMatches (owner : EffectOccurrenceId)
+@[no_expose] def activityScopeMatches (owner : EffectOccurrenceId)
     (scope : ActivityVariableScope) : Bool :=
   localDataOwnerMatches (.effectOccurrence owner) scope.owner
 
 /-- Canonical complete-identity order within the effect-owner arm. -/
-def localEffectOwnerBefore
+@[no_expose] def localEffectOwnerBefore
     (left right : EffectOccurrenceId) : Bool :=
   if left.processInstanceId.value ≠ right.processInstanceId.value then
     left.processInstanceId.value < right.processInstanceId.value
@@ -187,7 +190,7 @@ def localEffectOwnerBefore
     left.activation < right.activation
 
 /-- Canonical complete-identity order within the Activity-owner arm. -/
-def localActivityOwnerBefore
+@[no_expose] def localActivityOwnerBefore
     (left right : ActivityOccurrenceId) : Bool :=
   if left.processInstanceId.value ≠ right.processInstanceId.value then
     left.processInstanceId.value < right.processInstanceId.value
@@ -197,7 +200,7 @@ def localActivityOwnerBefore
     left.activation < right.activation
 
 /-- Canonical discriminator-first order for complete local-data ownership. -/
-def localDataOwnerBefore (left right : LocalDataOwner) : Bool :=
+@[no_expose] def localDataOwnerBefore (left right : LocalDataOwner) : Bool :=
   match left, right with
   | .effectOccurrence left, .effectOccurrence right =>
       localEffectOwnerBefore left right
@@ -207,10 +210,10 @@ def localDataOwnerBefore (left right : LocalDataOwner) : Bool :=
       localActivityOwnerBefore left right
 
 /-- Canonical order for complete discriminated local-data ownership. -/
-def activityVariableScopeBefore (left right : ActivityVariableScope) : Bool :=
+@[no_expose] def activityVariableScopeBefore (left right : ActivityVariableScope) : Bool :=
   localDataOwnerBefore left.owner right.owner
 
-def insertActivityVariableScope (scope : ActivityVariableScope) :
+@[no_expose] def insertActivityVariableScope (scope : ActivityVariableScope) :
     List ActivityVariableScope → List ActivityVariableScope
   | [] => [scope]
   | current :: rest =>
@@ -219,8 +222,9 @@ def insertActivityVariableScope (scope : ActivityVariableScope) :
       else
         current :: insertActivityVariableScope scope rest
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertActivityVariableScope]
 /-- Add the input-mapping scope for one newly activated effect occurrence. Reachable runtime states supply a fresh complete owner. -/
-def addActivityVariableScope (variables : ScopedVariables)
+@[no_expose] def addActivityVariableScope (variables : ScopedVariables)
     (owner : EffectOccurrenceId)
     (bindings : List VariableBinding) : ScopedVariables :=
   { variables with
@@ -228,7 +232,7 @@ def addActivityVariableScope (variables : ScopedVariables)
       { owner := .effectOccurrence owner, bindings }
       variables.activities }
 
-def evaluateInputMappings : List VariableMapping →
+@[no_expose] def evaluateInputMappings : List VariableMapping →
     Option (List VariableBinding)
   | [] => some []
   | [{ target, expression := .stringLiteral value }] =>
@@ -237,20 +241,21 @@ def evaluateInputMappings : List VariableMapping →
 
 
 /-- SBT-INPUT-01 reads one immutable containing context; duplicate bindings are unavailable. -/
-def enclosingVariable? (bindings : List VariableBinding) (name : String) : Option VariableValue :=
+@[no_expose] def enclosingVariable? (bindings : List VariableBinding) (name : String) : Option VariableValue :=
   match bindings.filter (·.name == name) with
   | [binding] => match binding.value with
       | .string _ | .null => some binding.value
       | _ => none
   | _ => none
 
-def scalarInputLookup? (read : String → Option VariableValue) (name : String) : Option VariableValue := do
+@[no_expose] def scalarInputLookup? (read : String → Option VariableValue) (name : String) : Option VariableValue := do
   let value ← read name
   match value with
   | .string _ | .null => some value
   | _ => none
 
-def evaluateInputMappingsInOrder (read : String → Option VariableValue) :
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`scalarInputLookup?]
+@[no_expose] def evaluateInputMappingsInOrder (read : String → Option VariableValue) :
     List VariableMapping → Option (List VariableBinding)
   | [] => some []
   | mapping :: rest => do
@@ -260,7 +265,8 @@ def evaluateInputMappingsInOrder (read : String → Option VariableValue) :
         | .localVariable _ => none
       return { name := mapping.target, value } :: (← evaluateInputMappingsInOrder read rest)
 
-def orderedInputSnapshotMatches : List VariableMapping → List VariableBinding → Bool
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`evaluateInputMappingsInOrder]
+@[no_expose] def orderedInputSnapshotMatches : List VariableMapping → List VariableBinding → Bool
   | [], [] => true
   | mapping :: mappings, binding :: bindings =>
       mapping.target == binding.name &&
@@ -272,16 +278,18 @@ def orderedInputSnapshotMatches : List VariableMapping → List VariableBinding 
         | .localVariable _ => false) && orderedInputSnapshotMatches mappings bindings
   | _, _ => false
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`orderedInputSnapshotMatches]
 /-- Inserts by ascending target. Structural rather than `List.mergeSort`, whose well-founded
 recursion the kernel cannot unfold, so a kernel-decided witness can capture two or more inputs. On the
 distinct targets `canonicalInputMappings?` admits, every stable ascending sort agrees. -/
-def insertByTarget (mapping : VariableMapping) : List VariableMapping → List VariableMapping
+@[no_expose] def insertByTarget (mapping : VariableMapping) : List VariableMapping → List VariableMapping
   | [] => [mapping]
   | current :: rest =>
       if mapping.target ≤ current.target then mapping :: current :: rest
       else current :: insertByTarget mapping rest
 
-def sortByTarget : List VariableMapping → List VariableMapping
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertByTarget]
+@[no_expose] def sortByTarget : List VariableMapping → List VariableMapping
   | [] => []
   | mapping :: rest => insertByTarget mapping (sortByTarget rest)
 
@@ -301,22 +309,24 @@ theorem sortByTarget_perm (mappings : List VariableMapping) : (sortByTarget mapp
   | cons mapping rest ih => exact (insertByTarget_perm mapping _).trans (List.Perm.cons mapping ih)
 
 /-- SBT-SNAPSHOT-01 treats mapping declarations by target name; duplicate targets cannot define a snapshot. -/
-def canonicalInputMappings? (mappings : List VariableMapping) : Option (List VariableMapping) :=
+@[no_expose] def canonicalInputMappings? (mappings : List VariableMapping) : Option (List VariableMapping) :=
   if (mappings.map (·.target)).Nodup then some (sortByTarget mappings)
   else none
 
 /-- Immutable snapshots use canonical target order independently of declaration order. -/
-def inputSnapshotMatches (mappings : List VariableMapping) (bindings : List VariableBinding) : Bool :=
+@[no_expose] def inputSnapshotMatches (mappings : List VariableMapping) (bindings : List VariableBinding) : Bool :=
   match canonicalInputMappings? mappings with
   | some ordered => orderedInputSnapshotMatches ordered bindings
   | none => false
 
-def evaluateInputMappings? (read : String → Option VariableValue) (mappings : List VariableMapping) :
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`inputSnapshotMatches]
+@[no_expose] def evaluateInputMappings? (read : String → Option VariableValue) (mappings : List VariableMapping) :
     Option (List VariableBinding) := do
   let ordered ← canonicalInputMappings? mappings
   evaluateInputMappingsInOrder read ordered
 
-def evaluateEnclosingInputMappings (bindings : List VariableBinding) (mappings : List VariableMapping) :
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`evaluateInputMappings?]
+@[no_expose] def evaluateEnclosingInputMappings (bindings : List VariableBinding) (mappings : List VariableMapping) :
     Option (List VariableBinding) := evaluateInputMappings? (enclosingVariable? bindings) mappings
 
 theorem scalarInputLookup_enclosing (context : List VariableBinding) (name : String) :
@@ -407,17 +417,17 @@ theorem evaluateEnclosingInputMappings_snapshot (context : List VariableBinding)
     inputSnapshotMatches mappings bindings = true :=
   evaluateInputMappings_snapshot (enclosingVariable? context) mappings bindings evaluated
 
-def singleStringLiteralMapping : List VariableMapping → Bool
+@[no_expose] def singleStringLiteralMapping : List VariableMapping → Bool
   | [{ target, expression := .stringLiteral value }] =>
       !target.isEmpty && !value.isEmpty
   | _ => false
 
-def singleLocalVariableMapping : List VariableMapping → Bool
+@[no_expose] def singleLocalVariableMapping : List VariableMapping → Bool
   | [{ target, expression := .localVariable name }] =>
       !target.isEmpty && !name.isEmpty
   | _ => false
 
-def applyEffectPatch
+@[no_expose] def applyEffectPatch
     (_arguments : List VariableBinding)
     (outputMappings : List VariableMapping)
     (processBindings : List VariableBinding)
@@ -443,7 +453,7 @@ def applyEffectPatch
         none
   | _, _ => none
 
-def applyEffectResult
+@[no_expose] def applyEffectResult
     (arguments : List VariableBinding)
     (outputMappings : List VariableMapping)
     (processBindings : List VariableBinding)
@@ -457,12 +467,12 @@ def applyEffectResult
         localPatch true
 
 /-- Match only the Activity-occurrence-owned arm used by the direct data-input family. -/
-def activityOccurrenceScopeMatches (owner : ActivityOccurrenceId)
+@[no_expose] def activityOccurrenceScopeMatches (owner : ActivityOccurrenceId)
     (scope : ActivityVariableScope) : Bool :=
   localDataOwnerMatches (.activityOccurrence owner) scope.owner
 
 /-- Add the copied data-input scope for one newly activated Activity occurrence. Separate from the effect entry point because substituting one owner family for the other is the alias this discriminator exists to prevent. -/
-def addActivityOccurrenceVariableScope (variables : ScopedVariables)
+@[no_expose] def addActivityOccurrenceVariableScope (variables : ScopedVariables)
     (owner : ActivityOccurrenceId)
     (bindings : List VariableBinding) : ScopedVariables :=
   { variables with
@@ -471,14 +481,14 @@ def addActivityOccurrenceVariableScope (variables : ScopedVariables)
       variables.activities }
 
 /-- The bindings of one Activity occurrence's unique local scope, or `none`. -/
-def activityOccurrenceVariableBindings (variables : ScopedVariables)
+@[no_expose] def activityOccurrenceVariableBindings (variables : ScopedVariables)
     (owner : ActivityOccurrenceId) : Option (List VariableBinding) :=
   match variables.activities.filter (activityOccurrenceScopeMatches owner) with
   | [scope] => some scope.bindings
   | _ => none
 
 /-- Remove one Activity occurrence's local scope, preserving Process scope and every other owner. A missing or duplicated owner returns `none` rather than removing what it found, so a state that lost the join refuses instead of committing a partial disposal. -/
-def removeActivityOccurrenceVariableScope (variables : ScopedVariables)
+@[no_expose] def removeActivityOccurrenceVariableScope (variables : ScopedVariables)
     (owner : ActivityOccurrenceId) : Option ScopedVariables :=
   match variables.activities.filter (activityOccurrenceScopeMatches owner) with
   | [_] =>
@@ -560,7 +570,7 @@ theorem removeActivityOccurrenceVariableScope_disposes
   · exact absurd removed (by simp)
 
 /-- Validate one effect result against its unique owned local scope, map into Process scope, and remove only that local scope. Missing or duplicate owners return `none`. -/
-def completeActivityVariableScope
+@[no_expose] def completeActivityVariableScope
     (variables : ScopedVariables)
     (owner : EffectOccurrenceId)
     (outputMappings : List VariableMapping)

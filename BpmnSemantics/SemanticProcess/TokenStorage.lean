@@ -1,11 +1,14 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Token storage multiplicity laws
 
 Permutation witnesses separate exact token ownership and multiplicity from insertion order. These low-level laws remain available to start and position validation without importing the aggregate runtime invariant.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addToken, `canonicalInsertBy, `removeToken]
 
 public section
 

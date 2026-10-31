@@ -6,12 +6,13 @@ import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessCompl
 import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessStateValidation
 import all BpmnSemantics.SemanticProcess.ScopeCompletion
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! IMES-CLOSE-01 and IMES-EXPIRE-01 relations, soundness and lifetime laws. These distinguish handler
 disposal from ordinary-child continuation and passive listening from work that prevents completion. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeEventSubProcessState?,
-  `messageEventSubProcessRunningPhaseValid, `scopeQuiescent]
+  `messageEventSubProcessRunningPhaseValid, `scopeQuiescent, `canonicalInsertBy]
 
 public section
 

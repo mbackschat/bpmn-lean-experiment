@@ -52,7 +52,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeReplay.
   `SequentialScopeControl.inputs, `SequentialScopeProgram.operationAllowed, `admitStimulus, `bodyConsumedPorts,
   `bodyProducedPorts, `completeParallelScopeEffect?, `completeSerialEffect?, `continuationMarking, `operationOutputs,
   `ownedPortCount, `parallelScopeContinuation?, `parallelScopeEntry?, `parallelScopeOperationWellFormed,
-  `parentContinuationMarking]
+  `parentContinuationMarking, `addToken, `canonicalInsertBy, `initiateState?, `rootScopeOccurrence?,
+  `runningProgramStartState?, `runningStartState]
 
 public section
 

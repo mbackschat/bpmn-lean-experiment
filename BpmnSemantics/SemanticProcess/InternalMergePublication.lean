@@ -30,7 +30,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.InternalTransitionPublicationTemplate.instantiate,
   `InternalCommutation.actualInternalAlternativePublication?, `InternalCommutation.internalMergePublicationTemplate,
   `InternalCommutation.makeInternalMergePreparation, `SemanticOperation.kind, `TokenPatch.apply,
-  `acceptFlowNodeOccurrenceCandidate?]
+  `acceptFlowNodeOccurrenceCandidate?, `addTokens, `removeTokens]
 
 public section
 

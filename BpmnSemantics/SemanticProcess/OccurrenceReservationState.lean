@@ -6,13 +6,16 @@ import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import all BpmnSemantics.SemanticProcess.InternalCommutationCore
 import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! PMIS-SELECT-01 shares retained-anchor issuance checks with private command admission without importing transition publication back into admission. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.available,
   `InternalCommutation.InternalArmingWrite.elementId, `InternalCommutation.InternalArmingWrite.occurrence,
   `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.effectWaitOccurrence,
-  `InternalCommutation.openWaitAnchors, `InternalCommutation.userTaskWaitOccurrence, `effectActivationCount]
+  `InternalCommutation.openWaitAnchors, `InternalCommutation.userTaskWaitOccurrence, `effectActivationCount,
+  `activationCount, `activityScopeMatches, `canonicalInsertBy, `elementActivationCount, `insertActivityVariableScope,
+  `insertEffectWait, `insertTaskActivation, `localDataOwnerMatches, `taskActivationCount]
 
 public section
 

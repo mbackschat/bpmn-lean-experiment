@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
 import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Policy-parameterized effect input mapping
 
@@ -11,6 +12,7 @@ definition is the policy-parameterized form of the scalar definition in `Data` a
 theorem pins the `scalar` arm to that definition, so the legacy names and statements stay the
 scalar specialization without rewriting the proofs that unfold them.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`evaluateInputMappingsInOrder, `orderedInputSnapshotMatches]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.EffectMappingValuePolicy #[`admits]
 

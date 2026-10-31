@@ -47,7 +47,7 @@ human-completion fairness, Timer-delivery fairness, or unconditional liveness.
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyTask?, `activityOccurrenceFrame,
   `completedInstanceCount, `controllerNamesActivityOccurrence, `enteredController, `iteratedState, `replaceBodyIn,
   `replacedState, `sameSequentialMultiInstanceController, `sequentialMultiInstanceControllerFrame,
-  `storeIterationResult]
+  `storeIterationResult, `ActivityOccurrence.timerHandlerOccurrences]
 
 public section
 

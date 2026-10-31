@@ -13,6 +13,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 The Activity supplement commutes with ordinary updates through separate counter domains and
 discriminated local owners, even when the Effect and Activity occurrence coordinates coincide.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addActivityOccurrenceVariableScope]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyInternalArmingPatch,
   `applyInternalDataArmingActivityPatch, `applyInternalDataArmingPatch]

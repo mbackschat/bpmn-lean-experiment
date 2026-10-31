@@ -21,7 +21,8 @@ no transition, public observation, shared runtime-state field, or host state.
 run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyParallelTasks?,
-  `parallelMultiInstanceRuntimeWellFormed, `parallelSlotIdentityValid, `pendingParallelTaskIds, `timerIdNamesWait]
+  `parallelMultiInstanceRuntimeWellFormed, `parallelSlotIdentityValid, `pendingParallelTaskIds, `timerIdNamesWait,
+  `activationCount, `canonicalInsertBy, `insertUserTaskWait]
 
 public section
 

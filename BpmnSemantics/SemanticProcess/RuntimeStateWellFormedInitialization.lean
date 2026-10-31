@@ -38,7 +38,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyClaimsUn
   `retentionLifecycleValid, `runtimePositionValid, `runtimeStateIdentityBound, `scopedOwnershipComplete,
   `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
   `sequentialMultiInstanceProgramBindingsValid, `sequentialScopeEntry?, `sequentialScopeStateValid,
-  `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+  `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive, `runningStartState]
 
 public section
 

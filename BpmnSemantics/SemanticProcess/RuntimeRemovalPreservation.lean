@@ -18,7 +18,8 @@ counters. Their owner-liveness and Activity-controller rules remain at the disti
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalCollectionOrder, `hiddenRecordDeclarationsValid,
-  `orderedBy, `runtimeStateIdentityBound, `waitDeclarationsValid]
+  `orderedBy, `runtimeStateIdentityBound, `waitDeclarationsValid, `activationCount, `activityActivationCount,
+  `timerActivationCount]
 
 public section
 

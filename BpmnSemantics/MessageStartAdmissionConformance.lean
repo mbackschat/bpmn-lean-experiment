@@ -38,6 +38,7 @@ import all BpmnSemantics.CheckedProcessContract
 import all BpmnSemantics.Scenario
 import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 import all BpmnSemantics.SemanticProcessContract
+import all BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Message Start Event admission conformance
 

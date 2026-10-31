@@ -50,7 +50,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `activateUserTask, `canonicalCollectionOrder, `operationDeclaresWaitKey, `operationWaitDeclarationKeys,
   `runningInstance?, `runtimePositionValid, `runtimeStateIdentityBound, `runtimeStateWellFormed,
   `sameActivityOccurrence, `timerWaitKeyMatches, `userTaskWaitDeclarationKey, `userTaskWaitKeyMatches,
-  `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+  `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive, `ActivityOccurrence.messageHandlerOccurrences,
+  `insertTimerWait, `setTimerActivationCount]
 
 public section
 

@@ -22,7 +22,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
-  `InternalCommutation.internalScopeCreationDefinitionMatches, `exactLiveOccurrence, `uniqueDefinitionScope?]
+  `InternalCommutation.internalScopeCreationDefinitionMatches, `exactLiveOccurrence, `uniqueDefinitionScope?,
+  `insertScopeOccurrence]
 
 public section
 

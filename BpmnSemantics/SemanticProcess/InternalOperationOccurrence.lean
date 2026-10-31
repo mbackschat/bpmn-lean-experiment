@@ -9,6 +9,7 @@ import all BpmnSemantics.SemanticProcess.TokenPatch
 import all BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! PMIS-SELECT-01: exact occurrence execution over the discovery in `InternalOperationOccurrenceDiscovery`,
 which CEA-OCCUR-01 and CEA-QUIESCE-01 reuse for merge-target scope operations. This changing execution

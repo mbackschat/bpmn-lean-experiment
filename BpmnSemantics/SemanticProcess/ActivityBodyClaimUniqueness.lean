@@ -16,7 +16,7 @@ controller binding, and host order are independent obligations and are not infer
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScope?, `activityBodyScopeClaims,
   `activityBodyTask?, `activityBodyTaskClaims, `activityOccurrenceForScope?, `activityOccurrenceForTaskWait?,
-  `recordBodyNamesWait, `taskIdNamesWait]
+  `recordBodyNamesWait, `taskIdNamesWait, `insertActivityOccurrence]
 
 public section
 

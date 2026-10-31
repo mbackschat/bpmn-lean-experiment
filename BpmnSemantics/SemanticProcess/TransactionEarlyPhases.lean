@@ -30,7 +30,8 @@ prefix selects the other Task. These facts supply the early cases of reachable-p
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TransactionInitialTask.arm, `activateUserTask,
   `attemptInternalOperation, `completeQuiescentScope?, `completeScopeState?, `scopeQuiescent,
   `transactionEnteredState, `transactionInitialArmingState, `transactionInitiatedState, `transactionRootStartState,
-  `transactionSplitState]
+  `transactionSplitState, `addToken, `addTokens, `canonicalInsertBy, `onlyTokenOwner?, `removeToken, `runningStartState,
+  `tokenOwners]
 
 public section
 

@@ -20,7 +20,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelMultiInstanc
   `activityBodyParallelTasks?, `completeParallelSlot, `insertParallelMultiInstanceController,
   `parallelControllerNamesIdentity, `parallelMultiInstanceProgramBindingsValid,
   `parallelMultiInstanceRuntimeWellFormed, `parallelOutputAbsent, `parallelSlotTaskIds, `pendingParallelTaskIds,
-  `removeParallelChildWaits, `removeParallelController, `replacePendingParallelSlot, `sameActivityOccurrence]
+  `removeParallelChildWaits, `removeParallelController, `replacePendingParallelSlot, `sameActivityOccurrence,
+  `ActivityOccurrence.timerHandlerOccurrences, `activationCount, `activityActivationCount, `timerActivationCount]
 
 public section
 

@@ -42,7 +42,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredCompositio
   `callDataRuntimeStateValid, `canonicalCollectionOrder, `chooseState?, `committedStateCollectionAdmitted,
   `committedStateCollectionDefects, `completeDataInputOutputUserTask?, `interruptingMessageEventSubProcessStateValid,
   `occursOnce, `orderedBy, `parallelMultiInstanceControllersOrdered, `reachNoneEndState?, `sameActivityOccurrence,
-  `uniqueCollectionKeys, `userTaskWaitKeyMatches, `waitIdentitiesUnique]
+  `uniqueCollectionKeys, `userTaskWaitKeyMatches, `waitIdentitiesUnique, `runningProgramStartState?, `runningStartState]
 
 public section
 

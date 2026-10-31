@@ -20,7 +20,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredCompositio
   `activityOccurrenceForTaskWait?, `admitStimulus, `awaitUserTaskState?, `callDataRuntimeStateValid, `chooseState?,
   `interruptingMessageEventSubProcessStateValid, `isCallActivityProgram, `operationDeclaresWaitKey,
   `operationOwningScope?, `operationWaitDeclarationKeys, `processInterfaceScalar, `programEntryRootScopeId?,
-  `reachNoneEndState?, `runningInstance?, `sameActivityOccurrence, `scopeQuiescent, `scopedOwnershipComplete]
+  `reachNoneEndState?, `runningInstance?, `sameActivityOccurrence, `scopeQuiescent, `scopedOwnershipComplete,
+  `addActivityOccurrenceVariableScope, `insertActivityOccurrence, `insertActivityVariableScope, `insertUserTaskWait,
+  `removeActivityOccurrenceVariableScope, `rootDefinitionScope?, `runningProgramStartState?, `runningStartState]
 
 public section
 

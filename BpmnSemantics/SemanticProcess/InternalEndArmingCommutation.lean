@@ -33,7 +33,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.InternalEndSelection.tokens, `InternalCommutation.PreparedInternalArming.apply,
   `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalDataArmingPatch,
   `InternalCommutation.internalEndStateFootprint, `InternalCommutation.liftRegionalStateAtom,
-  `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply, `exactLiveOccurrence]
+  `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply, `exactLiveOccurrence, `addTokens, `removeTokens]
 
 public section
 

@@ -25,7 +25,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.footprintOfPatch, `InternalCommutation.internalActivationCount,
   `InternalCommutation.listsDisjoint, `InternalCommutation.makeInternalDataArmingPatch,
   `InternalCommutation.prepareInternalDataArmingContract?, `InternalCommutation.stateReadSetsDisjoint,
-  `canonicalStateAtomSet, `dataInputOutputActivityRecord, `dataInputOutputRunningInstance?, `footprintsNonInterfering]
+  `canonicalStateAtomSet, `dataInputOutputActivityRecord, `dataInputOutputRunningInstance?, `footprintsNonInterfering,
+  `activityActivationCount, `activityOccurrenceScopeMatches, `activityScopeMatches, `addActivityOccurrenceVariableScope,
+  `localDataOwnerMatches]
 
 public section
 

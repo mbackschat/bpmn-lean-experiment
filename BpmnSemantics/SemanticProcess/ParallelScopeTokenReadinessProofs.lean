@@ -68,7 +68,7 @@ Neither fact assumes successful batch preparation or publication.
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
   `InternalCommutation.prepareOccurrenceTokenPatch?, `ParallelScopeStart.analyzeProgram,
   `ParallelScopeStart.programSelected, `SemanticOperation.kind, `SequentialScopeControl.inputs, `bodyConsumedPorts,
-  `continuationMarking, `nonempty, `operationOutputs]
+  `continuationMarking, `nonempty, `operationOutputs, `runningProgramStartState?]
 
 public section
 

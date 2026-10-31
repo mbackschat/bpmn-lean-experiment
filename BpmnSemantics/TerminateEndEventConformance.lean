@@ -33,6 +33,7 @@ import all BpmnSemantics.SemanticProcess.TerminateEndLowering
 import all BpmnSemantics.TerminateEndEventFixtures
 import all BpmnSemantics.CheckedProcessContract
 import all BpmnSemantics.SemanticProcessContract
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Terminate End Event conformance
 

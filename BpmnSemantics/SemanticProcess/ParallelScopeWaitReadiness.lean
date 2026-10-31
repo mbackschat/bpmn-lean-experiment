@@ -45,7 +45,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.applyReservedOccurrencePrefix?, `InternalCommutation.effectWaitOccurrence,
   `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.userTaskWaitOccurrence,
   `ParallelScopeStart.analyzeProgram, `ParallelScopeStart.programSelected, `ParallelScopeStart.programStateCapacity,
-  `SemanticOperation.kind, `effectActivationCount, `hasParallelScopeDefinition, `waitDeclarationsValid]
+  `SemanticOperation.kind, `effectActivationCount, `hasParallelScopeDefinition, `waitDeclarationsValid,
+  `activationCount, `elementActivationCount, `runningProgramStartState?, `runningStartState, `taskActivationCount]
 
 public section
 

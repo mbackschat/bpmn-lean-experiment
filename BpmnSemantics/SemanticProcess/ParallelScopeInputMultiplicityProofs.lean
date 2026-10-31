@@ -35,7 +35,7 @@ application, reservation or successful frontier discovery.
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.analyzeProgram,
   `SemanticOperation.kind, `SequentialScopeControl.bodyVertex?, `SequentialScopeControl.inputs, `bodyConsumedPorts,
-  `continuationMarking, `ownedPortCount]
+  `continuationMarking, `ownedPortCount, `runningProgramStartState?, `runningStartState]
 
 public section
 

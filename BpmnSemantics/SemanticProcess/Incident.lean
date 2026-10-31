@@ -3,13 +3,15 @@ module
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import all BpmnSemantics.SemanticProcess.ActivityOccurrence
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Semantic Process effect incidents
 
 This module owns the private incident association, the one literal-generation report and retry relations, and their executable transitions. It preserves the complete suspended effect wait and does not define host failure, CIB identity, cancellation, or general BPMN fault meaning.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectIdNamesWait]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectIdNamesWait, `activityScopeMatches,
+  `addActivityVariableScope, `canonicalInsertBy, `localDataOwnerMatches]
 
 public section
 

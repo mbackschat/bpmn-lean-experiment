@@ -8,6 +8,7 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! PMIS-DATA-01: collection preservation and provenance proofs remain outside the executable command dependency graph. -/
 

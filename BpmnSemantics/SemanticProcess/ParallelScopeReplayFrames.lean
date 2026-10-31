@@ -73,7 +73,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `ParallelScopeReplay.bodyOrRetirementTransition, `ParallelScopeReplay.bodyTransition,
   `ParallelScopeReplay.committedTransitions?, `ParallelScopeReplay.waitCompletionStimulus, `SemanticOperation.kind,
   `SequentialScopeProgram.operationAllowed, `TokenPatch.apply, `admitStimulus, `boundedScopeDefinitionForChild?,
-  `completeSelectedScope?, `isMonitoredScopeDefinition, `issueParallelBodies?]
+  `completeSelectedScope?, `isMonitoredScopeDefinition, `issueParallelBodies?, `addTokens, `duplicateToken,
+  `initiateState?, `reachNoneEndToken, `removeTokens, `rootScopeOccurrence?, `synchronizeTokens]
 
 public section
 

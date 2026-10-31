@@ -11,7 +11,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 [scope-creation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`triggerLifecycleValid]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`triggerLifecycleValid, `insertScopeOccurrence]
 
 public section
 

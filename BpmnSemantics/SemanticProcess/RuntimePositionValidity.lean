@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import Std.Data.DTreeMap.Internal.Operations
 import all BpmnSemantics.SemanticProcess.GraphValidation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Runtime position validity
 

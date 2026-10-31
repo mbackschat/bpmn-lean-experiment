@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.Data
 public import BpmnSemantics.SemanticProcess.ParallelScopePopulation
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceController
 public import BpmnSemantics.SemanticProcessContract
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic Process runtime state
 
@@ -183,13 +184,13 @@ structure ActivityOccurrence where
   deriving Repr, DecidableEq
 
 /-- The Timer-only projection of one Activity's attached handlers, preserving handler order. -/
-def ActivityOccurrence.timerHandlerOccurrences (record : ActivityOccurrence) : List OccurrenceId :=
+@[no_expose] def ActivityOccurrence.timerHandlerOccurrences (record : ActivityOccurrence) : List OccurrenceId :=
   record.attachedHandlers.filterMap fun
     | .timer occurrence => some occurrence
     | .message _ => none
 
 /-- The Message-only projection of one Activity's attached handlers, preserving handler order. -/
-def ActivityOccurrence.messageHandlerOccurrences (record : ActivityOccurrence) : List OccurrenceId :=
+@[no_expose] def ActivityOccurrence.messageHandlerOccurrences (record : ActivityOccurrence) : List OccurrenceId :=
   record.attachedHandlers.filterMap fun
     | .timer _ => none
     | .message occurrence => some occurrence
@@ -369,7 +370,7 @@ structure RuntimeState where
   logicalTimeMs : Nat
   deriving Repr, DecidableEq
 
-def initialState : RuntimeState :=
+@[expose] def initialState : RuntimeState :=
   { control := .notStarted
     initiationPending := false
     scopeOccurrences := []
@@ -404,7 +405,7 @@ def initialState : RuntimeState :=
     logicalTimeMs := 0 }
 
 /-- The failed-state validator checks this listed subset of live collections; inherited listeners and scope/interface data are outside this predicate. -/
-def failedCompensationListedLiveCollectionsEmpty (state : RuntimeState) : Bool :=
+@[no_expose] def failedCompensationListedLiveCollectionsEmpty (state : RuntimeState) : Bool :=
   !state.initiationPending && state.scopeOccurrences.isEmpty && state.tokens.isEmpty &&
     state.waits.isEmpty && state.messageWaits.isEmpty && state.timerWaits.isEmpty &&
     state.effectWaits.isEmpty && state.effectIncidents.isEmpty &&
@@ -417,7 +418,7 @@ def failedCompensationListedLiveCollectionsEmpty (state : RuntimeState) : Bool :
     state.compensationParentContextRetentions.isEmpty &&
     state.compensationHandlerEffectWaits.isEmpty && state.variables.activities.isEmpty
 
-def compensationSubjectOwnsEffect (program : Program)
+@[no_expose] def compensationSubjectOwnsEffect (program : Program)
     (occurrence : CompensationSubjectOccurrence) (effectElementId : SemanticId) : Bool :=
   match program.compensationExecution with
   | none => false
@@ -433,14 +434,14 @@ def compensationSubjectOwnsEffect (program : Program)
           body.effectElementId.value == effectElementId.value
       | _ => false
 
-def compensationFailureEffectActivationMatches (state : RuntimeState)
+@[no_expose] def compensationFailureEffectActivationMatches (state : RuntimeState)
     (effectId : EffectOccurrenceId) : Bool :=
   match state.effectActivations.filter fun activation =>
       activation.elementId.value == effectId.elementId.value with
   | [activation] => activation.count == effectId.activation
   | _ => false
 
-def compensationFailureMatchesTrigger (program : Program) (state : RuntimeState)
+@[no_expose] def compensationFailureMatchesTrigger (program : Program) (state : RuntimeState)
     (instanceId : SemanticId) (failure : CompensationHandlerFailure)
     (trigger : CompensationTriggerExecution) : Bool :=
   trigger.id == failure.triggerId && trigger.lifecycle == .failed &&
@@ -456,7 +457,7 @@ def compensationFailureMatchesTrigger (program : Program) (state : RuntimeState)
     | _ => false
 
 /-- The checkpoint admits at most one live Compensation trigger for any exact root occurrence. -/
-def activeCompensationTriggerOwnersUnique (state : RuntimeState) : Bool :=
+@[no_expose] def activeCompensationTriggerOwnersUnique (state : RuntimeState) : Bool :=
   state.compensationTriggers.all fun trigger =>
     if trigger.lifecycle == .active then
       (state.compensationTriggers.filter fun candidate =>
@@ -464,7 +465,7 @@ def activeCompensationTriggerOwnersUnique (state : RuntimeState) : Bool :=
     else true
 
 /-- Exact failed-control closure: one declared failed trigger owns one matching failed-handler tombstone and no live execution region survives. -/
-def failedCompensationStateValid (program : Program) (state : RuntimeState) : Bool :=
+@[no_expose] def failedCompensationStateValid (program : Program) (state : RuntimeState) : Bool :=
   match state.control with
   | .failed instanceId failure =>
       program.compensationExecution.isSome &&
@@ -477,7 +478,7 @@ def failedCompensationStateValid (program : Program) (state : RuntimeState) : Bo
           trigger.lifecycle == .succeeded || trigger.lifecycle == .failed
   | _ => false
 
-def runningStartState (instanceId : SemanticId)
+@[no_expose] def runningStartState (instanceId : SemanticId)
     (initialVariables : List VariableBinding) : RuntimeState :=
   { initialState with
     control := .running instanceId
@@ -486,14 +487,14 @@ def runningStartState (instanceId : SemanticId)
       { emptyScopedVariables with
         process := { bindings := initialVariables } } }
 
-def rootDefinitionScope? (program : Program) : Option DefinitionScope :=
+@[no_expose] def rootDefinitionScope? (program : Program) : Option DefinitionScope :=
   match program.definitionScopes.filter fun scope =>
       scope.parentScopeId.isNone &&
         scope.originElementId.value = program.processId.value with
   | [scope] => some scope
   | _ => none
 
-def runningProgramStartState? (program : Program) (instanceId : SemanticId)
+@[no_expose] def runningProgramStartState? (program : Program) (instanceId : SemanticId)
     (initialVariables : List VariableBinding) : Option RuntimeState := do
   let root ← rootDefinitionScope? program
   let owner : ScopeOccurrenceId :=
@@ -524,27 +525,27 @@ def runningProgramStartState? (program : Program) (instanceId : SemanticId)
               [{ owner, nextCompletionOrdinal := 1, records := [] }]
             else [] }
 
-def tokenMultiplicity (state : RuntimeState) (place : ControlPlaceId) : Nat :=
+@[no_expose] def tokenMultiplicity (state : RuntimeState) (place : ControlPlaceId) : Nat :=
   (state.tokens.filter fun token => decide (token.placeId = place)).length
 
-def hasToken (state : RuntimeState) (place : ControlPlaceId) : Bool :=
+@[no_expose] def hasToken (state : RuntimeState) (place : ControlPlaceId) : Bool :=
   tokenMultiplicity state place > 0
 
-def perIncomingJoinReady (state : RuntimeState)
+@[no_expose] def perIncomingJoinReady (state : RuntimeState)
     (inputs : List ControlPlaceId) : Bool :=
   inputs.all (hasToken state)
 
 /-- Counts total multiplicity across the inputs, so it admits a join whose tokens are stacked on fewer places than `perIncomingJoinReady` requires. The two disagree exactly on that unbalanced case. -/
-def countBasedJoinReady (state : RuntimeState)
+@[no_expose] def countBasedJoinReady (state : RuntimeState)
     (inputs : List ControlPlaceId) : Bool :=
   inputs.foldl (fun count input => count + tokenMultiplicity state input) 0 ≥
     inputs.length
 
-def tokenOwners (state : RuntimeState) (place : ControlPlaceId) :
+@[no_expose] def tokenOwners (state : RuntimeState) (place : ControlPlaceId) :
     List ScopeOccurrenceId :=
   (state.tokens.filter fun token => decide (token.placeId = place)).map (·.owner)
 
-def onlyTokenOwner? (state : RuntimeState) (place : ControlPlaceId) :
+@[no_expose] def onlyTokenOwner? (state : RuntimeState) (place : ControlPlaceId) :
     Option ScopeOccurrenceId :=
   match tokenOwners state place with
   | [] => none
@@ -552,13 +553,14 @@ def onlyTokenOwner? (state : RuntimeState) (place : ControlPlaceId) :
       if rest.all fun candidate => decide (candidate = owner) then some owner
       else none
 
-def removeToken : List ControlToken → ControlPlaceId → ScopeOccurrenceId →
+@[no_expose] def removeToken : List ControlToken → ControlPlaceId → ScopeOccurrenceId →
     List ControlToken
   | [], _, _ => []
   | token :: rest, place, owner =>
       if token.placeId = place && token.owner = owner then rest
       else token :: removeToken rest place owner
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`removeToken]
 theorem removeToken_commutes (tokens : List ControlToken)
     (leftPlace rightPlace : ControlPlaceId)
     (leftOwner rightOwner : ScopeOccurrenceId) :
@@ -587,13 +589,14 @@ theorem removeToken_commutes (tokens : List ControlToken)
           simp [removeToken, right, different]
         · simp [removeToken, left, right, ih]
 
-def canonicalInsertBy (before : α → α → Bool) (value : α) : List α → List α
+@[no_expose] def canonicalInsertBy (before : α → α → Bool) (value : α) : List α → List α
   | [] => [value]
   | current :: rest =>
       if before value current then value :: current :: rest
       else current :: canonicalInsertBy before value rest
 
-def scopeOwnerBefore (left right : ScopeOccurrenceId) : Bool :=
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalInsertBy]
+@[no_expose] def scopeOwnerBefore (left right : ScopeOccurrenceId) : Bool :=
   if left.processInstanceId.value ≠ right.processInstanceId.value then
     left.processInstanceId.value < right.processInstanceId.value
   else if left.definitionScopeId.value ≠ right.definitionScopeId.value then
@@ -601,47 +604,47 @@ def scopeOwnerBefore (left right : ScopeOccurrenceId) : Bool :=
   else
     left.activation < right.activation
 
-def scopeOccurrenceBefore (left right : RuntimeScopeOccurrence) : Bool :=
+@[no_expose] def scopeOccurrenceBefore (left right : RuntimeScopeOccurrence) : Bool :=
   scopeOwnerBefore left.id right.id
 
-def insertScopeOccurrence (occurrence : RuntimeScopeOccurrence)
+@[no_expose] def insertScopeOccurrence (occurrence : RuntimeScopeOccurrence)
     (values : List RuntimeScopeOccurrence) : List RuntimeScopeOccurrence :=
   canonicalInsertBy scopeOccurrenceBefore occurrence values
 
-def scopeActivationBefore (left right : ScopeActivation) : Bool :=
+@[no_expose] def scopeActivationBefore (left right : ScopeActivation) : Bool :=
   left.scopeId.value < right.scopeId.value
 
-def callActivationBefore (left right : CallActivation) : Bool :=
+@[no_expose] def callActivationBefore (left right : CallActivation) : Bool :=
   left.elementId.value < right.elementId.value
 
-def eventRaceActivationBefore (left right : EventRaceActivation) : Bool :=
+@[no_expose] def eventRaceActivationBefore (left right : EventRaceActivation) : Bool :=
   left.elementId.value < right.elementId.value
 
-def setScopeActivationCount (values : List ScopeActivation)
+@[no_expose] def setScopeActivationCount (values : List ScopeActivation)
     (scopeId : DefinitionScopeId) (count : Nat) : List ScopeActivation :=
   canonicalInsertBy scopeActivationBefore { scopeId, count }
     (values.filter fun value => decide (value.scopeId.value ≠ scopeId.value))
 
-def setEventRaceActivationCount (values : List EventRaceActivation)
+@[no_expose] def setEventRaceActivationCount (values : List EventRaceActivation)
     (elementId : NodeId) (count : Nat) : List EventRaceActivation :=
   canonicalInsertBy eventRaceActivationBefore { elementId, count }
     (values.filter fun value => decide (value.elementId.value ≠ elementId.value))
 
-def controlTokenBefore (left right : ControlToken) : Bool :=
+@[no_expose] def controlTokenBefore (left right : ControlToken) : Bool :=
   if left.placeId.value ≠ right.placeId.value then
     left.placeId.value < right.placeId.value
   else scopeOwnerBefore left.owner right.owner
 
-def addToken (tokens : List ControlToken) (place : ControlPlaceId)
+@[no_expose] def addToken (tokens : List ControlToken) (place : ControlPlaceId)
     (owner : ScopeOccurrenceId) : List ControlToken :=
   canonicalInsertBy controlTokenBefore { placeId := place, owner } tokens
 
-def rootScopeOccurrence? (state : RuntimeState) : Option ScopeOccurrenceId :=
+@[no_expose] def rootScopeOccurrence? (state : RuntimeState) : Option ScopeOccurrenceId :=
   match state.scopeOccurrences.filter (·.parent.isNone) with
   | [occurrence] => some occurrence.id
   | _ => none
 
-def initiateState? (state : RuntimeState) (output : ControlPlaceId) :
+@[no_expose] def initiateState? (state : RuntimeState) (output : ControlPlaceId) :
     Option RuntimeState := do
   let owner ← rootScopeOccurrence? state
   if state.initiationPending then
@@ -651,20 +654,20 @@ def initiateState? (state : RuntimeState) (output : ControlPlaceId) :
         tokens := addToken state.tokens output owner }
   else none
 
-def removeTokens (tokens : List ControlToken) (places : List ControlPlaceId)
+@[no_expose] def removeTokens (tokens : List ControlToken) (places : List ControlPlaceId)
     (owner : ScopeOccurrenceId) : List ControlToken :=
   places.foldl (fun current place => removeToken current place owner) tokens
 
-def addTokens (tokens : List ControlToken) (places : List ControlPlaceId)
+@[no_expose] def addTokens (tokens : List ControlToken) (places : List ControlPlaceId)
     (owner : ScopeOccurrenceId) : List ControlToken :=
   places.foldr (fun place current => addToken current place owner) tokens
 
-def taskActivationCount : List TaskActivation → TaskDefinitionId → Nat
+@[no_expose] def taskActivationCount : List TaskActivation → TaskDefinitionId → Nat
   | [], _ => 0
   | activation :: rest, taskId =>
       if activation.taskId = taskId then activation.count else taskActivationCount rest taskId
 
-def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) : Nat :=
+@[no_expose] def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) : Nat :=
   taskActivationCount state.activations taskId
 
 /-- The Activity-element activation high-water mark, or zero when the element is absent.
@@ -672,7 +675,7 @@ def activationCount (state : RuntimeState) (taskId : TaskDefinitionId) : Nat :=
 Separate from `activationCount` even though both are keyed by the same identifier, because they count
 different things: how many times an Activity was activated, against how many occurrences its body has
 produced. They agree under every registered profile and nothing reads the agreement. -/
-def activityActivationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
+@[no_expose] def activityActivationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
     Nat :=
   taskActivationCount state.activityActivations taskId
 
@@ -680,7 +683,7 @@ def activityActivationCount (state : RuntimeState) (taskId : TaskDefinitionId) :
 
 Public for the same reason `insertUserTaskWait` and `insertActivityOccurrence` are: a law about the
 order this preserves has to speak about the term the counter update actually inserts with. -/
-def insertTaskActivation (activation : TaskActivation) :
+@[no_expose] def insertTaskActivation (activation : TaskActivation) :
     List TaskActivation → List TaskActivation
   | [] => [activation]
   | current :: rest =>
@@ -688,12 +691,12 @@ def insertTaskActivation (activation : TaskActivation) :
         activation :: current :: rest
       else current :: insertTaskActivation activation rest
 
-def setActivationCount (activations : List TaskActivation)
+@[no_expose] def setActivationCount (activations : List TaskActivation)
     (taskId : TaskDefinitionId) (count : Nat) : List TaskActivation :=
   insertTaskActivation { taskId, count }
     (activations.filter fun activation => decide (activation.taskId ≠ taskId))
 
-def userTaskWaitBefore (left right : UserTaskWait) : Bool :=
+@[no_expose] def userTaskWaitBefore (left right : UserTaskWait) : Bool :=
   if left.processInstanceId.value ≠ right.processInstanceId.value then
     left.processInstanceId.value < right.processInstanceId.value
   else if left.owner.definitionScopeId.value ≠
@@ -705,13 +708,13 @@ def userTaskWaitBefore (left right : UserTaskWait) : Bool :=
     left.task.id.value < right.task.id.value
   else left.activation < right.activation
 
-def insertUserTaskWait (wait : UserTaskWait) : List UserTaskWait → List UserTaskWait
+@[no_expose] def insertUserTaskWait (wait : UserTaskWait) : List UserTaskWait → List UserTaskWait
   | [] => [wait]
   | current :: rest =>
       if userTaskWaitBefore wait current then wait :: current :: rest
       else current :: insertUserTaskWait wait rest
 
-def waitOccurrenceBefore (leftInstance rightInstance : SemanticId)
+@[no_expose] def waitOccurrenceBefore (leftInstance rightInstance : SemanticId)
     (leftOwner rightOwner : ScopeOccurrenceId) (leftElement rightElement : NodeId)
     (leftActivation rightActivation : Nat) : Bool :=
   if leftInstance.value ≠ rightInstance.value then
@@ -723,26 +726,26 @@ def waitOccurrenceBefore (leftInstance rightInstance : SemanticId)
   else
     leftActivation < rightActivation
 
-def messageWaitBefore (left right : MessageWait) : Bool :=
+@[no_expose] def messageWaitBefore (left right : MessageWait) : Bool :=
   waitOccurrenceBefore left.processInstanceId right.processInstanceId
     left.owner right.owner left.elementId right.elementId left.activation right.activation
 
-def timerWaitBefore (left right : TimerWait) : Bool :=
+@[no_expose] def timerWaitBefore (left right : TimerWait) : Bool :=
   waitOccurrenceBefore left.processInstanceId right.processInstanceId
     left.owner right.owner left.elementId right.elementId left.activation right.activation
 
-def effectWaitBefore (left right : EffectWait) : Bool :=
+@[no_expose] def effectWaitBefore (left right : EffectWait) : Bool :=
   waitOccurrenceBefore left.processInstanceId right.processInstanceId
     left.owner right.owner left.elementId right.elementId left.activation right.activation
 
-def insertMessageWait (wait : MessageWait) (waits : List MessageWait) :
+@[no_expose] def insertMessageWait (wait : MessageWait) (waits : List MessageWait) :
   List MessageWait :=
   canonicalInsertBy messageWaitBefore wait waits
 
-def insertTimerWait (wait : TimerWait) (waits : List TimerWait) : List TimerWait :=
+@[no_expose] def insertTimerWait (wait : TimerWait) (waits : List TimerWait) : List TimerWait :=
   canonicalInsertBy timerWaitBefore wait waits
 
-def insertEffectWait (wait : EffectWait) (waits : List EffectWait) : List EffectWait :=
+@[no_expose] def insertEffectWait (wait : EffectWait) (waits : List EffectWait) : List EffectWait :=
   canonicalInsertBy effectWaitBefore wait waits
 
 private theorem canonicalInsertBy_length (before : α → α → Bool) (value : α)
@@ -771,35 +774,35 @@ theorem insertEffectWait_length (wait : EffectWait) (waits : List EffectWait) :
 Beside its two siblings because `canonicalCollectionOrder` and the preservation laws must read one
 spelling of this order; an inlined lambda in the conjunct and a named comparator in the laws would be
 two canonical orders that happen to agree. -/
-def activationBefore (left right : TaskActivation) : Bool :=
+@[no_expose] def activationBefore (left right : TaskActivation) : Bool :=
   decide (left.taskId.value < right.taskId.value)
 
-def messageActivationBefore (left right : MessageActivation) : Bool :=
+@[no_expose] def messageActivationBefore (left right : MessageActivation) : Bool :=
   decide (left.elementId.value < right.elementId.value)
 
-def timerActivationBefore (left right : TimerActivation) : Bool :=
+@[no_expose] def timerActivationBefore (left right : TimerActivation) : Bool :=
   decide (left.elementId.value < right.elementId.value)
 
-def effectActivationBefore (left right : EffectActivation) : Bool :=
+@[no_expose] def effectActivationBefore (left right : EffectActivation) : Bool :=
   decide (left.elementId.value < right.elementId.value)
 
-def setMessageActivationCount (activations : List MessageActivation)
+@[no_expose] def setMessageActivationCount (activations : List MessageActivation)
     (elementId : NodeId) (count : Nat) : List MessageActivation :=
   canonicalInsertBy messageActivationBefore { elementId, count }
     (activations.filter fun activation => decide (activation.elementId ≠ elementId))
 
-def setTimerActivationCount (activations : List TimerActivation)
+@[no_expose] def setTimerActivationCount (activations : List TimerActivation)
     (elementId : NodeId) (count : Nat) : List TimerActivation :=
   canonicalInsertBy timerActivationBefore { elementId, count }
     (activations.filter fun activation => decide (activation.elementId ≠ elementId))
 
-def setEffectActivationCount (activations : List EffectActivation)
+@[no_expose] def setEffectActivationCount (activations : List EffectActivation)
     (elementId : NodeId) (count : Nat) : List EffectActivation :=
   canonicalInsertBy effectActivationBefore { elementId, count }
     (activations.filter fun activation => decide (activation.elementId ≠ elementId))
 
 /-- Canonical order: Process instance, then Activity element, then activation. -/
-def activityOccurrenceBefore (left right : ActivityOccurrence) : Bool :=
+@[no_expose] def activityOccurrenceBefore (left right : ActivityOccurrence) : Bool :=
   if left.processInstanceId.value ≠ right.processInstanceId.value then
     left.processInstanceId.value < right.processInstanceId.value
   else if left.activityElementId.value ≠ right.activityElementId.value then
@@ -813,7 +816,7 @@ An ordered insert rather than a sort of the whole list: the invariant already ho
 inserted into, so sorting would re-derive what is given, and the kernel reduces this to the singleton
 arm at the one-record cardinality every current profile admits.
 -/
-def insertActivityOccurrence (record : ActivityOccurrence) :
+@[no_expose] def insertActivityOccurrence (record : ActivityOccurrence) :
     List ActivityOccurrence → List ActivityOccurrence
   | [] => [record]
   | current :: rest =>
@@ -821,6 +824,7 @@ def insertActivityOccurrence (record : ActivityOccurrence) :
         record :: current :: rest
       else current :: insertActivityOccurrence record rest
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertActivityOccurrence]
 /-- Canonical insertion adds exactly one record, whichever position the order selects. -/
 theorem insertActivityOccurrence_length (record : ActivityOccurrence)
     (records : List ActivityOccurrence) :
@@ -832,53 +836,53 @@ theorem insertActivityOccurrence_length (record : ActivityOccurrence)
       · simp [insertActivityOccurrence, before]
       · simp [insertActivityOccurrence, before, ih]
 
-def elementActivationCount (activations : List (NodeId × Nat))
+@[no_expose] def elementActivationCount (activations : List (NodeId × Nat))
     (elementId : NodeId) : Nat :=
   (activations.find? fun activation => decide (activation.1 = elementId))
     |>.map (·.2) |>.getD 0
 
 /-- The monotonic activation ordinal already reached by this Timer element. Shared with the bounded-scope family, whose deadline must be numbered from the same counter so the pair keeps one ordinal. -/
-def timerActivationCount (state : RuntimeState) (elementId : NodeId) :
+@[no_expose] def timerActivationCount (state : RuntimeState) (elementId : NodeId) :
     Nat :=
   elementActivationCount (state.timerActivations.map fun value =>
     (value.elementId, value.count)) elementId
 
-def scopeActivationCount (state : RuntimeState)
+@[no_expose] def scopeActivationCount (state : RuntimeState)
     (scopeId : DefinitionScopeId) : Nat :=
   (state.scopeActivations.find? fun activation =>
     decide (activation.scopeId = scopeId)).map (·.count) |>.getD 0
 
-def callActivationCount (state : RuntimeState) (elementId : NodeId) : Nat :=
+@[no_expose] def callActivationCount (state : RuntimeState) (elementId : NodeId) : Nat :=
   elementActivationCount (state.callActivations.map fun value =>
     (value.elementId, value.count)) elementId
 
-def setCallActivationCount (state : RuntimeState) (elementId : NodeId)
+@[no_expose] def setCallActivationCount (state : RuntimeState) (elementId : NodeId)
     (count : Nat) : List CallActivation :=
   canonicalInsertBy callActivationBefore { elementId, count }
     (state.callActivations.filter fun value => decide (value.elementId.value ≠ elementId.value))
 
-def duplicateToken (state : RuntimeState) (owner : ScopeOccurrenceId)
+@[no_expose] def duplicateToken (state : RuntimeState) (owner : ScopeOccurrenceId)
     (input : ControlPlaceId) (outputs : List ControlPlaceId) : RuntimeState :=
   { state with
     tokens := addTokens (removeToken state.tokens input owner) outputs owner }
 
-def synchronizeTokens (state : RuntimeState) (owner : ScopeOccurrenceId)
+@[no_expose] def synchronizeTokens (state : RuntimeState) (owner : ScopeOccurrenceId)
     (inputs : List ControlPlaceId) (output : ControlPlaceId) : RuntimeState :=
   { state with
     tokens := addToken (removeTokens state.tokens inputs owner) output owner }
 
-def chooseToken (state : RuntimeState) (owner : ScopeOccurrenceId)
+@[no_expose] def chooseToken (state : RuntimeState) (owner : ScopeOccurrenceId)
     (input output : ControlPlaceId) : RuntimeState :=
   { state with
     tokens := addToken (removeToken state.tokens input owner) output owner }
 
-def reachNoneEndToken (state : RuntimeState) (owner : ScopeOccurrenceId)
+@[no_expose] def reachNoneEndToken (state : RuntimeState) (owner : ScopeOccurrenceId)
     (input : ControlPlaceId) : RuntimeState :=
   { state with
     tokens := removeToken state.tokens input owner
     endOccurrences := state.endOccurrences + 1 }
 
-def commonTokenOwner? (state : RuntimeState) (inputs : List ControlPlaceId) :
+@[no_expose] def commonTokenOwner? (state : RuntimeState) (inputs : List ControlPlaceId) :
     Option ScopeOccurrenceId :=
   match inputs with
   | [] => none
@@ -888,7 +892,7 @@ def commonTokenOwner? (state : RuntimeState) (inputs : List ControlPlaceId) :
         some owner
       else none
 
-def enterScopeState? (state : RuntimeState) (input childEntry : ControlPlaceId)
+@[no_expose] def enterScopeState? (state : RuntimeState) (input childEntry : ControlPlaceId)
     (childScopeId : DefinitionScopeId) : Option RuntimeState := do
   let parent ← onlyTokenOwner? state input
   let instanceId ← match state.control with

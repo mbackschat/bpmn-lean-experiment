@@ -17,7 +17,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.internalArmInput?, `InternalCommutation.internalArmOrigin?,
   `InternalCommutation.prepareInternalArm?, `insertTokenPosition, `projectControlPosition?, `projectTokens,
   `sameTokenPosition, `tokenDifference, `tokenMultiplicityAt, `tokenOrigin, `tokenPositionBefore, `tokenPositionKey,
-  `uniqueControlPlace?]
+  `uniqueControlPlace?, `onlyTokenOwner?, `removeToken]
 
 public section
 

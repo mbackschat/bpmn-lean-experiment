@@ -1,12 +1,15 @@
 module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
+import all BpmnSemantics.SemanticProcess.RuntimeState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Runtime-state identity bound
 
 This module owns the implemented, consumer-required part of `RSI-BOUND-01`. It is separate from the
 aggregate predicate because one numeric relation spans otherwise independent runtime collections.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertTaskActivation, `taskActivationCount]
 
 public section
 

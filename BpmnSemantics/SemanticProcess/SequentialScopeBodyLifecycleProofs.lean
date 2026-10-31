@@ -22,7 +22,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeCompletionResult.state,
   `SequentialScopeEntryResult.state, `canonicalCollectionOrder, `completeSequentialScopeResult?, `effectIdNamesWait,
-  `effectWaitOccurrenceId, `exactLiveOccurrence, `orderedBy, `runtimeStateIdentityBound, `sequentialScopeEntryEnabled]
+  `effectWaitOccurrenceId, `exactLiveOccurrence, `orderedBy, `runtimeStateIdentityBound, `sequentialScopeEntryEnabled,
+  `activityActivationCount]
 
 public section
 

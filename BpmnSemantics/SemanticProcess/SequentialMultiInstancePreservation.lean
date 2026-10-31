@@ -32,7 +32,7 @@ have named the removed record either, and its own record survives with it.
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialMultiInstanceArm.innerTask,
   `activateBoundedUserTask, `controllerNamesActivityOccurrence, `controllersOwnLiveActivity, `enteredController,
   `finalCompletionState, `firstIterationEntryState, `interruptionState, `iteratedState, `runtimeStateIdentityBound,
-  `sameActivityOccurrence, `sameSequentialMultiInstanceController, `storeIterationResult]
+  `sameActivityOccurrence, `sameSequentialMultiInstanceController, `storeIterationResult, `insertActivityOccurrence]
 
 public section
 

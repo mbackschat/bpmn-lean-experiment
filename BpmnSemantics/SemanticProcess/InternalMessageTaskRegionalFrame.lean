@@ -41,7 +41,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.regionalOwnsAtom, `InternalCommutation.regionalOwnsOrdinaryAtom,
   `InternalCommutation.regionalStateAtomsConflict, `calledInstanceClosure, `canonicalCollectionOrder,
   `exactLiveOccurrence, `messageActivationCount, `messageIdNamesWait, `messageWaitKeyMatches, `recordInRegion,
-  `retainedByRegion, `runningInstance?, `withdrawnByRegion]
+  `retainedByRegion, `runningInstance?, `withdrawnByRegion, `activationCount, `activityActivationCount,
+  `insertMessageWait, `onlyTokenOwner?, `tokenOwners]
 
 public section
 

@@ -13,6 +13,7 @@ import all BpmnSemantics.SemanticProcess.ScopeVariableData
 import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.Transition
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Repeated-scope dispatch contract
 
@@ -26,7 +27,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeData.
   `SerialBusinessTask.scalar, `admitStimulus, `awaitEffectState?, `completeSequentialScopeResult?, `dispatchStimulus,
   `enterSequentialScopeResult?, `fire?, `removeScopeVariables?, `runningInstance?, `scopeVariableNamesUnique,
   `scopeVariableScalar, `sequentialScopeCollection?, `sequentialScopeCondition?, `sequentialScopeEntryEnabled,
-  `sequentialScopeProgramSelected, `sequentialScopeStateValid, `strictlySortedStrings]
+  `sequentialScopeProgramSelected, `sequentialScopeStateValid, `strictlySortedStrings, `canonicalInputMappings?,
+  `enclosingVariable?, `inputSnapshotMatches, `orderedInputSnapshotMatches]
 
 public section
 

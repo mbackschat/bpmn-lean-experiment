@@ -22,7 +22,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.InternalArmingWrite.occurrence, `InternalCommutation.applyInternalArmingPatch,
   `InternalCommutation.internalArmInput?, `InternalCommutation.internalArmOrigin?,
   `InternalCommutation.messageWaitOccurrence, `InternalCommutation.prepareInternalArm?, `exactLiveOccurrence,
-  `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity]
+  `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity, `insertMessageWait]
 
 public section
 

@@ -10,7 +10,7 @@ deadline and Activity as one patch for interrupting and ESL-OWN noninterrupting 
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
-  `armBoundedScopeState?]
+  `armBoundedScopeState?, `canonicalInsertBy, `enterScopeState?, `insertScopeOccurrence]
 
 public section
 

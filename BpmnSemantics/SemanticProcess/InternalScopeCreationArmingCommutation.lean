@@ -15,6 +15,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Exact mixed scope/arming commutation uses the distinct consumed and created owners required
 by the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`setCallActivationCount]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalScopeCreationSelection.apply,
   `PreparedInternalArming.scopeFramePatch, `applyInternalArmingPatch]

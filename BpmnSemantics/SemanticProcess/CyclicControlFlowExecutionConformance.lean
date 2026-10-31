@@ -63,7 +63,8 @@ This module owns exact representative execution and finite reviewed-choice sched
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeUserTask, `cyclicInitialPostMergeState,
   `cyclicMergeInputs, `cyclicMergeOperation, `cyclicPostCompletionState, `cyclicPostStartState, `cyclicRepeatChoices,
-  `cyclicVariables, `cyclicWait, `cyclicWaitingState, `runChoices, `singletonWaitingState, `taskIdNamesWait]
+  `cyclicVariables, `cyclicWait, `cyclicWaitingState, `runChoices, `singletonWaitingState, `taskIdNamesWait, `addToken,
+  `canonicalInsertBy, `mergeProcessVariableBindings]
 
 public section
 

@@ -15,7 +15,7 @@ depend on no replay history, so they stay separate from the structural frames in
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatch.apply,
   `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalOperationOccurrence?,
   `InternalCommutation.effectWaitOccurrence, `InternalCommutation.internalArmInput?,
-  `InternalCommutation.prepareReservedOccurrenceArm?, `activateEffect, `activateUserTask]
+  `InternalCommutation.prepareReservedOccurrenceArm?, `activateEffect, `activateUserTask, `addActivityVariableScope]
 
 public section
 

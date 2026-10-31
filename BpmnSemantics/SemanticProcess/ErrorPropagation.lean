@@ -5,6 +5,7 @@ import all BpmnSemantics.SemanticProcess.ScopeCancellation
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Interrupting Sub-Process Error propagation
 

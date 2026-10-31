@@ -61,7 +61,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `canonicalCollectionOrder, `completeSelectedScope?, `completeSerialEffect?, `effectWaitKeyMatches,
   `issueParallelBodies?, `messageWaitKeyMatches, `occursOnce, `orderedBy, `parallelMultiInstanceControllersOrdered,
   `sameActivityOccurrence, `timerWaitKeyMatches, `uniqueCollectionKeys, `userTaskWaitKeyMatches,
-  `waitIdentitiesUnique]
+  `waitIdentitiesUnique, `initiateState?, `runningStartState, `setMessageActivationCount, `setScopeActivationCount,
+  `setTimerActivationCount]
 
 public section
 

@@ -28,7 +28,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.messageWaitOccurrence, `InternalCommutation.openWaitAnchorAbsent,
   `InternalCommutation.openWaitAnchors, `InternalCommutation.prepareInternalArm?,
   `InternalCommutation.timerWaitOccurrence, `InternalCommutation.userTaskWaitOccurrence, `effectWaitOccurrenceId,
-  `exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity]
+  `exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity, `insertEffectWait,
+  `insertMessageWait, `insertTimerWait]
 
 public section
 

@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Data-arming preparation preservation
 
@@ -16,7 +17,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.makeInternalDataArmingPatch,
   `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
   `InternalCommutation.prepareInternalDataArmingContract?, `activityBodyTaskClaims, `dataInputOutputActivityRecord,
-  `dataInputOutputRunningInstance?, `sameActivityOccurrence]
+  `dataInputOutputRunningInstance?, `sameActivityOccurrence, `activationCount, `activityActivationCount,
+  `activityOccurrenceScopeMatches, `insertActivityOccurrence, `insertActivityVariableScope, `localDataOwnerMatches,
+  `removeToken]
 
 public section
 

@@ -60,7 +60,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrencePr
   `enteredChildScopeId?, `exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity,
   `flowNodeOccurrenceWaitProgramValidity, `messageBoundedOperationProjectionValid, `projectOpenFlowNodeOccurrences?,
   `recordAttaches, `runningInstance?, `runtimeStateWellFormed, `timerIdNamesWait, `timerWaitDeclarers,
-  `timerWaitKeyMatches]
+  `timerWaitKeyMatches, `ActivityOccurrence.timerHandlerOccurrences, `insertScopeOccurrence, `insertTimerWait]
 
 public section
 

@@ -45,7 +45,8 @@ or successful-preparation premise substitutes for those execution facts.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.analyzeProgram,
-  `SemanticOperation.kind, `SequentialScopeProgram.operationAllowed, `completeSelectedScope?, `continuationMarking]
+  `SemanticOperation.kind, `SequentialScopeProgram.operationAllowed, `completeSelectedScope?, `continuationMarking,
+  `initiateState?]
 
 public section
 

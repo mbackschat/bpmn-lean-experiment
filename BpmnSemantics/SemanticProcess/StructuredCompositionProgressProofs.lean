@@ -61,7 +61,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CheckedSequenceFlow.
   `StructuredComposition.isScopeCompletion, `StructuredComposition.operationInputs, `TokenPatch.apply,
   `activateDataInputOutputUserTask?, `awaitUserTaskState?, `chooseState?, `completeQuiescentScope?,
   `completeScopeState?, `exactLiveOccurrence, `fire?, `flowControlPlaceId, `lowerCheckedProcess, `nonempty,
-  `programWellFormed, `reachNoneEndState?, `runningInstance?, `scopeQuiescent, `step]
+  `programWellFormed, `reachNoneEndState?, `runningInstance?, `scopeQuiescent, `step, `addToken, `addTokens,
+  `canonicalInsertBy, `initiateState?, `onlyTokenOwner?, `removeToken, `removeTokens, `rootScopeOccurrence?,
+  `tokenOwners]
 
 public section
 

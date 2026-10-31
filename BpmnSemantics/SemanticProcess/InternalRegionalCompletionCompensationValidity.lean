@@ -21,7 +21,8 @@ active triggers at the sole live root, while predecessor validity rules out fail
 in a running state. These facts justify terminal validity without erasing that history. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`compensationActivityRetentionStateValid,
-  `compensationExecutionStateValid, `triggerLifecycleValid, `triggerMatchesDeclaration]
+  `compensationExecutionStateValid, `triggerLifecycleValid, `triggerMatchesDeclaration,
+  `activeCompensationTriggerOwnersUnique]
 
 public section
 

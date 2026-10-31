@@ -26,7 +26,7 @@ cannot reset the credit needed to establish reservation headroom.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.analyzeProgram,
-  `completeSelectedScope?, `effectActivationCount]
+  `completeSelectedScope?, `effectActivationCount, `activationCount, `elementActivationCount, `taskActivationCount]
 
 public section
 

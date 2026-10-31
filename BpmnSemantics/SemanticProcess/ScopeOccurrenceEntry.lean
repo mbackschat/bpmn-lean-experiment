@@ -10,6 +10,7 @@ CEA-OCCUR-01 for a merge target: entry issues a fresh occurrence of the child de
 arriving token's owner, even while other occurrences of that definition are live. `enterScopeState?` keeps
 refusing a second live occurrence for every other `enterScope`; the two agree whenever none is live.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`tokenOwners]
 
 public section
 

@@ -40,7 +40,7 @@ inactive-family facts are derived locally; no constructor assumes a frontier bou
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`admitStimulusWithCompensationSnapshots,
-  `callDataRuntimeStateValid]
+  `callDataRuntimeStateValid, `canonicalInsertBy, `insertScopeOccurrence]
 
 public section
 

@@ -41,7 +41,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredCompositio
   `dataInputOutputLocalScope?, `dataInputOutputRuntimeJoinValid, `dataInputOutputTaskContracts,
   `dataInputOutputTaskWait?, `filledDeclaredOutput?, `interruptingMessageEventSubProcessStateValid,
   `isCallActivityProgram, `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `processInterfaceScalar,
-  `recordBodyNamesWait, `taskIdNamesWait, `userTaskWaitDeclarationKey, `writeActivityDataOutput?]
+  `recordBodyNamesWait, `taskIdNamesWait, `userTaskWaitDeclarationKey, `writeActivityDataOutput?,
+  `activityOccurrenceScopeMatches, `localDataOwnerMatches, `removeActivityOccurrenceVariableScope]
 
 public section
 

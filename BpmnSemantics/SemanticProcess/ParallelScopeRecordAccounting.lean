@@ -29,7 +29,8 @@ premises on either counting population.
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeReplay.bodyOrRetirementTransition,
   `ParallelScopeReplay.bodyTransition, `ParallelScopeReplay.declarationFiringCharge,
   `ParallelScopeReplay.declarationFiringCount, `ParallelScopeReplay.retirementCharge,
-  `ParallelScopeStart.ParentSpineStep]
+  `ParallelScopeStart.ParentSpineStep, `addToken, `initiateState?, `rootScopeOccurrence?, `runningProgramStartState?,
+  `runningStartState]
 
 public section
 

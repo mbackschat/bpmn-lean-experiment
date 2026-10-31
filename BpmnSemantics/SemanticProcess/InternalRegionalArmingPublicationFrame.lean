@@ -59,7 +59,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.regionalLifecycleTemplate?, `InternalCommutation.regionalPositionDelta?,
   `InternalCommutation.regionalPublicationTemplate?, `InternalCommutation.uniqueFamilyDeclarer?,
   `calledInstanceClosure, `flowNodeOccurrenceBoundaryTimerBound, `projectControlPosition?, `runningInstance?,
-  `runtimeStateWellFormed, `scopeCancellationWithdrawsHandler]
+  `runtimeStateWellFormed, `scopeCancellationWithdrawsHandler, `insertMessageWait, `insertTimerWait]
 
 public section
 

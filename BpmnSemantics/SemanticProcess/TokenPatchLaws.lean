@@ -6,8 +6,11 @@ public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.TokenStorage
 import all BpmnSemantics.SemanticProcess.TokenPatch
+import all BpmnSemantics.SemanticProcess.RuntimeState
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Token patches preserve canonical storage order and commute when their produced and consumed units are disjoint. -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`onlyTokenOwner?, `removeTokens]
 
 public section
 

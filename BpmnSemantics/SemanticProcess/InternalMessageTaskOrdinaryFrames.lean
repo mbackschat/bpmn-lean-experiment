@@ -33,7 +33,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.makeInternalMessageTaskPatch, `InternalCommutation.messageTaskStateFootprint,
   `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
   `InternalCommutation.prepareInternalMessageTaskContract?, `InternalCommutation.regionalStateAtomsConflict,
-  `InternalWaitKind.activationKind, `canonicalCollectionOrder, `canonicalStateAtomSet, `runningInstance?]
+  `InternalWaitKind.activationKind, `canonicalCollectionOrder, `canonicalStateAtomSet, `runningInstance?,
+  `activityActivationCount]
 
 public section
 

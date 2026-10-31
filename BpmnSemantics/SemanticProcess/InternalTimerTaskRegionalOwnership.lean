@@ -24,6 +24,7 @@ import all BpmnSemantics.SemanticProcess.RuntimeState
 import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import all BpmnSemantics.SemanticProcess.TransitionStates
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! The new Activity references its jointly inserted task and Timer, which the regional mask retains.
 Existing retained locals keep their exact record census because preparation forbids Activity aliases.
@@ -34,7 +35,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.regionalActivityAssociationsConflict, `InternalCommutation.regionalLocalScopeNamesActivity,
   `InternalCommutation.selectInternalOwnershipClosedRegional?, `activityOwnerForRecord, `allMatchingRetained,
   `regionalActivityOwnersClosed, `regionalActivityReferencesClosed, `regionalOwnershipClosed, `sameActivityOccurrence,
-  `taskIdNamesWait, `timerIdNamesWait, `timerWaitKeyMatches, `userTaskWaitKeyMatches]
+  `taskIdNamesWait, `timerIdNamesWait, `timerWaitKeyMatches, `userTaskWaitKeyMatches, `activityOccurrenceScopeMatches,
+  `insertTimerWait, `localDataOwnerMatches]
 
 public section
 

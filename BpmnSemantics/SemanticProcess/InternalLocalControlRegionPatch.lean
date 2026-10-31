@@ -20,7 +20,8 @@ filter only when every changed value survives and the predecessor has canonical 
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalLocalControlSelection.apply,
   `InternalCommutation.InternalLocalControlSelection.owner, `InternalSelectedBranchPatch.apply,
-  `canonicalCollectionOrder, `completeQuiescentScope?, `completeScopeState?, `runtimeStateWellFormed]
+  `canonicalCollectionOrder, `completeQuiescentScope?, `completeScopeState?, `runtimeStateWellFormed,
+  `canonicalInsertBy, `removeTokens]
 
 public section
 

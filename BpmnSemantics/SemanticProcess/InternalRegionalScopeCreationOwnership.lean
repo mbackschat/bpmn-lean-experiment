@@ -38,7 +38,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.regionalStateAtomsConflict, `boundedCompletionReferenceRetention, `callReferenceRetention,
   `cancellationReferenceRetention, `canonicalStateAtomSet, `monitoredCompletionReferenceRetention,
   `ordinaryCompletionReferenceRetention, `regionalActivityOwnersClosed, `regionalActivityReferencesClosed,
-  `regionalOwnershipClosed, `runtimeStateWellFormed]
+  `regionalOwnershipClosed, `runtimeStateWellFormed, `insertScopeOccurrence]
 
 public section
 

@@ -51,7 +51,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `dataInputOutputActivityRecord, `dataInputOutputRunningInstance?, `effectActivationCount, `evaluateEffectInputs?,
   `evaluateInputMappingsInOrderUnder, `evaluateInputMappingsUnder?, `evaluateSequentialScopeInputs?,
   `messageActivationCount, `readSequentialScopeVariable?, `sequentialScopeBindingForEntry?,
-  `sequentialScopeBindingForOwner?]
+  `sequentialScopeBindingForOwner?, `activationCount, `activityActivationCount, `callActivationCount,
+  `canonicalInsertBy, `insertScopeOccurrence, `onlyTokenOwner?, `scopeActivationCount, `timerActivationCount]
 
 public section
 

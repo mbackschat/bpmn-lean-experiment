@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ActivityOccurrence
 import all BpmnSemantics.SemanticProcess.ActivityOccurrence
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Direct Activity data input
 
@@ -13,7 +14,9 @@ BPMN 2.0.2 Clause 10.4.2 makes an InputSet unavailable while any of its Data Ass
 Availability is decided at the representation level, and that is a recorded profile interpretation rather than a normative rule: a missing binding is unavailable, and a present binding whose value arm is `null` is available and is copied as explicit null. A duplicated name is unavailable too, because two bindings under one name is an invalid Process scope and selecting either would make the copied value depend on list order rather than on the model.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`taskIdNamesWait]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`taskIdNamesWait, `activityActivationCount,
+  `activityOccurrenceScopeMatches, `activityOccurrenceVariableBindings, `addActivityOccurrenceVariableScope,
+  `insertActivityVariableScope, `insertTaskActivation, `localDataOwnerMatches, `runningStartState, `taskActivationCount]
 
 public section
 

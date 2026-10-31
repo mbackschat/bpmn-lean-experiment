@@ -22,7 +22,7 @@ Successful old lookups remain exact; the newly created owner intentionally gains
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
-  `flowNodeOccurrenceOwnerLiveUnique, `projectOpenFlowNodeOccurrences?]
+  `flowNodeOccurrenceOwnerLiveUnique, `projectOpenFlowNodeOccurrences?, `insertScopeOccurrence]
 
 public section
 

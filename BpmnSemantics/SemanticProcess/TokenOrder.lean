@@ -12,7 +12,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 The complete place and owner key orders token units without collapsing multiplicity. Permutation and canonical order together recover exact stored equality; mixed insertion/removal laws therefore require an ordered predecessor.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalCollectionOrder, `orderedBy]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalCollectionOrder, `orderedBy, `controlTokenBefore,
+  `scopeOwnerBefore]
 
 public section
 

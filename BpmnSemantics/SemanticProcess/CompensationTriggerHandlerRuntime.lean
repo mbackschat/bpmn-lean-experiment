@@ -10,7 +10,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Compensation trigger and handler runtime validity -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalArrayUtf8Bytes, `effectIdNamesWait]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalArrayUtf8Bytes, `effectIdNamesWait,
+  `activeCompensationTriggerOwnersUnique, `canonicalInsertBy, `insertEffectWait]
 
 public section
 

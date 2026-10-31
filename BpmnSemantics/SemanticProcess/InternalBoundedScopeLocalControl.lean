@@ -30,6 +30,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Bounded entry reuses child/local-control separation. Its joined deadline and Activity touch
 no additional local-control reads, including the nonchosen selected-join populations.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`setCallActivationCount]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalBoundedScopeSelection.apply,
   `InternalLocalControlSelection.apply, `InternalScopeCreationSelection.apply, `makeInternalBoundedScopePreparation,

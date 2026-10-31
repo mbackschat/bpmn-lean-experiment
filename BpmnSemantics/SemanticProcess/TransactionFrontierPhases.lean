@@ -28,7 +28,8 @@ lemmas here do not assume or establish a complete reachable-frontier classificat
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attemptInternalOperation, `attemptTransactionCancellation,
   `awaitUserTaskState?, `completeBoundedScope?, `completeMonitoredScope?, `completeUserTask, `duplicateState?,
-  `enterScopeWithCompensationRetention?, `initializeTransactionRetention, `reachNoneEndState?, `scopeQuiescent]
+  `enterScopeWithCompensationRetention?, `initializeTransactionRetention, `reachNoneEndState?, `scopeQuiescent,
+  `addToken, `canonicalInsertBy, `enterScopeState?, `initiateState?, `onlyTokenOwner?, `tokenOwners]
 
 public section
 

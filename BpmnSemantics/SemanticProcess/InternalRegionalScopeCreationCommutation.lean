@@ -49,7 +49,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
   `InternalCommutation.internalScopeCreationStateFootprint, `InternalCommutation.regionalStateAtomsConflict,
-  `canonicalCollectionOrder, `canonicalStateAtomSet, `interruptScope, `runtimeStateWellFormed]
+  `canonicalCollectionOrder, `canonicalStateAtomSet, `interruptScope, `runtimeStateWellFormed, `insertScopeOccurrence,
+  `setCallActivationCount]
 
 public section
 

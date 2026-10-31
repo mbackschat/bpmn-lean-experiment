@@ -9,7 +9,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 identity freshness, not comparator equality for potentially different same-id payloads, under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`projectScopes, `scopeDifference]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`projectScopes, `scopeDifference, `canonicalInsertBy]
 
 public section
 

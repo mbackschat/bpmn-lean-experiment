@@ -24,7 +24,7 @@ read populations and removal-only resource law. No intermediate state is assumed
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.boundedScopeJointResourcesAvailable,
-  `runningInstance?]
+  `runningInstance?, `activityActivationCount, `timerActivationCount]
 
 public section
 

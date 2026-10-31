@@ -48,7 +48,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.openWaitAnchorAbsent, `InternalCommutation.openWaitAnchors,
   `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.selectInternalScopeCreation?,
   `InternalWaitKind.activationKind, `canonicalCollectionOrder, `canonicalStateAtomSet, `effectActivationCount,
-  `exactLiveOccurrence, `messageActivationCount]
+  `exactLiveOccurrence, `messageActivationCount, `activationCount, `activityActivationCount, `onlyTokenOwner?,
+  `scopeActivationCount, `timerActivationCount, `tokenOwners]
 
 public section
 

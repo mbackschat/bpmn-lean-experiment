@@ -13,7 +13,8 @@ RSI-BIND-04 must survive PMIS entry and retirement so later issuance can use
 retained declaration provenance rather than assume reservation freshness.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`issueParallelBodies?, `waitDeclarationsValid]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`issueParallelBodies?, `waitDeclarationsValid,
+  `runningStartState]
 
 public section
 

@@ -16,7 +16,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#ordinary-end-batch-outcome).
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TokenPatch.apply, `reachNoneEndState?, `runningInstance?]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TokenPatch.apply, `reachNoneEndState?, `runningInstance?,
+  `addTokens, `onlyTokenOwner?, `reachNoneEndToken, `removeTokens, `tokenOwners]
 
 public section
 

@@ -13,7 +13,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.listsDisjoint, `armingLexStep,
-  `insertSelectedBranchSetCanonical, `orderedBy, `selectedBranchJoinReady, `selectionBefore]
+  `insertSelectedBranchSetCanonical, `orderedBy, `selectedBranchJoinReady, `selectionBefore, `canonicalInsertBy]
 
 public section
 

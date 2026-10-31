@@ -31,7 +31,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelMultiInstanc
   `programUndispatchedCapabilities, `runtimeStateIdentityBound,
   `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
   `sequentialMultiInstanceProgramBindingsValid, `sequentialMultiInstanceUserTaskProfileId, `taskIdNamesWait,
-  `timerWaitDeclarationKey, `userTaskWaitDeclarationKey, `userTaskWaitKeyMatches]
+  `timerWaitDeclarationKey, `userTaskWaitDeclarationKey, `userTaskWaitKeyMatches, `activationCount,
+  `activityActivationCount, `insertTaskActivation, `insertTimerWait]
 
 public section
 

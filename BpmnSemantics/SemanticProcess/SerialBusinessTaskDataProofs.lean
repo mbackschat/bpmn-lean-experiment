@@ -15,6 +15,7 @@ import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 import all BpmnSemantics.SemanticProcess.ScopeCompletion
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! SBT-CHAIN-01, SBT-INPUT-01 and SBT-RESULT-01 connect independent chain/read analysis to immutable containing-context evaluation, canonical mapped results and non-target frames. These quantified laws supply the unified reachable suffix invariant. -/
 
@@ -22,7 +23,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.f
   `SerialBusinessTask.operationVertex?, `SerialBusinessTask.requiredInputs, `SerialBusinessTask.scalar,
   `SerialBusinessTask.startBindingsAdmitted, `StructuredComposition.unique?, `activateEffect,
   `completeQuiescentScope?, `completeScopeState?, `operationDeclaresWaitKey, `operationWaitDeclarationKeys,
-  `scopeQuiescent, `sequentialScopeEntry?, `serialEffectPatch?, `strictlySortedStrings]
+  `scopeQuiescent, `sequentialScopeEntry?, `serialEffectPatch?, `strictlySortedStrings, `activityScopeMatches,
+  `addActivityVariableScope, `enclosingVariable?, `evaluateInputMappingsInOrder, `localDataOwnerMatches]
 
 public section
 

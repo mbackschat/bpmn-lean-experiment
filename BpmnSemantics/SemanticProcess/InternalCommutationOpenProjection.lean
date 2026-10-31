@@ -46,7 +46,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `candidateMessageStart?, `candidateTimerStart?, `candidateUserTaskStart?, `canonicalFlowNodeOccurrenceDelta,
   `effectWaitKeyMatches, `flowNodeOccurrenceProgramValidity, `messageBoundedOperationProjectionValid,
   `messageWaitDeclarers, `messageWaitKeyMatches, `projectOpenFlowNodeOccurrences?, `removeEndedFlowNodeOccurrences,
-  `timerWaitKeyMatches, `userTaskWaitDeclarers, `userTaskWaitKeyMatches]
+  `timerWaitKeyMatches, `userTaskWaitDeclarers, `userTaskWaitKeyMatches, `taskActivationCount]
 
 public section
 

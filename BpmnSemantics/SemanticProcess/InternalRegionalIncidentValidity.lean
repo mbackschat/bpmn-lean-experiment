@@ -14,7 +14,8 @@ The incident validator requires a singleton local scope and excludes an open wai
 identity, so arbitrary sublist retention alone cannot establish its preservation. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`effectIdNamesWait, `effectIncidentAssociationValid,
-  `effectIncidentAssociationsValid, `effectWaitOccurrenceId, `effectWaitOwnerAssociationValid]
+  `effectIncidentAssociationsValid, `effectWaitOccurrenceId, `effectWaitOwnerAssociationValid,
+  `LocalDataOwner.processInstanceId, `activityOccurrenceScopeMatches, `localDataOwnerMatches]
 
 public section
 

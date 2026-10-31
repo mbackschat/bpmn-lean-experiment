@@ -21,6 +21,7 @@ import all BpmnSemantics.SemanticProcess.CanonicalJsonStringCollection
 import all BpmnSemantics.SemanticProcess.EventBasedGateway
 import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
 import all BpmnSemantics.SemanticProcess.ScopeCompletion
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! PMIS lifecycle fixtures distinguish exact body retirement from whole-Activity cancellation and retain unrelated ownership. -/
 

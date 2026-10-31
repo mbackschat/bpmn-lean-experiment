@@ -10,7 +10,7 @@ successor invariant, establish withdrawal finality. Token production and prior h
 are independent of the number or order of existing handler occurrences. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeMessageMonitoredPair,
-  `completeMessageMonitoredUserTask?]
+  `completeMessageMonitoredUserTask?, `canonicalInsertBy]
 
 public section
 

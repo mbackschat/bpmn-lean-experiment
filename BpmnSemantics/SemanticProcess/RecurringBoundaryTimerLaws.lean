@@ -12,7 +12,8 @@ and unrelated Activity records frame without assuming a successor well-formednes
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`boundaryTimerWaitIdentity,
   `fireNonInterruptingBoundaryTimer, `recurringBoundaryTimerSuccessor, `replaceBoundaryTimerAttachment,
-  `replaceSelectedBoundaryTimerAttachment, `sameActivityOccurrence, `timerIdNamesWait]
+  `replaceSelectedBoundaryTimerAttachment, `sameActivityOccurrence, `timerIdNamesWait, `canonicalInsertBy,
+  `elementActivationCount, `insertTimerWait]
 
 public section
 

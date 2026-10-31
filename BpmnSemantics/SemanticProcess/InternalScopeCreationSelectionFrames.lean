@@ -10,6 +10,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Population frames for scope creation preserve the complete definition and instance exclusions
 of the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addToken, `callActivationCount, `elementActivationCount,
+  `insertScopeOccurrence, `onlyTokenOwner?, `scopeActivationCount, `setCallActivationCount, `setScopeActivationCount]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalScopeCreationSelection.apply,
   `selectInternalScopeCreation?]

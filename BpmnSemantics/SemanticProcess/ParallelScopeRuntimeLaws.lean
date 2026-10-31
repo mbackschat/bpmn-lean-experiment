@@ -14,7 +14,8 @@ The preservation laws of Parallel Multi-Instance population entry and retirement
 run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`issueParallelBodies?, `parallelRuntimeActivityId,
-  `parallelScopeBinding?, `parallelScopeBodyBound, `validParallelScopeIterations, `validParallelScopePopulation]
+  `parallelScopeBinding?, `parallelScopeBodyBound, `validParallelScopeIterations, `validParallelScopePopulation,
+  `canonicalInsertBy, `insertActivityOccurrence, `insertScopeOccurrence, `scopeActivationCount]
 
 public section
 

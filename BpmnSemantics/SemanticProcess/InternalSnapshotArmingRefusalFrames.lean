@@ -36,7 +36,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `attemptCompensationTrigger, `attemptCompleteScope, `attemptEnterBoundedScope, `attemptEnterScope,
   `boundedScopeChildOccurrence?, `childOccurrenceAfterEntry?, `compensationTriggerOwnerRejected,
   `completeQuiescentScope?, `completeScopeState?, `parentOwnedDeadline?, `runtimeStateWellFormed, `scopeQuiescent,
-  `selectedCompletionOccurrence?]
+  `selectedCompletionOccurrence?, `canonicalInsertBy, `enterScopeState?, `insertEffectWait, `insertMessageWait,
+  `insertTimerWait, `scopeActivationCount]
 
 public section
 

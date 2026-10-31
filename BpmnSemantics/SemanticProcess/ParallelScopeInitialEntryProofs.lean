@@ -48,7 +48,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `ParallelScopeReplay.transitionPortCharge, `ParallelScopeStart.analyzeProgram, `SemanticOperation.kind,
   `SequentialScopeControl.bodyVertex?, `SequentialScopeControl.inputs, `SequentialScopeProgram.operationAllowed,
   `activateEffect, `activateUserTask, `bodyConsumedPorts, `bodyProducedPorts, `completeSelectedScope?,
-  `continuationMarking, `operationOutputs, `ownedPortCount, `scopeQuiescent]
+  `continuationMarking, `operationOutputs, `ownedPortCount, `scopeQuiescent, `duplicateToken, `insertEffectWait,
+  `reachNoneEndToken, `synchronizeTokens]
 
 public section
 

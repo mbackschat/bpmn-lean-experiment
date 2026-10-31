@@ -65,7 +65,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MixedTaskControlFlow
   `dispatchStimulus, `effectActivationCount, `hasSequentialScopeDefinition,
   `interruptingMessageEventSubProcessStateValid, `isCallActivityProgram, `isMonitoredScopeDefinition,
   `reachNoneEndState?, `selectConditionalOutput, `sequentialScopeEntry?,
-  `structuredCompositionOrdinaryCompletionAdmitted]
+  `structuredCompositionOrdinaryCompletionAdmitted, `activationCount]
 
 public section
 

@@ -29,7 +29,8 @@ collections and needed no order argument; the first transition-level preservatio
 the theory.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attachedMessagesUnambiguous, `occursOnce, `orderedBy]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`attachedMessagesUnambiguous, `occursOnce, `orderedBy,
+  `activationBefore, `canonicalInsertBy, `insertActivityOccurrence, `insertTaskActivation, `insertUserTaskWait]
 
 public section
 

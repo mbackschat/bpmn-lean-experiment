@@ -130,7 +130,8 @@ This module owns the direct Lean account for the exact mapped boundary-Error cap
 
 run_meta privateEquations `BpmnSemantics #[`MappedBoundaryErrorConformance.effectWait,
   `MappedBoundaryErrorConformance.errorResult, `MappedBoundaryErrorConformance.outputMappings,
-  `MappedBoundaryErrorConformance.route, `SemanticProcess.effectResultOutput]
+  `MappedBoundaryErrorConformance.route, `SemanticProcess.effectResultOutput, `SemanticProcess.applyEffectPatch,
+  `SemanticProcess.applyEffectResult]
 
 public section
 

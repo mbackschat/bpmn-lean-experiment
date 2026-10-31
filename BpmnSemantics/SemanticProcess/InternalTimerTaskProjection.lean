@@ -40,7 +40,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalTimerTaskPatch,
   `InternalCommutation.makeInternalTimerTaskPatch, `InternalCommutation.uniqueFamilyDeclarer?,
   `InternalCommutation.userTaskWaitOccurrence, `flowNodeOccurrenceProgramValidity,
-  `messageBoundedOperationProjectionValid, `runningInstance?, `runtimeStateWellFormed, `userTaskWaitDeclarers]
+  `messageBoundedOperationProjectionValid, `runningInstance?, `runtimeStateWellFormed, `userTaskWaitDeclarers,
+  `insertTimerWait]
 
 public section
 

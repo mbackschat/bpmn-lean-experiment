@@ -34,7 +34,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `sequentialMultiInstanceControllerProgramBindingValid, `sequentialMultiInstanceControllerProgramBindingsValid,
   `sequentialMultiInstanceOperationBindingComplete, `sequentialMultiInstanceProgramBindingsValid, `taskIdNamesWait,
   `timerWaitKeyMatches, `userTaskWaitDeclarers, `userTaskWaitKeyMatches, `waitDeclarationsValid,
-  `waitIdentitiesUnique, `waitOwnersLive]
+  `waitIdentitiesUnique, `waitOwnersLive, `activationCount, `activityActivationCount, `addActivityVariableScope,
+  `insertEffectWait, `insertMessageWait, `insertTimerWait, `timerActivationCount]
 
 public section
 

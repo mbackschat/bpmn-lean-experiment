@@ -18,7 +18,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.selectInternalLocalControl?,
-  `runtimeStateWellFormed, `scopeQuiescent]
+  `runtimeStateWellFormed, `scopeQuiescent, `commonTokenOwner?, `onlyTokenOwner?]
 
 public section
 

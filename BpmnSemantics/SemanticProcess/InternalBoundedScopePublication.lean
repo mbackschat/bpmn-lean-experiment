@@ -45,7 +45,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.internalBoundedScopePublicationTemplate,
   `InternalCommutation.makeInternalBoundedScopePreparation, `InternalCommutation.makeInternalBoundedScopeSelection,
   `candidateFlowNodeOccurrenceDeltaForOperation?, `candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
-  `runningInstance?, `runtimeStateWellFormed, `selectedOperationOwner?]
+  `runningInstance?, `runtimeStateWellFormed, `selectedOperationOwner?, `insertScopeOccurrence]
 
 public section
 

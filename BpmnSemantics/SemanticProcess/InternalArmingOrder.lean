@@ -6,10 +6,12 @@ public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Internal arming collection order: canonical insertion and distinct-key replacement laws for bounded internal arming. -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`orderedBy]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`orderedBy, `activationBefore, `canonicalInsertBy,
+  `elementActivationCount, `insertActivityVariableScope, `insertTaskActivation, `localDataOwnerBefore]
 
 public section
 

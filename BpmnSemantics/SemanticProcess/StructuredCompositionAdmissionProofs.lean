@@ -26,7 +26,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredCompositio
   `StructuredComposition.burstFacts, `StructuredComposition.consumer?, `StructuredComposition.incoming,
   `StructuredComposition.operationInputs, `StructuredComposition.operationVertex?,
   `StructuredComposition.topologicalOrder, `StructuredComposition.unique?, `admitStimulus, `operationOutputs,
-  `structuredCompositionStartBindingsAdmitted]
+  `structuredCompositionStartBindingsAdmitted, `runningProgramStartState?]
 
 public section
 

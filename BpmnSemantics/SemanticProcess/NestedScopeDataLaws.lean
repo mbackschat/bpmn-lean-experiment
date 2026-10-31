@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.ScopeCompletion
 import all BpmnSemantics.SemanticProcess.NestedScopeData
 import all BpmnSemantics.SemanticProcess.ScopeVariableData
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Nested scope-data frame laws
 

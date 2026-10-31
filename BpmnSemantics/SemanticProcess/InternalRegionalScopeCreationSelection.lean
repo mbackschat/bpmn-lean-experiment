@@ -46,7 +46,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.InternalScopeCreationSelection.apply, `InternalCommutation.internalScopeCreationStateFootprint,
   `InternalCommutation.liftRegionalStateAtom, `InternalCommutation.regionalBaseFootprint?,
   `InternalCommutation.regionalStateAtomsConflict, `MonitoredScopeOwnership, `MonitoredScopeTimerBinding,
-  `NonInterruptingBoundaryTimerBinding, `canonicalStateAtomSet, `runningInstance?, `runtimeStateWellFormed]
+  `NonInterruptingBoundaryTimerBinding, `canonicalStateAtomSet, `runningInstance?, `runtimeStateWellFormed,
+  `onlyTokenOwner?, `tokenOwners]
 
 public section
 

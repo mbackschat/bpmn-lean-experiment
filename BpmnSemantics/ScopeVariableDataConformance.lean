@@ -3,6 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.ScopeVariableData
 import all BpmnSemantics.SemanticProcess.ScopeVariableData
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Occurrence-owned body data witnesses
 
@@ -10,7 +11,8 @@ SMIS-DATA-01 requires pre-entry mapping, present-null shadowing and nearest-exis
 These separating controls cover owner collisions and turnover without claiming MI execution.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`initializeScopeVariables?]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`initializeScopeVariables?, `canonicalInputMappings?,
+  `evaluateEnclosingInputMappings, `evaluateInputMappings?, `insertByTarget, `sortByTarget]
 
 public section
 

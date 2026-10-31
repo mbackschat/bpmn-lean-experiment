@@ -54,7 +54,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `a
   `parallelEntryWaitTaskId, `parallelMultiInstanceControllersOrdered, `parallelMultiInstanceRuntimeWellFormed,
   `parallelSlotIdentityValid, `pendingParallelSlots, `runtimeStateIdentityBound, `runtimeStateWellFormed,
   `sameActivityOccurrence, `timerIdNamesWait, `timerWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique,
-  `waitOwnersLive]
+  `waitOwnersLive, `ActivityOccurrence.messageHandlerOccurrences, `ActivityOccurrence.timerHandlerOccurrences,
+  `insertTimerWait, `setActivationCount, `setTimerActivationCount]
 
 public section
 

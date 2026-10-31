@@ -14,7 +14,8 @@ Fixed patches share one predecessor while task and Activity issuers retain indep
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalArmingPatch,
-  `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.makeInternalDataArmingPatch, `armingLexStep]
+  `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.makeInternalDataArmingPatch, `armingLexStep,
+  `addActivityOccurrenceVariableScope]
 
 public section
 

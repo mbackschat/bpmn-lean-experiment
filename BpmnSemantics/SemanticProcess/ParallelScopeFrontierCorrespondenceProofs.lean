@@ -13,6 +13,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 The bridge compares their canonical alternatives without choosing an execution or weakening
 the failed-wait and duplicate-alternative guards.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalInsertBy]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalAlternativeBefore,
   `internalOperationOccurrenceOffers?, `internalOperationOccurrences?, `ordinaryExecutionFrontier, `sortBy,

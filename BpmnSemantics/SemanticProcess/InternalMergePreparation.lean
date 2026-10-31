@@ -7,13 +7,15 @@ import all BpmnSemantics.SemanticProcess.TokenPatch
 import all BpmnSemantics.SemanticProcess.TransitionStates
 meta import BpmnSemantics.PrivateEquationLemmas
 import all BpmnSemantics.SemanticProcessContract
+import all BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! Exact Merge selection reuses owned token patches and publication provenance under the
 [complete-frontier account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#exact-merge-frontier-outcome).
 -/
 run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TokenPatch.apply, `runningInstance?]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TokenPatch.apply, `runningInstance?, `addTokens,
+  `removeTokens]
 
 public section
 

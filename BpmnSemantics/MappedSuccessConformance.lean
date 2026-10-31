@@ -104,6 +104,8 @@ import all BpmnSemantics.CheckedProcessContract
 
 These checks own the direct Lean account for the exact string-only mapped-success capsule. They establish independent checked-source normalization, committed effect arguments, typed local-patch validation, Process-scope output mapping, exact state preservation on refusal, and the nearest accept-unvalidated-patch non-law.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityScopeMatches, `applyEffectPatch, `applyEffectResult,
+  `completeActivityVariableScope, `localDataOwnerMatches]
 
 run_meta privateEquations `BpmnSemantics.MappedSuccessConformance #[`expectedVariable, `expectedWaitingVariables,
   `outputMappings, `successResult]

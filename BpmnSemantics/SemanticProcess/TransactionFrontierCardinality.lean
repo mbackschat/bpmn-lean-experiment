@@ -16,7 +16,7 @@ not merely a set of enabled operation identities. Reachability must still establ
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalEnabledInternalTransitions,
-  `snapshotInternalTransitionFrontier]
+  `snapshotInternalTransitionFrontier, `onlyTokenOwner?, `tokenOwners]
 
 public section
 

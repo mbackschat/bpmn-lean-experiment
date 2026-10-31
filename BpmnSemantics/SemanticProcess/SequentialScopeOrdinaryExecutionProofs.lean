@@ -41,7 +41,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SemanticOperation.kind,
   `SequentialScopeControl.bodyVertex?, `activateEffect, `activateUserTask, `bodyConsumedPorts,
   `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `selectScopeVariables?, `sequentialScopeBindingForEntry?,
-  `sequentialScopeTaskWaitingCount]
+  `sequentialScopeTaskWaitingCount, `duplicateToken, `reachNoneEndToken, `scopeActivationCount, `synchronizeTokens]
 
 public section
 

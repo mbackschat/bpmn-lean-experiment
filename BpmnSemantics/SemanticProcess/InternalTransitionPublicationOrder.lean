@@ -10,6 +10,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Complete mixed templates sort before lifecycle numbering under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalInsertBy]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`numberTransitionPublicationTemplates,
   `sortBy, `sortInsertBy]

@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Flow-node occurrence lifecycle ordering laws
 
@@ -11,7 +12,7 @@ Proves the strict total-order laws behind canonical open-occurrence sorting and 
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`flowNodeOccurrenceAnchorBefore, `insertBy,
-  `occurrenceBefore, `scalarBefore, `scopeBefore, `sortBy, `startBefore]
+  `occurrenceBefore, `scalarBefore, `scopeBefore, `sortBy, `startBefore, `canonicalInsertBy]
 
 public section
 

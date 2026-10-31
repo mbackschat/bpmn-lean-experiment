@@ -14,7 +14,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 are separate. Actual input tokens supply that separation for existing local-control callers. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`compensationExecutionDeclarationValid, `scopeQuiescent,
-  `triggerLifecycleValid, `triggerMatchesDeclaration]
+  `triggerLifecycleValid, `triggerMatchesDeclaration, `addToken]
 
 public section
 

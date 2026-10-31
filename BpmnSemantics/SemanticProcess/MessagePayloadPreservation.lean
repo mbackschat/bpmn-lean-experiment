@@ -33,7 +33,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `a
   `parallelMultiInstanceUserTaskProfileId, `programParallelMultiInstanceProfileMatches,
   `programUndispatchedCapabilities, `runtimeStateWellFormed, `sequentialMultiInstanceControllerProgramBindingValid,
   `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
-  `sequentialMultiInstanceProgramBindingsValid, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+  `sequentialMultiInstanceProgramBindingsValid, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive,
+  `messageWaitBefore, `scopeOwnerBefore, `waitOccurrenceBefore]
 
 public section
 

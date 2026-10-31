@@ -12,6 +12,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 The [scope-creation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md) requires the
 parentless-root and Call-record bijection to survive the actual selected insertion.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`insertScopeOccurrence]
 
 public section
 

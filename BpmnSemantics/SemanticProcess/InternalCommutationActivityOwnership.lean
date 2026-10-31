@@ -12,7 +12,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.timerWaitOccurrence,
   `activityBodyLive, `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `anyTimerIdNamesWait,
   `attachedTimersUnambiguous, `exactLiveOccurrence, `recordAttaches, `runtimeStateIdentityBound, `taskIdNamesWait,
-  `timerIdNamesWait, `timerWaitKeyMatches]
+  `timerIdNamesWait, `timerWaitKeyMatches, `insertTimerWait]
 
 public section
 

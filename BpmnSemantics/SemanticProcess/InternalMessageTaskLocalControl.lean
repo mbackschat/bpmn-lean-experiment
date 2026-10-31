@@ -24,6 +24,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Message-task arming and local control share only token dependencies. Complete regional
 separation protects the full place census and every selected-join readiness bucket.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`tokenOwners]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`applyInternalArmingPatch,
   `applyInternalMessageTaskPatch, `messageTaskStateFootprint, `regionalStateAtomsConflict]

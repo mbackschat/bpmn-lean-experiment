@@ -28,7 +28,7 @@ derived from the unchanged open projection, independently of later batch numberi
 run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat, `maxSafeWireNat]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalEndOrigin?,
-  `acceptFlowNodeOccurrenceCandidate?]
+  `acceptFlowNodeOccurrenceCandidate?, `onlyTokenOwner?, `tokenOwners]
 
 public section
 

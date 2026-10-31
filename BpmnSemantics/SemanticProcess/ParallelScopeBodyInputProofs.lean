@@ -47,7 +47,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `ParallelScopeReplay.committedTransitions?, `ParallelScopeReplay.internalTransition?,
   `ParallelScopeReplay.internalTransitions?, `ParallelScopeStart.analyzeProgram, `SemanticOperation.kind,
   `completeSelectedScope?, `completeSerialEffect?, `evaluateParallelScopeInputs?, `issueParallelBodies?,
-  `readScopeVariable?, `scopeVariableScalar, `validParallelScopeIterations, `validParallelScopePopulation]
+  `readScopeVariable?, `scopeVariableScalar, `validParallelScopeIterations, `validParallelScopePopulation,
+  `canonicalInputMappings?, `enclosingVariable?, `evaluateInputMappings?, `evaluateInputMappingsInOrder,
+  `orderedInputSnapshotMatches, `runningStartState, `scalarInputLookup?, `sortByTarget]
 
 public section
 

@@ -38,7 +38,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.PreparedInternalArming.scopeFramePatch, `InternalCommutation.applyInternalArmingPatch,
   `InternalCommutation.applyInternalDataArmingPatch, `InternalCommutation.effectWaitOccurrence,
   `InternalCommutation.makeInternalDataArmingPatch, `MonitoredScopeTimerBinding, `canonicalCollectionOrder,
-  `completeQuiescentScope?, `completeScopeState?, `removeMonitoredScopeTimer, `timerWaitKeyMatches]
+  `completeQuiescentScope?, `completeScopeState?, `removeMonitoredScopeTimer, `timerWaitKeyMatches,
+  `LocalDataOwner.processInstanceId, `addActivityOccurrenceVariableScope, `insertEffectWait, `insertMessageWait,
+  `insertTimerWait]
 
 public section
 

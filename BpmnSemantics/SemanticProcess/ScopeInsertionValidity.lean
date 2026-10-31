@@ -12,7 +12,7 @@ membership. These laws preserve the existing ownership checks without assuming s
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `activityRecordsOwnLiveWork,
-  `exactLiveOccurrence, `waitOwnersLive]
+  `exactLiveOccurrence, `waitOwnersLive, `insertScopeOccurrence]
 
 public section
 

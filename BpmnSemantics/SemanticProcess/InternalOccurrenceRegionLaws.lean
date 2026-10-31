@@ -11,6 +11,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 The existing occurrence-count evaluator computes the least parent/forward-Call closure. These
 laws concern predecessor graph membership, not agreement with a transition's removal algorithm.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`scopeOwnerBefore]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`canonicalScopeMembers,
   `expandOccurrenceRegionMembers, `occurrenceRegionMembersWithin, `scopeBefore, `scopeOwnershipGraphExact, `sortBy,

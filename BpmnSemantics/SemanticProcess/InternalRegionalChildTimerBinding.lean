@@ -14,7 +14,8 @@ child and Timer activation counters need not agree. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
   `activityBodyScope?, `flowNodeOccurrenceWaitProgramValidity, `operationDeclaresWaitKey,
-  `operationWaitDeclarationKeys, `recordAttaches, `timerIdNamesWait, `timerWaitDeclarationKey, `timerWaitKeyMatches]
+  `operationWaitDeclarationKeys, `recordAttaches, `timerIdNamesWait, `timerWaitDeclarationKey, `timerWaitKeyMatches,
+  `ActivityOccurrence.timerHandlerOccurrences]
 
 public section
 

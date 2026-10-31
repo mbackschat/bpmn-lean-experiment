@@ -20,7 +20,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.occurrenceReservationStateValid, `InternalCommutation.openWaitAnchorAbsent,
   `InternalCommutation.openWaitAnchors, `InternalCommutation.timerWaitOccurrence,
   `InternalCommutation.userTaskWaitOccurrence, `ParallelScopeStart.programOperationAllowed,
-  `SequentialScopeProgram.operationAllowed, `declaredByExactlyOneOwnedOperation, `waitDeclarationsValid]
+  `SequentialScopeProgram.operationAllowed, `declaredByExactlyOneOwnedOperation, `waitDeclarationsValid,
+  `activityScopeMatches, `localDataOwnerMatches]
 
 public section
 

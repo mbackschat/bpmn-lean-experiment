@@ -15,7 +15,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 Filtering changes adjacency, so the regional removal account needs composition of non-inversion for every retained collection comparator.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`orderedBy, `parallelMultiInstanceControllersOrdered]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`orderedBy, `parallelMultiInstanceControllersOrdered,
+  `localDataOwnerBefore]
 
 public section
 

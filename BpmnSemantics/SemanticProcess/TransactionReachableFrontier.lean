@@ -39,7 +39,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`TransactionProgramRo
   `attemptInternalOperation, `awaitUserTaskState?, `canonicalEnabledInternalTransitions,
   `compensationEventSubProcessSnapshotScopeLifecycleWellFormed, `completeBoundedScope?, `completeMonitoredScope?,
   `duplicateState?, `initializeTransactionRetention, `runningInstance?, `scopeForestWellFormed,
-  `snapshotInternalTransitionFrontier]
+  `snapshotInternalTransitionFrontier, `addToken, `addTokens, `canonicalInsertBy, `duplicateToken, `enterScopeState?,
+  `initiateState?, `insertScopeOccurrence, `insertUserTaskWait, `onlyTokenOwner?, `removeToken, `rootDefinitionScope?,
+  `rootScopeOccurrence?, `runningProgramStartState?, `runningStartState, `scopeActivationCount, `tokenOwners]
 
 public section
 

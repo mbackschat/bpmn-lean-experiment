@@ -2,12 +2,14 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Occurrence-owned embedded scope data
 
 SMIS-DATA-01 fixes pre-entry Process evaluation, present-null shadowing and nearest-existing writes.
 These storage operations establish no body lifecycle, source admission or command-policy claim.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`canonicalInsertBy]
 
 public section
 

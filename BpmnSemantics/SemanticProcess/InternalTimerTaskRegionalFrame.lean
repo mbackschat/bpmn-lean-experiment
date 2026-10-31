@@ -40,7 +40,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.prepareInternalTimerTaskContract?, `InternalCommutation.regionalOwnsAtom,
   `InternalCommutation.regionalOwnsOrdinaryAtom, `InternalCommutation.regionalStateAtomsConflict,
   `InternalCommutation.timerTaskStateFootprint, `calledInstanceClosure, `canonicalCollectionOrder,
-  `exactLiveOccurrence, `recordInRegion, `retainedByRegion, `runningInstance?, `withdrawnByRegion]
+  `exactLiveOccurrence, `recordInRegion, `retainedByRegion, `runningInstance?, `withdrawnByRegion, `activationCount,
+  `activityActivationCount, `insertTimerWait, `onlyTokenOwner?, `timerActivationCount, `tokenOwners]
 
 public section
 

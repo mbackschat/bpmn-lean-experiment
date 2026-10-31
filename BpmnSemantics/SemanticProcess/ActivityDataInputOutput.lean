@@ -23,7 +23,8 @@ Activity contract independently of its module placement.
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateDataInputOutputUserTask?,
   `activityDataOutputValueAdmitted, `associatedProcessBinding, `completeDataInputOutputUserTask?,
   `dataInputOutputActivityOwner, `dataInputOutputActivityRecord, `dataInputOutputRunningInstance?,
-  `dataInputOutputSourceBinding?, `runtimeStateIdentityBound, `taskIdNamesWait]
+  `dataInputOutputSourceBinding?, `runtimeStateIdentityBound, `taskIdNamesWait, `activityOccurrenceScopeMatches,
+  `activityOccurrenceVariableBindings, `addActivityOccurrenceVariableScope, `localDataOwnerMatches]
 
 public section
 

@@ -35,7 +35,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.boundedScopeStateFootprint, `InternalCommutation.makeInternalBoundedScopePreparation,
   `InternalCommutation.makeInternalBoundedScopeSelection, `InternalCommutation.openWaitAnchorAbsent,
   `InternalCommutation.openWaitAnchors, `InternalCommutation.regionalStateAtomsConflict, `canonicalCollectionOrder,
-  `runningInstance?]
+  `runningInstance?, `activityActivationCount, `insertTimerWait, `timerActivationCount]
 
 public section
 

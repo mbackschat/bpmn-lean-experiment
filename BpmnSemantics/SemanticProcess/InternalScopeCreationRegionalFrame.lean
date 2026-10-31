@@ -31,7 +31,8 @@ the actual removal filters required by the Internal Commutation account. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalScopeCreationStateFootprint,
   `InternalCommutation.regionalOwnsAtom, `InternalCommutation.regionalOwnsOrdinaryAtom,
-  `InternalCommutation.regionalStateAtomsConflict, `canonicalStateAtomSet, `runtimeStateWellFormed]
+  `InternalCommutation.regionalStateAtomsConflict, `canonicalStateAtomSet, `runtimeStateWellFormed,
+  `callActivationCount, `scopeActivationCount]
 
 public section
 

@@ -26,7 +26,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeStart.programStateCapacity,
   `cancelScopeSubtree, `issueParallelBodies?, `occurrenceInSubtree, `occurrenceInSubtreeWithin, `retainedByRegion,
-  `validParallelScopeIterations, `validParallelScopePopulation, `withdrawnByRegion]
+  `validParallelScopeIterations, `validParallelScopePopulation, `withdrawnByRegion, `insertActivityOccurrence]
 
 public section
 

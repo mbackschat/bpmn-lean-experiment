@@ -14,7 +14,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 and retained identity provenance follow from the predecessor state. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activateUserTask, `scopeQuiescent,
-  `transactionTriggerProvenanceValid, `triggerLifecycleValid]
+  `transactionTriggerProvenanceValid, `triggerLifecycleValid, `canonicalInsertBy, `insertMessageWait, `insertTimerWait]
 
 public section
 

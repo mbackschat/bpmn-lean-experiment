@@ -15,7 +15,7 @@ The two-Task composition carries the same child-retention state through both act
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalArmingWrite.owner,
   `InternalCommutation.applyInternalArmingPatch, `scopeQuiescent, `transactionTriggerProvenanceValid,
-  `triggerLifecycleValid]
+  `triggerLifecycleValid, `canonicalInsertBy, `insertEffectWait, `insertMessageWait, `insertTimerWait]
 
 public section
 

@@ -26,7 +26,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.InternalScopeCreationSelection.apply, `InternalCommutation.boundedScopeJointResourcesAvailable,
   `InternalCommutation.makeInternalBoundedScopePreparation, `InternalCommutation.makeInternalBoundedScopeSelection,
   `InternalCommutation.selectInternalOwnershipClosedRegional?, `allMatchingRetained, `regionalActivityOwnersClosed,
-  `regionalActivityReferencesClosed, `regionalOwnershipClosed, `timerIdNamesWait, `timerWaitKeyMatches]
+  `regionalActivityReferencesClosed, `regionalOwnershipClosed, `timerIdNamesWait, `timerWaitKeyMatches,
+  `insertScopeOccurrence, `insertTimerWait]
 
 public section
 

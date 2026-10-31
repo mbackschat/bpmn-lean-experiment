@@ -35,7 +35,7 @@ Scope shape and leaf ownership exclude a normal parent completion beside live ch
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyPreparedSnapshotArming?,
   `attemptInternalOperation, `awaitUserTaskState?, `boundedScopeDefinitionForChild?, `completeBoundedScope?,
   `completeSelectedScope?, `fireSnapshotInternalBatch, `isMonitoredScopeDefinition, `reachNoneEndState?,
-  `runningInstance?]
+  `runningInstance?, `onlyTokenOwner?, `tokenOwners]
 
 public section
 

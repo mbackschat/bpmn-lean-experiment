@@ -55,7 +55,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `flowNodeOccurrenceWaitProgramValidity, `lifecyclePositionValid, `nonempty, `operationControlPlacesShareOwner,
   `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `programWellFormed, `projectOpenFlowNodeOccurrences?,
   `projectWaits?, `runningPositionValid, `runtimePositionValid, `runtimeStateWellFormed, `scopeOperationBindingValid,
-  `scopedOwnershipComplete, `sequentialScopeEntry?, `sortBy, `sortFlowNodeOccurrenceStarts, `uniqueDefinitionScope?]
+  `scopedOwnershipComplete, `sequentialScopeEntry?, `sortBy, `sortFlowNodeOccurrenceStarts, `uniqueDefinitionScope?,
+  `runningStartState]
 
 public section
 

@@ -74,7 +74,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrencePr
   `SequentialScopeProgram.operationAllowed, `cancelScopeSubtree, `completeSerialEffect?, `exactLiveOccurrence,
   `flowNodeOccurrenceProgramValidity, `flowNodeOccurrenceWaitProgramValidity, `issueParallelBodies?,
   `occurrenceInSubtreeWithin, `operationControlPlaces, `operationOutputs, `parallelScopeEntry?,
-  `uniqueDefinitionScope?]
+  `uniqueDefinitionScope?, `runningProgramStartState?, `runningStartState]
 
 public section
 

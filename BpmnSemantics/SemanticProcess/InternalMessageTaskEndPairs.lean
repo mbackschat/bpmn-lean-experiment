@@ -29,7 +29,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.InternalEndSelection.tokens, `InternalCommutation.applyInternalArmingPatch,
   `InternalCommutation.applyInternalMessageTaskPatch, `InternalCommutation.internalEndStateFootprint,
   `InternalCommutation.makeInternalEndPreparation, `InternalCommutation.makeInternalMessageTaskPatch,
-  `InternalCommutation.messageTaskStateFootprint, `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply]
+  `InternalCommutation.messageTaskStateFootprint, `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply,
+  `addTokens, `removeTokens]
 
 public section
 

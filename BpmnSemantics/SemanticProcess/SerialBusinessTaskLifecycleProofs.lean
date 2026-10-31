@@ -59,7 +59,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.F
   `isCallActivityProgram, `isMonitoredScopeDefinition, `operationControlPlaces, `operationDeclaresWaitKey,
   `operationOutputs, `operationOwningScope?, `operationWaitDeclarationKeys, `serialRuntimeAssociationsValid,
   `structuredCompositionOrdinaryCompletionAdmitted, `taskIdNamesWait, `uniqueControlPlace?, `uniqueDefinitionScope?,
-  `waitDeclarationsValid]
+  `waitDeclarationsValid, `activityScopeMatches, `addToken, `canonicalInsertBy, `localDataOwnerMatches,
+  `onlyTokenOwner?, `tokenOwners]
 
 public section
 

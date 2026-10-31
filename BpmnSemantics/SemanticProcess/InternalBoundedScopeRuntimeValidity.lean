@@ -61,7 +61,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `controllersOwnLiveActivity, `enteredChildScopeId?, `exactLiveOccurrence, `runningInstance?,
   `runtimeStateIdentityBound, `runtimeStateWellFormed, `sameActivityOccurrence, `sequentialScopeBindingForEntry?,
   `sequentialScopeCollection?, `sequentialScopeEntry?, `sequentialScopeStateValid, `timerIdNamesWait,
-  `timerWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+  `timerWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive,
+  `ActivityOccurrence.messageHandlerOccurrences, `ActivityOccurrence.timerHandlerOccurrences, `activationCount,
+  `activityActivationCount, `insertTimerWait, `setTimerActivationCount, `timerActivationCount]
 
 public section
 

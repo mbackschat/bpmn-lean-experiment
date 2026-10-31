@@ -13,7 +13,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalSelectedBranchPatch.apply, `TokenPatch.apply,
-  `chooseState?, `duplicateState?, `selectManyState?, `synchronizeSelectedState?, `synchronizeState?]
+  `chooseState?, `duplicateState?, `selectManyState?, `synchronizeSelectedState?, `synchronizeState?, `addTokens,
+  `chooseToken, `duplicateToken, `removeTokens, `synchronizeTokens]
 
 public section
 

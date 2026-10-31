@@ -43,7 +43,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeReplay.
   `ParallelScopeReplay.internalTransition?, `ParallelScopeReplay.internalTransitions?,
   `ParallelScopeReplay.waitCompletionStimulus, `ParallelScopeStart.analyzeProgram,
   `ParallelScopeStart.programOperationAllowed, `activityBodyScopeClaims, `admitStimulus, `completeSerialEffect?,
-  `hasParallelScopeDefinition, `hasSequentialScopeDefinition, `sequentialScopeEntry?]
+  `hasParallelScopeDefinition, `hasSequentialScopeDefinition, `sequentialScopeEntry?, `runningProgramStartState?]
 
 public section
 

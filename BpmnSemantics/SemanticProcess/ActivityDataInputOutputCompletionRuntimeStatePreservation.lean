@@ -54,7 +54,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `a
   `programParallelMultiInstanceProfileMatches, `programSequentialMultiInstanceProfileMatches,
   `programUndispatchedCapabilities, `runtimePositionValid, `runtimeStateIdentityBound, `runtimeStateWellFormed,
   `sameActivityOccurrence, `sequentialMultiInstanceUserTaskProfileId, `userTaskWaitKeyMatches, `waitDeclarationsValid,
-  `waitIdentitiesUnique, `waitOwnersLive]
+  `waitIdentitiesUnique, `waitOwnersLive, `activityOccurrenceScopeMatches, `activityScopeMatches,
+  `localActivityOwnerBefore, `localDataOwnerBefore, `localDataOwnerMatches, `localEffectOwnerBefore]
 
 public section
 

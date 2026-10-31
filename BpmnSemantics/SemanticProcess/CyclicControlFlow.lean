@@ -2,11 +2,13 @@ module
 
 public import BpmnSemantics.SemanticProcess.RuntimeState
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! # Exclusive Merge runtime semantics
 
 This module owns the declarative and executable state transition for the resumption-bounded cycle profile's Exclusive Merge. The relation permits one pass-through for each offered token occurrence. The executable evaluator implements the deterministic unique-offer subset selected by this profile and deliberately leaves multi-offer selection incomplete.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addToken, `canonicalInsertBy, `removeToken]
 
 public section
 

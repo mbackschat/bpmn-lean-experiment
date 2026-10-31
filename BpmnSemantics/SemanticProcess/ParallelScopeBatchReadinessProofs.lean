@@ -37,7 +37,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.occurrenceOwnerRootValid, `InternalCommutation.prepareOccurrenceTokenPatch?,
   `InternalCommutation.reserveOccurrenceMembers?, `InternalCommutation.resolveInternalOperationOccurrence?,
   `InternalCommutation.userTaskWaitOccurrence, `ParallelScopeReplay.ReservedArmWriteShape, `SemanticOperation.kind,
-  `effectActivationCount, `exactLiveOccurrence]
+  `effectActivationCount, `exactLiveOccurrence, `activationCount]
 
 public section
 

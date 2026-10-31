@@ -22,7 +22,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ContinuationMarkingLaws.tokenCount,
   `SequentialScopeControl.bodyVertex?, `SequentialScopeEntryResult.state, `continuationMarking, `exactLiveOccurrence,
   `ownedPortCount, `runtimeStateWellFormed, `scopeQuiescent, `selectScopeVariables?, `sequentialScopeActivityId,
-  `sequentialScopeEntryEnabled, `waitOwnersLive]
+  `sequentialScopeEntryEnabled, `waitOwnersLive, `addToken, `addTokens, `canonicalInsertBy, `insertActivityOccurrence,
+  `insertScopeOccurrence, `scopeActivationCount, `setScopeActivationCount]
 
 public section
 

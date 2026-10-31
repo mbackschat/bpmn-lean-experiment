@@ -43,6 +43,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 [bounded outcome](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#bounded-sub-process-arming-outcome).
 Neither changes the joined Activity or deadline, so those retained reads stay exact.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`setCallActivationCount]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`InternalBoundedScopeSelection.apply,
   `InternalEndSelection.apply, `InternalEndSelection.tokens, `InternalLocalControlSelection.apply,

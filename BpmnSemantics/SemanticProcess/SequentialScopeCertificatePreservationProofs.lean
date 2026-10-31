@@ -31,7 +31,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeCompletionResult.state,
   `SequentialScopeEntryResult.state, `continuationMarking, `flowNodeOccurrenceProgramValidity, `ownedPortCount,
   `runtimeStateWellFormed, `scopeOperationBindingValid, `selectScopeVariables?, `sequentialScopeEntryEnabled,
-  `sequentialScopeTaskWaitingCount]
+  `sequentialScopeTaskWaitingCount, `scopeActivationCount]
 
 public section
 

@@ -10,7 +10,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalLocalControlSelection.censusReads,
   `InternalCommutation.selectInternalLocalControl?, `InternalSelectedBranchPatch.selectionKey,
-  `selectedBranchJoinReady, `selectedInputOwnedReady]
+  `selectedBranchJoinReady, `selectedInputOwnedReady, `commonTokenOwner?, `onlyTokenOwner?]
 
 public section
 

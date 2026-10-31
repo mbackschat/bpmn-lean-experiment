@@ -78,7 +78,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MixedTaskControlFlow
   `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
   `sequentialMultiInstanceProgramBindingsValid, `sequentialScopeEntry?, `sequentialScopeStateValid,
   `serialRuntimeAssociationsValid, `taskIdNamesWait, `uniqueControlPlace?, `uniqueDefinitionScope?,
-  `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive]
+  `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive, `activityScopeMatches,
+  `addToken, `canonicalInsertBy, `localDataOwnerMatches, `onlyTokenOwner?, `rootDefinitionScope?,
+  `runningProgramStartState?, `runningStartState, `tokenOwners]
 
 public section
 

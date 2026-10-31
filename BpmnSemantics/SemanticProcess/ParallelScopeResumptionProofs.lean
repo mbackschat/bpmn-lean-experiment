@@ -65,7 +65,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `ParallelScopeStart.programSelected, `SemanticOperation.kind, `SequentialScopeControl.inputs,
   `SequentialScopeProgram.operationAllowed, `admitStimulus, `bodyConsumedPorts, `completeDeclaredScope?,
   `completeParallelScopeEffect?, `completeParallelScopeUserTask?, `completeQuiescentScope?, `completeScopeState?,
-  `completeSelectedScope?, `enterParallelScope?]
+  `completeSelectedScope?, `enterParallelScope?, `initiateState?, `rootScopeOccurrence?]
 
 public section
 

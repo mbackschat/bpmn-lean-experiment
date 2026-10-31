@@ -12,7 +12,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
   `SemanticOperation.kind, `activateEffect, `activateUserTask, `awaitEffectState?, `awaitUserTaskState?,
   `bodyConsumedPorts, `bodyProducedPorts, `continuationMarking, `duplicateState?, `fire?, `ownedPortCount,
-  `reachNoneEndState?, `synchronizeState?]
+  `reachNoneEndState?, `synchronizeState?, `addTokens, `commonTokenOwner?, `duplicateToken, `insertEffectWait,
+  `reachNoneEndToken, `removeTokens, `synchronizeTokens]
 
 public section
 

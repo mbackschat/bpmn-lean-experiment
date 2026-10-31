@@ -14,7 +14,7 @@ that sort to establish canonical order, independently of reachability's permutat
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`armingLexStep, `callRecordBefore, `insertCallRecord,
-  `orderedBy, `sortCallRecords]
+  `orderedBy, `sortCallRecords, `canonicalInsertBy, `scopeOwnerBefore]
 
 public section
 

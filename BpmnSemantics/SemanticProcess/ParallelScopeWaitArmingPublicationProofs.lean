@@ -82,7 +82,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `SequentialScopeProgram.operationAllowed, `activateEffect, `activateUserTask, `cancelScopeSubtree,
   `completeParallelScopeEffect?, `completeSelectedScope?, `completeSerialEffect?, `effectWaitOccurrenceId,
   `eventRaceAssociationsValid, `exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique,
-  `flowNodeOccurrenceProgramValidity, `issueParallelBodies?]
+  `flowNodeOccurrenceProgramValidity, `issueParallelBodies?, `addActivityVariableScope, `runningProgramStartState?]
 
 public section
 

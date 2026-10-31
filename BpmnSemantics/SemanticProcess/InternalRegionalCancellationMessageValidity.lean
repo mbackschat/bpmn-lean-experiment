@@ -12,7 +12,8 @@ Cancellation preserves it when a matched Activity, Task, and Message share reten
 the generic census law preserves multiplicity rather than replacing counts by membership. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`anyMessageIdNamesWait,
-  `messageBoundedOperationProjectionValid, `messageBoundedProjectionValid, `messageIdNamesWait, `recordInRegion]
+  `messageBoundedOperationProjectionValid, `messageBoundedProjectionValid, `messageIdNamesWait, `recordInRegion,
+  `ActivityOccurrence.messageHandlerOccurrences]
 
 public section
 

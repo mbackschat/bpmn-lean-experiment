@@ -15,7 +15,8 @@ These bridges preserve the existing evaluator's selection and publication contra
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.regionalLifecycleTemplate?,
-  `errorPropagationCancellationDelta?, `flowNodeOccurrenceThrowingScopeParent?, `terminateScopeCancellationDelta?]
+  `errorPropagationCancellationDelta?, `flowNodeOccurrenceThrowingScopeParent?, `terminateScopeCancellationDelta?,
+  `onlyTokenOwner?]
 
 public section
 

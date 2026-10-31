@@ -12,6 +12,7 @@ import all BpmnSemantics.SemanticProcess.ScopeVariableData
 import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Repeated-scope transition laws
 
@@ -26,7 +27,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SequentialScopeCompl
   `exactLiveOccurrence, `hasSequentialScopeDefinition, `issueSequentialScope?, `readSequentialScopeVariable?,
   `sameActivityOccurrence, `scopeForestWellFormed, `scopeVariableScalar, `selectScopeVariables?,
   `sequentialScopeBindingForEntry?, `sequentialScopeProgramSelected, `sequentialScopeStateValid,
-  `writeSequentialScopeValues?]
+  `writeSequentialScopeValues?, `canonicalInputMappings?, `enclosingVariable?, `evaluateEnclosingInputMappings,
+  `evaluateInputMappings?, `evaluateInputMappingsInOrder, `inputSnapshotMatches, `insertByTarget,
+  `insertScopeOccurrence, `orderedInputSnapshotMatches, `scalarInputLookup?, `sortByTarget]
 
 public section
 

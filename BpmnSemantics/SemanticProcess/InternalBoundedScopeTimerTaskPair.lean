@@ -48,7 +48,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.makeInternalTimerTaskPatch, `InternalCommutation.openWaitAnchorAbsent,
   `InternalCommutation.openWaitAnchors, `InternalCommutation.prepareInternalTimerTaskContract?,
   `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.selectInternalScopeCreation?,
-  `InternalCommutation.timerTaskStateFootprint, `canonicalCollectionOrder, `runningInstance?]
+  `InternalCommutation.timerTaskStateFootprint, `canonicalCollectionOrder, `runningInstance?, `activationCount,
+  `activityActivationCount, `onlyTokenOwner?, `scopeActivationCount, `timerActivationCount]
 
 public section
 

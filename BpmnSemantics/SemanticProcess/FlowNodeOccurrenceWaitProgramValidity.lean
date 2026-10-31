@@ -13,7 +13,7 @@ This module validates the exact correspondence between immutable Program definit
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
   `flowNodeOccurrenceOwnerLiveUnique, `messageWaitDeclarers, `recordAttaches, `timerWaitDeclarers,
-  `userTaskWaitDeclarers]
+  `userTaskWaitDeclarers, `ActivityOccurrence.timerHandlerOccurrences]
 
 public section
 

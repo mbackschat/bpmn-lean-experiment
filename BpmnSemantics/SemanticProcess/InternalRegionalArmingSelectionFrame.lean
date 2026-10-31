@@ -45,7 +45,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.liftRegionalStateAtom, `InternalCommutation.prepareInternalArm?,
   `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.uniqueFamilyDeclarer?,
   `MonitoredScopeOwnership, `MonitoredScopeTimerBinding, `NonInterruptingBoundaryTimerBinding,
-  `monitoredScopeTimerNames, `scopeQuiescent, `timerIdNamesWait, `timerWaitDeclarers, `timerWaitKeyMatches]
+  `monitoredScopeTimerNames, `scopeQuiescent, `timerIdNamesWait, `timerWaitDeclarers, `timerWaitKeyMatches,
+  `insertEffectWait, `insertMessageWait, `insertTimerWait]
 
 public section
 

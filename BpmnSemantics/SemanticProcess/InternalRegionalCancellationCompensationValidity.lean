@@ -25,7 +25,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`cancelScopeSubtree,
   `compensationActivityRetentionDeclarationValid, `compensationActivityRetentionStateValid,
   `compensationEventSubProcessSnapshotStateValid, `compensationExecutionDeclarationValid,
   `compensationExecutionStateValid, `compensationSubjectDefinitionForOccurrence?, `runtimePositionValid,
-  `triggerLifecycleValid, `triggerMatchesDeclaration]
+  `triggerLifecycleValid, `triggerMatchesDeclaration, `activeCompensationTriggerOwnersUnique]
 
 public section
 

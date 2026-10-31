@@ -23,7 +23,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.PreparedInternalArming.apply,
   `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalDataArmingPatch,
   `InternalCommutation.footprintOfPatch, `InternalCommutation.localControlStateFootprintsNonInterfering,
-  `canonicalStateAtomSet]
+  `canonicalStateAtomSet, `addActivityOccurrenceVariableScope]
 
 public section
 

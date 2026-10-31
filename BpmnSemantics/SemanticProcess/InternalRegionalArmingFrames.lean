@@ -50,7 +50,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.regionalOwnsOrdinaryAtom, `InternalCommutation.regionalStateAtomsConflict,
   `InternalCommutation.selectInternalRegional?, `canonicalStateAtomSet, `dataInputOutputActivityRecord,
   `dataInputOutputRunningInstance?, `effectActivationCount, `exactLiveOccurrence, `fire?, `messageActivationCount,
-  `runtimeStateWellFormed, `terminateScopeState?]
+  `runtimeStateWellFormed, `terminateScopeState?, `activationCount, `activityActivationCount, `onlyTokenOwner?,
+  `timerActivationCount, `tokenOwners]
 
 public section
 

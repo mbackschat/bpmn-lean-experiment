@@ -15,6 +15,7 @@ import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import all BpmnSemantics.SemanticProcess.ScopeVariableData
 import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.Data
 
 /-! # Classified internal commutation
 
@@ -30,7 +31,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.prepareInternalArm?, `InternalCommutation.scopedEffectInputReads?,
   `InternalCommutation.stateReadSetsDisjoint, `canonicalCollectionOrder, `canonicalPublicationAtomSet,
   `canonicalStateAtomSet, `effectActivationCount, `evaluateEffectInputs?, `evaluateSequentialScopeInputs?,
-  `footprintsNonInterfering, `messageActivationCount]
+  `footprintsNonInterfering, `messageActivationCount, `activationCount, `activityScopeMatches, `insertEffectWait,
+  `insertMessageWait, `insertTimerWait, `localDataOwnerMatches, `removeToken, `timerActivationCount]
 
 public section
 

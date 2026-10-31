@@ -17,7 +17,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Scope creation inserts outside a prepared removal region. These collection laws retain exact order and multiplicity when insertion is exchanged with removal; token equality is kept separate from the other RuntimeState fields. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalScopeCreationSelection.apply,
-  `cancelScopeSubtree, `sortCallRecords]
+  `cancelScopeSubtree, `sortCallRecords, `insertScopeOccurrence, `setCallActivationCount]
 
 public section
 

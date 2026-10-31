@@ -20,7 +20,7 @@ without reading its predecessor value; the input census still protects single-un
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalEndSelection.apply,
   `InternalCommutation.InternalEndSelection.tokens, `InternalCommutation.internalEndStateFootprint,
   `InternalCommutation.makeInternalEndPreparation, `InternalCommutation.prepareInternalEnd?,
-  `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply, `runningInstance?]
+  `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply, `runningInstance?, `addTokens, `removeTokens]
 
 public section
 

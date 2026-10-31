@@ -20,7 +20,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrencePr
   `InternalCommutation.internalScopeCreationDefinitionMatches, `InternalCommutation.internalScopeCreationOrigin?,
   `InternalCommutation.internalScopeCreationStart?, `candidateCallStart?, `candidateScopeStart?,
   `compensationEventSubProcessSnapshotScopeLifecycleWellFormed, `enteredChildScopeId?, `exactLiveOccurrence,
-  `programWellFormed, `scopeOperationBindingValid]
+  `programWellFormed, `scopeOperationBindingValid, `insertScopeOccurrence]
 
 public section
 

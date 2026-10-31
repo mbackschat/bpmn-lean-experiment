@@ -30,7 +30,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `awaitCorrelatedPayloadMessageState?, `canonicalCollectionOrder, `effectWaitKeyMatches, `messageWaitKeyMatches,
   `occursOnce, `runtimeStateIdentityBound, `sequentialMultiInstanceControllerProgramBindingsValid,
   `sequentialMultiInstanceProgramBindingsValid, `timerIdNamesWait, `timerWaitDeclarers, `timerWaitKeyMatches,
-  `userTaskWaitKeyMatches]
+  `userTaskWaitKeyMatches, `addActivityVariableScope, `insertTimerWait, `setActivationCount, `setEffectActivationCount,
+  `setMessageActivationCount, `setTimerActivationCount]
 
 public section
 

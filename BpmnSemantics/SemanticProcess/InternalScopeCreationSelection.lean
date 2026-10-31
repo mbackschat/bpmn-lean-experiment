@@ -6,12 +6,14 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.DeclaredScopeTransition
 meta import BpmnSemantics.PrivateEquationLemmas
+import all BpmnSemantics.SemanticProcess.RuntimeState
 
 /-! Predecessor selection and retained patches for ordinary child entry and Call invocation in the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`enterDeclaredScope?]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`enterDeclaredScope?, `enterScopeState?,
+  `insertScopeOccurrence]
 
 public section
 

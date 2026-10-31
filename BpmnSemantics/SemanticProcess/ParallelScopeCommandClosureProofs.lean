@@ -41,7 +41,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
   `ParallelScopeReplay.transitionPortCharge, `ParallelScopeReplay.waitCompletionStimulus,
   `ParallelScopeStart.analyzeProgram, `ParallelScopeStart.programSelected, `admitStimulus, `continuationMarking,
-  `enterParallelScope?, `parallelScopeBinding?]
+  `enterParallelScope?, `parallelScopeBinding?, `runningProgramStartState?]
 
 public section
 

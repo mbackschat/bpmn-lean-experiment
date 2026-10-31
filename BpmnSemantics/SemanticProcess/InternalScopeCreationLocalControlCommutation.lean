@@ -25,7 +25,7 @@ the [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md).
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalLocalControlSelection.apply,
   `InternalCommutation.InternalScopeCreationSelection.apply, `InternalCommutation.internalLocalControlStateFootprint,
   `InternalCommutation.internalScopeCreationCreationAtoms,
-  `InternalCommutation.localControlStateFootprintsNonInterfering, `canonicalStateAtomSet]
+  `InternalCommutation.localControlStateFootprintsNonInterfering, `canonicalStateAtomSet, `setCallActivationCount]
 
 public section
 

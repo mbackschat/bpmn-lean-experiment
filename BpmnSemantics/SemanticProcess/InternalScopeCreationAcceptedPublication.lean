@@ -42,7 +42,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.internalScopeCreationStart?, `InternalCommutation.makeInternalScopeCreationPreparation,
   `candidateFlowNodeOccurrenceDeltaForOperation?, `candidateFlowNodeOccurrenceDeltaForOwnedOperation?,
   `exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique, `flowNodeOccurrenceProgramValidity,
-  `projectOpenFlowNodeOccurrences?, `runtimeStateWellFormed]
+  `projectOpenFlowNodeOccurrences?, `runtimeStateWellFormed, `insertScopeOccurrence]
 
 public section
 

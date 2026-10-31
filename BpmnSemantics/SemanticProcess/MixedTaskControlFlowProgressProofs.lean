@@ -52,7 +52,9 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `SerialBusinessTask.IssuanceFrame, `SerialBusinessTask.RootFrame, `SerialBusinessTask.RootLifecycle,
   `SerialBusinessTask.frontierFields, `StructuredComposition.isScopeCompletion, `activateEffect, `activateUserTask,
   `awaitEffectState?, `awaitUserTaskState?, `chooseState?, `completeQuiescentScope?, `completeScopeState?, `fire?,
-  `reachNoneEndState?, `runningInstance?, `scenarioClosureLimit, `scopeQuiescent]
+  `reachNoneEndState?, `runningInstance?, `scenarioClosureLimit, `scopeQuiescent, `addActivityVariableScope, `addToken,
+  `canonicalInsertBy, `chooseToken, `initiateState?, `insertActivityVariableScope, `insertEffectWait,
+  `insertUserTaskWait, `onlyTokenOwner?, `reachNoneEndToken, `removeToken, `rootScopeOccurrence?, `tokenOwners]
 
 public section
 

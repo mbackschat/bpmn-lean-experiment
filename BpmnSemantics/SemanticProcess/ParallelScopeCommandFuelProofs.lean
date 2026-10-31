@@ -42,7 +42,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `ParallelScopeReplay.waitCompletionStimulus, `ParallelScopeStart.analyzeProgram,
   `ParallelScopeStart.commandClosureLimit?, `ParallelScopeStart.programSelected,
   `ParallelScopeStart.programStateCapacity, `StimulusResult.ofClosure, `StimulusResult.ofScheduledClosure,
-  `admitStimulus, `applyStimulus]
+  `admitStimulus, `applyStimulus, `runningProgramStartState?]
 
 public section
 

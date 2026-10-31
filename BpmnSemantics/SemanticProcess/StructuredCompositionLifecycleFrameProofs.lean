@@ -18,7 +18,8 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredComposition.OperationAllowed,
   `activateDataInputOutputUserTask?, `admitStimulus, `awaitUserTaskState?, `callDataRuntimeStateValid, `chooseState?,
-  `completeDataInputOutputUserTask?, `interruptingMessageEventSubProcessStateValid, `reachNoneEndState?]
+  `completeDataInputOutputUserTask?, `interruptingMessageEventSubProcessStateValid, `reachNoneEndState?,
+  `runningProgramStartState?, `runningStartState]
 
 public section
 

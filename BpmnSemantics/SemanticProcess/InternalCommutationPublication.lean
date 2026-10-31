@@ -30,7 +30,7 @@ This module proves that the exact accepted transition, lifecycle, logical-time, 
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.sortBy,
   `InternalCommutation.sortInsertBy, `internalOperationPairIndependent?, `internalPublicationPairForFootprint?,
-  `internalTransitionFootprint?, `publicationPairBefore, `runtimeStateWellFormed]
+  `internalTransitionFootprint?, `publicationPairBefore, `runtimeStateWellFormed, `canonicalInsertBy]
 
 public section
 

@@ -18,7 +18,7 @@ PMIS-END-01 and PMIS-CANCEL-01 share exact population censuses through retiremen
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatch.apply,
   `InternalCommutation.applyInternalArmingPatch, `activityBodyScopeClaims, `cancelScopeSubtree,
   `completeSerialEffect?, `parallelScopeBinding?, `retainedByRegion, `validParallelScopeIterations,
-  `validParallelScopePopulation, `withdrawnByRegion]
+  `validParallelScopePopulation, `withdrawnByRegion, `insertActivityOccurrence, `runningProgramStartState?]
 
 public section
 

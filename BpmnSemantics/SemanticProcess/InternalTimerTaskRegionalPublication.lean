@@ -56,7 +56,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.expandOccurrenceRegionMembers, `InternalCommutation.makeInternalTimerTaskPatch,
   `InternalCommutation.occurrenceRegionMembersWithin, `InternalCommutation.regionalPositionDelta?,
   `InternalCommutation.regionalPublicationTemplate?, `projectControlPosition?, `recordInRegion, `runningInstance?,
-  `runtimeStateWellFormed, `scopeCancellationWithdrawsHandler, `withdrawnByRegion]
+  `runtimeStateWellFormed, `scopeCancellationWithdrawsHandler, `withdrawnByRegion, `insertTimerWait]
 
 public section
 

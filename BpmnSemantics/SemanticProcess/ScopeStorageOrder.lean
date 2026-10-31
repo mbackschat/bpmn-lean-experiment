@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.TokenOrder
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import all BpmnSemantics.SemanticProcess.InternalArmingOrder
+meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Scope occurrence and remaining activation-counter order laws
 
@@ -12,6 +13,8 @@ Scope insertion uses the complete owner key already used by tokens. Counter repl
 every other key and its high-water value. These collection laws are prerequisites for regional
 preparation, not a proof that any regional transition can already enter a production batch.
 -/
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`setCallActivationCount, `setEventRaceActivationCount,
+  `setScopeActivationCount]
 
 public section
 

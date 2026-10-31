@@ -173,7 +173,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`chooseState?, `cycli
   `cyclicMergeInputs, `cyclicMergeOperation, `cyclicPostChooseState, `cyclicPostCompletionState, `cyclicPostEndState,
   `cyclicPostMergeState, `cyclicPostStartState, `cyclicRepeatChoices, `cyclicSameInputMultiplicityTwoState,
   `cyclicTwoInputState, `cyclicVariables, `cyclicWaitingState, `evaluateSimpleBooleanExpression, `runChoices,
-  `selectConditionalOutput, `singletonWaitingState]
+  `selectConditionalOutput, `singletonWaitingState, `addToken, `canonicalInsertBy, `chooseToken, `onlyTokenOwner?,
+  `removeToken, `runningStartState, `tokenOwners]
 
 public section
 

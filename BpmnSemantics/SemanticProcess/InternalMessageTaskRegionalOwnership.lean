@@ -32,7 +32,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.applyInternalMessageTaskPatch, `InternalCommutation.makeInternalMessageTaskPatch,
   `InternalCommutation.selectInternalOwnershipClosedRegional?, `allMatchingRetained, `messageIdNamesWait,
   `messageWaitKeyMatches, `regionalActivityOwnersClosed, `regionalActivityReferencesClosed, `regionalOwnershipClosed,
-  `taskIdNamesWait, `userTaskWaitKeyMatches]
+  `taskIdNamesWait, `userTaskWaitKeyMatches, `insertMessageWait]
 
 public section
 
