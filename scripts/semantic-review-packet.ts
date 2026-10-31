@@ -91,6 +91,7 @@ export const guardBoundOwners: ReadonlyArray<string> = [
   "package.json",
   "scripts/cibseven-maven-budget.ts",
   "scripts/lean-fanout-bounds.ts",
+  "scripts/lean-fanout-records.test.ts",
   "scripts/lean-fanout.test.ts",
   "scripts/lean-fanout.ts",
   "scripts/lean-module-cost.ts",

@@ -568,7 +568,7 @@ export const leanOpeningImportBound = 11986;
 
 /**
  * The owner decisions that let a default or total above rise, each committed before the rise it allows and removed
- * once the main line carries it ([the rise guard](./lean-fanout.test.ts)).
+ * once the main line carries it ([the rise guard](./lean-fanout-records.test.ts)).
  */
 export const leanOwnerDecidedRises: ReadonlyArray<LeanOwnerDecidedRise> = [
   { setting: "leanOpeningImportBound", from: 2179, to: 11946,
