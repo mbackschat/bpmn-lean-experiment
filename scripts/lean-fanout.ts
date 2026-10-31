@@ -510,14 +510,24 @@ export function leanBodyEditFanouts(sources: LeanSources, leaks: ReadonlyArray<R
 export function leanExposedDefinitions(sources: LeanSources): Map<string, string[]> {
   return new Map(sources.map(({ path, source }) => {
     const names = leanHeader(source).isModule ? leanDeclarations(source).filter((declaration) =>
-      !declaration.isPrivate && !declaration.inExposedScope && bodyExported(declaration)).map(({ name }) => name) : [];
+      !declaration.isPrivate && !exposedBySection(declaration) && bodyExported(declaration)).map(({ name }) => name) : [];
     return [path.replace(/\.lean$/u, "").replaceAll("/", "."), names.sort()];
   }));
 }
 
-/** Whether a module exposes a body through a section: a non-private definition inside an `@[expose]` section, or a plain file. */
+/**
+ * Whether a module exposes a body through a section: a non-private `def` that an `@[expose]` section exports, or a plain
+ * file. An abbrev or instance there is exported without the section too, and a `@[no_expose]` def is not, so neither
+ * makes every body edit an interface edit; {@link leanExposedDefinitions} names the former instead.
+ */
 function exposedSectionDefinitions(source: string): boolean {
-  return !leanHeader(source).isModule || leanDeclarations(source).some(({ isPrivate, inExposedScope }) => !isPrivate && inExposedScope);
+  return !leanHeader(source).isModule || leanDeclarations(source).some((declaration) =>
+    !declaration.isPrivate && exposedBySection(declaration) && bodyExported(declaration));
+}
+
+/** Whether a declaration is a `def` inside an `@[expose]` section, whose export the section rather than the def decides. */
+function exposedBySection({ keyword, inExposedScope }: LeanDeclaration): boolean {
+  return keyword === "def" && inExposedScope;
 }
 
 /**

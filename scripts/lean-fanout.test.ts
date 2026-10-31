@@ -515,6 +515,22 @@ test("a body edit rebuilds an exposed module's public cone but only a hidden mod
   assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Hidden"), []);
 });
 
+// A kernel module keeps its types, derived instances and abbrevs in an `@[expose]` section and hides each operation
+// with `@[no_expose]`; Lean then exports no def body of that section (Elab/MutualDef.lean:1346-1384), so its body edits
+// rebuild only the `import all` loaders, while its abbrevs and instances stay interface edits named one by one.
+test("an `@[expose]` section whose every def is `@[no_expose]` keeps def bodies hidden and names its other exposures", () => {
+  const module = (path: string, text: string) => ({ path, source: `module\n\n${text}\n` });
+  const sources = [
+    module("Pkg/Kernel.lean", ["@[expose] public section", "", "inductive Kind where", "  | a", "  deriving DecidableEq", "",
+      "@[no_expose] def step : Nat := 0", "", "abbrev alias : Nat := 0", "", "instance : Inhabited Kind := ⟨.a⟩", "", "end"].join("\n")),
+    module("Pkg/Importer.lean", "public import Pkg.Kernel"),
+    module("Pkg/Above.lean", "public import Pkg.Importer"),
+    module("Pkg/Opener.lean", "import all Pkg.Kernel"),
+  ];
+  assert.deepEqual(leanBodyEditFanouts(sources).get("Pkg.Kernel"), ["Pkg.Opener"]);
+  assert.deepEqual(leanExposedDefinitions(sources).get("Pkg.Kernel"), ["alias", "instance : Inhabited Kind"]);
+});
+
 // The scanner follows Lean v4.34.1's own rules, so no spelling of an exposure escapes it: `sectionHeader` takes
 // `@[expose]? public? noncomputable? meta?` (Lean/Parser/Command.lean:308), every `section`, `namespace` and `mutual`
 // scope inherits its parent's attributes and `end Name` closes one scope per name component
