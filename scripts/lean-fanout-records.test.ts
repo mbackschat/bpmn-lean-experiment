@@ -12,6 +12,7 @@ import {
 } from "./lean-fanout-bounds.ts";
 import {
   brokenDebtRecords, needlessRaises, settledOwnerDecisions, unexplainedAllowanceRises, unexplainedBoundRises, undecidedSettingRises,
+  type LeanFanoutBound,
 } from "./lean-fanout.ts";
 
 // A bound raised to fit the graph instead of root-causing the growth protects nothing: the hidden-edit bounds of an
@@ -145,16 +146,18 @@ test("no recorded bound, allowance or kernel entry rises above a base commit's w
   const committedDecisions = (await committedBounds("HEAD")).leanOwnerDecidedRises ?? [];
   for (const commit of baseCommits()) {
     const previous = await committedBounds(commit);
+    // Every ratchet takes both checks from one table, so none can miss one: the body-edit ratchet once lacked the
+    // debt-record check (stage-1 carry review, 2026-10-31). A ratchet's first recording is its baseline, so a ratchet
+    // the base lacks has nothing to rise above.
+    const ratchets: Array<[ReadonlyArray<LeanFanoutBound> | undefined, ReadonlyArray<LeanFanoutBound>, number]> = [
+      [previous.leanFanoutBounds, leanFanoutBounds, previous.leanFanoutDefaultBound],
+      [previous.leanHiddenEditBounds, leanHiddenEditBounds, previous.leanHiddenEditDefaultBound],
+      [previous.leanHiddenRewriteBounds, leanHiddenRewriteBounds, 0],
+      [previous.leanBodyEditBounds, leanBodyEditBounds, previous.leanBodyEditDefaultBound],
+    ];
     const findings = [
-      ...unexplainedBoundRises(previous.leanFanoutBounds, leanFanoutBounds, previous.leanFanoutDefaultBound),
-      ...unexplainedBoundRises(previous.leanHiddenEditBounds, leanHiddenEditBounds, previous.leanHiddenEditDefaultBound),
-      ...unexplainedBoundRises(previous.leanHiddenRewriteBounds, leanHiddenRewriteBounds, 0),
-      ...brokenDebtRecords(previous.leanFanoutBounds, leanFanoutBounds, previous.leanFanoutDefaultBound),
-      ...brokenDebtRecords(previous.leanHiddenEditBounds, leanHiddenEditBounds, previous.leanHiddenEditDefaultBound),
-      ...brokenDebtRecords(previous.leanHiddenRewriteBounds, leanHiddenRewriteBounds, 0),
-      // A ratchet's first recording is its baseline, so a ratchet the base lacks has nothing to rise above.
-      ...(previous.leanBodyEditBounds === undefined ? []
-        : unexplainedBoundRises(previous.leanBodyEditBounds, leanBodyEditBounds, previous.leanBodyEditDefaultBound)),
+      ...ratchets.flatMap(([before, now, defaultBound]) => before === undefined ? []
+        : [...unexplainedBoundRises(before, now, defaultBound), ...brokenDebtRecords(before, now, defaultBound)]),
       ...(previous.leanExposedDefinitionAllowance === undefined ? []
         : unexplainedAllowanceRises(previous.leanExposedDefinitionAllowance, leanExposedDefinitionAllowance)),
       ...leanFanoutKernel.filter((module) => !previous.leanFanoutKernel.includes(module))
