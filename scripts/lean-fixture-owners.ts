@@ -28,9 +28,12 @@ import { leanHeader } from "./lean-source-analysis.ts";
 
 const importLine = /^(?:public |meta )*import (?:all )?(\S+)\s*$/u;
 
-/** The module as a plain file whose every declaration reports what it unfolded. */
+/**
+ * The module as a plain file whose every declaration reports what it unfolded. The private-equation helpers refuse a
+ * body a plain file exposes, and only keep generated lemmas out of the interface, so their calls are blanked.
+ */
 export function plainProbeVariant(text: string): string {
-  const lines = text.split("\n");
+  const lines = withoutHelperCalls(text.split("\n"));
   const lastImport = lines.findLastIndex((line) => importLine.test(line));
   return lines.flatMap((line, index) => {
     if (line === "module") return [];
@@ -40,6 +43,16 @@ export function plainProbeVariant(text: string): string {
       : `import ${imported[1]}`;
     return index === lastImport ? [plain, "set_option diagnostics true", "set_option diagnostics.threshold 0"] : [plain];
   }).join("\n");
+}
+
+/** The lines with every `run_meta privateEquations` or `privateMatchEquations` call blanked, up to its closing bracket. */
+function withoutHelperCalls(lines: ReadonlyArray<string>): string[] {
+  let depth = 0;
+  return lines.map((line) => {
+    if (depth === 0 && !/^run_meta private(?:Match)?Equations\b/u.test(line)) return line;
+    depth += [...line].filter((character) => character === "[").length - [...line].filter((character) => character === "]").length;
+    return "";
+  });
 }
 
 /** Every name the diagnostics counted as unfolded, without Lean's inaccessible-name mark, sorted. */

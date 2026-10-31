@@ -17,6 +17,23 @@ test("the probe variant is the module as a plain file with diagnostics for every
   ].join("\n"));
 });
 
+// The `privateEquations` helpers refuse a definition whose body is exposed (BpmnSemantics/PrivateEquationLemmas.lean), and
+// a plain file exposes every body, so the probe of any module calling them failed (scratch kernel repair, 2026-10-31).
+// They only keep generated lemmas out of the interface and never change what a proof reduces, so the probe blanks them,
+// continuation lines included.
+test("the probe variant blanks the private-equation helper calls a plain file would refuse", () => {
+  const text = [
+    "module", "", "public import Pkg.A", "meta import BpmnSemantics.PrivateEquationLemmas", "",
+    "run_meta privateEquations `Pkg #[`a,", "  `b]", "", "run_meta privateMatchEquations `Pkg #[`c] (congruence := true)",
+    "public section", "theorem t : True := trivial", "end",
+  ].join("\n");
+  assert.equal(plainProbeVariant(text), [
+    "", "import Pkg.A", "import BpmnSemantics.PrivateEquationLemmas",
+    "set_option diagnostics true", "set_option diagnostics.threshold 0", "",
+    "", "", "", "", "section", "theorem t : True := trivial", "end",
+  ].join("\n"));
+});
+
 test("the unfolded names are every kernel and reduction count, without the inaccessible-name mark", () => {
   const output = [
     "info: F.lean:3:0: [reduction] unfolded declarations (max: 3, num: 2):",
