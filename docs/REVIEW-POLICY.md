@@ -103,7 +103,7 @@ For Practical CIB7 Coverage the review unit is a checklist family, not a slice o
 | Semantic checkpoint | First green committed wire/schema, checked graph/IL, runtime/public-observation, admission/profile, transition/proof, scope, cancellation, or concurrency change | `fork-turns-none`, or `fork-turns-none-combined` on the fully closed Closure target | Before the next implementation lane |
 | Closure | Committed implementation/documentation closure with focused/full gates, evidence matrices, epistemic closure, cost, and exact implemented/absent status complete | `fork-turns-none`, guarded `checkpoint-reviewer-warm`, or single-lane `fork-turns-none-combined` | Before proposal graduation or the next material capsule |
 
-Independent `approved`, or `approved-with-required-edits` plus recorded green audit, establishes approval without a human step. Record proposal `Lifecycle` in `## Status`; guarded `owner-approved` denotes receipt authority. Pending/rejected/unavailable review blocks; self-review cannot approve. Active specs contain stable contracts without transient pending-review wording or copied mutable proposal state; proposal receipts/routed status own lifecycle.
+Independent `approved`, or `approved-with-required-edits` or `reject` plus a recorded green audit by the same reviewer, establishes approval without a human step. Record proposal `Lifecycle` in `## Status`; guarded `owner-approved` denotes receipt authority. Pending, unavailable or rejected review without audit rounds blocks; self-review cannot approve. Active specs contain stable contracts without transient pending-review wording or copied mutable proposal state; proposal receipts/routed status own lifecycle.
 
 ### Combined checkpoint and closure
 
