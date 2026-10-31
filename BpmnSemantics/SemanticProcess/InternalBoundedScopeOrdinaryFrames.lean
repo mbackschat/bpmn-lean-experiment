@@ -185,10 +185,13 @@ theorem prepareInternalArm_after_bounded_scope
     contract.entryOperation ordinary entry ordinaryFound entryFound inputs entries
   let child := entry.apply state
   let after := (makeInternalBoundedScopeSelection state contract entry).apply state
-  have scopedFrames := prepared_arm_process_input_frames program child after operation ordinary
+  have scopedFrames := prepared_arm_input_frames program child after operation ordinary
     childPrepared noPopulation (by
       simp only [after, child, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
         InternalScopeCreationSelection.apply, fields.2.2])
+    fun _ _ _ => by
+      simp only [after, child, InternalBoundedScopeSelection.apply, makeInternalBoundedScopeSelection,
+        InternalScopeCreationSelection.apply, fields.2.2, and_self]
   have counts : internalActivationCount after ordinary.write.kind ordinary.write.elementId =
       internalActivationCount child ordinary.write.kind ordinary.write.elementId := by
     cases kind : ordinary.write.kind with

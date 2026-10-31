@@ -536,11 +536,20 @@ theorem evaluateFrame?_insertFrame_dead (program : Program) (state : RuntimeStat
   dsimp only
   rw [reads, absent]
 
+/-- Only the nested scope-data profile has scope records. -/
+theorem recordFor?_nested (program : Program) (scopeId : DefinitionScopeId) (record : ScopeLocalData)
+    (found : recordFor? program scopeId = some record) : nestedScopeDataProgram program = true := by
+  unfold recordFor? at found
+  cases nested : nestedScopeDataProgram program with
+  | false => simp [nested] at found
+  | true => rfl
+
 /-- CSD-PREPARE-01: inserting a frame for a dead identity keeps every read set. -/
 theorem readSet?_insertFrame_dead (state : RuntimeState) (frame : ScopeVariableScope)
     (dead : ∀ occurrence ∈ state.scopeOccurrences, occurrence.id ≠ frame.owner)
     (reader : ScopeOccurrenceId) (names : List String) :
-    readSet? { state with variables := insertFrame state.variables frame } reader names = readSet? state reader names := by
+    readSet? state.scopeOccurrences (insertFrame state.variables frame).scopes reader names =
+      readSet? state.scopeOccurrences state.variables.scopes reader names := by
   unfold readSet?
   dsimp only
   cases chained : occurrenceChain state.scopeOccurrences reader with
@@ -555,21 +564,204 @@ theorem readSet?_insertFrame_dead (state : RuntimeState) (frame : ScopeVariableS
         funext fun name => resolveOwner?_insertFrame_off state.variables frame name chain off
       simp only [Option.bind_eq_bind, Option.bind_some, owners]
 
-/-- Frame evaluation reads only the occurrences and the variables. -/
+/-- Frame evaluation reads only the occurrences, the frames and the Process data. -/
 theorem evaluateFrame?_frame (program : Program) (state after : RuntimeState)
-    (occurrences : after.scopeOccurrences = state.scopeOccurrences) (variables : after.variables = state.variables)
+    (occurrences : after.scopeOccurrences = state.scopeOccurrences)
+    (scopes : after.variables.scopes = state.variables.scopes)
+    (process : after.variables.process = state.variables.process)
     (record : ScopeLocalData) (child parent : ScopeOccurrenceId) :
     evaluateFrame? program after record child parent = evaluateFrame? program state record child parent := by
+  have reads : read? program after.scopeOccurrences after.variables parent =
+      read? program state.scopeOccurrences state.variables parent := funext fun name => by
+    unfold read? selectScopeVariables?
+    simp only [occurrences, scopes, process]
   unfold evaluateFrame?
-  rw [occurrences, variables]
+  simp only [reads, scopes]
 
 /-- A read set reads only the occurrences and the frames. -/
 theorem readSet?_frame (state after : RuntimeState)
     (occurrences : after.scopeOccurrences = state.scopeOccurrences)
     (scopes : after.variables.scopes = state.variables.scopes) (reader : ScopeOccurrenceId) (names : List String) :
-    readSet? after reader names = readSet? state reader names := by
+    readSet? after.scopeOccurrences after.variables.scopes reader names =
+      readSet? state.scopeOccurrences state.variables.scopes reader names := by
   unfold readSet?
   rw [occurrences, scopes]
+
+private theorem mapM_some_mem {α β : Type} (f : α → Option β) :
+    ∀ (xs : List α) (ys : List β), xs.mapM f = some ys → ∀ x ∈ xs, ∃ y ∈ ys, f x = some y
+  | [], _, _, _, inside => by simp at inside
+  | x :: xs, ys, mapped, z, inside => by
+      simp only [List.mapM_cons, bind, Option.bind_eq_some_iff, pure, Option.some.injEq] at mapped
+      obtain ⟨y, found, rest, restMapped, rfl⟩ := mapped
+      rcases List.mem_cons.mp inside with rfl | later
+      · exact ⟨y, by simp, found⟩
+      · obtain ⟨w, member, same⟩ := mapM_some_mem f xs rest restMapped z later
+        exact ⟨w, List.mem_cons_of_mem _ member, same⟩
+
+private theorem mapM_congr_mem {α β : Type} (f g : α → Option β) :
+    ∀ (xs : List α), (∀ x ∈ xs, f x = g x) → xs.mapM f = xs.mapM g
+  | [], _ => rfl
+  | x :: xs, same => by
+      simp only [List.mapM_cons, same x (by simp),
+        mapM_congr_mem f g xs (fun y inside => same y (List.mem_cons_of_mem _ inside))]
+
+private theorem resolveOwner?_congr (scopes scopes' : List ScopeVariableScope) (name : String) :
+    ∀ chain : List ScopeOccurrenceId, (∀ member ∈ chain, framesAt scopes' member = framesAt scopes member) →
+      resolveOwner? scopes' chain name = resolveOwner? scopes chain name
+  | [], _ => rfl
+  | member :: rest, same => by
+      simp only [resolveOwner?, same member (by simp),
+        resolveOwner?_congr scopes scopes' name rest (fun other inside => same other (List.mem_cons_of_mem _ inside))]
+
+private theorem mapM_some_mem_right {α β : Type} (f : α → Option β) :
+    ∀ (xs : List α) (ys : List β), xs.mapM f = some ys → ∀ y ∈ ys, ∃ x ∈ xs, f x = some y
+  | [], ys, mapped, y, inside => by
+      simp only [List.mapM_nil, pure, Option.some.injEq] at mapped
+      simp [← mapped] at inside
+  | x :: xs, ys, mapped, y, inside => by
+      simp only [List.mapM_cons, bind, Option.bind_eq_some_iff, pure, Option.some.injEq] at mapped
+      obtain ⟨z, found, rest, restMapped, rfl⟩ := mapped
+      rcases List.mem_cons.mp inside with rfl | later
+      · exact ⟨x, by simp, found⟩
+      · obtain ⟨w, member, same⟩ := mapM_some_mem_right f xs rest restMapped y later
+        exact ⟨w, List.mem_cons_of_mem _ member, same⟩
+
+/-- A read set's links are live occurrences. -/
+theorem readSet?_links_live (occurrences : List RuntimeScopeOccurrence) (scopes : List ScopeVariableScope)
+    (reader : ScopeOccurrenceId) (names : List String) (reads : ReadSet)
+    (read : readSet? occurrences scopes reader names = some reads) : ∀ link ∈ reads.links, link ∈ occurrences := by
+  unfold readSet? at read
+  cases chained : occurrenceChain occurrences reader with
+  | none => simp [chained] at read
+  | some chain =>
+    cases resolved : names.mapM (resolveOwner? scopes chain) with
+    | none => simp [chained, resolved] at read
+    | some owners =>
+      cases linked : chain.mapM (fun id => occurrences.find? (·.id == id)) with
+      | none => simp [chained, resolved, linked] at read
+      | some links =>
+        simp only [chained, resolved, linked, bind, Option.bind, Option.some.injEq] at read
+        subst read
+        intro link inside
+        obtain ⟨_, _, found⟩ := mapM_some_mem_right _ chain links linked link inside
+        exact List.mem_of_find?_eq_some found
+
+/-- What a state keeps of a read set: each link's occurrences and frames. -/
+@[expose] def ReadSet.Kept (reads : ReadSet) (state after : RuntimeState) : Prop :=
+  ∀ link ∈ reads.links,
+    after.scopeOccurrences.filter (fun scope => decide (scope.id = link.id)) =
+      state.scopeOccurrences.filter (fun scope => decide (scope.id = link.id)) ∧
+    after.variables.scopes.filter (fun frame => decide (frame.owner = link.id)) =
+      state.variables.scopes.filter (fun frame => decide (frame.owner = link.id))
+
+private theorem readSet?_chain_kept (state after : RuntimeState) (reader : ScopeOccurrenceId)
+    (names : List String) (reads : ReadSet) (read : readSet? state.scopeOccurrences state.variables.scopes reader names = some reads)
+    (kept : reads.Kept state after) :
+    ∃ chain, occurrenceChain state.scopeOccurrences reader = some chain ∧
+      occurrenceChain after.scopeOccurrences reader = some chain ∧
+      ∀ member ∈ chain, after.scopeOccurrences.filter (·.id == member) =
+          state.scopeOccurrences.filter (·.id == member) ∧
+        framesAt after.variables.scopes member = framesAt state.variables.scopes member := by
+  unfold readSet? at read
+  cases chained : occurrenceChain state.scopeOccurrences reader with
+  | none => simp [chained] at read
+  | some chain =>
+    cases resolved : names.mapM (resolveOwner? state.variables.scopes chain) with
+    | none => simp [chained, resolved] at read
+    | some owners =>
+      cases linked : chain.mapM (fun id => state.scopeOccurrences.find? (·.id == id)) with
+      | none => simp [chained, resolved, linked] at read
+      | some links =>
+        simp only [chained, resolved, linked, bind, Option.bind, Option.some.injEq] at read
+        subst read
+        have members : ∀ member ∈ chain, after.scopeOccurrences.filter (·.id == member) =
+            state.scopeOccurrences.filter (·.id == member) ∧
+            framesAt after.variables.scopes member = framesAt state.variables.scopes member := by
+          intro member inside
+          obtain ⟨link, linkInside, found⟩ := mapM_some_mem _ chain links linked member inside
+          have same : link.id = member := by simpa using List.find?_some found
+          have both := kept link linkInside
+          rw [same] at both
+          exact both
+        exact ⟨chain, rfl, occurrenceChain_transfer _ _ reader chain chained (fun member inside =>
+          (members member inside).1), members⟩
+
+/-- CSD-PREPARE-01 read frame: a state that keeps each link's occurrences and frames resolves the read set
+as before, whatever it changes off the chain. -/
+theorem readSet?_kept (state after : RuntimeState) (reader : ScopeOccurrenceId) (names : List String)
+    (reads : ReadSet) (read : readSet? state.scopeOccurrences state.variables.scopes reader names = some reads) (kept : reads.Kept state after) :
+    readSet? after.scopeOccurrences after.variables.scopes reader names = some reads := by
+  obtain ⟨chain, before, moved, members⟩ := readSet?_chain_kept state after reader names reads read kept
+  have owners : names.mapM (resolveOwner? after.variables.scopes chain) =
+      names.mapM (resolveOwner? state.variables.scopes chain) := by
+    congr 1
+    funext name
+    exact resolveOwner?_congr _ _ name chain fun member inside => (members member inside).2
+  have links : chain.mapM (fun id => after.scopeOccurrences.find? (·.id == id)) =
+      chain.mapM (fun id => state.scopeOccurrences.find? (·.id == id)) :=
+    mapM_congr_mem _ _ chain fun id inside => by
+      rw [← List.head?_filter, ← List.head?_filter, (members id inside).1]
+  rw [← read]
+  unfold readSet?
+  simp only [moved, before, bind, Option.bind, owners, links]
+
+/-- NSD-READ-01 under the same frame: each name reads as before when the Process data is also kept. -/
+theorem read?_kept (program : Program) (state after : RuntimeState) (reader : ScopeOccurrenceId)
+    (names : List String) (reads : ReadSet) (read : readSet? state.scopeOccurrences state.variables.scopes reader names = some reads)
+    (kept : reads.Kept state after) (process : after.variables.process = state.variables.process)
+    (name : String) :
+    read? program after.scopeOccurrences after.variables reader name =
+      read? program state.scopeOccurrences state.variables reader name := by
+  obtain ⟨chain, before, moved, members⟩ := readSet?_chain_kept state after reader names reads read kept
+  unfold read?
+  simp only [moved, before, bind, Option.bind]
+  rw [resolveOwner?_congr _ _ name chain fun member inside => (members member inside).2]
+  cases resolved : resolveOwner? state.variables.scopes chain name with
+  | none => rfl
+  | some owner =>
+    cases owner with
+    | process => simp only [process]
+    | frame owner =>
+      have onChain := resolveOwner?_frame_on_chain state.variables chain name owner resolved
+      have frames : after.variables.scopes.filter (fun scope => decide (scope.owner = owner)) =
+          state.variables.scopes.filter (fun scope => decide (scope.owner = owner)) := (members owner onChain).2
+      unfold selectScopeVariables?
+      dsimp only
+      rw [frames]
+
+private theorem mapM_some_of_mem {α β : Type} (f : α → Option β) :
+    ∀ xs : List α, (∀ x ∈ xs, (f x).isSome) → ∃ ys, xs.mapM f = some ys
+  | [], _ => ⟨[], rfl⟩
+  | x :: xs, found => by
+      obtain ⟨y, here⟩ := Option.isSome_iff_exists.mp (found x (by simp))
+      obtain ⟨ys, rest⟩ := mapM_some_of_mem f xs fun other inside => found other (List.mem_cons_of_mem _ inside)
+      exact ⟨y :: ys, by simp [List.mapM_cons, here, rest]⟩
+
+/-- Reading each of `names` resolves their read set: the reads walk the same chain and resolve each owner. -/
+theorem readSet?_of_reads (program : Program) (state : RuntimeState) (reader : ScopeOccurrenceId)
+    (names : List String) (nonempty : names ≠ [])
+    (readable : ∀ name ∈ names, (read? program state.scopeOccurrences state.variables reader name).isSome) :
+    ∃ reads, readSet? state.scopeOccurrences state.variables.scopes reader names = some reads := by
+  obtain ⟨first, firstInside⟩ := List.exists_mem_of_ne_nil names nonempty
+  have firstRead := readable first firstInside
+  unfold read? at firstRead
+  cases chained : occurrenceChain state.scopeOccurrences reader with
+  | none => simp [chained] at firstRead
+  | some chain =>
+    obtain ⟨owners, resolved⟩ := mapM_some_of_mem (resolveOwner? state.variables.scopes chain) names
+      fun name inside => by
+        have named := readable name inside
+        unfold read? at named
+        cases owner : resolveOwner? state.variables.scopes chain name with
+        | none => simp [chained, owner] at named
+        | some _ => rfl
+    obtain ⟨links, linked⟩ := mapM_some_of_mem (fun id => state.scopeOccurrences.find? (·.id == id)) chain
+      fun member inside => by
+        obtain ⟨occurrence, live, same⟩ := occurrenceChain_live _ reader chain chained member inside
+        exact List.find?_isSome.mpr ⟨occurrence, live, by simp [same]⟩
+    unfold readSet?
+    simp only [chained, resolved, linked, bind, Option.bind]
+    exact ⟨_, rfl⟩
 
 /-! ## Nearest checked non-law
 

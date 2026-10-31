@@ -433,8 +433,9 @@ export function deriveInternalTransitionFootprint(
             return assertNever(mapping.expression);
         }
       }
-      // CSD arming reads: a nested evaluation consults exactly its chain links, frames and fall-through Process names.
-      const nestedReads = binding === undefined && nestedScopeDataProgram(program)
+      // CSD arming reads: a nested evaluation consults exactly its chain links, frames and fall-through Process names,
+      // and nothing when no input names an enclosing variable.
+      const nestedReads = binding === undefined && nestedScopeDataProgram(program) && processNames.length > 0
         ? nestedScopeReadSet(program, state, owner, processNames) : undefined;
       if (nestedReads === null) return null;
       return waitFootprint(

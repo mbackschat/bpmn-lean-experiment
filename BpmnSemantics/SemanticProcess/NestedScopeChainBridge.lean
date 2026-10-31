@@ -173,6 +173,58 @@ theorem occurrenceChain_live (owner : ScopeOccurrenceId) (chain : List ScopeOccu
     ∀ member ∈ chain, ∃ occurrence ∈ occurrences, occurrence.id = member :=
   within_live occurrences _ owner chain chained
 
+/-- A walk needs no more fuel than the chain it yields. -/
+private theorem within_exact : ∀ (fuel : Nat) (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId),
+    occurrenceChainWithin occurrences fuel owner = some chain →
+    occurrenceChainWithin occurrences chain.length owner = some chain
+  | fuel, owner, chain, walked => by
+      obtain ⟨fuel', occurrence, tail, rfl, rfl, found, root, linked⟩ := within_step occurrences fuel owner chain walked
+      cases parented : occurrence.parent with
+      | none =>
+          rw [root parented]
+          simp [occurrenceChainWithin, found, parented]
+      | some parent =>
+          have rest := within_exact fuel' parent tail (linked parent parented)
+          simp only [List.length_cons, occurrenceChainWithin, found, parented, rest, Option.map_some]
+
+private theorem within_transfer (after : List RuntimeScopeOccurrence) :
+    ∀ (fuel : Nat) (owner : ScopeOccurrenceId) (chain : List ScopeOccurrenceId),
+    occurrenceChainWithin occurrences fuel owner = some chain →
+    (∀ member ∈ chain, after.filter (·.id == member) = occurrences.filter (·.id == member)) →
+    occurrenceChainWithin after fuel owner = some chain
+  | fuel, owner, chain, walked, kept => by
+      obtain ⟨fuel', occurrence, tail, rfl, rfl, found, root, linked⟩ := within_step occurrences fuel owner chain walked
+      have here : after.filter (·.id == owner) = [occurrence] := (kept owner (by simp)).trans found
+      cases parented : occurrence.parent with
+      | none =>
+          rw [root parented]
+          simp [occurrenceChainWithin, here, parented]
+      | some parent =>
+          have rest := within_transfer after fuel' parent tail (linked parent parented)
+            (fun member inside => kept member (List.mem_cons_of_mem _ inside))
+          simp only [occurrenceChainWithin, here, parented, rest, Option.map_some]
+
+/-- The chain reads only its own links: a population that keeps each link's occurrences walks the same
+chain, whatever else it adds or removes (CSD-PREPARE-01). -/
+theorem occurrenceChain_transfer (after : List RuntimeScopeOccurrence) (owner : ScopeOccurrenceId)
+    (chain : List ScopeOccurrenceId) (chained : occurrenceChain occurrences owner = some chain)
+    (kept : ∀ member ∈ chain, after.filter (·.id == member) = occurrences.filter (·.id == member)) :
+    occurrenceChain after owner = some chain := by
+  have moved := within_transfer occurrences after _ owner chain
+    (within_exact occurrences _ owner chain chained) kept
+  have enough : chain.length ≤ after.length := by
+    have covered : chain ⊆ after.map (·.id) := by
+      intro member inside
+      obtain ⟨occurrence, live, same⟩ := within_live occurrences _ owner chain chained member inside
+      have selected : occurrence ∈ after.filter (·.id == member) := by
+        rw [kept member inside]
+        simp [live, same]
+      exact List.mem_map.mpr ⟨occurrence, (List.mem_filter.mp selected).1, same⟩
+    simpa using (within_nodup occurrences _ owner chain chained).length_le_of_subset covered
+  unfold occurrenceChain
+  have grown := occurrenceChainWithin_mono after chain.length (after.length - chain.length) owner chain moved
+  rwa [Nat.add_sub_cancel' enough] at grown
+
 end Walk
 
 /-- CSD-CHAIN-01's three premises for the chain `chain` of `reader`, each read over the chain alone:

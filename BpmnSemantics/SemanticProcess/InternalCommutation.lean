@@ -164,6 +164,11 @@ def internalActivationCount (state : RuntimeState) (kind : InternalWaitKind) (el
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalActivationCount]
 
+theorem internalActivationCount_variables (state : RuntimeState) (variables : ScopedVariables)
+    (kind : InternalWaitKind) (element : NodeId) :
+    internalActivationCount { state with variables } kind element = internalActivationCount state kind element := by
+  cases kind <;> rfl
+
 theorem armingActivationRead_frame (state : RuntimeState) (left : InternalArmingPatch) (queryKind : InternalWaitKind) (queryElement : NodeId) (different : left.write.kind = queryKind → left.write.elementId ≠ queryElement) : internalActivationCount (applyInternalArmingPatch state left) queryKind queryElement = internalActivationCount state queryKind queryElement := by
   cases left with | mk _ _ _ _ _ _ _ _ _ write _ => cases write <;> cases queryKind <;> simp_all [internalActivationCount, applyInternalArmingPatch, InternalArmingWrite.kind, InternalArmingWrite.elementId, activationCount, messageActivationCount, timerActivationCount, effectActivationCount, taskActivationRead_set_other, messageActivationRead_set_other, timerActivationRead_set_other, effectActivationRead_set_other]
 
@@ -252,55 +257,6 @@ theorem prepared_effect_reads_activity_population (program : Program) (state : R
         simp [footprintOfPatch, scopedEffectInputReads?, selected, binding,
           canonicalStateAtomSet, mem_sortBy]
 
-theorem prepared_nested_effect_reads_activity_population (program : Program) (state : RuntimeState)
-    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
-    (effect : EffectDefinition) (route : Option BpmnErrorRoute) (patch : InternalArmingPatch)
-    (prepared : prepareInternalArm? program state (.awaitEffect id origin input output effect route) = some patch)
-    (disabled : (sequentialScopeProgramSelected program && hasSequentialScopeDefinition program patch.owner) = false)
-    (nested : nestedScopeDataProgram program = true) :
-    .activityPopulation ∈ (footprintOfPatch patch).reads := by
-  simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?] at prepared
-  obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-  split at prepared
-  · simp at prepared
-  · obtain ⟨inputOrigin, inputOriginEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
-    cases controlEq : state.control <;> simp_all
-    all_goals
-      rcases prepared with ⟨evaluated, _, _, rfl⟩
-      simp only [Decidable.imp_iff_not_or] at disabled
-      simp [footprintOfPatch, scopedEffectInputReads?, nested, disabled, canonicalStateAtomSet, mem_sortBy]
-
-theorem prepared_arm_process_input_frames (program : Program) (state after : RuntimeState)
-    (operation : SemanticOperation) (patch : InternalArmingPatch)
-    (prepared : prepareInternalArm? program state operation = some patch)
-    (noPopulation : .activityPopulation ∉ (footprintOfPatch patch).reads)
-    (processFrame : after.variables.process = state.variables.process) :
-    (match operation with
-      | .awaitEffect .. => ∀ mappings, evaluateEffectInputs? program after patch.owner mappings =
-          evaluateEffectInputs? program state patch.owner mappings
-      | _ => True) ∧
-    scopedEffectInputReads? program after patch.owner operation =
-      scopedEffectInputReads? program state patch.owner operation := by
-  cases operation <;> try exact ⟨True.intro, rfl⟩
-  rename_i id origin input output effect route
-  have disabled : (sequentialScopeProgramSelected program && hasSequentialScopeDefinition program patch.owner) = false := by
-    cases selected : sequentialScopeProgramSelected program && hasSequentialScopeDefinition program patch.owner with
-    | false => rfl
-    | true => exact False.elim (noPopulation
-        (prepared_effect_reads_activity_population program state id origin input output effect route patch prepared selected))
-  have notNested : nestedScopeDataProgram program = false := by
-    cases nested : nestedScopeDataProgram program with
-    | false => rfl
-    | true => exact False.elim (noPopulation
-        (prepared_nested_effect_reads_activity_population program state id origin input output effect route patch
-          prepared disabled nested))
-  constructor
-  · intro mappings
-    simp only [evaluateEffectInputs?, disabled, notNested]
-    simp [processFrame]
-  · simp only [scopedEffectInputReads?, disabled, notNested]
-    rfl
-
 theorem prepared_arm_read_frame (program : Program) (state after : RuntimeState)
     (rightOperation : SemanticOperation) (right : InternalArmingPatch)
     (rightPrepared : prepareInternalArm? program state rightOperation = some right)
@@ -310,8 +266,8 @@ theorem prepared_arm_read_frame (program : Program) (state after : RuntimeState)
     (liveFrame : ∀ owner, exactLiveOccurrence after owner = exactLiveOccurrence state owner)
     (processVariablesFrame : after.variables.process = state.variables.process)
     (effectInputsFrame : match rightOperation with
-      | .awaitEffect .. => ∀ mappings, evaluateEffectInputs? program after right.owner mappings =
-          evaluateEffectInputs? program state right.owner mappings
+      | .awaitEffect _ _ _ _ effect _ => evaluateEffectInputs? program after right.owner effect.inputMappings =
+          evaluateEffectInputs? program state right.owner effect.inputMappings
       | _ => True)
     (inputReadsFrame : scopedEffectInputReads? program after right.owner rightOperation =
       scopedEffectInputReads? program state right.owner rightOperation)
@@ -410,7 +366,7 @@ theorem prepared_patch_frame_of_inputs_ne (program : Program) (state : RuntimeSt
     (armingControlRead_frame state left) (armingTimeRead_frame state left)
     (armingLiveOwnerRead_frame state left) (armingProcessVariablesRead_frame state left)
     (by cases rightOperation <;> try trivial
-        exact armingEffectInputsRead_frame program state left right.owner)
+        exact armingEffectInputsRead_frame program state left right.owner _)
     (armingScopedInputReads_frame program state left right.owner rightOperation)
     (armingActivationRead_frame state left right.write.kind right.write.elementId elementDistinct)
     (armingOpenAnchorRead_frame state left right.write.occurrence occurrenceDistinct) availableFrame

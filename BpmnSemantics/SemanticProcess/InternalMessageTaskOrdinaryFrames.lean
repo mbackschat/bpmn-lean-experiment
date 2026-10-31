@@ -1,6 +1,7 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
 import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalPairDependencies
@@ -173,8 +174,8 @@ theorem prepareInternalArm_message_task_preserved
     prepareInternalMessageTaskContract_facts program state contract message messagePrepared
   let message := makeInternalMessageTaskPatch program state contract owner instanceId processId origin
   let after := applyInternalMessageTaskPatch state message
-  have scopedFrames := prepared_arm_process_input_frames program state after operation ordinary
-    ordinaryPrepared noPopulation rfl
+  have scopedFrames := prepared_arm_input_frames program state after operation ordinary
+    ordinaryPrepared noPopulation rfl fun _ _ _ => ⟨rfl, rfl⟩
   have counts : internalActivationCount after ordinary.write.kind ordinary.write.elementId =
       internalActivationCount state ordinary.write.kind ordinary.write.elementId := by
     cases kind : ordinary.write.kind with

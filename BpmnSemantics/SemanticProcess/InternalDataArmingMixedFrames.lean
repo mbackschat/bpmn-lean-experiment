@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalDataArmingFootprint
+import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.InternalCommutationStateFrames
@@ -177,8 +178,9 @@ theorem prepareInternalArm_activity_patch (program : Program) (state : RuntimeSt
     (noPopulation : .activityPopulation ∉ (footprintOfPatch ordinary).reads) :
     prepareInternalArm? program (applyInternalDataArmingActivityPatch state patch) operation =
       some ordinary := by
-  have inputs := prepared_arm_process_input_frames program state
+  have inputs := prepared_arm_input_frames program state
     (applyInternalDataArmingActivityPatch state patch) operation ordinary prepared noPopulation rfl
+    fun _ _ _ => ⟨rfl, rfl⟩
   apply prepared_arm_read_frame program state _ operation ordinary prepared
   · rfl
   · rfl

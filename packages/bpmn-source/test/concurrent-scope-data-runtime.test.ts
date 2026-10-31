@@ -9,7 +9,8 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
-  CommandOutcome, EffectExecutionResultKind, StimulusKind, VariableValueKind, applyInternalOperationStep, applyStimulus,
+  CommandOutcome, EffectExecutionResultKind, SemanticOperationKind, StimulusKind, VariableValueKind, applyInternalOperationStep,
+  applyStimulus,
   initialState, isWellFormedRuntimeState,
 } from "@bpmn-lean/semantic-core";
 import type { RuntimeState, SemanticProcessProgram, Stimulus, VariableBinding } from "@bpmn-lean/semantic-core";
@@ -197,4 +198,12 @@ test("nested effect arming reads its precise frame, chain and Process atoms inst
   assert.deepEqual(reads.flatMap(atom => atom.kind === "scopeParent" ? [atom.occurrence.definitionScopeId] : []).sort(),
     ["scope:HandleClaim", "scope:PriceDamage", "scope:Process_ClaimDamageAssessment"]);
   assertLinksReadLive(reads);
+  // Evaluation reads its frames only for enclosing names, so without one the arming claims no chain (Lean's account).
+  const literalOnly = { ...claim, operations: claim.operations.map(operation =>
+    operation.id === fetch.id && operation.kind === SemanticOperationKind.AwaitEffect
+      ? { ...operation, effect: { ...operation.effect, inputMappings: [] } } : operation) };
+  const unmapped = deriveInternalTransitionFootprint(literalOnly, armed,
+    { operation: operationAt(literalOnly, "FetchRates", "awaitEffect"), owner: price });
+  assert.ok(unmapped !== null);
+  assert.equal(unmapped.reads.some(({ kind }) => kind === "scopeParent" || kind === "scopeVariableScope"), false);
 });

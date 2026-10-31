@@ -440,17 +440,29 @@ def InternalArmingWrite.available (state : RuntimeState) : InternalArmingWrite �
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation.InternalArmingWrite #[`available]
 
-/-- SMIS-DATA-01 binds prepared reads to the same selected body as input evaluation. NSD-READ-01
-reads scope frames, which no footprint atom names individually; like the SMIS read, a nested read
-therefore claims the Activity population, which keeps it out of the Process-only read-frame law. -/
+/-- What a nested read set consults (CSD-PREPARE-01): each chain link's liveness and parent, and each
+consulted frame; the fall-through Process names are the caller's, since each reader claims them in its own way. -/
+def nestedScopeReadAtoms (reads : NestedScopeData.ReadSet) : List InternalStateAtom :=
+  reads.links.flatMap (fun link => [.scopeOccurrence link.id, .scopeParent link.id link.parent]) ++
+    reads.frames.map .scopeVariableScope
+
+/-- The names a mapping list reads from its enclosing context, in declaration order. -/
+def enclosingInputNames (mappings : List VariableMapping) : List String :=
+  mappings.filterMap fun mapping => match mapping.expression with
+    | .enclosingVariable name => some name
+    | _ => none
+
+/-- SMIS-DATA-01 binds prepared reads to the same selected body as input evaluation. A nested read
+(NSD-READ-01) claims exactly the read set it resolves over, so it consults no Activity data; input
+evaluation calls its reader only for enclosing names, so without one it reads nothing. -/
 def scopedEffectInputReads? (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)
     (operation : SemanticOperation) : Option (List InternalStateAtom) := do
   let .awaitEffect _ _ _ _ effect _ := operation | none
   if !(sequentialScopeProgramSelected program && hasSequentialScopeDefinition program owner) then
     if nestedScopeDataProgram program then
-      some (.activityPopulation :: effect.inputMappings.filterMap fun mapping => match mapping.expression with
-        | .enclosingVariable name => some (.processVariable name)
-        | _ => none)
+      if (enclosingInputNames effect.inputMappings).isEmpty then some [] else
+      let reads ← NestedScopeData.readSet? state.scopeOccurrences state.variables.scopes owner (enclosingInputNames effect.inputMappings)
+      some (nestedScopeReadAtoms reads ++ reads.processNames.map .processVariable)
     else none
   else
     let binding ← sequentialScopeBindingForOwner? program state owner

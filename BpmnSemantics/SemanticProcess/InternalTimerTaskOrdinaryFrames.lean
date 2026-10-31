@@ -1,6 +1,7 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
+import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
 import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalDataArmingMixedFrames
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
@@ -160,8 +161,8 @@ theorem prepareInternalArm_timer_task_preserved
     prepareInternalTimerTaskContract_facts program state contract timer timerPrepared
   let timer := makeInternalTimerTaskPatch program state contract owner instanceId processId origin
   let after := applyInternalTimerTaskPatch state timer
-  have scopedFrames := prepared_arm_process_input_frames program state after operation ordinary
-    ordinaryPrepared noPopulation rfl
+  have scopedFrames := prepared_arm_input_frames program state after operation ordinary
+    ordinaryPrepared noPopulation rfl fun _ _ _ => ⟨rfl, rfl⟩
   have counts : internalActivationCount after ordinary.write.kind ordinary.write.elementId =
       internalActivationCount state ordinary.write.kind ordinary.write.elementId := by
     cases kind : ordinary.write.kind with

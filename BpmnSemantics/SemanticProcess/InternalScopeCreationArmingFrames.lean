@@ -11,6 +11,7 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.NestedScopeChainBridge
+import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 import BpmnSemantics.SemanticProcess.TokenPatchLaws
@@ -52,6 +53,10 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.internalDeclaredEntryFootprint,
   `dataInputOutputActivityRecord, `dataInputOutputRunningInstance?, `effectActivationCount, `evaluateEffectInputs?,
   `evaluateInputMappingsInOrderUnder, `evaluateInputMappingsUnder?, `evaluateSequentialScopeInputs?,
+  `canonicalInputMappings?, `inputLookupUnder?, `InternalCommutation.enclosingInputNames,
+  `addActivityOccurrenceVariableScope, `InternalCommutation.nestedScopeReadAtoms,
+  `InternalCommutation.internalScopeCreationCreationAtoms, `InternalCommutation.internalScopeCreationStateFootprint,
+  `InternalCommutation.makeInternalScopeCreationPreparation,
   `messageActivationCount, `readSequentialScopeVariable?, `sequentialScopeBindingForEntry?,
   `sequentialScopeBindingForOwner?, `activationCount, `activityActivationCount, `callActivationCount,
   `canonicalInsertBy, `insertScopeOccurrence, `onlyTokenOwner?, `scopeActivationCount, `timerActivationCount]
@@ -261,8 +266,8 @@ theorem readSet?_insert_fresh (state after : RuntimeState) (created : RuntimeSco
     (occurrences : after.scopeOccurrences = insertScopeOccurrence created state.scopeOccurrences)
     (scopes : after.variables.scopes = state.variables.scopes)
     (reader : ScopeOccurrenceId) (names : List String) (reads : NestedScopeData.ReadSet)
-    (read : NestedScopeData.readSet? state reader names = some reads) :
-    NestedScopeData.readSet? after reader names = some reads := by
+    (read : NestedScopeData.readSet? state.scopeOccurrences state.variables.scopes reader names = some reads) :
+    NestedScopeData.readSet? after.scopeOccurrences after.variables.scopes reader names = some reads := by
   unfold NestedScopeData.readSet? at read ⊢
   rw [occurrences, scopes]
   cases chained : NestedScopeData.occurrenceChain state.scopeOccurrences reader with
@@ -314,9 +319,93 @@ theorem occurrenceWithParent?_insert_created (occurrences : List RuntimeScopeOcc
     exact List.perm_singleton.mp perm
   simp only [NestedScopeData.occurrenceWithParent?, filtered, parentOf, bind, Option.bind]
 
+/-- Input evaluation calls its reader only on enclosing names. -/
+private theorem evaluateInputMappingsInOrderUnder_congr (policy : EffectMappingValuePolicy)
+    (before after : String → Option VariableValue) :
+    ∀ mappings : List VariableMapping, (∀ name ∈ enclosingInputNames mappings, after name = before name) →
+      evaluateInputMappingsInOrderUnder policy after mappings = evaluateInputMappingsInOrderUnder policy before mappings
+  | [], _ => rfl
+  | mapping :: rest, agree => by
+      cases expression : mapping.expression with
+      | enclosingVariable name =>
+          have tail := evaluateInputMappingsInOrderUnder_congr policy before after rest fun other inside =>
+            agree other (by simp [enclosingInputNames, expression] at inside ⊢; exact Or.inr inside)
+          simp only [evaluateInputMappingsInOrderUnder, expression, inputLookupUnder?,
+            agree name (by simp [enclosingInputNames, expression]), tail]
+      | stringLiteral _ | localVariable _ =>
+          have tail := evaluateInputMappingsInOrderUnder_congr policy before after rest fun other inside =>
+            agree other (by simpa [enclosingInputNames, expression] using inside)
+          simp only [evaluateInputMappingsInOrderUnder, expression, tail]
+
+/-- A successful evaluation read every enclosing name. -/
+private theorem evaluateInputMappingsInOrderUnder_readable (policy : EffectMappingValuePolicy)
+    (read : String → Option VariableValue) :
+    ∀ (mappings : List VariableMapping) (bindings : List VariableBinding),
+      evaluateInputMappingsInOrderUnder policy read mappings = some bindings →
+      ∀ name ∈ enclosingInputNames mappings, (read name).isSome
+  | [], _, _, _, inside => by simp [enclosingInputNames] at inside
+  | mapping :: rest, bindings, evaluated, name, inside => by
+      cases restValue : evaluateInputMappingsInOrderUnder policy read rest with
+      | none =>
+          cases expression : mapping.expression <;>
+            simp [evaluateInputMappingsInOrderUnder, expression, restValue] at evaluated
+      | some tail =>
+          have later := evaluateInputMappingsInOrderUnder_readable policy read rest tail restValue name
+          cases expression : mapping.expression with
+          | enclosingVariable first =>
+              simp only [enclosingInputNames, expression, List.filterMap_cons, List.mem_cons] at inside
+              rcases inside with rfl | inside
+              · simp only [evaluateInputMappingsInOrderUnder, expression, inputLookupUnder?] at evaluated
+                cases found : read name with
+                | none => simp [found] at evaluated
+                | some _ => rfl
+              · exact later (by simpa [enclosingInputNames] using inside)
+          | stringLiteral _ | localVariable _ =>
+              exact later (by simpa [enclosingInputNames, expression] using inside)
+
+private theorem enclosingInputNames_perm {mappings ordered : List VariableMapping} (same : ordered.Perm mappings)
+    (name : String) : name ∈ enclosingInputNames ordered ↔ name ∈ enclosingInputNames mappings := by
+  simp only [enclosingInputNames, List.mem_filterMap]
+  exact ⟨fun ⟨mapping, inside, named⟩ => ⟨mapping, same.mem_iff.mp inside, named⟩,
+    fun ⟨mapping, inside, named⟩ => ⟨mapping, same.mem_iff.mpr inside, named⟩⟩
+
+private theorem evaluateInputMappingsUnder?_congr (policy : EffectMappingValuePolicy)
+    (before after : String → Option VariableValue) (mappings : List VariableMapping)
+    (agree : ∀ name ∈ enclosingInputNames mappings, after name = before name) :
+    evaluateInputMappingsUnder? policy after mappings = evaluateInputMappingsUnder? policy before mappings := by
+  unfold evaluateInputMappingsUnder? canonicalInputMappings?
+  split
+  · simp only [Option.bind_eq_bind, Option.bind_some]
+    exact evaluateInputMappingsInOrderUnder_congr policy before after _ fun name inside =>
+      agree name ((enclosingInputNames_perm (sortByTarget_perm mappings) name).mp inside)
+  · rfl
+
+/-- Nested input evaluation reads each enclosing name over one chain, so a successful one resolves the read
+set its arming claims (CSD-PREPARE-01). -/
+private theorem nested_effect_inputs_readSet (program : Program) (state : RuntimeState) (owner : ScopeOccurrenceId)
+    (mappings : List VariableMapping) (bindings : List VariableBinding)
+    (disabled : (sequentialScopeProgramSelected program && hasSequentialScopeDefinition program owner) = false)
+    (nested : nestedScopeDataProgram program = true)
+    (evaluated : evaluateEffectInputs? program state owner mappings = some bindings)
+    (nonempty : enclosingInputNames mappings ≠ []) :
+    ∃ reads, NestedScopeData.readSet? state.scopeOccurrences state.variables.scopes owner (enclosingInputNames mappings) = some reads := by
+  simp only [evaluateEffectInputs?, disabled, nested, Bool.false_eq_true, ↓reduceIte, evaluateInputMappingsUnder?,
+    canonicalInputMappings?] at evaluated
+  split at evaluated
+  · simp only [Option.bind_eq_bind, Option.bind_some] at evaluated
+    apply NestedScopeData.readSet?_of_reads program state owner _ nonempty
+    intro name inside
+    have readable := evaluateInputMappingsInOrderUnder_readable _ _ _ bindings evaluated name
+      ((enclosingInputNames_perm (sortByTarget_perm mappings) name).mpr inside)
+    cases found : NestedScopeData.read? program state.scopeOccurrences state.variables owner name with
+    | none => simp [inputLookupUnder?, found] at readable
+    | some _ => rfl
+  · simp at evaluated
+
 /-- Scope creation keeps the arming's own snapshot: a nested read walks only live links, which a fresh
-occurrence never replaces (CSD-CHAIN-01). Other mappings may differ, because a walk that failed before
-the creation may resolve through the created occurrence. -/
+occurrence never replaces (CSD-CHAIN-01), and so is its read set, which the successful evaluation resolved.
+Other mappings may differ, because a walk that failed before the creation may resolve through the created
+occurrence. -/
 theorem scopeCreation_effect_input_frames (program : Program) (state : RuntimeState)
     (scopeOperation : SemanticOperation) (scope : InternalScopeCreationSelection)
     (scopeFound : selectInternalScopeCreation? state scopeOperation = some scope)
@@ -347,8 +436,23 @@ theorem scopeCreation_effect_input_frames (program : Program) (state : RuntimeSt
                 exact evaluateInputMappingsUnder?_of_widened _ _ _
                   (fun name found read => read?_insert_fresh _ program _ scope.created fresh owner name
                     found read) _ _ value
-      · simp only [scopedEffectInputReads?, scopeSelected]
-        rfl
+      · cases nested : nestedScopeDataProgram program with
+        | false =>
+            simp only [scopedEffectInputReads?, scopeSelected, nested]
+            rfl
+        | true =>
+            by_cases empty : (enclosingInputNames effect.inputMappings).isEmpty
+            · simp only [scopedEffectInputReads?, scopeSelected, nested, empty, Bool.not_false, ↓reduceIte]
+            · cases value : evaluateEffectInputs? program state owner effect.inputMappings with
+              | none => simp [value] at evaluated
+              | some bindings =>
+                  obtain ⟨reads, read⟩ := nested_effect_inputs_readSet program state owner _ bindings scopeSelected
+                    nested value (by simpa using empty)
+                  have kept := readSet?_insert_fresh state (scope.apply state) scope.created
+                    (selectInternalScopeCreation_fresh state scopeOperation scope scopeFound) applied.1
+                    (by rw [applied.2]) owner _ reads read
+                  simp only [scopedEffectInputReads?, scopeSelected, nested, empty, kept, read, Bool.not_false,
+                    ↓reduceIte]
   | true =>
       cases binding : sequentialScopeBindingForOwner? program state owner with
       | none =>
@@ -366,6 +470,166 @@ theorem scopeCreation_effect_input_frames (program : Program) (state : RuntimeSt
             cases kind : scope.kind <;> simp [InternalScopeCreationSelection.apply, kind, readSequentialScopeVariable?]
           · simp only [scopedEffectInputReads?, scopeSelected]
             simp [binding, afterBinding]
+
+private theorem prepared_effect_inputs (program : Program) (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (input output : ControlPlaceId) (effect : EffectDefinition)
+    (route : Option BpmnErrorRoute) (patch : InternalArmingPatch)
+    (prepared : prepareInternalArm? program state (.awaitEffect id origin input output effect route) = some patch) :
+    (∃ bindings, evaluateEffectInputs? program state patch.owner effect.inputMappings = some bindings) ∧
+      patch.inputReads = scopedEffectInputReads? program state patch.owner (.awaitEffect id origin input output effect route) := by
+  simp [prepareInternalArm?, internalArmInput?, internalArmOrigin?] at prepared
+  obtain ⟨owner, ownerEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+  split at prepared
+  · simp at prepared
+  · obtain ⟨inputOrigin, inputOriginEq, prepared⟩ := Option.bind_eq_some_iff.mp prepared
+    cases controlEq : state.control <;> simp_all
+    all_goals
+      rcases prepared with ⟨evaluated, _, _, rfl⟩
+      refine ⟨?_, rfl⟩
+      cases value : evaluateEffectInputs? program state owner effect.inputMappings <;> simp_all
+
+/-- CSD-PREPARE-01 arming input frame: an arming outside a sequential body evaluates its inputs and claims its
+reads as before on a state that keeps the Process data and, for each live occurrence it reads, that occurrence
+and its frames. -/
+private theorem prepared_arm_input_frames_of_disabled (program : Program) (state after : RuntimeState)
+    (operation : SemanticOperation) (patch : InternalArmingPatch)
+    (prepared : prepareInternalArm? program state operation = some patch)
+    (disabled : (sequentialScopeProgramSelected program && hasSequentialScopeDefinition program patch.owner) = false)
+    (process : after.variables.process = state.variables.process)
+    (kept : ∀ id, .scopeOccurrence id ∈ (footprintOfPatch patch).reads → id ∈ state.scopeOccurrences.map (·.id) →
+      after.scopeOccurrences.filter (fun scope => decide (scope.id = id)) =
+        state.scopeOccurrences.filter (fun scope => decide (scope.id = id)) ∧
+      after.variables.scopes.filter (fun frame => decide (frame.owner = id)) =
+        state.variables.scopes.filter (fun frame => decide (frame.owner = id))) :
+    (match operation with
+      | .awaitEffect _ _ _ _ effect _ => evaluateEffectInputs? program after patch.owner effect.inputMappings =
+          evaluateEffectInputs? program state patch.owner effect.inputMappings
+      | _ => True) ∧
+    scopedEffectInputReads? program after patch.owner operation =
+      scopedEffectInputReads? program state patch.owner operation := by
+  cases operation <;> try exact ⟨True.intro, rfl⟩
+  rename_i id origin input output effect route
+  obtain ⟨⟨bindings, evaluated⟩, inputReads⟩ :=
+    prepared_effect_inputs program state id origin input output effect route patch prepared
+  cases nested : nestedScopeDataProgram program with
+  | false =>
+      constructor
+      · simp only [evaluateEffectInputs?, disabled, nested, Bool.false_eq_true, ↓reduceIte, process]
+      · simp only [scopedEffectInputReads?, disabled, nested, Bool.not_false, Bool.false_eq_true, ↓reduceIte]
+  | true =>
+      by_cases empty : (enclosingInputNames effect.inputMappings).isEmpty
+      · constructor
+        · simp only [evaluateEffectInputs?, disabled, nested, Bool.false_eq_true, ↓reduceIte]
+          exact evaluateInputMappingsUnder?_congr _ _ _ _ fun name inside => by
+            simp [List.isEmpty_iff.mp empty] at inside
+        · simp only [scopedEffectInputReads?, disabled, nested, empty, Bool.not_false, ↓reduceIte]
+      · obtain ⟨reads, read⟩ := nested_effect_inputs_readSet program state patch.owner _ bindings disabled nested
+          evaluated (by simpa using empty)
+        have keptReads : reads.Kept state after := fun link inside => kept link.id (by
+          simp only [scopedEffectInputReads?, disabled, nested, empty, read, Bool.not_false, Bool.false_eq_true,
+            ↓reduceIte, Option.bind_eq_bind, Option.bind_some] at inputReads
+          simp [footprintOfPatch, canonicalStateAtomSet, mem_sortBy, inputReads, nestedScopeReadAtoms]
+          exact Or.inr (Or.inr ⟨link, inside, rfl⟩))
+          (List.mem_map_of_mem (NestedScopeData.readSet?_links_live _ _ _ _ reads read link inside))
+        have readsAfter := NestedScopeData.readSet?_kept state after patch.owner _ reads read keptReads
+        have readAfter := funext fun name =>
+          NestedScopeData.read?_kept program state after patch.owner _ reads read keptReads process name
+        constructor
+        · simp only [evaluateEffectInputs?, disabled, nested, Bool.false_eq_true, ↓reduceIte, readAfter]
+        · simp only [scopedEffectInputReads?, disabled, nested, empty, read, readsAfter, Bool.not_false,
+            Bool.false_eq_true, ↓reduceIte]
+
+/-- The input frame for an arming that claims no Activity population, which only a sequential body claims. -/
+theorem prepared_arm_input_frames (program : Program) (state after : RuntimeState)
+    (operation : SemanticOperation) (patch : InternalArmingPatch)
+    (prepared : prepareInternalArm? program state operation = some patch)
+    (noPopulation : .activityPopulation ∉ (footprintOfPatch patch).reads)
+    (process : after.variables.process = state.variables.process)
+    (kept : ∀ id, .scopeOccurrence id ∈ (footprintOfPatch patch).reads → id ∈ state.scopeOccurrences.map (·.id) →
+      after.scopeOccurrences.filter (fun scope => decide (scope.id = id)) =
+        state.scopeOccurrences.filter (fun scope => decide (scope.id = id)) ∧
+      after.variables.scopes.filter (fun frame => decide (frame.owner = id)) =
+        state.variables.scopes.filter (fun frame => decide (frame.owner = id))) :
+    (match operation with
+      | .awaitEffect _ _ _ _ effect _ => evaluateEffectInputs? program after patch.owner effect.inputMappings =
+          evaluateEffectInputs? program state patch.owner effect.inputMappings
+      | _ => True) ∧
+    scopedEffectInputReads? program after patch.owner operation =
+      scopedEffectInputReads? program state patch.owner operation := by
+  cases operation <;> try exact ⟨True.intro, rfl⟩
+  rename_i id origin input output effect route
+  apply prepared_arm_input_frames_of_disabled program state after _ patch prepared _ process kept
+  cases selected : sequentialScopeProgramSelected program && hasSequentialScopeDefinition program patch.owner with
+  | false => rfl
+  | true => exact False.elim (noPopulation
+      (prepared_effect_reads_activity_population program state id origin input output effect route patch prepared selected))
+
+/-- A prepared scope creation writes its created occurrence. -/
+theorem prepared_scope_creation_writes_created (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
+    (found : prepareInternalScopeCreation? program state operation = some prepared) :
+    .scopeOccurrence prepared.selection.created.id ∈ prepared.footprint.writes := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, rfl⟩ :=
+    prepareInternalScopeCreation_facts program state operation prepared found
+  simp [makeInternalScopeCreationPreparation, internalScopeCreationStateFootprint,
+    internalScopeCreationCreationAtoms, canonicalStateAtomSet, mem_sortBy]
+
+/-- A nested-data Program is never the sequential-body Program, the only one whose armings read Activity data. -/
+theorem nested_not_sequential (program : Program) (nested : nestedScopeDataProgram program = true) :
+    sequentialScopeProgramSelected program = false := by
+  cases selected : sequentialScopeProgramSelected program with
+  | false => rfl
+  | true =>
+      unfold sequentialScopeProgramSelected at selected
+      simp only [beq_iff_eq] at selected
+      rw [nestedScopeDataProgram_of_profile_value selected] at nested
+      contradiction
+
+/-- An arming changes no occurrence, frame or Process datum. -/
+theorem arming_apply_scope_data (state : RuntimeState) (arm : PreparedInternalArming) :
+    (arm.apply state).scopeOccurrences = state.scopeOccurrences ∧
+      (arm.apply state).variables.scopes = state.variables.scopes ∧
+      (arm.apply state).variables.process = state.variables.process := by
+  cases arm with
+  | ordinary operation patch =>
+      cases write : patch.write <;> simp [PreparedInternalArming.apply, applyInternalArmingPatch, write]
+  | data contract patch =>
+      cases write : patch.arm.write <;>
+        simp [PreparedInternalArming.apply, applyInternalDataArmingPatch, applyInternalArmingPatch, write,
+          addActivityOccurrenceVariableScope]
+
+/-- An arming stays prepared when a frame is inserted for an occurrence it does not read. -/
+theorem arming_insertFrame (program : Program) (state : RuntimeState) (frame : ScopeVariableScope)
+    (arm : PreparedInternalArming) (armFound : arm.Prepared program state)
+    (notSequential : sequentialScopeProgramSelected program = false)
+    (unread : .scopeOccurrence frame.owner ∉ arm.stateFootprint.reads) :
+    arm.Prepared program { state with variables := NestedScopeData.insertFrame state.variables frame } := by
+  cases arm with
+  | ordinary operation patch =>
+      have inputs := prepared_arm_input_frames_of_disabled program state
+        { state with variables := NestedScopeData.insertFrame state.variables frame } operation patch armFound
+        (by rw [notSequential, Bool.false_and]) rfl fun id member _ => ⟨rfl, by
+          change (NestedScopeData.insertFrame state.variables frame).scopes.filter _ = _
+          rw [NestedScopeData.insertFrame_scopes]
+          exact filter_canonicalInsertBy_rejected _ _ frame _ (by
+            simp only [decide_eq_false_iff_not]
+            intro same
+            exact unread (same ▸ member))⟩
+      exact prepared_arm_read_frame program state _ operation patch armFound rfl rfl rfl (fun _ => rfl) rfl
+        (by cases operation <;> exact inputs.1) inputs.2 (internalActivationCount_variables _ _ _ _) rfl
+        (by cases patch.write <;> rfl)
+  | data contract patch => exact armFound
+
+theorem arming_apply_insertFrame (state : RuntimeState) (frame : ScopeVariableScope)
+    (arm : PreparedInternalArming) :
+    arm.apply { state with variables := NestedScopeData.insertFrame state.variables frame } =
+      { arm.apply state with variables := NestedScopeData.insertFrame (arm.apply state).variables frame } := by
+  cases arm with
+  | ordinary operation patch =>
+      cases write : patch.write <;> simp only [PreparedInternalArming.apply, applyInternalArmingPatch, write] <;> rfl
+  | data contract patch =>
+      cases write : patch.arm.write <;>
+        simp only [PreparedInternalArming.apply, applyInternalDataArmingPatch, applyInternalArmingPatch, write] <;> rfl
 
 theorem prepared_scopeCreation_input_frames (program : Program) (state : RuntimeState)
     (scopeOperation : SemanticOperation) (scope : InternalScopeCreationSelection)

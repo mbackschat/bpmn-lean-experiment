@@ -161,6 +161,23 @@ private def facility_fork_enters_both_declaring_checks : Bool :=
   startFacility.outcome == .committed && ["E", "F"].all fun owner =>
     startFacility.state.variables.scopes.any (·.owner.definitionScopeId == scope owner)
 
+/-- CSD-PREPARE-01, arming reads: Summarize under Inspection reads its chain links, the frames it consults and
+the names that fall through to the Process, never the Activity population, so a declared entry's new frame
+is visibly off its reads. -/
+private def summarize_reads_its_chain_instead_of_the_population : Bool :=
+  let program := lowerCheckedProcess facility
+  let state := startFacility.state
+  match program.operations.find? (fun operation => match operation with
+      | .awaitEffect _ origin .. => origin.elementId.value == "Summarize"
+      | _ => false),
+    state.scopeOccurrences.find? (·.id.definitionScopeId == scope "N") with
+  | some operation, some inspection =>
+      match InternalCommutation.scopedEffectInputReads? program state inspection.id operation with
+      | some reads => !reads.contains .activityPopulation && reads.contains (.scopeOccurrence inspection.id) &&
+          reads.contains (.scopeVariableScope inspection.id) && reads.contains (.processVariable "fireResult")
+      | none => false
+  | _, _ => false
+
 /-- Every executable check of this module, named for the driver's failure report. -/
 def concurrentScopeDataConformanceChecks : List (String × Bool) := [
   ("facility_is_admitted", facility_is_admitted),
@@ -176,7 +193,8 @@ def concurrentScopeDataConformanceChecks : List (String × Bool) := [
   ("review_start_requires_a_bounded_claim", review_start_requires_a_bounded_claim),
   ("review_frame_holds_the_start_value", review_frame_holds_the_start_value),
   ("review_patch_is_bounded_and_declared", review_patch_is_bounded_and_declared),
-  ("facility_fork_enters_both_declaring_checks", facility_fork_enters_both_declaring_checks)
+  ("facility_fork_enters_both_declaring_checks", facility_fork_enters_both_declaring_checks),
+  ("summarize_reads_its_chain_instead_of_the_population", summarize_reads_its_chain_instead_of_the_population)
 ]
 
 end BpmnSemantics.ConcurrentScopeDataConformance

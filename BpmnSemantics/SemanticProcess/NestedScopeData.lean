@@ -158,10 +158,11 @@ structure ReadSet where
   processNames : List String
   deriving Repr, DecidableEq
 
-def readSet? (state : RuntimeState) (reader : ScopeOccurrenceId) (names : List String) : Option ReadSet := do
-  let chain ← occurrenceChain state.scopeOccurrences reader
-  let owners ← names.mapM (resolveOwner? state.variables.scopes chain)
-  let links ← chain.mapM fun id => state.scopeOccurrences.find? (·.id == id)
+def readSet? (occurrences : List RuntimeScopeOccurrence) (scopes : List ScopeVariableScope) (reader : ScopeOccurrenceId)
+    (names : List String) : Option ReadSet := do
+  let chain ← occurrenceChain occurrences reader
+  let owners ← names.mapM (resolveOwner? scopes chain)
+  let links ← chain.mapM fun id => occurrences.find? (·.id == id)
   let depth := owners.foldl (fun depth owner => max depth (match owner with
     | .frame occurrence => chain.idxOf occurrence + 1
     | .process => chain.length)) 0

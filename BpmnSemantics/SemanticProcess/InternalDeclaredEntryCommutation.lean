@@ -1,12 +1,15 @@
 module
 
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
+public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 import BpmnSemantics.SemanticProcess.CallActivity
 import BpmnSemantics.SemanticProcess.InternalArmingOrder
 import BpmnSemantics.SemanticProcess.InternalLocalControlFootprintCommutation
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationFrames
 import BpmnSemantics.SemanticProcess.InternalLocalControlSelectionFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingFrames
+import BpmnSemantics.SemanticProcess.InternalScopeCreationArmingCommutation
+import BpmnSemantics.SemanticProcess.InternalCommutation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationCommutation
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
 import BpmnSemantics.SemanticProcess.InternalScopeCreationLocalControlCommutation
@@ -18,7 +21,7 @@ import BpmnSemantics.SemanticProcess.TokenPatchLaws
 
 /-! Commutation of the prepared declared entry (CSD-PREPARE-01 of the
 [concurrent scope data proposal](../../docs/capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#representation-and-runtime-ownership))
-with another declared entry, an undeclared scope creation and local control. Each pair composes the
+with another declared entry, an undeclared scope creation, local control and an arming. Each pair composes the
 control's existing pair law with the frame insertion, which changes only variables: the inserted frame
 belongs to the fresh child, which is on no other reader's chain, and the two frames of a declared pair have
 distinct owners because each entry reads the frame the other would write. -/
@@ -104,8 +107,8 @@ private theorem prepareInternalDeclaredEntry_after (program : Program) (state af
         entry.control.selection.owner = some entry.frame →
       NestedScopeData.evaluateFrame? program after record entry.control.selection.created.id
         entry.control.selection.owner = some entry.frame)
-    (read : ∀ names reads, NestedScopeData.readSet? state entry.control.selection.owner names = some reads →
-      NestedScopeData.readSet? after entry.control.selection.owner names = some reads) :
+    (read : ∀ names reads, NestedScopeData.readSet? state.scopeOccurrences state.variables.scopes entry.control.selection.owner names = some reads →
+      NestedScopeData.readSet? after.scopeOccurrences after.variables.scopes entry.control.selection.owner names = some reads) :
     prepareInternalDeclaredEntry? program after operation = some entry := by
   obtain ⟨id, origin, input, child, scope, record, reads, rfl, recorded, _, framed, readSet, footprint⟩ :=
     prepareInternalDeclaredEntry_facts program state operation entry found
@@ -249,7 +252,7 @@ theorem prepared_declared_entry_local_control_pair (program : Program) (state : 
       localPrepared pair.1
   · refine prepareInternalDeclaredEntry_after program state _ entryOperation entry entryFound pair.2.1 ?_ ?_
     · intro record evaluated
-      rw [NestedScopeData.evaluateFrame?_frame program state _ moved.1 moved.2.1]
+      rw [NestedScopeData.evaluateFrame?_frame program state _ moved.1 (by rw [moved.2.1]) (by rw [moved.2.1])]
       exact evaluated
     · intro names reads read
       rw [NestedScopeData.readSet?_frame state _ moved.1 (by rw [moved.2.1])]
@@ -257,5 +260,40 @@ theorem prepared_declared_entry_local_control_pair (program : Program) (state : 
   · rw [PreparedInternalDeclaredEntry.apply_eq, PreparedInternalDeclaredEntry.apply_eq,
       (localControl_apply_variables _ localPrepared.selection _).2.2, pair.2.2, scopeCreation_keeps_variables,
       scopeCreation_keeps_variables, moved.2.1]
+
+/-- A declared entry and an arming commute (CSD-PREPARE-01): the arming reads exactly its chain links and
+consulted frames, and the entry's frame belongs to the occurrence the entry creates, which the arming does not
+read; the arming changes no occurrence, frame or Process datum the entry's frame evaluation reads. -/
+theorem prepared_declared_entry_arming_pair (program : Program) (state : RuntimeState)
+    (entryOperation : SemanticOperation) (entry : PreparedInternalDeclaredEntry) (arm : PreparedInternalArming)
+    (entryFound : prepareInternalDeclaredEntry? program state entryOperation = some entry)
+    (armFound : arm.Prepared program state)
+    (canonical : canonicalCollectionOrder state = true)
+    (separated : localControlStateFootprintsNonInterfering entry.footprint arm.stateFootprint = true) :
+    arm.Prepared program (entry.apply state) ∧
+      prepareInternalDeclaredEntry? program (arm.apply state) entryOperation = some entry ∧
+      arm.apply (entry.apply state) = entry.apply (arm.apply state) := by
+  obtain ⟨reads, writes, _, _, control, owner, _⟩ := declared_entry_shape program state entryOperation entry entryFound
+  obtain ⟨_, _, _, _, _, record, _, _, recorded, _⟩ :=
+    prepareInternalDeclaredEntry_facts program state entryOperation entry entryFound
+  have pair := prepared_scope_creation_arming_pair program state entryOperation entry.control arm control armFound
+    canonical (control_separated entry _ reads writes separated)
+  have created := writes (prepared_scope_creation_writes_created program state entryOperation entry.control control)
+  have unread : InternalStateAtom.scopeOccurrence entry.frame.owner ∉ arm.stateFootprint.reads := fun read =>
+    localControlStateFootprintsNonInterfering_write_read _ _ separated _ (by rw [owner]; exact created) read
+  have moved := arming_apply_scope_data state arm
+  refine ⟨?_, ?_, ?_⟩
+  · rw [PreparedInternalDeclaredEntry.apply_eq]
+    exact arming_insertFrame program _ entry.frame arm pair.1
+      (nested_not_sequential program (NestedScopeData.recordFor?_nested program _ record recorded)) unread
+  · refine prepareInternalDeclaredEntry_after program state _ entryOperation entry entryFound pair.2.1 ?_ ?_
+    · intro record evaluated
+      rw [NestedScopeData.evaluateFrame?_frame program state _ moved.1 moved.2.1 moved.2.2]
+      exact evaluated
+    · intro names reads read
+      rw [moved.1, moved.2.1]
+      exact read
+  · rw [PreparedInternalDeclaredEntry.apply_eq, PreparedInternalDeclaredEntry.apply_eq, arming_apply_insertFrame,
+      pair.2.2]
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

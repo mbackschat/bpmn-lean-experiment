@@ -175,9 +175,7 @@ structure PreparedInternalDeclaredEntry where
   deriving Repr, DecidableEq
 
 def internalDeclaredEntryInputNames (record : ScopeLocalData) : List String :=
-  record.localInputs.filterMap fun mapping => match mapping.expression with
-    | .enclosingVariable name => some name
-    | _ => none
+  enclosingInputNames record.localInputs
 
 /-- The control footprint plus what the frame evaluation consults: each chain link's liveness and parent,
 each consulted frame, each fall-through Process name, and the absence of the child's frame, which the
@@ -185,9 +183,8 @@ entry then writes. -/
 def internalDeclaredEntryFootprint (control : PreparedInternalScopeCreation) (reads : NestedScopeData.ReadSet) :
     InternalTransitionStateFootprint :=
   let written : InternalStateAtom := .scopeVariableScope control.selection.created.id
-  { reads := canonicalStateAtomSet (control.footprint.reads ++
-      reads.links.flatMap (fun link => [.scopeOccurrence link.id, .scopeParent link.id link.parent]) ++
-      reads.frames.map .scopeVariableScope ++ reads.processNames.map .processVariable ++ [written])
+  { reads := canonicalStateAtomSet (control.footprint.reads ++ nestedScopeReadAtoms reads ++
+      reads.processNames.map .processVariable ++ [written])
     writes := canonicalStateAtomSet (control.footprint.writes ++ [written]) }
 
 def prepareInternalDeclaredEntry? (program : Program) (state : RuntimeState)
@@ -197,7 +194,7 @@ def prepareInternalDeclaredEntry? (program : Program) (state : RuntimeState)
   let control ← prepareInternalScopeCreation? program state operation
   let frame ← NestedScopeData.evaluateFrame? program state record control.selection.created.id
     control.selection.owner
-  let reads ← NestedScopeData.readSet? state control.selection.owner (internalDeclaredEntryInputNames record)
+  let reads ← NestedScopeData.readSet? state.scopeOccurrences state.variables.scopes control.selection.owner (internalDeclaredEntryInputNames record)
   some { control, frame, footprint := internalDeclaredEntryFootprint control reads }
 
 def PreparedInternalDeclaredEntry.apply (prepared : PreparedInternalDeclaredEntry) (state : RuntimeState) :
@@ -262,7 +259,7 @@ theorem prepareInternalDeclaredEntry_facts (program : Program) (state : RuntimeS
       prepareInternalScopeCreation? program state operation = some prepared.control ∧
       NestedScopeData.evaluateFrame? program state record prepared.control.selection.created.id
         prepared.control.selection.owner = some prepared.frame ∧
-      NestedScopeData.readSet? state prepared.control.selection.owner
+      NestedScopeData.readSet? state.scopeOccurrences state.variables.scopes prepared.control.selection.owner
         (internalDeclaredEntryInputNames record) = some reads ∧
       prepared.footprint = internalDeclaredEntryFootprint prepared.control reads := by
   unfold prepareInternalDeclaredEntry? at found
@@ -284,7 +281,7 @@ theorem prepareInternalDeclaredEntry_of_facts (program : Program) (state : Runti
       some prepared.control)
     (evaluated : NestedScopeData.evaluateFrame? program state record prepared.control.selection.created.id
       prepared.control.selection.owner = some prepared.frame)
-    (read : NestedScopeData.readSet? state prepared.control.selection.owner
+    (read : NestedScopeData.readSet? state.scopeOccurrences state.variables.scopes prepared.control.selection.owner
       (internalDeclaredEntryInputNames record) = some reads)
     (footprint : prepared.footprint = internalDeclaredEntryFootprint prepared.control reads) :
     prepareInternalDeclaredEntry? program state (.enterScope id origin input entry scope) = some prepared := by

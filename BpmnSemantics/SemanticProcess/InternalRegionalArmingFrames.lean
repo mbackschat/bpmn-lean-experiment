@@ -13,6 +13,8 @@ import BpmnSemantics.SemanticProcess.InternalRegionalRemovalAgreement
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnPositionPublication
 import BpmnSemantics.SemanticProcess.InternalRegionalReturnQuiescence
 import BpmnSemantics.SemanticProcess.InternalRegionalTerminationPositionPublication
+import BpmnSemantics.SemanticProcess.InternalRegionalPairExecutionFrame
+import BpmnSemantics.SemanticProcess.InternalOccurrenceRegionLaws
 public import BpmnSemantics.SemanticProcess.InternalPreparedArming
 public import BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import all BpmnSemantics.SemanticProcess.ActivityDataInputOutputRuntime
@@ -378,6 +380,96 @@ theorem RegionalArmingRetirement.anchor_absent {before after : RuntimeState}
   rw [absent] at previous
   contradiction
 
+/-- CSD-PREPARE-01: a regional step disposes only frames of its region, so a frame owned by a live
+occurrence outside the region survives it. -/
+private theorem preparedRegional_scope_frames (program : Program) (before after : RuntimeState)
+    (hosting : SemanticId) (operation : SemanticOperation) (prepared : PreparedInternalRegional)
+    (owner : ScopeOccurrenceId) (valid : runtimeStateWellFormed program hosting before = true)
+    (running : before.control = .running hosting) (afterRunning : after.control = .running hosting)
+    (ownerLive : owner ∈ before.scopeOccurrences.map (·.id))
+    (found : prepareInternalRegional? program before operation = some prepared)
+    (applied : applyPreparedInternalRegional? program before prepared = some after)
+    (outside : prepared.region.contains owner = false) :
+    after.variables.scopes.filter (fun frame => decide (frame.owner = owner)) =
+      before.variables.scopes.filter (fun frame => decide (frame.owner = owner)) := by
+  have position : runtimePositionValid program hosting before = true := by
+    simp only [runtimeStateWellFormed, Bool.and_eq_true, and_assoc] at valid
+    exact valid.1
+  have fields := preparedRegional_execution_fields program before after hosting operation prepared valid running
+    afterRunning found applied
+  obtain ⟨snapshots, _, _, closed, derived, _, _⟩ :=
+    prepareInternalRegional_facts program before operation prepared found
+  have selected := (ownershipClosedSelection_facts program before operation prepared.selection closed).1
+  obtain ⟨actual, fired, executed⟩ := prepareInternalRegional_executes program before operation prepared found
+  have same : actual = after := Option.some.inj (executed.symm.trans applied)
+  subst actual
+  have cancellationFrame (disposition : SelectedScopeDisposition) :
+      (cancelScopeSubtree before prepared.selection.root.id disposition).variables.scopes.filter
+          (fun frame => decide (frame.owner = owner)) =
+        before.variables.scopes.filter (fun frame => decide (frame.owner = owner)) := by
+    have mask := regional_cancellation_mask program before hosting hosting position running
+      prepared.selection.root.id prepared.region derived owner ownerLive
+    change (before.variables.scopes.filter _).filter _ = _
+    apply regional_filter_retained
+    intro frame _ seen
+    have identity : frame.owner = owner := of_decide_eq_true seen
+    cases disposition <;> simp only [identity, ← mask, outside, Bool.not_false, Bool.or_true]
+  cases operation with
+  | returnProcess id origin process definition output data =>
+      have empty := prepareInternalRegional_return_data_empty program before id origin process definition output data prepared found
+      subst data
+      obtain ⟨returned, record, root, returnedApply, kind, rootEq, rootLive, parentless, _, update, _⟩ :=
+        preparedReturn_quiescent_fields program before hosting id origin process definition output prepared valid found
+      have resultEq := Option.some.inj (returnedApply.symm.trans applied)
+      rw [resultEq] at update
+      obtain ⟨chosen, chosenKind, chosenRoot, _⟩ :=
+        regionalSelection_return_record program before id origin process definition output prepared.selection selected
+      have recordEq : chosen = record := by simpa [kind] using chosenKind.symm
+      subst chosen
+      have mask := regional_called_tree_mask program before hosting hosting position running root prepared.region
+        (by simpa only [rootEq] using derived) rootLive parentless owner ownerLive
+      rw [update]
+      change (before.variables.scopes.filter _).filter _ = _
+      apply regional_filter_retained
+      intro frame _ seen
+      have identity : frame.owner = owner := of_decide_eq_true seen
+      simp only [identity, ← rootEq.trans chosenRoot, mask, outside, Bool.not_false]
+  | completeScope id origin definition output =>
+      have rootInside : prepared.region.contains prepared.selection.root.id = true :=
+        List.contains_iff_mem.mpr (deriveInternalOccurrenceRegion_spec before _ _ derived).2.1
+      have retained : (before.variables.scopes.filter fun frame => decide (frame.owner ≠ prepared.selection.root.id)).filter
+          (fun frame => decide (frame.owner = owner)) =
+            before.variables.scopes.filter (fun frame => decide (frame.owner = owner)) := by
+        apply regional_filter_retained
+        intro frame _ seen
+        have identity : frame.owner = owner := of_decide_eq_true seen
+        apply decide_eq_true
+        intro root
+        rw [← identity, root, rootInside] at outside
+        contradiction
+      cases kind : prepared.selection.kind <;> simp only [kind] at fields <;> try exact fields.elim
+      rename_i withdrawal
+      cases parent : prepared.selection.root.parent <;> cases output <;> simp only [parent] at fields <;>
+        try exact fields.elim
+      cases withdrawal <;> simp only at fields <;> rw [fields] <;> exact retained
+  | «throwError» id origin input error handler =>
+      have raw : throwErrorState? before input error handler = some after := by
+        simp only [fire?, snapshots] at fired
+        exact fired
+      obtain ⟨_, _, _, update⟩ := regionalSelection_error_execution program before after
+        id origin input error handler prepared.selection selected raw
+      rw [update]
+      exact cancellationFrame .remove
+  | terminateScope id origin input definition =>
+      have raw : terminateScopeState? program before id origin input definition = some after := by
+        simp only [fire?, snapshots] at fired
+        exact fired
+      obtain ⟨chosen, _⟩ := regionalSelection_terminate_owner program before id origin input definition prepared.selection selected
+      simp only [terminateScopeState?, chosen, Option.some.injEq] at raw
+      subst after
+      exact cancellationFrame .retain
+  | _ => simp [selectInternalRegional?] at selected
+
 theorem RegionalArmingRetirement.available {before after : RuntimeState}
     (frame : RegionalArmingRetirement before after) (write : InternalArmingWrite)
     (available : write.available before = true) : write.available after = true := by
@@ -398,8 +490,8 @@ theorem prepareInternalArm_retirement_frame (program : Program) (before after : 
     (time : after.logicalTimeMs = before.logicalTimeMs)
     (process : after.variables.process = before.variables.process)
     (effectInputs : match operation with
-      | .awaitEffect .. => ∀ mappings, evaluateEffectInputs? program after patch.owner mappings =
-          evaluateEffectInputs? program before patch.owner mappings
+      | .awaitEffect _ _ _ _ effect _ => evaluateEffectInputs? program after patch.owner effect.inputMappings =
+          evaluateEffectInputs? program before patch.owner effect.inputMappings
       | _ => True)
     (inputReads : scopedEffectInputReads? program after patch.owner operation =
       scopedEffectInputReads? program before patch.owner operation) :
@@ -534,8 +626,29 @@ theorem prepareInternalArming_after_independent_regional (program : Program)
     simpa only [onlyTokenOwner?, tokenOwners, frame.2.2.2.2] using facts.1
   have live : exactLiveOccurrence after arm.scopeFramePatch.owner = true := by
     simpa only [exactLiveOccurrence, frame.2.2.2.1] using facts.2.1
+  have occurrenceFrame : ∀ id, regional.region.contains id = false →
+      after.scopeOccurrences.filter (fun scope => decide (scope.id = id)) =
+        before.scopeOccurrences.filter (fun scope => decide (scope.id = id)) := fun id outside =>
+    (preparedRegional_control_filters program before after arm.scopeFramePatch.runtimeInstanceId regionalOperation
+      regional valid facts.2.2 regionalFound applied (fun scope => decide (scope.id = id)) (fun _ => false)
+      (fun _ => false)
+      (by
+        intro scope _ seen
+        have same : scope.id = id := by simpa using seen
+        simpa [same] using outside)
+      (by simp) (by simp) (fun _ _ _ _ => rfl)
+      (arming_regional_control_not_written regional.footprint arm independent)).2.2.2.1
   cases arm with
   | ordinary operation patch =>
+    have readOutside : ∀ id, .scopeOccurrence id ∈ (footprintOfPatch patch).reads →
+        regional.region.contains id = false := by
+      intro id member
+      have conflict := arming_regional_read_separation regional.footprint
+        (.ordinary operation patch) independent _ _
+        (regionalStateFootprint_region_write before regional.selection regional.region regional.footprint
+          (prepareInternalRegional_facts program before regionalOperation regional regionalFound).2.2.2.2.2.1) member
+      simpa [liftRegionalStateAtom, regionalStateAtomsConflict, regionalOwnsAtom,
+        regionalOwnsOrdinaryAtom] using conflict
     have noPopulation : .activityPopulation ∉ (footprintOfPatch patch).reads := by
       intro member
       have conflict := arming_regional_read_separation regional.footprint
@@ -544,8 +657,11 @@ theorem prepareInternalArming_after_independent_regional (program : Program)
           (prepareInternalRegional_facts program before regionalOperation regional regionalFound).2.2.2.2.2.1) member
       simp [liftRegionalStateAtom, regionalStateAtomsConflict, regionalOwnsAtom,
         regionalOwnsOrdinaryAtom] at conflict
-    have inputs := prepared_arm_process_input_frames program before after operation patch armFound
-      noPopulation frame.2.2.1
+    have inputs := prepared_arm_input_frames program before after operation patch armFound
+      noPopulation frame.2.2.1 fun id member live =>
+        ⟨occurrenceFrame id (readOutside id member),
+          preparedRegional_scope_frames program before after _ regionalOperation regional id valid facts.2.2
+            (frame.1.trans facts.2.2) live regionalFound applied (readOutside id member)⟩
     exact prepareInternalArm_retirement_frame program before after operation patch armFound
       retirement owned live frame.1 frame.2.1 frame.2.2.1
       (by cases operation <;> exact inputs.1) inputs.2

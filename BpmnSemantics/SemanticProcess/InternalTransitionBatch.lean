@@ -319,7 +319,10 @@ theorem prepared_transition_pair (program : Program) [InterruptionInvocationsRoo
             right left rightPrepared.1 leftPrepared canonical
             (localControlStateFootprintsNonInterfering_symm _ _ independent)
           exact ⟨⟨pair.2.1, rightPrepared.2⟩, pair.1, pair.2.2.symm⟩
-      | declaredEntry _ => exact (independent : False).elim
+      | declaredEntry right =>
+          have pair := prepared_declared_entry_arming_pair program state right.control.selection.operation right left
+            rightPrepared leftPrepared canonical (localControlStateFootprintsNonInterfering_symm _ _ independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | regional right =>
           have pair := prepared_regional_transition_pair program state instanceId right (.arming left)
             programValid stateValid rightPrepared leftPrepared (PreparedInternalTransition.independent_symm independent)
@@ -421,8 +424,11 @@ theorem prepared_transition_pair (program : Program) [InterruptionInvocationsRoo
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | declaredEntry left =>
       cases right with
-      | messageTask _ _ | boundedScope _ _ | timerTask _ _ | arming _ | regional _ | ordinaryEnd _
+      | messageTask _ _ | boundedScope _ _ | timerTask _ _ | regional _ | ordinaryEnd _
       | mergeInput _ => exact (independent : False).elim
+      | arming right =>
+          exact prepared_declared_entry_arming_pair program state left.control.selection.operation left right
+            leftPrepared rightPrepared canonical independent
       | localControl right =>
           exact prepared_declared_entry_local_control_pair program state left.control.selection.operation
             right.operation left right leftPrepared rightPrepared canonical independent

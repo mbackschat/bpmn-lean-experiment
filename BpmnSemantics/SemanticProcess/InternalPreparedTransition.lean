@@ -167,8 +167,10 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .scopeCreation first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .declaredEntry first, .localControl second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .localControl first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .declaredEntry first, .arming second => localControlStateFootprintsNonInterfering first.footprint second.stateFootprint = true
+  | .arming first, .declaredEntry second => localControlStateFootprintsNonInterfering first.stateFootprint second.footprint = true
   -- CSD-PREPARE-01's batch premise: a declared entry's commutation is established only beside scope
-  -- creations and local control, so every other companion refuses the batch.
+  -- creations, local control and armings, so every other companion refuses the batch.
   | .declaredEntry _, _ | _, .declaredEntry _ => False
   | .messageTask .., _ | _, .messageTask .. | .boundedScope .., _ | _, .boundedScope ..
   | .timerTask .., _ | _, .timerTask .. | .regional _, _ | _, .regional _ | .ordinaryEnd _, _ | _, .ordinaryEnd _ =>
