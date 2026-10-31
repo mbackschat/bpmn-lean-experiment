@@ -240,7 +240,7 @@ theorem ParallelScopeReplay.ContinuationCommandHistory.live_binding (program : P
     exact replay_binding program analysis analyzed parent target before after record
       (history.structural_frame program owner parent selected initial before earlier frame) (ih prior) kind replayed survives
   | @command before after earlier rest stimulus history replayed completion kinds outside ih =>
-    simp only [committedTransitions?, selected, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at replayed
+    simp only [committedTransitions?, selected, Bool.true_or, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at replayed
     cases snapshot : program.compensationEventSubProcessSnapshots with
     | some value => simp [snapshot] at replayed
     | none =>

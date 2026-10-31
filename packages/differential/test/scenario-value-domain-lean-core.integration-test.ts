@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { isDeepStrictEqual } from "node:util";
-import { CanonicalObservationKind, CommandOutcome, EffectExecutionResultKind, ScenarioOutcomeKind, StimulusKind, VariableValueKind, applyStimulusWithTrace, compareCanonicalStrings, initialState, isWellFormedRuntimeState, observeStableState,
-  projectOpenFlowNodeOccurrences, replayCommittedTransitions, runScenario, runtimeStateDefects, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
+import { CanonicalObservationKind, CommandOutcome, EffectExecutionResultKind, ScenarioOutcomeKind, StimulusKind, VariableValueKind, applyStimulusWithTrace, compareCanonicalStrings, initialState,
+  runScenario, runtimeStateDefects, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
 import type { ScenarioResult } from "@bpmn-lean/semantic-core";
 import { assessBpmnProcessAdmission, BpmnProcessAdmissionResultKind } from "@bpmn-lean/temporal-testkit";
 import { parseWireJson } from "../../../scripts/strict-json.ts";
@@ -13,6 +13,7 @@ import { domainCases, selectedProfileContexts, values } from "./scenario-value-d
 import type { DomainCase } from "./scenario-value-domain-cases.ts";
 import { assertProfilesEnrolled } from "./scenario-value-domain-expectations.ts";
 import { runLeanDriver } from "./semantic-differential-targets.ts";
+import { coreCommandPublications } from "./core-command-publications.ts";
 
 test("every registered profile states its expected value domain on every surface", async () => {
   assertProfilesEnrolled((await selectedProfileContexts()).keys());
@@ -150,29 +151,13 @@ function emitterBindsDefinition({ scenario, context }: DomainCase): boolean {
 
 function publications(input: DomainCase) {
   if (!input.supported) return [];
-  const start = input.scenario.stimuli[0]!;
-  assert.ok("instanceId" in start);
-  const program = input.context.semanticProcess;
-  let state = initialState;
-  const records = [];
-  for (const stimulus of input.scenario.stimuli) {
-    const before = state;
-    const traced = applyStimulusWithTrace(program, before, stimulus);
-    state = traced.result.state;
-    if (stimulus.commandId.startsWith("refuse-") || stimulus.commandId.startsWith("late-")) {
-      assert.equal(traced.result.outcome, CommandOutcome.Rejected);
-      assert.deepEqual(state, before);
-      assert.deepEqual(traced.committedTransitions, []);
+  const records = coreCommandPublications(input.context.semanticProcess, input.scenario);
+  for (const record of records) {
+    if (record.commandId.startsWith("refuse-") || record.commandId.startsWith("late-")) {
+      assert.equal(record.outcome, CommandOutcome.Rejected);
+      assert.ok(record.stateUnchanged);
+      assert.equal(record.publication, null);
     }
-    records.push({ commandId: stimulus.commandId, outcome: traced.result.outcome, stateUnchanged: isDeepStrictEqual(state, before),
-      stateWellFormed: isWellFormedRuntimeState(program, start.instanceId, state),
-      traceReplays: isDeepStrictEqual(replayCommittedTransitions(program, before, traced.committedTransitions), state),
-      publication: traced.committedTransitions.length === 0 ? null : { transitions: traced.committedTransitions, current: traced.currentPositions },
-      lifecycles: traced.flowNodeOccurrenceLifecycles, openOccurrences: projectOpenFlowNodeOccurrences(program, state) });
-    // Lean's `commandPublicationsJson` publishes no command after one the scenario cannot continue from.
-    const continues = (traced.result.outcome === CommandOutcome.Committed || traced.result.outcome === CommandOutcome.Rejected) &&
-      !traced.result.internalStepBoundExceeded && !traced.result.ambiguousInternalChoice && observeStableState(program, state) !== null;
-    if (!continues) break;
   }
   return records;
 }

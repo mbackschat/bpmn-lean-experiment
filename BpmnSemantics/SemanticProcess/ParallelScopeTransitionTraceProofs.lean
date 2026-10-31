@@ -87,15 +87,17 @@ theorem applyStimulusTraced_parallel_scope_record_declaration
   subst actual
   exact ParallelScopeReplay.replayed_declaration_scope program pair.2.1 pair.2.2 record replayed
 
-/-- Profiles outside PMIS retain the previous emitted-trace replay conclusion without additional runtime assumptions. -/
+/-- Profiles outside PMIS and merge-target addressing retain the previous emitted-trace replay conclusion without
+additional runtime assumptions. -/
 theorem applyStimulusTraced_emitted_trace_replays_of_unselected_parallel_scope
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
     (unselected : ParallelScopeStart.programSelected program = false)
+    (other : program.identity.semanticProfile.value ≠ "cibseven-2.2.0-embedded-subprocess-completion-draft")
     (published : (applyStimulusTraced closureLimit program state stimulus).committedTransitions ≠ []) :
     replayCommittedTransitions program state
         (applyStimulusTraced closureLimit program state stimulus).committedTransitions =
       some (applyStimulus closureLimit program state stimulus).state := by
-  rw [← ParallelScopeReplay.committedTransitions_of_unselected program state _ unselected]
+  rw [← ParallelScopeReplay.committedTransitions_of_unselected program state _ unselected other]
   exact applyStimulusTraced_emitted_trace_replays closureLimit program state stimulus published
 
 end BpmnSemantics.SemanticProcess

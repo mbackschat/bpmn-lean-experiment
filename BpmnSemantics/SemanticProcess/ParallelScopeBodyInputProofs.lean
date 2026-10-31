@@ -551,7 +551,7 @@ private theorem history_locals (program : Program)
   | @internalStep before after earlier record history replayed kind outside ih =>
     exact replay_locals program before after record kind replayed ih
   | @command before after earlier rest stimulus history replayed completion kinds outside ih =>
-    simp only [committedTransitions?, selected, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at replayed
+    simp only [committedTransitions?, selected, Bool.true_or, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at replayed
     cases snapshot : program.compensationEventSubProcessSnapshots with
     | some value => simp [snapshot] at replayed
     | none =>

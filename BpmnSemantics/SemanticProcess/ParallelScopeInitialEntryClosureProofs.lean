@@ -137,7 +137,7 @@ private theorem ordered_batch_replay (program : Program) (members : List Interna
       obtain ⟨tailReplay, tailBody⟩ := ih next tail nextValid nextAbsent (by simpa using length) (by simpa using last) tailSteps
       have selected : ParallelScopeStart.programSelected program = true := by simp [ParallelScopeStart.programSelected, profile]
       refine ⟨?_, ?_⟩
-      · simp only [List.map_cons, metadata, internalTransitions?, internalTransition?, selected, replayed,
+      · simp only [List.map_cons, metadata, internalTransitions?, internalTransition?, occurrenceAddressed_of_selected program _ selected, replayed,
           ↓reduceIte, bind, Option.bind_some, tailReplay]
       · intro transition member
         simp only [List.map_cons, metadata, List.mem_cons] at member

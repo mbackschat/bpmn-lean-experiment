@@ -462,7 +462,7 @@ theorem applyStimulusTraced_erases_to_applyStimulus
   dsimp only
   exact evaluateStimulus_result_eq_applyStimulus closureLimit program state stimulus
 
-/-- Every nonempty emitted trace replays through its selected account. PMIS uses exact-owner occurrence execution; this theorem makes no legacy ProgramStep claim for that profile. -/
+/-- Every nonempty emitted trace replays through its selected account. PMIS and merge-target records use exact-owner occurrence execution; this theorem makes no legacy ProgramStep claim for them. -/
 theorem applyStimulusTraced_emitted_trace_replays
     (closureLimit : Nat) (program : Program) (state : RuntimeState) (stimulus : Stimulus)
     (published :

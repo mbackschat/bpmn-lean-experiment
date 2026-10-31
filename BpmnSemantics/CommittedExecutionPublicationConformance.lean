@@ -114,7 +114,7 @@ theorem admitted_start_trace_replays_to_exact_result :
         startStimulus).committedTransitions =
     some (applyStimulus scenarioClosureLimit sequentialProgram initialState startStimulus).state
   exact applyStimulusTraced_emitted_trace_replays_of_unselected_parallel_scope scenarioClosureLimit sequentialProgram
-    initialState startStimulus (by decide +kernel) (by decide +kernel)
+    initialState startStimulus (by decide +kernel) (by decide +kernel) (by decide +kernel)
 
 /-- Drop, order, multiplicity, ID, kind, origin, and dynamic-owner corruption cannot replay as the committed result. -/
 theorem trace_corruption_is_not_replay_of_committed_result :
