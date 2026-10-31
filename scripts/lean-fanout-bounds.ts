@@ -49,6 +49,9 @@ const kernelBodyExposure = {
   body: "the body-edit ratchet exempted the kernel until F2 of the cold closure review (2026-10-31); this kernel module still exports its operation bodies through its `@[expose]` section, so a body edit rebuilds its public cone, recorded so that it only shrinks",
   abbrevExposure: "the exposed-definition allowance exempted the kernel until F2 of the cold closure review (2026-10-31); Lean always exports an abbrev's body, so an edit of it is an interface edit of this kernel module",
   instanceExposure: "the exposed-definition allowance exempted the kernel until F2 of the cold closure review (2026-10-31); a non-Prop instance's body is exported, so an edit of it is an interface edit of this kernel module",
+  valueEquality: "the body-edit ratchet exempted the kernel until F2 of the cold closure review (2026-10-31); kernel decisions over values reduce this module's hand-written `DecidableEq` bodies, and a kernel-decided fixture and the JSON decoder's bound check use its six size functions, so hiding the size functions takes stage 1's exact `import all` repair, which PLAN schedules for the module's next edit",
+  pmiOperations: "the body-edit ratchet exempted the kernel until F2 of the cold closure review (2026-10-31); 15 modules unfold or rewrite this module's five operations, so hiding them takes stage 1's rewrite conversion and exact `import all` repair, which PLAN schedules for the module's next edit",
+  typesOnly: "the body-edit ratchet exempted the kernel until F2 of the cold closure review (2026-10-31); this module holds only types with derived instances, so each of its edits is an interface edit and its body-edit fanout is its interface fanout",
 } as const;
 
 /** Why a kernel module that hides its operation bodies (F2 of the cold closure review, stages 1 and 2, 2026-10-31) raised a bound. */
@@ -603,8 +606,8 @@ export const leanBodyEditDefaultBound = 10;
  * Re-seeded on 2026-10-29 at the graph of the hidden-bodies conversion (owner decisions 1-3) under the same rule.
  */
 export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
-  { module: "BpmnSemantics.BusinessValue", bound: 1106, raisedFrom: 10, raised: kernelBodyExposure.body },
-  { module: "BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract", bound: 888, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.BusinessValue", bound: 1106, raisedFrom: 10, raised: kernelBodyExposure.valueEquality },
+  { module: "BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract", bound: 888, raisedFrom: 10, raised: kernelBodyExposure.pmiOperations },
   { module: "BpmnSemantics.PrivateEquationLemmas", bound: 784, raisedFrom: 10, raised: "the hidden-bodies conversion (owner decisions 1-3, 2026-10-29): the modules that rewrite with a hidden definition `meta import` this helper to declare its equation lemmas privately, and a `meta import` loads the helper's whole compiled closure, so a body edit here reaches every loader and its `import all` loaders" },
   { module: "BpmnSemantics.SemanticProcess.RuntimeState", bound: 666, raisedFrom: 10, raised: kernelBodyHiding.body },
   { module: "BpmnSemantics.SemanticProcess.ActivityOccurrence", bound: 624 },
@@ -837,7 +840,7 @@ export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.ParallelScopeCompletionPublication", bound: 21, raisedFrom: 10, raised: publicMetaReexport.body },
   { module: "BpmnSemantics.SemanticProcess.ScopeAncestryLaws", bound: 21 },
   { module: "BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs", bound: 21 },
-  { module: "BpmnSemantics.SemanticProcess.VariableMappingContract", bound: 21, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.SemanticProcess.VariableMappingContract", bound: 21, raisedFrom: 10, raised: kernelBodyExposure.typesOnly },
 ];
 
 /**
