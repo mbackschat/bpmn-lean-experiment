@@ -794,8 +794,9 @@ export function leanOpeningImportLines(sources: LeanSources): number {
  * above the default. Recorded findings come in list order, unlisted ones after them in fanout order.
  *
  * A `kernel` module is exempt, as item 6 of the build modularity specification declares: every module imports
- * the kernel types, so their fanout grows with the library by design. A kernel module carrying a bound, or a
- * kernel name that is no scanned module, is reported after the bounds' findings.
+ * the kernel types, so their fanout grows with the library by design. Only the interface ratchet passes a kernel,
+ * since an operation-body edit need not rebuild every family. A kernel module carrying a bound, or a kernel name
+ * that is no scanned module, is reported after the bounds' findings.
  */
 export function leanFanoutViolations(fanouts: ReadonlyMap<string, ReadonlyArray<string>>,
   bounds: ReadonlyArray<LeanFanoutBound>, defaultBound: number, kernel: ReadonlyArray<string> = [],

@@ -1,8 +1,8 @@
 /**
  * The recorded bounds of [the Lean fanout ratchet](./lean-fanout.test.ts). It counts, as
  * [`leanFanouts`](./lean-fanout.ts) finds them, only importers the semantic root builds, and exempts the declared
- * kernel; every module listed here may keep at most its recorded number of such importers, and every other module
- * at most `leanFanoutDefaultBound` (required item 6 of
+ * kernel from this interface ratchet only; every module listed here may keep at most its recorded number of such
+ * importers, and every other module at most `leanFanoutDefaultBound` (required item 6 of
  * [the build modularity specification](../docs/LEAN-BUILD-MODULARITY-PROPOSAL.md#contract)). The bounds are the
  * counts plus a tenth, at least ten, of the 2026-10-25 graph, tightened on 2026-10-26 after each module re-exported
  * only the modules its public declarations name, and re-derived the same day once the count learned that an
@@ -42,6 +42,13 @@ const realizedLeakRecord = {
 /** Why the owner modules' new `meta import`s of the `privateEquations` helper (#55, 2026-10-30) raised a hidden-edit bound. */
 const helperMetaImports = {
   hidden: "37 owner modules and one fixture newly `meta import` the helper to declare their definitions' generated lemmas privately (#55, 2026-10-30), so a hidden edit of the helper reaches them",
+} as const;
+
+/** Why a kernel module, which the body-edit ratchet exempted until F2 of the cold closure review (2026-10-31), records a bound. */
+const kernelBodyExposure = {
+  body: "the body-edit ratchet exempted the kernel until F2 of the cold closure review (2026-10-31); this kernel module still exports its operation bodies through its `@[expose]` section, so a body edit rebuilds its public cone, recorded so that it only shrinks",
+  abbrevExposure: "the exposed-definition allowance exempted the kernel until F2 of the cold closure review (2026-10-31); Lean always exports an abbrev's body, so an edit of it is an interface edit of this kernel module",
+  instanceExposure: "the exposed-definition allowance exempted the kernel until F2 of the cold closure review (2026-10-31); a non-Prop instance's body is exported, so an edit of it is an interface edit of this kernel module",
 } as const;
 
 /** Why a module whose `OperationAllowed` keeps sparse case splits (owner-delegated workaround, 2026-10-30) raised a bound. */
@@ -585,6 +592,19 @@ export const leanBodyEditDefaultBound = 10;
  * Re-seeded on 2026-10-29 at the graph of the hidden-bodies conversion (owner decisions 1-3) under the same rule.
  */
 export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
+  { module: "BpmnSemantics.BusinessValue", bound: 1106, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.Contract", bound: 1105, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.SemanticProcess.UserTaskMetadata", bound: 1105, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.Scenario", bound: 1104, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.SemanticProcess.ActivityDataContract", bound: 1098, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.SemanticProcess.CallDataContract", bound: 1096, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.SemanticProcess.CorrelationScalarPath", bound: 1096, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.CheckedProcessContract", bound: 1095, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.SemanticProcessContract", bound: 1082, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.WireNatural", bound: 1056, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.SemanticProcess.Data", bound: 1037, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.SemanticProcess.RuntimeState", bound: 1036, raisedFrom: 10, raised: kernelBodyExposure.body },
+  { module: "BpmnSemantics.SemanticProcess.ParallelMultiInstanceContract", bound: 888, raisedFrom: 10, raised: kernelBodyExposure.body },
   { module: "BpmnSemantics.PrivateEquationLemmas", bound: 784, raisedFrom: 10, raised: "the hidden-bodies conversion (owner decisions 1-3, 2026-10-29): the modules that rewrite with a hidden definition `meta import` this helper to declare its equation lemmas privately, and a `meta import` loads the helper's whole compiled closure, so a body edit here reaches every loader and its `import all` loaders" },
   { module: "BpmnSemantics.SemanticProcess.ActivityOccurrence", bound: 624 },
   { module: "BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration", bound: 554 },
@@ -593,6 +613,7 @@ export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.GraphValidation", bound: 548 },
   { module: "BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage", bound: 539 },
   { module: "BpmnSemantics.SemanticProcess.ProgramStructuralValidation", bound: 536 },
+  { module: "BpmnSemantics.SemanticProcess.ValueDomain", bound: 535, raisedFrom: 10, raised: kernelBodyExposure.body },
   { module: "BpmnSemantics.SemanticProcess.RuntimePositionValidity", bound: 527 },
   { module: "BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission", bound: 527 },
   { module: "BpmnSemantics.SemanticProcess.RuntimeStateWellFormed", bound: 507 },
@@ -805,6 +826,7 @@ export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.ParallelScopeCompletionPublication", bound: 21, raisedFrom: 10, raised: publicMetaReexport.body },
   { module: "BpmnSemantics.SemanticProcess.ScopeAncestryLaws", bound: 21 },
   { module: "BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleFrameProofs", bound: 21 },
+  { module: "BpmnSemantics.SemanticProcess.VariableMappingContract", bound: 21, raisedFrom: 10, raised: kernelBodyExposure.body },
 ];
 
 /**
@@ -814,6 +836,8 @@ export const leanBodyEditBounds: ReadonlyArray<LeanFanoutBound> = [
  * with its reason in `raised`.
  */
 export const leanExposedDefinitionAllowance: LeanExposureAllowance = {
+  "BpmnSemantics.BusinessValue": { names: ["instance : DecidableEq BusinessValue"], raised: kernelBodyExposure.instanceExposure },
+  "BpmnSemantics.Scenario": { names: ["EffectOccurrenceId", "MessageSubscriptionId", "ScenarioRunner", "TimerOccurrenceId", "UserTaskInstanceId"], raised: kernelBodyExposure.abbrevExposure },
   "BpmnSemantics.SemanticProcess.CallActivity": { names: ["calledProcessAssociationsValid", "removeCalledProcessTree", "rootInstanceId?", "sameCallIdentity"] },
   "BpmnSemantics.SemanticProcess.CallDataAdmission": { names: ["callDataCheckpointProfileId"], raised: hiddenBodiesConversion.abbrevExposure },
   "BpmnSemantics.SemanticProcess.CallInstanceClosure": { names: ["expand"], raised: hiddenBodiesConversion.abbrevExposure },
@@ -834,4 +858,5 @@ export const leanExposedDefinitionAllowance: LeanExposureAllowance = {
   "BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission": { names: ["serialBusinessTaskProfileId"], raised: hiddenBodiesConversion.abbrevExposure },
   "BpmnSemantics.SemanticProcess.StructuredCompositionAdmission": { names: ["structuredCompositionCheckpointProfileId"], raised: hiddenBodiesConversion.abbrevExposure },
   "BpmnSemantics.SemanticProcess.TransactionSourceAdmission": { names: ["transactionCancellationCheckpointProfileId"], raised: hiddenBodiesConversion.abbrevExposure },
+  "BpmnSemantics.SemanticProcess.ValueDomain": { names: ["activityDataInputOutputUserTaskProfileId", "activityDataInputUserTaskProfileId", "activityDataOutputUserTaskProfileId", "booleanProcessDataCheckpointProfileId", "compensationSourceCheckpointProfileId", "messagePayloadCatchProfileId", "parallelUserTaskMetadataCheckpointProfileId", "portableMessagePayloadProfileId", "profileIsOneOf", "profileValueDomain", "structuredHumanWorkProfileId", "userTaskAssignmentFormMetadataProfileId", "userTaskProcessDataPreservedNotationProfileId"], raised: kernelBodyExposure.abbrevExposure },
 };

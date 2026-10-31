@@ -628,10 +628,11 @@ test("a section header Lean's grammar does not admit fails closed", () => {
 });
 
 // Bounds only shrink, and a module may keep an exposed body only through a recorded entry whose reason the bounds
-// file states; kernel type modules are exempt as for the interface ratchet.
+// file states. Unlike the interface ratchet, the kernel gets no exemption: an interface edit of a kernel type rebuilds
+// every family by design, but an edit of an operation body need not (F2 of the cold closure review, 2026-10-31).
 test("every module's body edit stays within its recorded body-edit bound", () => {
   assert.deepEqual(leanFanoutViolations(leanBodyEditFanouts(librarySources(), realizedLeaks), leanBodyEditBounds,
-    leanBodyEditDefaultBound, leanFanoutKernel, "body-edit importers"), []);
+    leanBodyEditDefaultBound, [], "body-edit importers"), []);
 });
 
 // Anti-vacuity: re-exposing one hidden hub must fail in every spelling, as the original conversion's blanket exposure
@@ -644,7 +645,7 @@ test("re-exposing a hidden hub's bodies fails the body-edit ratchet in every spe
       ? { path, source: file.source.replace(/^public section$/mu, header) }
       : file);
     const findings = leanFanoutViolations(leanBodyEditFanouts(sources, realizedLeaks), leanBodyEditBounds, leanBodyEditDefaultBound,
-      leanFanoutKernel, "body-edit importers");
+      [], "body-edit importers");
     assert.ok(findings.some((finding) => finding.startsWith("BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle: ")), header);
   }
 });
@@ -654,11 +655,10 @@ test("re-exposing a hidden hub's bodies fails the body-edit ratchet in every spe
 test("every exposed definition of a wide module is named in the reviewed allowance", () => {
   const sources = librarySources();
   const interfaceFanouts = leanFanouts(sources);
-  const kernel = new Set(leanFanoutKernel);
   const findings: string[] = [];
   for (const [module, names] of leanExposedDefinitions(sources)) {
     const allowed = new Set(leanExposedDefinitionAllowance[module]?.names ?? []);
-    if (!kernel.has(module) && (interfaceFanouts.get(module)?.length ?? 0) > leanBodyEditDefaultBound) {
+    if ((interfaceFanouts.get(module)?.length ?? 0) > leanBodyEditDefaultBound) {
       for (const name of names) if (!allowed.has(name)) findings.push(`${module}.${name}: exposed without an allowance entry`);
     }
     for (const name of allowed) if (!names.includes(name)) findings.push(`${module}.${name}: allowed but no longer exposed, so its entry must go`);
@@ -813,7 +813,7 @@ test("no recorded bound, allowance or kernel entry rises above a base commit's w
       ...(previous.leanExposedDefinitionAllowance === undefined ? []
         : unexplainedAllowanceRises(previous.leanExposedDefinitionAllowance, leanExposedDefinitionAllowance)),
       ...leanFanoutKernel.filter((module) => !previous.leanFanoutKernel.includes(module))
-        .map((module) => `${module}: joins the kernel, which exempts it from every bound; only an owner decision adds one`),
+        .map((module) => `${module}: joins the kernel, which exempts it from the interface ratchet; only an owner decision adds one`),
     ];
     findings.push(...undecidedSettingRises([
       ["leanFanoutDefaultBound", previous.leanFanoutDefaultBound, leanFanoutDefaultBound],
