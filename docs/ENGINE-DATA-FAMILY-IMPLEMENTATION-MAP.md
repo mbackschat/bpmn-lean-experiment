@@ -66,7 +66,7 @@ The implemented [nested scope-data account](capsules/NESTED-EMBEDDED-SCOPE-DATA-
 
 The [capsule receipt](capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#independent-cold-review-receipt) owns review state, and its [epistemic closure](capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#epistemic-closure) records the complete pipeline, Temporal and model-corpus gates and the full Lean gate's inherited placeholder failure.
 
-**Open.** CIB calibration of the third nesting level (`CIB-EXT-0020`); repeated scope activation through re-entry (`PC-SCOPE-02`), and concurrent scope data outside [concurrent scope data](#concurrent-scope-data); Call scope data is the [Call variable mapping](#call-variable-mapping) section. Defect: [hosted caller User Task detail](../packages/temporal-adapter/protocol/src/user-task-detail.ts) reads Process bindings only, so a frame-shadowed name shows the Process value where CIB's task variable read shows the frame's.
+**Open.** CIB calibration of the third nesting level (`CIB-EXT-0020`); repeated scope activation through re-entry (`PC-SCOPE-02`), and concurrent scope data outside [concurrent scope data](#concurrent-scope-data); Call scope data is the [Call variable mapping](#call-variable-mapping) section. Defect: [hosted caller User Task detail](../packages/temporal-adapter/protocol/src/user-task-detail.ts) reads Process bindings only, so a frame-shadowed name shows the Process value where CIB's task variable read shows the frame's; the retained [claim damage assessment](../scenarios/concurrent-scope-data/claim-damage-assessment.bpmn) is a witness, whose *Assess damage* would show `adjuster = "desk"` where CIB shows the frame's null.
 
 ## Call variable mapping
 

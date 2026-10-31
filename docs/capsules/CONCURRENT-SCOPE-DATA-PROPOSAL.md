@@ -116,7 +116,7 @@ For admitted Programs of this profile, the singleton argument below establishes 
 - the profile admits no Message, Timer or bounded-scope family;
 - regional completion, End and merge input are never co-enabled with an entry.
 
-That establishment is checked, not proved. The core asserts the premise on every committed batch of every registered schedule, and the TypeScript batch refuses any other combination as a host invariant failure. Admitting Message, Timer, interruption or wait-free paths beside data reopens it, together with the singleton argument.
+That establishment is not proved. Both languages encode the premise in prepared independence: Lean's `PreparedInternalTransition.Independent` and the core's `preparedInternalTransitionsAreIndependent` make a declared entry dependent on every companion outside declared entries, scope creations, armings and local control. The production frontier rule therefore rolls such a frontier back as an observable choice instead of committing it, and a [core test](../../packages/bpmn-source/test/concurrent-scope-data-runtime.test.ts) locks that refusal for every other family. Admitting Message, Timer, interruption or wait-free paths beside data reopens it, together with the singleton argument.
 
 The commutation proposal's scope-creation section is amended to name the declared constructor.
 
@@ -211,7 +211,7 @@ Two whole models with business purposes and one measurement model carry the witn
 | `CSD-INIT-01`, ordinary entry | The fork enters both checks in one closure. *Fire safety check*'s `result` initializes to the outer `"none"`, not to *Electrical check*'s `"pending-electrical"`, and *Summarize* shows `fireResult = "none"`. | Compiled Lean; core; pipeline | Evaluate the later-executed entry against the earlier sibling's frame. The batch runs in canonical operation order, and *Fire safety check*'s entry operation sorts after *Electrical check*'s. |
 | `CSD-INIT-01`, merge-target entry | The two *Price damage* entries follow two separate inspection commands. Each frame holds `"pending"` and the null, read from the same *Handle claim* chain. | Compiled Lean; core; pipeline | Skip the declared hook on occurrence-addressed entry. |
 | `CSD-RETIRE-01` | Both *Price damage* occurrences output `estimate` to `lastEstimate`, in both completion orders. The Process holds the later completer's value by explicit command order, and each frame is gone after its completion. | Compiled Lean; core; pipeline | Skip outputs or disposal on occurrence-addressed completion. |
-| `CSD-PREPARE-01` | The facility fork commits both prepared entries as one independent batch, without `ambiguousInternalChoice`. The core checks each prepared patch against the evaluator after every committed step of every registered schedule. | Core; compiled Lean; pipeline | Keep declared scopes out of the prepared path. |
+| `CSD-PREPARE-01` | The facility fork commits both prepared entries as one independent batch, without `ambiguousInternalChoice`. The core test compares each prepared patch with the singleton entry at that fork, and `prepareInternalDeclaredEntry_refines` proves the refinement in Lean. | Core; compiled Lean; pipeline | Keep declared scopes out of the prepared path. |
 | Arming read set | The nested arming footprint names every consulted frame, chain link and Process name, and no `.activityPopulation`. | The internal commutation census; the Lean frame law | Keep the population claim on nested arming. |
 | `NSD-WRITE-01` over the chain, `CSD-ISOLATE-01` | Each *Record findings* writes the outer `findings`, its nearest declaring owner, and its own `result`. The sibling's `result` is never visible. *Summarize* shows the last-written `findings`. | Compiled Lean; core; pipeline | Write to the innermost frame; write to the Process. |
 | `CSD-AVAILABLE-01` | *Summarize* reads both check outputs after the join without Start bindings. A model variant in which *Fire safety check* reads `${electricalResult}` makes it a required Start binding. | Source; TypeScript; a Lean law over the analysis predicate | Count a sibling branch's write as available; intersect at a Parallel join. |
@@ -219,7 +219,7 @@ Two whole models with business purposes and one measurement model carry the witn
 | `CSD-CHAIN-01` bridge | Under its three premises, occurrence-chain resolution equals definition-chain resolution. | A Lean law | Change resolution for single-occurrence chains. |
 | Preservation | Every registered `DATA` and data-free `SCOPE` scenario keeps its retained expectations. | Core; pipeline | Route a data-free Program through the nested-data arms. |
 | Capacity | The facility inspection fits every budget with escape-heavy values in every slot, and the claim assessment with ASCII values; the escape-heavy claim is refused before commit with a typed committed-state capacity failure. | Workflow component test | Count one copy of each effect argument; measure ASCII values. |
-| `CSD-ADMIT-01` | Each exclusion is refused, including a Call Activity in a data-bearing model and a re-entry cycle. The retained models compile. | Source; compiled Lean admission check | Admit a Call beside data. |
+| `CSD-ADMIT-01` | Each exclusion is refused, including a Call Activity beside one scope declaration, against the same data-free caller as an admitted control. The availability analysis refuses a cycle. The retained models compile. | Source; compiled Lean admission check; the availability analysis unit test | Admit a Call beside data. |
 
 ## Lean assurance lane
 
@@ -234,7 +234,7 @@ Evidence: the occurrence-chain mechanism and its prepared entry are proved. Admi
 - **Prepared entry.** The composed declared-entry patch re-establishes the laws listed under representation: refinement, aggregate validity, footprint frames, commutation, batch membership and unchanged publication. Each one composes the existing `apply` law with a variables-only law for the frame insertion.
 - **Frame read law.** Nested input evaluation and entry input evaluation are unchanged when the consulted frames, chain links and Process names are unchanged. It discharges the `effectInputsFrame` premise of `prepared_arm_read_frame` and the corresponding premise of the scope-creation read frames.
 
-Open, and recorded as such: there is no quantified law that an admitted Program never reaches `ambiguousInternalChoice`, and none that admitted Programs satisfy the declared entry's batch premise. The structural argument under representation and the core's check on every registered schedule support it, and the laws above make each executed patch sound.
+Open, and recorded as such: there is no quantified law that an admitted Program never reaches `ambiguousInternalChoice`, and none that admitted Programs satisfy the declared entry's batch premise. The structural argument under representation and the independence refusal support it, every registered schedule agrees across Lean, the core and Temporal, and the laws above make each executed patch sound.
 
 ## Temporal hosting and refinement preflight
 

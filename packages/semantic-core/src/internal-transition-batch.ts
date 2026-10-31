@@ -182,7 +182,6 @@ export function prepareInternalTransitionBatch(
     prepared.push(member);
   }
   if (canonicalUniqueInternalAlternatives(prepared.map(({ alternative }) => alternative)) === null) return null;
-  if (!declaredEntryBatchPremiseHolds(prepared)) return null;
   for (let left = 0; left < prepared.length; left += 1) {
     for (let right = left + 1; right < prepared.length; right += 1) {
       const first = prepared[left]!;
@@ -195,20 +194,23 @@ export function prepareInternalTransitionBatch(
 }
 
 /**
- * The declared entry's batch premise (CSD-PREPARE-01): its commutation is established only beside scope creations,
- * ordinary armings and local control, so any other companion refuses the batch rather than commit unproved order.
+ * The declared entry's batch premise (CSD-PREPARE-01), as Lean's `PreparedInternalTransition.Independent` states it: its
+ * commutation is established only beside declared entries, scope creations, ordinary armings and local control, so any
+ * other companion is dependent and the frontier rolls back as an observable choice instead of committing unproved order.
  */
-function declaredEntryBatchPremiseHolds(prepared: ReadonlyArray<PreparedInternalTransition>): boolean {
-  return !prepared.some(({ family }) => family === PreparedInternalTransitionFamily.DeclaredScopeEntry) ||
-    prepared.every(({ family }) => family === PreparedInternalTransitionFamily.DeclaredScopeEntry ||
-      family === PreparedInternalTransitionFamily.ScopeCreation || family === PreparedInternalTransitionFamily.Arming ||
-      family === PreparedInternalTransitionFamily.LocalControl);
-}
+const declaredEntryCompanions: ReadonlySet<PreparedInternalTransitionFamily> = new Set([
+  PreparedInternalTransitionFamily.DeclaredScopeEntry, PreparedInternalTransitionFamily.ScopeCreation,
+  PreparedInternalTransitionFamily.Arming, PreparedInternalTransitionFamily.LocalControl,
+]);
 
 export function preparedInternalTransitionsAreIndependent(
   left: PreparedInternalTransition,
   right: PreparedInternalTransition,
 ): boolean {
+  if ((left.family === PreparedInternalTransitionFamily.DeclaredScopeEntry && !declaredEntryCompanions.has(right.family)) ||
+      (right.family === PreparedInternalTransitionFamily.DeclaredScopeEntry && !declaredEntryCompanions.has(left.family))) {
+    return false;
+  }
   return left.family === PreparedInternalTransitionFamily.Arming && right.family === PreparedInternalTransitionFamily.Arming
     ? internalTransitionFootprintsAreIndependent(left.footprint, right.footprint)
     : internalTransitionStateFootprintsAreIndependent(left.footprint, right.footprint);

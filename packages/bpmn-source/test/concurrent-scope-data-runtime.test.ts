@@ -20,6 +20,9 @@ const { PreparedInternalTransitionFamily, applyPreparedInternalTransition, deriv
   preparedInternalTransitionsAreIndependent } = await import(
   new URL("../../semantic-core/dist/internal-transition-batch.js", import.meta.url).href) as
   typeof import("../../semantic-core/src/internal-transition-batch.ts");
+const { InternalFrontierDisposition, classifyPreparedInternalFrontier } = await import(
+  new URL("../../semantic-core/dist/internal-transition-preparation.js", import.meta.url).href) as
+  typeof import("../../semantic-core/src/internal-transition-preparation.ts");
 const { InternalTransitionStateAtomKind, deriveInternalTransitionFootprint } = await import(
   new URL("../../semantic-core/dist/internal-transition-footprint.js", import.meta.url).href) as
   typeof import("../../semantic-core/src/internal-transition-footprint.ts");
@@ -177,6 +180,34 @@ test("each prepared declared entry equals the evaluator's entry, and the two sib
   assert.deepEqual(frameReads(0), ["scope:ElectricalCheck"]);
   for (const member of prepared) assertLinksReadLive(member!.footprint.reads);
 });
+
+// Oracle: Lean's `PreparedInternalTransition.Independent`, which refuses a declared entry beside every family but declared
+// entries, scope creations, armings and local control (CSD-PREPARE-01's batch premise). The companion is the independent
+// sibling entry relabelled, because independence reads only family and footprint and no admitted Program yet offers a
+// declared entry beside another family; the frontier rule is the production path that must honour the premise.
+test("a declared entry beside any other prepared family is dependent and rolls the frontier back as an observable choice",
+  async () => {
+    const facility = await program("facility-inspection");
+    const start: Stimulus = { kind: StimulusKind.StartProcess, commandId: "start", processId: "Process_FacilityInspection",
+      instanceId: "Facility_1", initialVariables: [] };
+    const entries = ["ElectricalCheck", "FireSafetyCheck"].map(id => operationAt(facility, id, "enterScope"));
+    const state = admittedInternalPrefix(facility, initialState, start,
+      [operationAt(facility, "InspectionRequested", "initiate").id, operationAt(facility, "Inspection", "enterScope").id,
+        operationAt(facility, "ChecksFork", "duplicate").id], entries.map(({ id }) => id));
+    const inspection = state.scopeOccurrences.find(({ id }) => id.definitionScopeId === "scope:Inspection")!.id;
+    const [declared, sibling] = entries.map(operation =>
+      deriveInternalTransitionPreparation(facility, state, { operation, owner: inspection })!);
+    const refused = [PreparedInternalTransitionFamily.CallData, PreparedInternalTransitionFamily.BoundedScope,
+      PreparedInternalTransitionFamily.Regional, PreparedInternalTransitionFamily.OrdinaryEnd,
+      PreparedInternalTransitionFamily.MergeInput];
+    for (const family of refused) {
+      const companion = { ...sibling!, family } as unknown as typeof sibling;
+      assert.equal(preparedInternalTransitionsAreIndependent(declared!, companion!), false, family);
+      assert.equal(preparedInternalTransitionsAreIndependent(companion!, declared!), false, family);
+      assert.equal(classifyPreparedInternalFrontier([declared!, companion!])?.kind, InternalFrontierDisposition.ObservableChoice,
+        family);
+    }
+  });
 
 test("nested effect arming reads its precise frame, chain and Process atoms instead of the Activity population", async () => {
   const claim = await program("claim-damage-assessment");

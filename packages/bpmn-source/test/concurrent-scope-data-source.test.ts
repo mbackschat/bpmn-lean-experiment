@@ -1,7 +1,7 @@
 /**
  * CSD-ADMIT-01 and CSD-AVAILABLE-01 through the exact-bytes source path: the retained Facility inspection model compiles
  * as a data-bearing embedded completion Program on both the checked and the Program analysis, and each refusal is a
- * one-fact mutation of it, so a reader that refused every data-bearing model could not pass.
+ * one-fact mutation of an admitted control, so a reader that refused every data-bearing model could not pass.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -60,12 +60,50 @@ test("a check reading its sibling's output makes that output a required Start na
   assert.deepEqual(nestedScopeControlProgramStartNames(await admitted(xml)), ["electricalResult"]);
 });
 
-test("a Call Activity, an over-long literal and a ninth input are each refused in a data-bearing model", async () => {
+/** A root Sub-Process beside a Call of an in-document Process; `declarations` is the only difference between variants. */
+function callerBeside(declarations: string): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_Caller" targetNamespace="https://bpmn-lean.local/test">
+  <process id="Process_Caller" isExecutable="true">
+    <startEvent id="Started" />
+    <subProcess id="Prepare">${declarations}
+      <startEvent id="PrepareStarted" />
+      <userTask id="PrepareFile" />
+      <endEvent id="PrepareEnded" />
+      <sequenceFlow id="Flow_PrepareStarted" sourceRef="PrepareStarted" targetRef="PrepareFile" />
+      <sequenceFlow id="Flow_PrepareFile" sourceRef="PrepareFile" targetRef="PrepareEnded" />
+    </subProcess>
+    <callActivity id="Archive" calledElement="Process_Archive" />
+    <endEvent id="Ended" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Prepare" />
+    <sequenceFlow id="Flow_Prepared" sourceRef="Prepare" targetRef="Archive" />
+    <sequenceFlow id="Flow_Archived" sourceRef="Archive" targetRef="Ended" />
+  </process>
+  <process id="Process_Archive" isExecutable="true">
+    <startEvent id="ArchiveStarted" />
+    <userTask id="ArchiveFile" />
+    <endEvent id="ArchiveEnded" />
+    <sequenceFlow id="Flow_ArchiveStarted" sourceRef="ArchiveStarted" targetRef="ArchiveFile" />
+    <sequenceFlow id="Flow_ArchiveFile" sourceRef="ArchiveFile" targetRef="ArchiveEnded" />
+  </process>
+</definitions>`;
+}
+
+// Mirrors the Lean witness `call_beside_data_is_refused`: the data-free caller is the admitted control, so the one added
+// declaration is the refusal's only cause.
+test("a Call beside one scope declaration is refused while the same data-free caller is admitted", async () => {
+  const compileCaller = (xml: string) => compileBpmnToSemanticProcess({ bytes: new TextEncoder().encode(xml),
+    sourceId: "caller", expectedSha256: undefined, semanticProfile, sourceOverlay: null, limits: semanticProcessTestLimits });
+  const control = await compileCaller(callerBeside(""));
+  assert.equal(control.status, BpmnCompilationStatus.Accepted, JSON.stringify(control.diagnostics));
+  const declared = await compileCaller(callerBeside(
+    '<extensionElements><camunda:inputOutput><camunda:inputParameter name="file">open</camunda:inputParameter></camunda:inputOutput></extensionElements>'));
+  assert.equal(declared.status, BpmnCompilationStatus.Rejected);
+});
+
+test("an over-long literal and a ninth input are each refused in a data-bearing model", async () => {
   const xml = await facility();
   const refusals = {
-    call: replaceOnce(xml, '<endEvent id="InspectionReported" name="Inspection reported" />',
-      '<callActivity id="Archive" calledElement="Process_Archive" /><endEvent id="InspectionReported" name="Inspection reported" />')
-      .replace('targetRef="InspectionReported" />', 'targetRef="Archive" /><sequenceFlow id="Flow_Archived" sourceRef="Archive" targetRef="InspectionReported" />'),
     literal: replaceOnce(xml, '<camunda:inputParameter name="findings">open</camunda:inputParameter>',
       `<camunda:inputParameter name="findings">${"x".repeat(1025)}</camunda:inputParameter>`),
     declarations: replaceOnce(xml, '<camunda:inputParameter name="findings">open</camunda:inputParameter>',
