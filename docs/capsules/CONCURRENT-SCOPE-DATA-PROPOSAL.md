@@ -264,6 +264,17 @@ Acceptance: Lean, core and pipeline agree on every scenario of this profile and 
 - the clause of `PC-SCOPE-02` that two live same-definition occurrences never share mutable locals;
 - the `PC-DATA-04` prerequisite of `PC-SCOPE-01`, for its nested scopes with concurrent mixed activities.
 
+Closure gates, 2026-10-31:
+- **Green at `14cbc55a`:**
+  - the full Lean library;
+  - the Lean checks;
+  - the complete pipeline, with all 140 registered cases agreeing across Lean, the core and Temporal. Its 110-second warm run is within the 182-second budget but over the 70-second soft feedback target;
+  - composition parity;
+  - Lean/core publication agreement on every registered schedule.
+- **Green at `afbbaae6`:** the runtime stage, including the CIB oracle and the [calibration probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConcurrentScopeDataProbeTest.java), and the serial Temporal stage.
+- **Temporal stage:** it failed only on the recorded [TD-001](../TEMPORAL-DEFECTS-LEDGER.md#td-001-query-loss-during-run-eviction) recurrence; the failing file alone passes.
+- **Corrected during closure:** the pipeline stage first exposed that Lean published nothing for merge-target records, a defect in the [concurrent embedded activations](CONCURRENT-EMBEDDED-ACTIVATIONS-SPEC.md) replay. `14cbc55a` corrected it.
+
 ## Common-mode risks
 
 - **Chain walk.** Both languages could share a wrong chain walk, for example one that stops early at a merge target's parent. The two-level claim model separates it, and the CIB calibration adds an independent oracle.

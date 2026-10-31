@@ -93,18 +93,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: implement the approved [concurrent scope data proposal](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md), primary `PC-DATA-04` with `PC-SCOPE-02` and `PC-SCOPE-01`, resumed after the [build modularity](LEAN-BUILD-MODULARITY-SPEC.md) closure. Multi-Instance closure stays held at qualification. Pull request #38 is the owner's to land.
+Current task: close the [concurrent scope data proposal](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md), primary `PC-DATA-04` with `PC-SCOPE-02` and `PC-SCOPE-01`. Multi-Instance closure stays held at qualification. Pull request #38 is the owner's to land.
 
-Deliverable: the family through registration and its closure review, built under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
+Deliverable: the family's closure review, its correction audit and the graduation of the proposal to a specification, under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
 
 Acceptance blockers: none recorded.
 
-Current result: occurrence-chain resolution and the Program-gated scope data admission (CSD-1, CSD-2) are green in TypeScript and Lean (`99cb3861`), and the core prepares declared entries and frames merge-target scopes (`2d8db0e7`). The build modularity specification graduated with its [measured residual](LEAN-BUILD-MODULARITY-SPEC.md#acceptance): a CSD-3 Lean commit still rebuilds about 450 modules (fan-out model, 2026-10-31).
+Current result: CSD-1 to CSD-4 are implemented in Lean and the core, registered, calibrated on CIB and measured against every hosted budget. Every closure gate the [capsule](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md#evidence-and-acceptance) lists is green except the Temporal stage's TD-001 recurrence. `14cbc55a` corrected Lean's publication replay of merge-target records, which the pipeline exposed, and now compares Lean and core publications on every registered schedule.
 
-Effort budget: 16 hours of working time to family closure; stop and reassess at the limit.
+Effort budget: 16 hours of working time to family closure, nearly spent; stop and reassess at the limit.
 
-Next action: CSD-3 in Lean, the merge-target hooks, prepared declared entry and arming read atoms that `2d8db0e7` added to the core; then CSD-4 models, scenarios and registration.
+Next action: the cold closure review of the committed closure target, then graduation; afterwards the hub fix below.
 
-Oracle: a Parallel fork into two declaring Sub-Processes that rolls back as `ambiguousInternalChoice`, or a `DATA` profile scenario whose committed states change.
+Oracle: the closure verdict and, for each required finding, its correction audit.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
