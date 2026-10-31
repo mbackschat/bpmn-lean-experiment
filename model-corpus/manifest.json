@@ -903,6 +903,89 @@
       }
     },
     {
+      "id": "claim-damage-assessment-concurrent-pricing",
+      "title": "Assess claim damage",
+      "businessPurpose": "Inspect the vehicle and the property in parallel, price the damage separately for each finished inspection with its own estimate and adjuster so two pricings never share data, fetch rates for each estimate through an automated rate lookup, record the latest estimate on the claim and review the claim once both pricings have finished.",
+      "cloneFamily": "claim-damage-assessment-concurrent-pricing",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/concurrent-scope-data/claim-damage-assessment.bpmn",
+        "sha256": "25b1d522b7233f3bd398f6620a6d2ab448eec71124b33a344c56de3a5ff95cb8",
+        "scenarioRelativePath": "scenarios/concurrent-scope-data/claim-fetch-one-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "concurrent-scope-data-claim-fetch-one-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The per-occurrence pricing data is protected by the execution pipeline but not yet by a production browser journey."
+      }
+    },
+    {
+      "id": "facility-inspection-concurrent-checks",
+      "title": "Inspect a facility",
+      "businessPurpose": "Open a facility inspection with shared findings, run the electrical and fire-safety checks at the same time with their own results, let each check record findings for the whole inspection, publish each check's result and summarize the findings and both results through an automated service once both checks have finished.",
+      "cloneFamily": "facility-inspection-concurrent-checks",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/concurrent-scope-data/facility-inspection.bpmn",
+        "sha256": "2d759a7ded2111cd3fde5e9f98d4b3011ba426602dc75482a82a88c0917e64e9",
+        "scenarioRelativePath": "scenarios/concurrent-scope-data/facility-inspection.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "concurrent-scope-data-facility-inspection",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The concurrent check data is protected by the execution pipeline but not yet by a production browser journey."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

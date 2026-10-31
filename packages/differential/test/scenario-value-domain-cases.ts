@@ -5,7 +5,8 @@ import { pipelineCases } from "./pipeline-cases.ts";
 import { loadAndCompileCases } from "./pipeline-case-loading.ts";
 import type { PipelineContext } from "./pipeline-types.ts";
 import { loadMessageKeyCorrelationPopulationCases } from "./message-key-correlation-population-cases.ts";
-import { assertProfilesEnrolled, correlatedPayloadProfile, expectedDomainsOf, incidentCommandProfiles, singletonBusinessItem } from "./scenario-value-domain-expectations.ts";
+import { assertProfilesEnrolled, correlatedPayloadProfile, dataBearingEmbeddedCompletionDomains, expectedDomainsOf, incidentCommandProfiles,
+  singletonBusinessItem } from "./scenario-value-domain-expectations.ts";
 import type { ProfileValueDomains } from "./scenario-value-domain-expectations.ts";
 
 type DomainContext = Pick<PipelineContext, "scenario" | "checkedProcess" | "semanticProcess">;
@@ -139,6 +140,9 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   const loan = (await loadAndCompileCases(pipelineCases.filter(({ id }) => id === "call-variable-mapping-loan-approved")))[0];
   assert.ok(loan !== undefined, "the loan application schedule is registered");
   addCallVariableMappingCases(loan, add);
+  const claim = (await loadAndCompileCases(pipelineCases.filter(({ id }) => id === "concurrent-scope-data-claim-fetch-one-first")))[0];
+  assert.ok(claim !== undefined, "the claim damage assessment schedule is registered");
+  addConcurrentScopeDataCases(claim, add);
   const mapped = selected.get(SemanticProfileId.MappedSuccessServiceTask)!;
   const effectIndex = mapped.scenario.stimuli.findIndex(stimulus => stimulus.kind === StimulusKind.CompleteEffect);
   const effect = mapped.scenario.stimuli[effectIndex]!;
@@ -324,6 +328,39 @@ function addNestedScopeDataCases(context: DomainContext, add: AddCase): void {
   startWith("valid-start-data-present-null", replaced({ kind: VariableValueKind.Null }), true);
   for (const [label, value, supported] of [["exact-bound", string(1024), true], ["over-bound", string(1025), false]] as const) {
     startWith(`start-string-${label}`, replaced(value), supported);
+    for (const surface of ["human", "effect"] as const) {
+      const occurrence = occurrenceOf(start);
+      const bindings = [{ name: "zzLater", value }];
+      const stimulus: Stimulus = surface === "human"
+        ? { kind: StimulusKind.CompleteUserTaskInstance, commandId: `late-${surface}-${label}`, taskId: occurrence, submittedValues: bindings }
+        : { kind: StimulusKind.CompleteEffect, commandId: `late-${surface}-${label}`, effectId: occurrence,
+          result: { kind: EffectExecutionResultKind.Success, localPatch: bindings } };
+      add(context, `${surface}-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
+    }
+  }
+}
+
+/**
+ * The claim damage assessment is a data-bearing Program of the embedded completion profile, whose separate row admits a
+ * String of at most 1,024 UTF-8 bytes or a present null on every write surface (CSD-VALUE-01) and derives its required
+ * Start names from the occurrence chain (CSD-AVAILABLE-01): Price damage's input reads `noAdjuster`, which no enclosing
+ * input declares. Each case changes one fact of the retained answer-free Start or appends one late command.
+ */
+function addConcurrentScopeDataCases(context: DomainContext, add: AddCase): void {
+  const start = context.scenario.stimuli[0]!;
+  assert.ok(start.kind === StimulusKind.StartProcess);
+  assert.ok(start.initialVariables.some(binding => binding.name === "noAdjuster"),
+    "the retained claim Start carries the occurrence-chain-required noAdjuster");
+  const domains = dataBearingEmbeddedCompletionDomains;
+  addLateValueCases(context, start, domains, add);
+  addStartKindCases(context, start, domains.start, add);
+  const startWith = (suffix: string, initialVariables: readonly VariableBinding[], supported: boolean) =>
+    add(context, suffix, [{ ...start, initialVariables }, ...context.scenario.stimuli.slice(1)], supported);
+  const string = (bytes: number): VariableValue => ({ kind: VariableValueKind.String, value: "a".repeat(bytes) });
+  startWith("invalid-start-data-missing-required", start.initialVariables.filter(binding => binding.name !== "noAdjuster"), false);
+  for (const [label, value, supported] of [["exact-bound", string(1024), true], ["over-bound", string(1025), false]] as const) {
+    startWith(`start-string-${label}`, start.initialVariables.map(binding =>
+      binding.name === "noAdjuster" ? { ...binding, value } : binding), supported);
     for (const surface of ["human", "effect"] as const) {
       const occurrence = occurrenceOf(start);
       const bindings = [{ name: "zzLater", value }];

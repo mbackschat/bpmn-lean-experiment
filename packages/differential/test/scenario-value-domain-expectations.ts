@@ -88,6 +88,14 @@ const expectedDomains = new Map<string, ProfileValueDomains>([
   [SemanticProfileId.StructuredHumanWork, { start: stringNull, human: structuredHumanWork, effect: none, payload: none }],
 ]);
 
+/**
+ * The separate data-bearing row of the embedded completion profile: a Program with scope data or a mapped Service Task admits
+ * a String of at most 1,024 UTF-8 bytes or a present null at Start, User Task completion and effect result (CSD-VALUE-01),
+ * while the profile's data-free row above stays empty. It is selected by Program, not profile, so it is no catalog row.
+ */
+export const dataBearingEmbeddedCompletionDomains: ProfileValueDomains =
+  { start: stringNull, human: stringNull, effect: stringNull, payload: none };
+
 /** The profile whose correlated-payload delivery is admitted; the wire carries only a String payload there (MCORR-EXTRACT-01). */
 export const correlatedPayloadProfile: string = SemanticProfileId.MessageKeyCorrelation;
 
