@@ -92,17 +92,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-PROPOSAL.md#problem) promise (owner direction, 2026-10-27). The [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md) family pauses after `2d8db0e7` until this outcome closes (owner direction, 2026-10-28); CSD-3 (Lean merge-target hooks, prepared declared entry, arming read atoms) and CSD-4 (models, scenarios, registration, capacity test, documentation, closure review) remain. Pull request #38 is the owner's to land.
+Current task: deliver the [build modularity](LEAN-BUILD-MODULARITY-PROPOSAL.md#problem) promise (owner direction, 2026-10-27). The [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-PROPOSAL.md) family pauses after `2d8db0e7` until this outcome closes (owner direction, 2026-10-28); CSD-3 and CSD-4 remain. Pull request #38 is the owner's to land.
 
 Deliverable: bodies hidden by default in every family, so a body edit rebuilds only the modules that load the body, re-checked by container rebuild probes across the core and every family.
 
-Acceptance blockers: a new cold closure review, because those corrections were material ([receipt](LEAN-BUILD-MODULARITY-PROPOSAL.md#independent-cold-review-receipt)).
+Acceptance blockers: the closure review of `afd2b1ba` rejected the closure ([receipt](LEAN-BUILD-MODULARITY-PROPOSAL.md#independent-cold-review-receipt)): ordinary edits are not covered as the owner's closure scope assumed, and contract item 5's fixture decision is due.
 
-Current result: the conversion, the generated-lemma fix (`4b963dc9`) and the probe matrix landed ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)). The `c5add868` closure review's corrections, with eleven kernel modules hiding their operation bodies (`726db247`, `6f6b3217`), passed its second audit at `9495a9eb`. Each recorded opening-import rise and size exception since 2026-10-30 rests on the owner's delegation of decisions to the session.
+Current result: the conversion, the generated-lemma fix and the probe matrix landed ([current boundary](LEAN-BUILD-MODULARITY-PROPOSAL.md#current-boundary)), and eleven kernel modules hide their operation bodies (`726db247`, `6f6b3217`). Each recorded opening-import rise and size exception since 2026-10-30 rests on the owner's delegation of decisions to the session.
 
 Effort budget: 80 hours; the owner lifted the cap on 2026-10-27, so reaching it records progress and continues.
 
-Next action: `./scripts/verify.sh` at the review target, the new cold closure review, graduation, then the concurrent scope data family.
+Next action: the owner decides how to close the gap, the item 5 remedy and the ratification of the delegated rises; then the corrections, the same reviewer's audit and graduation.
 
 Oracle: a container body-edit probe that rebuilds more than the body-edit model predicts, or any weakened lane shape, claim or gate.
 
