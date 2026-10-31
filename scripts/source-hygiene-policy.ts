@@ -35,11 +35,8 @@ export const ownerApprovedLargeFiles: ReadonlyMap<string, string> = new Map([
   ["scripts/lean-fanout-bounds.ts", "Owner approval of every size exception found in this session (\"I confirm all 18 exceptions with the corrected reason, yes and all exceptions you find in this session!\"); measured 856 nonblank lines on 2026-10-31: the #55 re-seed brought it to 827 on 2026-10-30 with the ratchet entries and reason constants for the recorded generated-lemma leaks, the helper's new importers and the leak witness's rewrite allowance, and F2 of the closure review added the kernel modules' body-edit bounds, hidden-edit bounds and allowance entries, their reasons and two owner-decision entries (+29). A split per ratchet must keep the rise, debt and owner-decision guards, which read this one file at the base commit, so it is a change of its own."],
 ]);
 /** Narrow large-file exceptions in force; each must equal an approval the baseline below records. */
-export const reviewedLargeFiles: ReadonlyMap<string, string> = new Map([
-  ...ownerApprovedLargeFiles,
-  ["scripts/lean-fanout-bounds.ts", "Owner approval of every size exception found in the session of 2026-10-29/30 (\"I confirm all 18 exceptions with the corrected reason, yes and all exceptions you find in this session!\"); measured 827 nonblank lines on 2026-10-30: the #55 re-seed added the ratchet entries and reason constants for the recorded generated-lemma leaks, the helper's new importers and the leak witness's rewrite allowance (+28 over 799: 797 at 3a977697 plus the 2-line owner-decision entry). A split per ratchet must keep the rise, debt and owner-decision guards, which read this one file at the base commit, so it is a change of its own."],
-]);
-const sourceHygieneExceptionApprovalBaseline = "5e46e3c0";
+export const reviewedLargeFiles: ReadonlyMap<string, string> = new Map(ownerApprovedLargeFiles);
+const sourceHygieneExceptionApprovalBaseline = "fbcac76a";
 
 export type SourceHygieneAssessment = Readonly<{
   hardViolations: ReadonlyArray<SourceMeasurement>;
