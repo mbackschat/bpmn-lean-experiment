@@ -58,7 +58,10 @@ def InternalScopeCreationSelection.apply (state : RuntimeState)
 
 /-- Child entry stays restricted to the hosting Process owner; a Call invokes from any parentless root
 that association validity admits, the hosting instance or a live called root (CALLN-INVOKE-01), so
-batched nested invocations agree with the singleton path. -/
+batched nested invocations agree with the singleton path. A mapped Call selects exactly what its
+data-erased invocation selects: the mappings decide only the called-root frame, which the mapped
+invocation family adds (CMCALL-PREPARE-01), so the ordinary family admits it only with
+`internalScopeCreationUnmapped`. -/
 def selectInternalScopeCreation? (state : RuntimeState) (operation : SemanticOperation) :
     Option InternalScopeCreationSelection :=
   (match state.control with
@@ -76,7 +79,8 @@ def selectInternalScopeCreation? (state : RuntimeState) (operation : SemanticOpe
                     activation := scopeActivationCount state definition + 1 }
             parent := some owner }
         pure { operation, owner, input, entry, created, kind := .child }
-  | .invokeProcess _ origin input process definition entry returnOperation .empty =>
+  | .invokeProcess _ origin input process definition entry returnOperation .empty
+  | .invokeProcess _ origin input process definition entry returnOperation (.variableMappings _ _) =>
       let owner ← onlyTokenOwner? state input
       if (state.tokens.filter fun token : ControlToken =>
           decide (token.placeId = input && token.owner = owner)).length ≠ 1 then none
@@ -126,16 +130,6 @@ theorem scopeCreationSelection_scalar_refused (state : RuntimeState)
     (data : ScalarCallData) :
     selectInternalScopeCreation? state
       (.invokeProcess id origin input process definition entry returned (.scalar data)) = none := by
-  cases control : state.control <;> simp [selectInternalScopeCreation?, control]
-
-/-- CVM-IN-01 installs the called-root frame with the Call record, so a mapped Call stays on the
-singleton path rather than control-only scope creation. -/
-theorem scopeCreationSelection_mapped_refused (state : RuntimeState)
-    (id : OperationId) (origin : BpmnElementOrigin) (input entry : ControlPlaceId)
-    (process : ProcessId) (definition : DefinitionScopeId) (returned : OperationId)
-    (inputs outputs : List VariableMapping) :
-    selectInternalScopeCreation? state
-      (.invokeProcess id origin input process definition entry returned (.variableMappings inputs outputs)) = none := by
   cases control : state.control <;> simp [selectInternalScopeCreation?, control]
 
 /-- Child occurrence identity advances the predecessor's retained issuance high-water mark. -/
@@ -202,8 +196,14 @@ def internalScopeCreationUndeclared (program : Program) : SemanticOperation → 
   | .enterScope _ _ _ _ scope => (NestedScopeData.recordFor? program scope).isNone
   | _ => true
 
+/-- CVM-IN-01 adds the called-root frame outside the ordinary retained invocation patch; a mapped
+invocation composes that write onto the unchanged patch as its own prepared family (CMCALL-PREPARE-01). -/
+def internalScopeCreationUnmapped : SemanticOperation → Bool
+  | .invokeProcess _ _ _ _ _ _ _ (.variableMappings _ _) => false
+  | _ => true
+
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalScopeCreationRetentionUnchanged,
-  `internalScopeCreationUndeclared]
+  `internalScopeCreationUndeclared, `internalScopeCreationUnmapped]
 
 /-- A selected child entry without child retention is the retained entry patch. -/
 private theorem selectInternalScopeCreation_enters (program : Program) (state : RuntimeState) (id : OperationId)
@@ -242,6 +242,71 @@ theorem selectInternalScopeCreation_fires_declared (program : Program) (state : 
   simp only [enterDeclaredScope?, recorded, selectInternalScopeCreation_enters program state id origin input entry
     definition selected retentionUnchanged found, bind, Option.bind]
 
+/-- A non-scalar Call's selection is `invokeProcessState?` from the selected owner, creating the root the
+mapped invocation's frame belongs to (CMCALL-PREPARE-01). -/
+theorem selectInternalScopeCreation_invokes (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (input : ControlPlaceId) (process : ProcessId) (definition : DefinitionScopeId)
+    (entry : ControlPlaceId) (returnOperation : OperationId) (data : CallDataInterface)
+    (selected : InternalScopeCreationSelection)
+    (found : selectInternalScopeCreation? state
+      (.invokeProcess id origin input process definition entry returnOperation data) = some selected) :
+    onlyTokenOwner? state input = some selected.owner ∧
+      selected.created.id =
+        { processInstanceId := deriveCalledProcessInstanceId selected.owner.processInstanceId origin.elementId
+            (callActivationCount state origin.elementId + 1)
+          definitionScopeId := definition, activation := 1 } ∧
+      invokeProcessState? state origin input process definition entry returnOperation = some (selected.apply state) := by
+  obtain ⟨hosting, running⟩ := selectInternalScopeCreation_running state _ selected found
+  unfold selectInternalScopeCreation? at found
+  simp only [running, bind, Option.bind] at found
+  cases data with
+  | scalar => simp at found
+  | empty | variableMappings _ _ =>
+      obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
+      have shape : selected.owner = owner ∧ selected.created.id =
+          { processInstanceId := deriveCalledProcessInstanceId owner.processInstanceId origin.elementId
+              (callActivationCount state origin.elementId + 1)
+            definitionScopeId := definition, activation := 1 } := by
+        repeat first | split at found | contradiction
+        all_goals cases found
+        all_goals exact ⟨rfl, rfl⟩
+      rw [shape.1]
+      refine ⟨owned, shape.2, ?_⟩
+      have rootSelected : (match state.control with
+          | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
+          | .notStarted | .failed .. => none) = some hosting := by rw [running]
+      unfold invokeProcessState?
+      conv =>
+        lhs
+        arg 3
+        change (match state.control with
+          | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
+          | .notStarted | .failed .. => none)
+      rw [owned, rootSelected]
+      change (if calledProcessAssociationsValid state then
+        if (state.tokens.filter fun token =>
+            decide (token.placeId = input && token.owner = owner)).length = 1 then
+          if (state.calledProcessOccurrences.filter fun record =>
+              decide (record.id.elementId.value = origin.elementId.value)).length = 0
+            then _ else none
+        else none
+      else none) = _
+      repeat first | split at found | contradiction
+      all_goals cases found
+      all_goals simp_all [InternalScopeCreationSelection.apply]
+
+/-- Without snapshots a mapped Call fires its variable-mapping evaluator. -/
+theorem fire_mapped_invoke (program : Program) (state : RuntimeState) (id : OperationId)
+    (origin : BpmnElementOrigin) (input : ControlPlaceId) (process : ProcessId) (definition : DefinitionScopeId)
+    (entry : ControlPlaceId) (returnOperation : OperationId) (inputs outputs : List VariableMapping)
+    (snapshotAbsent : program.compensationEventSubProcessSnapshots = none) :
+    fire? program (.invokeProcess id origin input process definition entry returnOperation (.variableMappings inputs outputs))
+      state = CallVariableMapping.invokeState? program state origin input process definition entry returnOperation
+        inputs outputs := by
+  unfold fire?
+  rw [snapshotAbsent]
+  rfl
+
 /-- Retained patches agree with the evaluator when neither snapshot, child retention nor frame is created;
 this is not a footprint, validity-preservation, or commutation claim. -/
 theorem selectInternalScopeCreation_refines (program : Program) (state : RuntimeState)
@@ -249,6 +314,7 @@ theorem selectInternalScopeCreation_refines (program : Program) (state : Runtime
     (snapshotAbsent : program.compensationEventSubProcessSnapshots = none)
     (retentionUnchanged : internalScopeCreationRetentionUnchanged program operation = true)
     (undeclared : internalScopeCreationUndeclared program operation = true)
+    (unmapped : internalScopeCreationUnmapped operation = true)
     (found : selectInternalScopeCreation? state operation = some selected) :
     fire? program operation state = some (selected.apply state) := by
   have original := found
@@ -267,32 +333,11 @@ theorem selectInternalScopeCreation_refines (program : Program) (state : Runtime
   | invokeProcess id origin input process definition entry returnOperation data =>
       cases data with
       | scalar => simp at found
-      | variableMappings => simp at found
+      | variableMappings => simp [internalScopeCreationUnmapped] at unmapped
       | empty =>
-          obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
           change invokeProcessState? state origin input process definition entry returnOperation = _
-          have rootSelected : (match state.control with
-              | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
-              | .notStarted | .failed .. => none) = some hosting := by rw [running]
-          unfold invokeProcessState?
-          conv =>
-            lhs
-            arg 3
-            change (match state.control with
-              | .running instanceId | .completed instanceId | .cancelled instanceId => some instanceId
-              | .notStarted | .failed .. => none)
-          rw [owned, rootSelected]
-          change (if calledProcessAssociationsValid state then
-            if (state.tokens.filter fun token =>
-                decide (token.placeId = input && token.owner = owner)).length = 1 then
-              if (state.calledProcessOccurrences.filter fun record =>
-                  decide (record.id.elementId.value = origin.elementId.value)).length = 0
-                then _ else none
-            else none
-          else none) = _
-          repeat first | split at found | contradiction
-          all_goals cases found
-          all_goals simp_all [InternalScopeCreationSelection.apply]
+          exact (selectInternalScopeCreation_invokes state id origin input process definition entry returnOperation
+            .empty selected original).2.2
   | _ => simp at found
 
 /-- CEA-OCCUR-01's entry record also excludes occurrences live before entry. When no occurrence of the entered

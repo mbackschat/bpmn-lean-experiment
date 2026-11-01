@@ -296,8 +296,7 @@ theorem prepared_scope_creation_candidate (program : Program) (state : RuntimeSt
   | invokeProcess id selectedOrigin input process root entry returned data =>
       cases data with
       | scalar => simp at selection
-      | variableMappings => simp at selection
-      | empty =>
+      | empty | variableMappings _ _ =>
           obtain ⟨owner, owned, selection⟩ := Option.bind_eq_some_iff.mp selection
           try dsimp only at selection
           repeat first | contradiction | split at selection
@@ -336,7 +335,7 @@ theorem prepared_scope_creation_candidate (program : Program) (state : RuntimeSt
                   (fun candidate => decide (candidate.id = record.id)) with
                 | [actual] => some actual | _ => none
               pure (canonicalFlowNodeOccurrenceDelta
-                [← candidateCallStart? program (.invokeProcess id selectedOrigin input process root entry returned)
+                [← candidateCallStart? program (.invokeProcess id selectedOrigin input process root entry returned _)
                   owner actual] [])) = some { started := [start], ended := [] }
             rw [singleton]
             simp only [bind, Option.bind, record, startFound, pure, Pure.pure]

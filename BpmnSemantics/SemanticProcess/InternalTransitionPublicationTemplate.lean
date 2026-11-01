@@ -86,12 +86,15 @@ control's publication (CSD-PREPARE-01). -/
 private theorem actualInternalTransitionPublication_scope_frames (program : Program) (instanceId : SemanticId)
     (before after : RuntimeState) (operation : SemanticOperation) (commandId : SemanticId) (index : Nat)
     (scopes : List ScopeVariableScope)
-    (entry : ∃ id origin input childEntry childScopeId, operation = .enterScope id origin input childEntry childScopeId) :
+    (creation : (∃ id origin input childEntry childScopeId,
+        operation = .enterScope id origin input childEntry childScopeId) ∨
+      ∃ id origin input process scope entry returned data,
+        operation = .invokeProcess id origin input process scope entry returned data) :
     actualInternalTransitionPublication? program instanceId before
         { after with variables := { after.variables with scopes } } operation commandId index =
       actualInternalTransitionPublication? program instanceId before after operation commandId index := by
   simp only [actualInternalTransitionPublication?,
-    flowNodeOccurrenceDeltaForOperation?_scope_frames program before after operation commandId index scopes entry,
+    flowNodeOccurrenceDeltaForOperation?_scope_frames program before after operation commandId index scopes creation,
     controlPositionDelta?_scope_frames]
 
 private theorem waitStart_scope_frames (program : Program) (state : RuntimeState) (scopes : List ScopeVariableScope)
@@ -166,8 +169,20 @@ theorem prepared_transition_publication_template_accepted (program : Program) [I
       change actualInternalTransitionPublication? program instanceId state (entry.apply state)
         entry.control.selection.operation commandId transitionIndex = _
       rw [PreparedInternalDeclaredEntry.apply_eq, NestedScopeData.insertFrame_scopes,
-        actualInternalTransitionPublication_scope_frames _ _ _ _ _ _ _ _ ⟨id, origin, input, child, scope, entered⟩]
+        actualInternalTransitionPublication_scope_frames _ _ _ _ _ _ _ _ (.inl ⟨id, origin, input, child, scope, entered⟩)]
       exact prepared_scope_creation_publication_template_accepted program state entry.control instanceId
+        commandId transitionIndex programWF beforeWF projectable control
+  case mappedInvocation mapped =>
+      obtain ⟨id, origin, input, process, scope, entry, returned, inputs, outputs, _, _, invoked, _, _, control, _⟩ :=
+        prepareInternalMappedInvocation_facts program state _ mapped found
+      have operation := (prepareInternalScopeCreation_operation program state _ mapped.control control).1
+      refine ⟨internalScopeCreationPublicationTemplate mapped.control, rfl, ?_⟩
+      change actualInternalTransitionPublication? program instanceId state (mapped.apply state)
+        mapped.control.selection.operation commandId transitionIndex = _
+      rw [PreparedInternalMappedInvocation.apply_eq, NestedScopeData.insertFrame_scopes,
+        actualInternalTransitionPublication_scope_frames _ _ _ _ _ _ _ _
+          (.inr ⟨id, origin, input, process, scope, entry, returned, _, operation.trans invoked⟩)]
+      exact prepared_scope_creation_publication_template_accepted program state mapped.control instanceId
         commandId transitionIndex programWF beforeWF projectable control
   case ordinaryEnd ending =>
       have record := prepareInternalEnd_record program state ending.operation ending found
@@ -231,6 +246,7 @@ theorem prepared_transition_template_operation_id (program : Program) (state : R
   | localControl localPrepared => cases found; rfl
   | scopeCreation scopePrepared => cases found; rfl
   | declaredEntry entry => cases found; rfl
+  | mappedInvocation mapped => cases found; rfl
   | regional regional => cases found; rfl
   | ordinaryEnd ending => cases found; rfl
   | mergeInput merge => cases found; rfl
@@ -267,6 +283,7 @@ theorem prepared_transition_template_frame (program : Program) (before after : R
   | localControl _ => exact found
   | scopeCreation _ => exact found
   | declaredEntry _ => exact found
+  | mappedInvocation _ => exact found
   | regional _ => exact found
   | ordinaryEnd _ => exact found
   | mergeInput _ => exact found
@@ -349,6 +366,18 @@ theorem prepared_transition_template_after_step (program : Program) [Interruptio
         rw [PreparedInternalDeclaredEntry.apply_eq, NestedScopeData.insertFrame_scopes, waitStart_scope_frames]
         simpa only [preparedEq, makeInternalScopeCreationPreparation] using
           scopeCreation_wait_start_preserved program state _ selected owner element activation start selection prior
+  | mappedInvocation mapped =>
+      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, control, _⟩ :=
+        prepareInternalMappedInvocation_facts program state _ mapped stepPrepared
+      obtain ⟨selected, _, _, _, _, _, _, selection, _, _, _, _, _, _, _, _, _, preparedEq⟩ :=
+        prepareInternalScopeCreation_facts program state _ mapped.control control
+      apply prepared_transition_template_frame program state (mapped.apply state) query template _ _ found
+      · rw [PreparedInternalMappedInvocation.apply_eq]
+        exact scopeCreation_apply_time state mapped.control.selection
+      · intro owner element activation start prior
+        rw [PreparedInternalMappedInvocation.apply_eq, NestedScopeData.insertFrame_scopes, waitStart_scope_frames]
+        simpa only [preparedEq, makeInternalScopeCreationPreparation] using
+          scopeCreation_wait_start_preserved program state _ selected owner element activation start selection prior
   | regional regional =>
       cases query with
       | messageTask contract patch =>
@@ -411,8 +440,8 @@ theorem prepared_transition_template_after_step (program : Program) [Interruptio
           have sameTemplate : actualTemplate = template := Option.some.inj (beforeFound.symm.trans found)
           simpa only [PreparedInternalTransition.apply, applied, Option.getD_some,
             preparedTransitionPublicationTemplate?, sameTemplate] using afterFound
-      | boundedScope _ _ | localControl _ | scopeCreation _ | declaredEntry _ | regional _ | ordinaryEnd _
-      | mergeInput _ => exact found
+      | boundedScope _ _ | localControl _ | scopeCreation _ | declaredEntry _ | mappedInvocation _ | regional _
+      | ordinaryEnd _ | mergeInput _ => exact found
       | arming arm =>
           have facts := preparedArming_owner_facts program state arm queryPrepared
           have hosting := runtimePositionValid_running_instance program instanceId arm.scopeFramePatch.runtimeInstanceId state

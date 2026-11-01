@@ -98,6 +98,10 @@ theorem prepared_transition_operation_member (program : Program) (state : Runtim
       obtain ⟨_, _, _, _, _, _, _, _, _, control, _⟩ :=
         prepareInternalDeclaredEntry_facts program state _ declared found
       exact prepared_scope_creation_operation_member program state declared.control control
+  | mappedInvocation mapped =>
+      obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, control, _⟩ :=
+        prepareInternalMappedInvocation_facts program state _ mapped found
+      exact prepared_scope_creation_operation_member program state mapped.control control
   | regional regional =>
       exact fromCensus regional.selection.operation _
         (prepareInternalRegional_facts program state regional.selection.operation regional found).2.1

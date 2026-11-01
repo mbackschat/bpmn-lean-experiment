@@ -32,11 +32,11 @@ namespace BpmnSemantics.SemanticProcess.InternalCommutation
 
 open BpmnSemantics
 
-private theorem scopeCreation_keeps_variables (state : RuntimeState) (selected : InternalScopeCreationSelection) :
+theorem scopeCreation_keeps_variables (state : RuntimeState) (selected : InternalScopeCreationSelection) :
     (selected.apply state).variables = state.variables :=
   (scopeCreation_apply_scopes state selected).2
 
-private theorem prepareInternalScopeCreation_variables (program : Program) (state : RuntimeState)
+theorem prepareInternalScopeCreation_variables (program : Program) (state : RuntimeState)
     (variables : ScopedVariables) (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
     (found : prepareInternalScopeCreation? program state operation = some prepared) :
     prepareInternalScopeCreation? program { state with variables } operation = some prepared := by
@@ -55,7 +55,7 @@ private theorem prepareInternalScopeCreation_variables (program : Program) (stat
   exact prepareInternalScopeCreation_read_frame program state _ operation prepared found selected rfl rfl rfl rfl rfl
     (scopeCreation_counter_read_frame state _ prepared.selection (fun _ => rfl) (fun _ _ => rfl))
 
-private theorem prepareInternalLocalControl_variables (program : Program) (state : RuntimeState)
+theorem prepareInternalLocalControl_variables (program : Program) (state : RuntimeState)
     (variables : ScopedVariables) (process : variables.process = state.variables.process)
     (operation : SemanticOperation) (prepared : PreparedInternalLocalControl)
     (found : prepareInternalLocalControl? program state operation = some prepared) :
@@ -65,7 +65,7 @@ private theorem prepareInternalLocalControl_variables (program : Program) (state
     (fun _ _ => rfl)
     (fun _ _ _ _ _ _ _ => rfl)
 
-private theorem insertFrame_commutes (variables : ScopedVariables) (left right : ScopeVariableScope)
+theorem insertFrame_commutes (variables : ScopedVariables) (left right : ScopeVariableScope)
     (distinct : left.owner ≠ right.owner) :
     NestedScopeData.insertFrame (NestedScopeData.insertFrame variables left) right =
       NestedScopeData.insertFrame (NestedScopeData.insertFrame variables right) left := by
@@ -77,7 +77,7 @@ private theorem insertFrame_commutes (variables : ScopedVariables) (left right :
 
 /-- What every pair law needs of a prepared declared entry: its footprint extends its control's and names
 the child's frame, which the evaluated frame fills and no live occurrence carries. -/
-private theorem declared_entry_shape (program : Program) (state : RuntimeState) (operation : SemanticOperation)
+theorem declared_entry_shape (program : Program) (state : RuntimeState) (operation : SemanticOperation)
     (entry : PreparedInternalDeclaredEntry)
     (found : prepareInternalDeclaredEntry? program state operation = some entry) :
     entry.control.footprint.reads ⊆ entry.footprint.reads ∧
@@ -99,7 +99,7 @@ private theorem declared_entry_shape (program : Program) (state : RuntimeState) 
       (prepareInternalScopeCreation_selection_facts program state operation entry.control control).1⟩
 
 /-- An entry stays prepared on any state on which its control, frame and read set evaluate as before. -/
-private theorem prepareInternalDeclaredEntry_after (program : Program) (state after : RuntimeState)
+theorem prepareInternalDeclaredEntry_after (program : Program) (state after : RuntimeState)
     (operation : SemanticOperation) (entry : PreparedInternalDeclaredEntry)
     (found : prepareInternalDeclaredEntry? program state operation = some entry)
     (control : prepareInternalScopeCreation? program after operation = some entry.control)

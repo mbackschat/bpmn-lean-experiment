@@ -17,6 +17,7 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationAcceptedPublication
 import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.InternalDeclaredEntryLaws
+import BpmnSemantics.SemanticProcess.InternalMappedInvocationLaws
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.InternalBoundedScopePreparation
 import all BpmnSemantics.SemanticProcess.InternalBoundedScopeSelection
@@ -59,26 +60,28 @@ private theorem projectOpenFlowNodeOccurrences_scope_frames (program : Program) 
   cases state
   rfl
 
-/-- An entry's lifecycle projects waits, occurrences and records, never frames, so the declared entry's frame
-insertion keeps its control's lifecycle. Multi-instance operations pass the whole successor on and are not
-covered. -/
+/-- A scope creation's lifecycle projects waits, occurrences and records, never frames, so the declared entry's
+and the mapped invocation's frame insertion keeps its control's lifecycle. Multi-instance operations pass the whole
+successor on and are not covered. -/
 theorem flowNodeOccurrenceDeltaForOperation?_scope_frames (program : Program) (before after : RuntimeState)
     (operation : SemanticOperation) (commandId : SemanticId) (transitionIndex : Nat)
     (scopes : List ScopeVariableScope)
-    (entry : ∃ id origin input childEntry childScopeId, operation = .enterScope id origin input childEntry childScopeId) :
+    (creation : (∃ id origin input childEntry childScopeId,
+        operation = .enterScope id origin input childEntry childScopeId) ∨
+      ∃ id origin input process scope entry returned data,
+        operation = .invokeProcess id origin input process scope entry returned data) :
     flowNodeOccurrenceDeltaForOperation? program before { after with variables := { after.variables with scopes } }
         operation commandId transitionIndex =
       flowNodeOccurrenceDeltaForOperation? program before after operation commandId transitionIndex := by
-  obtain ⟨id, origin, input, childEntry, childScopeId, rfl⟩ := entry
   have candidate (owner : ScopeOccurrenceId) : candidateFlowNodeOccurrenceDeltaForOwnedOperation? program before
-      { after with variables := { after.variables with scopes } } (.enterScope id origin input childEntry childScopeId)
-        owner commandId transitionIndex =
-      candidateFlowNodeOccurrenceDeltaForOwnedOperation? program before after
-        (.enterScope id origin input childEntry childScopeId) owner commandId transitionIndex := by
-    unfold candidateFlowNodeOccurrenceDeltaForOwnedOperation?
-    dsimp only
-  simp only [flowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOperation?,
-    acceptFlowNodeOccurrenceCandidate?, projectOpenFlowNodeOccurrences_scope_frames, candidate]
+      { after with variables := { after.variables with scopes } } operation owner commandId transitionIndex =
+      candidateFlowNodeOccurrenceDeltaForOwnedOperation? program before after operation owner commandId
+        transitionIndex := by
+    rcases creation with ⟨_, _, _, _, _, rfl⟩ | ⟨_, _, _, _, _, _, _, _, rfl⟩ <;>
+      (unfold candidateFlowNodeOccurrenceDeltaForOwnedOperation?; dsimp only)
+  rcases creation with ⟨_, _, _, _, _, rfl⟩ | ⟨_, _, _, _, _, _, _, _, rfl⟩ <;>
+    simp only [flowNodeOccurrenceDeltaForOperation?, candidateFlowNodeOccurrenceDeltaForOperation?,
+      acceptFlowNodeOccurrenceCandidate?, projectOpenFlowNodeOccurrences_scope_frames, candidate]
 
 /-- Root completion writes hosting control. A genuinely independent batch supplies another
 member's protected control read, deriving this condition before prefix induction. -/
@@ -115,6 +118,9 @@ theorem prepared_transition_control_frame (program : Program) (state : RuntimeSt
   | declaredEntry declared =>
       simp only [PreparedInternalTransition.apply, PreparedInternalDeclaredEntry.apply_eq]
       exact scopeCreation_apply_control state declared.control.selection
+  | mappedInvocation mapped =>
+      simp only [PreparedInternalTransition.apply, PreparedInternalMappedInvocation.apply_eq]
+      exact scopeCreation_apply_control state mapped.control.selection
   | regional regional =>
       obtain ⟨after, _, applied⟩ := prepareInternalRegional_executes program state _ regional found
       have frame := preparedRegional_control_filters program state after instanceId _ regional valid running
@@ -201,6 +207,20 @@ theorem prepared_transition_preserves (program : Program) [InterruptionInvocatio
           rw [PreparedInternalDeclaredEntry.apply_eq, NestedScopeData.insertFrame_scopes,
             projectOpenFlowNodeOccurrences_scope_frames, afterProjected]
           rfl
+  | mappedInvocation mapped =>
+      refine ⟨prepareInternalMappedInvocation_preserves_runtimeStateWellFormed program instanceId state
+        mapped.control.selection.operation mapped programValid stateValid selected, control, ?_⟩
+      cases projected : projectOpenFlowNodeOccurrences? program state with
+      | none => simp [projected] at openBefore
+      | some current =>
+          obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, controlFound, _⟩ :=
+            prepareInternalMappedInvocation_facts program state _ mapped selected
+          obtain ⟨start, _, afterProjected⟩ := prepared_scope_creation_open_projection program state
+            _ mapped.control instanceId current programValid stateValid projected controlFound
+          change (projectOpenFlowNodeOccurrences? program (mapped.apply state)).isSome = true
+          rw [PreparedInternalMappedInvocation.apply_eq, NestedScopeData.insertFrame_scopes,
+            projectOpenFlowNodeOccurrences_scope_frames, afterProjected]
+          rfl
   | regional regional =>
       obtain ⟨after, applied, published⟩ := prepareInternalRegional_execution_publication program state _ regional
         instanceId instanceId 0 programValid stateValid selected
@@ -230,9 +250,12 @@ theorem prepared_transition_applies (program : Program) (state : RuntimeState)
         exact prepareInternalLocalControl_refines program state localPrepared.operation
           localPrepared snapshots selected
     case scopeCreation scope =>
-        exact prepareInternalScopeCreation_refines program state scope.selection.operation scope selected.2 selected.1
+        exact prepareInternalScopeCreation_refines program state scope.selection.operation scope selected.2.1
+          selected.2.2 selected.1
     case declaredEntry declared =>
         exact prepareInternalDeclaredEntry_refines program state _ declared selected
+    case mappedInvocation mapped =>
+        exact prepareInternalMappedInvocation_refines program state _ mapped selected
     case ordinaryEnd ending =>
         exact prepareInternalEnd_refines program state ending.operation ending selected
     case regional regional =>

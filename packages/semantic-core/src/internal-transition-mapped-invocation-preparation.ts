@@ -13,14 +13,15 @@ import {
   deriveInternalInvokeProcessPreparation, InternalScopeCreationResultKind,
 } from "./internal-transition-scope-creation-preparation.js";
 import type { PreparedInternalScopeCreation } from "./internal-transition-scope-creation-preparation.js";
-import { insertNestedScopeFrame, nestedScopeReadSet } from "./nested-scope-data.js";
+import { insertNestedScopeFrame, nestedScopeDataProgram, nestedScopeReadSet } from "./nested-scope-data.js";
 import { mergeProcessVariableBindings } from "./semantic-process-data.js";
 import type { InvokeProcessOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import { sameScopeOccurrence } from "./semantic-process-state.js";
 import type { RuntimeState, ScopeOccurrenceId, ScopeVariableScope } from "./semantic-process-state.js";
 
 /**
- * CMCALL-PREPARE-01: a mapped Call's invocation as a prepared scope creation, beside the declared entry of CSD-PREPARE-01.
+ * CMCALL-PREPARE-01: a mapped Call's invocation in a nested scope-data Program as a prepared scope creation, beside the
+ * declared entry of CSD-PREPARE-01; elsewhere it stays a singleton.
  * It keeps the unchanged invocation `control` and adds the called-root frame CVM-IN-01 evaluates against the
  * predecessor along the caller's chain, so every law over the control patch stays as it is and the composition adds one
  * frame insertion that changes only `variables.scopes`. Return stays an unprepared singleton.
@@ -41,7 +42,7 @@ export function deriveInternalMappedInvocationPreparation(
   operation: InvokeProcessOperation,
 ): PreparedInternalMappedInvocation | null {
   const data: VariableMappingCallData | undefined =
-    operation.data.kind === CallDataKind.VariableMappings ? operation.data : undefined;
+    nestedScopeDataProgram(program) && operation.data.kind === CallDataKind.VariableMappings ? operation.data : undefined;
   const control = data === undefined ? null : deriveInternalInvokeProcessPreparation(program, state, operation);
   if (data === undefined || control === null || control.creation.kind !== InternalScopeCreationResultKind.CalledProcess) {
     return null;

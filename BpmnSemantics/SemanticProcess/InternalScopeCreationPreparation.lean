@@ -9,8 +9,9 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! Complete predecessor preparations for ordinary child entry and Call invocation under the
 [Internal Commutation account](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md). The preparation is the
 entry's control, TypeScript's `deriveInternalEnterScopeControl`: it also succeeds for a child that
-declares locals, whose frame the declared-entry family adds (CSD-PREPARE-01), so the ordinary family
-admits it only with `internalScopeCreationUndeclared`.
+declares locals, whose frame the declared-entry family adds (CSD-PREPARE-01), and for a mapped Call,
+whose called-root frame the mapped invocation family adds (CMCALL-PREPARE-01), so the ordinary family
+admits it only with `internalScopeCreationUndeclared` and `internalScopeCreationUnmapped`.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalScopeCreationRetentionUnchanged,
@@ -55,7 +56,8 @@ def internalScopeCreationDefinitionMatches (operation : SemanticOperation)
   | .enterScope _ origin _ _ scope =>
       definition.id = scope && definition.parentScopeId = some owner.definitionScopeId &&
         definition.originElementId = origin.elementId
-  | .invokeProcess _ _ _ process scope _ _ .empty =>
+  | .invokeProcess _ _ _ process scope _ _ .empty
+  | .invokeProcess _ _ _ process scope _ _ (.variableMappings _ _) =>
       definition.id = scope && definition.parentScopeId = none &&
         definition.originElementId.value = process.value
   | _ => false
@@ -393,17 +395,18 @@ theorem prepareInternalScopeCreation_selection_facts (program : Program) (state 
   exact ⟨selection, snapshots, (Bool.and_eq_true_iff.mp checks).1⟩
 
 /-- Predecessor checks exclude both snapshot creation and the Transaction's child-register write; an
-undeclared child adds no frame. -/
+undeclared child and an unmapped Call add no frame. -/
 theorem prepareInternalScopeCreation_refines (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
     (undeclared : internalScopeCreationUndeclared program operation = true)
+    (unmapped : internalScopeCreationUnmapped operation = true)
     (found : prepareInternalScopeCreation? program state operation = some prepared) :
     fire? program operation state = some (prepared.selection.apply state) := by
   obtain ⟨selected, instanceId, ownerRecord, origin, definition, start, delta,
     selection, _, snapshots, _, _, _, _, checks, _, _, rfl⟩ :=
       prepareInternalScopeCreation_facts program state operation prepared found
   exact selectInternalScopeCreation_refines program state operation selected snapshots
-    (Bool.and_eq_true_iff.mp checks).1 undeclared selection
+    (Bool.and_eq_true_iff.mp checks).1 undeclared unmapped selection
 
 theorem applyPreparedInternalScopeCreation_of_preparation (program : Program) (state : RuntimeState)
     (operation : SemanticOperation) (prepared : PreparedInternalScopeCreation)
@@ -484,5 +487,126 @@ theorem prepareInternalScopeCreation_owner_alias_refused (program : Program)
       rw [selection] at actualSelected
       cases actualSelected
       simp [owners, identity] at ownerFound
+
+/-! ### Mapped invocation
+
+CMCALL-PREPARE-01 of the
+[concurrent mapped Calls proposal](../../docs/capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md#representation-and-runtime-ownership):
+a mapped Call's invocation in a nested scope-data Program as a prepared scope creation beside the declared
+entry; elsewhere it stays a singleton. It keeps the unchanged invocation `control`, which selects exactly what
+the data-erased invocation selects, and adds the called-root frame that CVM-IN-01 evaluates along the caller's
+chain in the predecessor, so every law over the control stays as it is and the composition adds one frame
+insertion that changes only `variables.scopes`. Return stays an unprepared singleton. -/
+
+/-- The unchanged invocation control, the evaluated called-root frame, and the control footprint plus
+what the evaluation consults. -/
+structure PreparedInternalMappedInvocation where
+  control : PreparedInternalScopeCreation
+  frame : ScopeVariableScope
+  footprint : InternalTransitionStateFootprint
+  deriving Repr, DecidableEq
+
+def prepareInternalMappedInvocation? (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) : Option PreparedInternalMappedInvocation := do
+  let .invokeProcess _ origin _ process _ _ _ (.variableMappings inputs outputs) := operation | none
+  if !nestedScopeDataProgram program ||
+      !callDataInterfaceValid (.variableMappings inputs outputs) origin.elementId.value process.value then none
+  else
+    let control ← prepareInternalScopeCreation? program state operation
+    let bindings ← CallVariableMapping.copyValues?
+      (NestedScopeData.readOutcome? program state.scopeOccurrences state.variables control.selection.owner) inputs
+    if state.variables.scopes.any (·.owner == control.selection.created.id) then none
+    else
+      let reads ← NestedScopeData.readSet? state.scopeOccurrences state.variables.scopes control.selection.owner
+        (enclosingInputNames inputs)
+      some { control, frame := CallVariableMapping.calledRootFrame control.selection.created.id bindings
+             footprint := internalDeclaredEntryFootprint control reads }
+
+def PreparedInternalMappedInvocation.apply (prepared : PreparedInternalMappedInvocation) (state : RuntimeState) :
+    RuntimeState :=
+  let invoked := prepared.control.selection.apply state
+  { invoked with variables := NestedScopeData.insertFrame invoked.variables prepared.frame }
+
+theorem PreparedInternalMappedInvocation.apply_eq (prepared : PreparedInternalMappedInvocation) (state : RuntimeState) :
+    prepared.apply state =
+      { prepared.control.selection.apply state with
+        variables := NestedScopeData.insertFrame (prepared.control.selection.apply state).variables prepared.frame } := by
+  unfold PreparedInternalMappedInvocation.apply
+  rfl
+
+theorem prepareInternalMappedInvocation_facts (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalMappedInvocation)
+    (found : prepareInternalMappedInvocation? program state operation = some prepared) :
+    ∃ id origin input process scope entry returned inputs outputs bindings reads,
+      operation = .invokeProcess id origin input process scope entry returned (.variableMappings inputs outputs) ∧
+      nestedScopeDataProgram program = true ∧
+      callDataInterfaceValid (.variableMappings inputs outputs) origin.elementId.value process.value = true ∧
+      prepareInternalScopeCreation? program state operation = some prepared.control ∧
+      CallVariableMapping.copyValues? (NestedScopeData.readOutcome? program state.scopeOccurrences state.variables
+        prepared.control.selection.owner) inputs = some bindings ∧
+      state.variables.scopes.any (·.owner == prepared.control.selection.created.id) = false ∧
+      prepared.frame = CallVariableMapping.calledRootFrame prepared.control.selection.created.id bindings ∧
+      NestedScopeData.readSet? state.scopeOccurrences state.variables.scopes prepared.control.selection.owner
+        (enclosingInputNames inputs) = some reads ∧
+      prepared.footprint = internalDeclaredEntryFootprint prepared.control reads := by
+  unfold prepareInternalMappedInvocation? at found
+  cases operation with
+  | invokeProcess id origin input process scope entry returned data =>
+      cases data with
+      | variableMappings inputs outputs =>
+          simp only [Option.bind_eq_bind] at found
+          split at found
+          · contradiction
+          · next valid =>
+              obtain ⟨control, controlFound, found⟩ := Option.bind_eq_some_iff.mp found
+              obtain ⟨bindings, copied, found⟩ := Option.bind_eq_some_iff.mp found
+              split at found
+              · contradiction
+              · next fresh =>
+                  obtain ⟨reads, read, found⟩ := Option.bind_eq_some_iff.mp found
+                  cases found
+                  simp only [Bool.or_eq_true, Bool.not_eq_true', not_or, Bool.not_eq_false] at valid
+                  exact ⟨id, origin, input, process, scope, entry, returned, inputs, outputs, bindings, reads, rfl,
+                    valid.1, valid.2, controlFound, copied, by simpa using fresh, rfl, read, rfl⟩
+      | _ => simp at found
+  | _ => simp at found
+
+/-- The converse of `prepareInternalMappedInvocation_facts`: a state on which the control, the copied
+values, the frame's absence and the read set evaluate as before prepares the same invocation. -/
+theorem prepareInternalMappedInvocation_of_facts (program : Program) (state : RuntimeState)
+    (prepared : PreparedInternalMappedInvocation) (id : OperationId) (origin : BpmnElementOrigin)
+    (input entry : ControlPlaceId) (process : ProcessId) (scope : DefinitionScopeId) (returned : OperationId)
+    (inputs outputs : List VariableMapping) (bindings : List VariableBinding) (reads : NestedScopeData.ReadSet)
+    (nested : nestedScopeDataProgram program = true)
+    (valid : callDataInterfaceValid (.variableMappings inputs outputs) origin.elementId.value process.value = true)
+    (control : prepareInternalScopeCreation? program state
+      (.invokeProcess id origin input process scope entry returned (.variableMappings inputs outputs)) = some prepared.control)
+    (copied : CallVariableMapping.copyValues? (NestedScopeData.readOutcome? program state.scopeOccurrences state.variables
+      prepared.control.selection.owner) inputs = some bindings)
+    (fresh : state.variables.scopes.any (·.owner == prepared.control.selection.created.id) = false)
+    (frame : prepared.frame = CallVariableMapping.calledRootFrame prepared.control.selection.created.id bindings)
+    (read : NestedScopeData.readSet? state.scopeOccurrences state.variables.scopes prepared.control.selection.owner
+      (enclosingInputNames inputs) = some reads)
+    (footprint : prepared.footprint = internalDeclaredEntryFootprint prepared.control reads) :
+    prepareInternalMappedInvocation? program state
+      (.invokeProcess id origin input process scope entry returned (.variableMappings inputs outputs)) = some prepared := by
+  cases prepared with
+  | mk invocationControl invocationFrame invocationFootprint =>
+      dsimp only at control copied fresh frame read footprint
+      subst frame footprint
+      unfold prepareInternalMappedInvocation?
+      simp only [Option.bind_eq_bind, nested, valid, Bool.not_true, Bool.or_self, Bool.false_eq_true, ↓reduceIte, control, copied, fresh,
+        read, Option.bind_some]
+
+theorem prepareInternalMappedInvocation_operation (program : Program) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalMappedInvocation)
+    (found : prepareInternalMappedInvocation? program state operation = some prepared) :
+    prepared.control.selection.operation = operation ∧
+      program.compensationEventSubProcessSnapshots = none := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, control, _⟩ :=
+    prepareInternalMappedInvocation_facts program state operation prepared found
+  obtain ⟨_, _, _, _, _, _, _, _, _, snapshots, _⟩ :=
+    prepareInternalScopeCreation_facts program state operation prepared.control control
+  exact ⟨(prepareInternalScopeCreation_operation program state operation prepared.control control).1, snapshots⟩
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

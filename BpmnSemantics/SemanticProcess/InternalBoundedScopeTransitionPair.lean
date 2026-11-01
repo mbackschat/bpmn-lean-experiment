@@ -234,6 +234,7 @@ theorem prepared_bounded_scope_transition_pair (program : Program) (state : Runt
       exact False.elim (prepared_bounded_scope_creation_impossible program state contract bounded creation
         boundedFound otherFound.1)
   | declaredEntry _ => exact (independent : False).elim
+  | mappedInvocation _ => exact (independent : False).elim
   | ordinaryEnd ending =>
       have pair := prepared_bounded_scope_end_pair program state contract bounded ending.operation ending
         boundedFound.2 otherFound canonical independent

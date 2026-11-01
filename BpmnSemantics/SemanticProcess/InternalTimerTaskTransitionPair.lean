@@ -106,6 +106,7 @@ theorem prepared_timer_task_transition_pair (program : Program) (state : Runtime
         creation taskFound otherFound.1 canonical independent
       exact ⟨⟨pair.2.1, otherFound.2⟩, pair.1, pair.2.2.symm⟩
   | declaredEntry _ => exact (independent : False).elim
+  | mappedInvocation _ => exact (independent : False).elim
   | ordinaryEnd ending =>
       have pair := prepared_timer_task_end_pair_commutes program state ending.operation ending contract patch
         otherFound taskFound independent

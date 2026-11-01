@@ -13,6 +13,7 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
 import BpmnSemantics.SemanticProcess.InternalScopeCreationAdmissionFacts
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
+import BpmnSemantics.SemanticProcess.InternalMappedInvocationLaws
 import BpmnSemantics.SemanticProcess.ScopeInsertionValidity
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TokenOrder
@@ -319,8 +320,7 @@ private theorem prepared_repeated_scope_separate (program : Program) (state : Ru
   | invokeProcess id origin input process scope childEntry returned data =>
     cases data with
     | scalar => simp at selection
-    | variableMappings => simp at selection
-    | empty =>
+    | empty | variableMappings _ _ =>
       obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
       dsimp only at selection
       repeat first | contradiction | split at selection
@@ -613,7 +613,7 @@ theorem prepareInternalScopeCreation_preserves_runtimeStateWellFormed
     prepareInternalScopeCreation_facts program state operation prepared found
   have domain := scopeCreation_runtime_rootCompensationDomain program instanceId state operation selected
     origin definition valid checks definitionFound (by
-      intro id callOrigin input process scope entry returnOperation same
+      intro id callOrigin input process scope entry returnOperation data same
       have member : operation ∈ program.operations.filter (fun candidate => decide (candidate.id = operation.id)) := by
         rw [operationExact]; simp
       exact (List.mem_filter.mp member).1)
@@ -640,7 +640,7 @@ theorem prepareInternalDeclaredEntry_preserves_runtimeStateWellFormed
     prepareInternalScopeCreation_facts program state operation prepared.control controlFound
   have domain := scopeCreation_runtime_rootCompensationDomain program instanceId state operation selected
     origin definition valid checks definitionFound (by
-      intro _ _ _ _ _ _ _ _
+      intro _ _ _ _ _ _ _ _ _
       have member : operation ∈ program.operations.filter (fun candidate => decide (candidate.id = operation.id)) := by
         rw [operationExact]; simp
       exact (List.mem_filter.mp member).1)
@@ -654,6 +654,41 @@ theorem prepareInternalDeclaredEntry_preserves_runtimeStateWellFormed
   intro owner frame selectedFrame
   have kept := NestedScopeData.selectScopeVariables?_insertFrame (prepared.control.selection.apply state).variables
     prepared.frame frame owner (by rw [variables, owned]; exact absent) selectedFrame
+  rwa [NestedScopeData.insertFrame_scopes] at kept
+
+/-- CMCALL-PREPARE-01: the mapped invocation preserves aggregate validity, composed from the control's
+preservation and the frame insertion for the created called root, which held no frame. -/
+theorem prepareInternalMappedInvocation_preserves_runtimeStateWellFormed
+    (program : Program) (instanceId : SemanticId) (state : RuntimeState)
+    (operation : SemanticOperation) (prepared : PreparedInternalMappedInvocation)
+    (admitted : programWellFormed program = true)
+    (valid : runtimeStateWellFormed program instanceId state = true)
+    (found : prepareInternalMappedInvocation? program state operation = some prepared) :
+    runtimeStateWellFormed program instanceId (prepared.apply state) = true := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _, _, _, controlFound, _⟩ :=
+    prepareInternalMappedInvocation_facts program state operation prepared found
+  have absent := (prepareInternalMappedInvocation_frame program state operation prepared found).2
+  have entered := prepareInternalScopeCreation_preserves_runtimeStateWellFormed program instanceId state
+    operation prepared.control admitted valid controlFound
+  obtain ⟨selected, hosting, _, origin, definition, _, _, _, running, _, operationExact, _, _,
+    definitionFound, checks, _, _, _⟩ :=
+    prepareInternalScopeCreation_facts program state operation prepared.control controlFound
+  have domain := scopeCreation_runtime_rootCompensationDomain program instanceId state operation selected
+    origin definition valid checks definitionFound (by
+      intro _ _ _ _ _ _ _ _ _
+      have member : operation ∈ program.operations.filter (fun candidate => decide (candidate.id = operation.id)) := by
+        rw [operationExact]; simp
+      exact (List.mem_filter.mp member).1)
+  have variables : (prepared.control.selection.apply state).variables = state.variables := by
+    cases kind : prepared.control.selection.kind <;> simp [InternalScopeCreationSelection.apply, kind]
+  have enteredRunning : (prepared.control.selection.apply state).control = .running hosting := by
+    cases kind : prepared.control.selection.kind <;> simp [InternalScopeCreationSelection.apply, kind, running]
+  rw [PreparedInternalMappedInvocation.apply_eq]
+  simp only [NestedScopeData.insertFrame_scopes]
+  apply runtimeStateWellFormed_frames program domain instanceId hosting _ enteredRunning _ _ entered
+  intro owner frame selectedFrame
+  have kept := NestedScopeData.selectScopeVariables?_insertFrame (prepared.control.selection.apply state).variables
+    prepared.frame frame owner (by rw [variables]; exact absent) selectedFrame
   rwa [NestedScopeData.insertFrame_scopes] at kept
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

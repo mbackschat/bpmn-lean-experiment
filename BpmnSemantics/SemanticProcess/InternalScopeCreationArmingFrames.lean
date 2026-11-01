@@ -188,6 +188,20 @@ private theorem read?_insert_fresh (occurrences : List RuntimeScopeOccurrence) (
   | some chain =>
       simpa [occurrenceChain_insert_fresh occurrences created fresh reader chain chained, chained] using found
 
+/-- CMCALL-PREPARE-01: a mapped Call's input read taken before a fresh occurrence's insertion reads the same
+afterwards, because the reader's chain holds only live identities. -/
+theorem readOutcome?_insert_fresh (occurrences : List RuntimeScopeOccurrence) (program : Program)
+    (variables : ScopedVariables) (created : RuntimeScopeOccurrence)
+    (fresh : ∀ occurrence ∈ occurrences, occurrence.id ≠ created.id) (reader : ScopeOccurrenceId)
+    (name : String) (value : Option VariableValue)
+    (found : NestedScopeData.readOutcome? program occurrences variables reader name = some value) :
+    NestedScopeData.readOutcome? program (insertScopeOccurrence created occurrences) variables reader name = some value := by
+  unfold NestedScopeData.readOutcome? at found ⊢
+  cases chained : NestedScopeData.occurrenceChain occurrences reader with
+  | none => simp [chained] at found
+  | some chain =>
+      simpa [occurrenceChain_insert_fresh occurrences created fresh reader chain chained, chained] using found
+
 /-- Input evaluation consults its reader only on enclosing names, so a reader that returns every earlier
 present value again yields the same snapshot. -/
 private theorem evaluateInputMappingsInOrderUnder_of_widened (policy : EffectMappingValuePolicy)

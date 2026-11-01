@@ -109,8 +109,8 @@ theorem scopeCreation_rootCompensationDomain (program : Program) (state : Runtim
     (execution : compensationExecutionDeclarationValid program = true)
     (checks : internalScopeCreationPredecessorChecks program state operation selected origin definition = true)
     (definitionMember : definition ∈ program.definitionScopes)
-    (invocationMember : ∀ id callOrigin input process scope entry returnOperation,
-      operation = .invokeProcess id callOrigin input process scope entry returnOperation →
+    (invocationMember : ∀ id callOrigin input process scope entry returnOperation data,
+      operation = .invokeProcess id callOrigin input process scope entry returnOperation data →
         operation ∈ program.operations) : RootCompensationExecutionDomain program := by
   cases declared : program.compensationExecution with
   | none => exact RootCompensationExecutionDomain.of_no_execution program declared execution
@@ -149,9 +149,8 @@ theorem scopeCreation_rootCompensationDomain (program : Program) (state : Runtim
               | invokeProcess id callOrigin input process scope entry returnOperation data =>
                   cases data with
                   | scalar => simp [internalScopeCreationDefinitionMatches] at definitionMatches
-                  | variableMappings => simp [internalScopeCreationDefinitionMatches] at definitionMatches
-                  | empty =>
-                      have member := invocationMember id callOrigin input process scope entry returnOperation rfl
+                  | empty | variableMappings _ _ =>
+                      have member := invocationMember id callOrigin input process scope entry returnOperation _ rfl
                       simp only [compensationActivityRetentionDeclarationValid, retentionPresent,
                         Bool.and_eq_true, Bool.not_eq_true'] at retentionValid
                       have absent := retentionValid.2
@@ -167,8 +166,8 @@ theorem scopeCreation_runtime_rootCompensationDomain (program : Program) (instan
     (valid : runtimeStateWellFormed program instanceId state = true)
     (checks : internalScopeCreationPredecessorChecks program state operation selected origin definition = true)
     (found : definitionScope? program selected.created.id.definitionScopeId = some definition)
-    (invocationMember : ∀ id callOrigin input process scope entry returnOperation,
-      operation = .invokeProcess id callOrigin input process scope entry returnOperation →
+    (invocationMember : ∀ id callOrigin input process scope entry returnOperation data,
+      operation = .invokeProcess id callOrigin input process scope entry returnOperation data →
         operation ∈ program.operations) : RootCompensationExecutionDomain program := by
   have execution : compensationExecutionDeclarationValid program = true := by
     simp only [runtimeStateWellFormed, Bool.and_eq_true] at valid

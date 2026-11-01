@@ -181,7 +181,7 @@ theorem prepareInternalBoundedScope_rootCompensationDomain
   obtain ⟨entry, entryFound, rfl⟩ := selectInternalBoundedScope_facts state contract selected selection
   exact scopeCreation_runtime_rootCompensationDomain program instanceId state contract.entryOperation
     entry contract.origin definition valid checks definitionFound (by
-      intro id origin input process scope output returnOperation same
+      intro id origin input process scope output returnOperation data same
       simp [InternalBoundedScopeContract.entryOperation] at same)
 
 /-- Admitted scope and origin populations separate bounded Activities from repeated-scope ownership. -/

@@ -160,3 +160,20 @@ test("each prepared mapped invocation equals the evaluator's invocation, and the
       assert.equal(preparedInternalTransitionsAreIndependent(prepared[left]!, prepared[right]!), true, `${left}/${right}`);
     }
   });
+
+test("CMCALL-PREPARE-01 prepares a mapped invocation only in a nested scope-data Program", async () => {
+  const travel = await program("travel-request");
+  const operationAt = (elementId: string, kind: string) => travel.operations.find(operation =>
+    operation.kind === kind && operation.origin.elementId === elementId)!;
+  const invocation = operationAt("BudgetCheck", "invokeProcess");
+  const state = admittedInternalPrefix(travel, initialState,
+    start("Process_TravelRequest", [bind("approvedBudget", text("1200"))]),
+    [operationAt("TravelRequested", "initiate").id, operationAt("PreparationFork", "duplicate").id],
+    [invocation.id, operationAt("VisaCheck", "invokeProcess").id, operationAt("Booking", "enterScope").id]);
+  const owner = state.scopeOccurrences.find(({ parent }) => parent === null)!.id;
+  assert.equal(deriveInternalTransitionPreparation(travel, state, { operation: invocation, owner })?.family,
+    PreparedInternalTransitionFamily.MappedInvocation);
+  // Outside nested scope data the Call keeps its singleton invocation, as Lean's preparation refuses it there.
+  const unnested = { ...travel, identity: { ...travel.identity, semanticProfile: "unnested-profile" } };
+  assert.equal(deriveInternalTransitionPreparation(unnested, state, { operation: invocation, owner }), null);
+});

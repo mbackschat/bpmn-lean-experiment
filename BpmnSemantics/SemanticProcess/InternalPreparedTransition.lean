@@ -38,6 +38,7 @@ inductive PreparedInternalTransition where
   | localControl (prepared : PreparedInternalLocalControl)
   | scopeCreation (prepared : PreparedInternalScopeCreation)
   | declaredEntry (prepared : PreparedInternalDeclaredEntry)
+  | mappedInvocation (prepared : PreparedInternalMappedInvocation)
   | regional (prepared : PreparedInternalRegional)
   | ordinaryEnd (prepared : PreparedInternalEnd)
   | mergeInput (prepared : PreparedInternalMerge)
@@ -51,6 +52,7 @@ def PreparedInternalTransition.operation : PreparedInternalTransition → Semant
   | .localControl prepared => prepared.operation
   | .scopeCreation prepared => prepared.selection.operation
   | .declaredEntry prepared => prepared.control.selection.operation
+  | .mappedInvocation prepared => prepared.control.selection.operation
   | .regional prepared => prepared.selection.operation
   | .ordinaryEnd prepared => prepared.operation
   | .mergeInput prepared => prepared.selection.operation
@@ -68,6 +70,7 @@ def PreparedInternalTransition.apply (program : Program) (state : RuntimeState) 
   | .localControl prepared => prepared.selection.apply state
   | .scopeCreation prepared => prepared.selection.apply state
   | .declaredEntry prepared => prepared.apply state
+  | .mappedInvocation prepared => prepared.apply state
   | .regional prepared => (applyPreparedInternalRegional? program state prepared).getD state
   | .ordinaryEnd prepared => prepared.selection.apply state
   | .mergeInput prepared => prepared.selection.apply state
@@ -81,6 +84,7 @@ def PreparedInternalTransition.stateFootprint :
   | .localControl prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
   | .scopeCreation prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
   | .declaredEntry prepared => liftRegionalStateFootprint prepared.control.selection.owner prepared.footprint
+  | .mappedInvocation prepared => liftRegionalStateFootprint prepared.control.selection.owner prepared.footprint
   | .regional prepared => prepared.footprint
   | .ordinaryEnd prepared => prepared.footprint
   | .mergeInput prepared => liftRegionalStateFootprint prepared.selection.owner prepared.footprint
@@ -108,9 +112,12 @@ def PreparedInternalTransition.Prepared (program : Program) (state : RuntimeStat
       prepareInternalLocalControl? program state prepared.operation = some prepared
   | .scopeCreation prepared =>
       prepareInternalScopeCreation? program state prepared.selection.operation = some prepared ∧
-        internalScopeCreationUndeclared program prepared.selection.operation = true
+        internalScopeCreationUndeclared program prepared.selection.operation = true ∧
+        internalScopeCreationUnmapped prepared.selection.operation = true
   | .declaredEntry prepared =>
       prepareInternalDeclaredEntry? program state prepared.control.selection.operation = some prepared
+  | .mappedInvocation prepared =>
+      prepareInternalMappedInvocation? program state prepared.control.selection.operation = some prepared
   | .regional prepared =>
       prepareInternalRegional? program state prepared.selection.operation = some prepared
   | .ordinaryEnd prepared =>
@@ -169,9 +176,19 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .localControl first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .declaredEntry first, .arming second => localControlStateFootprintsNonInterfering first.footprint second.stateFootprint = true
   | .arming first, .declaredEntry second => localControlStateFootprintsNonInterfering first.stateFootprint second.footprint = true
-  -- CSD-PREPARE-01's batch premise: a declared entry's commutation is established only beside scope
-  -- creations, local control and armings, so every other companion refuses the batch.
-  | .declaredEntry _, _ | _, .declaredEntry _ => False
+  | .mappedInvocation first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .mappedInvocation first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .declaredEntry first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .mappedInvocation first, .scopeCreation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .scopeCreation first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .mappedInvocation first, .localControl second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .localControl first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .mappedInvocation first, .arming second => localControlStateFootprintsNonInterfering first.footprint second.stateFootprint = true
+  | .arming first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.stateFootprint second.footprint = true
+  -- CSD-PREPARE-01's and CMCALL-PREPARE-01's batch premise: a frame-inserting member's commutation is
+  -- established only beside the frame-inserting families, scope creations, local control and armings, so every
+  -- other companion refuses the batch.
+  | .declaredEntry _, _ | _, .declaredEntry _ | .mappedInvocation _, _ | _, .mappedInvocation _ => False
   | .messageTask .., _ | _, .messageTask .. | .boundedScope .., _ | _, .boundedScope ..
   | .timerTask .., _ | _, .timerTask .. | .regional _, _ | _, .regional _ | .ordinaryEnd _, _ | _, .ordinaryEnd _ =>
       regionalStateFootprintsIndependent left.stateFootprint right.stateFootprint = true
@@ -188,9 +205,11 @@ def prepareOrdinaryInternalTransition? (program : Program) (state : RuntimeState
   | none =>
       match internalScopeCreationOrigin? operation with
       | some _ =>
-          if internalScopeCreationUndeclared program operation then
-            (prepareInternalScopeCreation? program state operation).map .scopeCreation
-          else (prepareInternalDeclaredEntry? program state operation).map .declaredEntry
+          if !internalScopeCreationUndeclared program operation then
+            (prepareInternalDeclaredEntry? program state operation).map .declaredEntry
+          else if !internalScopeCreationUnmapped operation then
+            (prepareInternalMappedInvocation? program state operation).map .mappedInvocation
+          else (prepareInternalScopeCreation? program state operation).map .scopeCreation
       | none => (prepareInternalArming? program state operation).map .arming
 
 def prepareTimerTaskInternalTransition? (program : Program) (state : RuntimeState)
@@ -285,7 +304,25 @@ private theorem prepareOrdinaryInternalTransition_sound (program : Program) (sta
       | some origin =>
           simp only [prepareOrdinaryInternalTransition?, originFound, scopeOrigin] at found
           split at found
+          · obtain ⟨declared, selected, rfl⟩ := Option.map_eq_some_iff.mp found
+            obtain ⟨operationEq, snapshots⟩ :=
+              prepareInternalDeclaredEntry_operation program state operation declared selected
+            refine ⟨?_, operationEq, snapshots⟩
+            change prepareInternalDeclaredEntry? program state declared.control.selection.operation = some declared
+            rw [operationEq]
+            exact selected
           · next undeclared =>
+            simp only [Bool.not_eq_true', Bool.not_eq_false] at undeclared
+            split at found
+            · obtain ⟨mapped, selected, rfl⟩ := Option.map_eq_some_iff.mp found
+              obtain ⟨operationEq, snapshots⟩ :=
+                prepareInternalMappedInvocation_operation program state operation mapped selected
+              refine ⟨?_, operationEq, snapshots⟩
+              change prepareInternalMappedInvocation? program state mapped.control.selection.operation = some mapped
+              rw [operationEq]
+              exact selected
+            · next unmapped =>
+              simp only [Bool.not_eq_true', Bool.not_eq_false] at unmapped
               obtain ⟨scope, selected, rfl⟩ := Option.map_eq_some_iff.mp found
               have operationEq := (prepareInternalScopeCreation_operation program state operation
                 scope selected).1
@@ -295,16 +332,10 @@ private theorem prepareOrdinaryInternalTransition_sound (program : Program) (sta
                 exact excluded
               refine ⟨?_, operationEq, snapshots⟩
               change prepareInternalScopeCreation? program state scope.selection.operation = some scope ∧
-                internalScopeCreationUndeclared program scope.selection.operation = true
+                internalScopeCreationUndeclared program scope.selection.operation = true ∧
+                internalScopeCreationUnmapped scope.selection.operation = true
               rw [operationEq]
-              exact ⟨selected, undeclared⟩
-          · obtain ⟨declared, selected, rfl⟩ := Option.map_eq_some_iff.mp found
-            obtain ⟨operationEq, snapshots⟩ :=
-              prepareInternalDeclaredEntry_operation program state operation declared selected
-            refine ⟨?_, operationEq, snapshots⟩
-            change prepareInternalDeclaredEntry? program state declared.control.selection.operation = some declared
-            rw [operationEq]
-            exact selected
+              exact ⟨selected, undeclared, unmapped⟩
   | some origin =>
       cases snapshots : program.compensationEventSubProcessSnapshots with
       | some _ => simp [prepareOrdinaryInternalTransition?, originFound, snapshots] at found
@@ -465,9 +496,15 @@ private theorem prepareOrdinaryInternalTransition_snapshots_refused (program : P
     | some entry =>
         have absent := (prepareInternalDeclaredEntry_operation program state operation entry found).2
         simp [declared] at absent
+  have mappedRefused : prepareInternalMappedInvocation? program state operation = none := by
+    cases found : prepareInternalMappedInvocation? program state operation with
+    | none => rfl
+    | some mapped =>
+        have absent := (prepareInternalMappedInvocation_operation program state operation mapped found).2
+        simp [declared] at absent
   cases origin : internalLocalControlOrigin? operation <;>
     cases scopeOrigin : internalScopeCreationOrigin? operation <;>
-    simp [prepareOrdinaryInternalTransition?, origin, scopeOrigin, scopeRefused, declaredRefused,
+    simp [prepareOrdinaryInternalTransition?, origin, scopeOrigin, scopeRefused, declaredRefused, mappedRefused,
       prepareInternalArming?, declared]
 
 theorem prepareInternalTransition_snapshots_refused (program : Program) (state : RuntimeState)

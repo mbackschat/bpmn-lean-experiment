@@ -44,6 +44,7 @@ def preparedTransitionPublicationTemplate? (program : Program) (state : RuntimeS
   | .localControl prepared => some (internalLocalControlPublicationTemplate prepared)
   | .scopeCreation prepared => some (internalScopeCreationPublicationTemplate prepared)
   | .declaredEntry prepared => some (internalScopeCreationPublicationTemplate prepared.control)
+  | .mappedInvocation prepared => some (internalScopeCreationPublicationTemplate prepared.control)
   | .regional prepared => some (internalRegionalPublicationTemplate prepared)
   | .ordinaryEnd prepared => some (internalEndPublicationTemplate prepared)
   | .mergeInput prepared => some (internalMergePublicationTemplate prepared)

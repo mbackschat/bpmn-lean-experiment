@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.CallVariableMapping
 import BpmnSemantics.SemanticProcess.CollectionOrder
+import BpmnSemantics.SemanticProcess.NestedScopeChainBridge
 import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
 import all BpmnSemantics.SemanticProcess.CallVariableMapping
 import all BpmnSemantics.SemanticProcess.NestedScopeData
@@ -339,6 +340,106 @@ theorem returnState?_outputs_land_in_caller_frames (program : Program) (before a
   obtain ⟨process, landed, _⟩ := NestedScopeData.writeAll?_frames program _ _ chain chained values returned.variables
     after.variables wrote (names ▸ distinct) resolvedAll
   exact ⟨process, landed⟩
+
+/-- CMCALL-PREPARE-01: the mapped invocation is the data-erased invocation plus the called-root frame, so a
+prepared invocation that retains those parts refines this evaluator. -/
+theorem invokeState?_of_parts (program : Program) (state invoked : RuntimeState) (origin : BpmnElementOrigin)
+    (input : ControlPlaceId) (calledProcessId : ProcessId) (calledRootScopeId : DefinitionScopeId)
+    (calledEntry : ControlPlaceId) (returnOperationId : OperationId) (inputs outputs : List VariableMapping)
+    (caller root : ScopeOccurrenceId) (bindings : List VariableBinding)
+    (valid : callDataInterfaceValid (.variableMappings inputs outputs) origin.elementId.value calledProcessId.value = true)
+    (owned : onlyTokenOwner? state input = some caller)
+    (copied : copyValues? (NestedScopeData.readOutcome? program state.scopeOccurrences state.variables caller) inputs =
+      some bindings)
+    (invokedFound : invokeProcessState? state origin input calledProcessId calledRootScopeId calledEntry
+      returnOperationId = some invoked)
+    (rooted : root =
+      { processInstanceId := deriveCalledProcessInstanceId caller.processInstanceId origin.elementId
+          (callActivationCount state origin.elementId + 1)
+        definitionScopeId := calledRootScopeId, activation := 1 })
+    (fresh : invoked.variables.scopes.any (·.owner == root) = false) :
+    invokeState? program state origin input calledProcessId calledRootScopeId calledEntry returnOperationId inputs
+      outputs = some { invoked with variables := NestedScopeData.insertFrame invoked.variables (calledRootFrame root bindings) } := by
+  subst rooted
+  unfold invokeState? scalarInvocationRoot
+  simp only [valid, Bool.not_true, Bool.false_eq_true, ↓reduceIte, owned, copied, invokedFound, fresh, bind,
+    Option.bind, NestedScopeData.insertFrame_scopes]
+
+theorem calledRootFrame_owner (root : ScopeOccurrenceId) (bindings : List VariableBinding) :
+    (calledRootFrame root bindings).owner = root := by
+  unfold calledRootFrame
+  rfl
+
+/-! ## Input reads beside a concurrent batch member
+
+A mapped invocation evaluates its inputs against the predecessor (CMCALL-PREPARE-01), so a co-enabled
+member keeps it prepared only if the reads stay as they were: they consult only the occurrences, the
+frames and the Process data, and a frame for an identity no live occurrence carries lies on no
+reader's chain. -/
+
+theorem readOutcome?_of_data (program : Program) (state after : RuntimeState)
+    (occurrences : after.scopeOccurrences = state.scopeOccurrences)
+    (scopes : after.variables.scopes = state.variables.scopes)
+    (process : after.variables.process = state.variables.process) (reader : ScopeOccurrenceId) :
+    NestedScopeData.readOutcome? program after.scopeOccurrences after.variables reader =
+      NestedScopeData.readOutcome? program state.scopeOccurrences state.variables reader := funext fun name => by
+  unfold NestedScopeData.readOutcome? selectScopeVariables?
+  simp only [occurrences, scopes, process]
+
+theorem readOutcome?_insertFrame_dead (program : Program) (occurrences : List RuntimeScopeOccurrence)
+    (variables : ScopedVariables) (frame : ScopeVariableScope)
+    (dead : ∀ occurrence ∈ occurrences, occurrence.id ≠ frame.owner) (reader : ScopeOccurrenceId) :
+    NestedScopeData.readOutcome? program occurrences (NestedScopeData.insertFrame variables frame) reader =
+      NestedScopeData.readOutcome? program occurrences variables reader := funext fun name => by
+  unfold NestedScopeData.readOutcome?
+  cases chained : occurrenceChain occurrences reader with
+  | none => rfl
+  | some chain =>
+      have off : ∀ member ∈ chain, member ≠ frame.owner := by
+        intro member inside
+        obtain ⟨occurrence, live, same⟩ := NestedScopeData.occurrenceChain_live occurrences reader chain chained
+          member inside
+        exact same ▸ dead occurrence live
+      simp only [Option.bind_eq_bind, Option.bind_some,
+        NestedScopeData.resolveOwner?_insertFrame_off variables frame name chain off]
+      cases resolved : resolveOwner? variables.scopes chain name with
+      | none => rfl
+      | some owner =>
+          cases owner with
+          | process =>
+              cases called : calledRootOf? program chain with
+              | none => simp [NestedScopeData.insertFrame_scopes]
+              | some root =>
+                  simp [NestedScopeData.framesAt_insertFrame_other variables frame root
+                    (off root (NestedScopeData.calledRootOf?_on_chain program chain root called))]
+          | frame owner =>
+              have onChain := NestedScopeData.resolveOwner?_frame_on_chain variables chain name owner resolved
+              simp [NestedScopeData.selectScopeVariables?_insertFrame_other variables frame owner
+                (Ne.symm (off owner onChain))]
+
+private theorem copyValue?_of_widened (before after : String → Option (Option VariableValue))
+    (widened : ∀ name value, before name = some value → after name = some value)
+    (mapping : VariableMapping) (binding : VariableBinding)
+    (copied : copyValue? before mapping = some binding) : copyValue? after mapping = some binding := by
+  unfold copyValue? at copied ⊢
+  cases expression : mapping.expression with
+  | stringLiteral _ => simp [expression] at copied
+  | localVariable name | enclosingVariable name =>
+      simp only [expression, Option.bind_eq_bind, Option.bind_eq_some_iff] at copied ⊢
+      obtain ⟨value, read, copied⟩ := copied
+      exact ⟨value, widened name value read, copied⟩
+
+/-- A reader that returns every earlier outcome again copies the same values. -/
+theorem copyValues?_of_widened (before after : String → Option (Option VariableValue))
+    (widened : ∀ name value, before name = some value → after name = some value) :
+    ∀ (mappings : List VariableMapping) (bindings : List VariableBinding),
+      copyValues? before mappings = some bindings → copyValues? after mappings = some bindings
+  | [], _, copied => copied
+  | mapping :: rest, _, copied => by
+      simp only [copyValues?, List.mapM_cons, Option.bind_eq_bind, Option.bind_eq_some_iff] at copied ⊢
+      obtain ⟨head, headCopied, tail, tailCopied, done⟩ := copied
+      exact ⟨head, copyValue?_of_widened before after widened mapping head headCopied, tail,
+        copyValues?_of_widened before after widened rest tail tailCopied, done⟩
 
 end CallVariableMapping
 end BpmnSemantics.SemanticProcess

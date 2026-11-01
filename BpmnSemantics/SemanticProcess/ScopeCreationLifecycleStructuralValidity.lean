@@ -150,8 +150,7 @@ theorem prepareInternalScopeCreation_child_excludes_bounded_entry
   | invokeProcess selectedId selectedOrigin selectedInput process scope entry returned data =>
       cases data with
       | scalar => simp at selection
-      | variableMappings => simp at selection
-      | empty =>
+      | empty | variableMappings _ _ =>
           obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
           dsimp only at selection
           repeat first | contradiction | split at selection
@@ -174,8 +173,8 @@ private theorem length_filterMap_as_filter (values : List α) (f : α → Option
 private theorem invoke_return_census (program : Program)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
     (process : ProcessId) (root : DefinitionScopeId) (entry : ControlPlaceId)
-    (returnedId : OperationId) (paired : callOperationsPaired program = true)
-    (member : .invokeProcess id origin input process root entry returnedId ∈ program.operations) :
+    (returnedId : OperationId) (data : CallDataInterface) (paired : callOperationsPaired program = true)
+    (member : .invokeProcess id origin input process root entry returnedId data ∈ program.operations) :
     (program.operations.filter fun operation => match operation with
       | .invokeProcess _ _ _ _ _ _ returned _ => decide (returned = returnedId)
       | _ => false).length = 1 := by
@@ -191,7 +190,7 @@ private theorem invoke_return_census (program : Program)
       have selected := paired.1.2
       rw [List.all_filterMap] at selected
       have selected := List.all_eq_true.mp selected
-        (.invokeProcess id origin input process root entry returnedId) member
+        (.invokeProcess id origin input process root entry returnedId data) member
       dsimp only at selected
       split at selected
       · next returned singleton =>
@@ -427,8 +426,7 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
   | invokeProcess id selectedOrigin input process root entry returned data =>
       cases data with
       | scalar => simp at selection
-      | variableMappings => simp at selection
-      | empty =>
+      | empty | variableMappings _ _ =>
           obtain ⟨owner, _, selection⟩ := Option.bind_eq_some_iff.mp selection
           try dsimp only at selection
           repeat first | contradiction | split at selection
@@ -440,9 +438,9 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
               simp only [programWellFormed_eq, Bool.and_eq_true] at admitted
               grind
             have census := invoke_return_census program id selectedOrigin input process root entry returned
-              paired operationMember
+              _ paired operationMember
             obtain ⟨sole, singleton⟩ := List.length_eq_one_iff.mp census
-            have operationFiltered : .invokeProcess id selectedOrigin input process root entry returned ∈
+            have operationFiltered : .invokeProcess id selectedOrigin input process root entry returned _ ∈
                 program.operations.filter (fun operation => match operation with
                   | .invokeProcess _ _ _ _ _ _ candidate _ => decide (candidate = returned)
                   | _ => false) := List.mem_filter.mpr ⟨operationMember, by simp⟩
@@ -508,9 +506,8 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
                 exact ⟨⟨⟨⟨by simpa using ownerNonempty, by simpa [← originFound] using originNonempty⟩,
                   Nat.zero_lt_succ _⟩, trivial⟩, afterOwner⟩
               · simp only [decide_eq_true_eq]
-                suffices exactCall : (program.operations.filter _) =
-                    [.invokeProcess id selectedOrigin input process root entry returned] by rw [exactCall]; rfl
-                apply filter_singleton_of_subpredicate program.operations _ _ _ singleton
+                refine (congrArg List.length
+                  (filter_singleton_of_subpredicate program.operations _ _ _ singleton ?_ ?_)).trans rfl
                 · intro candidate _ accepted
                   exact call_binding_candidate_return program owner selectedOrigin.elementId.value
                     process root returned candidate accepted

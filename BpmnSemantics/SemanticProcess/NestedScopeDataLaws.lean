@@ -104,7 +104,7 @@ theorem resolveOwner?_process_undeclared (variables : ScopedVariables) (name : S
 /-- CVM-ISOLATE-01 and CSD-ISOLATE-01, frame side: resolution selects only the frame of an occurrence
 on the resolving chain, so a called-owned read or write never selects a caller frame, and an
 occurrence never selects a sibling occurrence's frame. -/
-private theorem resolveOwner?_frame_on_chain (variables : ScopedVariables) (chain : List ScopeOccurrenceId)
+theorem resolveOwner?_frame_on_chain (variables : ScopedVariables) (chain : List ScopeOccurrenceId)
     (name : String) (owner : ScopeOccurrenceId)
     (resolved : resolveOwner? variables.scopes chain name = some (.frame owner)) :
     owner ∈ chain := by
@@ -134,7 +134,7 @@ private theorem off_chain_map (chain : List ScopeOccurrenceId) (owner : ScopeOcc
         · rw [later]
         · exact later
 
-private theorem calledRootOf?_on_chain (program : Program) (chain : List ScopeOccurrenceId)
+theorem calledRootOf?_on_chain (program : Program) (chain : List ScopeOccurrenceId)
     (root : ScopeOccurrenceId) (called : calledRootOf? program chain = some root) : root ∈ chain := by
   unfold calledRootOf? at called
   split at called
@@ -465,7 +465,16 @@ A frame inserted for an identity that no live occurrence carries lies on no reso
 (`occurrenceChain_live`), so every nested read, frame evaluation and read set stays as it was. Two
 declared entries of one batch rely on this for each other's frames (CSD-PREPARE-01). -/
 
-private theorem resolveOwner?_insertFrame_off (variables : ScopedVariables) (frame : ScopeVariableScope)
+/-- A frame inserted for another owner leaves every owner's frames as they were. -/
+theorem framesAt_insertFrame_other (variables : ScopedVariables) (frame : ScopeVariableScope)
+    (owner : ScopeOccurrenceId) (distinct : owner ≠ frame.owner) :
+    framesAt (insertFrame variables frame).scopes owner = framesAt variables.scopes owner := by
+  rw [insertFrame_scopes]
+  simp only [framesAt]
+  exact filter_canonicalInsertBy_rejected _ _ frame variables.scopes
+    (by simpa only [beq_eq_false_iff_ne] using Ne.symm distinct)
+
+theorem resolveOwner?_insertFrame_off (variables : ScopedVariables) (frame : ScopeVariableScope)
     (name : String) :
     ∀ chain : List ScopeOccurrenceId, (∀ member ∈ chain, member ≠ frame.owner) →
       resolveOwner? (insertFrame variables frame).scopes chain name = resolveOwner? variables.scopes chain name
@@ -473,14 +482,9 @@ private theorem resolveOwner?_insertFrame_off (variables : ScopedVariables) (fra
   | occurrence :: rest, off => by
       have later := resolveOwner?_insertFrame_off variables frame name rest
         (fun member inside => off member (List.mem_cons_of_mem _ inside))
-      have frames : framesAt (insertFrame variables frame).scopes occurrence = framesAt variables.scopes occurrence := by
-        rw [insertFrame_scopes]
-        simp only [framesAt]
-        exact filter_canonicalInsertBy_rejected _ _ frame variables.scopes
-          (by simpa only [beq_eq_false_iff_ne] using Ne.symm (off occurrence (by simp)))
-      simp only [resolveOwner?, frames, later]
+      simp only [resolveOwner?, framesAt_insertFrame_other variables frame occurrence (off occurrence (by simp)), later]
 
-private theorem selectScopeVariables?_insertFrame_other (variables : ScopedVariables) (frame : ScopeVariableScope)
+theorem selectScopeVariables?_insertFrame_other (variables : ScopedVariables) (frame : ScopeVariableScope)
     (owner : ScopeOccurrenceId) (distinct : frame.owner ≠ owner) :
     selectScopeVariables? (insertFrame variables frame) owner = selectScopeVariables? variables owner := by
   unfold selectScopeVariables?
