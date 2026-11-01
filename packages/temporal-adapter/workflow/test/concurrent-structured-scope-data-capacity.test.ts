@@ -15,8 +15,8 @@
  * size, optionally with one further slot empty. In the last two every budget not refused before commit must fit.
  *
  * The Query response is paged to its budget, so its measured size is the page, not a margin: its untyped refusal needs
- * one paired batch with the current execution and open occurrences beyond 196,608 bytes, and both are refused before
- * commit at 65,536 bytes each. Measured on 2026-11-01: the largest uniform slot that commits is 5,749 bytes for order
+ * one paired batch with the current execution and open occurrences beyond 196,608 bytes, and the commit preflight keeps
+ * both within 65,536 bytes, since these models' continuation fits at Start. Measured on 2026-11-01: the largest uniform slot that commits is 5,749 bytes for order
  * review first, 7,472 for order pick first and 9,132 for both loan schedules; with one slot grown, loan assessment
  * reaches the publication continuation budget before the committed-state budget, which the commit preflight refuses,
  * and the largest budget not refused before commit is the Continue-As-New arguments at 158,556 of 458,752 bytes.

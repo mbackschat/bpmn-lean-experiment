@@ -92,10 +92,11 @@ export function preflightWorkflowSemanticCandidate(
 }
 
 /**
- * The semantic preflight followed by the publication continuation that a Continue-As-New directly after this commit
- * would carry. Measuring it here refuses, before commit, a successor that the Workflow could commit but never continue:
- * a concurrent Program's open occurrences and current execution repeat its structured values beside the committed
- * state, so the continuation can outgrow its budget while the state still fits (`CSSD-CAPACITY-01`).
+ * The semantic preflight, then a refusal of any commit that would make a continuable Run uncontinuable: a concurrent
+ * Program's current execution and open occurrences repeat its structured values beside the committed state, so the
+ * publication a Continue-As-New carries can outgrow its budget while the state still fits (`CSSD-CAPACITY-01`). A
+ * continuation already over its budget before the commit, such as one carrying an oversized Program identity, is not
+ * this commit's growth and stays with the typed Continue-As-New check.
  */
 export function preflightWorkflowCommitCandidate(
   candidate: WorkflowSemanticCandidate,
@@ -112,7 +113,8 @@ export function preflightWorkflowCommitCandidate(
     candidate.publication,
     segments,
   );
-  return observed > bound
+  return observed > bound &&
+      measureWorkflowContinuationPublicationBytes(candidate.publicationBefore, segments) <= bound
     ? capacityExceeded(
         WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes,
         bound,

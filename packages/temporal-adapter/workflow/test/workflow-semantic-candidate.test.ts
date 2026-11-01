@@ -27,6 +27,7 @@ import {
   TemporalHostCapabilityResultKind,
   WorkflowChainBudgetKind,
   assessTemporalHostCapability,
+  bpmnWorkflowPublicationSegmentDirectoryV1,
   effectTransportKey,
   preflightEffectActivityRequest,
   preflightEffectActivityResult,
@@ -39,6 +40,7 @@ import {
   WorkflowSemanticCandidatePreflightKind,
   createCommandPublicationState,
   integrateCommandPublication,
+  preflightWorkflowCommitCandidate,
   preflightWorkflowSemanticCandidate,
   recordCommandPublicationOutcome,
 } from "@bpmn-lean/temporal-workflow";
@@ -63,6 +65,23 @@ test("accepts exact canonical state and paired-publication byte boundaries", () 
       observedPublicationBatchBytes: limits.publicationBatchBytes,
     },
   );
+});
+
+// The Continue-As-New check owns a continuation already over budget before the commit; the hosted outgoing and terminal
+// capacity witnesses rely on such a Program committing its Start.
+test("lets a commit through when its predecessor's continuation is already over budget", () => {
+  const program: SemanticProcessProgram = { ...publicationProgram,
+    identity: { ...publicationProgram.identity, sourceId: `${publicationProgram.identity.sourceId}-${"s".repeat(40 * 1_024)}` } };
+  const segments = { runId: "run-1", runOrdinal: 1, firstExecutionRunId: "run-1",
+    segmentDirectory: { format: bpmnWorkflowPublicationSegmentDirectoryV1, segments: [] } };
+  const before = createCommandPublicationState(program, publicationStart.instanceId);
+  const step = advanceScenario(program, initialState, publicationStart);
+  if (step.kind !== ScenarioStepKind.Committed) assert.fail("start did not commit");
+  const after = recordCommandPublicationOutcome(
+    integrateCommandPublication(program, before, publicationStart, step, () => 1_000), publicationStart, step.observations);
+  assert.ok(workflowChainCanonicalUtf8ByteLength(before) > 65_536);
+  assert.equal(preflightWorkflowCommitCandidate({ state: step.state, publicationBefore: before, publication: after }, segments).kind,
+    WorkflowSemanticCandidatePreflightKind.Ready);
 });
 
 test("refuses a multibyte state candidate before mutating any retained fact", () => {
