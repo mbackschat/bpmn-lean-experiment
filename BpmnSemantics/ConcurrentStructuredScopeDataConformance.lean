@@ -115,11 +115,13 @@ private def orderWith (closer : String → String → String × String × Checke
 /-- Loan assessment: root `P` runs *Assess application*, then *Decide loan*. Its body forks into *Credit check*
 and *Collateral valuation*, each copying `file` into its own `dossier`, preparing it and asking the one
 *Expert review* Process `ExpertReview` through its own mapped Call. `extra` adds members and edges,
-`creditTail` and `assessTail` retarget the flows leaving the credit Call and *Assess application*, and
-`overlaid` keeps the source overlay. -/
+`creditTail`, `assessTail` and `joinTail` retarget the flows leaving the credit Call, *Assess application* and the
+join, `creditPrepared` keeps *Prepare credit file* before the credit Call, `valuationCalled` keeps the valuation
+Call, and `overlaid` keeps the source overlay. -/
 private def loanWith (extra : List (String × String × CheckedNode) := []) (extraEdges : List (String × String) := [])
-    (creditTail : String := "CreditCheckClosed") (assessTail : String := "DecideLoan") (overlaid : Bool := true) :
-    CheckedProcess :=
+    (creditTail : String := "CreditCheckClosed") (assessTail : String := "DecideLoan")
+    (joinTail : String := "AssessmentClosed") (creditPrepared : Bool := true) (valuationCalled : Bool := true)
+    (overlaid : Bool := true) : CheckedProcess :=
   build
     [ declare "AssessApplication"
         [literal "creditOpinion" "pending", enclosing "file" "application", literal "valuationOpinion" "pending"]
@@ -132,24 +134,29 @@ private def loanWith (extra : List (String × String × CheckedNode) := []) (ext
      , start "AssessApplication" "AssessmentOpened", fork "AssessApplication" "SplitAssessment"
      , sub "AssessApplication" "CreditCheck", sub "AssessApplication" "CollateralValuation"
      , join "AssessApplication" "JoinAssessment", finish "AssessApplication" "AssessmentClosed"
-     , start "CreditCheck" "CreditCheckOpened", task "CreditCheck" "PrepareCreditFile"
+     , start "CreditCheck" "CreditCheckOpened"
      , mappedCall "CreditCheck" "CreditExpertReview" "ExpertReview" [enclosing "case" "dossier"]
          [copied "creditOpinion" "opinion"]
      , finish "CreditCheck" "CreditCheckClosed"
      , start "CollateralValuation" "ValuationOpened", task "CollateralValuation" "PrepareValuation"
-     , mappedCall "CollateralValuation" "ValuationExpertReview" "ExpertReview" [enclosing "case" "dossier"]
-         [copied "valuationOpinion" "opinion"]
      , finish "CollateralValuation" "ValuationClosed"
      , start "ExpertReview" "ReviewRequested", task "ExpertReview" "GiveOpinion", finish "ExpertReview" "ReviewCompleted" ]
+      ++ (if creditPrepared then [task "CreditCheck" "PrepareCreditFile"] else [])
+      ++ (if valuationCalled then
+            [mappedCall "CollateralValuation" "ValuationExpertReview" "ExpertReview" [enclosing "case" "dossier"]
+              [copied "valuationOpinion" "opinion"]] else [])
       ++ extra)
     ([ ("ApplicationReceived", "AssessApplication"), ("AssessApplication", assessTail), ("DecideLoan", "LoanDecided")
      , ("AssessmentOpened", "SplitAssessment"), ("SplitAssessment", "CreditCheck")
      , ("SplitAssessment", "CollateralValuation"), ("CreditCheck", "JoinAssessment")
-     , ("CollateralValuation", "JoinAssessment"), ("JoinAssessment", "AssessmentClosed")
-     , ("CreditCheckOpened", "PrepareCreditFile"), ("PrepareCreditFile", "CreditExpertReview")
+     , ("CollateralValuation", "JoinAssessment"), ("JoinAssessment", joinTail)
+     , ("CreditCheckOpened", if creditPrepared then "PrepareCreditFile" else "CreditExpertReview")
      , ("CreditExpertReview", creditTail), ("ValuationOpened", "PrepareValuation")
-     , ("PrepareValuation", "ValuationExpertReview"), ("ValuationExpertReview", "ValuationClosed")
-     , ("ReviewRequested", "GiveOpinion"), ("GiveOpinion", "ReviewCompleted") ] ++ extraEdges)
+     , ("PrepareValuation", if valuationCalled then "ValuationExpertReview" else "ValuationClosed")
+     , ("ReviewRequested", "GiveOpinion"), ("GiveOpinion", "ReviewCompleted") ]
+      ++ (if creditPrepared then [("PrepareCreditFile", "CreditExpertReview")] else [])
+      ++ (if valuationCalled then [("ValuationExpertReview", "ValuationClosed")] else [])
+      ++ extraEdges)
     overlaid
 
 private def order : CheckedProcess := orderWith
@@ -206,6 +213,18 @@ private def service_task_beside_a_call_is_refused : Bool :=
   admitted loan && !admitted (loanWith [service "P" "RecordAssessment" "recordAssessment" [] []]
     [("RecordAssessment", "DecideLoan")] (assessTail := "RecordAssessment"))
 
+/-- A credit Call leading its branch body is refused, while the same Call after *Prepare credit file* is
+admitted. -/
+private def call_leading_a_branch_body_is_refused : Bool :=
+  admitted loan && !admitted (loanWith (creditPrepared := false))
+
+/-- A Call after the join in the forking body is refused. The control drops the valuation Call, so the refused
+graph stays within the two-Call bound and differs only in that placement. -/
+private def call_in_a_forking_body_is_refused : Bool :=
+  admitted (loanWith (valuationCalled := false)) && !admitted (loanWith
+    [mappedCall "AssessApplication" "FinalReview" "ExpertReview" [enclosing "case" "file"] []]
+    [("FinalReview", "AssessmentClosed")] (joinTail := "FinalReview") (valuationCalled := false))
+
 /-- Every executable check of this module, named for the driver's failure report. -/
 def concurrentStructuredScopeDataConformanceChecks : List (String × Bool) := [
   ("retained_models_are_admitted_and_routed_concurrent", retained_models_are_admitted_and_routed_concurrent),
@@ -215,7 +234,9 @@ def concurrentStructuredScopeDataConformanceChecks : List (String × Bool) := [
   ("merge_region_is_refused", merge_region_is_refused),
   ("overlay_free_model_is_refused", overlay_free_model_is_refused),
   ("third_call_is_refused", third_call_is_refused),
-  ("service_task_beside_a_call_is_refused", service_task_beside_a_call_is_refused)
+  ("service_task_beside_a_call_is_refused", service_task_beside_a_call_is_refused),
+  ("call_leading_a_branch_body_is_refused", call_leading_a_branch_body_is_refused),
+  ("call_in_a_forking_body_is_refused", call_in_a_forking_body_is_refused)
 ]
 
 end BpmnSemantics.ConcurrentStructuredScopeDataConformance
