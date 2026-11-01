@@ -1,8 +1,8 @@
 import { readBusinessTaskMappings } from "./business-task-mapping-source.js";
 import { classifyGateway, projectExclusiveMerge, projectUserTaskMetadata } from "./checked-element-projection.js";
 import {
-  CallDataKind, CheckedNodeKind, CheckedProcessKind, MappingExpressionKind, SemanticProfileId, callDataInterfaceValid,
-  compareCanonicalStrings, isWellFormedWireString, structuredScopeDataCheckedAnalysis,
+  CallDataKind, CheckedNodeKind, CheckedProcessKind, GatewayDirection, MappingExpressionKind, SemanticProfileId,
+  callDataInterfaceValid, compareCanonicalStrings, isWellFormedWireString, structuredScopeDataCheckedAnalysis,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode, CheckedProcess, CheckedSequenceFlow, DefinitionScope, ScopeLocalData, VariableMapping,
@@ -51,16 +51,19 @@ type ScopeDataReader = Readonly<{
   caller: (roots: readonly ProcessRoot[], collected: Collected) => string | undefined;
   /** Whether a model needs the overlay even without a Service Task; otherwise it binds one exactly when it has one. */
   overlayRequired: boolean;
-  /** The profile's own analysis, beside the shared checked admission, and its refusal evidence. */
-  admitted: (checkedProcess: CheckedProcess) => boolean;
+  /** The profile's own analysis of the graph and its handler bindings, beside the shared checked admission. */
+  admitted: (checkedProcess: CheckedProcess, policy: MappedServiceTaskSourcePolicy) => boolean;
   refusal: string;
 }>;
 
 const nestedScopeDataReader: ScopeDataReader = {
   semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, projectCall: projectMappedCall,
   caller: callerProcess, overlayRequired: true,
-  // CSSD-ADMIT-01: the routed analysis refuses the merges and root-body forks the shared gateway grammar reads.
-  admitted: checkedProcess => structuredScopeDataCheckedAnalysis(checkedProcess) !== null,
+  // CSSD-ADMIT-01: the routed analysis refuses the merges and root-body forks the shared gateway grammar reads, and only
+  // a model with a Parallel fork may bind no handler, so a serial model keeps NSD-ADMIT-01's overlay rule.
+  admitted: (checkedProcess, policy) => structuredScopeDataCheckedAnalysis(checkedProcess) !== null &&
+    (policy.effectBindings.length > 0 || checkedProcess.nodes.some(node =>
+      node.kind === CheckedNodeKind.ParallelGateway && node.direction === GatewayDirection.Diverging)),
   refusal: "The checked graph does not satisfy nested scope-data admission.",
 };
 
@@ -148,7 +151,7 @@ function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overl
       scopeLocalData: [...collected.records].sort((a, b) => compareCanonicalStrings(a.scopeId, b.scopeId)),
     }),
   };
-  return reader.admitted(checkedProcess) &&
+  return reader.admitted(checkedProcess, selection.policy) &&
       isAdmittedCheckedProcess({ ...checkedProcess, flows: checkedProcess.sequenceFlows }, definitions.expressionLanguage, semanticProfile)
     ? { checkedProcess, diagnostics: [] }
     : unsupported(reader.refusal);

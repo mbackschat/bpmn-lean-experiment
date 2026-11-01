@@ -82,6 +82,28 @@ test("the Loan assessment model is refused without its source overlay, and a Ser
   await refused("order-fulfilment", await source("order-fulfilment"), "unbound Service Tasks", []);
 });
 
+/** Loan assessment with its two checks in sequence instead of on Parallel branches: a serial model of the profile. */
+function withSequentialChecks(xml: string): string {
+  let serial = replaceOnce(xml, '<parallelGateway id="SplitAssessment" name="Check credit and value collateral" />', "");
+  serial = replaceOnce(serial, '<parallelGateway id="JoinAssessment" name="Credit and collateral assessed" />', "");
+  serial = replaceOnce(serial, '<sequenceFlow id="Flow_AssessmentOpened" sourceRef="AssessmentOpened" targetRef="SplitAssessment" />',
+    '<sequenceFlow id="Flow_AssessmentOpened" sourceRef="AssessmentOpened" targetRef="CreditCheck" />');
+  serial = replaceOnce(serial, '<sequenceFlow id="Flow_ToCreditCheck" sourceRef="SplitAssessment" targetRef="CreditCheck" />', "");
+  serial = replaceOnce(serial,
+    '<sequenceFlow id="Flow_ToCollateralValuation" sourceRef="SplitAssessment" targetRef="CollateralValuation" />', "");
+  serial = replaceOnce(serial, '<sequenceFlow id="Flow_CreditChecked" sourceRef="CreditCheck" targetRef="JoinAssessment" />',
+    '<sequenceFlow id="Flow_CreditChecked" sourceRef="CreditCheck" targetRef="CollateralValuation" />');
+  serial = replaceOnce(serial, '<sequenceFlow id="Flow_CollateralValued" sourceRef="CollateralValuation" targetRef="JoinAssessment" />',
+    '<sequenceFlow id="Flow_CollateralValued" sourceRef="CollateralValuation" targetRef="AssessmentClosed" />');
+  return replaceOnce(serial, '<sequenceFlow id="Flow_Assessed" sourceRef="JoinAssessment" targetRef="AssessmentClosed" />', "");
+}
+
+// CSSD-ADMIT-01 leaves serial admission unchanged: an overlay that binds no handler stays refused on a serial model.
+test("the empty Loan assessment overlay is refused once its checks run in sequence instead of on Parallel branches", async () => {
+  await admitted("loan-assessment", await source("loan-assessment"));
+  await refused("loan-assessment", withSequentialChecks(await source("loan-assessment")), "serial model, empty overlay");
+});
+
 /** Record assessment, a bound Service Task on the Loan assessment root path between Assess application and Decide loan. */
 function withRecordAssessment(xml: string): string {
   return replaceOnce(xml,

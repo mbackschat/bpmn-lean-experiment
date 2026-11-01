@@ -55,8 +55,8 @@ export function selectMappedServiceTaskSourcePolicy(
 ): SourcePolicySelection {
   if ((semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID || semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID || semanticProfile === SemanticProfileId.PortableBusinessEffectData || semanticProfile === SemanticProfileId.NestedEmbeddedScopeData ||
     semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion) {
-    // CSSD-ADMIT-01: the nested scope-data profile requires its overlay on every model, so a model without a Service
-    // Task, such as a Call-bearing concurrent one, carries an empty binding list instead of none.
+    // CSSD-ADMIT-01: the nested scope-data profile requires its overlay on every model, so a concurrent model without a
+    // Service Task carries an empty binding list instead of none; its source reader refuses that list on a serial model.
     if (overlay === null || overlay.semanticProfile !== semanticProfile || overlay.inertAttributes.length > 0 ||
       (overlay.effectBindings.length === 0 && semanticProfile !== SemanticProfileId.NestedEmbeddedScopeData) ||
       hasDuplicateSourceBinding(overlay.effectBindings) ||
