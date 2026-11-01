@@ -66,6 +66,8 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "every local retires with its Sub-Process",
     "A User Task completion may name only declared locals, within 16,384 canonical bytes",
     "a hosted Start whose structured values cannot fit the capacity envelope is refused",
+    "an effect's arguments are fixed when it is armed, so a sibling's later write never reaches an open effect",
+    "a run with Parallel branches whose data outgrows a hosted budget ends with a typed capacity failure",
   ]],
   ["callActivityVariableMappings", "restriction", [
     "up to two Calls of one in-document Process of one to three serial User Tasks",
@@ -74,7 +76,9 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "called tasks read and write only their own Call's copied names and never reach caller data",
     "a target that an enclosing Sub-Process declares lands in that Sub-Process's local",
     "a second Call of the same Process gets its own called instance and task activations",
-    "a third Call, nested Calls, Calls on concurrent branches",
+    "a third Call, nested Calls, called Service Tasks",
+    "Both Calls may also sit on concurrent Parallel branches inside a Sub-Process body",
+    "each copying structured values into and out of its own called instance in either completion order",
     "a hosted Start whose copied values cannot fit the capacity envelope is refused",
     "each call reads its inputs and writes its outputs through its own caller occurrence, whatever the completion order",
     "one Process is never called both with and without mappings",
@@ -82,6 +86,7 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ["parallelGateway", "restriction", [
     "paired forks and joins of two or more branches inside Sub-Process bodies",
     "a fork whose task branches all end at one Exclusive merge into a Sub-Process",
+    "The nested scope-data profile admits the same paired forks and joins inside Sub-Process bodies, never in the Process root body or into a merge",
   ]],
   ["exclusiveGateway", "restriction", ["which passes each arriving token on its own"]],
 ];
