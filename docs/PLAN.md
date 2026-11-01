@@ -101,9 +101,9 @@ Acceptance blockers: none recorded.
 
 Current result: three increments cut the body edits of `ProgramStructuralValidation` (480 → 214 modules), `ParallelScopeRuntime` (151 → 64) and `SerialBusinessTaskAdmission` (457 → 45); replay mean 262.4 → 239.0, p90 682 → 619 ([current evidence](#current-evidence)). Every remaining single-opener cut ranked (2026-11-01) gains at most 1.2 points, or needs many re-opened `import all` lines.
 
-Effort budget: 12 hours of working time for the hub fix, about 9.9 hours used (2026-10-31 22:35 to 2026-11-01 08:30); stop and reassess at the limit.
+Effort budget: 12 hours of working time for the hub fix, about 10.3 hours used (2026-10-31 22:35 to 2026-11-01 08:55); stop and reassess at the limit.
 
-Next action: the hub fix's fixture item, converting the global fixtures no proof or proved lane consumes to executable guards (contract item 5), scoped against the cost record before any conversion.
+Next action: the hub fix's fixture item. A `CommandAdmission` body edit still rebuilds 1,006 serial seconds of kernel-decided fixtures (cost record, `911ad64a`), above contract item 5's 900; classify each remaining check by contract item 7's three rules first.
 
 Oracle: the replay's per-module rebuild counts, mean and p90 at the increment's commit against `afd2b1ba`.
 
