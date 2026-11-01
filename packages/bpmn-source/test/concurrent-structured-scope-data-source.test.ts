@@ -110,7 +110,14 @@ test("a Call in a forking body and a Call leading a branch body are each refused
   '<sequenceFlow id="Flow_CreditCheckOpened" sourceRef="CreditCheckOpened" targetRef="CreditExpertReview" />')
     .replace('<userTask id="PrepareCreditFile" name="Prepare credit file" />', "");
   await refused("loan-assessment", leading, "Call leading a branch body");
-  const inForkingBody = replaceOnce(replaceOnce(xml,
+  // The control drops the valuation Call, so the refused model adds one Call after the join and stays within the
+  // profile's two-Call bound: placement alone separates the two.
+  const oneCall = replaceOnce(xml.replace(/<callActivity id="ValuationExpertReview"[^]*?<\/callActivity>/u, ""),
+    '<sequenceFlow id="Flow_ValuationPrepared" sourceRef="PrepareValuation" targetRef="ValuationExpertReview" />' +
+      '\n        <sequenceFlow id="Flow_ValuationReviewed" sourceRef="ValuationExpertReview" targetRef="ValuationClosed" />',
+    '<sequenceFlow id="Flow_ValuationPrepared" sourceRef="PrepareValuation" targetRef="ValuationClosed" />');
+  assert.equal((await compile("loan-assessment", oneCall)).status, BpmnCompilationStatus.Accepted, "one-Call control");
+  const inForkingBody = replaceOnce(replaceOnce(oneCall,
     '<sequenceFlow id="Flow_Assessed" sourceRef="JoinAssessment" targetRef="AssessmentClosed" />',
     '<sequenceFlow id="Flow_Assessed" sourceRef="JoinAssessment" targetRef="FinalReview" />' +
       '<sequenceFlow id="Flow_FinalReviewed" sourceRef="FinalReview" targetRef="AssessmentClosed" />'),
