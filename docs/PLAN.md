@@ -93,17 +93,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: select the next Practical CIB7 Coverage family batch in [delivery batch](#scheduled-delivery-batches) 3 and write its proposal. The owner closed the hub fix on 2026-11-01 ([restated residual](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)). Multi-Instance closure stays held. Pull request #38 is the owner's to land.
+Current task: write the proposal of the concurrent structured scope data family, selected on 2026-11-01 in [delivery batch](#scheduled-delivery-batches) 3: `PC-DATA-03` primary, with the structured clauses of `PC-DATA-05` and `PC-DATA-06`. The owner closed the hub fix on 2026-11-01 ([restated residual](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)). Multi-Instance closure stays held. Pull request #38 is the owner's to land.
 
-Deliverable: a family proposal approved by its cold design review, taking every open checklist row that shares its mechanism.
+Deliverable: a family proposal approved by its cold design review: the `cibseven-2.2.0-nested-embedded-scope-data-draft` profile, which already carries `SingletonBusinessItem` values through Start, User Task completion and Call mappings on one serial path, additionally admits Parallel forks and joins in Sub-Process bodies, reusing the concurrent mechanisms of the [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-SPEC.md) and [concurrent mapped Calls](capsules/CONCURRENT-MAPPED-CALLS-SPEC.md) accounts. The embedded completion profile cannot widen its bounded Strings, because its admitted models would change command outcomes.
 
 Acceptance blockers: none recorded.
 
-Current result: the concurrent mapped Calls family is closed under its [specification](capsules/CONCURRENT-MAPPED-CALLS-SPEC.md); [`lean-fanout-replay-residual.test.ts`](../scripts/lean-fanout-replay-residual.test.ts) ratchets the restated build residual.
+Current result: selection only. Concurrent Programs need that profile's runtime typed capacity refusal in place of the static Start envelope, which serial Programs keep; 10 Lean and 7 TypeScript files gate the concurrent mechanisms on the embedded profile.
 
-Effort budget: 3 hours for the selection and the proposal draft, from 2026-11-01 17:30 CET; stop and reassess at the limit.
+Effort budget: 3 hours for the proposal draft and its cold review; stop and reassess at the limit.
 
-Next action: rank batch 3's open rows by normative dependency, reach and semantic risk, excluding expressions (`PC-DATA-07`), which would reopen the owner-deferred JUEL lane and adopt its approved dependency set, a step this resume point's stop rule holds for an owner direction.
+Next action: draft the proposal against both specifications' sections, then commit it and run the cold design review. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
 
 Oracle: the [cold-review gate](REVIEW-POLICY.md#independent-cold-review-gate) on the proposal.
 
