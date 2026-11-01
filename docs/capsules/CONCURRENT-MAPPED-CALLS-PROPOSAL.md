@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and delivery boundary
 
@@ -106,7 +106,7 @@ Observation adds nothing: `StateObservation` shows Process variables and open wa
 Two retained whole models carry the witnesses.
 
 - **Supplier onboarding.** A fork leads to two ordinary Sub-Processes, *Financial review* and *Compliance review*. Each declares a local `file`, initialized from `${supplierName}` in the financial body and from the literal `sanctions screening` in the compliance body, and a local `verdict` initialized to the literal `pending`. Each body runs a preparation User Task and then a Call to one reusable *Expert opinion* Process with a single User Task. The financial Call maps `file` in as `dossier` and `opinion` out to `verdict`; the compliance Call maps `file` in as `screeningFile` and `finding` out to `verdict`. Each Sub-Process maps `verdict` out, to `financialVerdict` and `complianceVerdict`. An approval User Task after the join reads both.
-- **Travel request.** A fork leads straight into a Call to a *Budget check* Process, a Call to a *Visa check* Process and a declaring *Booking* Sub-Process whose local `budget` is initialized from `${approvedBudget}` and whose body holds a *Book travel* User Task. Each Call maps `traveller` in; *Budget check* maps its result out to `approvedBudget` and *Visa check* to `visaStatus`, both landing at the Process.
+- **Travel request.** A fork leads straight into a Call to a *Budget check* Process, a Call to a *Visa check* Process and a declaring *Booking* Sub-Process whose local `budget` is initialized from `${approvedBudget}`, the pre-approved budget the request starts with, which *Budget check* later confirms or overwrites, and whose body holds a *Book travel* User Task. Each Call maps `traveller` in; *Budget check* maps its result out to `approvedBudget` and *Visa check* to `visaStatus`, both landing at the Process.
 
 Lanes: B profile admission, L Lean law or decided fixture, T TypeScript core, P pipeline agreement on `StateObservation`, H Temporal hosted, C CIB calibration, N negative witness, M seeded mutation.
 
@@ -118,7 +118,7 @@ Lanes: B profile admission, L Lean law or decided fixture, T TypeScript core, P 
 | `CMCALL-ISOLATE-01` | While both experts' tasks are open, one called patch writing `opinion` leaves the other called frame, both `verdict` locals and every Process binding unchanged. | L, T, P, H | Write called patches through the caller hierarchy or the first frame of the definition. |
 | `CMCALL-PREPARE-01` | Travel request commits Start, with `approvedBudget` bound, as one batch of two mapped invocations and the *Booking* entry, leaving three open waits, two called and one caller task; without the prepared constructor the same Start rolls back as `ambiguousInternalChoice`. | L, T, P, H, M | Leave mapped invocations on the singleton path. |
 | `CMCALL-AVAILABLE-01` | *Booking*'s `${approvedBudget}` reads the *Budget check* output from a sibling branch, so travel request's Start without `approvedBudget` is `rejected`; a variant whose declaring Sub-Process reads `${approvedBudget}` after the join commits without it. | B, L, N | Count a branch's Call output as available in a sibling. |
-| `CMCALL-START-01` | Travel request's Start without `traveller` commits and the called frames hold present nulls; Start binding the called-only name `dossier` is `rejected` unchanged. | B, T, P, N | Require Call input sources at Start, or admit any Start name. |
+| `CMCALL-START-01` | Travel request's Start without `traveller` commits and the called frames hold present nulls; supplier onboarding's Start binding the called-only name `dossier` is `rejected` unchanged. | B, T, P, N | Require Call input sources at Start, or admit any Start name. |
 | `CMCALL-ADMIT-01` | A fork straight into two Calls of *Expert opinion*, a mapped Call leading a Sub-Process body on a fork branch, a called Process invoked by a mapped and an unmapped Call, a Call in a merge-target body, a `sourceExpression` input and a Service Task beside a Call are refused; the retained models compile. | B, L, N | Admit two invocations of one definition in one closure; admit a co-enabled embedded-caller invocation, which Lean would roll back while the core batched it. |
 | `CMCALL-REFUSE-01` | A completion of the financial expert's task addressed with the compliance call's identity, and after its return, is `rejected` unchanged. | T, P, H, N | Route a called completion by definition. |
 
@@ -172,6 +172,8 @@ Guards the implementation must change or satisfy:
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `233fb94b` | `fork-turns-none` | `approve-with-required-edits` | `1c725222` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal review of `233fb94b` (packet `9fcfa65d3d3783f57c07ddbd55f40e5a8eb53b9e7cfbbf9adf174dc6e268514f`) required six corrections: co-enabled embedded-caller invocations that Lean's parentless control selection cannot prepare, a mapped/unmapped Call mix of one definition that breaks called-root isolation, an availability witness without a Call output, supplier witnesses that did not separate mappings selected by definition, an undecided Start rule, and an incomplete owner inventory. The same reviewer's audit of `1c725222` closed all of them and approved.
