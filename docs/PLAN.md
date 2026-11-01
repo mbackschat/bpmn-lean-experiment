@@ -99,11 +99,11 @@ Deliverable: the hub fix's next increment, the leading measured mean driver cons
 
 Acceptance blockers: none recorded.
 
-Current result: two increments cut `ProgramStructuralValidation`'s body edit from 480 to 214 modules and `ParallelScopeRuntime`'s from 151 to 64; the replay gives mean 243.6, p90 619 and 15 above 500 (base 262.4, 682, 17), verified green ([current evidence](#current-evidence)).
+Current result: two increments cut `ProgramStructuralValidation`'s body edit from 480 to 214 modules and `ParallelScopeRuntime`'s from 151 to 64 (replay mean 262.4 → 243.6, p90 682 → 619; [current evidence](#current-evidence)). A third stopped at its time-box: compile probes (2026-11-01) showed `ValueDomain`, `TransitionTrace` and `InternalCommutationCore` cuts needing many re-opened `import all` lines for at most 4.3 points.
 
-Effort budget: 12 hours of working time for the hub fix increments, about 7.3 hours used (2026-10-31 22:35 to 2026-11-01 05:55); stop and reassess at the limit.
+Effort budget: 12 hours of working time for the hub fix increments, about 8.3 hours used (2026-10-31 22:35 to 2026-11-01 06:55); stop and reassess at the limit.
 
-Next action: the third increment, ranked by mean contribution: `ValueDomain` (body edit 470, only two `import all` openers, so exposed bodies drive it): establish by compile which bodies importers reduce and hide the rest; if most are reduced, cut `CommandAdmission`'s largest carrier `TransitionTrace` instead. Both run under a reviewed Rule 2 declaration selecting consumers by compile.
+Next action: rank single-opener cuts for `RuntimeState`, `BusinessValue`, `SequentialScopeRuntime`, `ProfileShapeCatalog` and `SerialBusinessTaskAdmission` by replay mean, then compile-probe the best; take it only above 3 points at most 2 opening lines per point, otherwise turn to the hub fix's fixture item.
 
 Oracle: the replay's per-module rebuild counts, mean and p90 at the increment's commit against `afd2b1ba`.
 
