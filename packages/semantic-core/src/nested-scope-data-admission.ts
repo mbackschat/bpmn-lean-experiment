@@ -35,8 +35,11 @@ const VertexKind = {
 } as const;
 /** CVM-ADMIT-01: the called Process is one serial path through one to three User Tasks. */
 const calledTaskLimit = 3;
-/** CALLN-ADMIT-01's Stage B: up to two Calls, each on the root path or at most two Sub-Processes deep. */
-const callLimit = 2;
+/**
+ * CALLN-ADMIT-01's Stage B: up to two Calls, each on the root path or at most two Sub-Processes deep. The profile's
+ * concurrent routing (CSSD-ADMIT-01) keeps the same Call bound.
+ */
+export const nestedScopeCallLimit = 2;
 const callDepthLimit = 2;
 type VertexKind = typeof VertexKind[keyof typeof VertexKind];
 
@@ -228,7 +231,7 @@ function analyze(vertices: readonly Vertex[], records: readonly ScopeLocalData[]
   const calls = vertices.flatMap(vertex => vertex.call === undefined ? [] : [vertex.call]);
   const calledScopes = new Set(calls.map(({ scope }) => scope));
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
-  if (scopes.length !== children.length + calledScopes.size + 1 || children.length === 0 || calls.length > callLimit ||
+  if (scopes.length !== children.length + calledScopes.size + 1 || children.length === 0 || calls.length > nestedScopeCallLimit ||
       calledScopes.size > 1 || roots.length !== calledScopes.size + 1 || !roots.some(({ id }) => id === root) ||
       !calls.every(call => call.scope !== root && callMappingsAdmitted(call.data, handlers)) ||
       !strictlySorted(records.map(({ scopeId }) => scopeId)) ||

@@ -12,15 +12,13 @@ import {
   nestedScopeControlProgramStartNameRule,
 } from "./nested-scope-control-admission.js";
 import {
-  nestedScopeCheckedShape, nestedScopeCheckedStartNames, nestedScopeProgramShape, nestedScopeProgramStartNames,
+  nestedScopeCallLimit, nestedScopeCheckedShape, nestedScopeCheckedStartNames, nestedScopeProgramShape,
+  nestedScopeProgramStartNames,
 } from "./nested-scope-data-admission.js";
 import type { NestedScopeStartNames } from "./nested-scope-data-admission.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
-
-/** The profile's own Call bound (CVM-ADMIT-01, Stage B), which its concurrent Programs keep. */
-const callLimit = 2;
 
 const splits = (operations: readonly SemanticOperation[]): boolean =>
   operations.some(({ kind }) => kind === SemanticOperationKind.Duplicate);
@@ -41,7 +39,7 @@ function rootScope(scopes: readonly Readonly<{ id: string; parentScopeId: string
 
 /** At most two Calls, all mapped and all naming the one called Process of a two-Process document. */
 function calledProcessesAdmitted(calls: readonly Readonly<{ calledProcessId: string; data: Readonly<{ kind: CallDataKind }> }>[]): boolean {
-  return calls.length <= callLimit && new Set(calls.map(({ calledProcessId }) => calledProcessId)).size <= 1 &&
+  return calls.length <= nestedScopeCallLimit && new Set(calls.map(({ calledProcessId }) => calledProcessId)).size <= 1 &&
     calls.every(({ data }) => data.kind === CallDataKind.VariableMappings);
 }
 
