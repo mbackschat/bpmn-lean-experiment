@@ -15,6 +15,7 @@ import {
 import type {
   DeliverMessageStimulus,
   DeliverPayloadMessageStimulus,
+  Scenario,
 } from "@bpmn-lean/semantic-core";
 import {
   MessageDeliveryResolutionKind,
@@ -24,6 +25,8 @@ import {
 import type {
   MessageDeliveryResolution,
 } from "@bpmn-lean/temporal-testkit";
+
+import { loadJson, requiredAt } from "./temporal-test-support.ts";
 
 const delivery = {
   kind: StimulusKind.DeliverMessage,
@@ -97,6 +100,37 @@ test("records conflicting content in Signal order without replacing the first co
       CommandOutcome.Rejected,
     )
   );
+});
+
+test("coalesces an exact structured-manifest redelivery and conflicts on one changed nested leaf (PBV-MSG-03)", async () => {
+  const scenario = await loadJson<Scenario>(new URL(
+    "../../../../scenarios/portable-business-message-payload/manifest-delivered.scenario.json",
+    import.meta.url,
+  ));
+  const manifest = requiredAt(scenario.stimuli, 1, "manifest stimuli");
+  if (manifest.kind !== StimulusKind.DeliverPayloadMessage) {
+    assert.fail("the manifest scenario delivers its payload second");
+  }
+  // The last parcel's reference sits three levels below the root, so only a recursive identity encoding separates it.
+  const changed = structuredClone(manifest);
+  const parcels = changed.payload.kind === VariableValueKind.Map
+    ? changed.payload.value.find(({ name }) => name === "parcels")?.value
+    : undefined;
+  const lastParcel = parcels?.kind === VariableValueKind.List ? parcels.value[2] : undefined;
+  const reference = lastParcel?.kind === VariableValueKind.Map ? lastParcel.value[0]?.value : undefined;
+  if (reference?.kind !== VariableValueKind.String) {
+    assert.fail("the manifest's last parcel carries a String reference");
+  }
+  (reference as { value: string }).value = "P-3";
+
+  const records: MessageDeliveryResolution[] = [];
+  assert.equal(acceptMessageDelivery(records, manifest).enqueue, true);
+  assert.equal(acceptMessageDelivery(records, structuredClone(manifest)).enqueue, false);
+  assert.equal(acceptMessageDelivery(records, changed).enqueue, false);
+  assert.deepEqual(records, [
+    { kind: MessageDeliveryResolutionKind.Pending, stimulus: manifest },
+    { kind: MessageDeliveryResolutionKind.RequestFailure, stimulus: changed, failure: "commandIdentityConflict" },
+  ]);
 });
 
 test("treats a payload change under one command identity as a conflict", () => {

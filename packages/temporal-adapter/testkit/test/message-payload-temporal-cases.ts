@@ -2,7 +2,8 @@
  * Durable refinement witness for one payload-bearing Intermediate Catch Message Event, run for the closed scalar
  * profile and for the structured Message-payload profile (`PBV-MSG-01`..`03`): each refused delivery leaves the
  * subscription live across Continue-As-New, the routed delivery survives a Worker outage, a reused command ID with a
- * changed payload leaf is an identity conflict, Review survives a second outage, and every Run replays.
+ * changed payload leaf is an identity conflict, an exact redelivery returns the original result, Review survives a
+ * second outage, and every Run replays.
  */
 import assert from "node:assert/strict";
 
@@ -60,6 +61,7 @@ import {
 import type {
   MessageTemporalCaseContext,
 } from "./message-temporal-test-support.ts";
+import { manifest } from "../../../bpmn-source/test/portable-message-payload-fixture.ts";
 import {
   compileExecutionInput,
   loadJson,
@@ -85,12 +87,12 @@ export type PayloadMessageWorkflowChainCase = Readonly<{
   conflictingPayload: (payload: VariableValue) => VariableValue;
 }>;
 
-/** The closed scalar profile also refuses a structured payload, hosted (`PBV-MSG-01`). */
+/** The closed scalar profile also refuses the structured profile's manifest, hosted (`PBV-MSG-01`). */
 export const scalarPayloadMessageCase: PayloadMessageWorkflowChainCase = {
   scenarioUrl: new URL("message-payload-catch/supplied-scalar.scenario.json", scenarios),
   bpmnUrl: new URL("message-payload-catch/process.bpmn", scenarios),
   propertyId: "Property_SettlementReference",
-  refusedPayloads: [{ kind: VariableValueKind.Map, value: [{ name: "reference", value: { kind: VariableValueKind.String, value: "s" } }] }],
+  refusedPayloads: [manifest()],
   conflictingPayload: () => ({ kind: VariableValueKind.String, value: "settlement-reference-conflict" }),
 };
 
@@ -284,6 +286,12 @@ export async function exercisePayloadMessageAcrossWorkflowChain(
     value: payloadDelivery.payload,
   }]);
   assert.deepEqual(taskState.openMessageSubscriptions, []);
+  // An exact redelivery after commit coalesces to the original result instead of a second semantic step (`PBV-MSG-03`).
+  const redelivery = structuredClone(payloadDelivery);
+  assert.deepEqual(
+    await submitMessageDelivery(context.environment.client.workflow, start.instanceId, redelivery),
+    { kind: ProcessCommandResultKind.Semantic, commandId: payloadDelivery.commandId, outcome: CommandOutcome.Committed },
+  );
 
   // A second outage while Review waits with the routed Property; the replacement Worker completes it.
   await context.suspendWorker();
@@ -354,6 +362,7 @@ export async function exercisePayloadMessageAcrossWorkflowChain(
     ...refusedDeliveries,
     payloadDelivery,
     conflictingDelivery,
+    redelivery,
   ]);
   assertNoNonSignalMessageHostEvents(combinedHistory);
 }
