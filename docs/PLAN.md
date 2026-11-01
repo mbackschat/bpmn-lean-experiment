@@ -95,7 +95,7 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: the next Practical CIB7 Coverage family, after the [structured Message-payload amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#message-payload-closure-acceptance) closed approved on 2026-11-01. The hub fix in [Lean build follow-ups](#lean-build-follow-ups) stopped at its fixture item. Multi-Instance closure stays held. Pull request #38 is the owner's to land.
 
-Deliverable: the next family batch, every open row sharing one mechanism, selected through the [delivery task list](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), and its proposal.
+Deliverable: the concurrent mapped Calls family proposal: `PC-DATA-04`'s mapped Calls on concurrent branches, whose outputs land at the associated caller under reverse completion, with the Call-host input and output obligations of `PC-DATA-05` and `PC-DATA-06` that share its prepared mapped invoke and return.
 
 Acceptance blockers: none recorded.
 
@@ -103,7 +103,7 @@ Current result: the amendment closed after one correction audit ([current eviden
 
 Effort budget: 4 hours for the batch selection and proposal; stop and reassess at the limit.
 
-Next action: select the batch. `PC-DATA-07` needs an approved dependency and `PC-DELIVERY-01` and Multi-Instance closure are held, so weigh the concurrent-data remainder (`PC-DATA-04`–`06`) against the task contracts (`PC-HUM-01`).
+Next action: write the proposal from the [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-SPEC.md), [Call variable mapping](capsules/CALL-VARIABLE-MAPPING-SPEC.md) and [repeated Calls](capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md) accounts. Expressions (`PC-DATA-07`) would reopen the owner-deferred JUEL lane and adopt its approved dependency set, which this resume point's stop rule holds for an owner direction.
 
 Oracle: the [cold design review](REVIEW-POLICY.md#independent-cold-review-gate) of the proposal.
 
