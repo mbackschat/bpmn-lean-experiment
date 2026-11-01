@@ -1,0 +1,194 @@
+# Concurrent structured scope data proposal
+
+## Status
+
+Lifecycle: draft
+Review: pending
+
+## Question and delivery boundary
+
+Can the nested scope-data profile, which carries `SingletonBusinessItem` values through Start, User Task completion, Service Task mappings, scope locals and Call mappings on one serial path, admit Parallel forks and joins inside Sub-Process bodies, so that structured values keep their exact shape through concurrently live frames, effect snapshots and called-root frames, and every over-bound value on one branch is refused without touching its siblings?
+
+This is a family of batch 3 in [PLAN](../PLAN.md#scheduled-delivery-batches). Its shared mechanism is the existing concurrent scope-data machinery, the occurrence-chain resolution and prepared declared entry of the [concurrent scope data account](CONCURRENT-SCOPE-DATA-SPEC.md) and the per-record Call ownership of the [concurrent mapped Calls account](CONCURRENT-MAPPED-CALLS-SPEC.md), applied under the profile whose value domain is structured. It takes every open row of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) that shares that mechanism:
+
+- `PC-DATA-03`, primary: structured lists and maps, with nested values and multiplicity, survive concurrent mappings, observations and restoration, and boundary or over-bound values on one branch reject atomically;
+- `PC-DATA-05`: structured reference inputs at Sub-Process, Service Task and Call entry on concurrent branches, all read from the entering occurrence's pre-entry context, and an open effect's argument snapshot that a sibling's later write cannot rewrite;
+- `PC-DATA-06`: structured Service Task results, Sub-Process outputs and Call outputs on concurrent branches, landing at local and enclosing targets atomically.
+
+No row closes in this family. The remaining clauses belong to mechanisms it does not share: repeated activation through cycles (`PC-CF-06`), Multi-Instance owners (held), expression mappings (`PC-DATA-07`, held by the owner), exceptional exits (`PC-SCOPE-06`), and the concurrency this profile still refuses: forks in the Process root body and merge regions, whose concurrent same-definition occurrences belong to `PC-SCOPE-02`.
+
+The [embedded completion profile](../../profiles/cibseven-2.2.0-embedded-subprocess-completion-draft/README.md) already owns the concurrency but bounds every value to a String of at most 1,024 UTF-8 bytes or a present null (`CSD-VALUE-01`). Widening its domain would change the outcome of commands it admits today: a 1,025-byte String or a Map in a completion patch is `rejected` there. The [cumulative profile rule](../../contracts/README.md) therefore grows the structured profile instead. Every model this profile admits today has no Parallel split, so admitting split models adds models without changing any admitted model's commands or observations.
+
+## Normative basis and CIB classification
+
+**BPMN.** The basis of the two accounts holds unchanged: Clause 10.3.5 makes each embedded Sub-Process instance a contextual scope, Clause 10.3.6 gives each Call activation its own called instance, Clause 13.3.4 completes a scope only when nothing inside it is active, and Clause 10.4.1 ties data lifetime and visibility to the owning instance and its descendants. Clause 10.4.1 also states that a Data Association copies data to its target, which the selected account follows for structured values. Name-based resolution remains the CIB extension below.
+
+**CIB Seven.** At pinned `v2.2.0-27-g5a45b47`, variable storage and resolution are type-agnostic: `AbstractVariableScope.setVariable` and `getVariable` walk the same parent chain for every typed value, and `InputParameter` and `OutputParameter` evaluate `${name}` to the stored object whatever its type (`CIB-EXT-0019`). The concurrent path of `CIB-EXT-0020` and the per-activation Call path of `CIB-EXT-0021` therefore apply to structured values without a further code path. CIB stores a structured value by reference, so in-place mutation would alias (`CIB-EXT-0019`); no admitted step mutates a value in place, because every write replaces a whole binding, so copy and reference are indistinguishable at the admitted boundary. The composition is inferred from these code paths, so the family calibrates it on the CIB oracle (below).
+
+Register changes, each with these citations and the calibration:
+
+- **`CIB-EXT-0020`.** Its "no concurrent branches outside that profile" clause widens to this profile's Parallel forks in Sub-Process bodies, over the live occurrence chain, with `SingletonBusinessItem` values; the merge-target clause stays the embedded completion profile's.
+- **`CIB-EXT-0021`.** Its data-bearing placement clause applies under this profile at the placements below, with `SingletonBusinessItem` values.
+- **`CIB-OP-0010`.** Its concurrent effect-occurrence mapping applies to this profile's Service Tasks on concurrent branches.
+
+## Required, optional and excluded scope
+
+Required: every model the profile admits today, unchanged, and in addition every model that has at least one Parallel split and that the [nested scope-control class](NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#required-optional-and-excluded-scope), as widened for data-bearing models by the [concurrent scope data scope](CONCURRENT-SCOPE-DATA-SPEC.md#required-optional-and-excluded-scope) and the [concurrent mapped Calls scope](CONCURRENT-MAPPED-CALLS-SPEC.md#required-optional-and-excluded-scope), admits under these restrictions:
+
+- **Forks only in Sub-Process bodies.** The Process root body is one serial path, as the profile requires today; paired Parallel blocks sit inside ordinary embedded Sub-Process bodies at definition depth one to three, and a branch may hold User Tasks, mapped Service Tasks and Sub-Processes.
+- **No merge regions.** No Exclusive merge, so every embedded definition has at most one live occurrence per instance.
+- **Calls.** A mapped Call keeps this profile's placements, on the root path or on the serial path of a Sub-Process body at depth one or two, never leading that body directly or through leading Sub-Processes; such a body may itself lie on a Parallel branch. A body that holds a fork holds no Call. `CALLN-SHARED-01` holds, a Service Task and a Call never share a model, and the called Process stays one to three serial User Tasks.
+- **Data.** The profile's declarations, mappings and bounds are unchanged: at most eight inputs and eight outputs per Sub-Process, String literals of at most 1,024 UTF-8 bytes or exact `${name}` references, outputs sourced from a declared local of the same Sub-Process, and `SingletonBusinessItem` values at every surface.
+
+Optional: terminal unjoined forks in child bodies whose branches end at separate None Ends, as the nested scope-control class admits; two mapped Calls of one called Process with different mappings on distinct branches; declarations at several depths.
+
+Excluded: a fork in the Process root body; merge regions; a Call in a body that holds a fork; every exclusion of the profile today other than the Parallel split; every exclusion of the two concurrent accounts. These bound admission only: a root fork, a merge region or a cycle later broadens the class without reinterpreting an admitted model, because the occurrence chain already gives every occurrence its own frames.
+
+## Profile and public contract
+
+The `DATA` family profile `cibseven-2.2.0-nested-embedded-scope-data-draft` grows in place under the [cumulative profile rule](../../contracts/README.md). A Program of this profile is **concurrent** when it contains a Parallel split operation, otherwise **serial**. The predicate depends on the Program alone, so an admitted model is either serial or concurrent for every command.
+
+- **Serial Programs** keep their exact admission, Start rule (`NSD-AVAILABLE-01`, `CVM-START-01`), commands, observations, hosting path and [Start capacity envelope](../../packages/temporal-adapter/protocol/src/start-capacity-envelope.ts).
+- **Concurrent Programs** take the nested scope-control analysis for admission, `CSD-AVAILABLE-01` with `CMCALL-AVAILABLE-01` for availability and `CMCALL-START-01`'s Start rule, each with this profile's `SingletonBusinessItem` domain and the `NSD-TASK-01` completion patch rule, including its 16,384-byte cap.
+
+The value domain stays keyed by profile: the surface value domains and `programEffectMappingValuePolicy` already select `SingletonBusinessItem` for every Program of this profile, so neither changes, and no value arm, wire shape or schema changes. The profile artifact grows in place as the Call variable mapping widening grew it: features for Parallel forks and joins in Sub-Process bodies and concurrent scope frames, `CIB-OP-0010` among its relationships, and the exclusion `concurrent-control-units` narrowed to root-body concurrency and merge regions; its identity and claim string stay. The [profile README](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/README.md) states the class and discloses the capacity limit below.
+
+## Representation and runtime ownership
+
+**No new representation.** No opcode, Program field, runtime collection, synthetic construct or transition family is added. Frames, called-root frames and effect argument snapshots are the existing runtime-only constructs with their lifecycle invariants unchanged.
+
+**The mechanisms are already selected for this profile.** Occurrence-chain resolution, the declared entry and completion hooks, the prepared declared entry, the prepared mapped invocation, the precise nested arming read set and the frame-ownership state check are each gated by `nestedScopeDataProgram`, which already holds for every Program of this profile, and their Lean laws are quantified over every Program, with no profile premise. Concurrent Programs of this profile therefore reach them unchanged; only admission, the Start rule and hosting decide whether such a Program runs.
+
+**Prepared entry and singletons.** A fork in a Sub-Process body that leads straight into two declaring Sub-Processes is a batch of two prepared declared entries (`CSD-PREPARE-01`). A mapped invocation is never co-enabled here, because a Call never leads its body and the root body has no fork, so it stays a singleton and the prepared mapped invocation is not reached under this profile. Completions and returns stay unprepared singletons by the structural argument of the two accounts, which holds because the admitted class is a subset of theirs. The declared entry's batch premise holds for the same reason: the profile admits no Message, Timer, bounded-scope, regional or merge family beside concurrent data.
+
+**Routing.** One routing predicate, owned beside the nested scope-control analysis, selects the analysis at each dispatch site of this profile: the Program and checked capability catalogs, Program admission, the Start binding and scenario Start rules, and the completion re-check behind User Task and effect completion. Each site keeps its serial branch for serial Programs, so a serial Program reaches the same definitions as before. The nested scope-control analysis gains the profile's data gate and its two restrictions, root-body seriality and the absence of merge regions, for concurrent Programs of this profile only.
+
+## Admission
+
+Admission stays [profile-parameterized](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md). The nearest wrong algorithms each have a separating witness below:
+
+1. a concurrent Program routed through the serial analysis, which refuses every admitted fork;
+2. a concurrent Program given the embedded completion profile's bounded String policy, which rejects a structured Start or completion value;
+3. a serial Program routed through the nested scope-control analysis or out of the Start envelope, which changes an admitted model's Start outcome;
+4. a root-body fork or a merge region admitted, which leaves the selected class;
+5. a write in one fork branch counted as available in a sibling branch.
+
+## Capacity
+
+Serial Programs keep the Start capacity envelope and its refusals before Workflow creation. A concurrent Program offers no single journey to enumerate, so the envelope keeps only its Program-level checks: the 256-byte hosting identity bound that the embedded completion profile applies, since every concurrent wait and called identity embeds the hosting identity, and the per-effect reserved-result checks of `PBV-EFF-05`, which depend on the Program alone. It then reports the envelope not applicable. Hosted budgets are enforced at runtime exactly as for the embedded completion profile:
+
+- **At ingress:** each Start and command stimulus within its stimulus budget, as today.
+- **Before commit:** the [candidate preflight](../../packages/temporal-adapter/workflow/src/workflow-semantic-candidate.ts) refuses a successor that exceeds the committed-state or publication-batch budget with a typed capacity failure.
+- **After commit:** the effect request byte preflight and the [ordinary-effect History reservation](../../packages/temporal-adapter/workflow/src/ordinary-effect-history-reservation.ts) fail the Workflow with a nonretryable typed host failure, leaving committed effect waits unissued.
+
+With values of up to 16,384 bytes, a concurrent Program reaches these refusals far sooner than a bounded-String one: one full-allowance value copied into two frames and two effect snapshots already approaches the 64 KiB committed-state budget. That is a step back from serial Programs, which are refused before Workflow creation, and the profile README and About disclose it. It meets the rows, which require business behavior and its evidence, not a capacity envelope; [PROJECT-DESIGN](../PROJECT-DESIGN.md) makes no capacity claim before the production baseline, and the refusal is typed and fail-closed through existing mechanisms.
+
+The retained models are measured in a Workflow component test beside the [concurrent scope data capacity test](../../packages/temporal-adapter/workflow/test/concurrent-scope-data-capacity.test.ts), once with realistic values, which must fit every budget, and once with every structured slot filled to the allowance, which must be refused before commit with a typed committed-state failure. The same test drives each model to successors just below the committed-state budget and measures there the budgets the runtime does not check before commit: Query response, terminal result, Continue-As-New arguments and the command recovery ledger. Any of those exceeded is a design blocker for this account, not a disclosure.
+
+## Stable rules
+
+Layers: `CSSD-VALUE-01` restates BPMN Clause 10.4.1's copy semantics for structured values; the other rules apply the `CIB-EXT-0020` and `CIB-EXT-0021` overlay under this profile's admission and hosting.
+
+- `CSSD-ADMIT-01`: admission accepts exactly the required and optional scope above, refuses every exclusion and parser warning, and leaves every serial model's admission unchanged.
+- `CSSD-ROUTE-01`: a serial Program keeps every pre-family definition of admission, Start rule, completion re-check, hosting and Start envelope; a concurrent Program takes the concurrent account at every dispatch site.
+- `CSSD-REUSE-01`: in a concurrent Program, `CSD-CHAIN-01`, `CSD-ISOLATE-01`, `CSD-INIT-01`, `CSD-RETIRE-01`, `CSD-AVAILABLE-01`, `CSD-PREPARE-01`, `CSD-REFUSE-01` and `CMCALL-IN-01` through `CMCALL-REFUSE-01` hold with `SingletonBusinessItem` in place of `CSD-VALUE-01`'s bounded String and with `NSD-TASK-01`'s patch rule; their merge-target clauses do not apply.
+- `CSSD-VALUE-01`: a structured value keeps its multiplicity, list order, Map keys, Decimal scale and present nulls through every frame, effect snapshot, effect result, called-root frame, output, observation and Continue-As-New restoration of a concurrent Program; a root List, a 1,025-byte root String and a patch over 16,384 bytes are refused at the surface that introduces them.
+- `CSSD-SNAPSHOT-01`: an open effect's argument snapshot holds the values its arming read; a later write by a sibling branch to a name the snapshot read changes no open snapshot and is visible to every later reader on that name's owner chain.
+- `CSSD-REFUSE-01`: a refused completion or effect result on one branch leaves every frame, every sibling wait and every open snapshot unchanged.
+- `CSSD-CAPACITY-01`: as stated under capacity.
+
+Observation adds nothing: Process variables, open User Tasks and open effect arguments are observed as today, and [SDATA-OBSERVE-02](SCOPED-DATA-SPEC.md#sdata-observe-02) remains the projection boundary.
+
+## Newly reachable waits and resumption
+
+Admission widening makes concurrent wait sets reachable under this profile: up to the nested scope-control class's User Task and Service Task bounds of concurrent waits, and concurrent called User Tasks of distinct records. Each wait resumes only through its own content-bound command, User Task completion or effect result, as today, and refusal is per command. The host capability obligation for each shape is the existing one of the embedded completion profile: [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) admits concurrent host-driven waits for an admitted concurrent Program of this profile, the [ordinary-effect frontier scheduler](../../packages/temporal-adapter/workflow/src/ordinary-effect-frontier-scheduler.ts) hosts its effects, and the [pending Activity limit](../../packages/temporal-adapter/protocol/src/workflow-chain.ts) takes the nested scope-control Service Task bound. Serial Programs keep their present host path.
+
+## Separating witnesses
+
+Two retained whole models carry the witnesses, so that each new rule is witnessed in both.
+
+- **Order fulfilment.** The Start binds `order`, a Map whose `lines` List holds two equal line items, whose `shipTo` Map has a present-null `unit`, and whose `discount` is the Decimal `-1.25`. The root path runs *Fulfil order*, a Sub-Process, then *Close order*, a User Task. *Fulfil order* declares `instructions = "standard"`, `parcels = "none"` and `label = "none"`, and outputs them to `finalInstructions`, `shippedParcels` and `shippingLabel`. Its body forks straight into two declaring Sub-Processes and joins before *Confirm fulfilment*, a User Task:
+  - *Pick stock* declares `pickList = ${order}`; its *Pick items* Service Task maps `${pickList}` and `${instructions}` in and its result `packed`, a Map listing two equal parcels, out to `parcels`.
+  - *Plan shipment* declares `shipment = ${order}`; its *Review route* User Task may write `shipment` and `instructions`, and its *Rate shipment* Service Task maps `${shipment}` and `${instructions}` in and its result `quote` out to `label`.
+  - In the retained journeys, *Review route* writes `instructions` as a Map while *Pick items* is open, once before and once after the *Pick items* result.
+- **Loan assessment.** The Start binds `application`, a Map with a nested applicant whose `employer` is a present null, a `collateral` List of two equal entries and a Decimal amount. The root path runs *Assess application*, a Sub-Process, then *Decide loan*, a User Task. *Assess application* declares `file = ${application}`, `creditOpinion = "pending"` and `valuationOpinion = "pending"`, and outputs both opinions to `credit` and `valuation`. Its body forks straight into two declaring Sub-Processes and joins:
+  - *Credit check* and *Collateral valuation* each declare `dossier = ${file}` and run a preparation User Task, then a Call to one reusable *Expert review* Process with one *Give opinion* User Task. Both Calls map `dossier` in as `case`; the credit Call maps `opinion` out to `creditOpinion`, the valuation Call to `valuationOpinion`.
+  - *Prepare valuation* writes an amended `dossier` Map before its Call; *Prepare credit file* writes nothing. Each expert's patch writes `opinion` as a Map with a repeated condition.
+  - Two schedules complete the valuation expert first and the credit expert first.
+
+Lanes: B profile admission, L Lean law or decided fixture, T TypeScript core, P pipeline agreement on `StateObservation`, H Temporal hosted, C CIB calibration, N negative witness, M seeded mutation, W Workflow component test.
+
+| Rule | Witness | Lanes | Mutant it kills |
+|---|---|---|---|
+| `CSSD-ADMIT-01` | Both models compile and are admitted. A root-body fork, a merge region in a Sub-Process body, a Call in a body that holds a fork, a Call leading a body on a branch, and a Service Task beside a Call are refused under this profile; each refused model differs from an admitted control in that one fact. | B, L, T, N | Admit a root-body fork or a merge region. |
+| `CSSD-ROUTE-01` | Every registered scenario of this profile keeps its retained expectations, its serial capacity model is still refused before Workflow creation, and Lean proves that without a Parallel split the routed admission, Start rule and completion re-check reduce to the serial analysis's. | L, T, P, W, M | Route serial Programs through the nested scope-control analysis; envelope a concurrent Program. |
+| `CSSD-VALUE-01` | In order fulfilment, both entry frames and the open *Pick items* argument show `order` with both equal lines, the present-null `unit` and `-1.25`; `shippedParcels` publishes both equal parcels. In loan assessment, both called-root frames hold `case` with both collateral entries and the null `employer`, and each opinion's repeated condition reaches `credit` and `valuation`. A Continue-As-New while both branches wait restores every frame unchanged. | L, T, P, H, C, M | Route concurrent Programs to the bounded String policy; deduplicate list members; drop a present-null Map entry. |
+| `CSSD-SNAPSHOT-01` | In the journey where *Review route* completes first, the open *Pick items* argument keeps `instructions = "standard"` after *Review route* writes the Map; *Rate shipment*, armed afterwards, shows the Map, and `finalInstructions` publishes it in both journeys. | L, T, P, H | Rewrite open snapshots on a frame write; read `instructions` from the Process. |
+| `CSSD-REUSE-01`, isolation and Call ownership | The valuation expert's `case` holds the amended Map and the credit expert's holds the original; with either expert first, each opinion lands in its own declared local and reaches its own Process target. | L, T, P, H, C, M | Select called-root mappings by called definition; evaluate both invocations from one caller chain. |
+| `CSSD-REUSE-01`, prepared entry | Each fork commits both declared entries as one independent batch, without `ambiguousInternalChoice`. | L, T, P | Keep declared entries of this profile off the prepared path. |
+| `CSSD-REUSE-01`, availability | A variant in which *Pick items* also maps `${quote}`, written by *Rate shipment* on the sibling branch, makes `quote` a required Start binding; Start without it is `rejected`, Start with it commits. | B, L, T, N | Count a sibling branch's write as available. |
+| `CSSD-REFUSE-01` | While *Review route* is open, a *Pick items* result carrying a root List or a 1,025-byte root String is `rejected` with every frame, the open *Review route* wait and its snapshot unchanged; a *Review route* patch of 16,385 bytes is `rejected` while *Pick items* is open, and one of exactly 16,384 bytes commits. A *Give opinion* patch of 16,385 bytes is `rejected` with both called-root frames unchanged. | L, T, N, M | Commit a partial frame update; check the patch cap only on serial Programs. |
+| `CSSD-CAPACITY-01` | Realistic values fit every budget; full-allowance values are refused before commit with a typed committed-state failure; the unchecked budgets fit just below the committed-state budget; a concurrent Program gets the hosting identity bound and the reserved-result checks and no journey. | W, M | Count one copy of an effect argument; skip the hosting identity bound for concurrent Programs. |
+
+The 16,384-byte boundary patch and the over-bound refusals run in the core, Lean and the [value-domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts), not as hosted pipeline schedules, because their successors are sized by the boundary rather than by the runtime budgets.
+
+## Lean assurance lane
+
+Lane shape: checked
+
+Evidence: the family adds no transition family and no new law about runtime transitions. The occurrence-chain, declared-entry, mapped-invocation and frame laws it reuses are already quantified over every Program for which `nestedScopeDataProgram` holds, which includes every Program of this profile, so they apply to its concurrent Programs without a new premise; the guaranteeing declarations are those listed in the [concurrent scope data lane](CONCURRENT-SCOPE-DATA-SPEC.md#lean-assurance-lane) and the [concurrent mapped Calls lane](CONCURRENT-MAPPED-CALLS-SPEC.md#lean-assurance-lane). The family's own propositions are checked: admission and routing by a decided conformance fixture over both models and the refused variants, values by the cross-target value-domain matrix, and agreement by the pipeline. One preservation law is proved, because it is definitional and cheap: for a Program of this profile without a Parallel split, the routed admission, Start rule and completion re-check reduce to the serial analysis's.
+
+Open, and recorded as such: as in the concurrent scope data account, there is no quantified law that an admitted Program never reaches `ambiguousInternalChoice` or satisfies the declared entry's batch premise; the structural argument under representation, the existing independence refusal and the registered schedules support it.
+
+Assurance findings: `AA-13` adds no reader work, because no value arm or wire shape changes. `AA-15`'s value-domain lane is the matrix row for each retained model under this profile; design acceptance establishes none of it, and the lane is checked, not proved.
+
+## Temporal hosting and refinement preflight
+
+The family adds no hosting mechanism; it applies the embedded completion profile's concurrent hosting to this profile's concurrent Programs:
+
+- **Ingress.** Start, User Task completion Updates and effect Activity results, as today; called tasks keep their called identities.
+- **Effects.** The ordinary-effect frontier scheduler passes each effect's argument snapshot to its Activity, now with structured arguments, and its History reservation sums the actual request bytes.
+- **State.** Frames, called-root frames and snapshots are committed state carried through Continue-As-New; [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) restoration already accepts this profile's frames and called-root frames by their ownership rules.
+- **None of these.** No timers, Messages, BPMN cancellation or interruption.
+
+The preserved relation is the existing equality of hosted committed state with the core's state, extended over structured frames and snapshots. Risks and deciders: ordering of concurrent writes is explicit command order, realized in both orders by the schedules; replay re-derives frames and snapshots from committed state; deduplication is as today; size is the capacity account above. Structured arguments are a new input class for the frontier scheduler and its History reservation, so one hosted witness is required: order fulfilment with *Pick items* open and *Review route* pending, Worker replacement, Continue-As-New, *Review route* completing, then the *Pick items* result, with every Run replayed and the final Process variables compared with the core.
+
+## Evidence and acceptance
+
+Both models run as answer-free scenarios, two schedules each, with registered pipeline cases, seeded mutations, value-domain matrix rows, corpus rows and the About disclosure. The CIB lane is a calibration probe beside the [concurrent mapped Calls probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConcurrentMappedCallsProbeTest.java), driving both models in CIB `2.2.0` with Java `Map` and `List` values and asserting structural equality of the caller's Process variables at the same points, plus each called instance's variables through CIB's query API.
+
+Acceptance: Lean, core and pipeline agree on every scenario of this profile and of the embedded completion profile; the routing preservation law holds; the probe agrees at its declared fidelity; the hosted witness and the capacity component test pass; and the hosted pipeline passes once at family closure. Then the concurrent, structured clauses of `PC-DATA-03`, `PC-DATA-05` and `PC-DATA-06` named above are evidenced, and each row's remaining clauses stay recorded in the checklist.
+
+Nearest unsupported claims: forks in the Process root body and merge regions under this profile, structured values in a mapped invocation co-enabled with sibling work, capacity beyond the measured retained models, and aliasing of structured values. Common-mode risk: Lean and the core transcribe one reading of the CIB extraction and share the routing predicate's text; only the calibration probe checks the reading independently, and only on the retained models.
+
+## Versioning consequences
+
+Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy): the profile identity, Program and checked shapes, schemas and value arms stay unchanged; admission accepts split models under one more profile; the profile artifact grows in place; no legacy reader or migration is added.
+
+### Owners this implementation grows
+
+Derived with `node scripts/what-binds.ts` on 2026-11-01; `what-binds` owns every headroom figure. Build cost is a constraint: the family edits no `ValueDomain`, `ScopeDataBearing`, `CommandAdmission`, `ProgramStructuralValidation` or `RuntimeState` declaration; the Lean dispatch edits are body edits, land in one commit so the closed-world fixtures rebuild once, and are priced with the fan-out model before the first compile; a new public declaration goes to a leaf module when the fan-out model prices it lower than the hub-adjacent owner.
+
+- Lean admission and routing: [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean), which is near its review target, so the routing predicate and the restrictions move to a module of their own when growth would exceed it; [`NestedScopeDataCommand`](../../BpmnSemantics/SemanticProcess/NestedScopeDataCommand.lean), [`CommandStartBindings`](../../BpmnSemantics/SemanticProcess/CommandStartBindings.lean), [`ScenarioAdmission`](../../BpmnSemantics/SemanticProcess/ScenarioAdmission.lean) and [`ProfileShapeCatalog`](../../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean), each by one dispatch branch; one new conformance module.
+- TypeScript admission and routing: [nested scope-control admission](../../packages/semantic-core/src/nested-scope-control-admission.ts), which is near its review target, so the restrictions move out when growth would exceed it; [nested scope-data admission](../../packages/semantic-core/src/nested-scope-data-admission.ts), [Program admission](../../packages/semantic-core/src/semantic-process-admission.ts), [Start admission](../../packages/semantic-core/src/scope-data-stimulus-admission.ts) and [profile shapes](../../packages/semantic-core/src/semantic-process-profile.ts).
+- Source: [nested scope-data source](../../packages/bpmn-source/src/nested-scope-data-source.ts), [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) and [compilation dispatch](../../packages/bpmn-source/src/compilation-dispatch.ts), which accept Parallel Gateways in Sub-Process bodies under this profile.
+- Temporal: [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts), the [pending Activity limit](../../packages/temporal-adapter/protocol/src/workflow-chain.ts), the [ordinary-effect frontier scheduler](../../packages/temporal-adapter/workflow/src/ordinary-effect-frontier-scheduler.ts) and the [Start capacity envelope](../../packages/temporal-adapter/protocol/src/start-capacity-envelope.ts), each selecting by the routing predicate rather than by profile alone.
+- Registration: the [relation register](../CIB-BPMN-RELATION-REGISTER.md) entries `CIB-EXT-0020`, `CIB-EXT-0021` and `CIB-OP-0010`, the [profile artifact](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) and README, the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md), scenarios, pipeline cases, the value-domain matrix, the corpus, About, the CIB probe, the capacity component test and the hosted recovery witness.
+
+Guards the implementation must change or satisfy:
+
+- [`host-admission`](../../packages/temporal-adapter/testkit/test/host-admission.test.ts): concurrent host-driven waits of this profile are admitted only for admitted concurrent Programs, and serial Programs keep their serial host path;
+- the [Start capacity envelope test](../../packages/temporal-adapter/protocol/test/start-capacity-envelope.test.ts): serial Programs keep every envelope result, concurrent ones get only the Program-level checks;
+- the [concurrent scope data runtime test](../../packages/bpmn-source/test/concurrent-scope-data-runtime.test.ts), whose declared-entry batch premise now also covers this profile;
+- [`call-forest-selection-census`](../../scripts/call-forest-selection-census.test.ts), [`semantic-operation-consumer-census`](../../scripts/semantic-operation-consumer-census.test.ts) and [`internal-commutation-census`](../../scripts/internal-commutation-census.test.ts), which must stay unchanged in content;
+- the [value-domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts), the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts), [`contract-artifact-projections`](../../scripts/contract-artifact-projections.test.ts) and [`requirement-ledger-consistency`](../../scripts/requirement-ledger-consistency.test.ts) for the grown artifact;
+- [`lean-fanout`](../../scripts/lean-fanout.test.ts), [`lean-import-boundaries`](../../scripts/lean-import-boundaries.test.ts) and [`source-hygiene`](../../scripts/source-hygiene.test.ts), which bound every grown owner and new module;
+- [`document-reviewability`](../../scripts/document-reviewability.test.ts), for this inventory.
+
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
+| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

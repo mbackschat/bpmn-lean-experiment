@@ -99,11 +99,11 @@ Deliverable: a family proposal approved by its cold design review: the `cibseven
 
 Acceptance blockers: none recorded.
 
-Current result: selection only. Concurrent Programs need that profile's runtime typed capacity refusal in place of the static Start envelope, which serial Programs keep; 10 Lean and 7 TypeScript files gate the concurrent mechanisms on the embedded profile.
+Current result: the [proposal](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md) is drafted; split Programs take the nested scope-control analysis and the runtime capacity refusal, serial Programs keep their account and Start envelope.
 
-Effort budget: 3 hours for the proposal draft and its cold review; stop and reassess at the limit.
+Effort budget: 3 hours for the proposal draft and its cold review, from 2026-11-01 18:15 CET; stop and reassess at the limit.
 
-Next action: draft the proposal against both specifications' sections, then commit it and run the cold design review. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
+Next action: the cold design review of the proposal. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
 
 Oracle: the [cold-review gate](REVIEW-POLICY.md#independent-cold-review-gate) on the proposal.
 
