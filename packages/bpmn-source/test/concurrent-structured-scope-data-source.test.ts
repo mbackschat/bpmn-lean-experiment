@@ -100,8 +100,11 @@ function withSequentialChecks(xml: string): string {
 
 // CSSD-ADMIT-01 leaves serial admission unchanged: an overlay that binds no handler stays refused on a serial model.
 test("the empty Loan assessment overlay is refused once its checks run in sequence instead of on Parallel branches", async () => {
+  const serial = withSequentialChecks(await source("loan-assessment"));
   await admitted("loan-assessment", await source("loan-assessment"));
-  await refused("loan-assessment", withSequentialChecks(await source("loan-assessment")), "serial model, empty overlay");
+  await refused("loan-assessment", serial, "serial model, empty overlay");
+  // Control: the same serial model with a binding it does not use is admitted, so only the empty list is refused.
+  assert.equal((await compile("loan-assessment", serial, ["recordAssessment"])).status, BpmnCompilationStatus.Accepted);
 });
 
 /** Record assessment, a bound Service Task on the Loan assessment root path between Assess application and Decide loan. */
