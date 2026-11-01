@@ -1,0 +1,145 @@
+{
+  "kind": "scenario",
+  "id": "concurrent-mapped-calls-supplier-financial-first",
+  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "bpmn": {
+    "id": "supplier-onboarding",
+    "relativePath": "scenarios/concurrent-mapped-calls/supplier-onboarding.bpmn",
+    "sha256": "cadf9403db528cdd89b3203900f2b9ebfb669c43a8840f3b0b47a3fa4f852b40",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_SupplierOnboarding",
+      "instanceId": "Instance_1",
+      "initialVariables": [
+        {
+          "name": "supplierName",
+          "value": {
+            "kind": "string",
+            "value": "Acme"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-prepare-financial-file",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "PrepareFinancialFile",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-prepare-compliance-file",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "PrepareComplianceFile",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-financial-expert-opinion",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:22:FinancialExpertOpinion:1",
+        "elementId": "GiveExpertOpinion",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "dossier",
+          "value": {
+            "kind": "string",
+            "value": "Acme revised"
+          }
+        },
+        {
+          "name": "opinion",
+          "value": {
+            "kind": "string",
+            "value": "solvent"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "refuse-caller-addressed-compliance-task",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "GiveExpertOpinion",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "finding",
+          "value": {
+            "kind": "string",
+            "value": "clear"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-compliance-expert-opinion",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
+        "elementId": "GiveExpertOpinion",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "finding",
+          "value": {
+            "kind": "string",
+            "value": "clear"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-approve-supplier",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ApproveSupplier",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0005",
+      "CIB-EXT-0006",
+      "CIB-EXT-0020",
+      "CIB-EXT-0021"
+    ]
+  }
+}
