@@ -99,7 +99,7 @@ Deliverable: the family implemented and closure-reviewed under its [approved pro
 
 Acceptance blockers: none recorded.
 
-Current result: implemented; the cold closure review returned approve-with-required-edits, and its five required corrections are committed: the commit preflight now refuses a successor whose Continue-As-New publication continuation cannot fit, *Review route* writes a Map, the empty handler overlay is limited to models with a Parallel fork, and the disclosures and proposal status are corrected. About 3 of the 16 budgeted hours spent by 2026-11-01 22:05 CET.
+Current result: implemented; the five corrections the closure review required are committed; about 3 of the 16 budgeted hours spent by 2026-11-01 22:05 CET.
 
 Effort budget: 16 hours for the family's implementation through closure, from 2026-11-01 19:15 CET; stop and reassess at the limit.
 
