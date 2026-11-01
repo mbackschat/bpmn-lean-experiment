@@ -81,8 +81,8 @@ function hasMappedCallRoots(graph: CallActivityCheckedGraph): boolean {
 
 /**
  * CALLN-ADMIT-01's root census: one root per distinct called definition plus the caller root naming the checked
- * Process, and only empty-data Calls of another root. Placement, acyclicity, depth and the concurrency rules are the
- * nested scope-control analysis's, which sees the whole forest.
+ * Process, and only empty-data or mapped Calls of another root (CMCALL-ADMIT-01). Placement, acyclicity, depth, the
+ * mappings and the concurrency rules are the nested scope-control analysis's, which sees the whole forest.
  */
 function hasCallForestRoots(graph: CallActivityCheckedGraph): boolean {
   const roots = graph.definitionScopes.filter(({ parentScopeId }) => parentScopeId === null);
@@ -91,7 +91,7 @@ function hasCallForestRoots(graph: CallActivityCheckedGraph): boolean {
   const calledProcessIds = new Set(calls.map(({ calledProcessId }) => calledProcessId));
   return roots.length === calledProcessIds.size + 1 &&
     roots.filter(({ originElementId }) => originElementId === graph.processId).length === 1 &&
-    calls.every((call) => call.data.kind === CallDataKind.Empty && call.calledProcessId !== graph.processId &&
+    calls.every((call) => call.data.kind !== CallDataKind.Scalar && call.calledProcessId !== graph.processId &&
       roots.filter(({ originElementId }) => originElementId === call.calledProcessId).length === 1);
 }
 

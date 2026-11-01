@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_SupplierOnboarding" targetNamespace="urn:bpmn-lean:supplier-onboarding">
+  <process id="Process_SupplierOnboarding" name="Onboard a supplier" isExecutable="true">
+    <startEvent id="SupplierProposed" name="Supplier proposed" />
+    <parallelGateway id="ReviewsFork" name="Start reviews" />
+    <subProcess id="FinancialReview" name="Financial review">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="file">${supplierName}</camunda:inputParameter>
+          <camunda:inputParameter name="verdict">pending</camunda:inputParameter>
+          <camunda:outputParameter name="financialVerdict">${verdict}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="FinancialReviewOpened" name="Financial review opened" />
+      <userTask id="PrepareFinancialFile" name="Prepare financial file" />
+      <callActivity id="FinancialExpertOpinion" name="Ask financial expert" calledElement="Process_ExpertOpinion">
+        <extensionElements>
+          <camunda:in source="file" target="dossier" />
+          <camunda:out source="opinion" target="verdict" />
+        </extensionElements>
+      </callActivity>
+      <endEvent id="FinancialReviewClosed" name="Financial review closed" />
+      <sequenceFlow id="Flow_FinancialOpened" sourceRef="FinancialReviewOpened" targetRef="PrepareFinancialFile" />
+      <sequenceFlow id="Flow_FinancialPrepared" sourceRef="PrepareFinancialFile" targetRef="FinancialExpertOpinion" />
+      <sequenceFlow id="Flow_FinancialAnswered" sourceRef="FinancialExpertOpinion" targetRef="FinancialReviewClosed" />
+    </subProcess>
+    <subProcess id="ComplianceReview" name="Compliance review">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="file">sanctions screening</camunda:inputParameter>
+          <camunda:inputParameter name="verdict">pending</camunda:inputParameter>
+          <camunda:outputParameter name="complianceVerdict">${verdict}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="ComplianceReviewOpened" name="Compliance review opened" />
+      <userTask id="PrepareComplianceFile" name="Prepare compliance file" />
+      <callActivity id="ComplianceExpertOpinion" name="Ask compliance expert" calledElement="Process_ExpertOpinion">
+        <extensionElements>
+          <camunda:in source="file" target="screeningFile" />
+          <camunda:out source="finding" target="verdict" />
+        </extensionElements>
+      </callActivity>
+      <endEvent id="ComplianceReviewClosed" name="Compliance review closed" />
+      <sequenceFlow id="Flow_ComplianceOpened" sourceRef="ComplianceReviewOpened" targetRef="PrepareComplianceFile" />
+      <sequenceFlow id="Flow_CompliancePrepared" sourceRef="PrepareComplianceFile" targetRef="ComplianceExpertOpinion" />
+      <sequenceFlow id="Flow_ComplianceAnswered" sourceRef="ComplianceExpertOpinion" targetRef="ComplianceReviewClosed" />
+    </subProcess>
+    <parallelGateway id="ReviewsJoin" name="Reviews done" />
+    <userTask id="ApproveSupplier" name="Approve supplier" />
+    <endEvent id="SupplierOnboarded" name="Supplier onboarded" />
+    <sequenceFlow id="Flow_SupplierProposed" sourceRef="SupplierProposed" targetRef="ReviewsFork" />
+    <sequenceFlow id="Flow_ForkFinancial" sourceRef="ReviewsFork" targetRef="FinancialReview" />
+    <sequenceFlow id="Flow_ForkCompliance" sourceRef="ReviewsFork" targetRef="ComplianceReview" />
+    <sequenceFlow id="Flow_FinancialDone" sourceRef="FinancialReview" targetRef="ReviewsJoin" />
+    <sequenceFlow id="Flow_ComplianceDone" sourceRef="ComplianceReview" targetRef="ReviewsJoin" />
+    <sequenceFlow id="Flow_ReviewsJoined" sourceRef="ReviewsJoin" targetRef="ApproveSupplier" />
+    <sequenceFlow id="Flow_SupplierApproved" sourceRef="ApproveSupplier" targetRef="SupplierOnboarded" />
+  </process>
+  <process id="Process_ExpertOpinion" name="Give an expert opinion" isExecutable="true">
+    <startEvent id="OpinionRequested" name="Opinion requested" />
+    <userTask id="GiveExpertOpinion" name="Give expert opinion" />
+    <endEvent id="OpinionGiven" name="Opinion given" />
+    <sequenceFlow id="Flow_OpinionRequested" sourceRef="OpinionRequested" targetRef="GiveExpertOpinion" />
+    <sequenceFlow id="Flow_OpinionWritten" sourceRef="GiveExpertOpinion" targetRef="OpinionGiven" />
+  </process>
+</definitions>

@@ -1,8 +1,11 @@
+import { sameCallDataInterface } from "./call-data-admission.js";
 import { CallDataKind } from "./call-data-contract.js";
+import type { CallDataInterface, VariableMappingCallData } from "./call-data-contract.js";
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
-import { concurrentScopeRequiredStartNames, enclosingReads } from "./concurrent-scope-data-availability.js";
+import { concurrentScopeStartNames, enclosingReads } from "./concurrent-scope-data-availability.js";
 import type { ScopeDataAccess } from "./concurrent-scope-data-availability.js";
-import { scopeLocalRecordAdmitted } from "./nested-scope-data-admission.js";
+import { callMappingsAdmitted, scopeLocalRecordAdmitted } from "./nested-scope-data-admission.js";
+import type { NestedScopeStartNames } from "./nested-scope-data-admission.js";
 import { embeddedScopeDataBearing } from "./scope-data-bearing.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import type { CheckedNode, CheckedSequenceFlow } from "./checked-process-contract.js";
@@ -34,8 +37,10 @@ import { compareCanonicalStrings } from "./wire.js";
  * or beside a Call. Its completion resumes like a User Task's, so it joins the per-body task list that drives the bursts,
  * the task bound and the merge-target check.
  *
- * CSD-ADMIT-01 admits data in a model without a Call: Sub-Process declarations and mapped Service Tasks under the bounded
- * String rules, with the required Start names of CSD-AVAILABLE-01 computed over the raw bodies.
+ * CSD-ADMIT-01 admits data: Sub-Process declarations and mapped Service Tasks under the bounded String rules, with the
+ * required Start names of CSD-AVAILABLE-01 computed over the raw bodies. CMCALL-ADMIT-01 adds mapped Calls to a
+ * data-bearing model: at the Call placements of CALLN-ADMIT-01 and after the first vertex of a serial Sub-Process body at
+ * depth one or two, each called Process a serial User Task chain invoked only by mapped or only by unmapped Calls.
  */
 
 /** Definition depth of the deepest admitted Sub-Process body below the root. */
@@ -48,6 +53,8 @@ export const nestedScopeControlServiceTaskLimit = 32;
 const callDepthLimit = 3;
 /** The vertices of a called Process body between its None Start and None End (CALLN-ADMIT-01). */
 const calledBodyVertexLimit = 3;
+/** CMCALL-ADMIT-01: the deepest Sub-Process body that may hold a mapped Call. */
+const embeddedCallDepthLimit = 2;
 
 type RawBody = Readonly<{
   scope: string;
@@ -56,10 +63,12 @@ type RawBody = Readonly<{
   children: ReadonlyMap<string, string>;
   /** The called Process root scope of every Call vertex of this body. */
   calls: ReadonlyMap<string, string>;
+  /** The Call vertices of `calls` that carry variable mappings. */
+  mapped: ReadonlySet<string>;
   /** User and Service Task vertices; Service Tasks are also listed in `serviceTasks`. */
   tasks: readonly string[];
   serviceTasks: readonly string[];
-  /** The reads and writes of each mapped Service Task vertex; empty in a data-free model. */
+  /** The reads and writes of each mapped Service Task and mapped Call vertex; empty in a data-free model. */
   accesses: ReadonlyMap<string, ScopeDataAccess>;
 }>;
 
@@ -100,8 +109,22 @@ function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boolean {
   return nodes.every(node => node.kind !== Kind.Fork || node.outputs.every(reachesWork));
 }
 
+/**
+ * CMCALL-ADMIT-01: a Call outside the root is a mapped Call of a data-bearing model in a serial body at depth one or
+ * two, never the body's first vertex. Its invocation therefore follows a wait in the same body and is never co-enabled
+ * with sibling work, since the parentless caller is the only one Lean's control selection prepares.
+ */
+function embeddedCallsPlaced(body: Body, depth: number, dataBearing: boolean): boolean {
+  if (body.calls.size === 0) return true;
+  const first = body.nodes.find(({ kind }) => kind === Kind.Start)?.outputs ?? [];
+  return dataBearing && depth <= embeddedCallDepthLimit && body.regions.length === 0 &&
+    body.nodes.every(({ kind }) => kind === Kind.Start || kind === Kind.End || kind === Kind.Task) &&
+    [...body.calls.keys()].every(vertex => body.mapped.has(vertex) && !first.includes(vertex));
+}
+
 /** Validates the scope tree and every body, returning the tree with its per-body scans. */
-function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>, callsRoot: boolean):
+function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>, callsRoot: boolean,
+  dataBearing: boolean):
   Readonly<{ tree: Tree; scans: ReadonlyMap<string, ParallelBodyScans>; weightedTasks: number; weightedServiceTasks: number }> | null {
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
   // Equal sizes alone admit a body in an undeclared scope beside a declared scope without one.
@@ -118,22 +141,22 @@ function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<str
   // A caller without Sub-Process needs a Call to leave the exact-multiset class.
   if (parent.size !== scopes.length - 1 || (parent.size === 0 && !callsRoot)) return null;
   // Climbs at most `depthLimit` levels, so a parent cycle that never reaches the root is refused rather than recursed.
-  const withinDepth = (scope: string): boolean => {
+  const depthOf = (scope: string): number | undefined => {
     let current = scope;
-    for (let level = 0; level < depthLimit; level += 1) {
+    for (let level = 1; level <= depthLimit; level += 1) {
       const owner = parent.get(current);
-      if (owner === undefined) return false;
-      if (owner.scope === root) return true;
+      if (owner === undefined) return undefined;
+      if (owner.scope === root) return level;
       current = owner.scope;
     }
-    return false;
+    return undefined;
   };
-  if (scopes.some(({ id }) => id !== root && !withinDepth(id))) return null;
+  if (scopes.some(({ id }) => id !== root && depthOf(id) === undefined)) return null;
   const rootBody = bodies.get(root);
-  // A terminal fork is admitted only in a child body; the root keeps its single End. Stage A admits Calls in the
-  // caller root only, never in a Sub-Process or merge body.
+  // A terminal fork is admitted only in a child body; the root keeps its single End.
   if (rootBody === undefined || rootBody.nodes.filter(({ kind }) => kind === Kind.End).length !== 1 ||
-      rootBody.regions.length > 0 || [...bodies.values()].some(body => body.scope !== root && body.calls.size > 0)) return null;
+      rootBody.regions.length > 0 || [...bodies.values()].some(body => body.scope !== root &&
+        !embeddedCallsPlaced(body, depthOf(body.scope)!, dataBearing))) return null;
   const regions = [...bodies.values()].flatMap(({ regions }) => regions);
   if (!regions.every(({ targetScope }) => serialTargetBody(bodies.get(targetScope)))) return null;
   // CEA-ADMIT-01 weights the target body's tasks and those after it once per fork output; CSE-ADMIT-01 weights
@@ -152,10 +175,13 @@ function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<str
     weightedServiceTasks: weight(({ serviceTasks }) => serviceTasks) };
 }
 
-/** A called Process body is a serial chain of one to three User Task or Call vertices (CALLN-ADMIT-01, CSE-ADMIT-01). */
-function serialCalledBody(body: Body | undefined): body is Body {
+/**
+ * A called Process body is a serial chain of one to three User Task or Call vertices (CALLN-ADMIT-01, CSE-ADMIT-01); in a
+ * data-bearing model, of User Tasks only (CMCALL-ADMIT-01).
+ */
+function serialCalledBody(body: Body | undefined, dataBearing: boolean): body is Body {
   const vertices = body?.nodes.filter(({ kind }) => kind === Kind.Task) ?? [];
-  return body !== undefined && body.children.size === 0 && body.regions.length === 0 &&
+  return body !== undefined && body.children.size === 0 && body.regions.length === 0 && (!dataBearing || body.calls.size === 0) &&
     vertices.length >= 1 && vertices.length <= calledBodyVertexLimit &&
     body.serviceTasks.length === 0 && vertices.length === body.tasks.length + body.calls.size &&
     body.nodes.every(({ kind }) => kind === Kind.Start || kind === Kind.End || kind === Kind.Task);
@@ -168,16 +194,24 @@ type Forest = Readonly<{
   called: ReadonlyMap<string, Body>;
 }>;
 
-/** Splits off the called roots; the remaining scopes are the caller root, the one root no Call names, and its tree. */
-function splitForest(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>): Forest | null {
-  const calledRoots = new Set([...bodies.values()].flatMap(({ calls }) => [...calls.values()]));
+/**
+ * Splits off the called roots; the remaining scopes are the caller root, the one root no Call names, and its tree. A
+ * called root invoked by both a mapped and an unmapped Call is refused (CMCALL-ADMIT-01), because whether its frame
+ * isolates called-owned names is decided per definition.
+ */
+function splitForest(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>, dataBearing: boolean):
+  Forest | null {
+  const sites = [...bodies.values()].flatMap(({ calls, mapped }) =>
+    [...calls].map(([vertex, scope]) => ({ scope, mapped: mapped.has(vertex) })));
+  const calledRoots = new Set(sites.map(({ scope }) => scope));
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
   if (roots.filter(({ id }) => !calledRoots.has(id)).length !== 1 ||
       ![...calledRoots].every(scope => roots.some(({ id }) => id === scope))) return null;
   const called = new Map<string, Body>();
   for (const scope of calledRoots) {
     const body = bodies.get(scope);
-    if (!serialCalledBody(body)) return null;
+    if (!serialCalledBody(body, dataBearing) ||
+        new Set(sites.filter(site => site.scope === scope).map(site => site.mapped)).size !== 1) return null;
     called.set(scope, body);
   }
   return {
@@ -198,7 +232,8 @@ type ExpandedTree = Readonly<{
 /**
  * Expands the call tree once per call site, so one definition called from two sites is analysed twice. A site key
  * joins its caller key and Call vertex with `>`, which no XML ID or derived operation ID contains, so it never meets a
- * definition scope. A call cycle exceeds the depth bound; a called root no site reaches is refused.
+ * definition scope. A call cycle exceeds the depth bound; a called root no site reaches is refused. A Call in a
+ * Sub-Process body is at the depth of a Call in the root, since a Sub-Process adds no call nesting.
  */
 function expandCalls(tree: Tree, scans: ReadonlyMap<string, ParallelBodyScans>, called: ReadonlyMap<string, Body>):
   ExpandedTree | null {
@@ -228,6 +263,7 @@ function expandCalls(tree: Tree, scans: ReadonlyMap<string, ParallelBodyScans>, 
       invoked.set(site, definition);
       if (!attach(site, calledBody, depth + 1)) return false;
     }
+    for (const child of body.children.values()) if (!attach(child, tree.bodies.get(child)!, depth)) return false;
     bodies.set(key, { ...body, scope: key, children });
     return true;
   };
@@ -354,40 +390,48 @@ function maximumBurst(tree: Tree, scans: ReadonlyMap<string, ParallelBodyScans>)
 /** A model's data: its scope declarations and handler names, or `null` for a data-free model. */
 type ModelData = Readonly<{ records: readonly ScopeLocalData[]; handlers: ReadonlySet<string> }>;
 
-/** The admitted largest closure and, for a data-bearing model, its required Start names. */
-type Admitted = Readonly<{ burst: number; required: readonly string[] }>;
+/**
+ * The admitted largest closure and, for a data-bearing model, its required Start names; `optional` is `null` without a
+ * mapped Call, where every admitted Start name is allowed (CMCALL-START-01).
+ */
+type Admitted = Readonly<{ burst: number; required: readonly string[]; optional: readonly string[] | null }>;
 
 /**
  * CSD-ADMIT-01's data rules over a tree whose control is already admitted: declarations sorted by scope, each on a
- * Sub-Process scope and within the declaration rule, then CSD-AVAILABLE-01 over the raw bodies.
+ * Sub-Process scope and within the declaration rule, then CSD-AVAILABLE-01 and CMCALL-START-01 over the raw bodies.
  */
 function admittedData(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody>, data: ModelData):
-  readonly string[] | null {
-  const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
+  Omit<Admitted, "burst"> | null {
+  // The caller root is the one parentless scope no Call names; called roots declare nothing.
+  const calledRoots = new Set([...raw.values()].flatMap(({ calls }) => [...calls.values()]));
+  const roots = scopes.filter(({ id, parentScopeId }) => parentScopeId === null && !calledRoots.has(id));
   const { records, handlers } = data;
   if (roots.length !== 1 || !records.every(({ scopeId }, index) =>
       index === 0 || compareCanonicalStrings(records[index - 1]!.scopeId, scopeId) < 0) ||
       !records.every(record => record.scopeId !== roots[0]!.id && raw.has(record.scopeId) &&
         scopeLocalRecordAdmitted(handlers, record))) return null;
   const accesses = new Map([...raw.values()].flatMap(({ accesses }) => [...accesses]));
-  return concurrentScopeRequiredStartNames(roots[0]!.id, raw, records, accesses);
+  const names = concurrentScopeStartNames(roots[0]!.id, raw, records, accesses);
+  const mapped = [...raw.values()].some(({ mapped }) => mapped.size > 0);
+  return names === null ? null : { required: names.required, optional: mapped ? names.optional : null };
 }
 
 function admittedModel(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody> | null,
   data: ModelData | null): Admitted | null {
-  const burst = admittedBurst(scopes, raw);
+  const burst = admittedBurst(scopes, raw, data !== null);
   if (burst === null || raw === null) return null;
-  if (data === null) return { burst, required: [] };
-  const required = admittedData(scopes, raw, data);
-  return required === null ? null : { burst, required };
+  if (data === null) return { burst, required: [], optional: null };
+  const names = admittedData(scopes, raw, data);
+  return names === null ? null : { burst, ...names };
 }
 
-function admittedBurst(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody> | null): number | null {
+function admittedBurst(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody> | null,
+  dataBearing: boolean): number | null {
   const bodies = contractBodies(raw);
   if (bodies === null) return null;
-  const forest = splitForest(scopes, bodies);
+  const forest = splitForest(scopes, bodies, dataBearing);
   if (forest === null) return null;
-  const analyzed = analyzeTree(forest.scopes, forest.bodies, forest.called.size > 0);
+  const analyzed = analyzeTree(forest.scopes, forest.bodies, forest.called.size > 0, dataBearing);
   // CSE-ADMIT-01 refuses a Service Task beside a Call; called bodies refuse them in `serialCalledBody`.
   if (analyzed === null || analyzed.weightedServiceTasks > nestedScopeControlServiceTaskLimit ||
       (forest.called.size > 0 && analyzed.weightedServiceTasks > 0)) return null;
@@ -437,7 +481,22 @@ function accessOf(effect: Readonly<{ inputMappings: readonly VariableMapping[]; 
   return { reads: enclosingReads(effect.inputMappings), writes: effect.outputMappings.map(({ target }) => target) };
 }
 
-/** CSD-ADMIT-01 excludes every Call Activity from a data-bearing model. */
+/** A mapped Call reads without requiring and definitely writes its outputs (CMCALL-AVAILABLE-01, CMCALL-START-01). */
+function callAccess(data: VariableMappingCallData): ScopeDataAccess {
+  const writes = data.outputs.map(({ target }) => target);
+  return { reads: [], writes, optional: [...enclosingReads(data.inputs), ...writes] };
+}
+
+/** CALLN-ADMIT-01's empty Call anywhere; in a data-bearing model also CVM-ADMIT-01's mappings (CMCALL-ADMIT-01). */
+function callDataAdmitted(callData: CallDataInterface, data: ModelData | null): boolean {
+  switch (callData.kind) {
+    case CallDataKind.Empty: return true;
+    case CallDataKind.VariableMappings: return data !== null && callMappingsAdmitted(callData, data.handlers);
+    case CallDataKind.Scalar: return false;
+  }
+}
+
+/** CSD-ADMIT-01's Service Task data and CMCALL-ADMIT-01's Call data. */
 function checkedKind(node: CheckedNode, data: ModelData | null): RawBodyNodeKind | null {
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent: return RawBodyNodeKind.Start;
@@ -445,8 +504,7 @@ function checkedKind(node: CheckedNode, data: ModelData | null): RawBodyNodeKind
     case CheckedNodeKind.UserTask: return node.metadata === undefined ? RawBodyNodeKind.Task : null;
     case CheckedNodeKind.ServiceTask: return admittedServiceTask(node, node.bpmnErrorRoute, data) ? RawBodyNodeKind.Task : null;
     case CheckedNodeKind.EmbeddedSubProcess: return RawBodyNodeKind.Task;
-    case CheckedNodeKind.CallActivity:
-      return data === null && node.data.kind === CallDataKind.Empty ? RawBodyNodeKind.Task : null;
+    case CheckedNodeKind.CallActivity: return callDataAdmitted(node.data, data) ? RawBodyNodeKind.Task : null;
     case CheckedNodeKind.ExclusiveMerge: return RawBodyNodeKind.Merge;
     case CheckedNodeKind.ParallelGateway:
       return node.direction === GatewayDirection.Diverging ? RawBodyNodeKind.Fork
@@ -455,12 +513,14 @@ function checkedKind(node: CheckedNode, data: ModelData | null): RawBodyNodeKind
   }
 }
 
-/** A checked graph carries data exactly when a scope declares a local or a Service Task maps one. */
+/** A checked graph carries data exactly when a scope declares a local, a Service Task maps one or a Call maps. */
 function checkedData(graph: NestedScopeControlCheckedGraph): ModelData | null {
   const services = graph.nodes.flatMap(node => node.kind === CheckedNodeKind.ServiceTask ? [node] : []);
   const records = graph.scopeLocalData ?? [];
   return records.length === 0 && services.every(({ inputMappings, outputMappings }) =>
-      inputMappings.length === 0 && outputMappings.length === 0) ? null
+      inputMappings.length === 0 && outputMappings.length === 0) &&
+    !graph.nodes.some(node => node.kind === CheckedNodeKind.CallActivity && node.data.kind === CallDataKind.VariableMappings)
+    ? null
     : { records, handlers: new Set(services.map(({ descriptor }) => descriptor.operation)) };
 }
 
@@ -480,6 +540,7 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | 
     const vertices: RawBodyNode[] = [];
     const children = new Map<string, string>();
     const calls = new Map<string, string>();
+    const mapped = new Set<string>();
     const accesses = new Map<string, ScopeDataAccess>();
     for (const node of nodes) {
       const kind = checkedKind(node, data);
@@ -490,11 +551,15 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | 
         const root = calledRoot(node.calledProcessId);
         if (root === undefined) return null;
         calls.set(node.id, root);
+        if (node.data.kind === CallDataKind.VariableMappings) {
+          mapped.add(node.id);
+          accesses.set(node.id, callAccess(node.data));
+        }
       }
       vertices.push({ id: node.id, kind, outputs: graph.flows.filter(({ sourceId }) => sourceId === node.id).map(({ targetId }) => targetId) });
     }
     const serviceTasks = nodes.filter(({ kind }) => kind === CheckedNodeKind.ServiceTask).map(({ id }) => id);
-    bodies.set(scope, { scope, nodes: vertices, children, calls, serviceTasks, accesses,
+    bodies.set(scope, { scope, nodes: vertices, children, calls, mapped, serviceTasks, accesses,
       tasks: [...nodes.filter(({ kind }) => kind === CheckedNodeKind.UserTask).map(({ id }) => id), ...serviceTasks] });
   }
   return bodies;
@@ -513,6 +578,12 @@ export function nestedScopeControlCheckedAnalysis(graph: NestedScopeControlCheck
 /** CSD-AVAILABLE-01's required Start names over the checked graph, empty for a data-free model. */
 export function nestedScopeControlCheckedStartNames(graph: NestedScopeControlCheckedGraph): readonly string[] | null {
   return checkedModel(graph)?.required ?? null;
+}
+
+/** CSD-AVAILABLE-01 and CMCALL-START-01 over the checked graph; `optional` is `null` without a mapped Call. */
+export function nestedScopeControlCheckedStartNameRule(graph: NestedScopeControlCheckedGraph): NestedScopeStartNames | null {
+  const model = checkedModel(graph);
+  return model === null ? null : { required: model.required, optional: model.optional };
 }
 
 function inputsOf(operation: SemanticOperation): readonly string[] {
@@ -546,8 +617,7 @@ function programBodies(program: SemanticProcessProgram, data: ModelData | null):
   const calledRoots = new Set(returns.map(({ calledRootScopeId }) => calledRootScopeId));
   if (scopeOf.size !== program.operations.length ||
       completions.length !== program.definitionScopes.length - calledRoots.size ||
-      !returns.every(({ id, calledRootScopeId, data }) =>
-        scopeOf.get(id) === calledRootScopeId && data.kind === CallDataKind.Empty)) return null;
+      !returns.every(({ id, calledRootScopeId }) => scopeOf.get(id) === calledRootScopeId)) return null;
   const consumer = (scope: string, place: string): string | undefined => {
     const matching = operations.filter(operation => inputsOf(operation).includes(place));
     return matching.length === 1 && scopeOf.get(matching[0]!.id) === scope ? matching[0]!.id : undefined;
@@ -565,6 +635,7 @@ function programBodies(program: SemanticProcessProgram, data: ModelData | null):
     const vertices: RawBodyNode[] = [];
     const children = new Map<string, string>();
     const calls = new Map<string, string>();
+    const mapped = new Set<string>();
     const accesses = new Map<string, ScopeDataAccess>();
     const follow = (places: readonly string[]): string[] | null => {
       const targets = places.map(place => consumer(scope, place));
@@ -597,11 +668,17 @@ function programBodies(program: SemanticProcessProgram, data: ModelData | null):
         case SemanticOperationKind.InvokeProcess: {
           const returned = returns.filter(({ id }) => id === operation.returnOperationId);
           kind = RawBodyNodeKind.Task;
-          outputs = data !== null || returned.length !== 1 || returned[0]!.calledRootScopeId !== operation.calledRootScopeId ||
-              returned[0]!.calledProcessId !== operation.calledProcessId || operation.data.kind !== CallDataKind.Empty ||
+          // The return carries the invocation's own mappings, so CVM-OUT-01 reads exactly what this Call declares.
+          outputs = returned.length !== 1 || returned[0]!.calledRootScopeId !== operation.calledRootScopeId ||
+              returned[0]!.calledProcessId !== operation.calledProcessId || !callDataAdmitted(operation.data, data) ||
+              !sameCallDataInterface(operation.data, returned[0]!.data) ||
               consumer(operation.calledRootScopeId, operation.calledEntry) === undefined
             ? null : follow([returned[0]!.callerOutput]);
           calls.set(operation.id, operation.calledRootScopeId);
+          if (operation.data.kind === CallDataKind.VariableMappings) {
+            mapped.add(operation.id);
+            accesses.set(operation.id, callAccess(operation.data));
+          }
           break;
         }
         default: return null;
@@ -610,7 +687,7 @@ function programBodies(program: SemanticProcessProgram, data: ModelData | null):
       vertices.push({ id: operation.id, kind, outputs });
     }
     const serviceTasks = members.filter(({ kind }) => kind === SemanticOperationKind.AwaitEffect).map(({ id }) => id);
-    bodies.set(scope, { scope, nodes: vertices, children, calls, serviceTasks, accesses,
+    bodies.set(scope, { scope, nodes: vertices, children, calls, mapped, serviceTasks, accesses,
       tasks: [...members.filter(({ kind }) => kind === SemanticOperationKind.AwaitUserTask).map(({ id }) => id), ...serviceTasks] });
   }
   // Every return pairs with exactly one invocation, so no called root completes without a caller to continue.
@@ -648,6 +725,12 @@ export function nestedScopeControlProgramAnalysis(program: SemanticProcessProgra
 /** CSD-AVAILABLE-01's required Start names over the Program, empty for a data-free Program. */
 export function nestedScopeControlProgramStartNames(program: SemanticProcessProgram): readonly string[] | null {
   return programModel(program)?.required ?? null;
+}
+
+/** CSD-AVAILABLE-01 and CMCALL-START-01 over the Program; `optional` is `null` without a mapped Call. */
+export function nestedScopeControlProgramStartNameRule(program: SemanticProcessProgram): NestedScopeStartNames | null {
+  const model = programModel(program);
+  return model === null ? null : { required: model.required, optional: model.optional };
 }
 
 function programModel(program: SemanticProcessProgram): Admitted | null {

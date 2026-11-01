@@ -21,8 +21,9 @@ const semanticProfile = SemanticProfileId.EmbeddedSubProcessCompletion;
  * `CIB-EXT-0015`, the only foreign attributes admitted are their delegate and async-before markers, and the model must
  * contain a Service Task, because the overlay is admitted exactly when it binds one.
  *
- * A model whose Sub-Process or Service Task carries a `camunda:inputOutput` is data-bearing (CSD-ADMIT-01) and is read
- * by the scope-data reader instead, so every data-free model keeps exactly its earlier compilation.
+ * A model whose Sub-Process or Service Task carries a `camunda:inputOutput`, or whose Call carries a `camunda:in` or
+ * `camunda:out`, is data-bearing (CSD-ADMIT-01, CMCALL-ADMIT-01) and is read by the scope-data reader instead, so every
+ * data-free model keeps exactly its earlier compilation.
  */
 export function compileEmbeddedScopeSource(
   root: unknown,
@@ -51,9 +52,15 @@ export function compileEmbeddedScopeSource(
 
 function declaresData(root: unknown): boolean {
   const definitions = asElement(root);
-  return definitions !== undefined && [...locateContainedElements(definitions).keys()].some(element =>
-    (element.$type === "bpmn:SubProcess" || element.$type === "bpmn:ServiceTask") &&
-    (asElementArray(asElement(element.extensionElements)?.values) ?? []).some(value => value.$type === "camunda:inputOutput"));
+  return definitions !== undefined && [...locateContainedElements(definitions).keys()].some(element => {
+    const values = asElementArray(asElement(element.extensionElements)?.values) ?? [];
+    switch (element.$type) {
+      case "bpmn:SubProcess":
+      case "bpmn:ServiceTask": return values.some(value => value.$type === "camunda:inputOutput");
+      case "bpmn:CallActivity": return values.some(value => value.$type === "camunda:in" || value.$type === "camunda:out");
+      default: return false;
+    }
+  });
 }
 
 function unsupported(evidence: string): CheckedCompilationProjection {

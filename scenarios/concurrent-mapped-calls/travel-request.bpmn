@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TravelRequest" targetNamespace="urn:bpmn-lean:travel-request">
+  <process id="Process_TravelRequest" name="Handle a travel request" isExecutable="true">
+    <startEvent id="TravelRequested" name="Travel requested" />
+    <parallelGateway id="PreparationFork" name="Prepare the trip" />
+    <callActivity id="BudgetCheck" name="Check budget" calledElement="Process_BudgetCheck">
+      <extensionElements>
+        <camunda:in source="traveller" target="traveller" />
+        <camunda:out source="confirmedBudget" target="approvedBudget" />
+      </extensionElements>
+    </callActivity>
+    <callActivity id="VisaCheck" name="Check visa" calledElement="Process_VisaCheck">
+      <extensionElements>
+        <camunda:in source="traveller" target="traveller" />
+        <camunda:out source="visaDecision" target="visaStatus" />
+      </extensionElements>
+    </callActivity>
+    <subProcess id="Booking" name="Booking">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="budget">${approvedBudget}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="BookingOpened" name="Booking opened" />
+      <userTask id="BookTravel" name="Book travel" />
+      <endEvent id="BookingClosed" name="Booking closed" />
+      <sequenceFlow id="Flow_BookingOpened" sourceRef="BookingOpened" targetRef="BookTravel" />
+      <sequenceFlow id="Flow_TravelBooked" sourceRef="BookTravel" targetRef="BookingClosed" />
+    </subProcess>
+    <parallelGateway id="PreparationJoin" name="Trip prepared" />
+    <endEvent id="TravelArranged" name="Travel arranged" />
+    <sequenceFlow id="Flow_TravelRequested" sourceRef="TravelRequested" targetRef="PreparationFork" />
+    <sequenceFlow id="Flow_ForkBudget" sourceRef="PreparationFork" targetRef="BudgetCheck" />
+    <sequenceFlow id="Flow_ForkVisa" sourceRef="PreparationFork" targetRef="VisaCheck" />
+    <sequenceFlow id="Flow_ForkBooking" sourceRef="PreparationFork" targetRef="Booking" />
+    <sequenceFlow id="Flow_BudgetChecked" sourceRef="BudgetCheck" targetRef="PreparationJoin" />
+    <sequenceFlow id="Flow_VisaChecked" sourceRef="VisaCheck" targetRef="PreparationJoin" />
+    <sequenceFlow id="Flow_BookingDone" sourceRef="Booking" targetRef="PreparationJoin" />
+    <sequenceFlow id="Flow_PreparationJoined" sourceRef="PreparationJoin" targetRef="TravelArranged" />
+  </process>
+  <process id="Process_BudgetCheck" name="Check a travel budget" isExecutable="true">
+    <startEvent id="BudgetCheckRequested" name="Budget check requested" />
+    <userTask id="CheckBudget" name="Check budget" />
+    <endEvent id="BudgetChecked" name="Budget checked" />
+    <sequenceFlow id="Flow_BudgetCheckRequested" sourceRef="BudgetCheckRequested" targetRef="CheckBudget" />
+    <sequenceFlow id="Flow_BudgetDecided" sourceRef="CheckBudget" targetRef="BudgetChecked" />
+  </process>
+  <process id="Process_VisaCheck" name="Check a visa" isExecutable="true">
+    <startEvent id="VisaCheckRequested" name="Visa check requested" />
+    <userTask id="CheckVisa" name="Check visa" />
+    <endEvent id="VisaChecked" name="Visa checked" />
+    <sequenceFlow id="Flow_VisaCheckRequested" sourceRef="VisaCheckRequested" targetRef="CheckVisa" />
+    <sequenceFlow id="Flow_VisaDecided" sourceRef="CheckVisa" targetRef="VisaChecked" />
+  </process>
+</definitions>

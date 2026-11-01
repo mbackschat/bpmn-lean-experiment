@@ -13,10 +13,21 @@ import { compareCanonicalStrings } from "./wire.js";
  * of its inputs after a Parallel join, the intersection after an Exclusive merge, and the union of every End at a
  * body's completion, which waits for every branch. Forward flow alone keeps a write in one fork branch away from its
  * siblings. A read that is neither declared nor definitely written becomes a required Start binding.
+ *
+ * CMCALL-START-01 adds the optional Start names: a mapped Call's input sources and output targets that are neither
+ * declared on the Call's chain nor definitely written before it, so they resolve to the Process binding there. A Call
+ * input reads without requiring, because an absent source becomes a present null (CVM-IN-01), and a Call output is a
+ * definite write (CMCALL-AVAILABLE-01).
  */
 
-/** The names one task vertex reads before it runs and writes when it completes. */
-export type ScopeDataAccess = Readonly<{ reads: readonly string[]; writes: readonly string[] }>;
+/**
+ * The names one task vertex reads before it runs and writes when it completes; `optional` holds a mapped Call's names
+ * a Start binding may supply without being required to.
+ */
+export type ScopeDataAccess = Readonly<{ reads: readonly string[]; writes: readonly string[]; optional?: readonly string[] }>;
+
+/** The Start names of a tree: those every admitted Start binds, and those it may bind beside them. */
+export type ConcurrentScopeStartNames = Readonly<{ required: readonly string[]; optional: readonly string[] }>;
 
 /** One definition scope's raw body: vertices before merge-region contraction, and each Sub-Process vertex's child. */
 export type AvailabilityBody = Readonly<{ nodes: readonly RawBodyNode[]; children: ReadonlyMap<string, string> }>;
@@ -34,13 +45,14 @@ export function enclosingReads(mappings: readonly VariableMapping[]): string[] {
 }
 
 /**
- * The required Start names of the tree below `root`, sorted canonically; `null` when a body is missing, has no
- * single path into a vertex the walk needs, or is cyclic. `accesses` holds the mapped Service Tasks; a Sub-Process
- * vertex's access is its child scope's record.
+ * The Start names of the tree below `root`, each list sorted canonically; `null` when a body is missing, has no
+ * single path into a vertex the walk needs, or is cyclic. `accesses` holds the mapped Service Tasks and Calls; a
+ * Sub-Process vertex's access is its child scope's record.
  */
-export function concurrentScopeRequiredStartNames(root: string, bodies: ReadonlyMap<string, AvailabilityBody>,
-  records: readonly ScopeLocalData[], accesses: ReadonlyMap<string, ScopeDataAccess>): readonly string[] | null {
+export function concurrentScopeStartNames(root: string, bodies: ReadonlyMap<string, AvailabilityBody>,
+  records: readonly ScopeLocalData[], accesses: ReadonlyMap<string, ScopeDataAccess>): ConcurrentScopeStartNames | null {
   const required = new Set<string>();
+  const optional = new Set<string>();
   const recordOf = new Map(records.map(record => [record.scopeId, record]));
   const childAccess = (child: string): ScopeDataAccess => {
     const record = recordOf.get(child);
@@ -76,11 +88,13 @@ export function concurrentScopeRequiredStartNames(root: string, bodies: Readonly
       const child = body.children.get(node.id);
       const access = child === undefined ? accesses.get(node.id) ?? { reads: [], writes: [] } : childAccess(child);
       for (const name of access.reads) if (!declared.has(name) && !before.has(name)) required.add(name);
+      for (const name of access.optional ?? []) if (!declared.has(name) && !before.has(name)) optional.add(name);
       const done = child === undefined ? before : completion(child, before, declared, depth + 1);
       return done === null ? null : union([done, new Set(access.writes.filter(name => !declared.has(name)))]);
     };
     const ends = body.nodes.filter(({ kind }) => kind === RawBodyNodeKind.End).map(exit);
     return ends.length === 0 || ends.some(end => end === null) ? null : union(ends as Names[]);
   };
-  return completion(root, new Set(), new Set(), 0) === null ? null : [...required].sort(compareCanonicalStrings);
+  return completion(root, new Set(), new Set(), 0) === null ? null
+    : { required: [...required].sort(compareCanonicalStrings), optional: [...optional].sort(compareCanonicalStrings) };
 }

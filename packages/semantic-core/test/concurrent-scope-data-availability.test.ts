@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { MappingExpressionKind } from "@bpmn-lean/semantic-core";
 import type { ScopeLocalData } from "@bpmn-lean/semantic-core";
 import type { AvailabilityBody, ScopeDataAccess } from "../src/concurrent-scope-data-availability.ts";
-const { concurrentScopeRequiredStartNames } = await import(
+const { concurrentScopeStartNames } = await import(
   new URL("../dist/concurrent-scope-data-availability.js", import.meta.url).href) as
   typeof import("../src/concurrent-scope-data-availability.ts");
 const { RawBodyNodeKind: Kind } = await import(
@@ -23,7 +23,7 @@ const body = (nodes: Node[], children: Record<string, string> = {}): Availabilit
 const access = (reads: string[], writes: string[] = []): ScopeDataAccess => ({ reads, writes });
 const required = (bodies: Record<string, AvailabilityBody>, accesses: Record<string, ScopeDataAccess>,
   records: ScopeLocalData[] = []) =>
-  concurrentScopeRequiredStartNames("root", new Map(Object.entries(bodies)), records, new Map(Object.entries(accesses)));
+  concurrentScopeStartNames("root", new Map(Object.entries(bodies)), records, new Map(Object.entries(accesses)))?.required ?? null;
 const record = (scopeId: string, inputs: Record<string, string | { read: string }>, outputs: Record<string, string> = {}):
   ScopeLocalData => ({
   scopeId,

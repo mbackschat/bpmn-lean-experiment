@@ -1,3 +1,4 @@
+import { CallDataKind } from "./call-data-contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
@@ -6,13 +7,14 @@ import { SemanticProfileId } from "./semantic-profile-catalog.js";
 export type DataGateProgram = Pick<SemanticProcessProgram, "identity" | "scopeLocalData" | "operations">;
 
 /**
- * Whether an embedded completion Program carries data: a scope declaration or a mapped Service Task, per the
- * concurrent scope data specification's required scope. A data-free Program of that profile keeps its empty value domains
+ * Whether an embedded completion Program carries data: a scope declaration, a mapped Service Task or a mapped Call, per
+ * the concurrent scope data specification and the concurrent mapped Calls proposal. A data-free Program of that profile keeps its empty value domains
  * and the scalar effect policy, so every earlier admission of the profile is unchanged.
  */
 export function embeddedScopeDataBearing(program: DataGateProgram): boolean {
   return program.identity.semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion &&
     ((program.scopeLocalData?.length ?? 0) > 0 || program.operations.some(operation =>
       operation.kind === SemanticOperationKind.AwaitEffect &&
-      (operation.effect.inputMappings.length > 0 || operation.effect.outputMappings.length > 0)));
+        (operation.effect.inputMappings.length > 0 || operation.effect.outputMappings.length > 0) ||
+      operation.kind === SemanticOperationKind.InvokeProcess && operation.data.kind === CallDataKind.VariableMappings));
 }

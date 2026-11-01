@@ -89,9 +89,12 @@ function calledScopeValid(scopes: readonly DefinitionScope[], scope: string, cal
   return matching.length === 1 && matching[0]!.parentScopeId === null && matching[0]!.originElementId === calledProcessId;
 }
 
-/** CVM-ADMIT-01 names: every source and target an admitted identifier that no handler uses, as for every other name. */
-function callMappingsAdmitted(data: VariableMappingCallData, handlers: ReadonlySet<string>): boolean {
-  return [...data.inputs, ...data.outputs].every(({ target, expression }) =>
+/**
+ * CVM-ADMIT-01: the mapping shape of `variableMappingsValid`, every source and target an admitted identifier that no
+ * handler uses, as for every other name.
+ */
+export function callMappingsAdmitted(data: VariableMappingCallData, handlers: ReadonlySet<string>): boolean {
+  return variableMappingsValid(data) && [...data.inputs, ...data.outputs].every(({ target, expression }) =>
     isSerialBusinessIdentifier(target) && !handlers.has(target) && expression.kind !== MappingExpressionKind.StringLiteral &&
     isSerialBusinessIdentifier(expression.name) && !handlers.has(expression.name));
 }
@@ -227,8 +230,7 @@ function analyze(vertices: readonly Vertex[], records: readonly ScopeLocalData[]
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
   if (scopes.length !== children.length + calledScopes.size + 1 || children.length === 0 || calls.length > callLimit ||
       calledScopes.size > 1 || roots.length !== calledScopes.size + 1 || !roots.some(({ id }) => id === root) ||
-      !calls.every(call => call.scope !== root && variableMappingsValid(call.data) &&
-        callMappingsAdmitted(call.data, handlers)) ||
+      !calls.every(call => call.scope !== root && callMappingsAdmitted(call.data, handlers)) ||
       !strictlySorted(records.map(({ scopeId }) => scopeId)) ||
       !records.every(record => children.includes(record.scopeId) && scopeLocalRecordAdmitted(handlers, record))) return null;
   const walked = walk(vertices, records, scopes, vertices.length + 1, 0, [], root, entry);

@@ -25,6 +25,8 @@ const camunda = "http://camunda.org/schema/1.0/bpmn";
 /** One more level than NSD-ADMIT-01 admits, so the reader's recursion stays bounded while admission decides depth. */
 const readerDepthLimit = 4;
 
+type ProcessRoot = Readonly<{ processId: string; scopeId: string }>;
+
 type Collected = {
   nodes: CheckedNode[];
   flows: CheckedSequenceFlow[];
@@ -37,12 +39,15 @@ type Collected = {
 
 /**
  * What one scope-data profile's reader admits beyond the shared element grammar: Parallel gateways and Exclusive
- * merges for the embedded completion profile (CSD-ADMIT-01), a mapped Call for the nested scope-data profile.
+ * merges, mapped and unmapped Calls of several called Processes for the embedded completion profile (CSD-ADMIT-01,
+ * CMCALL-ADMIT-01), mapped Calls of one called Process for the nested scope-data profile.
  */
 type ScopeDataReader = Readonly<{
   semanticProfile: string;
   gateways: boolean;
-  calls: boolean;
+  projectCall: (element: ElementRecord) => CheckedNode | undefined;
+  /** The caller Process of the read roots, or `undefined` when the roots and Calls do not form one call forest. */
+  caller: (roots: readonly ProcessRoot[], collected: Collected) => string | undefined;
   /** Whether a model needs the overlay even without a Service Task; otherwise it binds one exactly when it has one. */
   overlayRequired: boolean;
   /** The profile's own analysis, beside the shared checked admission, and its refusal evidence. */
@@ -51,14 +56,16 @@ type ScopeDataReader = Readonly<{
 }>;
 
 const nestedScopeDataReader: ScopeDataReader = {
-  semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: false, calls: true, overlayRequired: true,
+  semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: false, projectCall: projectMappedCall,
+  caller: callerProcess, overlayRequired: true,
   admitted: checkedProcess => nestedScopeCheckedAnalysis(checkedProcess) !== null,
   refusal: "The checked graph does not satisfy nested scope-data admission.",
 };
 
 // Checked admission of the embedded completion profile already runs its nested scope-control and data analysis.
 const embeddedScopeDataReader: ScopeDataReader = {
-  semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, calls: false, overlayRequired: false,
+  semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, projectCall: projectEmbeddedCall,
+  caller: callForestCaller, overlayRequired: false,
   admitted: checkedProcess => (checkedProcess.identity.sourceOverlay !== null) ===
     checkedProcess.nodes.some(({ kind }) => kind === CheckedNodeKind.ServiceTask),
   refusal: "The checked graph does not satisfy concurrent scope-data admission.",
@@ -102,13 +109,13 @@ function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overl
       type === "bpmn:ServiceTask" && namespace === camunda && (name === "delegateExpression" || name === "asyncBefore"));
   if (foreign.length > 0) return { checkedProcess: undefined, diagnostics: orderedElementDiagnostics(foreign) };
   const processes = asElementArray(definitions.rootElements);
-  if (processes === undefined || processes.length < 1 || processes.length > (reader.calls ? 2 : 1) || !processes.every(process =>
+  if (processes === undefined || processes.length < 1 || !processes.every(process =>
     process.$type === "bpmn:Process" && process.isExecutable === true &&
     hasOnlyModelledKeys(process, ["$type", "id", "name", "isExecutable", "flowElements"]))) {
     return unsupported("Expected one executable root Process, or a caller and one called Process.");
   }
   const collected: Collected = { nodes: [], flows: [], scopes: [], nodeScopes: [], flowScopes: [], records: [], ids: [] };
-  const roots: { processId: string; scopeId: string }[] = [];
+  const roots: ProcessRoot[] = [];
   for (const process of processes) {
     const processId = readId(process);
     const elements = asElementArray(process.flowElements);
@@ -120,7 +127,7 @@ function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overl
     const failure = readScope(elements, scopeId, 0, definitions, selection.policy, reader, collected);
     if (failure !== null) return unsupported(failure);
   }
-  const caller = callerProcess(roots, collected);
+  const caller = reader.caller(roots, collected);
   if (caller === undefined) return unsupported("A second Process must be the called Process of every Call Activity in the caller.");
   const processId = caller;
   if (new Set(collected.ids).size !== collected.ids.length) return unsupported("Flow element IDs must be unique.");
@@ -189,7 +196,7 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
         node = { kind: CheckedNodeKind.EmbeddedSubProcess, id, childScopeId };
         break;
       }
-      case "bpmn:CallActivity": node = reader.calls ? projectMappedCall(element) : undefined; break;
+      case "bpmn:CallActivity": node = reader.projectCall(element); break;
       case "bpmn:ParallelGateway":
       case "bpmn:ExclusiveGateway":
         if (!reader.gateways) return "The flow element is outside the nested scope-data contract.";
@@ -219,9 +226,10 @@ function projectGateway(element: ElementRecord, flows: readonly CheckedSequenceF
  * keeps the profile's single-Process account. CALLN-ADMIT-01's Stage B admits up to two Calls of that one definition;
  * where they lie, at most two Sub-Processes deep, is the nested scope-data analysis's decision.
  */
-function callerProcess(roots: readonly { processId: string; scopeId: string }[], collected: Collected): string | undefined {
+function callerProcess(roots: readonly ProcessRoot[], collected: Collected): string | undefined {
   const calls = collected.nodes.flatMap(node => node.kind === CheckedNodeKind.CallActivity ? [node] : []);
   if (roots.length === 1) return calls.length === 0 ? roots[0]!.processId : undefined;
+  if (roots.length !== 2) return undefined;
   const rootOf = (scopeId: string | undefined): string | undefined => {
     let current = scopeId;
     for (let fuel = collected.scopes.length; fuel > 0 && current !== undefined; fuel -= 1) {
@@ -238,6 +246,32 @@ function callerProcess(roots: readonly { processId: string; scopeId: string }[],
   const called = roots.find(({ processId }) => processId !== callerId);
   return calls.length >= 1 && calls.length <= 2 && callerId !== undefined && called !== undefined &&
       calls.every(call => call.calledProcessId === called.processId) ? callerId : undefined;
+}
+
+/**
+ * CMCALL-ADMIT-01's forest: the caller is the one Process no Call names and every other Process is named by a Call.
+ * Where each Call lies, and whether a called Process may hold one, is the nested scope-control analysis's decision.
+ */
+function callForestCaller(roots: readonly ProcessRoot[], collected: Collected): string | undefined {
+  const named = new Set(collected.nodes.flatMap(node => node.kind === CheckedNodeKind.CallActivity ? [node.calledProcessId] : []));
+  const callers = roots.filter(({ processId }) => !named.has(processId));
+  return callers.length === 1 && named.size === roots.length - 1 &&
+      [...named].every(processId => roots.some(root => root.processId === processId))
+    ? callers[0]!.processId : undefined;
+}
+
+/**
+ * The embedded completion profile's Call: CALLN-ADMIT-01's unmapped Call with no extension, or CVM-ADMIT-01's mapped
+ * Call. An extension list with no `camunda:in` is refused by the mapping rule, never read as an unmapped Call.
+ */
+function projectEmbeddedCall(element: ElementRecord): CheckedNode | undefined {
+  const id = readId(element);
+  if (element.extensionElements !== undefined) return projectMappedCall(element);
+  return id !== undefined && typeof element.calledElement === "string" && element.calledElement.length > 0 &&
+      hasOnlyModelledKeys(element, ["$type", "id", "name", "calledElement"]) &&
+      (element.name === undefined || typeof element.name === "string")
+    ? { kind: CheckedNodeKind.CallActivity, id, calledProcessId: element.calledElement, data: { kind: CallDataKind.Empty } }
+    : undefined;
 }
 
 /**
