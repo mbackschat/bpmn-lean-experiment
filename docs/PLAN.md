@@ -93,17 +93,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the proposal of the scope re-entry family of [delivery batch](#scheduled-delivery-batches) 3: `PC-CF-06` primary (Sequence Flow cycles across reusable scopes), with the repeated-lifetime clause of `PC-DATA-04` and the re-entry clause of `PC-SCOPE-02`. Every other batch 3 residual waits on held expressions (`PC-DATA-07`–`09`) or Multi-Instance owners. Pull requests #38 and #39 are the owner's to land.
+Current task: the [scope re-entry proposal](capsules/SCOPE-REENTRY-PROPOSAL.md) of [delivery batch](#scheduled-delivery-batches) 3: `PC-CF-06` primary, with the repeated-lifetime clause of `PC-DATA-04`, the re-entry clause of `PC-SCOPE-02` and the scoped-rework clause of `PC-HUM-01`. Every other batch 3 residual waits on held expressions (`PC-DATA-07`–`09`) or Multi-Instance owners. Pull requests #38 and #39 are the owner's to land.
 
-Deliverable: an approved family proposal in which an embedded Sub-Process on a root-scope cycle is re-entered with a fresh occurrence identity and fresh scope-local data per iteration.
+Deliverable: an approved family proposal in which embedded Sub-Processes and mapped Calls on a root-scope cycle are re-entered with fresh occurrence identity and fresh scope-local data per iteration.
 
-Acceptance blockers: none recorded; stop if CIB's re-entry needs held expression or Multi-Instance mechanisms.
+Acceptance blockers: none recorded. CIB's re-entry needs neither held expressions nor Multi-Instance mechanisms (source-established at `5a45b47`); its calibration probe renders the root conditions in JUEL under `CIB-CFG-0005` only.
 
-Current result: the [concurrent structured scope data](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md) family closed on 2026-11-01 after about 4 of its 16 budgeted hours.
+Current result: the proposal is drafted; it grows the nested scope-data profile with root Choices and Merges under the mixed-task cycle cut and touches two Lean hubs by body edits only (`ProfileShapeCatalog`, `NestedScopeControlAdmission`). The duplicated nested scope-data Call bound got one owner in `58c3ed4b`.
 
-Effort budget: 2 hours for the proposal draft and its cold design review, from 2026-11-01 23:40 CET.
+Effort budget: 2 hours for the proposal draft and its cold design review, from 2026-11-01 23:55 CET.
 
-Next action: read the [cycle](capsules/CYCLIC-CONTROL-FLOW-SPEC.md) and nested scope owners and CIB's re-entry source, then draft the proposal. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
+Next action: the cold design review of the proposal. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
 
 Oracle: the cold design review of the selected family proposal.
 
