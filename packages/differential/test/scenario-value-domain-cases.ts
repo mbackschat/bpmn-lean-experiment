@@ -143,6 +143,9 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   const claim = (await loadAndCompileCases(pipelineCases.filter(({ id }) => id === "concurrent-scope-data-claim-fetch-one-first")))[0];
   assert.ok(claim !== undefined, "the claim damage assessment schedule is registered");
   addConcurrentScopeDataCases(claim, add);
+  const travel = (await loadAndCompileCases(pipelineCases.filter(({ id }) => id === "concurrent-mapped-calls-travel-request")))[0];
+  assert.ok(travel !== undefined, "the travel request schedule is registered");
+  addConcurrentMappedCallsCases(travel, add);
   const mapped = selected.get(SemanticProfileId.MappedSuccessServiceTask)!;
   const effectIndex = mapped.scenario.stimuli.findIndex(stimulus => stimulus.kind === StimulusKind.CompleteEffect);
   const effect = mapped.scenario.stimuli[effectIndex]!;
@@ -371,6 +374,25 @@ function addConcurrentScopeDataCases(context: DomainContext, add: AddCase): void
       add(context, `${surface}-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
     }
   }
+}
+
+/**
+ * The travel request's Start names under CMCALL-START-01 and CMCALL-AVAILABLE-01: Booking reads `approvedBudget`, a
+ * sibling Call's output, at its entry, so it is required; the Calls' input source `traveller` and the output target
+ * `visaStatus` land at the Process and are optional; Booking's own `budget` and the called-only `confirmedBudget` exist in
+ * no caller scope. Each case changes one fact of the retained answer-free Start, so only that fact can move the expectation.
+ */
+function addConcurrentMappedCallsCases(context: DomainContext, add: AddCase): void {
+  const start = context.scenario.stimuli[0]!;
+  assert.ok(start.kind === StimulusKind.StartProcess);
+  const startWith = (suffix: string, initialVariables: readonly VariableBinding[], supported: boolean) =>
+    add(context, suffix, [{ ...start, initialVariables }, ...context.scenario.stimuli.slice(1)], supported);
+  // Appended names sort after the retained `approvedBudget`, which keeps the canonical name order.
+  const appended = (...names: string[]) => [...start.initialVariables, ...names.map(name => ({ name, value: values[0]! }))];
+  startWith("invalid-start-data-missing-required", [], false);
+  startWith("invalid-start-data-declared-local-name", appended("budget"), false);
+  startWith("invalid-start-data-called-only-name", appended("confirmedBudget"), false);
+  startWith("valid-start-data-call-source-and-output-target", appended("traveller", "visaStatus"), true);
 }
 
 /**

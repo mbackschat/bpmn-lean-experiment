@@ -986,6 +986,88 @@
       }
     },
     {
+      "id": "supplier-onboarding-concurrent-expert-calls",
+      "title": "Ask two experts about a supplier at once",
+      "businessPurpose": "Review a new supplier's finances and compliance at the same time, let each review prepare its own file and ask one shared expert opinion process with its own question and answer field, publish each review's verdict and approve the supplier once both reviews are done.",
+      "cloneFamily": "supplier-onboarding-concurrent-expert-calls",
+      "constructs": [
+        "callActivity",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "calledProcess",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/concurrent-mapped-calls/supplier-onboarding.bpmn",
+        "sha256": "cadf9403db528cdd89b3203900f2b9ebfb669c43a8840f3b0b47a3fa4f852b40",
+        "scenarioRelativePath": "scenarios/concurrent-mapped-calls/supplier-compliance-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "concurrent-mapped-calls-supplier-compliance-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected and the browser does not yet present called-instance tasks of a mapped Call; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "travel-request-concurrent-checks",
+      "title": "Prepare a business trip",
+      "businessPurpose": "Start a travel request with its pre-approved budget, check the budget and the traveller's visa in separate called processes while the booking starts from the pre-approved budget, let the budget check confirm or lower the budget and record the visa decision on the request.",
+      "cloneFamily": "travel-request-concurrent-checks",
+      "constructs": [
+        "callActivity",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "calledProcess",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/concurrent-mapped-calls/travel-request.bpmn",
+        "sha256": "ba346f0b2a70bf573d7293d7ca15a1757cabd6086005f698fcfcf0d2e9990191",
+        "scenarioRelativePath": "scenarios/concurrent-mapped-calls/travel-request.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "concurrent-mapped-calls-travel-request",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected and the browser does not yet present called-instance tasks of a mapped Call; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

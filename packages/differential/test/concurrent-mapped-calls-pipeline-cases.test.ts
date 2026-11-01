@@ -11,13 +11,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { CanonicalObservationKind, CommandOutcome, ProcessStatus, ScenarioOutcomeKind, SemanticProfileId, StimulusKind,
   VariableValueKind, runScenario, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
-import type { CanonicalObservation, VariableBinding } from "@bpmn-lean/semantic-core";
+import type { CanonicalObservation, Scenario, VariableBinding } from "@bpmn-lean/semantic-core";
 import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
 import { assessBpmnProcessAdmission, assessTemporalHostCapability, BpmnProcessAdmissionResultKind,
   TemporalHostCapabilityResultKind } from "@bpmn-lean/temporal-testkit";
 import { concurrentMappedCallsMutations, concurrentMappedCallsPipelineCases } from "./concurrent-mapped-calls-pipeline-cases.ts";
 import { openWork } from "./concurrent-scope-service-tasks-pipeline-cases.ts";
 import { loadAndCompileCases } from "./pipeline-case-loading.ts";
+import { domainCases } from "./scenario-value-domain-cases.ts";
 import { mutableClone } from "./pipeline-target-support.ts";
 
 const prefix = "concurrent-mapped-calls-";
@@ -130,4 +131,16 @@ test("each registered case carries exactly one named mutation of its own journey
       expected === pipelineCase.expectedInjectedDisagreement);
     assert.equal(carried.length, 1, scenario.id);
   }
+});
+
+test("the travel request's value-domain rows follow CMCALL-START-01 and CMCALL-AVAILABLE-01", async () => {
+  const cases = (await domainCases()).filter(({ scenario }) => scenario.id.startsWith(`${prefix}travel-request-`));
+  const supportedByLabel = new Map(cases.map(({ scenario, supported }) => [scenario.id.slice(`${prefix}travel-request-`.length), supported]));
+  for (const input of cases) {
+    assert.equal(supportsSemanticProcessScenario(input.scenario as Scenario, input.context.semanticProcess), input.supported, input.scenario.id);
+  }
+  assert.deepEqual(Object.fromEntries(supportedByLabel), {
+    "invalid-start-data-missing-required": false, "invalid-start-data-declared-local-name": false,
+    "invalid-start-data-called-only-name": false, "valid-start-data-call-source-and-output-target": true,
+  });
 });
