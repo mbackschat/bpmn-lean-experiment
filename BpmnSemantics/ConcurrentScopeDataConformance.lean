@@ -106,10 +106,10 @@ private def bounded_string_counts_utf8_bytes_and_keeps_null_present : Bool :=
     admits (text 1024) && !admits (text 1025) && admits (text 512 'é') && !admits (text 513 'é') &&
       admits .null && !admits (.boolean true) && !admits (.map [])
 
-/-- CSD-ADMIT-01: the data-free caller is admitted, and one declaration beside its Call refuses it. -/
-private def call_beside_data_is_refused : Bool := decide <|
+/-- CMCALL-ADMIT-01 widens CSD-ADMIT-01: an unmapped Call keeps its Stage A placement beside a declaration. -/
+private def unmapped_call_beside_data_is_admitted : Bool := decide <|
   (NestedScopeControl.checkedAnalysis (callerBeside [])).isSome &&
-    NestedScopeControl.checkedAnalysis (callerBeside [declare "S" [literal "x" "v"]]) = none
+    (NestedScopeControl.checkedAnalysis (callerBeside [declare "S" [literal "x" "v"]])).isSome
 
 private def overlong_literal_is_refused : Bool := decide <|
   let literalOf := fun (length : Nat) => facilityWith (enclosing "result" "result")
@@ -187,7 +187,7 @@ def concurrentScopeDataConformanceChecks : List (String × Bool) := [
   ("data_bearing_gate_selects_the_bounded_string_policy", data_bearing_gate_selects_the_bounded_string_policy),
   ("mapped_service_task_is_admitted_as_data", mapped_service_task_is_admitted_as_data),
   ("bounded_string_counts_utf8_bytes_and_keeps_null_present", bounded_string_counts_utf8_bytes_and_keeps_null_present),
-  ("call_beside_data_is_refused", call_beside_data_is_refused),
+  ("unmapped_call_beside_data_is_admitted", unmapped_call_beside_data_is_admitted),
   ("overlong_literal_is_refused", overlong_literal_is_refused),
   ("ninth_declaration_is_refused", ninth_declaration_is_refused),
   ("review_start_requires_a_bounded_claim", review_start_requires_a_bounded_claim),

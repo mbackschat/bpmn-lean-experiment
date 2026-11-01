@@ -38,6 +38,7 @@ public import BpmnSemantics.ConcurrentEmbeddedActivationsAdmissionConformance
 public import BpmnSemantics.ConcurrentEmbeddedActivationsConformance
 public import BpmnSemantics.ConcurrentScopeServiceTasksConformance
 public import BpmnSemantics.ConcurrentScopeDataConformance
+public import BpmnSemantics.ConcurrentMappedCallsConformance
 public import BpmnSemantics.ConfiguredTaskConformance
 public import BpmnSemantics.EffectDataConformance
 public import BpmnSemantics.EmbeddedSubProcessCompletionConformance
@@ -196,6 +197,7 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("ConcurrentEmbeddedActivationsConformance", BpmnSemantics.ConcurrentEmbeddedActivationsConformance.checks),
   ("ConcurrentScopeServiceTasksConformance", BpmnSemantics.ConcurrentScopeServiceTasksConformance.concurrentScopeServiceTasksConformanceChecks),
   ("ConcurrentScopeDataConformance", BpmnSemantics.ConcurrentScopeDataConformance.concurrentScopeDataConformanceChecks),
+  ("ConcurrentMappedCallsConformance", BpmnSemantics.ConcurrentMappedCallsConformance.concurrentMappedCallsConformanceChecks),
   ("ConfiguredTaskConformance", BpmnSemantics.ConfiguredTaskConformance.checks),
   ("CyclicControlFlowConformance", BpmnSemantics.SemanticProcess.cyclicControlFlowConformanceChecks),
   ("CyclicControlFlowReachabilityConformance", BpmnSemantics.SemanticProcess.cyclicControlFlowReachabilityConformanceChecks),
