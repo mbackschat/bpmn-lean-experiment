@@ -85,7 +85,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Hub fix, second increment. Command: `./scripts/verify.sh lean-library`, `./scripts/verify.sh lean-checks`, `./scripts/pnpm.sh run test:infrastructure:runtime`. Status: `exit 0`. Date: `2026-11-01`. Commit: `6cff7309`, whose exact tree the asserted receipts verified on `0e1437d7`. The batch's builds ran under a 5 GiB container ceiling (no OOM), and the re-opened fixture `StructuredCompositionCommandConformance` was remeasured at 1 CPU under 3 GiB (644,796 KiB).
+- Hub fix, third increment. Command: `./scripts/verify.sh lean-library`, `./scripts/verify.sh lean-checks`, `./scripts/pnpm.sh run test:infrastructure:runtime`. Status: `exit 0`. Date: `2026-11-01`. Commit: `53329a46`, whose exact tree the asserted receipts verified on `4938389e`. The batch's builds ran under a 5 GiB container ceiling (no OOM), and the re-opened fixtures `MappedBoundaryErrorConformance` and `SequentialScopeGraphConformance` were remeasured at 1 CPU under 3 GiB (1,257,704 and 1,121,036 KiB).
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -99,11 +99,11 @@ Deliverable: the hub fix's next increment, the leading measured mean driver cons
 
 Acceptance blockers: none recorded.
 
-Current result: two increments cut `ProgramStructuralValidation`'s body edit from 480 to 214 modules and `ParallelScopeRuntime`'s from 151 to 64 (replay mean 262.4 → 243.6, p90 682 → 619; [current evidence](#current-evidence)). A third stopped at its time-box: compile probes (2026-11-01) showed `ValueDomain`, `TransitionTrace` and `InternalCommutationCore` cuts needing many re-opened `import all` lines for at most 4.3 points.
+Current result: three increments cut the body edits of `ProgramStructuralValidation` (480 → 214 modules), `ParallelScopeRuntime` (151 → 64) and `SerialBusinessTaskAdmission` (457 → 45); replay mean 262.4 → 239.0, p90 682 → 619 ([current evidence](#current-evidence)). Every remaining single-opener cut ranked (2026-11-01) gains at most 1.2 points, or needs many re-opened `import all` lines.
 
-Effort budget: 12 hours of working time for the hub fix increments, about 8.3 hours used (2026-10-31 22:35 to 2026-11-01 06:55); stop and reassess at the limit.
+Effort budget: 12 hours of working time for the hub fix, about 9.9 hours used (2026-10-31 22:35 to 2026-11-01 08:30); stop and reassess at the limit.
 
-Next action: rank single-opener cuts for `RuntimeState`, `BusinessValue`, `SequentialScopeRuntime`, `ProfileShapeCatalog` and `SerialBusinessTaskAdmission` by replay mean, then compile-probe the best; take it only above 3 points at most 2 opening lines per point, otherwise turn to the hub fix's fixture item.
+Next action: the hub fix's fixture item, converting the global fixtures no proof or proved lane consumes to executable guards (contract item 5), scoped against the cost record before any conversion.
 
 Oracle: the replay's per-module rebuild counts, mean and p90 at the increment's commit against `afd2b1ba`.
 
