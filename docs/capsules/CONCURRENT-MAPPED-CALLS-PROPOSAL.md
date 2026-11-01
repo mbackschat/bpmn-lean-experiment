@@ -152,6 +152,7 @@ Closure gates, 2026-11-01:
   - the complete Temporal gate, including the [recovery witness](../../packages/temporal-adapter/testkit/test/concurrent-mapped-calls-recovery.temporal-test.ts);
   - the realized-leak check, the pipeline's Lean-core parity tests including the value-domain matrix, and composition parity.
 - **Green at `2416dc49`:** the runtime stage, including the CIB oracle and the [calibration probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConcurrentMappedCallsProbeTest.java).
+- **Green at `82033590`, after the closure-review corrections:** the `BpmnConformance` root, the Lean checks with 1,231 of 1,231 holding, and the complete pipeline with all 143 cases agreeing and the recalibrated mutations detected at their first public divergence.
 - **Corrected during closure:** the runtime stage's capability-catalog guard found that the About disclosure of this family had dropped the nested scope-data profile's exclusion of Calls on concurrent branches; `2416dc49` restored it and locks the new disclosure.
 
 ## Versioning consequences
