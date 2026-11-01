@@ -3,6 +3,7 @@ package org.bpmnlean.cibseven;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.file.Files;
@@ -136,8 +137,9 @@ public final class CibSevenEmbeddedMappedCallsProbeTest {
       assertEquals(0, engine.getRuntimeService().createProcessInstanceQuery().processInstanceId(loan).count());
       var actual = new HashMap<String, Object>();
       for (var variable : engine.getHistoryService().createHistoricVariableInstanceQuery().processInstanceId(loan).list()) {
-        if (variable.getActivityInstanceId().equals(loan) || variable.getExecutionId().equals(loan)) {
-          actual.put(variable.getName(), variable.getValue());
+        // The Guarantor review's local `guarantorVerdict` shares the published name but has its own execution.
+        if (variable.getExecutionId().equals(loan)) {
+          assertNull(variable.getName(), actual.put(variable.getName(), variable.getValue()));
         }
       }
       assertEquals(expected, actual);
