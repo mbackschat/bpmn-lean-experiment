@@ -99,11 +99,11 @@ Deliverable: an approved family proposal in which embedded Sub-Processes and map
 
 Acceptance blockers: none recorded. CIB's re-entry needs neither held expressions nor Multi-Instance mechanisms (source-established at `5a45b47`); its calibration probe renders the root conditions in JUEL under `CIB-CFG-0005` only.
 
-Current result: the proposal is drafted; it grows the nested scope-data profile with root Choices and Merges under the mixed-task cycle cut and touches two Lean hubs by body edits only (`ProfileShapeCatalog`, `NestedScopeControlAdmission`). The duplicated nested scope-data Call bound got one owner in `58c3ed4b`.
+Current result: the proposal at `c4d87c3c` received `approve-with-required-edits`; the corrections touch four Lean owners by body edits only and keep `ProgramStructuralValidation` untouched. The review's serial burst finding is recorded in the data-family map's nested scope-data section.
 
 Effort budget: 2 hours for the proposal draft and its cold design review, from 2026-11-01 23:55 CET.
 
-Next action: the cold design review of the proposal. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
+Next action: the same reviewer audits the corrections. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
 
 Oracle: the cold design review of the selected family proposal.
 
