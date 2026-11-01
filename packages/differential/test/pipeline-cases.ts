@@ -9,6 +9,7 @@ import { concurrentEmbeddedActivationsPipelineCases } from "./concurrent-embedde
 import { concurrentScopeServiceTasksPipelineCases } from "./concurrent-scope-service-tasks-pipeline-cases.ts";
 import { concurrentScopeDataPipelineCases } from "./concurrent-scope-data-pipeline-cases.ts";
 import { concurrentMappedCallsPipelineCases } from "./concurrent-mapped-calls-pipeline-cases.ts";
+import { concurrentStructuredScopeDataPipelineCases } from "./concurrent-structured-scope-data-pipeline-cases.ts";
 import { repeatedNestedConcurrentCallsPipelineCases } from "./repeated-nested-concurrent-calls-pipeline-cases.ts";
 import { embeddedMappedCallsPipelineCases } from "./embedded-mapped-calls-pipeline-cases.ts";
 import { portableMessagePayloadPipelineCases } from "./portable-message-payload-pipeline-cases.ts";
@@ -583,6 +584,7 @@ export const pipelineCases = Object.freeze([
   ...concurrentScopeServiceTasksPipelineCases,
   ...concurrentScopeDataPipelineCases,
   ...concurrentMappedCallsPipelineCases,
+  ...concurrentStructuredScopeDataPipelineCases,
   ...repeatedNestedConcurrentCallsPipelineCases,
   ...embeddedMappedCallsPipelineCases,
   ...subprocessErrorPipelineCases,

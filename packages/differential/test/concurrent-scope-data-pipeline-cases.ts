@@ -14,7 +14,7 @@ type ConcurrentScopeDataName = "claim-fetch-one-first" | "claim-fetch-two-first"
  * argument must still hold `original`. Trace States share unchanged entries, so the mutation replaces the State, effect
  * and argument list instead of editing them in place.
  */
-function replaceArgument(result: MutableScenarioResult, index: number, expected: readonly string[], effect: number,
+export function replaceArgument(result: MutableScenarioResult, index: number, expected: readonly string[], effect: number,
   original: Argument["value"], binding: Argument): void {
   const state = result.trace[index];
   if (state?.kind !== CanonicalObservationKind.State || openWork(state).join() !== expected.join()) {

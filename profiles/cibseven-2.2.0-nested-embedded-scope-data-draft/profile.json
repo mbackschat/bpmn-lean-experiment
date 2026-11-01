@@ -2,7 +2,7 @@
   "kind": "semanticProfile",
   "id": "cibseven-2.2.0-nested-embedded-scope-data-draft",
   "status": "draft",
-  "claim": "bpmn-2.0.2-serial-nested-embedded-scope-data-with-classified-cib-extensions",
+  "claim": "bpmn-2.0.2-nested-embedded-scope-data-with-classified-cib-extensions",
   "normativeAuthority": {
     "name": "OMG Business Process Model and Notation",
     "version": "2.0.2",
@@ -42,6 +42,9 @@
       "call-input-variable-copy",
       "call-output-variable-copy",
       "called-root-frame-isolation",
+      "subprocess-body-parallel-gateway-fork",
+      "parallel-gateway-join",
+      "concurrent-scope-local-frames",
       "none-end-event",
       "sequence-flow",
       "process-completion",
@@ -67,7 +70,8 @@
       "CIB-EXT-0019",
       "CIB-EXT-0020",
       "CIB-EXT-0021",
-      "CIB-OP-0001"
+      "CIB-OP-0001",
+      "CIB-OP-0010"
     ]
   },
   "observations": [
@@ -84,7 +88,7 @@
   ],
   "comparison": {
     "trace": "exact-after-canonical-projection",
-    "semanticConcurrency": false
+    "semanticConcurrency": true
   },
   "excluded": [
     "whole-profile-cib-equivalence",
@@ -102,9 +106,8 @@
     "legacy-string-list-values",
     "arithmetic-or-implicit-conversion",
     "implicit-task-split-merge",
-    "concurrent-control-units",
-    "call-activities-inside-sub-processes",
-    "repeated-or-concurrent-call-activities",
+    "root-body-concurrency",
+    "more-than-two-call-activities",
     "call-source-expressions-and-variables-all",
     "call-business-key-version-and-tenant-bindings",
     "call-outputs-on-exceptional-exit",
@@ -120,11 +123,11 @@
     "transactions",
     "cib-transaction-timing-equivalence",
     "exactly-once-external-effects",
-    "gateways",
+    "exclusive-inclusive-and-event-based-gateways",
     "cycles",
     "boundary-events",
     "business-error-results",
-    "concurrent-or-repeated-scope-activations",
+    "concurrent-or-repeated-activations-of-one-scope-definition",
     "scope-depth-beyond-three",
     "event-subprocesses",
     "outputs-sourced-outside-the-completing-scope",
