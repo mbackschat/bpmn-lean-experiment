@@ -95,7 +95,7 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: closure of the business data family batch, the [structured Message-payload amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-message-payload-consuming-amendment) toward `PC-DATA-03`, implemented and hosted at `310cb4cd` but never closure-reviewed (its checkpoint and closure fold into one batch review); finishing it precedes a new family. The hub fix in [Lean build follow-ups](#lean-build-follow-ups) stopped at its fixture item. Multi-Instance closure stays held. Pull request #38 is the owner's to land.
 
-Deliverable: the amendment closed: closure gates green at the target, an approved cold closure review, its closure receipt and cost row, and the map status lines it names.
+Deliverable: the amendment closed: closure gates green, an approved cold closure review, its closure receipt and the map status lines it names.
 
 Acceptance blockers: none recorded.
 
@@ -103,7 +103,7 @@ Current result: the hub fix lowered the replay mean 262.4 → 239.0 and p90 682 
 
 Effort budget: 6 hours for the closure; stop and reassess at the limit. The hub fix stopped at about 10.2 of its 12 hours (2026-10-31 22:35 to 2026-11-01 08:50) because the classification invalidated its executable-guard path; its follow-up entry keeps the remaining items.
 
-Next action: check the amendment's decisive witnesses and owners against the tree, correct its stale Call-surface text, then run the closure gates once.
+Next action: the cold closure review of the amendment's [epistemic closure](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#message-payload-epistemic-closure), whose closure gates are green at `7dcb8e0f`.
 
 Oracle: the [capsule closure review](REVIEW-POLICY.md#capsule-closure-review) over green closure gates.
 
