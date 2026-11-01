@@ -93,17 +93,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: select the next family of [delivery batch](#scheduled-delivery-batches) 3 after the concurrent structured scope data family closed ([specification](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md), closure-approved on 2026-11-01). Multi-Instance closure stays held. Pull requests #38 and #39 are the owner's to land.
+Current task: the proposal of the scope re-entry family of [delivery batch](#scheduled-delivery-batches) 3: `PC-CF-06` primary (Sequence Flow cycles across reusable scopes), with the repeated-lifetime clause of `PC-DATA-04` and the re-entry clause of `PC-SCOPE-02`. Every other batch 3 residual waits on held expressions (`PC-DATA-07`–`09`) or Multi-Instance owners. Pull requests #38 and #39 are the owner's to land.
 
-Deliverable: one approved family proposal for the next batch 3 mechanism, or a recorded finding that batch 3 holds only clauses behind the held expression and Multi-Instance work.
+Deliverable: an approved family proposal in which an embedded Sub-Process on a root-scope cycle is re-entered with a fresh occurrence identity and fresh scope-local data per iteration.
 
-Acceptance blockers: none recorded.
+Acceptance blockers: none recorded; stop if CIB's re-entry needs held expression or Multi-Instance mechanisms.
 
-Current result: the family took about 4 of its 16 budgeted hours, 2026-11-01 19:15 to 23:15 CET.
+Current result: the [concurrent structured scope data](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md) family closed on 2026-11-01 after about 4 of its 16 budgeted hours.
 
-Effort budget: 2 hours for the selection and proposal draft.
+Effort budget: 2 hours for the proposal draft and its cold design review, from 2026-11-01 23:40 CET.
 
-Next action: read the open clauses of `PC-DATA-04` and `PC-DATA-09` and their dependency rows, and decide whether either has an unheld shared mechanism; otherwise open batch 4. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
+Next action: read the [cycle](capsules/CYCLIC-CONTROL-FLOW-SPEC.md) and nested scope owners and CIB's re-entry source, then draft the proposal. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
 
 Oracle: the cold design review of the selected family proposal.
 
