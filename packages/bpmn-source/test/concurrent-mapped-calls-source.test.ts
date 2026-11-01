@@ -2,7 +2,7 @@
  * CMCALL-ADMIT-01, CMCALL-AVAILABLE-01 and CMCALL-START-01 through the exact-bytes source path: the retained supplier
  * onboarding and travel request models compile as data-bearing embedded completion Programs with mapped Calls, and every
  * refusal differs from an admitted model in the one fact its label names, so a reader that refused every mapped Call, or
- * admitted every one, could not pass. The oracle is the concurrent mapped Calls proposal's required and excluded scope.
+ * admitted every one, could not pass. The oracle is the concurrent mapped Calls specification's required and excluded scope.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";

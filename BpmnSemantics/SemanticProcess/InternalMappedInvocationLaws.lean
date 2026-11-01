@@ -5,7 +5,7 @@ import BpmnSemantics.SemanticProcess.CallVariableMappingLaws
 import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 
 /-! Refinement of the prepared mapped invocation (CMCALL-PREPARE-01 of the
-[concurrent mapped Calls proposal](../../docs/capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md#representation-and-runtime-ownership)):
+[concurrent mapped Calls specification](../../docs/capsules/CONCURRENT-MAPPED-CALLS-SPEC.md#representation-and-runtime-ownership)):
 the control's invocation composed with the called-root frame is the variable-mapping evaluator's step. -/
 
 public section

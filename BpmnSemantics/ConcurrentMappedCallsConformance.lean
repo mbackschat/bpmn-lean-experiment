@@ -12,7 +12,7 @@ values for the same graphs, and each refused model differs from an admitted one 
 The checks decide observations, not quantified laws: the prepared invocation's refinement and commutation live
 in `InternalMappedInvocationLaws` and `InternalMappedInvocationCommutation`, and return, input and output in
 `CallActivity` and `CallVariableMappingLaws`. See the
-[concurrent mapped Calls proposal](../docs/capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md#separating-witnesses).
+[concurrent mapped Calls specification](../docs/capsules/CONCURRENT-MAPPED-CALLS-SPEC.md#separating-witnesses).
 -/
 
 public section

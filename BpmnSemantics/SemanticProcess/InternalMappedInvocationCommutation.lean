@@ -17,7 +17,7 @@ import BpmnSemantics.SemanticProcess.InternalScopeCreationSelectionFrames
 import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
 
 /-! Commutation of the prepared mapped invocation (CMCALL-PREPARE-01 of the
-[concurrent mapped Calls proposal](../../docs/capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md#representation-and-runtime-ownership))
+[concurrent mapped Calls specification](../../docs/capsules/CONCURRENT-MAPPED-CALLS-SPEC.md#representation-and-runtime-ownership))
 with another mapped invocation, a declared entry, an unmapped scope creation, local control and an arming. Each
 pair composes the control's existing pair law with the called-root frame insertion, as the declared entry's
 pairs do: the inserted frame belongs to the fresh called root, which is on no other reader's chain, and the

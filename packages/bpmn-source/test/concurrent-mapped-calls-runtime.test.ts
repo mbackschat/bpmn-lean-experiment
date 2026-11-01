@@ -1,5 +1,5 @@
 /**
- * The core journeys of the concurrent mapped Calls proposal over its retained models (CMCALL-IN-01, CMCALL-OWN-01,
+ * The core journeys of the concurrent mapped Calls specification over its retained models (CMCALL-IN-01, CMCALL-OWN-01,
  * CMCALL-OUT-01, CMCALL-TASK-01, CMCALL-ISOLATE-01, CMCALL-PREPARE-01, CMCALL-REFUSE-01). Frames are runtime-only, so this
  * test reads committed state directly; every expected value is read off the proposal's separating-witness table.
  */

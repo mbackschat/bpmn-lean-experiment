@@ -491,7 +491,7 @@ theorem prepareInternalScopeCreation_owner_alias_refused (program : Program)
 /-! ### Mapped invocation
 
 CMCALL-PREPARE-01 of the
-[concurrent mapped Calls proposal](../../docs/capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md#representation-and-runtime-ownership):
+[concurrent mapped Calls specification](../../docs/capsules/CONCURRENT-MAPPED-CALLS-SPEC.md#representation-and-runtime-ownership):
 a mapped Call's invocation in a nested scope-data Program as a prepared scope creation beside the declared
 entry; elsewhere it stays a singleton. It keeps the unchanged invocation `control`, which selects exactly what
 the data-erased invocation selects, and adds the called-root frame that CVM-IN-01 evaluates along the caller's

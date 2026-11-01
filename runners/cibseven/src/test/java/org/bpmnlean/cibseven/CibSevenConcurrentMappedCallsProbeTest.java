@@ -11,7 +11,7 @@ import org.cibseven.bpm.engine.ProcessEngine;
 import org.junit.Test;
 
 /**
- * Calibrates the widening of `CIB-EXT-0021` and `CIB-EXT-0020` by the concurrent mapped Calls proposal
+ * Calibrates the widening of `CIB-EXT-0021` and `CIB-EXT-0020` by the concurrent mapped Calls specification
  * (`CMCALL-IN-01`, `CMCALL-OUT-01`, `CMCALL-ISOLATE-01`) on the two retained models, along the committed steps of their
  * three scenarios. Two live calls of one definition each hold only their own mapped input, and each output lands in its
  * own review's declared verdict, in both completion orders; on the travel request, both Calls invoked at Start copy an

@@ -8,7 +8,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 Whether an embedded completion Program carries data: a scope declaration, a mapped Service Task or a mapped
 Call, per the
 [concurrent scope data specification](../../docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#profile-and-public-contract)
-and the [concurrent mapped Calls proposal](../../docs/capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md#required-optional-and-excluded-scope).
+and the [concurrent mapped Calls specification](../../docs/capsules/CONCURRENT-MAPPED-CALLS-SPEC.md#required-optional-and-excluded-scope).
 Only such a Program resolves frames by the occurrence chain and takes the bounded String domain; a
 data-free Program of that profile keeps its empty value domains and the scalar effect policy, so every
 earlier admission of the profile is unchanged.

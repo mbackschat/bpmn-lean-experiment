@@ -85,7 +85,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Message-payload closure. Command: `./scripts/verify.sh pipeline`, `./scripts/verify.sh composition-parity`, `./scripts/verify.sh runtime`, `./scripts/verify.sh temporal-serial`, `./scripts/verify.sh temporal`. Status: `exit 0`. Date: `2026-11-01`. Commit: `7dcb8e0f`, with `temporal` again `exit 0` after the review's corrections at `087e587d`; the Lean lanes verified the identical Lean tree of `53329a46`.
+- Concurrent mapped Calls closure. Command: `LEAN_FULL_GATE=concurrent-mapped-calls ./scripts/lake.sh test` and `build BpmnConformance`, `./scripts/verify.sh lean-checks`, `./scripts/pnpm.sh run test:pipeline`, `./scripts/pnpm.sh run test:temporal`, `./scripts/verify.sh composition-parity`, `./scripts/verify.sh runtime`. Status: `exit 0`. Date: `2026-11-01`. Commit: `77c9b9c9`; `runtime` at `2416dc49` after its About-disclosure failure at `77c9b9c9`; `BpmnConformance`, `lean-checks` and `test:pipeline` again at `82033590` after the review's corrections.
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -93,18 +93,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the closure review of the concurrent mapped Calls family. The hub fix in [Lean build follow-ups](#lean-build-follow-ups) stopped at its fixture item and resumes after this family, behind a re-assessment of replay mean, p90, modules above 500 and fixture time. Multi-Instance closure stays held. Pull request #38 is the owner's to land.
+Current task: the hub fix in [Lean build follow-ups](#lean-build-follow-ups); the concurrent mapped Calls family closed on 2026-11-01 ([specification](capsules/CONCURRENT-MAPPED-CALLS-SPEC.md)). Multi-Instance closure stays held. Pull request #38 is the owner's to land.
 
-Deliverable: the concurrent mapped Calls family: `PC-DATA-04`'s mapped Calls on concurrent branches, whose outputs land at the associated caller under reverse completion, with the Call-host input and output obligations of `PC-DATA-05` and `PC-DATA-06`, implemented and closure-reviewed under its [approved proposal](capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md).
+Deliverable: a double-checked scope decision for the hub fix, made before any edit from a re-assessment at the head: replay mean and p90 against owner decision 1's 118 and 490, the modules whose body edit rebuilds more than 500 modules, and fixture time against contract item 5's 900 seconds.
 
 Acceptance blockers: none recorded.
 
-Current result: every closure gate is green ([closure gates](capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md#evidence-and-acceptance)), after one disclosure correction. The hub fix lowered the replay mean 262.4 → 239.0 and p90 682 → 619; executable guards cannot bring the closed-world fixtures below contract item 5's 900 seconds ([fixture time](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)).
+Current result: the family is implemented and closure-approved, with its closure gates green at `82033590`. Before the family, the hub fix lowered the replay mean 262.4 → 239.0 and p90 682 → 619; executable guards cannot bring the closed-world fixtures below 900 seconds ([fixture time](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)). `CommandAdmission`'s hidden-edit bound is 434 under an owner exception the hub fix retires.
 
-Effort budget: 16 hours for the family's implementation through closure, from 2026-11-01 11:00 CET; stop and reassess at the limit.
+Effort budget: 2 hours for the re-assessment and scope decision, from 2026-11-01 16:00 CET; stop and reassess at the limit.
 
-Next action: the cold closure review of the [concurrent mapped Calls proposal](capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md) and its correction audit, then graduation to a specification. Expressions (`PC-DATA-07`) would reopen the owner-deferred JUEL lane and adopt its approved dependency set, which this resume point's stop rule holds for an owner direction.
+Next action: rerun [`lean-fanout-replay.ts`](../scripts/lean-fanout-replay.ts) and the fixture-time measurement at the head, compare, and record the double-checked scope. Expressions (`PC-DATA-07`) would reopen the owner-deferred JUEL lane and adopt its approved dependency set, which this resume point's stop rule holds for an owner direction.
 
-Oracle: the proposal's separating witnesses agreeing across Lean, the core and the pipeline, then the [capsule closure review](REVIEW-POLICY.md#capsule-closure-review).
+Oracle: the replay against owner decision 1 and the fixture time against contract item 5.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

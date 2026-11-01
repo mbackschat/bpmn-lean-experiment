@@ -1,5 +1,5 @@
 /**
- * Locks the registered supplier onboarding and travel request schedules against the concurrent mapped Calls proposal's
+ * Locks the registered supplier onboarding and travel request schedules against the concurrent mapped Calls specification's
  * separating witnesses without Lean or Temporal: the open work after every command, the Process variables each return
  * and Sub-Process output publishes (CMCALL-OWN-01, CMCALL-OUT-01, CMCALL-ISOLATE-01), the refused called-task patches and
  * addresses (CMCALL-TASK-01, CMCALL-REFUSE-01), the single Start batch (CMCALL-PREPARE-01, CMCALL-START-01), and every

@@ -1,6 +1,6 @@
 /**
  * Measures the two retained concurrent mapped Calls models against every hosted budget, the capacity measurement of the
- * concurrent mapped Calls proposal. The profile claims no Start capacity envelope, so the oracle is each budget's production
+ * concurrent mapped Calls specification. The profile claims no Start capacity envelope, so the oracle is each budget's production
  * limit, not an estimate; this is a component measurement of these two models, not a claim about other Programs.
  *
  * Every data slot holds a 1,024-byte String: escape-heavy U+0001, whose canonical encoding `\u0001` costs six bytes per

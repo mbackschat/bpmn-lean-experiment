@@ -8,7 +8,7 @@ export type DataGateProgram = Pick<SemanticProcessProgram, "identity" | "scopeLo
 
 /**
  * Whether an embedded completion Program carries data: a scope declaration, a mapped Service Task or a mapped Call, per
- * the concurrent scope data specification and the concurrent mapped Calls proposal. A data-free Program of that profile keeps its empty value domains
+ * the concurrent scope data specification and the concurrent mapped Calls specification. A data-free Program of that profile keeps its empty value domains
  * and the scalar effect policy, so every earlier admission of the profile is unchanged.
  */
 export function embeddedScopeDataBearing(program: DataGateProgram): boolean {

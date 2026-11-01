@@ -1,5 +1,5 @@
 /**
- * Hosting preflight of the concurrent mapped Calls proposal: with both expert calls of the retained supplier onboarding
+ * Hosting preflight of the concurrent mapped Calls specification: with both expert calls of the retained supplier onboarding
  * live, Continue-As-New restores the committed state with both called-root frames, refuses a frame without its called
  * root, a called root without its frame and a frame owned by the caller, and called-task detail shows each expert only
  * its own frame (CMCALL-IN-01, CVM-OBSERVE-01).

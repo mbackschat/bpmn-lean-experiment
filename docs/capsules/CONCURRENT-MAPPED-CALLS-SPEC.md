@@ -1,9 +1,9 @@
-# Concurrent mapped Calls proposal
+# Concurrent mapped Calls specification
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and delivery boundary
 
@@ -126,7 +126,7 @@ Lanes: B profile admission, L Lean law or decided fixture, T TypeScript core, P 
 
 Lane shape: proved
 
-Evidence: the prepared mapped invocation's refinement, preservation, footprint frames and commutation hold over every reachable state, which no finite schedule covers, so they are proved as for the declared entry in [`InternalScopeCreationPreparation`](../../BpmnSemantics/SemanticProcess/InternalScopeCreationPreparation.lean): the selection takes the mapped arm through the empty-data arm, so its control equals the singleton invocation's control effect (`selectInternalScopeCreation_invokes`), while the ordinary scope-creation family admits only unmapped operations; application equal to `invokeState?`'s result; `runtimeStateWellFormed` preservation; nested input evaluation unchanged when the consulted frames, chain links and Process names are unchanged; commutation of the five pairs named under representation; and batch membership under the widened premise, taken as a hypothesis as the declared entry takes it. The declarative invocation arm takes the evaluator result as premise, so its soundness bridge is a dispatcher check. Ownership under reverse completion (`CMCALL-OWN-01`, `CMCALL-OUT-01`) is a fixture over the retained schedules, since return already selects by record and `CALLN-RETURN-01` and `CVM-OUT-01` carry the quantified laws. The nearest checked non-law is that selecting called-root mappings by called definition differs from selecting them through the record's Call element when two live calls of one definition carry different mappings.
+Evidence: the prepared mapped invocation's refinement, preservation, footprint frames and commutation hold over every reachable state, which no finite schedule covers, so they are proved as for the declared entry in [`InternalScopeCreationPreparation`](../../BpmnSemantics/SemanticProcess/InternalScopeCreationPreparation.lean): the selection takes the mapped arm through the empty-data arm, so its control equals the singleton invocation's control effect (`selectInternalScopeCreation_invokes`), while the ordinary scope-creation family admits only unmapped operations; application equal to `invokeState?`'s result; `runtimeStateWellFormed` preservation; nested input evaluation unchanged when the consulted frames, chain links and Process names are unchanged; commutation of the five pairs named under representation; and batch membership under the widened premise, taken as a hypothesis as the declared entry takes it. The declarative invocation arm takes the evaluator result as premise, so its soundness bridge is a dispatcher check. Ownership under reverse completion (`CMCALL-OWN-01`, `CMCALL-OUT-01`) is a fixture over the retained schedules, since return already selects by record and `CALLN-RETURN-01` and `CVM-OUT-01` carry the quantified laws. The nearest checked non-law is that selecting called-root mappings by called definition differs from selecting them through the record's Call element when two live calls of one definition carry different mappings. The guaranteeing declarations are [`prepareInternalMappedInvocation_refines`](../../BpmnSemantics/SemanticProcess/InternalMappedInvocationLaws.lean#prepareInternalMappedInvocation_refines), [`prepareInternalMappedInvocation_frame`](../../BpmnSemantics/SemanticProcess/InternalMappedInvocationLaws.lean#prepareInternalMappedInvocation_frame), [`prepareInternalMappedInvocation_preserves_runtimeStateWellFormed`](../../BpmnSemantics/SemanticProcess/InternalScopeCreationRuntimeValidity.lean#prepareInternalMappedInvocation_preserves_runtimeStateWellFormed), [`prepared_mapped_invocation_pair`](../../BpmnSemantics/SemanticProcess/InternalMappedInvocationCommutation.lean#prepared_mapped_invocation_pair), [`prepared_mapped_invocation_declared_entry_pair`](../../BpmnSemantics/SemanticProcess/InternalMappedInvocationCommutation.lean#prepared_mapped_invocation_declared_entry_pair), [`prepared_mapped_invocation_scope_creation_pair`](../../BpmnSemantics/SemanticProcess/InternalMappedInvocationCommutation.lean#prepared_mapped_invocation_scope_creation_pair), [`prepared_mapped_invocation_local_control_pair`](../../BpmnSemantics/SemanticProcess/InternalMappedInvocationCommutation.lean#prepared_mapped_invocation_local_control_pair), [`prepared_mapped_invocation_arming_pair`](../../BpmnSemantics/SemanticProcess/InternalMappedInvocationCommutation.lean#prepared_mapped_invocation_arming_pair) and [`prepared_mapped_invocation_transition_pair`](../../BpmnSemantics/SemanticProcess/InternalPreparedTransitionLaws.lean#prepared_mapped_invocation_transition_pair).
 
 ## Temporal hosting and refinement preflight
 
@@ -159,7 +159,7 @@ Closure gates, 2026-11-01:
 
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy): the profile identity, Program and checked shapes and schemas stay unchanged; admission accepts the existing `variableMappings` Call arm under one more profile; no legacy reader or migration is added.
 
-### Owners this implementation grows
+### Owners this implementation grew
 
 Derived with `node scripts/what-binds.ts` on 2026-11-01; `what-binds` owns every headroom figure. The implementation added the Lean owners [`InternalMappedInvocationLaws`](../../BpmnSemantics/SemanticProcess/InternalMappedInvocationLaws.lean) and [`InternalMappedInvocationCommutation`](../../BpmnSemantics/SemanticProcess/InternalMappedInvocationCommutation.lean), the [conformance module](../../BpmnSemantics/ConcurrentMappedCallsConformance.lean) and the core's [mapped invocation preparation](../../packages/semantic-core/src/internal-transition-mapped-invocation-preparation.ts); the conformance module joined `CommandAdmission`'s hidden-edit cone under an owner exception of 2026-11-01, which the hub fix retires. That bound raise (`f0fae01b`) ran under Rule 2: a declaration of intention, scope, effect limits and cost; a fresh HIGH review that approved it on condition that the fan-out record guard passes against HEAD and the merge base; a separate fresh review of its direction, which endorsed it; and a fresh LOW post-check that found the change within the declared scope and effect.
 
@@ -170,7 +170,7 @@ Derived with `node scripts/what-binds.ts` on 2026-11-01; `what-binds` owns every
 - Temporal: [continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts), [called-task detail](../../packages/temporal-adapter/protocol/src/user-task-detail.ts) and a capacity component test beside the [concurrent scope data capacity test](../../packages/temporal-adapter/workflow/test/concurrent-scope-data-capacity.test.ts).
 - Registration: the [relation register](../CIB-BPMN-RELATION-REGISTER.md) entries `CIB-EXT-0021` and `CIB-EXT-0020`, the [profile README](../../profiles/cibseven-2.2.0-embedded-subprocess-completion-draft/README.md), scenarios, pipeline cases, the value-domain matrix, the corpus, About and the CIB probe.
 
-Guards the implementation must change or satisfy:
+Guards the implementation changed or satisfied:
 
 - [`call-forest-selection-census`](../../scripts/call-forest-selection-census.test.ts): every helper on the invoke, return and called-body paths selects by owner, by a live record or by a called root identity, now with two live called-root frames;
 - [`semantic-operation-consumer-census`](../../scripts/semantic-operation-consumer-census.test.ts): every consumer of `invokeProcess` handles the mapped arm under this profile;
@@ -185,6 +185,8 @@ Guards the implementation must change or satisfy:
 |---|---|---|---|---|
 | Proposal | `233fb94b` | `fork-turns-none` | `approve-with-required-edits` | `1c725222` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `8f390ff5` | `fork-turns-none` | `approve-with-required-edits` | `82033590, 1a4e2b7f` |
 
 The proposal review of `233fb94b` (packet `9fcfa65d3d3783f57c07ddbd55f40e5a8eb53b9e7cfbbf9adf174dc6e268514f`) required six corrections: co-enabled embedded-caller invocations that Lean's parentless control selection cannot prepare, a mapped/unmapped Call mix of one definition that breaks called-root isolation, an availability witness without a Call output, supplier witnesses that did not separate mappings selected by definition, an undecided Start rule, and an incomplete owner inventory. The same reviewer's audit of `1c725222` closed all of them and approved.
+
+The closure review of `8f390ff5` (packet `af9324684ba685fbed3bbfb31ed72c37177462347ee9aac811ae9935a4fc2370`) required four corrections: mapped-Call mutation expectations recalibrated to their first public divergence, the merge-target and body-leading placement refusals witnessed in Lean as well as TypeScript, a Lean-lane statement of what stays unproved, and a record of the bound raise's Rule 2 reviews. The same reviewer's audit of `82033590` and `1a4e2b7f` closed all four and approved; it noted, without requiring a change, that the merge-target controls differ from their refused models in more than one fact.
