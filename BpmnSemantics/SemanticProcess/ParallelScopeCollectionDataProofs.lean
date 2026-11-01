@@ -7,6 +7,7 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 meta import BpmnSemantics.PrivateEquationLemmas
 import all BpmnSemantics.SemanticProcess.Data
 

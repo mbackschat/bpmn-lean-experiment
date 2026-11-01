@@ -13,6 +13,7 @@ import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 meta import BpmnSemantics.PrivateEquationLemmas
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 

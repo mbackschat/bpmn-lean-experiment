@@ -14,6 +14,7 @@ import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 import all BpmnSemantics.SemanticProcess.ScopeCancellation
 import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 import all BpmnSemantics.SemanticProcess.WaitCompletion
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Counter and hosting-control frames across actual parallel lifetime operations

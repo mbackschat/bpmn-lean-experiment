@@ -750,19 +750,6 @@ theorem applyInternalOccurrenceBatch_retirement_frames
   exact ⟨control.trans oldControl, scopes.trans oldScopes, activities.trans oldActivities,
     controllers.trans oldControllers, frames.trans oldFrames, process.trans oldProcess⟩
 
-/-- Every actual successful batch prefix retains the exact parallel population binding. -/
-theorem applyInternalOccurrenceBatch_binding_frames
-    (program : Program) (state : RuntimeState) (batch : InternalOccurrenceBatch)
-    (successors : List RuntimeState) (entry : ParallelScopeEntry) (target : ScopeOccurrenceId)
-    (applied : applyInternalOccurrenceBatch? program state batch = some successors) :
-    ∀ successor ∈ successors,
-      parallelScopeBinding? entry successor target = parallelScopeBinding? entry state target := by
-  intro successor member
-  obtain ⟨control, scopes, activities, controllers, frames, _⟩ :=
-    applyInternalOccurrenceBatch_retirement_frames program state batch successors applied successor member
-  exact parallelScopeBinding_state_frame entry state successor target control scopes activities controllers
-    (congrArg (fun scopes => scopes.map ScopeVariableScope.owner) frames)
-
 /-- Actual body edits retain the retirement population and Process condition data; arming adds only separate Activity data. -/
 theorem applyInternalOperationOccurrence_body_retirement_frame
     (program : Program) (before after : RuntimeState) (candidate : InternalOperationOccurrence)
@@ -797,45 +784,5 @@ theorem applyInternalOperationOccurrence_body_clean_entry
     · cases write : patch.write <;> simp [applyInternalArmingPatch, write]
     · rfl
   exact ParallelScopeCleanEntry.frame entry parent before after clean scopes activities controllers locals counters
-
-/-- Exact binding eligibility survives every actual successful body operation, independently of token changes. -/
-theorem applyInternalOperationOccurrence_body_binding_frame
-    (program : Program) (before after : RuntimeState) (candidate : InternalOperationOccurrence)
-    (operation : SemanticOperation) (entry : ParallelScopeEntry) (target : ScopeOccurrenceId)
-    (resolved : resolveInternalOperationOccurrence? program before candidate = some operation)
-    (bodyOperation : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect,
-      .duplicate, .synchronize, .reachNoneEnd])
-    (applied : applyInternalOperationOccurrence? program before candidate = some after) :
-    parallelScopeBinding? entry after target = parallelScopeBinding? entry before target := by
-  obtain ⟨control, scopes, activities, controllers, frames, _⟩ :=
-    applyInternalOperationOccurrence_body_retirement_frame program before after candidate operation resolved bodyOperation applied
-  exact parallelScopeBinding_state_frame entry before after target control scopes activities controllers (congrArg (fun scopes => scopes.map ScopeVariableScope.owner) frames)
-
-/-- PMIS retirement readiness survives every reserved prefix; only the body's quiescence remains to be established. -/
-theorem applyInternalOccurrenceBatch_retirement_ready
-    (program : Program) (state : RuntimeState) (batch : InternalOccurrenceBatch)
-    (successors : List RuntimeState) (entry : ParallelScopeEntry) (target : ScopeOccurrenceId)
-    (binding : ParallelScopeBinding)
-    (applied : applyInternalOccurrenceBatch? program state batch = some successors)
-    (bound : parallelScopeBinding? entry state target = some binding)
-    (noActivity : state.activityOccurrences.any (fun activity => activity.owner == target) = false)
-    (typedCondition : match entry.completionBooleanName with
-      | none => True
-      | some name => ∃ condition, state.variables.process.bindings.filter (·.name == name) =
-          [{ name, value := .boolean condition }]) :
-    ∀ successor ∈ successors, scopeQuiescent successor target = true →
-      ∃ after, completeParallelScope? entry successor target = some after := by
-  intro successor present quiescent
-  have boundAfter := (applyInternalOccurrenceBatch_binding_frames program state batch successors
-    entry target applied successor present).trans bound
-  obtain ⟨_, _, activities, _, _, process⟩ :=
-    applyInternalOccurrenceBatch_retirement_frames program state batch successors applied successor present
-  exact completeParallelScope_ready entry successor target binding boundAfter
-    (parallelScopeBinding_member entry state target binding bound) quiescent
-    (by rw [activities]; exact noActivity)
-    (by
-      cases named : entry.completionBooleanName with
-      | none => trivial
-      | some name => simpa only [named, process] using typedCondition)
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

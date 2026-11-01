@@ -8,6 +8,7 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 import all BpmnSemantics.SemanticProcess.ScopeCancellation
 import all BpmnSemantics.SemanticProcess.CallDataTransfer
 import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel repeated-scope population preservation

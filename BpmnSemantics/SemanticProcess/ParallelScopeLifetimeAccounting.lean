@@ -39,6 +39,7 @@ import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.WaitCompletion
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual parallel body retirement accounting

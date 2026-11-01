@@ -16,6 +16,7 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeReservedArmingReplay
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import all BpmnSemantics.SemanticProcess.TransitionRecord
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Frozen arming preparation through raw prefixes

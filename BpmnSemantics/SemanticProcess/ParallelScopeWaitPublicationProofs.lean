@@ -11,6 +11,7 @@ import all BpmnSemantics.SemanticProcess.Incident
 import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 import all BpmnSemantics.SemanticProcess.ScopeCancellation
 import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS entry, completion and retirement preserve the full wait projection

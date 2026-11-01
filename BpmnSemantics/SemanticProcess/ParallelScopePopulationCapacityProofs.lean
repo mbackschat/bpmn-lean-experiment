@@ -20,6 +20,7 @@ import all BpmnSemantics.SemanticProcess.RuntimeState
 import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import all BpmnSemantics.SemanticProcess.ScopeCancellation
 import all BpmnSemantics.SemanticProcess.SequentialScopeDataAdmission
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Population capacity follows actual entry and retirement, so command composition need not assume successor capacity. -/

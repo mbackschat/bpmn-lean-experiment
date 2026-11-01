@@ -5,6 +5,7 @@ import BpmnSemantics.SemanticProcess.CollectionOrder
 import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
 import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ActivityOccurrence
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel scope runtime laws
@@ -15,7 +16,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat]
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`issueParallelBodies?, `parallelRuntimeActivityId,
   `parallelScopeBinding?, `parallelScopeBodyBound, `validParallelScopeIterations, `validParallelScopePopulation,
-  `canonicalInsertBy, `insertActivityOccurrence, `insertScopeOccurrence, `scopeActivationCount]
+  `canonicalInsertBy, `insertActivityOccurrence, `insertScopeOccurrence, `scopeActivationCount,
+  `activityBodyScopeClaims]
 
 public section
 
@@ -625,5 +627,61 @@ theorem completeParallelScope_disposes_target_frame {entry : ParallelScopeEntry}
   intro frame member
   have retained := (completeParallelScope_surviving_population completed).1.subset member
   exact of_decide_eq_true (List.mem_filter.mp retained).2
+
+/-- PMIS binding selects a claiming Activity, so target membership follows from successful selection. -/
+theorem parallelScopeBinding_member (entry : ParallelScopeEntry) (state : RuntimeState)
+    (target : ScopeOccurrenceId) (binding : ParallelScopeBinding)
+    (bound : parallelScopeBinding? entry state target = some binding) :
+    ∃ iteration ∈ binding.iterations, iteration.scope = target := by
+  unfold parallelScopeBinding? at bound
+  split at bound <;> try contradiction
+  split at bound <;> try contradiction
+  rename_i record selected
+  have claiming : (activityBodyScopeClaims record.body).contains target = true := by
+    have member : record ∈ state.activityOccurrences.filter (fun candidate =>
+        (activityBodyScopeClaims candidate.body).contains target) := by
+      rw [selected]
+      simp
+    exact (List.mem_filter.mp member).2
+  split at bound <;> try contradiction
+  rename_i first rest body
+  split at bound <;> try contradiction
+  split at bound <;> try contradiction
+  dsimp only at bound
+  split at bound <;> try contradiction
+  cases Option.some.inj bound
+  have member : target ∈ (first :: rest).map (·.scope) := by
+    simpa [body, activityBodyScopeClaims] using claiming
+  exact List.mem_map.mp member
+
+private theorem scopeFrame_selection_census (before after : ScopedVariables) (owner : ScopeOccurrenceId)
+    (owners : after.scopes.map (·.owner) = before.scopes.map (·.owner)) :
+    (selectScopeVariables? after owner).isSome = (selectScopeVariables? before owner).isSome := by
+  cases selected : selectScopeVariables? before owner with
+  | none =>
+    cases next : selectScopeVariables? after owner with
+    | none => rfl
+    | some frame =>
+      obtain ⟨original, originalEq⟩ := selectScopeVariables_owner_census after before owner owners.symm ⟨frame, next⟩
+      simp [selected] at originalEq
+  | some frame =>
+    obtain ⟨next, nextEq⟩ := selectScopeVariables_owner_census before after owner owners ⟨frame, selected⟩
+    simp [nextEq]
+
+/-- PMIS binding reads complete frame-owner multiplicity, independently of mutable values and wait disposal. -/
+theorem parallelScopeBinding_state_frame (entry : ParallelScopeEntry) (before after : RuntimeState)
+    (target : ScopeOccurrenceId)
+    (control : after.control = before.control)
+    (scopes : after.scopeOccurrences = before.scopeOccurrences)
+    (activities : after.activityOccurrences = before.activityOccurrences)
+    (controllers : after.parallelScopeControllers = before.parallelScopeControllers)
+    (owners : after.variables.scopes.map (·.owner) = before.variables.scopes.map (·.owner)) :
+    parallelScopeBinding? entry after target = parallelScopeBinding? entry before target := by
+  have bodyFrame : ∀ record owner, parallelScopeBodyBound entry after record owner =
+      parallelScopeBodyBound entry before record owner := by
+    intro record owner
+    simp only [parallelScopeBodyBound, scopes, activities,
+      scopeFrame_selection_census before.variables after.variables owner owners]
+  simp only [parallelScopeBinding?, control, scopes, activities, controllers, bodyFrame]
 
 end BpmnSemantics.SemanticProcess

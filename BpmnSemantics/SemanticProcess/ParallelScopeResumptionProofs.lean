@@ -46,6 +46,7 @@ import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 import all BpmnSemantics.SemanticProcess.TokenPatch
 import all BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.WireNatural
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Scoped parallel subprocess resumption

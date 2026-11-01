@@ -5,14 +5,14 @@ public import BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
 import BpmnSemantics.SemanticProcess.EffectCompletion
 import Std.Data.DTreeMap.Internal.Operations
 import all BpmnSemantics.SemanticProcess.MultiInstanceScopeWrite
-import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.ScopeVariableData
 import all BpmnSemantics.SemanticProcess.ActivityOccurrence
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-DATA-01: occurrence-bound input evaluation for parallel repeated bodies. -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScopeClaims, `parallelScopeBinding?,
-  `parallelScopeBodyBound, `runningProgramStartState?, `runningStartState, `scopeActivationCount]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyScopeClaims, `runningProgramStartState?,
+  `runningStartState, `scopeActivationCount]
 
 public section
 
@@ -175,98 +175,6 @@ theorem completeParallelScopeEffect_preserves_owner_census
     rename_i patch missingResult impossible
     exact False.elim (impossible patch rfl)
 
-/-- PMIS binding selects a claiming Activity, so target membership follows from successful selection. -/
-theorem parallelScopeBinding_member (entry : ParallelScopeEntry) (state : RuntimeState)
-    (target : ScopeOccurrenceId) (binding : ParallelScopeBinding)
-    (bound : parallelScopeBinding? entry state target = some binding) :
-    ∃ iteration ∈ binding.iterations, iteration.scope = target := by
-  unfold parallelScopeBinding? at bound
-  split at bound <;> try contradiction
-  split at bound <;> try contradiction
-  rename_i record selected
-  have claiming : (activityBodyScopeClaims record.body).contains target = true := by
-    have member : record ∈ state.activityOccurrences.filter (fun candidate =>
-        (activityBodyScopeClaims candidate.body).contains target) := by
-      rw [selected]
-      simp
-    exact (List.mem_filter.mp member).2
-  split at bound <;> try contradiction
-  rename_i first rest body
-  split at bound <;> try contradiction
-  split at bound <;> try contradiction
-  dsimp only at bound
-  split at bound <;> try contradiction
-  cases Option.some.inj bound
-  have member : target ∈ (first :: rest).map (·.scope) := by
-    simpa [body, activityBodyScopeClaims] using claiming
-  exact List.mem_map.mp member
-
-private theorem scopeFrame_selection_census (before after : ScopedVariables) (owner : ScopeOccurrenceId)
-    (owners : after.scopes.map (·.owner) = before.scopes.map (·.owner)) :
-    (selectScopeVariables? after owner).isSome = (selectScopeVariables? before owner).isSome := by
-  cases selected : selectScopeVariables? before owner with
-  | none =>
-    cases next : selectScopeVariables? after owner with
-    | none => rfl
-    | some frame =>
-      obtain ⟨original, originalEq⟩ := selectScopeVariables_owner_census after before owner owners.symm ⟨frame, next⟩
-      simp [selected] at originalEq
-  | some frame =>
-    obtain ⟨next, nextEq⟩ := selectScopeVariables_owner_census before after owner owners ⟨frame, selected⟩
-    simp [nextEq]
-
-/-- PMIS binding reads complete frame-owner multiplicity, independently of mutable values and wait disposal. -/
-theorem parallelScopeBinding_state_frame (entry : ParallelScopeEntry) (before after : RuntimeState)
-    (target : ScopeOccurrenceId)
-    (control : after.control = before.control)
-    (scopes : after.scopeOccurrences = before.scopeOccurrences)
-    (activities : after.activityOccurrences = before.activityOccurrences)
-    (controllers : after.parallelScopeControllers = before.parallelScopeControllers)
-    (owners : after.variables.scopes.map (·.owner) = before.variables.scopes.map (·.owner)) :
-    parallelScopeBinding? entry after target = parallelScopeBinding? entry before target := by
-  have bodyFrame : ∀ record owner, parallelScopeBodyBound entry after record owner =
-      parallelScopeBodyBound entry before record owner := by
-    intro record owner
-    simp only [parallelScopeBodyBound, scopes, activities,
-      scopeFrame_selection_census before.variables after.variables owner owners]
-  simp only [parallelScopeBinding?, control, scopes, activities, controllers, bodyFrame]
-
-/-- Actual Human completion retains every entry/target's population and exact frame eligibility. -/
-theorem completeParallelScopeUserTask_preserves_binding
-    {program : Program} {before after : RuntimeState} {id : UserTaskInstanceId}
-    {values : List VariableBinding}
-    (completed : completeParallelScopeUserTask? program before id values = some after)
-    (entry : ParallelScopeEntry) (target : ScopeOccurrenceId) :
-    parallelScopeBinding? entry after target = parallelScopeBinding? entry before target := by
-  have owners := completeParallelScopeUserTask_preserves_owner_census completed
-  unfold completeParallelScopeUserTask? at completed
-  split at completed <;> try contradiction
-  split at completed <;> try contradiction
-  obtain ⟨variables, _, completed⟩ := Option.bind_eq_some_iff.mp completed
-  cases Option.some.inj completed
-  exact parallelScopeBinding_state_frame entry before _ target rfl rfl rfl rfl owners
-
-/-- Actual Service completion retains population binding while disposing its separate Activity data frame. -/
-theorem completeParallelScopeEffect_preserves_binding
-    {program : Program} {before after : RuntimeState} {id : EffectOccurrenceId}
-    {result : EffectExecutionResult}
-    (completed : completeParallelScopeEffect? program before id result = some after)
-    (entry : ParallelScopeEntry) (target : ScopeOccurrenceId) :
-    parallelScopeBinding? entry after target = parallelScopeBinding? entry before target := by
-  have owners := completeParallelScopeEffect_preserves_owner_census completed
-  unfold completeParallelScopeEffect? at completed
-  split at completed <;> try contradiction
-  cases result <;> try contradiction
-  split at completed <;> try contradiction
-  split at completed <;> try contradiction
-  split at completed <;> try contradiction
-  obtain ⟨projected, _, completed⟩ := Option.bind_eq_some_iff.mp completed
-  obtain ⟨variables, _, completed⟩ := Option.bind_eq_some_iff.mp completed
-  cases Option.some.inj completed
-  exact parallelScopeBinding_state_frame entry before _ target rfl rfl rfl rfl owners
-  case h_2 =>
-    rename_i patch missingResult impossible
-    exact False.elim (impossible patch rfl)
 
 theorem conditionMerge_untouched (existing patch : List VariableBinding)
     (name : String) (binding : VariableBinding)

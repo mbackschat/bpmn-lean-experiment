@@ -34,6 +34,7 @@ import all BpmnSemantics.SemanticProcess.SerialBusinessTaskDataProofs
 import all BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SemanticProcess.WaitCompletion
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Repeated-body local input availability

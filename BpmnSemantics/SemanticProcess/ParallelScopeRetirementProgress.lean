@@ -43,6 +43,7 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionRecord
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Progress after parallel subprocess retirement

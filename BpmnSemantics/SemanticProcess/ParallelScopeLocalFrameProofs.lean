@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import all BpmnSemantics.SemanticProcess.InternalCommutationCore
 import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 import all BpmnSemantics.SemanticProcess.ScopeCancellation
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Activity-local frame provenance for parallel scopes

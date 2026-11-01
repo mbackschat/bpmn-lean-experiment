@@ -31,6 +31,7 @@ import all BpmnSemantics.SemanticProcess.ScopeCompletion
 import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.TransitionRecord
+import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Parallel command phase provenance

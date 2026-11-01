@@ -10,6 +10,7 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeCommandAdmission
 import all BpmnSemantics.SemanticProcess.ScopeCancellation
 import all BpmnSemantics.SemanticProcess.CallDataTransfer
 import all BpmnSemantics.SemanticProcess.ParallelScopePopulation
+import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Actual body-operation continuation balance
