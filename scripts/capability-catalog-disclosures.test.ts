@@ -68,6 +68,7 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "a hosted Start whose structured values cannot fit the capacity envelope is refused",
     "an effect's arguments are fixed when it is armed, so a sibling's later write never reaches an open effect",
     "a run with Parallel branches whose data outgrows a hosted budget ends with a typed capacity failure",
+    "only the retained models are measured clear of the untyped retained Run trace path",
   ]],
   ["callActivityVariableMappings", "restriction", [
     "up to two Calls of one in-document Process of one to three serial User Tasks",

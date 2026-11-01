@@ -99,11 +99,11 @@ Deliverable: the family implemented and closure-reviewed under its [approved pro
 
 Acceptance blockers: none recorded.
 
-Current result: implemented, and every closure gate is green ([closure gates](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md#evidence-and-acceptance)); about 2 of the 16 budgeted hours spent by 2026-11-01 21:15 CET. The four schedules raised the warm pipeline budget to 191.1 seconds at the unchanged per-case rate, after a direction review and a Rule 2 bound review.
+Current result: implemented; the cold closure review returned approve-with-required-edits, and its five required corrections are committed: the commit preflight now refuses a successor whose Continue-As-New publication continuation cannot fit, *Review route* writes a Map, the empty handler overlay is limited to models with a Parallel fork, and the disclosures and proposal status are corrected. About 3 of the 16 budgeted hours spent by 2026-11-01 22:05 CET.
 
 Effort budget: 16 hours for the family's implementation through closure, from 2026-11-01 19:15 CET; stop and reassess at the limit.
 
-Next action: the cold closure review of the [concurrent structured scope data proposal](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md) and its correction audit, then graduation to a specification. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
+Next action: rerun the complete `verify.sh` once over the corrections, then the same reviewer's correction audit of the [concurrent structured scope data proposal](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md), then graduation to a specification. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
 
 Oracle: the proposal's separating witnesses agreeing across Lean, the core and the pipeline, then the [capsule closure review](REVIEW-POLICY.md#capsule-closure-review).
 
