@@ -22,9 +22,11 @@ CSE-ADMIT-01 makes a data-free, overlay-bound Service Task a task wherever a Use
 a called body or beside a Call. Its completion resumes like a User Task's, so it joins the per-body task
 list that drives the bursts, the task bound and the merge-target check.
 
-CSD-ADMIT-01 admits data in a model without a Call: Sub-Process declarations and mapped Service Tasks
-under the bounded String rules, with the required Start names of CSD-AVAILABLE-01 computed over the raw
-bodies by `ConcurrentScopeData`. -/
+CSD-ADMIT-01 admits data: Sub-Process declarations and mapped Service Tasks under the bounded String
+rules, with the required Start names of CSD-AVAILABLE-01 computed over the raw bodies by
+`ConcurrentScopeData`. CMCALL-ADMIT-01 adds mapped Calls to a data-bearing model: at the Call placements
+of CALLN-ADMIT-01 and after the first vertex of a serial Sub-Process body at depth one or two, each called
+Process a serial User Task chain invoked only by mapped or only by unmapped Calls. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`unique?]
 
@@ -49,6 +51,9 @@ def callDepthLimit : Nat := 3
 /-- The vertices of a called Process body between its None Start and None End (CALLN-ADMIT-01). -/
 def calledBodyVertexLimit : Nat := 3
 
+/-- CMCALL-ADMIT-01: the deepest Sub-Process body that may hold a mapped Call. -/
+private def embeddedCallDepthLimit : Nat := 2
+
 structure Body where
   scope : String
   vertices : List Vertex
@@ -60,6 +65,8 @@ structure Body where
   regions : List MergeRegion.Region := []
   /-- The called Process root scope of every Call vertex of this body. -/
   calls : List (String × String) := []
+  /-- The Call vertices of `calls` that carry variable mappings. -/
+  mapped : List String := []
   deriving Repr, DecidableEq
 
 /-- A body before merge-region contraction. -/
@@ -70,11 +77,12 @@ structure RawBody where
   tasks : List String
   serviceTasks : List String := []
   calls : List (String × String) := []
+  mapped : List String := []
 
 def contractBody (raw : RawBody) : Option Body := do
   let (vertices, regions) ← MergeRegion.contract raw.vertices raw.children
   return { scope := raw.scope, vertices, children := raw.children, tasks := raw.tasks,
-           serviceTasks := raw.serviceTasks, regions, calls := raw.calls }
+           serviceTasks := raw.serviceTasks, regions, calls := raw.calls, mapped := raw.mapped }
 
 /-- A merge target's body is a serial chain of tasks; it owns no Sub-Process, gateway or region. -/
 def serialTargetBody (body : Body) : Bool :=
@@ -171,13 +179,24 @@ def depthOf (parents : List (String × (String × String))) : Nat → String →
       | some (owner, _) => (depthOf parents fuel owner).map (· + 1)
 
 /-- A called Process body is a serial chain of one to three User Task or Call vertices (CALLN-ADMIT-01,
-CSE-ADMIT-01). -/
-def serialCalledBody (body : Body) : Bool :=
+CSE-ADMIT-01); in a data-bearing model, of User Tasks only (CMCALL-ADMIT-01). -/
+def serialCalledBody (dataBearing : Bool) (body : Body) : Bool :=
   let vertices := body.vertices.filter (·.kind == .task)
-  body.children.isEmpty && body.regions.isEmpty && body.serviceTasks.isEmpty &&
+  body.children.isEmpty && body.regions.isEmpty && body.serviceTasks.isEmpty && (!dataBearing || body.calls.isEmpty) &&
     1 ≤ vertices.length && vertices.length ≤ calledBodyVertexLimit &&
     vertices.length == body.tasks.length + body.calls.length &&
     body.vertices.all (fun vertex => vertex.kind == .start || vertex.kind == .finish || vertex.kind == .task)
+
+/-- CMCALL-ADMIT-01: a Call outside the root is a mapped Call of a data-bearing model in a serial body at
+depth one or two, never the body's first vertex. Its invocation therefore follows a wait in the same body
+and is never co-enabled with sibling work, since the parentless caller is the only one the internal
+scope-creation selection prepares. -/
+private def embeddedCallsPlaced (dataBearing : Bool) (depth : Option Nat) (body : Body) : Bool :=
+  let first := (body.vertices.filter (·.kind == .start)).flatMap (·.outputs)
+  body.calls.isEmpty ||
+    dataBearing && depth.any (· ≤ embeddedCallDepthLimit) && body.regions.isEmpty &&
+      body.vertices.all (fun vertex => vertex.kind == .start || vertex.kind == .finish || vertex.kind == .task) &&
+      body.calls.all fun (vertex, _) => body.mapped.contains vertex && !first.contains vertex
 
 /-- The expanded call tree below one body: its copies keyed by call site, their parents and the
 definition each site invokes. -/
@@ -286,13 +305,17 @@ def sharesNoCallBearingDefinition (rootBody : Body) (expanded : List Body) (invo
 /-- Validates the caller's scope tree and every body, expands the called bodies per call site, then
 composes the largest automatic closure; Start applies `initiate` as the first step, while a child or
 called body's elided Start costs nothing. -/
-def analyze (allScopes : List DefinitionScope) (allBodies : List Body) : Option Nat := do
+def analyze (allScopes : List DefinitionScope) (allBodies : List Body) (dataBearing : Bool) : Option Nat := do
   let calledRoots := (allBodies.flatMap fun body => body.calls.map (·.2)).eraseDups
+  -- A called root invoked by both a mapped and an unmapped Call is refused (CMCALL-ADMIT-01), because
+  -- whether its frame isolates called-owned names is decided per definition.
+  let sites := allBodies.flatMap fun body => body.calls.map fun (vertex, scope) => (scope, body.mapped.contains vertex)
   let roots := allScopes.filter (·.parentScopeId.isNone)
   let root ← StructuredComposition.unique? (roots.filter fun scope => !calledRoots.contains scope.id.value)
   let called ← calledRoots.mapM fun scope => do
     let body ← allBodies.find? (·.scope == scope)
-    if roots.any (·.id.value == scope) && serialCalledBody body then some (scope, body) else none
+    if roots.any (·.id.value == scope) && serialCalledBody dataBearing body &&
+        ((sites.filter (·.1 == scope)).map (·.2)).eraseDups.length == 1 then some (scope, body) else none
   let scopes := allScopes.filter fun scope => !calledRoots.contains scope.id.value
   let bodies := allBodies.filter fun body => !calledRoots.contains body.scope
   let parents := bodies.flatMap fun body => body.children.map fun (vertex, child) => (child, (body.scope, vertex))
@@ -313,14 +336,18 @@ def analyze (allScopes : List DefinitionScope) (allBodies : List Body) : Option 
         | some depth => depth ≤ depthLimit
         | none => false) &&
       (rootBody.vertices.filter (·.kind == .finish)).length == 1 && rootBody.regions.isEmpty &&
-      -- Stage A admits Calls in the caller root only, never in a Sub-Process or merge body.
-      bodies.all (fun body => body.scope == root.id.value || body.calls.isEmpty) &&
+      bodies.all (fun body => body.scope == root.id.value ||
+        embeddedCallsPlaced dataBearing (depthOf parents fuel body.scope) body) &&
       regions.all (fun region => (bodies.find? (·.scope == region.targetScope)).any serialTargetBody)) then none
   else do
-    let expansion ← expandSite called callDepthLimit root.id.value rootBody
-    let expanded := expansion.bodies ++ bodies.filter (·.scope != root.id.value)
+    -- Each caller-tree body expands its own Calls; a Sub-Process adds no call nesting, and the head of each
+    -- expansion is the body itself, so the call-site copies are its tail.
+    let expansions ← bodies.mapM fun body => expandSite called callDepthLimit body.scope body
+    let expansion : Expansion := ⟨expansions.flatMap (·.bodies), expansions.flatMap (·.parents),
+      expansions.flatMap (·.invoked)⟩
+    let expanded := expansion.bodies
     let allParents := parents ++ expansion.parents
-    let calledTasks := ((expansion.bodies.filter (·.scope != root.id.value)).map (·.tasks.length)).sum
+    let calledTasks := ((expansions.flatMap (·.bodies.drop 1)).map (·.tasks.length)).sum
     -- CEA-ADMIT-01 weights the target body's tasks and those after it once per fork output; CSE-ADMIT-01
     -- weights Service Tasks the same way against their own bound.
     let weight := fun (listed : Body → List String) => (bodies.map fun body => (listed body).length +
@@ -353,7 +380,7 @@ def analyze (allScopes : List DefinitionScope) (allBodies : List Body) : Option 
         let maximum := (resumed ++ regional).foldl max (1 + entryBurst scans expandedFuel root.id.value)
         if maximum ≤ scenarioClosureLimit then some maximum else none
 
-/-- A data-bearing model's declarations, handler names and mapped Service Task accesses. -/
+/-- A data-bearing model's declarations, handler names and mapped Service Task and Call accesses. -/
 structure Data where
   records : List ScopeLocalData
   handlers : List String
@@ -362,32 +389,55 @@ structure Data where
 private def serviceAccess (inputs outputs : List VariableMapping) : ConcurrentScopeData.Access :=
   { reads := SerialBusinessTask.readNames inputs, writes := outputs.map (·.target) }
 
+/-- A mapped Call reads without requiring and definitely writes its outputs (CMCALL-AVAILABLE-01,
+CMCALL-START-01). -/
+private def callAccess (inputs outputs : List VariableMapping) : ConcurrentScopeData.Access :=
+  let writes := outputs.map (·.target)
+  { reads := [], writes, optional := SerialBusinessTask.readNames inputs ++ writes }
+
+/-- CALLN-ADMIT-01's empty Call anywhere; in a data-bearing model also CVM-ADMIT-01's mappings
+(CMCALL-ADMIT-01). -/
+private def callDataAdmitted (data : Option Data) : CallDataInterface → Bool
+  | .empty => true
+  | .variableMappings inputs outputs => match data with
+      | some data => variableMappingsValid inputs outputs && NestedScopeData.callMappingsAdmitted data.handlers inputs outputs
+      | none => false
+  | .scalar _ => false
+
 /-- CSD-ADMIT-01's data rules over a tree whose control is already admitted: declarations sorted by scope,
-each on a Sub-Process scope and within the declaration rule, then CSD-AVAILABLE-01 over the raw bodies. -/
-private def admittedData (scopes : List DefinitionScope) (raw : List RawBody) (data : Data) : Option (List String) := do
-  let root ← StructuredComposition.unique? (scopes.filter (·.parentScopeId.isNone))
+each on a Sub-Process scope and within the declaration rule, then CSD-AVAILABLE-01 and CMCALL-START-01
+over the raw bodies. The optional names are `none` without a mapped Call, where every admitted Start name
+is allowed. -/
+private def admittedData (scopes : List DefinitionScope) (raw : List RawBody) (data : Data) :
+    Option (List String × Option (List String)) := do
+  -- The caller root is the one parentless scope no Call names; called roots declare nothing.
+  let calledRoots := raw.flatMap fun body => body.calls.map (·.2)
+  let root ← StructuredComposition.unique? (scopes.filter fun scope =>
+    scope.parentScopeId.isNone && !calledRoots.contains scope.id.value)
   let bodies := raw.map fun body => ({ scope := body.scope, vertices := body.vertices, children := body.children } :
     ConcurrentScopeData.Body)
   if !(strictlySortedStrings (data.records.map (·.scopeId.value)) &&
       data.records.all (fun record => record.scopeId != root.id && raw.any (·.scope == record.scopeId.value) &&
         NestedScopeData.recordValid data.handlers record)) then none
-  else ConcurrentScopeData.requiredStartNames root.id.value bodies data.records data.accesses
+  else do
+    let (required, optional) ← ConcurrentScopeData.startNames root.id.value bodies data.records data.accesses
+    return (required, if raw.any (!·.mapped.isEmpty) then some optional else none)
 
-/-- The admitted largest closure and, for a data-bearing model, its required Start names. -/
+/-- The admitted largest closure and, for a data-bearing model, its required and optional Start names. -/
 private def admittedModel (scopes : List DefinitionScope) (raw : List RawBody) (data : Option Data) :
-    Option (Nat × List String) := do
-  let burst ← analyze scopes (← raw.mapM contractBody)
+    Option (Nat × List String × Option (List String)) := do
+  let burst ← analyze scopes (← raw.mapM contractBody) data.isSome
   match data with
-  | none => return (burst, [])
+  | none => return (burst, [], none)
   | some data => return (burst, ← admittedData scopes raw data)
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`admittedModel]
 
 /-- A single scope admits nothing: the class needs a Sub-Process or a Call, and a called root is a second
 scope. -/
-theorem analyze_one_scope (allScopes : List DefinitionScope) (allBodies : List Body)
-    (one : allScopes.length = 1) : analyze allScopes allBodies = none := by
-  cases analyzed : analyze allScopes allBodies with
+theorem analyze_one_scope (allScopes : List DefinitionScope) (allBodies : List Body) (dataBearing : Bool)
+    (one : allScopes.length = 1) : analyze allScopes allBodies dataBearing = none := by
+  cases analyzed : analyze allScopes allBodies dataBearing with
   | none => rfl
   | some burst =>
       exfalso
@@ -433,8 +483,8 @@ def controlCheckedScope? (source : CheckedProcess) (nodeId : NodeId) : Option St
   let owner ← StructuredComposition.unique? (source.nodeScopes.filter (·.nodeId == nodeId))
   return owner.scopeId.value
 
-/-- CSD-ADMIT-01 excludes every Call Activity from a data-bearing model and lets its Service Tasks map data
-under the bounded String rules. -/
+/-- CSD-ADMIT-01 lets Service Tasks of a data-bearing model map data under the bounded String rules, and
+CMCALL-ADMIT-01 lets its Calls map. -/
 def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : CheckedNode) :
     Option (MergeRegion.RawVertex × Option String) := do
   let id := node.id.value
@@ -450,7 +500,7 @@ def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : Checke
         | some data => if NestedScopeData.serviceValid data.handlers descriptor inputs outputs
             then some (.vertex .task) else none
     | .embeddedSubProcess _ _ => some (.vertex .task)
-    | .callActivity _ _ .empty => if data.isNone then some (.vertex .task) else none
+    | .callActivity _ _ callData => if callDataAdmitted data callData then some (.vertex .task) else none
     | .parallelGateway _ .diverging => some (.vertex .fork)
     | .parallelGateway _ .converging => some (.vertex .join)
     | .exclusiveMerge _ => some .merge
@@ -468,15 +518,20 @@ def calledRoot? (source : CheckedProcess) (calledProcessId : ProcessId) : Option
     scope.parentScopeId.isNone && scope.originElementId.value == calledProcessId.value)
   return root.id.value
 
-/-- A checked graph carries data exactly when a scope declares a local or a Service Task maps one. -/
+/-- A checked graph carries data exactly when a scope declares a local, a Service Task maps one or a Call
+maps. -/
 def checkedData (source : CheckedProcess) : Option Data :=
   let services := source.nodes.filterMap fun node => match node with
     | .serviceTask id _ inputs outputs _ => some (id.value, inputs, outputs)
     | _ => none
-  if source.scopeLocalData.isEmpty && services.all (fun (_, inputs, outputs) => inputs.isEmpty && outputs.isEmpty)
+  let calls := source.nodes.filterMap fun node => match node with
+    | .callActivity id _ (.variableMappings inputs outputs) => some (id.value, callAccess inputs outputs)
+    | _ => none
+  if source.scopeLocalData.isEmpty && calls.isEmpty &&
+      services.all (fun (_, inputs, outputs) => inputs.isEmpty && outputs.isEmpty)
   then none
   else some { records := source.scopeLocalData, handlers := SerialBusinessTask.checkedHandlers source
-              accesses := services.map fun (id, inputs, outputs) => (id, serviceAccess inputs outputs) }
+              accesses := services.map (fun (id, inputs, outputs) => (id, serviceAccess inputs outputs)) ++ calls }
 
 def checkedBodies (source : CheckedProcess) (data : Option Data) : Option (List RawBody) := do
   if !(source.sequenceFlows.all fun flow => flow.condition.isNone &&
@@ -496,9 +551,12 @@ def checkedBodies (source : CheckedProcess) (data : Option Data) : Option (List 
              tasks := members.filterMap (fun node => match node with
                | .userTask id _ _ => some id.value
                | _ => none) ++ serviceTasks
-             serviceTasks, calls }
+             serviceTasks, calls
+             mapped := members.filterMap fun node => match node with
+               | .callActivity id _ (.variableMappings ..) => some id.value
+               | _ => none }
 
-private def checkedModel (source : CheckedProcess) : Option (Nat × List String) := do
+private def checkedModel (source : CheckedProcess) : Option (Nat × List String × Option (List String)) := do
   if !(source.nodes.all fun node => (controlCheckedScope? source node.id).isSome) then none
   else
     let data := checkedData source
@@ -511,7 +569,7 @@ def checkedAnalysis (source : CheckedProcess) : Option Nat :=
 
 /-- CSD-AVAILABLE-01's required Start names over the checked graph, empty for a data-free model. -/
 def checkedStartNames (source : CheckedProcess) : Option (List String) :=
-  (checkedModel source).map (·.2)
+  (checkedModel source).map (·.2.1)
 
 def controlOperationScope? (program : Program) (operation : SemanticOperation) : Option String := do
   let owner ← StructuredComposition.unique? (program.operationScopes.filter (·.operationId == operation.id))
@@ -539,13 +597,15 @@ def controlParentOutput? (program : Program) (child : DefinitionScopeId) : Optio
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`controlParentOutput?]
 
-/-- The caller output of the one empty-data return an invocation names, owned by its called root. -/
-def callerOutput? (program : Program) (calledRoot : DefinitionScopeId) (returnOperationId : OperationId) :
-    Option ControlPlaceId := do
+/-- The caller output of the one return an invocation names, owned by its called root and carrying the
+invocation's own Call data, so CVM-OUT-01 reads exactly what this Call declares. -/
+def callerOutput? (program : Program) (calledRoot : DefinitionScopeId) (returnOperationId : OperationId)
+    (callData : CallDataInterface) : Option ControlPlaceId := do
   let returned ← StructuredComposition.unique? (program.operations.filter (·.id == returnOperationId))
   match returned with
-  | .returnProcess _ _ _ root output .empty =>
-      if root == calledRoot && controlOperationScope? program returned == some calledRoot.value then some output else none
+  | .returnProcess _ _ _ root output returnedData =>
+      if root == calledRoot && returnedData == callData && controlOperationScope? program returned == some calledRoot.value
+      then some output else none
   | _ => none
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`callerOutput?]
@@ -578,9 +638,9 @@ def operationVertex? (program : Program) (data : Option Data) (scope : String) (
   | .reachNoneEnd .. => return (⟨id, .vertex .finish, []⟩, none)
   | .enterScope _ _ _ _ child =>
       return (⟨id, .vertex .task, ← follow [← controlParentOutput? program child]⟩, some child.value)
-  | .invokeProcess _ _ _ _ calledRoot calledEntry returnOperationId .empty => do
-      if data.isSome then none
-      let output ← callerOutput? program calledRoot returnOperationId
+  | .invokeProcess _ _ _ _ calledRoot calledEntry returnOperationId callData => do
+      if !callDataAdmitted data callData then none
+      let output ← callerOutput? program calledRoot returnOperationId callData
       let _ ← consumer? program calledRoot.value calledEntry
       return (⟨id, .vertex .task, ← follow [output]⟩, none)
   | _ => none
@@ -610,22 +670,27 @@ def programBodies (program : Program) (data : Option Data) : Option (List RawBod
                | .awaitUserTask id .. => some id.value
                | _ => none) ++ serviceTasks
              serviceTasks
-             calls := members.filterMap fun op => match op with
+             calls := members.filterMap (fun op => match op with
                | .invokeProcess id _ _ _ calledRoot .. => some (id.value, calledRoot.value)
+               | _ => none)
+             mapped := members.filterMap fun op => match op with
+               | .invokeProcess id _ _ _ _ _ _ (.variableMappings ..) => some id.value
                | _ => none }
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`programBodies]
 
-/-- A data-bearing embedded completion Program's declarations, handlers and mapped Service Tasks. -/
+/-- A data-bearing embedded completion Program's declarations, handlers, mapped Service Tasks and mapped
+Calls. -/
 private def programData (program : Program) : Option Data :=
   if embeddedScopeDataBearing program then
     some { records := program.scopeLocalData, handlers := SerialBusinessTask.programHandlers program
            accesses := program.operations.filterMap fun op => match op with
              | .awaitEffect id _ _ _ effect _ => some (id.value, serviceAccess effect.inputMappings effect.outputMappings)
+             | .invokeProcess id _ _ _ _ _ _ (.variableMappings inputs outputs) => some (id.value, callAccess inputs outputs)
              | _ => none }
   else none
 
-private def programModel (program : Program) : Option (Nat × List String) := do
+private def programModel (program : Program) : Option (Nat × List String × Option (List String)) := do
   let root ← StructuredComposition.unique? (program.definitionScopes.filter fun scope =>
     scope.parentScopeId.isNone && scope.originElementId.value == program.processId.value)
   let completions := program.operations.filter StructuredComposition.isScopeCompletion
@@ -668,22 +733,24 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`p
 
 theorem programAnalysis_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
     programAnalysis program = none := by
-  simp only [programAnalysis, programModel, admittedModel, bind, Option.bind, analyze_one_scope _ _ one]
+  simp only [programAnalysis, programModel, admittedModel, bind, Option.bind, analyze_one_scope _ _ _ one]
   repeat' first | rfl | split | simp
 
 /-- CSD-AVAILABLE-01's required Start names over the Program, empty for a data-free Program. -/
 def programStartNames (program : Program) : Option (List String) :=
-  (programModel program).map (·.2)
+  (programModel program).map (·.2.1)
 
-/-- CSD-VALUE-01 and CSD-AVAILABLE-01 at Start of a data-bearing Program: admitted names outside the
-handler namespace, each within the bounded String policy, covering every required name; a present null
-counts as present. -/
+/-- CSD-VALUE-01, CSD-AVAILABLE-01 and CMCALL-START-01 at Start of a data-bearing Program: admitted names
+outside the handler namespace, each within the bounded String policy, covering every required name, a
+present null counting as present; with a mapped Call, every name required or optional. -/
 def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) : Bool :=
-  match programStartNames program with
+  match programModel program with
   | none => false
-  | some required =>
+  | some (_, required, optional) =>
       EffectData.bindingsValidUnder (programEffectMappingValuePolicy program)
           (SerialBusinessTask.programHandlers program) bindings &&
-        required.all fun name => bindings.any (·.name == name)
+        required.all (fun name => bindings.any (·.name == name)) &&
+        optional.all fun optional => bindings.all fun binding =>
+          required.contains binding.name || optional.contains binding.name
 
 end BpmnSemantics.SemanticProcess.NestedScopeControl

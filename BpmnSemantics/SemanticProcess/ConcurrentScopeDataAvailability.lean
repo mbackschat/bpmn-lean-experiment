@@ -16,6 +16,11 @@ merge, and the union of every End at a body's completion, which waits for every 
 alone keeps a write in one fork branch away from its siblings. A read that is neither declared nor
 definitely written is a required Start name. The walk is analysis evidence over raw bodies, before
 merge-region contraction, and carries no runtime authority.
+
+CMCALL-START-01 adds the optional Start names: a mapped Call's input sources and output targets that are
+neither declared on the Call's chain nor definitely written before it, so they resolve to the Process
+binding there. A Call input reads without requiring, because an absent source becomes a present null
+(CVM-IN-01), and a Call output is a definite write (CMCALL-AVAILABLE-01).
 -/
 
 public section
@@ -24,10 +29,12 @@ namespace BpmnSemantics.SemanticProcess.ConcurrentScopeData
 
 open StructuredParallelBody
 
-/-- The names one task vertex reads before it runs and writes when it completes. -/
+/-- The names one task vertex reads before it runs and writes when it completes; `optional` holds a mapped
+Call's names a Start binding may supply without being required to. -/
 structure Access where
   reads : List String
   writes : List String
+  optional : List String := []
   deriving Repr, DecidableEq
 
 /-- One definition scope's raw body and the child scope of each of its Sub-Process vertices. -/
@@ -37,10 +44,12 @@ structure Body where
   children : List (String × String)
   deriving Repr, DecidableEq
 
-/-- What reaching a vertex establishes: its definitely written names and the required names seen so far. -/
+/-- What reaching a vertex establishes: its definitely written names and the required and optional names
+seen so far. -/
 structure Reached where
   written : List String
   required : List String
+  optional : List String := []
 
 private def union (sets : List (List String)) : List String := sets.flatten.eraseDups
 
@@ -82,16 +91,18 @@ def exit (body : Body) (declared entry : List String) (accessOf : String → Acc
             if inputs.isEmpty then none
             else some { written := if kind == .merge then intersection (inputs.map (·.written))
                           else union (inputs.map (·.written))
-                        required := union (inputs.map (·.required)) }
+                        required := union (inputs.map (·.required))
+                        optional := union (inputs.map (·.optional)) }
       if vertex.kind != .vertex .task then some before
       else
         let access := accessOf id
-        let missing := access.reads.filter fun name => !declared.contains name && !before.written.contains name
+        let unresolved := fun (name : String) => !declared.contains name && !before.written.contains name
         let done ← match List.lookup id body.children with
           | some child => complete child before.written
           | none => some { written := before.written, required := [] }
         some { written := union [done.written, access.writes.filter (!declared.contains ·)]
-               required := union [before.required, missing, done.required] }
+               required := union [before.required, access.reads.filter unresolved, done.required]
+               optional := union [before.optional, access.optional.filter unresolved, done.optional] }
 
 /-- The union over every End of `scope`'s body entered with `entry`, under the names `enclosing` declares;
 scope fuel bounds the descent, so a child cycle refuses. -/
@@ -103,19 +114,21 @@ def completion (bodies : List Body) (records : List ScopeLocalData) (accesses : 
       let record := records.find? (·.scopeId.value == scope)
       let declared := enclosing ++ (record.map fun record => record.localInputs.map (·.target)).getD []
       let accessOf := fun (id : String) => match List.lookup id body.children with
-        | some child => ((records.find? (·.scopeId.value == child)).map recordAccess).getD ⟨[], []⟩
-        | none => (List.lookup id accesses).getD ⟨[], []⟩
+        | some child => ((records.find? (·.scopeId.value == child)).map recordAccess).getD { reads := [], writes := [] }
+        | none => (List.lookup id accesses).getD { reads := [], writes := [] }
       let ends ← (body.vertices.filter (·.kind == .vertex .finish)).mapM fun vertex =>
         exit body declared entry accessOf (fun child written => completion bodies records accesses fuel child written declared)
           (body.vertices.length + 1) vertex.id
       if ends.isEmpty then none
-      else some { written := union (ends.map (·.written)), required := union (ends.map (·.required)) }
+      else some { written := union (ends.map (·.written)), required := union (ends.map (·.required))
+                  optional := union (ends.map (·.optional)) }
 
-/-- The required Start names of the tree below `root`, in canonical order; `none` when a body is missing or
-a walk is cyclic. `accesses` holds the mapped Service Task vertices. -/
-def requiredStartNames (root : String) (bodies : List Body) (records : List ScopeLocalData)
-    (accesses : List (String × Access)) : Option (List String) := do
+/-- The required and optional Start names of the tree below `root`, each in canonical order; `none` when a
+body is missing or a walk is cyclic. `accesses` holds the mapped Service Task and Call vertices. -/
+def startNames (root : String) (bodies : List Body) (records : List ScopeLocalData)
+    (accesses : List (String × Access)) : Option (List String × List String) := do
   let reached ← completion bodies records accesses (bodies.length + 1) root [] []
-  return reached.required.mergeSort fun left right => decide (left ≤ right)
+  let sorted := fun (names : List String) => names.mergeSort fun left right => decide (left ≤ right)
+  return (sorted reached.required, sorted reached.optional)
 
 end BpmnSemantics.SemanticProcess.ConcurrentScopeData
