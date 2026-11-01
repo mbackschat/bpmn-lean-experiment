@@ -1,7 +1,7 @@
 import { mixedTaskControlProgramShape, mixedTaskControlCheckedShape } from "./mixed-task-control-flow-admission.js";
 import { serialBusinessProgramShape, serialBusinessCheckedShape } from "./serial-business-task-admission.js";
 import { isSerialChainProfile, serialChainRulesForProfile } from "./serial-business-task-policy.js";
-import { nestedScopeCheckedShape, nestedScopeProgramShape } from "./nested-scope-data-admission.js";
+import { structuredScopeDataCheckedShape, structuredScopeDataProgramShape } from "./structured-scope-data-routing.js";
 import { nestedScopeControlCheckedShape, nestedScopeControlProgramShape } from "./nested-scope-control-admission.js";
 import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { sequentialScopeProgramShape } from "./sequential-scope-program-admission.js";
@@ -61,7 +61,7 @@ export function profileAllowsProgramShape(
 ): boolean {
   if (semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) return sequentialScopeProgramShape(actualOperations, definitionScopeCount);
   if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return mixedTaskControlProgramShape(actualOperations, definitionScopeCount, semanticProfile);
-  if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return nestedScopeProgramShape(actualOperations, definitionScopeCount);
+  if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return structuredScopeDataProgramShape(actualOperations, definitionScopeCount);
   // The cumulative profile keeps its exact-multiset class and adds the nested scope-control class (NSC-ADMIT-01).
   if (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion) {
     return requiredProgramShapeAllows(semanticProfile, actualOperations, definitionScopeCount) ||
@@ -202,7 +202,7 @@ export function profileAllowsCheckedProcessShape(
   definitionScopeCount: number,
 ): boolean {
   if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return mixedTaskControlCheckedShape(nodes, definitionScopeCount, semanticProfile);
-  if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return nestedScopeCheckedShape(nodes, definitionScopeCount);
+  if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return structuredScopeDataCheckedShape(nodes, definitionScopeCount);
   if (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion) {
     return requiredCheckedShapeAllows(semanticProfile, nodes, definitionScopeCount) ||
       nestedScopeControlCheckedShape(nodes, definitionScopeCount);

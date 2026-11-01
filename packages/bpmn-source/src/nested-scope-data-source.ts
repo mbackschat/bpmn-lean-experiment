@@ -2,7 +2,7 @@ import { readBusinessTaskMappings } from "./business-task-mapping-source.js";
 import { classifyGateway, projectExclusiveMerge, projectUserTaskMetadata } from "./checked-element-projection.js";
 import {
   CallDataKind, CheckedNodeKind, CheckedProcessKind, MappingExpressionKind, SemanticProfileId, callDataInterfaceValid,
-  compareCanonicalStrings, isWellFormedWireString, nestedScopeCheckedAnalysis,
+  compareCanonicalStrings, isWellFormedWireString, structuredScopeDataCheckedAnalysis,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode, CheckedProcess, CheckedSequenceFlow, DefinitionScope, ScopeLocalData, VariableMapping,
@@ -40,7 +40,8 @@ type Collected = {
 /**
  * What one scope-data profile's reader admits beyond the shared element grammar: Parallel gateways and Exclusive
  * merges, mapped and unmapped Calls of several called Processes for the embedded completion profile (CSD-ADMIT-01,
- * CMCALL-ADMIT-01), mapped Calls of one called Process for the nested scope-data profile.
+ * CMCALL-ADMIT-01), mapped Calls of one called Process for the nested scope-data profile, whose admission keeps
+ * Parallel blocks inside Sub-Process bodies (CSSD-ADMIT-01).
  */
 type ScopeDataReader = Readonly<{
   semanticProfile: string;
@@ -56,9 +57,10 @@ type ScopeDataReader = Readonly<{
 }>;
 
 const nestedScopeDataReader: ScopeDataReader = {
-  semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: false, projectCall: projectMappedCall,
+  semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, projectCall: projectMappedCall,
   caller: callerProcess, overlayRequired: true,
-  admitted: checkedProcess => nestedScopeCheckedAnalysis(checkedProcess) !== null,
+  // CSSD-ADMIT-01: the routed analysis refuses the merges and root-body forks the shared gateway grammar reads.
+  admitted: checkedProcess => structuredScopeDataCheckedAnalysis(checkedProcess) !== null,
   refusal: "The checked graph does not satisfy nested scope-data admission.",
 };
 
@@ -75,8 +77,8 @@ const embeddedScopeDataReader: ScopeDataReader = {
 const noBindings: MappedServiceTaskSourcePolicy = { sourceOverlay: null, effectBindings: [], inertAttributes: [] };
 
 /**
- * NSD-ADMIT-01's source reader: serial scopes of None Start, User Task, mapped Service Task, ordinary embedded
- * Sub-Process and None End. A Sub-Process `camunda:inputOutput` becomes that child scope's `scopeLocalData` record;
+ * NSD-ADMIT-01's source reader: scopes of None Start, User Task, mapped Service Task, ordinary embedded Sub-Process,
+ * None End and, for CSSD-ADMIT-01, Parallel gateways. A Sub-Process `camunda:inputOutput` becomes that child scope's `scopeLocalData` record;
  * the parameter grammar is the Service Task's (CIB-EXT-0015), and independent checked admission decides the rest.
  */
 export function compileNestedScopeDataSource(root: unknown, source: BpmnSourceIdentity,

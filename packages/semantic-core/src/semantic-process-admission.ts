@@ -1,5 +1,6 @@
 import { mixedTaskControlProgramGraph, mixedTaskControlStimulusDataAdmitted } from "./mixed-task-control-flow-admission.js";
-import { isScopeLocalDataTable, nestedScopeProgramAnalysis } from "./nested-scope-data-admission.js";
+import { isScopeLocalDataTable } from "./nested-scope-data-admission.js";
+import { structuredScopeDataProgramAnalysis } from "./structured-scope-data-routing.js";
 import { scopeDataStimulusAdmitted } from "./scope-data-stimulus-admission.js";
 import { nestedScopeControlProgramAnalysis } from "./nested-scope-control-admission.js";
 import { embeddedScopeDataBearing } from "./scope-data-bearing.js";
@@ -328,7 +329,7 @@ export function isWellFormedSemanticProcessProgram(
   if ((identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || identity.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) && !mixedTaskControlProgramGraph(program)) return false;
   if (isSerialChainProfile(identity.semanticProfile) && !serialBusinessProgramGraph(program)) return false;
   if (identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData &&
-      nestedScopeProgramAnalysis(program) === null) return false;
+      structuredScopeDataProgramAnalysis(program) === null) return false;
   const snapshotTargets = program.compensationEventSubProcessSnapshots?.targets;
   if (identity.semanticProfile === INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOINT_PROFILE_ID) {
     if (!interruptingMessageEventSubProcessProgramGraph(program)) return false;

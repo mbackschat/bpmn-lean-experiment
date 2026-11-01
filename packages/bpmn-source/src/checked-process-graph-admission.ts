@@ -428,5 +428,6 @@ function isAcyclic(
 function wideParallelGateways(semanticProfile: string): boolean {
   return semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID ||
     semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID ||
-    semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion;
+    semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion ||
+    semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
 }

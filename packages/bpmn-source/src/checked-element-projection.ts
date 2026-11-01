@@ -402,8 +402,10 @@ export function classifyGateway(
   }
   const incoming = flows.filter(({ targetId }) => targetId === id).length;
   const outgoing = flows.filter(({ sourceId }) => sourceId === id).length;
-  // NSC-ADMIT-01 admits paired Parallel blocks of two or more branches in the embedded completion profile.
-  const wide = semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion;
+  // NSC-ADMIT-01 admits paired Parallel blocks of two or more branches in the embedded completion profile, and
+  // CSSD-ADMIT-01 in the nested scope-data profile's Sub-Process bodies.
+  const wide = semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion ||
+    semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
   const direction =
     incoming === 1 && (semanticProfile === REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID || wide
       ? outgoing >= 2 : outgoing === 2)

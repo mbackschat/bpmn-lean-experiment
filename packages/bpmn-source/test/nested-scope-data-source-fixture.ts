@@ -54,7 +54,7 @@ export const embedded = (id: string, inputs: readonly Local[], outputs: readonly
   id, xml: `<subProcess id="${id}">${declarations(inputs, outputs)}${serial(id, activities)}</subProcess>`,
 });
 
-/** A Sub-Process whose body forks into two Service Tasks and joins again; the profile admits no Parallel Gateway. */
+/** A Sub-Process whose body forks into two Service Tasks and joins again, which CSSD-ADMIT-01 admits. */
 export const forkingSubProcess = (id: string): Activity => ({
   id, xml: `<subProcess id="${id}">${declarations([["a", "x"]], [])}<startEvent id="${id}a"/><parallelGateway id="${id}m"/>${
     handlerTask(`${id}s1`).xml}${handlerTask(`${id}s2`).xml}<parallelGateway id="${id}j"/><endEvent id="${id}z"/>${

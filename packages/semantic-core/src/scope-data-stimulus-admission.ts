@@ -1,7 +1,8 @@
 import type { Stimulus } from "./contract.js";
 import { nestedScopeControlProgramStartNameRule } from "./nested-scope-control-admission.js";
 import { nestedScopeDataProgram } from "./nested-scope-data.js";
-import { nestedScopeProgramStartNames, scopeDataStimulusWithin } from "./nested-scope-data-admission.js";
+import { scopeDataStimulusWithin } from "./nested-scope-data-admission.js";
+import { structuredScopeDataProgramStartNames } from "./structured-scope-data-routing.js";
 import type { NestedScopeStartNames } from "./nested-scope-data-admission.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
@@ -19,7 +20,7 @@ export function scopeDataStimulusAdmitted(program: SemanticProcessProgram, stimu
 
 function startNames(program: SemanticProcessProgram): NestedScopeStartNames | null {
   if (program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) {
-    return nestedScopeProgramStartNames(program);
+    return structuredScopeDataProgramStartNames(program);
   }
   return nestedScopeControlProgramStartNameRule(program);
 }

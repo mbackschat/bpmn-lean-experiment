@@ -469,7 +469,10 @@ function dataFreeServiceTask(effect: Readonly<{ inputMappings: readonly unknown[
 
 const scopeDataRules = serialChainRulesForProfile(SemanticProfileId.EmbeddedSubProcessCompletion);
 
-/** CSD-ADMIT-01: in a data-bearing model a Service Task may map data under the bounded String rules. */
+/**
+ * CSD-ADMIT-01 and CSSD-ADMIT-01: in a data-bearing model a Service Task may map data. Mapping admission reads only the
+ * 1,024-byte literal ceiling, which both data profiles share; each profile's value policy applies when values arrive.
+ */
 function admittedServiceTask(effect: Readonly<{ inputMappings: readonly VariableMapping[]; outputMappings: readonly VariableMapping[] }>,
   bpmnErrorRoute: unknown, data: ModelData | null): boolean {
   return data === null ? dataFreeServiceTask(effect, bpmnErrorRoute)
@@ -735,19 +738,22 @@ export function nestedScopeControlProgramStartNameRule(program: SemanticProcessP
 
 function programModel(program: SemanticProcessProgram): Admitted | null {
   // CSE-ADMIT-01: the source overlay binds Service Task handlers, so a Program carries one exactly when it has an effect.
+  // The nested scope-data profile requires one on every model and always carries data (CSSD-ADMIT-01).
+  const structured = program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
   const hasEffect = program.operations.some(({ kind }) => kind === SemanticOperationKind.AwaitEffect);
-  if ((program.identity.sourceOverlay !== null) !== hasEffect ||
+  if ((program.identity.sourceOverlay !== null) !== (structured || hasEffect) ||
       program.internalSchedulingMode !== InternalSchedulingMode.RejectObservableChoice ||
       program.compensationActivityRetention !== undefined || program.compensationEventSubProcessSnapshots !== undefined ||
       program.compensationExecution !== undefined || program.interruptingMessageEventSubProcesses !== undefined ||
-      (program.scopeLocalData !== undefined && program.identity.semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion)) {
+      (program.scopeLocalData !== undefined && !structured &&
+        program.identity.semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion)) {
     return null;
   }
   const root = program.definitionScopes.find(({ parentScopeId, originElementId }) =>
     parentScopeId === null && originElementId === program.processId);
   const rootCompletion = program.operations.filter(operation =>
     operation.kind === SemanticOperationKind.CompleteScope && operation.scopeId === root?.id && operation.parentOutput === null);
-  const data: ModelData | null = embeddedScopeDataBearing(program) ? {
+  const data: ModelData | null = structured || embeddedScopeDataBearing(program) ? {
     records: program.scopeLocalData ?? [],
     handlers: new Set(program.operations.flatMap(operation =>
       operation.kind === SemanticOperationKind.AwaitEffect ? [operation.effect.descriptor.operation] : [])),

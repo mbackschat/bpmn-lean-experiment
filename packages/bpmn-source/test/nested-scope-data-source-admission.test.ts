@@ -81,9 +81,10 @@ test("NSD-ADMIT-01 runs the five-scope sibling Process as a supported scenario t
   assert.equal(last.status, ProcessStatus.Completed);
 });
 
-test("NSD-ADMIT-01 refuses a Parallel fork inside an embedded scope while the serial body of the same Sub-Process is admitted", async () => {
+// CSSD-ADMIT-01 superseded NSD-ADMIT-01's refusal of a token split; the concurrent witnesses own the root-body refusal.
+test("CSSD-ADMIT-01 admits a Parallel fork inside an embedded scope beside the serial body of the same Sub-Process", async () => {
   await assertAdmitted("serial body", literalModel("x"));
-  assert.equal(await refusalEvidence(processOf([forkingSubProcess("S1")])), "The flow element is outside the nested scope-data contract.");
+  await assertAdmitted("forking body", processOf([forkingSubProcess("S1")]));
 });
 
 test("NSD-ADMIT-01 admits a Sub-Process three levels below the root and refuses the fourth level at checked-graph admission", async () => {
