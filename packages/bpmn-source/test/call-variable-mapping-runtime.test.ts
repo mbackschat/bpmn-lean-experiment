@@ -10,12 +10,13 @@ import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
   CommandOutcome, EffectExecutionResultKind, SemanticProfileId, StimulusKind, VariableValueKind,
-  applyStimulus, canonicalNamedValueArrayUtf8ByteLength, deriveCalledProcessInstanceId, initialState,
+  applyStimulus, deriveCalledProcessInstanceId, initialState,
   isWellFormedRuntimeState, nestedScopePatchByteLimit,
 } from "@bpmn-lean/semantic-core";
 import type {
-  BusinessValue, RuntimeState, SemanticProcessProgram, Stimulus, VariableBinding,
+  RuntimeState, SemanticProcessProgram, Stimulus, VariableBinding,
 } from "@bpmn-lean/semantic-core";
+import { patchOfSize } from "./exact-size-patch-fixture.ts";
 
 const directory = new URL("../../../scenarios/call-variable-mapping/", import.meta.url);
 const instanceId = "Loan_1";
@@ -116,20 +117,6 @@ test("CVM-IN-01 a present-null input source copies its null into the called-root
   state = commit(program, state, acknowledge);
   assert.deepEqual(calledFrame(state), [bind("amount", text("25000")), bind("customer", nullValue)]);
 });
-
-/** A one-binding patch of a Map whose canonical size is exactly `bytes`, built from seventeen bounded Strings. */
-function patchOfSize(name: string, bytes: number): VariableBinding[] {
-  const lengths = Array.from({ length: 17 }, () => 1_000);
-  const patch = (): Array<{ name: string; value: BusinessValue }> => [{ name, value: { kind: VariableValueKind.Map,
-    value: lengths.map((length, index) => ({ name: `k${String(index).padStart(2, "0")}`, value: text("p".repeat(length)) })) } }];
-  for (let index = lengths.length - 1; index >= 0; index -= 1) {
-    const excess = canonicalNamedValueArrayUtf8ByteLength(patch()) - bytes;
-    if (excess <= 0) break;
-    lengths[index] = Math.max(0, lengths[index]! - excess);
-  }
-  assert.equal(canonicalNamedValueArrayUtf8ByteLength(patch()), bytes);
-  return patch();
-}
 
 test("CVM-TASK-01 commits a called patch at the allowance and rejects one byte more with the state unchanged", async () => {
   const program = await loanProgram();

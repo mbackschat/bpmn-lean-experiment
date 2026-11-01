@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_LoanAssessment" targetNamespace="urn:bpmn-lean:loan-assessment">
+  <process id="Process_LoanAssessment" name="Assess a secured loan application" isExecutable="true">
+    <startEvent id="ApplicationReceived" name="Application received" />
+    <subProcess id="AssessApplication" name="Assess application">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="creditOpinion">pending</camunda:inputParameter>
+          <camunda:inputParameter name="file">${application}</camunda:inputParameter>
+          <camunda:inputParameter name="valuationOpinion">pending</camunda:inputParameter>
+          <camunda:outputParameter name="credit">${creditOpinion}</camunda:outputParameter>
+          <camunda:outputParameter name="valuation">${valuationOpinion}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="AssessmentOpened" name="Assessment opened" />
+      <parallelGateway id="SplitAssessment" name="Check credit and value collateral" />
+      <subProcess id="CreditCheck" name="Credit check">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="dossier">${file}</camunda:inputParameter>
+            <camunda:outputParameter name="creditFile">${dossier}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <startEvent id="CreditCheckOpened" name="Credit check opened" />
+        <userTask id="PrepareCreditFile" name="Prepare credit file" />
+        <callActivity id="CreditExpertReview" name="Credit expert review" calledElement="Process_ExpertReview">
+          <extensionElements>
+            <camunda:in source="dossier" target="case" />
+            <camunda:out source="opinion" target="creditOpinion" />
+          </extensionElements>
+        </callActivity>
+        <endEvent id="CreditCheckClosed" name="Credit check closed" />
+        <sequenceFlow id="Flow_CreditCheckOpened" sourceRef="CreditCheckOpened" targetRef="PrepareCreditFile" />
+        <sequenceFlow id="Flow_CreditFilePrepared" sourceRef="PrepareCreditFile" targetRef="CreditExpertReview" />
+        <sequenceFlow id="Flow_CreditReviewed" sourceRef="CreditExpertReview" targetRef="CreditCheckClosed" />
+      </subProcess>
+      <subProcess id="CollateralValuation" name="Collateral valuation">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="dossier">${file}</camunda:inputParameter>
+            <camunda:outputParameter name="valuationFile">${dossier}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <startEvent id="ValuationOpened" name="Valuation opened" />
+        <userTask id="PrepareValuation" name="Prepare valuation" />
+        <callActivity id="ValuationExpertReview" name="Valuation expert review" calledElement="Process_ExpertReview">
+          <extensionElements>
+            <camunda:in source="dossier" target="case" />
+            <camunda:out source="opinion" target="valuationOpinion" />
+          </extensionElements>
+        </callActivity>
+        <endEvent id="ValuationClosed" name="Valuation closed" />
+        <sequenceFlow id="Flow_ValuationOpened" sourceRef="ValuationOpened" targetRef="PrepareValuation" />
+        <sequenceFlow id="Flow_ValuationPrepared" sourceRef="PrepareValuation" targetRef="ValuationExpertReview" />
+        <sequenceFlow id="Flow_ValuationReviewed" sourceRef="ValuationExpertReview" targetRef="ValuationClosed" />
+      </subProcess>
+      <parallelGateway id="JoinAssessment" name="Credit and collateral assessed" />
+      <endEvent id="AssessmentClosed" name="Assessment closed" />
+      <sequenceFlow id="Flow_AssessmentOpened" sourceRef="AssessmentOpened" targetRef="SplitAssessment" />
+      <sequenceFlow id="Flow_ToCreditCheck" sourceRef="SplitAssessment" targetRef="CreditCheck" />
+      <sequenceFlow id="Flow_ToCollateralValuation" sourceRef="SplitAssessment" targetRef="CollateralValuation" />
+      <sequenceFlow id="Flow_CreditChecked" sourceRef="CreditCheck" targetRef="JoinAssessment" />
+      <sequenceFlow id="Flow_CollateralValued" sourceRef="CollateralValuation" targetRef="JoinAssessment" />
+      <sequenceFlow id="Flow_Assessed" sourceRef="JoinAssessment" targetRef="AssessmentClosed" />
+    </subProcess>
+    <userTask id="DecideLoan" name="Decide loan" />
+    <endEvent id="LoanDecided" name="Loan decided" />
+    <sequenceFlow id="Flow_ApplicationReceived" sourceRef="ApplicationReceived" targetRef="AssessApplication" />
+    <sequenceFlow id="Flow_ApplicationAssessed" sourceRef="AssessApplication" targetRef="DecideLoan" />
+    <sequenceFlow id="Flow_LoanDecided" sourceRef="DecideLoan" targetRef="LoanDecided" />
+  </process>
+  <process id="Process_ExpertReview" name="Give an expert opinion on a case" isExecutable="true">
+    <startEvent id="ReviewRequested" name="Review requested" />
+    <userTask id="GiveOpinion" name="Give opinion" />
+    <endEvent id="ReviewCompleted" name="Review completed" />
+    <sequenceFlow id="Flow_ReviewRequested" sourceRef="ReviewRequested" targetRef="GiveOpinion" />
+    <sequenceFlow id="Flow_OpinionGiven" sourceRef="GiveOpinion" targetRef="ReviewCompleted" />
+  </process>
+</definitions>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OrderFulfilment" targetNamespace="urn:bpmn-lean:order-fulfilment">
+  <process id="Process_OrderFulfilment" name="Fulfil a customer order" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <subProcess id="FulfilOrder" name="Fulfil order">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="instructions">standard</camunda:inputParameter>
+          <camunda:inputParameter name="label">none</camunda:inputParameter>
+          <camunda:inputParameter name="parcels">none</camunda:inputParameter>
+          <camunda:outputParameter name="finalInstructions">${instructions}</camunda:outputParameter>
+          <camunda:outputParameter name="shippedParcels">${parcels}</camunda:outputParameter>
+          <camunda:outputParameter name="shippingLabel">${label}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="FulfilmentOpened" name="Fulfilment opened" />
+      <parallelGateway id="SplitFulfilment" name="Pick and plan in parallel" />
+      <subProcess id="PickStock" name="Pick stock">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="packing">none</camunda:inputParameter>
+            <camunda:inputParameter name="pickList">${order}</camunda:inputParameter>
+            <camunda:outputParameter name="parcels">${packing}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <startEvent id="PickingOpened" name="Picking opened" />
+        <serviceTask id="PickItems" name="Pick items"
+                     implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                     camunda:delegateExpression="${pickItems}" camunda:asyncBefore="true">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="instructions">${instructions}</camunda:inputParameter>
+              <camunda:inputParameter name="items">${pickList}</camunda:inputParameter>
+              <camunda:outputParameter name="packing">${packed}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </serviceTask>
+        <endEvent id="PickingClosed" name="Picking closed" />
+        <sequenceFlow id="Flow_PickingOpened" sourceRef="PickingOpened" targetRef="PickItems" />
+        <sequenceFlow id="Flow_ItemsPicked" sourceRef="PickItems" targetRef="PickingClosed" />
+      </subProcess>
+      <subProcess id="PlanShipment" name="Plan shipment">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="shipment">${order}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+        <startEvent id="PlanningOpened" name="Planning opened" />
+        <userTask id="ReviewRoute" name="Review route" />
+        <serviceTask id="RateShipment" name="Rate shipment"
+                     implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                     camunda:delegateExpression="${rateShipment}" camunda:asyncBefore="true">
+          <extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="instructions">${instructions}</camunda:inputParameter>
+              <camunda:inputParameter name="shipment">${shipment}</camunda:inputParameter>
+              <camunda:outputParameter name="carrierQuote">${quote}</camunda:outputParameter>
+              <camunda:outputParameter name="label">${quote}</camunda:outputParameter>
+            </camunda:inputOutput>
+          </extensionElements>
+        </serviceTask>
+        <endEvent id="PlanningClosed" name="Planning closed" />
+        <sequenceFlow id="Flow_PlanningOpened" sourceRef="PlanningOpened" targetRef="ReviewRoute" />
+        <sequenceFlow id="Flow_RouteReviewed" sourceRef="ReviewRoute" targetRef="RateShipment" />
+        <sequenceFlow id="Flow_ShipmentRated" sourceRef="RateShipment" targetRef="PlanningClosed" />
+      </subProcess>
+      <parallelGateway id="JoinFulfilment" name="Picked and planned" />
+      <serviceTask id="NotifyCustomer" name="Notify customer"
+                   implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${notifyCustomer}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="quote">${carrierQuote}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <userTask id="ConfirmFulfilment" name="Confirm fulfilment" />
+      <endEvent id="FulfilmentClosed" name="Fulfilment closed" />
+      <sequenceFlow id="Flow_FulfilmentOpened" sourceRef="FulfilmentOpened" targetRef="SplitFulfilment" />
+      <sequenceFlow id="Flow_ToPickStock" sourceRef="SplitFulfilment" targetRef="PickStock" />
+      <sequenceFlow id="Flow_ToPlanShipment" sourceRef="SplitFulfilment" targetRef="PlanShipment" />
+      <sequenceFlow id="Flow_StockPicked" sourceRef="PickStock" targetRef="JoinFulfilment" />
+      <sequenceFlow id="Flow_ShipmentPlanned" sourceRef="PlanShipment" targetRef="JoinFulfilment" />
+      <sequenceFlow id="Flow_Joined" sourceRef="JoinFulfilment" targetRef="NotifyCustomer" />
+      <sequenceFlow id="Flow_CustomerNotified" sourceRef="NotifyCustomer" targetRef="ConfirmFulfilment" />
+      <sequenceFlow id="Flow_FulfilmentConfirmed" sourceRef="ConfirmFulfilment" targetRef="FulfilmentClosed" />
+    </subProcess>
+    <userTask id="CloseOrder" name="Close order" />
+    <endEvent id="OrderClosed" name="Order closed" />
+    <sequenceFlow id="Flow_OrderReceived" sourceRef="OrderReceived" targetRef="FulfilOrder" />
+    <sequenceFlow id="Flow_OrderFulfilled" sourceRef="FulfilOrder" targetRef="CloseOrder" />
+    <sequenceFlow id="Flow_OrderClosed" sourceRef="CloseOrder" targetRef="OrderClosed" />
+  </process>
+</definitions>
