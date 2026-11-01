@@ -76,6 +76,8 @@ const reroutedOrder = map(["discount", decimal("-125", 2)], ["lines", list(lineI
 const parcel = map(["weight", decimal("1525", 3)]);
 const packed = map(["parcels", list(parcel, parcel)]);
 const quote = map(["carrier", text("north")], ["price", decimal("1249", 2)]);
+// Review route writes `instructions` as a Map over the declared String.
+const fragile = map(["handling", text("fragile")]);
 
 for (const reviewFirst of [true, false]) {
   test(`order fulfilment keeps each frame's structured values exact when Review route completes ${
@@ -91,7 +93,7 @@ for (const reviewFirst of [true, false]) {
     assert.deepEqual(argumentsOf(state, "PickItems"), pickArguments);
 
     const review = (current: RuntimeState) => commit(fulfilment, current, userTask(instanceId, "ReviewRoute",
-      [bind("instructions", text("fragile")), bind("shipment", reroutedOrder)]), instanceId);
+      [bind("instructions", fragile), bind("shipment", reroutedOrder)]), instanceId);
     const pick = (current: RuntimeState) =>
       commit(fulfilment, current, effect(instanceId, "PickItems", [bind("packed", packed)]), instanceId);
     if (reviewFirst) {
@@ -105,20 +107,20 @@ for (const reviewFirst of [true, false]) {
       state = review(state);
     }
     assert.deepEqual(frame(state, "scope:FulfilOrder"),
-      [[bind("instructions", text("fragile")), bind("label", text("none")), bind("parcels", packed)]]);
+      [[bind("instructions", fragile), bind("label", text("none")), bind("parcels", packed)]]);
     assert.deepEqual(argumentsOf(state, "RateShipment"),
-      [bind("instructions", text("fragile")), bind("shipment", reroutedOrder)]);
+      [bind("instructions", fragile), bind("shipment", reroutedOrder)]);
 
     // One result fans out to an enclosing local and to a Process name no scope declares (PC-DATA-06).
     state = commit(fulfilment, state, effect(instanceId, "RateShipment", [bind("quote", quote)]), instanceId);
     assert.deepEqual(frame(state, "scope:FulfilOrder"),
-      [[bind("instructions", text("fragile")), bind("label", quote), bind("parcels", packed)]]);
+      [[bind("instructions", fragile), bind("label", quote), bind("parcels", packed)]]);
     assert.deepEqual(argumentsOf(state, "NotifyCustomer"), [bind("quote", quote)]);
     state = commit(fulfilment, state, effect(instanceId, "NotifyCustomer", []), instanceId);
     state = commit(fulfilment, state, userTask(instanceId, "ConfirmFulfilment", []), instanceId);
     assert.deepEqual(state.variables.scopes, []);
     assert.deepEqual(state.variables.process.bindings, [bind("carrierQuote", quote),
-      bind("finalInstructions", text("fragile")), bind("order", order), bind("shippedParcels", packed),
+      bind("finalInstructions", fragile), bind("order", order), bind("shippedParcels", packed),
       bind("shippingLabel", quote)]);
     assert.deepEqual(state.userTaskWaits.map(({ id }) => id.elementId), ["CloseOrder"]);
   });

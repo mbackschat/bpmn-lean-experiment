@@ -12,6 +12,9 @@ const text = (value: string) => ({ kind: VariableValueKind.String, value }) as c
 /** A Process variable value in the mutable result a seeded mutation edits. */
 type MutableValue = Extract<MutableScenarioResult["trace"][number], { kind: CanonicalObservationKind.State }>["variables"][number]["value"];
 
+/** The structured `instructions` that *Review route* writes over the declared String. */
+const fragile = (): MutableValue => ({ kind: VariableValueKind.Map, value: [{ name: "handling", value: text("fragile") }] });
+
 /**
  * Replaces the Process variable `name` in the state at `trace[index]`, which must hold `original`. Consecutive states
  * share their binding objects, so the mutation replaces this state's array.
@@ -32,7 +35,7 @@ function replaceVariable(result: MutableScenarioResult, index: number, name: str
 
 /** CSSD-SNAPSHOT-01: rewriting open snapshots on a frame write moves *Review route*'s `instructions` into *Pick items*. */
 function rewriteOpenSnapshot(result: MutableScenarioResult): void {
-  replaceArgument(result, 6, ["PickItems#1", "RateShipment#1"], 0, text("standard"), { name: "instructions", value: text("fragile") });
+  replaceArgument(result, 6, ["PickItems#1", "RateShipment#1"], 0, text("standard"), { name: "instructions", value: fragile() });
 }
 
 /** CSSD-VALUE-01: deduplicating list members leaves one of the two equal parcels in `shippedParcels`. */
@@ -68,8 +71,8 @@ function dropPresentNull(result: MutableScenarioResult): void {
 const cases = {
   "order-review-first": {
     model: "order-fulfilment", inject: rewriteOpenSnapshot,
-    expected: { kind: DisagreementKind.ObservationValue, path: "trace[6].openEffects[0].arguments[0].value.value",
-      expected: "standard", actual: "fragile" },
+    expected: { kind: DisagreementKind.ObservationValue, path: "trace[6].openEffects[0].arguments[0].value.kind",
+      expected: "string", actual: "map" },
   },
   "order-pick-first": {
     model: "order-fulfilment", inject: deduplicateParcels,

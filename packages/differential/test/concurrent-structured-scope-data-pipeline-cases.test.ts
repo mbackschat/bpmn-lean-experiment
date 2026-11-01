@@ -40,7 +40,7 @@ const applicant = map(["employer", nothing], ["name", text("Ada")]);
 const application = map(["amount", decimal("2500075", 2)], ["applicant", applicant], ["collateral", collateral]);
 const surveyed = map(["amount", decimal("2500075", 2)], ["applicant", applicant], ["collateral", collateral], ["survey", text("done")]);
 const opinion = (verdict: string) => map(["conditions", list(text("insured"), text("insured"))], ["notes", nothing], ["verdict", text(verdict)]);
-const fulfilled = [bind("carrierQuote", quote), bind("finalInstructions", text("fragile")), order, bind("shippedParcels", packed),
+const fulfilled = [bind("carrierQuote", quote), bind("finalInstructions", map(["handling", text("fragile")])), order, bind("shippedParcels", packed),
   bind("shippingLabel", quote)];
 const assessed = [bind("application", application), bind("credit", opinion("good")), bind("creditFile", application),
   bind("valuation", opinion("sound")), bind("valuationFile", surveyed)];
@@ -142,7 +142,7 @@ test("the open Pick items snapshot keeps the arming values while Rate shipment a
     ["shipTo", map(["city", text("York")], ["unit", nothing])]);
   assert.deepEqual(state.openEffects.map(({ arguments: values }) => values), [
     [bind("instructions", text("standard")), { name: "items", value: order.value }],
-    [bind("instructions", text("fragile")), bind("shipment", rerouted)],
+    [bind("instructions", map(["handling", text("fragile")])), bind("shipment", rerouted)],
   ]);
 });
 

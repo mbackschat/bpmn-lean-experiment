@@ -133,8 +133,16 @@
         {
           "name": "instructions",
           "value": {
-            "kind": "string",
-            "value": "fragile"
+            "kind": "map",
+            "value": [
+              {
+                "name": "handling",
+                "value": {
+                  "kind": "string",
+                  "value": "fragile"
+                }
+              }
+            ]
           }
         },
         {

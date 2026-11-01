@@ -42,16 +42,16 @@ public final class CibSevenConcurrentStructuredScopeDataProbeTest {
       assertEquals(Map.of("instructions", "standard", "items", order("Leeds")), arguments.get("PickItems"));
       assertEquals(Map.of("order", order("Leeds")), session.processVariables(instance));
 
-      session.complete(instance, "ReviewRoute", Map.of("instructions", "fragile", "shipment", order("York")));
+      session.complete(instance, "ReviewRoute", Map.of("instructions", fragile(), "shipment", order("York")));
       session.runJob(instance);
-      assertEquals(Map.of("instructions", "fragile", "shipment", order("York")), arguments.get("RateShipment"));
+      assertEquals(Map.of("instructions", fragile(), "shipment", order("York")), arguments.get("RateShipment"));
       assertEquals(Map.of("carrierQuote", quote(), "order", order("Leeds")), session.processVariables(instance));
 
       session.runJob(instance);
       assertEquals(Map.of("quote", quote()), arguments.get("NotifyCustomer"));
       session.complete(instance, "ConfirmFulfilment", Map.of());
       session.complete(instance, "CloseOrder", Map.of());
-      session.assertEnded(instance, Map.of("carrierQuote", quote(), "finalInstructions", "fragile", "order", order("Leeds"),
+      session.assertEnded(instance, Map.of("carrierQuote", quote(), "finalInstructions", fragile(), "order", order("Leeds"),
           "shippedParcels", Map.of("parcels", List.of(parcel(), parcel())), "shippingLabel", quote()));
     }
   }
@@ -96,6 +96,11 @@ public final class CibSevenConcurrentStructuredScopeDataProbeTest {
     shipTo.put("unit", null);
     return new HashMap<>(Map.of("discount", new BigDecimal("-1.25"), "lines", new ArrayList<>(List.of(line, line)),
         "shipTo", shipTo));
+  }
+
+  /** Review route's structured `instructions`, written over the declared String. */
+  private static Map<String, Object> fragile() {
+    return new HashMap<>(Map.of("handling", "fragile"));
   }
 
   private static Map<String, Object> parcel() {
