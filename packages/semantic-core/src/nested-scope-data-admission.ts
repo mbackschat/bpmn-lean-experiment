@@ -30,9 +30,12 @@ const depthLimit = 3;
 const declarationLimit = 8;
 const rules = serialChainRulesForProfile(SemanticProfileId.NestedEmbeddedScopeData);
 
-const VertexKind = {
+/** `Choice` and `Merge` occur only in a re-entry root graph (SRE-ADMIT-01); the serial walk refuses both. */
+export const ScopeDataVertexKind = {
   Start: "start", Human: "human", Service: "service", SubProcess: "subProcess", Call: "call", Finish: "finish",
+  Choice: "choice", Merge: "merge",
 } as const;
+const VertexKind = ScopeDataVertexKind;
 /** CVM-ADMIT-01: the called Process is one serial path through one to three User Tasks. */
 const calledTaskLimit = 3;
 /**
@@ -43,6 +46,7 @@ export const nestedScopeCallLimit = 2;
 const callDepthLimit = 2;
 type VertexKind = typeof VertexKind[keyof typeof VertexKind];
 
+export type ScopeDataVertex = Vertex;
 type Vertex = Readonly<{
   id: string;
   scope: string;
@@ -61,6 +65,7 @@ type Vertex = Readonly<{
  * null (CVM-IN-01); `callOutput` is a Call output target, a definite write because return always writes (CVM-AVAILABLE-01).
  */
 type AccessKind = "read" | "write" | "callInput" | "callOutput";
+export type ScopeDataAccess = Access;
 type Access = Readonly<{ kind: AccessKind; name: string; frames: readonly (readonly string[])[] }>;
 
 function readNames(mappings: readonly VariableMapping[]): string[] {
@@ -108,7 +113,7 @@ function childScopeValid(scopes: readonly DefinitionScope[], parent: string, chi
 }
 
 /** `visited` is the caller tree, each vertex once; `called` is every called body walk, once per call site. */
-type Walked = Readonly<{ accesses: readonly Access[]; visited: readonly string[]; called: readonly string[] }>;
+export type Walked = Readonly<{ accesses: readonly Access[]; visited: readonly string[]; called: readonly string[] }>;
 
 function walk(vertices: readonly Vertex[], records: readonly ScopeLocalData[], scopes: readonly DefinitionScope[],
   fuel: number, depth: number, frames: readonly (readonly string[])[], scope: string, id: string): Walked | null {
@@ -154,6 +159,9 @@ function walk(vertices: readonly Vertex[], records: readonly ScopeLocalData[], s
         called: [...inner.called, ...rest.called],
       };
     }
+    case VertexKind.Choice:
+    case VertexKind.Merge:
+      return null;
     case VertexKind.Call: {
       const call = vertex.call;
       // The Call's inputs read and its outputs write along the enclosing `frames`, so a Call inside a Sub-Process
@@ -191,7 +199,7 @@ function calledPathValid(vertices: readonly Vertex[], visited: readonly string[]
  * NSD-AVAILABLE-01: a read is available when an enclosing frame declares it or an earlier definite write landed at
  * the Process; a write landing in a declaring frame adds nothing, since only readers inside that frame could see it.
  */
-function requiredReads(accesses: readonly Access[]): readonly string[] {
+export function requiredReads(accesses: readonly Access[]): readonly string[] {
   const produced = new Set<string>();
   const required: string[] = [];
   for (const { kind, name, frames } of accesses) {
@@ -209,7 +217,7 @@ function requiredReads(accesses: readonly Access[]): readonly string[] {
  * CVM-START-01: the Call input sources and output targets a Start binding would supply, those landing at the Process
  * because no enclosing frame of the Call declares them and no earlier step definitely produces them.
  */
-function optionalCallNames(accesses: readonly Access[]): readonly string[] {
+export function optionalCallNames(accesses: readonly Access[]): readonly string[] {
   const produced = new Set<string>();
   const optional: string[] = [];
   for (const { kind, name, frames } of accesses) {
@@ -225,17 +233,78 @@ function optionalCallNames(accesses: readonly Access[]): readonly string[] {
 /** NSD-AVAILABLE-01's required Start names; `optional` is `null` without a Call, where any admitted name may be bound. */
 export type NestedScopeStartNames = Readonly<{ required: readonly string[]; optional: readonly string[] | null }>;
 
-function analyze(vertices: readonly Vertex[], records: readonly ScopeLocalData[], scopes: readonly DefinitionScope[],
-  root: string, entry: string, handlers: ReadonlySet<string>): NestedScopeStartNames | null {
+/**
+ * One checked graph or Program of the profile as vertices, independent of how its root body is shaped. The serial
+ * analysis and the re-entry root-graph analysis both start from it.
+ */
+export type ScopeDataModel = Readonly<{
+  vertices: readonly Vertex[];
+  records: readonly ScopeLocalData[];
+  scopes: readonly DefinitionScope[];
+  root: string;
+  entry: string;
+  handlers: ReadonlySet<string>;
+}>;
+
+/** NSD-ADMIT-01's scope, Call and declaration bounds, shared by the serial and re-entry accounts. */
+export function scopeDataStructureAdmitted({ vertices, records, scopes, root, handlers }: ScopeDataModel): boolean {
   const children = vertices.flatMap(vertex => vertex.child === undefined ? [] : [vertex.child.scope]);
   const calls = vertices.flatMap(vertex => vertex.call === undefined ? [] : [vertex.call]);
   const calledScopes = new Set(calls.map(({ scope }) => scope));
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
-  if (scopes.length !== children.length + calledScopes.size + 1 || children.length === 0 || calls.length > nestedScopeCallLimit ||
-      calledScopes.size > 1 || roots.length !== calledScopes.size + 1 || !roots.some(({ id }) => id === root) ||
-      !calls.every(call => call.scope !== root && callMappingsAdmitted(call.data, handlers)) ||
-      !strictlySorted(records.map(({ scopeId }) => scopeId)) ||
-      !records.every(record => children.includes(record.scopeId) && scopeLocalRecordAdmitted(handlers, record))) return null;
+  return scopes.length === children.length + calledScopes.size + 1 && children.length > 0 &&
+    calls.length <= nestedScopeCallLimit && calledScopes.size <= 1 && roots.length === calledScopes.size + 1 &&
+    roots.some(({ id }) => id === root) && calls.every(call => call.scope !== root && callMappingsAdmitted(call.data, handlers)) &&
+    strictlySorted(records.map(({ scopeId }) => scopeId)) &&
+    records.every(record => children.includes(record.scopeId) && scopeLocalRecordAdmitted(handlers, record));
+}
+
+/**
+ * The accesses of one root-body vertex of a re-entry root graph, with the body vertices its walk visits: a
+ * Sub-Process or Call walks its body exactly as the serial walk does, without continuing to the vertex's successor.
+ */
+export function scopeDataVertexWalk(model: ScopeDataModel, vertex: Vertex): Walked | null {
+  const { vertices, records, scopes } = model;
+  const fuel = vertices.length + 1;
+  switch (vertex.kind) {
+    case VertexKind.SubProcess: {
+      const child = vertex.child;
+      if (child === undefined || !childScopeValid(scopes, vertex.scope, child.scope, child.origin)) return null;
+      const record = records.find(({ scopeId }) => scopeId === child.scope);
+      const inputs = record?.localInputs ?? [];
+      const inner = walk(vertices, records, scopes, fuel, 1, [inputs.map(({ target }) => target)], child.scope, child.entry);
+      return inner === null ? null : {
+        accesses: [...readNames(inputs).map(name => ({ kind: "read" as const, name, frames: [] })), ...inner.accesses,
+          ...(record?.localOutputs ?? []).map(({ target }) => ({ kind: "write" as const, name: target, frames: [] }))],
+        visited: inner.visited, called: inner.called,
+      };
+    }
+    case VertexKind.Call: {
+      const call = vertex.call;
+      if (call === undefined || !calledScopeValid(scopes, call.scope, call.calledProcessId)) return null;
+      const inner = walk(vertices, records, scopes, fuel, 0, [], call.scope, call.entry);
+      return inner === null || !calledPathValid(vertices, inner.visited) ? null : {
+        accesses: [
+          ...call.data.inputs.flatMap(({ expression }) => expression.kind === MappingExpressionKind.EnclosingVariable
+            ? [{ kind: "callInput" as const, name: expression.name, frames: [] }] : []),
+          ...call.data.outputs.map(({ target }) => ({ kind: "callOutput" as const, name: target, frames: [] })),
+        ],
+        visited: [], called: inner.visited,
+      };
+    }
+    case VertexKind.Service:
+      return { accesses: [...vertex.reads.map(name => ({ kind: "read" as const, name, frames: [] })),
+        ...vertex.writes.map(name => ({ kind: "write" as const, name, frames: [] }))], visited: [], called: [] };
+    default:
+      return { accesses: [], visited: [], called: [] };
+  }
+}
+
+function analyze(model: ScopeDataModel): NestedScopeStartNames | null {
+  const { vertices, records, scopes, root, entry } = model;
+  const calls = vertices.flatMap(vertex => vertex.call === undefined ? [] : [vertex.call]);
+  if (!scopeDataStructureAdmitted(model) ||
+      vertices.some(({ kind }) => kind === VertexKind.Choice || kind === VertexKind.Merge)) return null;
   const walked = walk(vertices, records, scopes, vertices.length + 1, 0, [], root, entry);
   const calledVertices = new Set(walked?.called ?? []);
   if (walked === null || new Set(walked.visited).size !== walked.visited.length ||
@@ -273,6 +342,14 @@ function checkedVertex(source: CheckedProcess, node: CheckedProcess["nodes"][num
       return entry === undefined ? null
         : { ...base, kind: VertexKind.SubProcess, child: { scope: node.childScopeId, entry, origin: node.id } };
     }
+    case CheckedNodeKind.ExclusiveGateway: {
+      // SRE-ADMIT-01: two ordered conditional candidates, then the default.
+      const target = (flowId: string) => source.sequenceFlows.find(({ id }) => id === flowId)?.targetId;
+      const targets = [...node.candidateFlowIds, node.defaultFlowId].map(target);
+      return node.candidateFlowIds.length === 2 && targets.every(id => id !== undefined)
+        ? { ...base, kind: VertexKind.Choice, outputs: targets as string[] } : null;
+    }
+    case CheckedNodeKind.ExclusiveMerge: return { ...base, kind: VertexKind.Merge };
     case CheckedNodeKind.CallActivity: {
       const calledRoot = unique(source.definitionScopes.filter(({ parentScopeId, originElementId }) =>
         parentScopeId === null && originElementId === node.calledProcessId));
@@ -311,10 +388,16 @@ export function nestedScopeCheckedAnalysis(source: CheckedProcess): readonly str
 
 /** NSD-ADMIT-01 and CVM-START-01 over the checked graph; `null` refuses the definition. */
 export function nestedScopeCheckedStartNames(source: CheckedProcess): NestedScopeStartNames | null {
+  const model = source.sequenceFlows.some(({ condition }) => condition !== null) ? null : nestedScopeCheckedModel(source);
+  return model === null ? null : analyze(model);
+}
+
+/** The checked graph as the profile's vertex model, refusing everything outside the shared element grammar. */
+export function nestedScopeCheckedModel(source: CheckedProcess): ScopeDataModel | null {
   const identities = [source.processId, ...source.nodes.map(({ id }) => id), ...source.sequenceFlows.map(({ id }) => id)];
   if (source.identity.sourceOverlay === null || source.compensation !== undefined ||
       source.transactionCancellation !== undefined || source.interruptingMessageEventSubProcesses !== undefined ||
-      new Set(identities).size !== identities.length || source.sequenceFlows.some(({ condition }) => condition !== null)) {
+      new Set(identities).size !== identities.length) {
     return null;
   }
   const root = unique(source.definitionScopes.filter(({ parentScopeId, originElementId }) =>
@@ -329,7 +412,7 @@ export function nestedScopeCheckedStartNames(source: CheckedProcess): NestedScop
     if (vertex === null) return null;
     vertices.push(vertex);
   }
-  return analyze(vertices, source.scopeLocalData ?? [], source.definitionScopes, root.id, entry, handlers);
+  return { vertices, records: source.scopeLocalData ?? [], scopes: source.definitionScopes, root: root.id, entry, handlers };
 }
 
 function operationInputs(operation: SemanticOperation): readonly string[] {
@@ -339,7 +422,10 @@ function operationInputs(operation: SemanticOperation): readonly string[] {
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitEffect:
     case SemanticOperationKind.ReachNoneEnd:
+    case SemanticOperationKind.Choose:
       return [operation.input];
+    case SemanticOperationKind.MergeExclusive:
+      return operation.inputs;
     default:
       return [];
   }
@@ -379,6 +465,15 @@ function operationVertex(program: SemanticProcessProgram, operation: SemanticOpe
         : { ...base, kind: VertexKind.Service, outputs, reads: readNames(operation.effect.inputMappings),
           writes: operation.effect.outputMappings.map(({ target }) => target) };
     }
+    case SemanticOperationKind.Choose: {
+      const targets = [...operation.candidates.map(({ output }) => output), operation.defaultOutput].map(following);
+      return operation.candidates.length === 2 && targets.every(target => target !== null)
+        ? { ...base, kind: VertexKind.Choice, outputs: targets.flatMap(target => target ?? []) } : null;
+    }
+    case SemanticOperationKind.MergeExclusive: {
+      const outputs = following(operation.output);
+      return outputs === null ? null : { ...base, kind: VertexKind.Merge, outputs };
+    }
     case SemanticOperationKind.InvokeProcess: {
       const returns = program.operations.filter(candidate => candidate.id === operation.returnOperationId);
       const returned = unique(returns);
@@ -417,6 +512,12 @@ export function nestedScopeProgramAnalysis(program: SemanticProcessProgram): rea
  * and continues the caller, so the walk reaches the caller's successor from the invocation, as a Sub-Process does.
  */
 export function nestedScopeProgramStartNames(program: SemanticProcessProgram): NestedScopeStartNames | null {
+  const model = nestedScopeProgramModel(program);
+  return model === null ? null : analyze(model);
+}
+
+/** The Program as the profile's vertex model, independent of the checked graph. */
+export function nestedScopeProgramModel(program: SemanticProcessProgram): ScopeDataModel | null {
   if (program.identity.sourceOverlay === null ||
       program.internalSchedulingMode !== InternalSchedulingMode.RejectObservableChoice ||
       program.compensationActivityRetention !== undefined || program.compensationEventSubProcessSnapshots !== undefined ||
@@ -447,7 +548,8 @@ export function nestedScopeProgramStartNames(program: SemanticProcessProgram): N
     if (vertex === null) return null;
     vertices.push(vertex);
   }
-  return analyze(vertices, program.scopeLocalData ?? [], program.definitionScopes, root.id, start.id, handlers);
+  return { vertices, records: program.scopeLocalData ?? [], scopes: program.definitionScopes, root: root.id, entry: start.id,
+    handlers };
 }
 
 /**
@@ -496,11 +598,14 @@ const programOperationKinds: ReadonlySet<SemanticOperationKind> = new Set([
   SemanticOperationKind.Initiate, SemanticOperationKind.EnterScope, SemanticOperationKind.AwaitUserTask,
   SemanticOperationKind.AwaitEffect, SemanticOperationKind.CompleteScope, SemanticOperationKind.ReachNoneEnd,
   SemanticOperationKind.InvokeProcess, SemanticOperationKind.ReturnProcess,
+  // SRE-ADMIT-01: root Choices and Merges, which only the re-entry route admits.
+  SemanticOperationKind.Choose, SemanticOperationKind.MergeExclusive,
 ]);
 
 const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
   CheckedNodeKind.NoneStartEvent, CheckedNodeKind.EmbeddedSubProcess, CheckedNodeKind.UserTask,
   CheckedNodeKind.ServiceTask, CheckedNodeKind.NoneEndEvent, CheckedNodeKind.CallActivity,
+  CheckedNodeKind.ExclusiveGateway, CheckedNodeKind.ExclusiveMerge,
 ]);
 
 /**

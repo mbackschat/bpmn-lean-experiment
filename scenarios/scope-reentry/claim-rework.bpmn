@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ClaimRework" targetNamespace="urn:bpmn-lean:claim-rework"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_ClaimRework" name="Assess an insurance claim with rework" isExecutable="true">
+    <startEvent id="ClaimReceived" name="Claim received" />
+    <exclusiveGateway id="AssessmentRequested" name="Assessment requested" gatewayDirection="Converging" />
+    <subProcess id="AssessClaim" name="Assess claim">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="decision">pending</camunda:inputParameter>
+          <camunda:inputParameter name="notes">${claimSummary}</camunda:inputParameter>
+          <camunda:outputParameter name="assessment">${decision}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="AssessmentOpened" name="Assessment opened" />
+      <userTask id="InspectDamage" name="Inspect damage" />
+      <serviceTask id="PriceRepair" name="Price repair"
+                   implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${priceRepair}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="damage">${notes}</camunda:inputParameter>
+            <camunda:outputParameter name="repairQuote">${quote}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <endEvent id="AssessmentClosed" name="Assessment closed" />
+      <sequenceFlow id="Flow_AssessmentOpened" sourceRef="AssessmentOpened" targetRef="InspectDamage" />
+      <sequenceFlow id="Flow_Inspected" sourceRef="InspectDamage" targetRef="PriceRepair" />
+      <sequenceFlow id="Flow_Priced" sourceRef="PriceRepair" targetRef="AssessmentClosed" />
+    </subProcess>
+    <exclusiveGateway id="AssessmentOutcome" name="Assessment outcome" gatewayDirection="Diverging" default="Flow_Approve" />
+    <userTask id="NotifyClaimant" name="Notify claimant" />
+    <userTask id="ApproveSettlement" name="Approve settlement" />
+    <exclusiveGateway id="ClaimClosing" name="Claim closing" gatewayDirection="Converging" />
+    <endEvent id="ClaimClosed" name="Claim closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ClaimReceived" targetRef="AssessmentRequested" />
+    <sequenceFlow id="Flow_Assess" sourceRef="AssessmentRequested" targetRef="AssessClaim" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="AssessClaim" targetRef="AssessmentOutcome" />
+    <sequenceFlow id="Flow_Rework" sourceRef="AssessmentOutcome" targetRef="AssessmentRequested">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(assessment,"rework")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Reject" sourceRef="AssessmentOutcome" targetRef="NotifyClaimant">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(assessment,"reject")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Approve" sourceRef="AssessmentOutcome" targetRef="ApproveSettlement" />
+    <sequenceFlow id="Flow_Notified" sourceRef="NotifyClaimant" targetRef="ClaimClosing" />
+    <sequenceFlow id="Flow_Approved" sourceRef="ApproveSettlement" targetRef="ClaimClosing" />
+    <sequenceFlow id="Flow_Closed" sourceRef="ClaimClosing" targetRef="ClaimClosed" />
+  </process>
+</definitions>

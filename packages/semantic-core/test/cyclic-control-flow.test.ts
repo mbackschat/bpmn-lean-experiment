@@ -61,6 +61,8 @@ test("selects each registered profile's exact graph resumption policy", () => {
         break;
       case SemanticProfileId.MixedTaskControlFlow:
       case SemanticProfileId.MixedTaskBusinessError:
+      // SRE-CYCLE-01: the scope re-entry family reuses the mixed-task cut.
+      case SemanticProfileId.NestedEmbeddedScopeData:
         assert.deepEqual(policy, {
           kind: SemanticGraphPolicyKind.ResumptionBounded,
           checkedResumptionNodeKinds: [CheckedNodeKind.UserTask, CheckedNodeKind.ServiceTask],

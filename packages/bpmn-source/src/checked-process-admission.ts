@@ -77,7 +77,7 @@ export function isAdmittedCheckedProcess(
     boundaryTimersAttachToDeadlineOwners(graph, admittedGraph.nodeScopes, semanticProfile) &&
     boundaryMessagesAttachToUserTasks(graph, admittedGraph.nodeScopes) &&
     hasSelectedActivityBoundaryMessageTopology(semanticProfile, graph) &&
-    hasSelectedExpressionLanguage(semanticProfile, expressionLanguage) &&
+    hasSelectedExpressionLanguage(semanticProfile, expressionLanguage, graph.flows) &&
     hasSelectedConditions(semanticProfile, graph.flows) &&
     (semanticProfile !== STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID ||
       structuredCompositionCheckedGraph(graph)) &&
@@ -567,8 +567,13 @@ function embeddedNodesOwnChildScopes(
 function hasSelectedExpressionLanguage(
   semanticProfile: string,
   expressionLanguage: unknown,
+  flows: ReadonlyArray<CheckedSequenceFlow>,
 ): boolean {
   switch (semanticProfile) {
+    // SRE-ADMIT-01: the profile grew root Choices, so a model names Simple Boolean v1 exactly when it has a condition.
+    case SemanticProfileId.NestedEmbeddedScopeData:
+      return expressionLanguage === (flows.some(({ condition }) => condition !== null)
+        ? SimpleBooleanExpressionLanguage : bpmnDefaultExpressionLanguage);
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:
     case MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID:
@@ -591,6 +596,8 @@ function hasSelectedConditions(
     case MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID:
     case MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID:
     case STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID:
+    // SRE-ADMIT-01: root Choices carry the conditions; arity and the routed analysis decide where they stand.
+    case SemanticProfileId.NestedEmbeddedScopeData:
       return true;
     case SemanticProfileId.ExclusiveGatewaySimpleBoolean:
     case SemanticProfileId.InclusiveGatewaySelectedBranches:

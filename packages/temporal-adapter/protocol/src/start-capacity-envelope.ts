@@ -21,6 +21,7 @@ import {
   SemanticProfileId,
   StimulusKind,
   concurrentStructuredScopeDataProgram,
+  scopeReentryProgram,
   projectOpenFlowNodeOccurrences,
   stimulusCommandId,
   utf8ByteLength,
@@ -247,7 +248,9 @@ export function assessStartCapacityEnvelope(
   // The reserved patch must pass its identity limits before the journey encodes it into a command ID.
   const unsupported = exceededReservedEffectResult(program, configuredEffects);
   if (unsupported !== null) return { kind: StartCapacityEnvelopeResultKind.EffectTaskExceeded, failure: unsupported };
-  if (concurrentData) return { kind: StartCapacityEnvelopeResultKind.NotApplicable };
+  // SRE-ADMIT-01: a re-entry Program's root graph offers no single journey, so it keeps the same checks (proposal
+  // capacity section, an accepted tradeoff: no Program admitted before the family is routed here).
+  if (concurrentData || scopeReentryProgram(program)) return { kind: StartCapacityEnvelopeResultKind.NotApplicable };
   const journeys = startCapacityJourneys(start, program);
   if (journeys === null) {
     return { kind: StartCapacityEnvelopeResultKind.ReservedCompletionsExceeded,

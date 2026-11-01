@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ContractRevision" targetNamespace="urn:bpmn-lean:contract-revision"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_ContractRevision" name="Revise a supplier contract until legal clears it" isExecutable="true">
+    <startEvent id="DraftRequested" name="Draft requested" />
+    <exclusiveGateway id="RevisionRequested" name="Revision requested" gatewayDirection="Converging" />
+    <subProcess id="PrepareDraft" name="Prepare draft">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="draft">${contractText}</camunda:inputParameter>
+          <camunda:outputParameter name="contractText">${draft}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="DraftOpened" name="Draft opened" />
+      <userTask id="EditDraft" name="Edit draft" />
+      <endEvent id="DraftReady" name="Draft ready" />
+      <sequenceFlow id="Flow_DraftOpened" sourceRef="DraftOpened" targetRef="EditDraft" />
+      <sequenceFlow id="Flow_Edited" sourceRef="EditDraft" targetRef="DraftReady" />
+    </subProcess>
+    <callActivity id="LegalReview" name="Legal review" calledElement="Process_LegalReview">
+      <extensionElements>
+        <camunda:in source="contractText" target="text" />
+        <camunda:out source="verdict" target="legalVerdict" />
+      </extensionElements>
+    </callActivity>
+    <exclusiveGateway id="ReviewOutcome" name="Review outcome" gatewayDirection="Diverging" default="Flow_Sign" />
+    <userTask id="CloseNegotiation" name="Close negotiation" />
+    <userTask id="SignContract" name="Sign contract" />
+    <serviceTask id="FileContract" name="File contract"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${fileContract}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="document">${contractText}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <exclusiveGateway id="ContractSettled" name="Contract settled" gatewayDirection="Converging" />
+    <endEvent id="ContractClosed" name="Contract closed" />
+    <sequenceFlow id="Flow_Requested" sourceRef="DraftRequested" targetRef="RevisionRequested" />
+    <sequenceFlow id="Flow_Prepare" sourceRef="RevisionRequested" targetRef="PrepareDraft" />
+    <sequenceFlow id="Flow_Prepared" sourceRef="PrepareDraft" targetRef="LegalReview" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="LegalReview" targetRef="ReviewOutcome" />
+    <sequenceFlow id="Flow_Revise" sourceRef="ReviewOutcome" targetRef="RevisionRequested">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(legalVerdict,"revise")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Withdraw" sourceRef="ReviewOutcome" targetRef="CloseNegotiation">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(legalVerdict,"withdraw")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Sign" sourceRef="ReviewOutcome" targetRef="SignContract" />
+    <sequenceFlow id="Flow_Closed" sourceRef="CloseNegotiation" targetRef="ContractSettled" />
+    <sequenceFlow id="Flow_Signed" sourceRef="SignContract" targetRef="FileContract" />
+    <sequenceFlow id="Flow_Filed" sourceRef="FileContract" targetRef="ContractSettled" />
+    <sequenceFlow id="Flow_Settled" sourceRef="ContractSettled" targetRef="ContractClosed" />
+  </process>
+  <process id="Process_LegalReview" name="Review a contract's clauses" isExecutable="true">
+    <startEvent id="ReviewRequested" name="Review requested" />
+    <userTask id="ReviewClauses" name="Review clauses" />
+    <endEvent id="ReviewCompleted" name="Review completed" />
+    <sequenceFlow id="Flow_ReviewRequested" sourceRef="ReviewRequested" targetRef="ReviewClauses" />
+    <sequenceFlow id="Flow_ClausesReviewed" sourceRef="ReviewClauses" targetRef="ReviewCompleted" />
+  </process>
+</definitions>

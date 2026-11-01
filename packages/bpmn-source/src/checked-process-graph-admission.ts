@@ -121,7 +121,28 @@ function isAdmittedDefinitionScope(
       (nodeIds.has(flow.sourceId) ||
         embeddedBoundaryHostForFlow(nodes, flow) !== undefined)
     ) &&
-    isConnectedGraphUnderPolicy(nodes, flows, exceptionalEdges, graphPolicy);
+    isConnectedGraphUnderPolicy(nodes, flows, exceptionalEdges, graphPolicy,
+      resumptionBearingSubProcesses(graph, nodes, nodeScopes, graphPolicy));
+}
+
+/**
+ * SRE-CYCLE-01's checked cut: checked validation sees one definition scope at a time, so an embedded Sub-Process
+ * vertex is a resumption point exactly when its body, through nested Sub-Processes, holds a node of the policy's cut
+ * kinds. This matches the Program level, whose order graph threads through every body.
+ */
+function resumptionBearingSubProcesses(
+  graph: CheckedProcessGraph,
+  nodes: ReadonlyArray<CheckedNode>,
+  nodeScopes: ReadonlyMap<string, string>,
+  graphPolicy: SemanticGraphPolicy,
+): ReadonlySet<string> {
+  if (graphPolicy.kind !== SemanticGraphPolicyKind.ResumptionBounded) return new Set();
+  const cutKinds = new Set<string>(graphPolicy.checkedResumptionNodeKinds);
+  const bearing = (scopeId: string): boolean =>
+    graph.nodes.some((node) => nodeScopes.get(node.id) === scopeId &&
+      (cutKinds.has(node.kind) || (node.kind === CheckedNodeKind.EmbeddedSubProcess && bearing(node.childScopeId))));
+  return new Set(nodes.flatMap((node) =>
+    node.kind === CheckedNodeKind.EmbeddedSubProcess && bearing(node.childScopeId) ? [node.id] : []));
 }
 
 function isDefinitionScopeForest(
@@ -219,7 +240,8 @@ function hasSelectedArity(
       return incoming === 1 && (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? outgoing >= 2 : outgoing === 3);
     case CheckedNodeKind.ExclusiveMerge:
       return (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ||
-        semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion ? incoming >= 2 : incoming === 3) && outgoing === 1;
+        semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion ||
+        semanticProfile === SemanticProfileId.NestedEmbeddedScopeData ? incoming >= 2 : incoming === 3) && outgoing === 1;
     case CheckedNodeKind.InclusiveGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging:
@@ -242,6 +264,7 @@ function isConnectedGraphUnderPolicy(
   flows: ReadonlyArray<CheckedSequenceFlow>,
   exceptionalEdges: ReadonlyArray<NodeEdge>,
   graphPolicy: SemanticGraphPolicy,
+  resumptionSubProcessIds: ReadonlySet<string>,
 ): boolean {
   const starts = nodes.filter(
     ({ kind }) =>
@@ -274,7 +297,7 @@ function isConnectedGraphUnderPolicy(
   return nodes.every(({ id }) => reached.has(id) && canReachEnd.has(id)) &&
     isAcyclic(
       nodes.map(({ id }) => id),
-      graphEdgesSelectedByPolicy(nodes, edges, graphPolicy),
+      graphEdgesSelectedByPolicy(nodes, edges, graphPolicy, resumptionSubProcessIds),
     );
 }
 
@@ -282,6 +305,7 @@ function graphEdgesSelectedByPolicy(
   nodes: ReadonlyArray<CheckedNode>,
   edges: ReadonlyArray<NodeEdge>,
   graphPolicy: SemanticGraphPolicy,
+  resumptionSubProcessIds: ReadonlySet<string>,
 ): ReadonlyArray<NodeEdge> {
   switch (graphPolicy.kind) {
     case SemanticGraphPolicyKind.Acyclic:
@@ -292,7 +316,7 @@ function graphEdgesSelectedByPolicy(
       );
       const resumptionNodeIds = new Set(
         nodes
-          .filter(({ kind }) => resumptionKinds.has(kind))
+          .filter(({ id, kind }) => resumptionKinds.has(kind) || resumptionSubProcessIds.has(id))
           .map(({ id }) => id),
       );
       return edges.filter(({ source }) => !resumptionNodeIds.has(source));

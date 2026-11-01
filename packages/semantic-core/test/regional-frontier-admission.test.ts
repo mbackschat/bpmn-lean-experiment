@@ -93,8 +93,9 @@ test("classifies every registered profile against the regional exclusion investi
         assert.equal(semanticGraphPolicyForProfile(profile)?.kind, SemanticGraphPolicyKind.ResumptionBounded);
         break;
       case SemanticProfileId.NestedEmbeddedScopeData:
-        assert.equal(excluded, false, "nested scope-data admission owns its serial single-control guarantee outside the legacy fixed-shape premises");
-        assert.equal(semanticGraphPolicyForProfile(profile)?.kind, SemanticGraphPolicyKind.Acyclic);
+        assert.equal(excluded, false, "nested scope-data admission owns its single-control guarantee outside the legacy fixed-shape premises");
+        // SRE-CYCLE-01: root cycles are admitted when a User or Service Task, possibly in a body, cuts them.
+        assert.equal(semanticGraphPolicyForProfile(profile)?.kind, SemanticGraphPolicyKind.ResumptionBounded);
         break;
       case SemanticProfileId.CallActivityDataBoundaries:
         assert.equal(excluded, false, "CALL-ACTIVITY-DATA-BOUNDARIES owns scalar-interface scheduled closure outside the legacy regional premises");

@@ -61,12 +61,13 @@ export function semanticGraphPolicyForProfile(
 ): SemanticGraphPolicy | undefined {
   switch (semanticProfile) {
     case MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID:
-    case MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID: return mixedTaskResumptionBoundedGraphPolicy;
+    case MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID:
+    // SRE-CYCLE-01: root cycles of the scope-data profile cross a User or Service Task, possibly inside a body.
+    case SemanticProfileId.NestedEmbeddedScopeData: return mixedTaskResumptionBoundedGraphPolicy;
     case SemanticProfileId.UserTaskCycle:
       return userTaskResumptionBoundedGraphPolicy;
     case SERIAL_BUSINESS_TASK_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.PortableBusinessEffectData:
-    case SemanticProfileId.NestedEmbeddedScopeData:
     case STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID:
     case SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID:
     case PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID:

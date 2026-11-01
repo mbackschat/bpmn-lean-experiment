@@ -150,3 +150,4 @@ export { mixedTaskControlCheckedGraph } from "./mixed-task-control-flow-admissio
 
 export { analyzeRepeatedScopeStructure } from "./repeated-scope-control-analysis.js";
 export { isStructuredParallelBody, structuredParallelBodyFrontierCapacity } from "./structured-parallel-body-analysis.js";
+export * from "./scope-reentry-admission.js";

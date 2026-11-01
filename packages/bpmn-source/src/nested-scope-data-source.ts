@@ -1,5 +1,7 @@
 import { readBusinessTaskMappings } from "./business-task-mapping-source.js";
-import { classifyGateway, projectExclusiveMerge, projectUserTaskMetadata } from "./checked-element-projection.js";
+import {
+  classifyGateway, projectCheckedSequenceFlows, projectExclusiveMerge, projectUserTaskMetadata,
+} from "./checked-element-projection.js";
 import {
   CallDataKind, CheckedNodeKind, CheckedProcessKind, GatewayDirection, MappingExpressionKind, SemanticProfileId,
   callDataInterfaceValid, compareCanonicalStrings, isWellFormedWireString, structuredScopeDataCheckedAnalysis,
@@ -19,6 +21,7 @@ import { projectMappedSuccessSequenceFlows, projectPlainNode } from "./mapped-se
 import { exactForeignAttributeRejections } from "./preserved-element-classification.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 import { projectSerialBusinessServiceTask } from "./serial-business-task-source.js";
+import { projectExclusiveGateway } from "./simple-boolean-exclusive-gateway-source.js";
 import type { AdmittedSourceOverlay } from "./source-overlay.js";
 
 const camunda = "http://camunda.org/schema/1.0/bpmn";
@@ -46,6 +49,8 @@ type Collected = {
 type ScopeDataReader = Readonly<{
   semanticProfile: string;
   gateways: boolean;
+  /** SRE-ADMIT-01: conditional flows and two-condition Exclusive Choices in a Process root body. */
+  rootChoices: boolean;
   projectCall: (element: ElementRecord) => CheckedNode | undefined;
   /** The caller Process of the read roots, or `undefined` when the roots and Calls do not form one call forest. */
   caller: (roots: readonly ProcessRoot[], collected: Collected) => string | undefined;
@@ -57,7 +62,7 @@ type ScopeDataReader = Readonly<{
 }>;
 
 const nestedScopeDataReader: ScopeDataReader = {
-  semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, projectCall: projectMappedCall,
+  semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, rootChoices: true, projectCall: projectMappedCall,
   caller: callerProcess, overlayRequired: true,
   // CSSD-ADMIT-01: the routed analysis refuses the merges and root-body forks the shared gateway grammar reads, and only
   // a model with a Parallel fork may bind no handler, so a serial model keeps NSD-ADMIT-01's overlay rule.
@@ -69,7 +74,7 @@ const nestedScopeDataReader: ScopeDataReader = {
 
 // Checked admission of the embedded completion profile already runs its nested scope-control and data analysis.
 const embeddedScopeDataReader: ScopeDataReader = {
-  semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, projectCall: projectEmbeddedCall,
+  semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, rootChoices: false, projectCall: projectEmbeddedCall,
   caller: callForestCaller, overlayRequired: false,
   admitted: checkedProcess => (checkedProcess.identity.sourceOverlay !== null) ===
     checkedProcess.nodes.some(({ kind }) => kind === CheckedNodeKind.ServiceTask),
@@ -106,7 +111,8 @@ function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overl
   if (selection.policy === null) return unsupported(selection.rejection);
   const definitions = asElement(root);
   if (definitions?.$type !== "bpmn:Definitions" || !hasOnlyModelledKeys(definitions,
-    ["$type", "id", "targetNamespace", "exporter", "exporterVersion", "rootElements", "diagrams"])) {
+    ["$type", "id", "targetNamespace", "exporter", "exporterVersion", "rootElements", "diagrams",
+      ...(reader.rootChoices ? ["expressionLanguage"] : [])])) {
     return unsupported("Expected one exact BPMN Definitions document.");
   }
   const foreign = exactForeignAttributeRejections(definitions, locateContainedElements(definitions),
@@ -135,6 +141,12 @@ function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overl
   const caller = reader.caller(roots, collected);
   if (caller === undefined) return unsupported("A second Process must be the called Process of every Call Activity in the caller.");
   const processId = caller;
+  // SRE-ADMIT-01: a Choice reads Process bindings only, so it stands only in the caller's root body.
+  const callerScope = definitionScopeId(caller);
+  if (collected.nodes.some(node => node.kind === CheckedNodeKind.ExclusiveGateway &&
+      collected.nodeScopes.find(({ nodeId }) => nodeId === node.id)?.scopeId !== callerScope)) {
+    return unsupported("An Exclusive Choice stands outside the caller's root body.");
+  }
   if (new Set(collected.ids).size !== collected.ids.length) return unsupported("Flow element IDs must be unique.");
   const byId = <T extends { id: string }>(values: readonly T[]) =>
     [...values].sort((a, b) => compareCanonicalStrings(a.id, b.id));
@@ -160,8 +172,11 @@ function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overl
 /** Reads one scope's flow elements into `collected`; returns the rejection evidence, or `null`. */
 function readScope(elements: readonly ElementRecord[], scopeId: string, depth: number, definitions: ElementRecord,
   policy: MappedServiceTaskSourcePolicy, reader: ScopeDataReader, collected: Collected): string | null {
-  const flows = projectMappedSuccessSequenceFlows(elements.filter(element => element.$type === "bpmn:SequenceFlow"));
-  if (flows === undefined) return "Sequence Flows exceed the unconditional flow contract.";
+  const flowElements = elements.filter(element => element.$type === "bpmn:SequenceFlow");
+  const conditional = reader.rootChoices && depth === 0 && flowElements.some(flow => flow.conditionExpression !== undefined);
+  const flows = conditional ? projectCheckedSequenceFlows(flowElements, definitions.expressionLanguage, undefined)
+    : projectMappedSuccessSequenceFlows(flowElements);
+  if (flows === undefined) return "Sequence Flows exceed the selected condition contract.";
   for (const flow of flows) {
     collected.flows.push(flow);
     collected.flowScopes.push({ sequenceFlowId: flow.id, scopeId });
@@ -205,7 +220,10 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
       case "bpmn:ParallelGateway":
       case "bpmn:ExclusiveGateway":
         if (!reader.gateways) return "The flow element is outside the nested scope-data contract.";
-        node = projectGateway(element, flows, reader.semanticProfile);
+        node = reader.rootChoices && depth === 0 && element.$type === "bpmn:ExclusiveGateway"
+          ? projectExclusiveMerge(element, readId(element) ?? "", flows, true) ??
+            projectExclusiveGateway(element, readId(element) ?? "", flows)
+          : projectGateway(element, flows, reader.semanticProfile);
         break;
       default: return "The flow element is outside the nested scope-data contract.";
     }
