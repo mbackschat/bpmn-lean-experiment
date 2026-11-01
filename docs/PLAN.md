@@ -93,18 +93,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the next Practical CIB7 Coverage family, after the hub fix in [Lean build follow-ups](#lean-build-follow-ups) stopped at its fixture item. The [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-SPEC.md) family closed approved at `484f358d` (`PC-DATA-04`, `PC-SCOPE-02` and `PC-SCOPE-01` stay open on other mechanisms). Multi-Instance closure stays held. Pull request #38 is the owner's to land.
+Current task: closure of the business data family batch, the [structured Message-payload amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-message-payload-consuming-amendment) toward `PC-DATA-03`, implemented and hosted at `310cb4cd` but never closure-reviewed (its checkpoint and closure fold into one batch review); finishing it precedes a new family. The hub fix in [Lean build follow-ups](#lean-build-follow-ups) stopped at its fixture item. Multi-Instance closure stays held. Pull request #38 is the owner's to land.
 
-Deliverable: the next family batch, every open row of the earliest [delivery batch](#scheduled-delivery-batches) that shares one mechanism, selected through the [delivery task list](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list).
+Deliverable: the amendment closed: closure gates green at the target, an approved cold closure review, its closure receipt and cost row, and the map status lines it names.
 
 Acceptance blockers: none recorded.
 
-Current result: the hub fix cut the body edits of `ProgramStructuralValidation` (480 → 214 modules), `ParallelScopeRuntime` (151 → 64) and `SerialBusinessTaskAdmission` (457 → 45); replay mean 262.4 → 239.0, p90 682 → 619 ([current evidence](#current-evidence)). Remaining single-opener cuts gain at most 1.2 points. Under contract item 7's rules, executable guards leave a `CommandAdmission` body edit's fixtures at about 897 seconds at best and `ValueDomain`'s at about 917, against contract item 5's 900 ([fixture time](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)).
+Current result: the hub fix lowered the replay mean 262.4 → 239.0 and p90 682 → 619 ([current evidence](#current-evidence)); executable guards cannot bring the closed-world fixtures below contract item 5's 900 seconds ([fixture time](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)). The amendment's map line still reads "Business-data family review and complete gates open".
 
-Effort budget: 4 hours for the batch selection and proposal; stop and reassess at the limit. The hub fix stopped at about 10.2 of its 12 hours (2026-10-31 22:35 to 2026-11-01 08:50) because the classification invalidated its executable-guard path; its follow-up entry keeps the remaining items, led by the registry design.
+Effort budget: 6 hours for the closure; stop and reassess at the limit. The hub fix stopped at about 10.2 of its 12 hours (2026-10-31 22:35 to 2026-11-01 08:50) because the classification invalidated its executable-guard path; its follow-up entry keeps the remaining items.
 
-Next action: select the family batch, then write its proposal for the cold design review.
+Next action: check the amendment's decisive witnesses and owners against the tree, correct its stale Call-surface text, then run the closure gates once.
 
-Oracle: the family's acceptance gate under [TESTING-SPEC](TESTING-SPEC.md#select-the-task-owner).
+Oracle: the [capsule closure review](REVIEW-POLICY.md#capsule-closure-review) over green closure gates.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
