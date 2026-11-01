@@ -39,6 +39,11 @@ const realizedLeakRecord = {
   body: "a recorded leak (scripts/lean-realized-leaks.tsv): Lean exports lemmas it generates for a hidden body (Lean v4.34.1 Environment.lean:723), so a body edit here rebuilds the leaking module's public cone; its owner is a theorem, an inductive or a `@[simp] def`, whose lemmas no private declaration in the owner module precedes, or the lemma carries an importer's prefix, which the owner module cannot declare (tier 2 row 9 measured the class: 595 rebuilt, 597 predicted, 2026-10-30)",
 } as const;
 
+/** Why a new family conformance module that needs `applyStimulus` raised a hidden-edit bound (owner exception, 2026-11-01). */
+const newFamilyConformanceModule = {
+  hidden: "the hidden-bodies conversion (owner decisions 1-3, 2026-10-29) put this mutual block's rewrite sites and recorded leak into its hidden-edit cone, and ConcurrentMappedCallsConformance (concurrent mapped Calls family, 2026-11-01) runs commands through `applyStimulus`, so it joins that cone; the hub fix removes the block's exported equation lemmas and with them the cone",
+} as const;
+
 /** Why the owner modules' new `meta import`s of the `privateEquations` helper (#55, 2026-10-30) raised a hidden-edit bound. */
 const helperMetaImports = {
   hidden: "37 owner modules and one fixture (#55, 2026-10-30) and the modules rewriting with hidden kernel bodies (two in F2 stage 1, nine in stage 2, 2026-10-31) `meta import` the helper to declare generated lemmas privately, so a hidden edit of the helper reaches them",
@@ -328,7 +333,7 @@ export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage", bound: 492, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
   { module: "BpmnSemantics.SemanticProcess.RuntimePositionValidity", bound: 481, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
   { module: "BpmnSemantics.SemanticProcess.RuntimeStateWellFormed", bound: 462, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
-  { module: "BpmnSemantics.SemanticProcess.CommandAdmission", bound: 433, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
+  { module: "BpmnSemantics.SemanticProcess.CommandAdmission", bound: 434, raisedFrom: 10, raised: newFamilyConformanceModule.hidden },
   { module: "BpmnSemantics.SemanticProcess.InternalCommutationCore", bound: 368, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite", bound: 366, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.Data", bound: 365, raisedFrom: 10, raised: kernelBodyHiding.hidden },
