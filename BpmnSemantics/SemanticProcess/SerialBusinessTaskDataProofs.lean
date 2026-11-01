@@ -15,6 +15,7 @@ import all BpmnSemantics.SemanticProcess.DefinitionArtifactInvariants
 import all BpmnSemantics.SemanticProcess.ScopeCompletion
 meta import BpmnSemantics.PrivateEquationLemmas
 import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 
 /-! SBT-CHAIN-01, SBT-INPUT-01 and SBT-RESULT-01 connect independent chain/read analysis to immutable containing-context evaluation, canonical mapped results and non-target frames. These quantified laws supply the unified reachable suffix invariant. -/
 

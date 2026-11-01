@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
-import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 import all BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
 meta import BpmnSemantics.PrivateEquationLemmas
 
@@ -19,8 +18,7 @@ preamble differs, and it is restated here instead of parameterizing `SerialBusin
 because three serial proof modules unfold that definition.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`EffectMappingValuePolicy.admits,
-  `SerialBusinessTask.scalar]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`EffectMappingValuePolicy.admits]
 
 public section
 
@@ -56,11 +54,12 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess.EffectData #[`bindingsV
 
 theorem bindingsValidUnder_scalar (handlers : List String) (bindings : List VariableBinding) :
     bindingsValidUnder .scalar handlers bindings = SerialBusinessTask.bindingsValid handlers bindings := by
-  unfold bindingsValidUnder bindingsValidWith SerialBusinessTask.bindingsValid
+  unfold bindingsValidUnder bindingsValidWith
+  rw [SerialBusinessTask.bindingsValid_eq]
   congr 1
   apply congrArg
   funext binding
-  cases binding.value <;> simp [EffectMappingValuePolicy.admits, SerialBusinessTask.scalar]
+  cases binding.value <;> simp [EffectMappingValuePolicy.admits, SerialBusinessTask.scalar_eq]
 
 def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Vertex := do
   let id := node.id.value

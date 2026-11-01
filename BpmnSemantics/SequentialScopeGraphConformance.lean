@@ -116,6 +116,7 @@ import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.TransitionTrace
 import all BpmnSemantics.SemanticProcess.WaitActivation
 import all BpmnSemantics.SequentialScopeGraphConformanceCheckFixtures
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 meta import BpmnSemantics.PrivateEquationLemmas
 import all BpmnSemantics.SemanticProcess.UserTaskMetadata
 

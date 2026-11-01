@@ -14,6 +14,7 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.Transition
 meta import BpmnSemantics.PrivateEquationLemmas
 import all BpmnSemantics.SemanticProcess.Data
+import all BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 
 /-! # Repeated-scope dispatch contract
 

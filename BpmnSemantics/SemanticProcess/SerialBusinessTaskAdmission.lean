@@ -49,6 +49,18 @@ def bindingsValid (handlers : List String) (bindings : List VariableBinding) : B
   strictlySortedStrings (bindings.map (·.name)) &&
     bindings.all (fun b => nameAllowed handlers b.name && scalar b.value)
 
+/-- `scalar` as a law, beside its definition because effect-data admission, which an executable closure consumes,
+proves its scalar policy through it instead of opening this module ([module rules](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules)). -/
+theorem scalar_eq (value : VariableValue) :
+    scalar value = match value with | .string _ | .null => true | _ => false := by
+  unfold scalar; rfl
+
+/-- `bindingsValid` as a law, for the same consumers as `scalar_eq`. -/
+theorem bindingsValid_eq (handlers : List String) (bindings : List VariableBinding) :
+    bindingsValid handlers bindings = (strictlySortedStrings (bindings.map (·.name)) &&
+      bindings.all (fun b => nameAllowed handlers b.name && scalar b.value)) := by
+  unfold bindingsValid; rfl
+
 def edgeWhitespace (c : Char) : Bool :=
   [9, 10, 11, 12, 13, 32, 160, 5760, 8192, 8193, 8194, 8195, 8196, 8197,
    8198, 8199, 8200, 8201, 8202, 8232, 8233, 8239, 8287, 12288, 65279].contains c.toNat
