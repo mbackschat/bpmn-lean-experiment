@@ -103,7 +103,7 @@ Current result: the amendment closed after one correction audit ([current eviden
 
 Effort budget: 4 hours for the batch selection and proposal; stop and reassess at the limit.
 
-Next action: write the proposal from the [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-SPEC.md), [Call variable mapping](capsules/CALL-VARIABLE-MAPPING-SPEC.md) and [repeated Calls](capsules/REPEATED-NESTED-CONCURRENT-CALLS-SPEC.md) accounts. Expressions (`PC-DATA-07`) would reopen the owner-deferred JUEL lane and adopt its approved dependency set, which this resume point's stop rule holds for an owner direction.
+Next action: the cold design review of the [concurrent mapped Calls proposal](capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md). Expressions (`PC-DATA-07`) would reopen the owner-deferred JUEL lane and adopt its approved dependency set, which this resume point's stop rule holds for an owner direction.
 
 Oracle: the [cold design review](REVIEW-POLICY.md#independent-cold-review-gate) of the proposal.
 
