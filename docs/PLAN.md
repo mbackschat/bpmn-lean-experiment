@@ -93,18 +93,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: write the proposal of the concurrent structured scope data family, selected on 2026-11-01 in [delivery batch](#scheduled-delivery-batches) 3: `PC-DATA-03` primary, with the structured clauses of `PC-DATA-05` and `PC-DATA-06`. The owner closed the hub fix on 2026-11-01 ([restated residual](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)). Multi-Instance closure stays held. Pull request #38 is the owner's to land.
+Current task: implement the concurrent structured scope data family of [delivery batch](#scheduled-delivery-batches) 3: `PC-DATA-03` primary, with the structured clauses of `PC-DATA-05` and `PC-DATA-06`. The owner closed the hub fix on 2026-11-01 ([restated residual](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)). Multi-Instance closure stays held. Pull request #38 is the owner's to land.
 
-Deliverable: a family proposal approved by its cold design review: the `cibseven-2.2.0-nested-embedded-scope-data-draft` profile, which already carries `SingletonBusinessItem` values through Start, User Task completion and Call mappings on one serial path, additionally admits Parallel forks and joins in Sub-Process bodies, reusing the concurrent mechanisms of the [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-SPEC.md) and [concurrent mapped Calls](capsules/CONCURRENT-MAPPED-CALLS-SPEC.md) accounts. The embedded completion profile cannot widen its bounded Strings, because its admitted models would change command outcomes.
+Deliverable: the family implemented and closure-reviewed under its [approved proposal](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md): the nested scope-data profile admits Parallel forks in Sub-Process bodies, with structured values through concurrent frames, effect snapshots and Calls.
 
 Acceptance blockers: none recorded.
 
-Current result: the [proposal](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md) is drafted; split Programs take the nested scope-control analysis and the runtime capacity refusal, serial Programs keep their account and Start envelope.
+Current result: proposal approved; the same reviewer's audit of `aa85f5ac` closed all six required findings.
 
-Effort budget: 3 hours for the proposal draft and its cold review, from 2026-11-01 18:15 CET; stop and reassess at the limit.
+Effort budget: 16 hours for the family's implementation through closure, from 2026-11-01 19:15 CET; stop and reassess at the limit.
 
-Next action: the cold design review of the proposal. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
+Next action: implement red/green, starting with the TypeScript routing predicate and the `CSSD-ADMIT-01` source and Program admission refusals. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
 
-Oracle: the [cold-review gate](REVIEW-POLICY.md#independent-cold-review-gate) on the proposal.
+Oracle: the proposal's separating witnesses agreeing across Lean, the core and the pipeline, then the [capsule closure review](REVIEW-POLICY.md#capsule-closure-review).
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
