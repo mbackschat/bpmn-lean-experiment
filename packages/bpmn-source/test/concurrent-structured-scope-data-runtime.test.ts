@@ -9,13 +9,18 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
-  CommandOutcome, EffectExecutionResultKind, SemanticProfileId, StimulusKind, applyStimulus,
+  CommandOutcome, EffectExecutionResultKind, SemanticProfileId, StimulusKind, applyInternalOperationStep, applyStimulus,
   deriveCalledProcessInstanceId, initialState, isWellFormedRuntimeState, nestedScopePatchByteLimit,
 } from "@bpmn-lean/semantic-core";
 import type { BusinessValue, RuntimeState, SemanticProcessProgram, Stimulus, VariableBinding } from "@bpmn-lean/semantic-core";
 import { decimal, list, map, nothing, text } from "./effect-data-fixture.ts";
 import { patchOfSize } from "./exact-size-patch-fixture.ts";
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
+import { admittedInternalPrefix } from "../../semantic-core/test/internal-operation-prefix-fixture.ts";
+const { PreparedInternalTransitionFamily, applyPreparedInternalTransition, deriveInternalTransitionPreparation,
+  preparedInternalTransitionsAreIndependent } = await import(
+  new URL("../../semantic-core/dist/internal-transition-batch.js", import.meta.url).href) as
+  typeof import("../../semantic-core/src/internal-transition-batch.ts");
 
 const directory = new URL("../../../scenarios/concurrent-structured-scope-data/", import.meta.url);
 
@@ -211,3 +216,28 @@ test("CSSD-REFUSE-01 a refused result or patch on one branch leaves every frame,
     const { loan, credit, give, state: awaiting } = await loanAwaitingExperts();
     rejected(loan, awaiting, give(credit, patchOfSize("opinion", nestedScopePatchByteLimit + 1)), "over-allowance opinion");
   });
+
+// Oracle: CSD-PREPARE-01's batch premise, Lean's `PreparedInternalTransition.Independent`, which admits a declared entry
+// only beside declared entries, scope creations, armings and local control; this profile's forks reach it as the
+// embedded completion profile's do.
+test("the two sibling declared entries after the order fork are independent and each refines its singleton step", async () => {
+  const order = await program("order-fulfilment");
+  const operationAt = (elementId: string, kind: string) => {
+    const matching = order.operations.filter(({ origin, kind: candidate }) => origin.elementId === elementId && candidate === kind);
+    assert.equal(matching.length, 1, elementId);
+    return matching[0]!;
+  };
+  const start: Stimulus = { kind: StimulusKind.StartProcess, commandId: "start", processId: order.processId,
+    instanceId: "Order_1", initialVariables: [bind("order", map(["lines", list()]))] };
+  const entries = ["PickStock", "PlanShipment"].map(id => operationAt(id, "enterScope"));
+  const state = admittedInternalPrefix(order, initialState, start, [operationAt("OrderReceived", "initiate").id,
+    operationAt("FulfilOrder", "enterScope").id, operationAt("SplitFulfilment", "duplicate").id], entries.map(({ id }) => id));
+  const fulfil = state.scopeOccurrences.find(({ id }) => id.definitionScopeId === "scope:FulfilOrder")!.id;
+  const prepared = entries.map(operation => deriveInternalTransitionPreparation(order, state, { operation, owner: fulfil }));
+  for (const [index, member] of prepared.entries()) {
+    assert.ok(member?.family === PreparedInternalTransitionFamily.DeclaredScopeEntry);
+    assert.deepEqual(applyPreparedInternalTransition(order, state, member),
+      applyInternalOperationStep(order, entries[index]!, state)?.successor);
+  }
+  assert.equal(preparedInternalTransitionsAreIndependent(prepared[0]!, prepared[1]!), true);
+});

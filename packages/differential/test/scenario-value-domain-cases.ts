@@ -143,6 +143,11 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   const claim = (await loadAndCompileCases(pipelineCases.filter(({ id }) => id === "concurrent-scope-data-claim-fetch-one-first")))[0];
   assert.ok(claim !== undefined, "the claim damage assessment schedule is registered");
   addConcurrentScopeDataCases(claim, add);
+  for (const id of ["concurrent-structured-scope-data-order-review-first", "concurrent-structured-scope-data-loan-credit-first"]) {
+    const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
+    assert.ok(context !== undefined, `the ${id} schedule is registered`);
+    addConcurrentStructuredScopeDataCases(context, add);
+  }
   const travel = (await loadAndCompileCases(pipelineCases.filter(({ id }) => id === "concurrent-mapped-calls-travel-request")))[0];
   assert.ok(travel !== undefined, "the travel request schedule is registered");
   addConcurrentMappedCallsCases(travel, add);
@@ -372,6 +377,35 @@ function addConcurrentScopeDataCases(context: DomainContext, add: AddCase): void
         : { kind: StimulusKind.CompleteEffect, commandId: `late-${surface}-${label}`, effectId: occurrence,
           result: { kind: EffectExecutionResultKind.Success, localPatch: bindings } };
       add(context, `${surface}-string-${label}`, [...context.scenario.stimuli, stimulus], supported);
+    }
+  }
+}
+
+/**
+ * The order fulfilment and loan assessment are concurrent Programs of the nested scope-data profile, which keep its
+ * SingletonBusinessItem domain on every surface (CSSD-VALUE-01) and derive their required Start names from the occurrence
+ * chain (CSD-AVAILABLE-01, CMCALL-START-01): each requires only its business object, a present null satisfies it, and the
+ * loan refuses a Start naming a declared local or a name only the called Process knows. Each case changes one fact of the
+ * retained answer-free Start or appends one late command.
+ */
+function addConcurrentStructuredScopeDataCases(context: DomainContext, add: AddCase): void {
+  const start = context.scenario.stimuli[0]!;
+  assert.ok(start.kind === StimulusKind.StartProcess && start.initialVariables.length === 1);
+  const domains = expectedDomainsOf(context.scenario.profile);
+  addLateValueCases(context, start, domains, add);
+  const startWith = (suffix: string, initialVariables: readonly VariableBinding[], supported: boolean) =>
+    add(context, suffix, [{ ...start, initialVariables }, ...context.scenario.stimuli.slice(1)], supported);
+  // The kind probe replaces the business object, since the loan's Call Start rule refuses an appended unknown name.
+  for (const value of values) {
+    add(context, `start-${value.kind}`, [{ ...start, initialVariables: [{ ...start.initialVariables[0]!, value }] }],
+      domains.start.includes(value.kind));
+  }
+  startWith("invalid-start-data-missing-required", [], false);
+  startWith("valid-start-data-present-null", [{ ...start.initialVariables[0]!, value: { kind: VariableValueKind.Null } }], true);
+  if (start.initialVariables[0]!.name === "application") {
+    // Appended names sort after the retained `application`, which keeps the canonical name order.
+    for (const name of ["case", "dossier"]) {
+      startWith(`invalid-start-data-${name}-name`, [...start.initialVariables, { name, value: values[0]! }], false);
     }
   }
 }
