@@ -286,7 +286,7 @@ export async function exercisePayloadMessageAcrossWorkflowChain(
     value: payloadDelivery.payload,
   }]);
   assert.deepEqual(taskState.openMessageSubscriptions, []);
-  // An exact redelivery after commit coalesces to the original result instead of a second semantic step (`PBV-MSG-03`).
+  // An exact redelivery after commit coalesces to the original result instead of a second semantic step.
   const redelivery = structuredClone(payloadDelivery);
   assert.deepEqual(
     await submitMessageDelivery(context.environment.client.workflow, start.instanceId, redelivery),

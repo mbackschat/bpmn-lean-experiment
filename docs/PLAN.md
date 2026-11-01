@@ -85,7 +85,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Hub fix, third increment. Command: `./scripts/verify.sh lean-library`, `./scripts/verify.sh lean-checks`, `./scripts/pnpm.sh run test:infrastructure:runtime`. Status: `exit 0`. Date: `2026-11-01`. Commit: `53329a46`, whose exact tree the asserted receipts verified on `4938389e`. The batch's builds ran under a 5 GiB container ceiling (no OOM), and the re-opened fixtures `MappedBoundaryErrorConformance` and `SequentialScopeGraphConformance` were remeasured at 1 CPU under 3 GiB (1,257,704 and 1,121,036 KiB).
+- Message-payload closure. Command: `./scripts/verify.sh pipeline`, `./scripts/verify.sh composition-parity`, `./scripts/verify.sh runtime`, `./scripts/verify.sh temporal-serial`, `./scripts/verify.sh temporal`. Status: `exit 0`. Date: `2026-11-01`. Commit: `7dcb8e0f`, with `temporal` again `exit 0` after the review's corrections at `087e587d`; the Lean lanes verified the identical Lean tree of `53329a46`.
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -93,18 +93,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: closure of the business data family batch, the [structured Message-payload amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#structured-message-payload-consuming-amendment) toward `PC-DATA-03`, implemented and hosted at `310cb4cd` but never closure-reviewed (its checkpoint and closure fold into one batch review); finishing it precedes a new family. The hub fix in [Lean build follow-ups](#lean-build-follow-ups) stopped at its fixture item. Multi-Instance closure stays held. Pull request #38 is the owner's to land.
+Current task: the next Practical CIB7 Coverage family, after the [structured Message-payload amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#message-payload-closure-acceptance) closed approved on 2026-11-01. The hub fix in [Lean build follow-ups](#lean-build-follow-ups) stopped at its fixture item. Multi-Instance closure stays held. Pull request #38 is the owner's to land.
 
-Deliverable: the amendment closed: closure gates green, an approved cold closure review, its closure receipt and the map status lines it names.
+Deliverable: the next family batch, every open row sharing one mechanism, selected through the [delivery task list](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), and its proposal.
 
 Acceptance blockers: none recorded.
 
-Current result: the hub fix lowered the replay mean 262.4 → 239.0 and p90 682 → 619 ([current evidence](#current-evidence)); executable guards cannot bring the closed-world fixtures below contract item 5's 900 seconds ([fixture time](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)). The amendment's map line still reads "Business-data family review and complete gates open".
+Current result: the amendment closed after one correction audit ([current evidence](#current-evidence)); `PC-DATA-03` and `PC-MESSAGE-03` stay open. The hub fix lowered the replay mean 262.4 → 239.0 and p90 682 → 619; executable guards cannot bring the closed-world fixtures below contract item 5's 900 seconds ([fixture time](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)).
 
-Effort budget: 6 hours for the closure; stop and reassess at the limit. The hub fix stopped at about 10.2 of its 12 hours (2026-10-31 22:35 to 2026-11-01 08:50) because the classification invalidated its executable-guard path; its follow-up entry keeps the remaining items.
+Effort budget: 4 hours for the batch selection and proposal; stop and reassess at the limit.
 
-Next action: the cold closure review of the amendment's [epistemic closure](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#message-payload-epistemic-closure), whose closure gates are green at `7dcb8e0f`.
+Next action: select the batch. `PC-DATA-07` needs an approved dependency and `PC-DELIVERY-01` and Multi-Instance closure are held, so weigh the concurrent-data remainder (`PC-DATA-04`–`06`) against the task contracts (`PC-HUM-01`).
 
-Oracle: the [capsule closure review](REVIEW-POLICY.md#capsule-closure-review) over green closure gates.
+Oracle: the [cold design review](REVIEW-POLICY.md#independent-cold-review-gate) of the proposal.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

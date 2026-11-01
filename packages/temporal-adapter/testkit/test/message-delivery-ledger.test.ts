@@ -102,7 +102,7 @@ test("records conflicting content in Signal order without replacing the first co
   );
 });
 
-test("coalesces an exact structured-manifest redelivery and conflicts on one changed nested leaf (PBV-MSG-03)", async () => {
+test("coalesces an exact structured-manifest redelivery and conflicts on one changed nested leaf", async () => {
   const scenario = await loadJson<Scenario>(new URL(
     "../../../../scenarios/portable-business-message-payload/manifest-delivered.scenario.json",
     import.meta.url,

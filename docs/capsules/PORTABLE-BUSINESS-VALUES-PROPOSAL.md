@@ -7,7 +7,7 @@ Review: approved
 
 ## Decision and delivery boundary
 
-The portable-value design is accepted at `377b46e0`; the [serial-handoff amendment](#serial-handoff-consuming-amendment) is independently accepted at `46fb3993`. The [structured effect-data amendment](#structured-effect-data-consuming-amendment) is independently accepted at `b9ea31ad` and [closed](#effect-data-closure-acceptance). The [structured Message-payload amendment](#structured-message-payload-consuming-amendment) is independently accepted at `f963858c` and implemented at `310cb4cd`; its [epistemic closure](#message-payload-epistemic-closure) awaits the business data family's closure review. Implementation follows the bounded checkpoint and qualification below.
+The portable-value design is accepted at `377b46e0`; the [serial-handoff amendment](#serial-handoff-consuming-amendment) is independently accepted at `46fb3993`. The [structured effect-data amendment](#structured-effect-data-consuming-amendment) is independently accepted at `b9ea31ad` and [closed](#effect-data-closure-acceptance). The [structured Message-payload amendment](#structured-message-payload-consuming-amendment) is independently accepted at `f963858c` and [closed](#message-payload-closure-acceptance) on its [epistemic closure](#message-payload-epistemic-closure). Implementation follows the bounded checkpoint and qualification below.
 
 Freeze the finite value contract required by `PC-DATA-01` so an order can retain repeated line items, a nested address and an exact signed amount through the `PC-DATA-03` delivery path. This is design acceptance, not runtime coverage. No profile, decoder, evaluator, source admission, host or platform capability changes on approval alone. Implementation still requires its selected profile identity, governed checkpoint and applicable qualification.
 
@@ -392,7 +392,7 @@ Observations depend only on the admitted Program, committed state and explicit s
 
 Reopen if a later surface needs a value root other than `SingletonBusinessItem`, if a host artifact other than the delivered Signal copies a payload more often than the envelope counts, or if correlation selects a payload-bearing subscription.
 
-Closure gates (2026-11-01): green at `7dcb8e0f` are the complete pipeline, with all 140 registered cases agreeing across Lean, the core and Temporal (its 111-second warm run is over the 70-second soft feedback target), composition parity, the runtime stage with the CIB oracle, and the serial and complete Temporal stages, the latter with 1,198 of 1,201 tests passing and three `todo`. The full Lean library and the Lean checks are green on the identical Lean tree of `53329a46`, verified at `4938389e`.
+Closure gates (2026-11-01): green at `7dcb8e0f` are the complete pipeline, with all 140 registered cases agreeing across Lean, the core and Temporal (its 111-second warm run is over the 70-second soft feedback target), composition parity, the runtime stage with the CIB oracle, and the serial and complete Temporal stages, the latter with 1,198 of 1,201 tests passing and three `todo`. The full Lean library and the Lean checks are green on the identical Lean tree of `53329a46`, verified at `4938389e`. After the review's corrections the complete Temporal stage is green again at `087e587d`, 1,199 of 1,202 tests passing with the same three `todo`.
 
 ### Owners this amendment grows
 
@@ -522,3 +522,9 @@ This closes the amendment only; `PC-DATA-03` stays open for Message, Call, Multi
 ### Message-payload proposal acceptance
 
 The structured Message-payload amendment was accepted on 2026-10-14 against `d0ebae78f199e91952eae20d9cc96f31c4db9d84`, baseline `17e94edd`, by one `fork-turns-none` reviewer after one correction audit at `f963858c326fd3fe33230b6a6edf958c8c4022be`. Packet: `d2520418fd2c833f20dc96cf41920ef9f0258f86b35fd0b56bd8408760db96e2`. The required findings were the Continue-As-New delivery record copying the payload outside the capacity journey, the missing 1,024-byte root-String witness, the unextended preservation law, a false claim that the core binds the payload by reference, and the missing ledger, specification and docstring owners.
+
+### Message-payload closure acceptance
+
+The structured Message-payload amendment was closed on 2026-11-01 against `38e977641cefec76c5bde2264c4a70c505bc4690` (implementation `310cb4cd054cae6539d5c33f18f1cf7f0c6f4cc3`, baseline `0fd4fd6b296e994d99afddcfcee6b7c59a6b6084`), its checkpoint folded into this closure, by one `fork-turns-none` reviewer after one correction audit at `087e587dc7ee95fd32cf8c83ac0ef84a162088fe`. Packet: `736e527029294731771d142c1652ad51ed80aedf250600860ff209ca6dd4c135`. The required findings were the absent exact-redelivery and protocol-level structured identity witnesses, and a closure sentence claiming envelope bounds for the delivered Signal's copies that only the runtime input-queue and Event History budgets enforce; the optional ones were a misattributed TypeScript witness owner, a hosted closed-profile refusal of a substitute Map instead of the manifest, a stale effect-data status line, an owners list naming files the implementation never changed, and a wrong rule ID on the new witnesses.
+
+This closes the amendment only; `PC-DATA-03` and `PC-MESSAGE-03` stay open.
