@@ -93,18 +93,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the [scope re-entry proposal](capsules/SCOPE-REENTRY-PROPOSAL.md) of [delivery batch](#scheduled-delivery-batches) 3: `PC-CF-06` primary, with the repeated-lifetime clause of `PC-DATA-04`, the re-entry clause of `PC-SCOPE-02` and the scoped-rework clause of `PC-HUM-01`. Every other batch 3 residual waits on held expressions (`PC-DATA-07`–`09`) or Multi-Instance owners. Pull requests #38 and #39 are the owner's to land.
+Current task: implement the approved [scope re-entry proposal](capsules/SCOPE-REENTRY-PROPOSAL.md) of [delivery batch](#scheduled-delivery-batches) 3: `PC-CF-06` primary, with the repeated-lifetime clause of `PC-DATA-04`, the re-entry clause of `PC-SCOPE-02` and the scoped-rework clause of `PC-HUM-01`. Pull requests #38 and #39 are the owner's to land.
 
-Deliverable: an approved family proposal in which embedded Sub-Processes and mapped Calls on a root-scope cycle are re-entered with fresh occurrence identity and fresh scope-local data per iteration.
+Deliverable: the family closed by its cold closure review: both retained models agree across Lean, core, pipeline, CIB probe and the hosted pipeline under the grown nested scope-data profile.
 
-Acceptance blockers: none recorded. CIB's re-entry needs neither held expressions nor Multi-Instance mechanisms (source-established at `5a45b47`); its calibration probe renders the root conditions in JUEL under `CIB-CFG-0005` only.
+Acceptance blockers: none recorded.
 
-Current result: the proposal at `c4d87c3c` received `approve-with-required-edits`; the corrections touch four Lean owners by body edits only and keep `ProgramStructuralValidation` untouched. The review's serial burst finding is recorded in the data-family map's nested scope-data section.
+Current result: the proposal was approved on 2026-11-02 (review `c4d87c3c`, audit `6da46da8`) in about 50 minutes of its 2-hour budget.
 
-Effort budget: 2 hours for the proposal draft and its cold design review, from 2026-11-01 23:55 CET.
+Effort budget: 10 hours for implementation through the closure review, from 2026-11-02 00:45 CET.
 
-Next action: the same reviewer audits the corrections. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
+Next action: TypeScript first: checked cut, Merge arity, conditions and expression language in source admission, then the re-entry admission and routing in the core with the claim model red/green; Lean follows with the four body edits priced by the fan-out model. Expressions (`PC-DATA-07`) stay held.
 
-Oracle: the cold design review of the selected family proposal.
+Oracle: the cold closure review of the family.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

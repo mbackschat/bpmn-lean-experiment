@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and delivery boundary
 
@@ -107,7 +107,7 @@ The reachable wait sets are those the serial account already reaches: one User T
 Two retained whole models, each run as answer-free scenarios:
 
 - **Claim assessment with rework.** *Assess claim*, a Sub-Process declaring `notes` from `${claimSummary}` and `decision` as null, holds the User Task *Inspect damage* and the mapped Service Task *Price repair*, and copies `decision` to the Process `assessment`. A root Choice routes `stringEquals(assessment,"rework")` back to a Merge before *Assess claim*, `stringEquals(assessment,"reject")` to the User Task *Notify claimant*, and the default to the User Task *Approve settlement*; a second Merge joins both before the End. Iteration 1 sets `notes` and requests rework; iteration 2 must read `notes` from `claimSummary` again, issue *Inspect damage* and *Price repair* with ordinal 2 and keep `assessment` from iteration 1 until it is overwritten. A completion of iteration 1's *Inspect damage* and a late result of its *Price repair* both reject unchanged. Further schedules exit at once by approval and by rejection.
-- **Contract revision.** *Prepare draft*, a Sub-Process copying `contractText` into a local edited by *Edit draft*, outputs it back; the mapped Call *Legal review* passes it to a called Process whose User Task *Review clauses* returns `verdict` to the Process `legalVerdict`; a Choice routes `stringEquals(legalVerdict,"revise")` back to the Merge, `stringEquals(legalVerdict,"withdraw")` to *Close negotiation* and the default to *Sign contract*. Two invocations of *Legal review* get distinct called identities and fresh called-root frames, and iteration 1's *Review clauses* rejects after iteration 2 opened. A Start binding `legalVerdict` is admitted as optional; a Start binding of an unrelated name is rejected.
+- **Contract revision.** *Prepare draft*, a Sub-Process copying `contractText` into a local edited by *Edit draft*, outputs it back; the mapped Call *Legal review* passes it to a called Process whose User Task *Review clauses* returns `verdict` to the Process `legalVerdict`; a Choice routes `stringEquals(legalVerdict,"revise")` back to the Merge, `stringEquals(legalVerdict,"withdraw")` to *Close negotiation* and the default to *Sign contract*; a second Merge joins both before the End. Two invocations of *Legal review* get distinct called identities and fresh called-root frames, and iteration 1's *Review clauses* rejects after iteration 2 opened. A Start binding `legalVerdict` is admitted as optional; a Start binding of an unrelated name is rejected.
 
 Refused models, each in the source lane and both target analyses:
 
@@ -120,7 +120,7 @@ Refused models, each in the source lane and both target analyses:
 - two burst pairs, each an exact-limit model that is admitted and its one-step-longer variant that is refused at admission: one critical at a caller-side resumption, one critical at a resumption inside the called Process;
 - a read whose only writer lies on the back-edge path, which stays a required Start binding, and the same model with a writer before the Merge, which does not.
 
-Mutations, each changing the deciding mechanism: completion that does not retire the frame, so iteration 2 reads iteration 1's `notes`; occurrence identity by element only, so the stale completion settles iteration 2; a cut on the Choice instead of a wait; a checked cut that ignores Sub-Process bodies; a monotone written-name set that counts a back-edge write; a burst count that omits scope completion; a burst graph that omits the called-return continuation.
+Mutations, each changing the deciding mechanism: completion that does not retire the frame, so iteration 2 reads iteration 1's `notes`; occurrence identity by element only, so the stale completion settles iteration 2; a cut on the Choice instead of a wait; a checked cut that ignores Sub-Process bodies; a monotone written-name set that counts a back-edge write; a burst count that omits scope completion; a burst graph that omits the called-return continuation; re-entry that clears the Process values the scope's outputs wrote.
 
 ## Rule-to-evidence matrix
 
@@ -133,7 +133,7 @@ Mutations, each changing the deciding mechanism: completion that does not retire
 | `SRE-BURST-01` | Two exact-limit and one-over pairs, caller-side and called-side | Conformance module, core, pipeline against the scheduler's closure | Omit scope completion; omit the called-return continuation |
 | `SRE-FRESH-01` | Ordinal 2 for *Inspect damage*, *Price repair*, *Assess claim*, *Legal review* and *Review clauses* | Pipeline across Lean, core and Temporal; CIB probe ids | Identity by element only |
 | `SRE-INIT-01` | Iteration 2 `notes` equals `claimSummary`; fresh called-root frame | Lean frame laws, pipeline, CIB probe locals | Completion that keeps the frame |
-| `SRE-RETAIN-01` | `assessment` and `legalVerdict` survive into iteration 2 | Pipeline, CIB probe Process variables | — (covered by the frame-retirement mutation) |
+| `SRE-RETAIN-01` | `assessment` and `legalVerdict` survive into iteration 2 | Pipeline, CIB probe Process variables | Re-entry that clears the Process values the scope's outputs wrote |
 | `SRE-STALE-01` | Iteration-1 completion and late effect result reject unchanged | Pipeline across Lean, core and Temporal; CIB stale task id | Identity by element only |
 | `SRE-OUTPUT-01` | Each iteration's outputs written once at its end | Lean frame laws, pipeline, CIB probe | Completion that keeps the frame |
 
@@ -178,7 +178,7 @@ Build cost is a constraint. Four Lean closed-world or hub owners are touched, ea
 
 - Lean: the four owners above, a new re-entry admission leaf and a new executable conformance module.
 - TypeScript core: [structured scope-data routing](../../packages/semantic-core/src/structured-scope-data-routing.ts), [graph policy](../../packages/semantic-core/src/semantic-process-graph-policy.ts), [Start admission](../../packages/semantic-core/src/scope-data-stimulus-admission.ts), and a new re-entry admission module.
-- Source: [nested scope-data source](../../packages/bpmn-source/src/nested-scope-data-source.ts), which accepts root Exclusive Gateways; [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts), for the variable Merge arity and the checked cut; and [checked process admission](../../packages/bpmn-source/src/checked-process-admission.ts), whose expression-language rule for this profile becomes model-dependent: Simple Boolean v1 exactly when a conditional flow exists.
+- Source: [nested scope-data source](../../packages/bpmn-source/src/nested-scope-data-source.ts), which accepts root Exclusive Gateways; [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts), for the variable Merge arity and the checked cut; and [checked process admission](../../packages/bpmn-source/src/checked-process-admission.ts), whose expression-language rule for this profile becomes model-dependent, Simple Boolean v1 exactly when a conditional flow exists, and whose `hasSelectedConditions` gains an arm admitting this profile's root Choice conditions, which it refuses by default today.
 - Temporal: the [Start capacity envelope](../../packages/temporal-adapter/protocol/src/start-capacity-envelope.ts), selecting by the routing predicate.
 - Registration: [`CIB-EXT-0020`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0020--nested-embedded-scope-locals-and-nearest-owner-writes) and [`CIB-EXT-0021`](../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0021--call-variable-mappings-by-name-across-the-instance-boundary) boundaries, the [profile artifact](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) and README, the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md), scenarios, pipeline cases, the value-domain matrix, the corpus, About and the CIB probe.
 
@@ -196,6 +196,6 @@ Guards the implementation must change or satisfy:
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `c4d87c3c` | `fork-turns-none` | `approve-with-required-edits` | `6da46da8` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
