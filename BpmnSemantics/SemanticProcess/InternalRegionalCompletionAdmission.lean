@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalRegionalCompletionPositionValidity
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import BpmnSemantics.SemanticProcess.InternalRegionalInstanceAncestry
@@ -19,8 +18,7 @@ and declared Call census distinguish the hosting root from a parentless called r
 ordinary or bounded completion changes runtime control.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeScopeState?, `programWellFormed,
-  `runtimePositionValid]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeScopeState?, `runtimePositionValid]
 
 public section
 
@@ -35,7 +33,7 @@ theorem programWellFormed_definition_lookup_of_member (program : Program) (defin
     apply List.Pairwise.of_map (S := (· ≠ ·)) DefinitionScopeId.value
       (fun _ _ different same => different (congrArg DefinitionScopeId.value same))
     rw [List.map_map]
-    simp only [programWellFormed, Bool.and_eq_true] at valid
+    simp only [programWellFormed_eq, Bool.and_eq_true] at valid
     have sorted : strictlySortedStrings (program.definitionScopes.map fun scope => scope.id.value) = true := by grind
     simpa only [List.nodup_iff_pairwise_ne, Function.comp_def] using strictlySortedStrings_nodup _ sorted
   rw [← List.head?_filter, filter_key_eq_singleton_of_nodup program.definitionScopes (·.id) definition unique member]
@@ -131,7 +129,7 @@ theorem declaredComplete_hosting_instance (program : Program) (before : RuntimeS
       invocation, _, _, _, calledScopeEq, _⟩ :=
         flowNodeOccurrenceStructuralProgramValidity_call_declarer program before record structural recordMember
     have paired : callOperationsPaired program = true := by
-      simp only [programWellFormed, Bool.and_eq_true] at programValid; grind
+      simp only [programWellFormed_eq, Bool.and_eq_true] at programValid; grind
     have excluded := callOperationsPaired_calledRoot_ne_entryRoot program entryRoot invokeId invokeOrigin input process
       calledScope calledEntry returned paired hosting invocation
     exact False.elim (excluded (by rw [calledScopeEq, calledRoot, entry]))

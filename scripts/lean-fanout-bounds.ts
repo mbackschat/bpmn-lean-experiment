@@ -62,6 +62,11 @@ const kernelBodyHiding = {
   contractPredicates: "F2 of the cold closure review, stage 1 (2026-10-31): the two contract predicates keep `@[expose]` because consumers `intro` them (Transition.lean:711), so they are interface; opening SemanticProcessContract for them would put the hub Transition's cone of about 550 modules into its body edit",
 } as const;
 
+/** Why the hub fix's first step (PLAN Lean build follow-ups, 2026-11-01) raised a bound by one. */
+const hubFixLawsModule = {
+  hidden: "the hub fix's first step (2026-11-01): RuntimeStateWellFormed no longer opens ProgramStructuralValidation, so its wait-key census theorems moved to its laws module RuntimeStateWellFormedLaws, as the laws-modules rule of the build modularity specification requires; that module opens RuntimeStateWellFormed and so loads this module's hidden part, one more loader; accepted by the direction review of 2026-11-01 under the owner's delegation of exceptions (2026-10-29), and the hub fix's RuntimeStateWellFormed step, which moves that hub's `import all` openers onto its laws module, shrinks it",
+} as const;
+
 /** Why a module whose `OperationAllowed` keeps sparse case splits (owner-delegated workaround, 2026-10-30) raised a bound. */
 const sparseCaseSplitKept = {
   hidden: "the hidden-bodies conversion (owner decisions 1-3, 2026-10-29) opened this module to its `import all` importers, and its `OperationAllowed` keeps sparse case splits, whose names Lean v4.34.1 exports (AuxRecursor.lean:53), because the absence proofs over it exceed their heartbeat limit without them; so a hidden edit here also reaches its own public cone (it is the recorded leaking module, scripts/lean-realized-leaks.tsv) until Lean filters those names",
@@ -313,18 +318,18 @@ export const leanHiddenEditDefaultBound = 10;
  * Re-seeded on 2026-10-29 at the graph of the hidden-bodies conversion (owner decisions 1-3) under the same rule.
  */
 export const leanHiddenEditBounds: ReadonlyArray<LeanFanoutBound> = [
-  { module: "BpmnSemantics.PrivateEquationLemmas", bound: 756, raisedFrom: 10, raised: helperMetaImports.hidden },
-  { module: "BpmnSemantics.SemanticProcess.RuntimeState", bound: 606, raisedFrom: 10, raised: kernelBodyHiding.hidden },
-  { module: "BpmnSemantics.SemanticProcess.ActivityOccurrence", bound: 568, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration", bound: 504, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.SemanticProcess.OperationControlPlaces", bound: 501, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.SemanticProcess.CallActivityAdmission", bound: 500, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.SemanticProcess.GraphValidation", bound: 499, raisedFrom: 10, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage", bound: 491, raisedFrom: 10, raised: publicMetaReexport.hidden },
+  { module: "BpmnSemantics.PrivateEquationLemmas", bound: 757, raisedFrom: 10, raised: `${helperMetaImports.hidden}; then ${hubFixLawsModule.hidden}` },
+  { module: "BpmnSemantics.SemanticProcess.RuntimeState", bound: 607, raisedFrom: 10, raised: `${kernelBodyHiding.hidden}; then ${hubFixLawsModule.hidden}` },
+  { module: "BpmnSemantics.SemanticProcess.ActivityOccurrence", bound: 569, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
+  { module: "BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotDeclaration", bound: 505, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
+  { module: "BpmnSemantics.SemanticProcess.OperationControlPlaces", bound: 502, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
+  { module: "BpmnSemantics.SemanticProcess.CallActivityAdmission", bound: 501, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
+  { module: "BpmnSemantics.SemanticProcess.GraphValidation", bound: 500, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
+  { module: "BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage", bound: 492, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
   { module: "BpmnSemantics.SemanticProcess.ProgramStructuralValidation", bound: 488, raisedFrom: 487, raised: publicMetaReexport.hidden },
-  { module: "BpmnSemantics.SemanticProcess.RuntimePositionValidity", bound: 480, raisedFrom: 10, raised: publicMetaReexport.hidden },
+  { module: "BpmnSemantics.SemanticProcess.RuntimePositionValidity", bound: 481, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
   { module: "BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission", bound: 479, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
-  { module: "BpmnSemantics.SemanticProcess.RuntimeStateWellFormed", bound: 461, raisedFrom: 10, raised: publicMetaReexport.hidden },
+  { module: "BpmnSemantics.SemanticProcess.RuntimeStateWellFormed", bound: 462, raisedFrom: 10, raised: `${publicMetaReexport.hidden}; then ${hubFixLawsModule.hidden}` },
   { module: "BpmnSemantics.SemanticProcess.CommandAdmission", bound: 433, raisedFrom: 10, raised: hiddenBodiesConversion.hidden },
   { module: "BpmnSemantics.SemanticProcess.InternalCommutationCore", bound: 368, raisedFrom: 10, raised: publicMetaReexport.hidden },
   { module: "BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite", bound: 366, raisedFrom: 10, raised: publicMetaReexport.hidden },

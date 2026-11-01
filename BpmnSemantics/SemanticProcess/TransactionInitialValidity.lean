@@ -4,7 +4,6 @@ public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycleProofs
 import BpmnSemantics.SemanticProcess.ScopeStorageOrder
 import BpmnSemantics.SemanticProcess.TokenOrder
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
@@ -62,13 +61,12 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyClaimsUn
   `flowNodeOccurrenceUserTaskProgramValidity, `flowNodeOccurrenceWaitProgramValidity, `hiddenRecordDeclarationsValid,
   `insertBy, `messageBoundedOperationProjectionValid, `nonempty, `operationControlPlaces,
   `operationControlPlacesShareOwner, `operationOutputs, `orderedBy, `parallelMultiInstanceControllersOrdered,
-  `parallelMultiInstanceProgramBindingsValid, `programWellFormed, `projectOpenFlowNodeOccurrences?,
-  `runtimeStateIdentityBound, `sequentialMultiInstanceControllerProgramBindingsValid,
-  `sequentialMultiInstanceOperationBindingComplete, `sequentialMultiInstanceProgramBindingsValid,
-  `sequentialScopeStateValid, `sortBy, `sortFlowNodeOccurrenceStarts, `transactionChildOwner,
-  `transactionEnteredState, `transactionInitiatedState, `transactionRootStartState, `transactionSplitState,
-  `uniqueControlPlace?, `uniqueDefinitionScope?, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive,
-  `canonicalInsertBy, `runningStartState]
+  `parallelMultiInstanceProgramBindingsValid, `projectOpenFlowNodeOccurrences?, `runtimeStateIdentityBound,
+  `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
+  `sequentialMultiInstanceProgramBindingsValid, `sequentialScopeStateValid, `sortBy, `sortFlowNodeOccurrenceStarts,
+  `transactionChildOwner, `transactionEnteredState, `transactionInitiatedState, `transactionRootStartState,
+  `transactionSplitState, `uniqueControlPlace?, `uniqueDefinitionScope?, `waitDeclarationsValid,
+  `waitIdentitiesUnique, `waitOwnersLive, `canonicalInsertBy, `runningStartState]
 
 public section
 
@@ -355,7 +353,7 @@ private theorem transaction_scope_nonempty (p : Program) (roles : TransactionAdm
       nonempty roles.child.originElementId.value = true := by
   have scopes : p.definitionScopes.all (fun scope =>
       nonempty scope.id.value && nonempty scope.originElementId.value) = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+    simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
     grind only
   have root := List.all_eq_true.mp scopes roles.root (unique_filter_facts _ _ _ roles.rootSelected).1
   have child := List.all_eq_true.mp scopes roles.child (unique_filter_facts _ _ _ roles.childSelected).1
@@ -369,7 +367,7 @@ private theorem transaction_split_retention_valid (p : Program) (roles : Transac
   let root : ScopeOccurrenceId := ⟨instanceId, roles.root.id, 1⟩
   let child := transactionChildOwner roles instanceId
   have declared : compensationActivityRetentionDeclarationValid p = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+    simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
     exact wellFormed.1.2
   obtain ⟨parent, _, _, _, _, _⟩ := transaction_scope_facts p roles wellFormed
   obtain ⟨rootNonempty, childNonempty, originNonempty⟩ := transaction_scope_nonempty p roles wellFormed
@@ -422,7 +420,7 @@ theorem transaction_split_wellFormed (p : Program) (roles : TransactionAdmittedR
   have retention := transaction_split_retention_valid p roles wellFormed instanceId
   have ordered := transaction_split_order p roles instanceId
   have executionDeclared : compensationExecutionDeclarationValid p = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+    simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
     exact wellFormed.2
   have execution := compensationExecutionStateValid_empty p state executionDeclared rfl rfl
     (.inr ⟨instanceId, rfl⟩)

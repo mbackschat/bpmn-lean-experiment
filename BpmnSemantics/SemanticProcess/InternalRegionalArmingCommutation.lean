@@ -31,7 +31,6 @@ import all BpmnSemantics.SemanticProcess.InternalRegionalPreparation
 import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
 import all BpmnSemantics.SemanticProcess.InternalRegionalSelection
 import all BpmnSemantics.SemanticProcess.ProfileShapeCatalog
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage

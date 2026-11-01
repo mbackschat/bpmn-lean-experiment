@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.SequentialScopeExecutionCertificate
 import BpmnSemantics.SemanticProcess.InternalTransitionPreservation
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import BpmnSemantics.SemanticProcess.ContinuationMarkingLaws
@@ -35,13 +34,14 @@ import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.TransitionRecord
 import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! Ordinary parent/body execution preserves the SMIS execution certificate. Repeated-body lifecycle and command ingress belong to the separate preservation owner; history and readiness remain above both. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SemanticOperation.kind,
   `SequentialScopeControl.bodyVertex?, `activateEffect, `activateUserTask, `bodyConsumedPorts,
-  `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `selectScopeVariables?, `sequentialScopeBindingForEntry?,
-  `sequentialScopeTaskWaitingCount, `duplicateToken, `reachNoneEndToken, `scopeActivationCount, `synchronizeTokens]
+  `selectScopeVariables?, `sequentialScopeBindingForEntry?, `sequentialScopeTaskWaitingCount, `duplicateToken,
+  `reachNoneEndToken, `scopeActivationCount, `synchronizeTokens]
 
 public section
 
@@ -158,8 +158,8 @@ private theorem smis_user_arming_waiting (program : Program) (before : RuntimeSt
   · have same := sequentialScope_wait_declarer_unique program
       (.awaitUserTask id origin input output task) (.awaitUserTask otherId otherOrigin otherInput otherOutput otherTask)
       (userTaskWaitDeclarationKey task.id) valid member candidateMember
-      (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])
-      (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, sameTask])
+      (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
+      (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, sameTask])
     cases same
     by_cases sameOwner : queried = owner
     · subst queried

@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.GraphReachabilityLaws
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.GraphValidation
@@ -14,8 +13,7 @@ Checked graph admission gives each control place one producer. A projected bound
 therefore identifies its declaring operation independently of Activity-to-Program completeness.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`operationDeclaresWaitKey, `operationOutputs,
-  `operationWaitDeclarationKeys]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`operationOutputs]
 
 public section
 
@@ -90,7 +88,7 @@ theorem boundedCompletion_timer_operation_binding (program : Program)
   have census := programWellFormed_waitDeclarer program
     (.enterBoundedScope id origin input childEntry scopeId boundary)
     (timerWaitDeclarationKey boundary.elementId) valid entry
-    (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])
+    (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
   have present : projected ∈ program.operations.filter (fun candidate =>
       operationDeclaresWaitKey candidate (timerWaitDeclarationKey boundary.elementId)) :=
     List.mem_filter.mpr ⟨projectedMember, projectedTimer⟩

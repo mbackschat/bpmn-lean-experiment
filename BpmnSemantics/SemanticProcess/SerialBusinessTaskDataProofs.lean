@@ -3,7 +3,6 @@ module
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskCounterLaws
 import BpmnSemantics.SemanticProcess.SequentialScopeRuntimeLaws
 public import BpmnSemantics.SemanticProcess.EffectCompletion
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
@@ -22,9 +21,9 @@ import all BpmnSemantics.SemanticProcess.Data
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.follow,
   `SerialBusinessTask.operationVertex?, `SerialBusinessTask.requiredInputs, `SerialBusinessTask.scalar,
   `SerialBusinessTask.startBindingsAdmitted, `StructuredComposition.unique?, `activateEffect,
-  `completeQuiescentScope?, `completeScopeState?, `operationDeclaresWaitKey, `operationWaitDeclarationKeys,
-  `scopeQuiescent, `sequentialScopeEntry?, `serialEffectPatch?, `strictlySortedStrings, `activityScopeMatches,
-  `addActivityVariableScope, `enclosingVariable?, `evaluateInputMappingsInOrder, `localDataOwnerMatches]
+  `completeQuiescentScope?, `completeScopeState?, `scopeQuiescent, `sequentialScopeEntry?, `serialEffectPatch?,
+  `strictlySortedStrings, `activityScopeMatches, `addActivityVariableScope, `enclosingVariable?,
+  `evaluateInputMappingsInOrder, `localDataOwnerMatches]
 
 public section
 
@@ -787,12 +786,12 @@ theorem human_wait_census (program : Program) (wait : UserTaskWait)
     (fun operation => operationDeclaresWaitKey operation (userTaskWaitDeclarationKey wait.task.id)) _
     (.awaitUserTask id origin input wait.output wait.task)
   · exact programWellFormed_waitDeclarer program _ _ wellFormed member
-      (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])
+      (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
   · intro operation _ selected
     cases operation <;> try simp only [Bool.false_eq_true] at selected
     case awaitUserTask id origin input output task =>
       simp only [Bool.and_eq_true, beq_iff_eq] at selected
-      simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, selected.1.1]
+      simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, selected.1.1]
   · simp [metadata]
 
 theorem effect_wait_census (program : Program) (wait : EffectWait)
@@ -813,7 +812,7 @@ theorem effect_wait_census (program : Program) (wait : EffectWait)
     (fun operation => operationDeclaresWaitKey operation (effectWaitDeclarationKey wait.elementId)) _
     (.awaitEffect id origin input wait.output effect none)
   · exact programWellFormed_waitDeclarer program _ _ wellFormed member
-      (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, aligned, element])
+      (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligned, element])
   · intro operation included selected
     cases operation <;> try simp only [Bool.false_eq_true] at selected
     case awaitEffect id origin input output effect route =>
@@ -822,7 +821,7 @@ theorem effect_wait_census (program : Program) (wait : EffectWait)
       | none =>
           have aligns := programWellFormed_awaitEffect_elements_align program wellFormed id origin input output effect none included
           simp only [Bool.and_eq_true, beq_iff_eq] at selected
-          simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, aligns, selected.1.1.1.1.1]
+          simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligns, selected.1.1.1.1.1]
   · simp [element, descriptor, outputs, route, snapshot]
 
 theorem canonical_present_binding_evaluable (handlers : List String) (context : List VariableBinding)

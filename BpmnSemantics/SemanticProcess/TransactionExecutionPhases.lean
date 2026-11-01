@@ -22,7 +22,6 @@ import all BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessState
 import all BpmnSemantics.SemanticProcess.MessageStartAdmission
 import all BpmnSemantics.SemanticProcess.NestedScopeData
 import all BpmnSemantics.SemanticProcess.NestedScopeDataCommand
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import all BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite
 import all BpmnSemantics.SemanticProcess.TransactionBranchPhases

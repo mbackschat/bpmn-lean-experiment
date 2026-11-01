@@ -6,7 +6,6 @@ import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.InternalTimerTaskPreparation
 import BpmnSemantics.SemanticProcess.CollectionOrder
@@ -38,6 +37,7 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! Timer-task arming preserves the three independent issuer bounds and the existing runtime
 collections. The joint wait/Activity obligations come from `InternalTimerTaskValidity`.
@@ -47,9 +47,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalTimerTaskPatch,
   `InternalCommutation.exactProgramSelection, `InternalCommutation.makeInternalTimerTaskPatch,
   `InternalCommutation.regionalActivityAssociationsConflict, `InternalCommutation.uniqueFamilyDeclarer?,
-  `activateUserTask, `canonicalCollectionOrder, `operationDeclaresWaitKey, `operationWaitDeclarationKeys,
-  `runningInstance?, `runtimePositionValid, `runtimeStateIdentityBound, `runtimeStateWellFormed,
-  `sameActivityOccurrence, `timerWaitKeyMatches, `userTaskWaitDeclarationKey, `userTaskWaitKeyMatches,
+  `activateUserTask, `canonicalCollectionOrder, `runningInstance?, `runtimePositionValid, `runtimeStateIdentityBound,
+  `runtimeStateWellFormed, `sameActivityOccurrence, `timerWaitKeyMatches, `userTaskWaitKeyMatches,
   `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive, `ActivityOccurrence.messageHandlerOccurrences,
   `insertTimerWait, `setTimerActivationCount]
 
@@ -411,8 +410,8 @@ theorem prepared_timer_task_preserves_runtime
     obtain ⟨member, equal⟩ := List.mem_filter.mp held
     simpa [of_decide_eq_true equal] using member
   have declares : operationDeclaresWaitKey contract.operation (userTaskWaitDeclarationKey contract.task.id) = true := by
-    cases kind : contract.kind <;> simp [InternalTimerTaskContract.operation, kind, operationDeclaresWaitKey,
-      operationWaitDeclarationKeys, userTaskWaitDeclarationKey]
+    cases kind : contract.kind <;> simp [InternalTimerTaskContract.operation, kind, operationDeclaresWaitKey_eq,
+      operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq]
   have repeatedAfter : sequentialScopeStateValid program after = true := by
     exact sequentialScopeStateValid_insert_activity program state selected.record
       (sequentialScopeEntry_task_separate program contract.operation contract.task.id structural declared declares) repeated

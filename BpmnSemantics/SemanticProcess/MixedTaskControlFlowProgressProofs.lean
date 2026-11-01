@@ -25,7 +25,6 @@ import all BpmnSemantics.SemanticProcess.MergeTargetOperations
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowDataProofs
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowLifecycleProofs
 import all BpmnSemantics.SemanticProcess.OperationControlPlaces
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.ScopeCompletion
 import all BpmnSemantics.SemanticProcess.ScopeDataBearing
 import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission

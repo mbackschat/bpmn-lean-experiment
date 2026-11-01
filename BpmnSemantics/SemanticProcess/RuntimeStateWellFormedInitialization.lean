@@ -34,8 +34,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyClaimsUn
   `compensationTransactionRetentionShapeValid, `controllerIdentitiesUnique, `controllersNotExhausted,
   `controllersOwnLiveActivity, `effectIncidentAssociationsValid, `eventRaceAssociationsValid,
   `hiddenRecordDeclarationsValid, `notStartedStateEmpty, `operationControlPlacesShareOwner, `orderedBy,
-  `parallelMultiInstanceControllersOrdered, `parallelMultiInstanceProgramBindingsValid, `programWellFormed,
-  `retentionLifecycleValid, `runtimePositionValid, `runtimeStateIdentityBound, `scopedOwnershipComplete,
+  `parallelMultiInstanceControllersOrdered, `parallelMultiInstanceProgramBindingsValid, `retentionLifecycleValid,
+  `runtimePositionValid, `runtimeStateIdentityBound, `scopedOwnershipComplete,
   `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
   `sequentialMultiInstanceProgramBindingsValid, `sequentialScopeEntry?, `sequentialScopeStateValid,
   `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive, `runningStartState]
@@ -54,7 +54,7 @@ private theorem startingCompensationValid (program : Program) (instanceId : Sema
     compensationExecutionStateValid program state = true := by
   simp only [runtimePositionValid, Bool.and_eq_true] at position
   have structural := position.1.1
-  simp only [programWellFormed, Bool.and_eq_true] at structural
+  simp only [programWellFormed_eq, Bool.and_eq_true] at structural
   exact compensationExecutionStateValid_empty program state structural.2 triggers waits control
 
 private theorem startingProgramFacts (program : Program) (instanceId : SemanticId)
@@ -65,7 +65,7 @@ private theorem startingProgramFacts (program : Program) (instanceId : SemanticI
   simp only [runtimePositionValid, Bool.and_eq_true] at position
   have structural := position.1.1
   have retention : compensationActivityRetentionDeclarationValid program = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at structural
+    simp only [programWellFormed_eq, Bool.and_eq_true] at structural
     exact structural.1.2
   refine ⟨structural, retention, ?_⟩
   have graph := programWellFormed_graph program structural
@@ -150,7 +150,7 @@ private theorem startingSequentialValid (program : Program) (state : RuntimeStat
       (fun _ _ different same => different (congrArg DefinitionScopeId.value same))
     rw [List.map_map]
     have admitted := structural
-    simp only [programWellFormed, Bool.and_eq_true] at admitted
+    simp only [programWellFormed_eq, Bool.and_eq_true] at admitted
     have sorted : strictlySortedStrings (program.definitionScopes.map fun scope => scope.id.value) = true := by
       grind
     exact strictlySortedStrings_nodup _ sorted

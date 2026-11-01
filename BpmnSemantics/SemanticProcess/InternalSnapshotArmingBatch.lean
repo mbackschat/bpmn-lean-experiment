@@ -19,7 +19,6 @@ import all BpmnSemantics.SemanticProcess.InternalDataArmingPreparation
 import all BpmnSemantics.SemanticProcess.InternalPreparedArming
 import all BpmnSemantics.SemanticProcess.InternalPreparedTransition
 import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import all BpmnSemantics.SemanticProcess.Transition

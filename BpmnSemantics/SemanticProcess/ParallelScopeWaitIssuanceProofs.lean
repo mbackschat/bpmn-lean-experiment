@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedLaws
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.InternalOperationOccurrence
@@ -16,7 +17,7 @@ preparation or claiming that foreign-instance waits belong to this Program.
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
   `SemanticOperation.kind, `activateEffect, `activateUserTask, `declaredByExactlyOneOwnedOperation,
-  `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `waitDeclarationsValid, `insertEffectWait]
+  `waitDeclarationsValid, `insertEffectWait]
 
 public section
 
@@ -32,7 +33,7 @@ private theorem human_declared (program : Program) (state : RuntimeState)
   have member := (resolveInternalOperationOccurrence_declaration program state candidate _ resolved).1
   have onlyDeclarer := programWellFormed_waitDeclarer program (.awaitUserTask id origin input output task)
     (userTaskWaitDeclarationKey task.id) wellFormed member (by
-      simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])
+      simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
   have owned := resolved_definition_owner program state candidate _ resolved
   rw [userTaskWaitDeclarers_eq_keyFilter, onlyDeclarer]
   simp [declaredByExactlyOneOwnedOperation, owned]
@@ -48,7 +49,7 @@ private theorem effect_declared (program : Program) (state : RuntimeState)
   have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input output effect route member
   have onlyDeclarer := programWellFormed_waitDeclarer program (.awaitEffect id origin input output effect route)
     (effectWaitDeclarationKey effect.elementId) wellFormed member (by
-      simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, aligned])
+      simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligned])
   have owned := resolved_definition_owner program state candidate _ resolved
   rw [effectWaitDeclarers_eq_keyFilter, onlyDeclarer]
   simp [declaredByExactlyOneOwnedOperation, owned]

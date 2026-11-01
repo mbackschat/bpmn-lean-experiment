@@ -12,6 +12,7 @@ import all BpmnSemantics.SemanticProcess.ContinuationMarking
 import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import all BpmnSemantics.SemanticProcess.SequentialScopeControlAdmission
 import all BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! PMIS-SELECT-01 checks command publication with the same exact-owner executor as closure; operation-only replay retains its existing ProgramStep domain. -/

@@ -28,6 +28,7 @@ import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
 import all BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshot
 import all BpmnSemantics.SemanticProcess.EventBasedGateway
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! Aggregate validity of actual scope creation under the
@@ -39,11 +40,10 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.PreparedInternalDeclaredEntry.apply,
   `InternalCommutation.internalScopeCreationDefinitionMatches, `canonicalCollectionOrder,
   `compensationEventSubProcessSnapshotScopeLifecycleWellFormed, `compensationEventSubProcessSnapshotStateValid,
-  `effectIncidentAssociationValid, `enteredChildScopeId?, `exactLiveOccurrence, `messageWaitDeclarationKey,
-  `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `parallelMultiInstanceExactEntry,
+  `effectIncidentAssociationValid, `enteredChildScopeId?, `exactLiveOccurrence, `parallelMultiInstanceExactEntry,
   `parallelMultiInstanceOperationWellFormed, `runtimeStateWellFormed, `scopedOwnershipComplete,
   `sequentialScopeCollection?, `sequentialScopeEntry?, `sequentialScopeOperationsPaired, `sequentialScopeStateValid,
-  `timerWaitDeclarationKey, `userTaskWaitDeclarationKey, `waitOwnersLive]
+  `waitOwnersLive]
 
 public section
 
@@ -483,10 +483,10 @@ theorem sequentialScopeEntry_task_separate (program : Program) (operation : Sema
   have checked := List.all_eq_true.mp (programWellFormed_operations program admitted) operation member
   have sameValue := congrArg NodeId.value same
   clear graph paired unique admitted member repeatedHeld
-  cases operation <;> simp only [operationDeclaresWaitKey, operationWaitDeclarationKeys] at declares
+  cases operation <;> simp only [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq] at declares
   all_goals try contradiction
   all_goals unfold operationWellFormed at checked
-  all_goals simp_all [userTaskWaitDeclarationKey, timerWaitDeclarationKey, messageWaitDeclarationKey,
+  all_goals simp_all [userTaskWaitDeclarationKey_eq, timerWaitDeclarationKey_eq, messageWaitDeclarationKey_eq,
     SemanticOperation.origin,
     parallelMultiInstanceOperationWellFormed, parallelMultiInstanceExactEntry]
   all_goals exact separate (congrArg NodeId.mk (by grind))

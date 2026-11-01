@@ -12,7 +12,6 @@ import all BpmnSemantics.SemanticProcess.GraphValidation
 import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import all BpmnSemantics.SemanticProcess.InternalOperationOccurrenceDiscovery
 import all BpmnSemantics.SemanticProcess.ParallelScopeCommandReplay
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import all BpmnSemantics.SemanticProcess.TransitionRecord
 

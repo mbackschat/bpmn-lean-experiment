@@ -1,7 +1,6 @@
 module
 
 public import BpmnSemantics.SemanticProcess.MixedTaskControlFlowDataProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
@@ -30,7 +29,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MixedTaskControlFlow.operationOutputs,
   `MixedTaskControlFlow.routesAdmitted, `completeBusinessEffect?, `completeSerialActivityScope?, `dispatchStimulus,
-  `effectResultOutput, `operationDeclaresWaitKey, `operationWaitDeclarationKeys]
+  `effectResultOutput]
 
 public section
 
@@ -184,7 +183,7 @@ theorem business_effect_wait_census (program : Program) (wait : EffectWait)
     (fun operation => operationDeclaresWaitKey operation (effectWaitDeclarationKey wait.elementId)) _
     (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute)
   · exact programWellFormed_waitDeclarer program _ _ wellFormed member
-      (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, aligned, element])
+      (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligned, element])
   · intro operation included selected
     cases operation <;> try simp only [Bool.false_eq_true] at selected
     case awaitEffect id origin input output effect route =>
@@ -193,10 +192,10 @@ theorem business_effect_wait_census (program : Program) (wait : EffectWait)
       cases route with
       | none =>
           simp only [Bool.and_eq_true, beq_iff_eq] at selected
-          simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, aligns, selected.1.1.1.1.1]
+          simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligns, selected.1.1.1.1.1]
       | some route =>
           simp only [Bool.and_eq_true, beq_iff_eq] at selected
-          simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, aligns, selected.1.1.1.1.1.2]
+          simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligns, selected.1.1.1.1.1.2]
   · cases attached : wait.bpmnErrorRoute with
     | none => simp [element, descriptor, outputs, snapshot]
     | some route =>

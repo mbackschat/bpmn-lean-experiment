@@ -14,7 +14,7 @@ bindings required by the raw Return preservation theorem. A selected runtime Cal
 cannot justify the continuation's definition-scope owner.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`programWellFormed, `runtimePositionValid]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`runtimePositionValid]
 
 public section
 
@@ -49,7 +49,7 @@ theorem declaredReturn_continuation_binding (program : Program) (state : Runtime
     · contradiction
   rw [returnedEq, selected] at invocation
   have paired : callOperationsPaired program = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at programValid
+    simp only [programWellFormed_eq, Bool.and_eq_true] at programValid
     grind
   have outputScope := callOperationsPaired_return_caller_scope program invokeId invokeOrigin input
     calledProcess calledRoot entry id origin process root output record.caller.definitionScopeId

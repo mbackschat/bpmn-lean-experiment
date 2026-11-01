@@ -12,9 +12,9 @@ meta import BpmnSemantics.PrivateEquationLemmas
 AOO-JOIN-03 binds the deadline through its Activity body and tagged attachment; independent
 child and Timer activation counters need not agree. -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
-  `activityBodyScope?, `flowNodeOccurrenceWaitProgramValidity, `operationDeclaresWaitKey,
-  `operationWaitDeclarationKeys, `recordAttaches, `timerIdNamesWait, `timerWaitDeclarationKey, `timerWaitKeyMatches,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[
+  `FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid, `activityBodyScope?,
+  `flowNodeOccurrenceWaitProgramValidity, `recordAttaches, `timerIdNamesWait, `timerWaitKeyMatches,
   `ActivityOccurrence.timerHandlerOccurrences]
 
 public section
@@ -60,7 +60,7 @@ theorem valid_scope_boundary_timer_binding
     rename_i owned
     have matching := matched
     cases candidate <;> try contradiction
-    all_goals simp only [operationDeclaresWaitKey, operationWaitDeclarationKeys, timerWaitDeclarationKey]
+    all_goals simp only [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, timerWaitDeclarationKey_eq]
     all_goals first
       | (change (_ && _) = true at matching
          simp only [Bool.and_eq_true, decide_eq_true_eq] at matching
@@ -71,7 +71,7 @@ theorem valid_scope_boundary_timer_binding
          · simp only [Bool.and_eq_true, decide_eq_true_eq] at matching
            simp_all)
   have entryDeclares : operationDeclaresWaitKey entryOperation (timerWaitDeclarationKey boundary.elementId) = true := by
-    rcases entryShape with rfl | rfl <;> simp [operationDeclaresWaitKey, operationWaitDeclarationKeys]
+    rcases entryShape with rfl | rfl <;> simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq]
   have declarers := programWellFormed_waitDeclarer program entryOperation
     (timerWaitDeclarationKey boundary.elementId) programValid entryMember entryDeclares
   have declaredMember : candidate ∈ program.operations.filter (fun operation =>

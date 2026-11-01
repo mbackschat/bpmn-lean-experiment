@@ -15,9 +15,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredCompositio
   `StructuredComposition.OperationAllowed, `StructuredComposition.WaitMatchesOperation,
   `StructuredComposition.isScopeCompletion, `StructuredComposition.operationInputs,
   `StructuredComposition.operationVertex?, `admitStimulus, `callDataRuntimeStateValid,
-  `interruptingMessageEventSubProcessStateValid, `isCallActivityProgram, `operationDeclaresWaitKey, `operationOutputs,
-  `operationWaitDeclarationKeys, `scopeQuiescent, `structuredCompositionOrdinaryCompletionAdmitted,
-  `userTaskWaitDeclarationKey, `runningProgramStartState?]
+  `interruptingMessageEventSubProcessStateValid, `isCallActivityProgram, `operationOutputs, `scopeQuiescent,
+  `structuredCompositionOrdinaryCompletionAdmitted, `runningProgramStartState?]
 
 public section
 
@@ -143,7 +142,7 @@ theorem matching_wait_declares_its_key
     operationDeclaresWaitKey operation (userTaskWaitDeclarationKey wait.task.id) = true := by
   cases operation <;> simp only [WaitMatchesOperation] at matched
   all_goals try contradiction
-  all_goals simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, matched.1]
+  all_goals simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, matched.1]
 
 theorem input_positions_for_declared_wait
     (program : Program) (vertices : List Vertex) (analysis : Analysis) (state : RuntimeState)
@@ -179,7 +178,7 @@ theorem data_completion_preserves_input_positions
   have declaredKey : operationDeclaresWaitKey
       (.awaitDataInputOutputUserTask contract.operationId origin contract.input contract.output contract.taskId
         contract.taskName contract.directInput contract.directOutput) (userTaskWaitDeclarationKey wait.task.id) = true := by
-    simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, key, taskKey]
+    simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, key, taskKey]
   have inputs := (input_positions_for_declared_wait program vertices analysis before wait _
     wellFormed positions live member declaredKey).2
   obtain ⟨target, consumer, supplied⟩ := declared_completion_transports_input_obligations program analysis vertices
@@ -224,7 +223,7 @@ theorem ordinary_completion_preserves_input_positions
     before after taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation bounded completed
   have declares : operationDeclaresWaitKey (.awaitUserTask id origin input output task)
       (userTaskWaitDeclarationKey wait.task.id) = true := by
-    simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, userTaskWaitDeclarationKey, key, taskKey]
+    simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq, key, taskKey]
   obtain ⟨matched, inputs⟩ := input_positions_for_declared_wait program vertices analysis before wait _
     wellFormed positions live member declares
   obtain ⟨source, included, projected⟩ := program_analysis_projects_each_executable_operation
@@ -722,7 +721,7 @@ theorem ordinary_completion_within_burst_bound
     before after taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation bounded completed
   have declares : operationDeclaresWaitKey (.awaitUserTask id origin input output task)
       (userTaskWaitDeclarationKey wait.task.id) = true := by
-    simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, userTaskWaitDeclarationKey, key, taskKey]
+    simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq, key, taskKey]
   have matched := (input_positions_for_declared_wait program vertices analysis before wait _
     wellFormed positions live member declares).1
   obtain ⟨source, included, projected⟩ := program_analysis_projects_each_executable_operation

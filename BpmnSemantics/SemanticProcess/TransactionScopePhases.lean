@@ -29,7 +29,6 @@ import all BpmnSemantics.SemanticProcess.InternalRegionalPublication
 import all BpmnSemantics.SemanticProcess.InternalScheduledClosure
 import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
 import all BpmnSemantics.SemanticProcess.MonitoredScope
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.RuntimeOwnerRemoval
 import all BpmnSemantics.SemanticProcess.ScopeCancellation
 import all BpmnSemantics.SemanticProcess.ScopeCompletion

@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.TransactionInitialValidity
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.TransactionReachableFrontier
@@ -54,10 +53,10 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `InternalCommutation.snapshotArmingAnchorFresh, `InternalCommutation.stateReadSetsDisjoint,
   `InternalCommutation.uniqueFamilyDeclarer?, `InternalCommutation.userTaskWaitOccurrence,
   `InternalWaitKind.activationKind, `TransactionInitialTask.operation, `canonicalPublicationAtomSet,
-  `canonicalStateAtomSet, `footprintsNonInterfering, `insertBy, `programWellFormed, `sortBy,
-  `sortFlowNodeOccurrenceStarts, `transactionChildOwner, `transactionEnteredState, `transactionInitiatedState,
-  `transactionRootStartState, `transactionSplitState, `addToken, `addTokens, `canonicalInsertBy, `insertScopeOccurrence,
-  `onlyTokenOwner?, `runningStartState, `tokenOwners]
+  `canonicalStateAtomSet, `footprintsNonInterfering, `insertBy, `sortBy, `sortFlowNodeOccurrenceStarts,
+  `transactionChildOwner, `transactionEnteredState, `transactionInitiatedState, `transactionRootStartState,
+  `transactionSplitState, `addToken, `addTokens, `canonicalInsertBy, `insertScopeOccurrence, `onlyTokenOwner?,
+  `runningStartState, `tokenOwners]
 
 public section
 
@@ -285,7 +284,7 @@ private theorem initial_compensation_projection (p : Program) (roles : Transacti
     projectOpenCompensationFlowNodeOccurrences? p (transactionSplitState roles instanceId []) = some [] := by
   let state := transactionSplitState roles instanceId []
   have declared : compensationExecutionDeclarationValid p = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at valid
+    simp only [programWellFormed_eq, Bool.and_eq_true] at valid
     exact valid.2
   have execution := compensationExecutionStateValid_empty p state declared rfl rfl
     (.inr ⟨instanceId, rfl⟩)

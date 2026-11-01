@@ -19,6 +19,7 @@ import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 import all BpmnSemantics.SemanticProcess.ScopeCompletion
 import all BpmnSemantics.SemanticProcess.Transition
 import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-CONTINUE-01 follows the actual evaluator from a committed start through internal steps and accepted or rejected User Task completions. Admission excludes foreign operation families; the control-unit bound is derived at start and preserved across those transitions. -/

@@ -6,7 +6,6 @@ import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.InternalMessageTaskPreparation
 import BpmnSemantics.SemanticProcess.CollectionOrder
@@ -38,19 +37,20 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.TransitionStates
 import all BpmnSemantics.SemanticProcess.WaitActivation
 meta import BpmnSemantics.PrivateEquationLemmas
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! Message-host arming preserves the existing runtime predicate from complete raw preparation.
 The independent issuer and attachment obligations remain separate from public projection. -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalMessageTaskContract.operation,
-  `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalMessageTaskPatch,
-  `InternalCommutation.exactProgramSelection, `InternalCommutation.makeInternalMessageTaskPatch,
-  `InternalCommutation.messageWaitOccurrence, `InternalCommutation.regionalActivityAssociationsConflict,
-  `InternalCommutation.uniqueFamilyDeclarer?, `activateUserTask, `anyTimerIdNamesWait, `canonicalCollectionOrder,
-  `messageWaitKeyMatches, `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `runningInstance?,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[
+  `InternalCommutation.InternalMessageTaskContract.operation, `InternalCommutation.applyInternalArmingPatch,
+  `InternalCommutation.applyInternalMessageTaskPatch, `InternalCommutation.exactProgramSelection,
+  `InternalCommutation.makeInternalMessageTaskPatch, `InternalCommutation.messageWaitOccurrence,
+  `InternalCommutation.regionalActivityAssociationsConflict, `InternalCommutation.uniqueFamilyDeclarer?,
+  `activateUserTask, `anyTimerIdNamesWait, `canonicalCollectionOrder, `messageWaitKeyMatches, `runningInstance?,
   `runtimePositionValid, `runtimeStateIdentityBound, `runtimeStateWellFormed, `sameActivityOccurrence,
-  `userTaskWaitDeclarationKey, `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique,
-  `waitOwnersLive, `ActivityOccurrence.timerHandlerOccurrences, `insertMessageWait, `setMessageActivationCount]
+  `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive,
+  `ActivityOccurrence.timerHandlerOccurrences, `insertMessageWait, `setMessageActivationCount]
 
 public section
 
@@ -420,8 +420,8 @@ theorem prepared_message_task_preserves_runtime
     obtain ⟨member, equal⟩ := List.mem_filter.mp held
     simpa [of_decide_eq_true equal] using member
   have declares : operationDeclaresWaitKey contract.operation (userTaskWaitDeclarationKey contract.task.id) = true := by
-    cases kind : contract.kind <;> simp [InternalMessageTaskContract.operation, kind, operationDeclaresWaitKey,
-      operationWaitDeclarationKeys, userTaskWaitDeclarationKey]
+    cases kind : contract.kind <;> simp [InternalMessageTaskContract.operation, kind, operationDeclaresWaitKey_eq,
+      operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq]
   have repeatedAfter : sequentialScopeStateValid program after = true := by
     exact sequentialScopeStateValid_insert_activity program state selected.record
       (sequentialScopeEntry_task_separate program contract.operation contract.task.id structural declared declares) repeated

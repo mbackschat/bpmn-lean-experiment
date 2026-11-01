@@ -1,6 +1,9 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+public import BpmnSemantics.SemanticProcess.CallDataAdmission
+public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
+public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.TimerStart
@@ -267,5 +270,117 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
     have operationValid := operationWellFormed_of_programWellFormed program _ valid member
     unfold operationWellFormed at operationValid
     simp_all [nonempty]
+
+/-! ## Equation laws
+
+Consumers rewrite with these instead of opening the bodies: an arm or conjunct edit changes this module's interface and rebuilds its importers, not every module that loads the structural validation's hidden part ([module rules](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules)). -/
+
+theorem userTaskWaitDeclarationKey_eq (taskId : TaskDefinitionId) :
+    userTaskWaitDeclarationKey taskId = { family := .userTask, elementId := taskId.value } := by
+  unfold userTaskWaitDeclarationKey; rfl
+
+theorem messageWaitDeclarationKey_eq (elementId : NodeId) :
+    messageWaitDeclarationKey elementId = { family := .message, elementId := elementId.value } := by
+  unfold messageWaitDeclarationKey; rfl
+
+theorem timerWaitDeclarationKey_eq (elementId : NodeId) :
+    timerWaitDeclarationKey elementId = { family := .timer, elementId := elementId.value } := by
+  unfold timerWaitDeclarationKey; rfl
+
+theorem effectWaitDeclarationKey_eq (elementId : NodeId) :
+    effectWaitDeclarationKey elementId = { family := .effect, elementId := elementId.value } := by
+  unfold effectWaitDeclarationKey; rfl
+
+theorem operationWaitDeclarationKeys_eq (operation : SemanticOperation) :
+    operationWaitDeclarationKeys operation = match operation with
+  | .awaitUserTask _ _ _ _ task => [userTaskWaitDeclarationKey task.id]
+  | .awaitDataInputUserTask _ _ _ _ taskId _ _
+  | .awaitDataInputOutputUserTask _ _ _ _ taskId _ _ _
+  | .awaitDataOutputUserTask _ _ _ _ taskId _ _ =>
+      [userTaskWaitDeclarationKey taskId]
+  | .awaitBoundedUserTask _ _ _ task boundaryTimer
+  | .awaitMonitoredUserTask _ _ _ task boundaryTimer =>
+      [userTaskWaitDeclarationKey task.id,
+        timerWaitDeclarationKey boundaryTimer.elementId]
+  | .awaitMessageBoundedUserTask _ _ _ task boundaryMessage
+  | .awaitMessageMonitoredUserTask _ _ _ task boundaryMessage =>
+      [userTaskWaitDeclarationKey task.id,
+        messageWaitDeclarationKey boundaryMessage.elementId]
+  | .awaitSequentialMultiInstanceUserTask _ _ _ task _ _ boundaryTimer _ =>
+      [userTaskWaitDeclarationKey task.id,
+        timerWaitDeclarationKey boundaryTimer.elementId]
+  | .awaitParallelMultiInstanceUserTask _ _ _ taskId _ _ _ boundaryTimer _ _ =>
+      [userTaskWaitDeclarationKey taskId,
+        timerWaitDeclarationKey boundaryTimer.elementId]
+  | .awaitMessage _ _ _ _ message => [messageWaitDeclarationKey message.elementId]
+  | .awaitPayloadMessage _ _ _ _ message _ =>
+      [messageWaitDeclarationKey message.elementId]
+  | .awaitCorrelatedPayloadMessage _ _ _ _ message _ _ _ _ =>
+      [messageWaitDeclarationKey message.elementId]
+  | .awaitTimer _ _ _ _ timer => [timerWaitDeclarationKey timer.elementId]
+  | .enterBoundedScope _ _ _ _ _ boundaryTimer
+  | .enterMonitoredScope _ _ _ _ _ boundaryTimer =>
+      [timerWaitDeclarationKey boundaryTimer.elementId]
+  | .awaitEventRace _ _ _ message timer =>
+      [messageWaitDeclarationKey message.elementId,
+        timerWaitDeclarationKey timer.elementId]
+  | .awaitEffect _ origin _ _ _ _ => [effectWaitDeclarationKey origin.elementId]
+  | .enterSequentialMultiInstanceScope ..
+  | .enterParallelMultiInstanceScope ..
+  | .completeSequentialMultiInstanceScope ..
+  | .completeParallelMultiInstanceScope ..
+  | .initiate ..
+  | .initiateMessage ..
+  | .initiateTimer ..
+  | .enterScope ..
+  | .invokeProcess ..
+  | .returnProcess ..
+  | .completeParallelMultiInstanceUserTask ..
+  | .duplicate ..
+  | .synchronize ..
+  | .mergeExclusive ..
+  | .choose ..
+  | .selectMany ..
+  | .synchronizeSelected ..
+  | .throwError ..
+  | .reachNoneEnd ..
+  | .terminateScope ..
+  | .completeScope ..
+  | .completeEventSubProcess ..
+  | .triggerCompensation .. | .cancelTransaction .. => [] := by
+  cases operation <;> rfl
+
+theorem operationDeclaresWaitKey_eq (operation : SemanticOperation) (key : WaitDeclarationKey) :
+    operationDeclaresWaitKey operation key = (operationWaitDeclarationKeys operation).contains key := by
+  unfold operationDeclaresWaitKey; rfl
+
+theorem programWellFormed_eq (program : Program) :
+    programWellFormed program = (
+  nonempty program.identity.semanticProfile.value &&
+    nonempty program.identity.sourceId.value &&
+    sourceOverlayIdentityValid program.identity.sourceOverlay &&
+    lowercaseHexSha256 program.identity.sourceSha256 &&
+    nonempty program.processId.value &&
+    !program.definitionScopes.isEmpty &&
+    strictlySortedStrings (program.definitionScopes.map fun scope => scope.id.value) &&
+    program.definitionScopes.all (fun scope =>
+      nonempty scope.id.value && nonempty scope.originElementId.value) &&
+    !program.controlPlaces.isEmpty &&
+    !program.operations.isEmpty &&
+    strictlySortedStrings (program.controlPlaces.map fun place => place.id.value) &&
+    strictlySortedStrings (program.operations.map fun operation => operation.id.value) &&
+    program.controlPlaces.all (fun place =>
+      nonempty place.id.value && nonempty place.origin.elementId.value) &&
+    program.operations.all (operationWellFormed program program.controlPlaces) &&
+    program.operations.all (operationRecurrenceValid program.identity.semanticProfile) &&
+    inclusiveOperationsPaired program.operations &&
+    callOperationsPaired program &&
+    (program.identity.semanticProfile != callDataCheckpointProfileId || callDataProgramGraph program) &&
+    (program.operations.filter isInitiate).length = 1 &&
+    programGraphWellFormedForProgram program &&
+    programWaitDeclarersUnique program.operations &&
+    compensationActivityRetentionDeclarationValid program &&
+    compensationExecutionDeclarationValid program) := by
+  unfold programWellFormed; rfl
 
 end BpmnSemantics.SemanticProcess

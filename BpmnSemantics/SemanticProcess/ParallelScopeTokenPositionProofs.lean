@@ -11,6 +11,7 @@ import all BpmnSemantics.SemanticProcess.InternalCommutationCore
 import all BpmnSemantics.SemanticProcess.InternalLocalControlPositionDelta
 import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 meta import BpmnSemantics.PrivateEquationLemmas
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Admitted token-patch position totality
 
@@ -21,7 +22,7 @@ availability, successful preparation, or a future publication.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.internalLocalControlPlaceOrigin?,
-  `nonempty, `programWellFormed]
+  `nonempty]
 
 public section
 
@@ -117,7 +118,7 @@ theorem selectedInputOrigin_has_local_control_origin (program : Program) (place 
     declaration origins member
   have nonemptyOrigins : program.controlPlaces.all (fun place =>
       nonempty place.id.value && nonempty place.origin.elementId.value) = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+    simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
     grind
   have nonemptyOrigin : declaration.origin.elementId.value ≠ "" := by
     have valid := List.all_eq_true.mp nonemptyOrigins declaration member

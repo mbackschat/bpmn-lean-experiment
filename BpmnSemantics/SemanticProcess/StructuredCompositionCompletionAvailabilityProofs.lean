@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.StructuredCompositionCounterProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
@@ -40,8 +39,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredCompositio
   `completeDataInputOutputUserTask?, `completeOrdinaryUserTaskWithCompensation?, `completeUserTask,
   `dataInputOutputLocalScope?, `dataInputOutputRuntimeJoinValid, `dataInputOutputTaskContracts,
   `dataInputOutputTaskWait?, `filledDeclaredOutput?, `interruptingMessageEventSubProcessStateValid,
-  `isCallActivityProgram, `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `processInterfaceScalar,
-  `recordBodyNamesWait, `taskIdNamesWait, `userTaskWaitDeclarationKey, `writeActivityDataOutput?,
+  `isCallActivityProgram, `processInterfaceScalar, `recordBodyNamesWait, `taskIdNamesWait, `writeActivityDataOutput?,
   `activityOccurrenceScopeMatches, `localDataOwnerMatches, `removeActivityOccurrenceVariableScope]
 
 public section
@@ -55,7 +53,7 @@ theorem data_contracts_select_wait_declarers (program : Program) (taskId : TaskD
   simp only [dataInputOutputTaskContracts, List.filter_filterMap, List.filterMap_filter]
   congr 1
   funext operation
-  cases operation <;> simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, userTaskWaitDeclarationKey]
+  cases operation <;> simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq]
   case awaitDataInputOutputUserTask id origin input output declaredId taskName directInput directOutput =>
     cases declaredId; cases taskId
     simp [Option.filter, eq_comm]
@@ -70,7 +68,7 @@ theorem declared_data_task_has_exact_contract
   have unique := programWellFormed_waitDeclarer program
     (.awaitDataInputOutputUserTask id origin input output taskId taskName directInput directOutput)
     (userTaskWaitDeclarationKey taskId) wellFormed member
-    (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])
+    (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
   unfold dataInputOutputTaskContract?
   rw [data_contracts_select_wait_declarers, unique]
   rfl
@@ -87,7 +85,7 @@ theorem declared_ordinary_task_completion_guards
       structuredCompositionOrdinaryCompletionAdmitted program taskId [] = true := by
   have unique := programWellFormed_waitDeclarer program (.awaitUserTask id origin input output task)
     (userTaskWaitDeclarationKey task.id) wellFormed member
-    (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])
+    (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
   have noData : (dataInputOutputTaskContracts program).filter (fun contract => decide (contract.taskId = task.id)) = [] := by
     rw [data_contracts_select_wait_declarers, unique]
     rfl
@@ -102,7 +100,7 @@ theorem declared_ordinary_task_completion_guards
       rw [List.filter_filter]
       apply List.filter_congr
       intro operation included
-      cases operation <;> simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, userTaskWaitDeclarationKey, key]
+      cases operation <;> simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq, key]
       exact fun same => same.symm
     rw [restrict, unique]
     simp [key]

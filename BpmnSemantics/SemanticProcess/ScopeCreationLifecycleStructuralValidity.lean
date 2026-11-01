@@ -10,17 +10,19 @@ import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import all BpmnSemantics.SemanticProcess.CallActivityIdentity
 meta import BpmnSemantics.PrivateEquationLemmas
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! Structural lifecycle preservation for the predecessor-selected scope creation account in
 [Internal Commutation](../../docs/INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite).
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[
+  `FlowNodeOccurrenceProgramValidity.Internal.occurrenceOwnerValid,
   `InternalCommutation.InternalScopeCreationSelection.apply,
   `InternalCommutation.internalScopeCreationDefinitionMatches, `InternalCommutation.internalScopeCreationOrigin?,
   `InternalCommutation.internalScopeCreationStart?, `candidateCallStart?, `candidateScopeStart?,
   `compensationEventSubProcessSnapshotScopeLifecycleWellFormed, `enteredChildScopeId?, `exactLiveOccurrence,
-  `programWellFormed, `scopeOperationBindingValid, `insertScopeOccurrence]
+  `scopeOperationBindingValid, `insertScopeOccurrence]
 
 public section
 
@@ -435,7 +437,7 @@ private theorem created_bindings (program : Program) (state : RuntimeState)
             simp only [internalScopeCreationDefinitionMatches, Bool.and_eq_true, decide_eq_true_eq]
               at matchingDefinition
             have paired : callOperationsPaired program = true := by
-              simp only [programWellFormed, Bool.and_eq_true] at admitted
+              simp only [programWellFormed_eq, Bool.and_eq_true] at admitted
               grind
             have census := invoke_return_census program id selectedOrigin input process root entry returned
               paired operationMember

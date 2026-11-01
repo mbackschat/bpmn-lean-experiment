@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedLaws
 import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 import BpmnSemantics.SemanticProcess.TransactionCompensationOrdinaryFrames
 public import BpmnSemantics.SemanticProcess.ActivityDataInputOutput
@@ -9,7 +10,6 @@ import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
 import BpmnSemantics.SemanticProcess.InternalScopeCreationRuntimeValidity
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import BpmnSemantics.SemanticProcess.ActivityBodyClaimWriterPreservation
@@ -58,11 +58,10 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityBodyLive, `a
   `activityRecordsOwnLiveWork, `activityTaskBodyOwnersAgree, `anyTimerIdNamesWait, `attachedMessagesUnambiguous,
   `attachedTimersUnambiguous, `canonicalCollectionOrder, `controllerIdentitiesUnique, `controllersNotExhausted,
   `dataInputOutputActivityRecord, `declaredByExactlyOneOwnedOperation, `effectIncidentAssociationsValid,
-  `effectWaitOwnerAssociationValid, `eventRaceAssociationsValid, `exactLiveOccurrence, `hiddenRecordDeclarationsValid,
-  `occursOnce, `operationDeclaresWaitKey, `operationOwningScope?, `operationWaitDeclarationKeys,
-  `parallelMultiInstanceProgramBindingsValid, `runtimePositionValid, `runtimeStateIdentityBound,
-  `runtimeStateWellFormed, `sameActivityOccurrence, `taskIdNamesWait, `userTaskWaitDeclarationKey,
-  `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive,
+  `effectWaitOwnerAssociationValid, `eventRaceAssociationsValid, `exactLiveOccurrence,
+  `hiddenRecordDeclarationsValid, `occursOnce, `operationOwningScope?, `parallelMultiInstanceProgramBindingsValid,
+  `runtimePositionValid, `runtimeStateIdentityBound, `runtimeStateWellFormed, `sameActivityOccurrence,
+  `taskIdNamesWait, `userTaskWaitKeyMatches, `waitDeclarationsValid, `waitIdentitiesUnique, `waitOwnersLive,
   `ActivityOccurrence.messageHandlerOccurrences, `ActivityOccurrence.timerHandlerOccurrences, `activityScopeMatches,
   `localDataOwnerMatches, `setActivationCount]
 
@@ -165,8 +164,8 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
   have sameScope : operationControlPlacesShareOwner operation = true := by
     cases declaration <;> rfl
   have declaresKey : operationDeclaresWaitKey operation (userTaskWaitDeclarationKey taskId) = true := by
-    cases declaration <;> simp [operationDeclaresWaitKey, operationWaitDeclarationKeys,
-      userTaskWaitDeclarationKey]
+    cases declaration <;> simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
+      userTaskWaitDeclarationKey_eq]
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
   have claims := wellFormed.2.1.1.1.1
   have retention := wellFormed.2.1.1.1.2

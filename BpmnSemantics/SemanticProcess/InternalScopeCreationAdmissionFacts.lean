@@ -3,10 +3,10 @@ module
 public import BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import BpmnSemantics.SemanticProcess.InternalLocalControlPreparationValidity
 import BpmnSemantics.SemanticProcess.ScopeCreationCallAssociations
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.InternalScopeCreationPreparation
 import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
 meta import BpmnSemantics.PrivateEquationLemmas
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Admission facts for scope creation
 
@@ -15,7 +15,7 @@ admission account supplies that fact; local preparation alone does not establish
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.makeInternalScopeCreationPreparation,
-  `processRootWithin, `programWellFormed]
+  `processRootWithin]
 
 public section
 
@@ -132,7 +132,7 @@ theorem prepareInternalScopeCreation_called_definition_ne_owner
     prepared.selection.created.id.definitionScopeId ≠
       prepared.selection.owner.definitionScopeId := by
   have paired : callOperationsPaired program = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at programWF
+    simp only [programWellFormed_eq, Bool.and_eq_true] at programWF
     grind
   obtain ⟨selected, instanceId, ownerRecord, origin, definition, start, delta,
     selection, _, _, operations, _, _, _, _, _, position, preparedEq⟩ :=
@@ -229,7 +229,7 @@ theorem prepareInternalScopeCreation_called_record_declared
     (called : prepared.selection.kind = .called record) :
     callRecordDeclared program record = true := by
   have paired : callOperationsPaired program = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at programWF
+    simp only [programWellFormed_eq, Bool.and_eq_true] at programWF
     grind
   obtain ⟨selected, instanceId, ownerRecord, origin, definition, start, delta,
     selection, _, _, operations, _, _, _, _, _, position, preparedEq⟩ :=

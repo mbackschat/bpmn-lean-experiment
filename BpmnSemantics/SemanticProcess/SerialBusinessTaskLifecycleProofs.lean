@@ -1,9 +1,9 @@
 module
 
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedLaws
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskCollectionStorageProofs
 import BpmnSemantics.SemanticProcess.Execution
 import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.TransitionTrace
@@ -56,11 +56,10 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.F
   `compensationTargetDeclaredForFamily, `completeBoundedScope?, `completeOrdinaryUserTaskWithCompensation?,
   `completeSelectedScope?, `completeSerialActivityScope?, `completeSerialEffect?, `completeUserTask,
   `declaredByExactlyOneOwnedOperation, `dispatchStimulus, `effectIdNamesWait, `exactLiveOccurrence,
-  `isCallActivityProgram, `isMonitoredScopeDefinition, `operationControlPlaces, `operationDeclaresWaitKey,
-  `operationOutputs, `operationOwningScope?, `operationWaitDeclarationKeys, `serialRuntimeAssociationsValid,
-  `structuredCompositionOrdinaryCompletionAdmitted, `taskIdNamesWait, `uniqueControlPlace?, `uniqueDefinitionScope?,
-  `waitDeclarationsValid, `activityScopeMatches, `addToken, `canonicalInsertBy, `localDataOwnerMatches,
-  `onlyTokenOwner?, `tokenOwners]
+  `isCallActivityProgram, `isMonitoredScopeDefinition, `operationControlPlaces, `operationOutputs,
+  `operationOwningScope?, `serialRuntimeAssociationsValid, `structuredCompositionOrdinaryCompletionAdmitted,
+  `taskIdNamesWait, `uniqueControlPlace?, `uniqueDefinitionScope?, `waitDeclarationsValid, `activityScopeMatches,
+  `addToken, `canonicalInsertBy, `localDataOwnerMatches, `onlyTokenOwner?, `tokenOwners]
 
 public section
 
@@ -816,7 +815,7 @@ theorem ordered_suffix_wait_guards (program : Program) (analysis : Analysis) (st
       have census := human_wait_census program wait id origin input wellFormed declared metadata
       have unique := programWellFormed_waitDeclarer program (.awaitUserTask id origin input wait.output wait.task)
         (userTaskWaitDeclarationKey wait.task.id) wellFormed declared
-        (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])
+        (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
       simp only [frontierFields, Prod.mk.injEq] at fields
       have identity := humanOwners wait (by simp [fields.2.2.1])
       rcases life with ⟨running, live⟩ | ⟨_, _, _, empty, _⟩
@@ -829,7 +828,7 @@ theorem ordered_suffix_wait_guards (program : Program) (analysis : Analysis) (st
       have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input wait.output effect none declared
       have unique := programWellFormed_waitDeclarer program (.awaitEffect id origin input wait.output effect none)
         (effectWaitDeclarationKey wait.elementId) wellFormed declared
-        (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, aligned, element])
+        (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligned, element])
       simp only [frontierFields, Prod.mk.injEq] at fields
       have identity := effectOwners wait (by simp [fields.2.2.2.1])
       rcases life with ⟨running, live⟩ | ⟨_, _, _, _, empty, _⟩

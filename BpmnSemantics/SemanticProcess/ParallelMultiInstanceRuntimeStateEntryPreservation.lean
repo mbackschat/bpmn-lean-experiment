@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedLaws
 import BpmnSemantics.SemanticProcess.RuntimeStateWaitIdentity
 import BpmnSemantics.SemanticProcess.TransactionCompensationProfileDomains
 import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStateEntryOrder
@@ -31,7 +32,6 @@ import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeInvariant
 import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeStatePreservation
 import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
 import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound

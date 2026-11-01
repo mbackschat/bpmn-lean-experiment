@@ -36,6 +36,7 @@ import all BpmnSemantics.SemanticProcess.CompensationSourceProfileAdmission
 import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerDeclaration
 import all BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
 import all BpmnSemantics.SemanticProcess.WaitActivation
+import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 meta import BpmnSemantics.PrivateEquationLemmas
 import all BpmnSemantics.SemanticProcess.GraphReachability
 import all BpmnSemantics.Scenario

@@ -13,7 +13,7 @@ Connects immutable definition-scope Process identity with the runtime owner iden
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`exactLiveOccurrence, `flowNodeOccurrenceOwnerLiveUnique,
-  `processIdForDefinitionScopeWithFuel?, `programWellFormed, `scopeForestWellFormed]
+  `processIdForDefinitionScopeWithFuel?, `scopeForestWellFormed]
 
 public section
 
@@ -59,7 +59,7 @@ noncomputable def definitionScopeAncestorRank (program : Program)
 private theorem definitionScopes_sorted_of_programWellFormed (program : Program)
     (valid : programWellFormed program = true) :
     strictlySortedStrings (program.definitionScopes.map fun scope => scope.id.value) = true := by
-  simp only [programWellFormed, Bool.and_eq_true] at valid
+  simp only [programWellFormed_eq, Bool.and_eq_true] at valid
   grind
 
 private theorem filter_eq_singleton_of_map_nodup [DecidableEq β]

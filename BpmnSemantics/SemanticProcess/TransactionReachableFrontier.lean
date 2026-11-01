@@ -20,7 +20,6 @@ import all BpmnSemantics.SemanticProcess.InternalOperationAttempt
 import all BpmnSemantics.SemanticProcess.InternalSnapshotArming
 import all BpmnSemantics.SemanticProcess.MonitoredScope
 import all BpmnSemantics.SemanticProcess.NestedScopeData
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.RuntimeState
 import all BpmnSemantics.SemanticProcess.ScopeCompletion
 import all BpmnSemantics.SemanticProcess.TransactionCancellation

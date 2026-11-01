@@ -2,7 +2,6 @@ module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import BpmnSemantics.SemanticProcess.ParallelScopeRuntimeLaws
@@ -25,7 +24,7 @@ live occurrence is enough to establish reservation's bounded ancestry check.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.occurrenceOwnerRootValid,
-  `ParallelScopeStart.analyzeProgram, `programWellFormed]
+  `ParallelScopeStart.analyzeProgram]
 
 public section
 
@@ -37,7 +36,7 @@ private theorem definition_scope_census (program : Program) (scope : DefinitionS
     (wellFormed : programWellFormed program = true) (member : scope ∈ program.definitionScopes) :
     program.definitionScopes.filter (·.id == scope.id) = [scope] := by
   have sorted : strictlySortedStrings (program.definitionScopes.map (·.id.value)) = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+    simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
     grind
   have valuesUnique := strictlySortedStrings_nodup _ sorted
   have idsUnique : (program.definitionScopes.map (·.id)).Nodup := by

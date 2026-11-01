@@ -15,6 +15,7 @@ import all BpmnSemantics.SemanticProcess.ParallelMultiInstanceTransition
 import all BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 meta import BpmnSemantics.PrivateEquationLemmas
 import all BpmnSemantics.SemanticProcessContract
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Parallel Multi-Instance shared runtime-state preservation
 
@@ -24,14 +25,13 @@ preservation. The upstream owner retains evaluator soundness, admitted-Program a
 and exact-state refusal.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelMultiInstanceSlot.taskId, `activityBodyTaskClaims,
-  `activityTaskBodyOwnersAgree, `insertParallelChildWaits, `mintedParallelTaskId, `operationDeclaresWaitKey,
-  `operationWaitDeclarationKeys, `parallelMultiInstanceUserTaskProfileId, `parallelSlotTaskIds, `pendingParallelSlots,
-  `pendingParallelSlotsFrom, `pendingParallelTaskIds, `programSequentialMultiInstanceProfileMatches,
-  `programUndispatchedCapabilities, `runtimeStateIdentityBound,
-  `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
-  `sequentialMultiInstanceProgramBindingsValid, `sequentialMultiInstanceUserTaskProfileId, `taskIdNamesWait,
-  `timerWaitDeclarationKey, `userTaskWaitDeclarationKey, `userTaskWaitKeyMatches, `activationCount,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelMultiInstanceSlot.taskId,
+  `activityBodyTaskClaims, `activityTaskBodyOwnersAgree, `insertParallelChildWaits, `mintedParallelTaskId,
+  `parallelMultiInstanceUserTaskProfileId, `parallelSlotTaskIds, `pendingParallelSlots, `pendingParallelSlotsFrom,
+  `pendingParallelTaskIds, `programSequentialMultiInstanceProfileMatches, `programUndispatchedCapabilities,
+  `runtimeStateIdentityBound, `sequentialMultiInstanceControllerProgramBindingsValid,
+  `sequentialMultiInstanceOperationBindingComplete, `sequentialMultiInstanceProgramBindingsValid,
+  `sequentialMultiInstanceUserTaskProfileId, `taskIdNamesWait, `userTaskWaitKeyMatches, `activationCount,
   `activityActivationCount, `insertTaskActivation, `insertTimerWait]
 
 public section
@@ -685,7 +685,7 @@ theorem parallelEntry_projection_declares_user_task (operation : SemanticOperati
     operationDeclaresWaitKey operation (userTaskWaitDeclarationKey arm.taskId) = true := by
   cases operation <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
   rw [← projects]
-  simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, userTaskWaitDeclarationKey]
+  simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq]
 
 theorem parallelEntry_projection_declares_timer (operation : SemanticOperation)
     (arm : ParallelMultiInstanceArm)
@@ -694,7 +694,7 @@ theorem parallelEntry_projection_declares_timer (operation : SemanticOperation)
       (timerWaitDeclarationKey arm.boundaryTimer.elementId) = true := by
   cases operation <;> simp [ParallelMultiInstanceArm.ofOperation?] at projects
   rw [← projects]
-  simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, timerWaitDeclarationKey]
+  simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, timerWaitDeclarationKey_eq]
 
 theorem parallelProjection_filter_eq_nil_of_filterMap_eq_nil
     (operations : List SemanticOperation) (taskId : TaskDefinitionId)

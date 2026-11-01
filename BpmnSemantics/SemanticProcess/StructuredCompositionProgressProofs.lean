@@ -4,7 +4,6 @@ import BpmnSemantics.SemanticProcess.StructuredCompositionCompletionAvailability
 public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.InternalScheduledClosure
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProcessIdentityProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 public import BpmnSemantics.SemanticProcess.StructuredCompositionLifecycleProofs
 public import BpmnSemantics.SemanticProcess.StructuredCompositionClosureProofs
@@ -61,9 +60,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CheckedSequenceFlow.
   `StructuredComposition.isScopeCompletion, `StructuredComposition.operationInputs, `TokenPatch.apply,
   `activateDataInputOutputUserTask?, `awaitUserTaskState?, `chooseState?, `completeQuiescentScope?,
   `completeScopeState?, `exactLiveOccurrence, `fire?, `flowControlPlaceId, `lowerCheckedProcess, `nonempty,
-  `programWellFormed, `reachNoneEndState?, `runningInstance?, `scopeQuiescent, `step, `addToken, `addTokens,
-  `canonicalInsertBy, `initiateState?, `onlyTokenOwner?, `removeToken, `removeTokens, `rootScopeOccurrence?,
-  `tokenOwners]
+  `reachNoneEndState?, `runningInstance?, `scopeQuiescent, `step, `addToken, `addTokens, `canonicalInsertBy,
+  `initiateState?, `onlyTokenOwner?, `removeToken, `removeTokens, `rootScopeOccurrence?, `tokenOwners]
 
 public section
 
@@ -280,7 +278,7 @@ theorem admitted_merge_port_has_provenance
     declared origins declaredMember
   have allNonempty : program.controlPlaces.all (fun place =>
       nonempty place.id.value && nonempty place.origin.elementId.value) = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+    simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
     grind
   have nonemptyOrigin : declared.origin.elementId.value ≠ "" := by
     have valid := List.all_eq_true.mp allNonempty declared declaredMember
@@ -489,7 +487,7 @@ theorem admitted_enabled_operation_is_unique
       · simp [pending] at done
     have count : (program.operations.filter (fun operation => match operation with
         | .initiate .. | .initiateMessage .. | .initiateTimer .. => true | _ => false)).length = 1 := by
-      simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+      simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
       exact of_decide_eq_true wellFormed.1.1.1.1.2
     exact singletonSame _ count (initiation left leftAfter leftMember leftFired) (initiation right rightAfter rightMember rightFired)
   · by_cases empty : state.tokens = []

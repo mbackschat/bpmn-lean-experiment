@@ -1,6 +1,6 @@
 module
 
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
+import BpmnSemantics.SemanticProcess.RuntimeStateWellFormedLaws
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 import all BpmnSemantics.SemanticProcess.MixedTaskControlFlowAdmission
@@ -72,9 +72,8 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MixedTaskControlFlow
   `completeUserTask, `controllerIdentitiesUnique, `controllersNotExhausted, `controllersOwnLiveActivity,
   `declaredByExactlyOneOwnedOperation, `dispatchStimulus, `effectIdNamesWait, `effectIncidentAssociationsValid,
   `effectResultOutput, `effectWaitKeyMatches, `eventRaceAssociationsValid, `exactLiveOccurrence,
-  `hiddenRecordDeclarationsValid, `occursOnce, `operationControlPlaces, `operationDeclaresWaitKey, `operationOutputs,
-  `operationWaitDeclarationKeys, `orderedBy, `parallelMultiInstanceControllersOrdered, `programWellFormed,
-  `reachNoneEndState?, `runtimeStateIdentityBound, `runtimeStateWellFormed,
+  `hiddenRecordDeclarationsValid, `occursOnce, `operationControlPlaces, `operationOutputs, `orderedBy,
+  `parallelMultiInstanceControllersOrdered, `reachNoneEndState?, `runtimeStateIdentityBound, `runtimeStateWellFormed,
   `sequentialMultiInstanceControllerProgramBindingsValid, `sequentialMultiInstanceOperationBindingComplete,
   `sequentialMultiInstanceProgramBindingsValid, `sequentialScopeEntry?, `sequentialScopeStateValid,
   `serialRuntimeAssociationsValid, `taskIdNamesWait, `uniqueControlPlace?, `uniqueDefinitionScope?,
@@ -524,7 +523,7 @@ theorem firing_unique (program : Program) (analysis : Analysis) (state leftAfter
       · simp [pending] at done
     have count : (program.operations.filter (fun operation => match operation with
         | .initiate .. | .initiateMessage .. | .initiateTimer .. => true | _ => false)).length = 1 := by
-      simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+      simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
       exact of_decide_eq_true wellFormed.1.1.1.1.2
     exact singletonSame _ count (initiation left leftAfter leftMember leftFired) (initiation right rightAfter rightMember rightFired)
   · by_cases empty : state.tokens = []
@@ -672,7 +671,7 @@ theorem position_wait_guards (program : Program) (analysis : Analysis) (state : 
       have census := SerialBusinessTask.human_wait_census program wait id origin input wellFormed declared metadata
       have unique := programWellFormed_waitDeclarer program (.awaitUserTask id origin input wait.output wait.task)
         (userTaskWaitDeclarationKey wait.task.id) wellFormed declared
-        (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])
+        (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
       simp only [frontierFields, Prod.mk.injEq] at fields
       have identity := humanOwners wait (by simp [fields.2.2.1])
       rcases life with ⟨running, live⟩ | ⟨_, _, _, empty, _⟩
@@ -687,7 +686,7 @@ theorem position_wait_guards (program : Program) (analysis : Analysis) (state : 
       have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input wait.output effect wait.bpmnErrorRoute declared
       have unique := programWellFormed_waitDeclarer program (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute)
         (effectWaitDeclarationKey wait.elementId) wellFormed declared
-        (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, aligned, element])
+        (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligned, element])
       simp only [frontierFields, Prod.mk.injEq] at fields
       have identity := effectOwners wait (by simp [fields.2.2.2.1])
       rcases life with ⟨running, live⟩ | ⟨_, _, _, _, empty, _⟩

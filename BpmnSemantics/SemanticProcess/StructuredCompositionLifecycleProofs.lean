@@ -18,10 +18,10 @@ meta import BpmnSemantics.PrivateEquationLemmas
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`StructuredComposition.OperationAllowed,
   `StructuredComposition.RootOwnedControl, `activateDataInputOutputUserTask?, `activateUserTask,
   `activityOccurrenceForTaskWait?, `admitStimulus, `awaitUserTaskState?, `callDataRuntimeStateValid, `chooseState?,
-  `interruptingMessageEventSubProcessStateValid, `isCallActivityProgram, `operationDeclaresWaitKey,
-  `operationOwningScope?, `operationWaitDeclarationKeys, `processInterfaceScalar, `programEntryRootScopeId?,
-  `reachNoneEndState?, `runningInstance?, `sameActivityOccurrence, `scopeQuiescent, `scopedOwnershipComplete,
-  `addActivityOccurrenceVariableScope, `insertActivityOccurrence, `insertActivityVariableScope, `insertUserTaskWait,
+  `interruptingMessageEventSubProcessStateValid, `isCallActivityProgram, `operationOwningScope?,
+  `processInterfaceScalar, `programEntryRootScopeId?, `reachNoneEndState?, `runningInstance?,
+  `sameActivityOccurrence, `scopeQuiescent, `scopedOwnershipComplete, `addActivityOccurrenceVariableScope,
+  `insertActivityOccurrence, `insertActivityVariableScope, `insertUserTaskWait,
   `removeActivityOccurrenceVariableScope, `rootDefinitionScope?, `runningProgramStartState?, `runningStartState]
 
 public section
@@ -343,7 +343,7 @@ theorem ordinary_completion_clears_task_lifetime
       have declares : operationDeclaresWaitKey operation (userTaskWaitDeclarationKey wait.task.id) = true := by
         cases operation <;> simp only at details
         all_goals try contradiction
-        all_goals simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, details.1]
+        all_goals simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, details.1]
       have unique := programWellFormed_waitDeclarer program operation (userTaskWaitDeclarationKey wait.task.id)
         wellFormed member declares
       have other : SemanticOperation.awaitUserTask id origin input output task ∈
@@ -355,7 +355,7 @@ theorem ordinary_completion_clears_task_lifetime
           have sameValue : task.id.value = wait.task.id.value := by
             simpa [sameWait] using key.trans (congrArg TaskDefinitionId.value sameKey).symm
           exact congrArg TaskDefinitionId.mk sameValue
-        simp [operationDeclaresWaitKey, operationWaitDeclarationKeys, taskKey]
+        simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, taskKey]
       rw [unique] at other
       have same := List.mem_singleton.mp other
       subst operation

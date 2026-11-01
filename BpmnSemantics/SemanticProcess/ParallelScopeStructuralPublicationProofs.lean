@@ -2,7 +2,6 @@ module
 
 import BpmnSemantics.SemanticProcess.ParallelScopeDiscoveryProofs
 public import BpmnSemantics.SemanticProcess.ScopeCreationLifecycleStructuralValidity
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 import BpmnSemantics.SemanticProcess.ParallelScopeCounterFrameProofs
@@ -46,11 +45,11 @@ Lifetime scope removal retains those Program bindings, so structural publication
 validity follows without assuming a successful occurrence projection. -/
 run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy,
-  `InternalCommutation.EntryBinding, `InternalCommutation.ScopeBinding, `ParallelScopeAcceptedStart.parent,
-  `ParallelScopeStart.analyzeProgram, `admitStimulus, `enteredChildScopeId?, `flowNodeOccurrenceOwnerLiveUnique,
-  `nonempty, `parallelScopeEntry?, `programWellFormed, `scopeOperationBindingValid, `scopedOwnershipComplete,
-  `uniqueDefinitionScope?, `runningProgramStartState?]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[
+  `FlowNodeOccurrenceProgramValidity.Internal.operationOwnedBy, `InternalCommutation.EntryBinding,
+  `InternalCommutation.ScopeBinding, `ParallelScopeAcceptedStart.parent, `ParallelScopeStart.analyzeProgram,
+  `admitStimulus, `enteredChildScopeId?, `flowNodeOccurrenceOwnerLiveUnique, `nonempty, `parallelScopeEntry?,
+  `scopeOperationBindingValid, `scopedOwnershipComplete, `uniqueDefinitionScope?, `runningProgramStartState?]
 
 public section
 
@@ -63,7 +62,7 @@ private theorem definition_census (program : Program) (scope : DefinitionScope)
     program.definitionScopes.filter (fun candidate => decide (candidate.id = scope.id)) = [scope] ∧
       scope.id.value.isEmpty = false := by
   have sorted : strictlySortedStrings (program.definitionScopes.map (·.id.value)) = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+    simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
     grind
   have valuesUnique := strictlySortedStrings_nodup _ sorted
   have idsUnique : (program.definitionScopes.map (·.id)).Nodup := by
@@ -73,7 +72,7 @@ private theorem definition_census (program : Program) (scope : DefinitionScope)
     exact valuesUnique
   have named : program.definitionScopes.all (fun scope =>
       nonempty scope.id.value && nonempty scope.originElementId.value) = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+    simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
     grind
   refine ⟨filter_key_eq_singleton_of_nodup _ (·.id) scope idsUnique member, ?_⟩
   simpa only [nonempty, Bool.not_eq_true'] using

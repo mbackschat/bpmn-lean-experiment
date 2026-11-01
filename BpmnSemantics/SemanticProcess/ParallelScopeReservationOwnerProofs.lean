@@ -1,7 +1,6 @@
 module
 
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationAncestryProofs
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.ParallelScopeData
 public import BpmnSemantics.SemanticProcess.ParallelScopeEntryReachability
 import BpmnSemantics.SemanticProcess.ParallelScopeReservationSelectionProofs
@@ -15,6 +14,7 @@ import all BpmnSemantics.SemanticProcess.InternalOperationOccurrence
 import all BpmnSemantics.SemanticProcess.ParallelScopeProgramCapacity
 import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
 meta import BpmnSemantics.PrivateEquationLemmas
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! # Actual parallel reservation owner bounds
 
@@ -24,7 +24,7 @@ actual continuation history retains those identities without allocating scopes.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.occurrenceOwnerRootValid,
-  `ParallelScopeStart.analyzeProgram, `nonempty, `programWellFormed]
+  `ParallelScopeStart.analyzeProgram, `nonempty]
 
 public section
 
@@ -122,7 +122,7 @@ private theorem ancestry_definition_nonempty (program : Program) (state : Runtim
     owner.definitionScopeId.value.isEmpty = false := by
   have named : program.definitionScopes.all (fun scope =>
       nonempty scope.id.value && nonempty scope.originElementId.value) = true := by
-    simp only [programWellFormed, Bool.and_eq_true] at wellFormed
+    simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
     grind
   cases definitions : program.definitionScopes.filter (·.id == owner.definitionScopeId) with
   | nil => cases fuel <;> simp [occurrenceOwnerRootValid, definitions] at ancestry

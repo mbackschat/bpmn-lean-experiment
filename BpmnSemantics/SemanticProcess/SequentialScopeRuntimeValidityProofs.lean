@@ -4,7 +4,6 @@ import BpmnSemantics.SemanticProcess.SequentialScopeAdmissionValidityProofs
 import BpmnSemantics.SemanticProcess.ActivityDataInputOutputMultiInstanceFrames
 import BpmnSemantics.SemanticProcess.ParallelScopeWaitPublicationProofs
 import BpmnSemantics.SemanticProcess.InternalRegionalIdentityValidity
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 import all BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 public import BpmnSemantics.SemanticProcess.SequentialScopeTransition
@@ -50,6 +49,7 @@ import all BpmnSemantics.SemanticProcess.SequentialScopeProgramAdmission
 import all BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
 import all BpmnSemantics.SemanticProcess.TransitionRecord
 meta import BpmnSemantics.PrivateEquationLemmas
+import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
 
 /-! SMIS-ADMIT-01 retains full runtime validity and actual projectability for successful individual transitions through admission and lifecycle contracts, below certificate preservation and scheduler transport. -/
 
@@ -62,8 +62,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SemanticOperation.ki
   `controllersOwnLiveActivity, `effectIncidentAssociationsValid, `eventRaceAssociationsValid, `exactLiveOccurrence,
   `flowNodeOccurrenceProgramValidity, `flowNodeOccurrenceUserTaskProgramValidity,
   `flowNodeOccurrenceWaitProgramValidity, `hiddenRecordDeclarationsValid, `messageBoundedOperationProjectionValid,
-  `occursOnce, `operationDeclaresWaitKey, `operationWaitDeclarationKeys, `orderedBy,
-  `parallelMultiInstanceControllersOrdered, `parallelMultiInstanceProgramBindingsValid,
+  `occursOnce, `orderedBy, `parallelMultiInstanceControllersOrdered, `parallelMultiInstanceProgramBindingsValid,
   `projectOpenFlowNodeOccurrences?, `projectWaits?, `runtimeStateIdentityBound, `runtimeStateWellFormed,
   `sameActivityOccurrence, `scopeOperationBindingValid, `sequentialMultiInstanceControllerProgramBindingsValid,
   `sequentialMultiInstanceOperationBindingComplete, `sequentialMultiInstanceProgramBindingsValid,
@@ -176,11 +175,11 @@ private theorem smis_entry_task_separation (program : Program) (entry : Sequenti
   constructor
   · intro operation member
     cases operation <;> try trivial
-    exact separate _ member _ (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])
+    exact separate _ member _ (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
   · intro operation member arm parsed
     cases operation <;> simp only [ParallelMultiInstanceArm.ofOperation?, Option.some.injEq] at parsed <;> try contradiction
     subst arm
-    exact separate _ member _ (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])
+    exact separate _ member _ (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
 
 /-- Actual SMIS entry retains the complete runtime and publication foundation; static port and child declarations are discharged by the admitted consumer. -/
 theorem sequentialScope_entry_full_validity (program : Program) (hosting : SemanticId)
@@ -410,7 +409,7 @@ theorem sequentialScope_entry_full_validity (program : Program) (hosting : Seman
           noWork.1, noWork.2.2, census.1, insertActivityOccurrence, record]
         all_goals
           exact Or.inr (Ne.symm (taskSeparated _ member _
-            (by simp [operationDeclaresWaitKey, operationWaitDeclarationKeys])))
+            (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])))
       have afterFacts := (position_iff program hosting hosting changed nextRunning).mp afterPosition
       obtain ⟨occurrences, projected⟩ := projectOpenFlowNodeOccurrences_hosting_total program changed hosting
         nextRunning afterFacts.1 occurrenceValidity (by simp [eventRaceAssociationsValid, changed, census.2.2.2.1])

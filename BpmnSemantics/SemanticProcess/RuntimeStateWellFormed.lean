@@ -8,7 +8,6 @@ public import BpmnSemantics.SemanticProcess.RuntimePositionValidity
 public import BpmnSemantics.SemanticProcess.RuntimeStateIdentityBound
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceRuntimeWellFormedness
 public import BpmnSemantics.SemanticProcess.SequentialScopeStateValidation
-import all BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 import all BpmnSemantics.SemanticProcess.ActivityOccurrence
 import all BpmnSemantics.SemanticProcess.RuntimePositionValidity
 import all BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
@@ -61,8 +60,7 @@ to be two.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`activityOccurrenceForTimerWait?,
-  `effectWaitDeclarationKey, `exactLiveOccurrence, `messageWaitDeclarationKey, `occursOnce, `operationDeclaresWaitKey,
-  `operationWaitDeclarationKeys, `sameActivityOccurrence, `timerWaitDeclarationKey, `userTaskWaitDeclarationKey]
+  `exactLiveOccurrence, `occursOnce, `sameActivityOccurrence]
 
 public section
 
@@ -518,76 +516,6 @@ def effectWaitDeclarers (program : Program) (elementId : NodeId) : List Semantic
     | .choose .. | .selectMany .. | .synchronizeSelected ..
     | .throwError .. | .reachNoneEnd .. | .terminateScope ..
     | .completeScope .. | .completeEventSubProcess .. | .triggerCompensation .. | .cancelTransaction .. => false
-
-private theorem nodeId_eq_iff_value_eq (left right : NodeId) :
-    left = right ↔ left.value = right.value := by
-  constructor
-  · intro equal
-    cases equal
-    rfl
-  · intro equal
-    cases left
-    cases right
-    simp_all
-
-private theorem taskDefinitionId_eq_iff_value_eq (left right : TaskDefinitionId) :
-    left = right ↔ left.value = right.value := by
-  constructor
-  · intro equal
-    cases equal
-    rfl
-  · intro equal
-    cases left
-    cases right
-    simp_all
-
-/-- The runtime Timer declarer census is the Timer projection of structural wait keys. -/
-theorem timerWaitDeclarers_eq_keyFilter (program : Program) (elementId : NodeId) :
-    timerWaitDeclarers program elementId =
-      program.operations.filter (fun operation =>
-        operationDeclaresWaitKey operation (timerWaitDeclarationKey elementId)) := by
-  unfold timerWaitDeclarers
-  apply List.filter_congr
-  intro operation _
-  cases operation <;> simp [operationDeclaresWaitKey, operationWaitDeclarationKeys,
-    userTaskWaitDeclarationKey, messageWaitDeclarationKey, timerWaitDeclarationKey,
-    effectWaitDeclarationKey, nodeId_eq_iff_value_eq, eq_comm]
-
-/-- The runtime Message declarer census is the Message projection of structural wait keys. -/
-theorem messageWaitDeclarers_eq_keyFilter (program : Program) (elementId : NodeId) :
-    messageWaitDeclarers program elementId =
-      program.operations.filter (fun operation =>
-        operationDeclaresWaitKey operation (messageWaitDeclarationKey elementId)) := by
-  unfold messageWaitDeclarers
-  apply List.filter_congr
-  intro operation _
-  cases operation <;> simp [operationDeclaresWaitKey, operationWaitDeclarationKeys,
-    userTaskWaitDeclarationKey, messageWaitDeclarationKey, timerWaitDeclarationKey,
-    effectWaitDeclarationKey, nodeId_eq_iff_value_eq, eq_comm]
-
-/-- The runtime User Task declarer census is the User Task projection of structural wait keys. -/
-theorem userTaskWaitDeclarers_eq_keyFilter (program : Program) (taskId : TaskDefinitionId) :
-    userTaskWaitDeclarers program taskId =
-      program.operations.filter (fun operation =>
-        operationDeclaresWaitKey operation (userTaskWaitDeclarationKey taskId)) := by
-  unfold userTaskWaitDeclarers
-  apply List.filter_congr
-  intro operation _
-  cases operation <;> simp [operationDeclaresWaitKey, operationWaitDeclarationKeys,
-    userTaskWaitDeclarationKey, messageWaitDeclarationKey, timerWaitDeclarationKey,
-    effectWaitDeclarationKey, taskDefinitionId_eq_iff_value_eq, eq_comm]
-
-/-- The runtime Effect declarer census is the Effect projection of structural wait keys. -/
-theorem effectWaitDeclarers_eq_keyFilter (program : Program) (elementId : NodeId) :
-    effectWaitDeclarers program elementId =
-      program.operations.filter (fun operation =>
-        operationDeclaresWaitKey operation (effectWaitDeclarationKey elementId)) := by
-  unfold effectWaitDeclarers
-  apply List.filter_congr
-  intro operation _
-  cases operation <;> simp [operationDeclaresWaitKey, operationWaitDeclarationKeys,
-    userTaskWaitDeclarationKey, messageWaitDeclarationKey, timerWaitDeclarationKey,
-    effectWaitDeclarationKey, nodeId_eq_iff_value_eq, eq_comm]
 
 def declaredByExactlyOneOwnedOperation (program : Program)
     (declarers : List SemanticOperation) (owner : ScopeOccurrenceId) : Bool :=
