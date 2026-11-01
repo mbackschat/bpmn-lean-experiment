@@ -21,6 +21,11 @@ import {
   deriveInternalDeclaredScopeEntryPreparation,
 } from "./internal-transition-declared-entry-preparation.js";
 import type { PreparedInternalDeclaredScopeEntry } from "./internal-transition-declared-entry-preparation.js";
+import {
+  applyPreparedInternalMappedInvocation,
+  deriveInternalMappedInvocationPreparation,
+} from "./internal-transition-mapped-invocation-preparation.js";
+import type { PreparedInternalMappedInvocation } from "./internal-transition-mapped-invocation-preparation.js";
 import { nestedScopeRecord } from "./nested-scope-data.js";
 import { applyPreparedInternalBoundedScope, deriveInternalBoundedScopePreparation } from "./internal-transition-bounded-scope-preparation.js";
 import type { PreparedInternalBoundedScope } from "./internal-transition-bounded-scope-preparation.js";
@@ -62,6 +67,7 @@ export enum PreparedInternalTransitionFamily {
   LocalControl = "localControl",
   ScopeCreation = "scopeCreation",
   DeclaredScopeEntry = "declaredScopeEntry",
+  MappedInvocation = "mappedInvocation",
   BoundedScope = "boundedScope",
   Regional = "regional",
   OrdinaryEnd = "ordinaryEnd",
@@ -74,6 +80,7 @@ export type PreparedInternalTransition = Readonly<
   | PreparedInternalLocalControl & { family: PreparedInternalTransitionFamily.LocalControl }
   | PreparedInternalScopeCreation & { family: PreparedInternalTransitionFamily.ScopeCreation }
   | PreparedInternalDeclaredScopeEntry & { family: PreparedInternalTransitionFamily.DeclaredScopeEntry }
+  | PreparedInternalMappedInvocation & { family: PreparedInternalTransitionFamily.MappedInvocation }
   | PreparedInternalBoundedScope & { family: PreparedInternalTransitionFamily.BoundedScope; owner: ScopeOccurrenceId }
   | PreparedInternalEnd & { family: PreparedInternalTransitionFamily.OrdinaryEnd }
   | PreparedInternalExclusiveMergeInput & { family: PreparedInternalTransitionFamily.MergeInput }
@@ -97,9 +104,13 @@ export function deriveInternalTransitionPreparation(
         return prepared === null || candidate.owner === null || !sameScopeOccurrence(prepared.owner, candidate.owner)
           ? null : { family: PreparedInternalTransitionFamily.CallData, ...prepared };
       }
-      // Called-root frames stay on the singleton path, like the declared-scope frames of NSD-INIT-01.
-      case CallDataKind.VariableMappings:
-        return null;
+      // CMCALL-PREPARE-01 prepares the invocation with its called-root frame; return stays a singleton.
+      case CallDataKind.VariableMappings: {
+        if (candidate.operation.kind === SemanticOperationKind.ReturnProcess || candidate.owner === null) return null;
+        const prepared = deriveInternalMappedInvocationPreparation(program, state, candidate.operation);
+        return prepared === null || !sameScopeOccurrence(prepared.owner, candidate.owner)
+          ? null : { family: PreparedInternalTransitionFamily.MappedInvocation, ...prepared };
+      }
       case CallDataKind.Empty:
         break;
     }
@@ -194,12 +205,16 @@ export function prepareInternalTransitionBatch(
 }
 
 /**
- * The declared entry's batch premise (CSD-PREPARE-01), as Lean's `PreparedInternalTransition.Independent` states it: its
- * commutation is established only beside declared entries, scope creations, ordinary armings and local control, so any
- * other companion is dependent and never batched with it, so no unproved order is committed.
+ * The frame-inserting families of CSD-PREPARE-01 and CMCALL-PREPARE-01, and their batch premise as Lean's
+ * `PreparedInternalTransition.Independent` states it: their commutation is established only beside declared entries,
+ * mapped invocations, scope creations, ordinary armings and local control, so any other companion is dependent and never
+ * batched with them, so no unproved order is committed.
  */
-const declaredEntryCompanions: ReadonlySet<PreparedInternalTransitionFamily> = new Set([
-  PreparedInternalTransitionFamily.DeclaredScopeEntry, PreparedInternalTransitionFamily.ScopeCreation,
+const frameInserting: ReadonlySet<PreparedInternalTransitionFamily> = new Set([
+  PreparedInternalTransitionFamily.DeclaredScopeEntry, PreparedInternalTransitionFamily.MappedInvocation,
+]);
+const frameInsertingCompanions: ReadonlySet<PreparedInternalTransitionFamily> = new Set([
+  ...frameInserting, PreparedInternalTransitionFamily.ScopeCreation,
   PreparedInternalTransitionFamily.Arming, PreparedInternalTransitionFamily.LocalControl,
 ]);
 
@@ -207,8 +222,8 @@ export function preparedInternalTransitionsAreIndependent(
   left: PreparedInternalTransition,
   right: PreparedInternalTransition,
 ): boolean {
-  if ((left.family === PreparedInternalTransitionFamily.DeclaredScopeEntry && !declaredEntryCompanions.has(right.family)) ||
-      (right.family === PreparedInternalTransitionFamily.DeclaredScopeEntry && !declaredEntryCompanions.has(left.family))) {
+  if ((frameInserting.has(left.family) && !frameInsertingCompanions.has(right.family)) ||
+      (frameInserting.has(right.family) && !frameInsertingCompanions.has(left.family))) {
     return false;
   }
   return left.family === PreparedInternalTransitionFamily.Arming && right.family === PreparedInternalTransitionFamily.Arming
@@ -263,6 +278,10 @@ export function applyPreparedInternalTransition(
     case PreparedInternalTransitionFamily.DeclaredScopeEntry: {
       const { family: _family, ...declared } = prepared;
       return applyPreparedInternalDeclaredScopeEntry(program, state, declared);
+    }
+    case PreparedInternalTransitionFamily.MappedInvocation: {
+      const { family: _family, ...mapped } = prepared;
+      return applyPreparedInternalMappedInvocation(program, state, mapped);
     }
   }
 }
