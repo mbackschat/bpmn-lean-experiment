@@ -85,7 +85,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Hub fix, first increment. Command: `./scripts/verify.sh lean-library`, `./scripts/verify.sh lean-checks`, `./scripts/pnpm.sh run test:infrastructure:runtime`. Status: `exit 0`. Date: `2026-11-01`. Commit: `515d5553`, whose exact tree the asserted receipts verified on `b85da836`. The batch's first builds ran under a 5 GiB container ceiling (peak 3.53 GB, no OOM), and the re-opened fixture `ActivityBoundaryMessageConformance` was remeasured at 1 CPU under 3 GiB (1,114,232 KiB).
+- Hub fix, second increment. Command: `./scripts/verify.sh lean-library`, `./scripts/verify.sh lean-checks`, `./scripts/pnpm.sh run test:infrastructure:runtime`. Status: `exit 0`. Date: `2026-11-01`. Commit: `6cff7309`, whose exact tree the asserted receipts verified on `0e1437d7`. The batch's builds ran under a 5 GiB container ceiling (no OOM), and the re-opened fixture `StructuredCompositionCommandConformance` was remeasured at 1 CPU under 3 GiB (644,796 KiB).
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -95,15 +95,15 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: the hub fix in [Lean build follow-ups](#lean-build-follow-ups), scheduled after the [concurrent scope data](capsules/CONCURRENT-SCOPE-DATA-SPEC.md) family, which closed approved at `484f358d` (`PC-DATA-04`, `PC-SCOPE-02` and `PC-SCOPE-01` stay open on other mechanisms). Multi-Instance closure stays held at qualification. Pull request #38 is the owner's to land.
 
-Deliverable: the hub fix's first increment, the leading closed-world functions consumed through lemmas in their owners, under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
+Deliverable: the hub fix's next increment, the leading measured mean driver consumed through lemmas in its owner or cut from its `import all` carrier, under the [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules).
 
 Acceptance blockers: none recorded.
 
-Current result: the hub fix's first increment cut `ProgramStructuralValidation`'s chain through `RuntimeStateWellFormed`, moving its consumers onto equation laws in `ProgramStructuralValidationLaws` and the wait-key census theorems into `RuntimeStateWellFormedLaws`; its body edit rebuilds 214 modules instead of 480, the replay gives mean 251.3, p90 619 and 15 above 500 (base 262.4, 682, 17), and its Lean and fast verification is green ([current evidence](#current-evidence)).
+Current result: two increments cut `ProgramStructuralValidation`'s body edit from 480 to 214 modules and `ParallelScopeRuntime`'s from 151 to 64; the replay gives mean 243.6, p90 619 and 15 above 500 (base 262.4, 682, 17), verified green ([current evidence](#current-evidence)).
 
-Effort budget: 12 hours of working time for the first increment, about 4.5 hours used (2026-10-31 22:35 to 2026-11-01 03:00); the remaining hours go to the next increments; stop and reassess at the limit.
+Effort budget: 12 hours of working time for the hub fix increments, about 7.3 hours used (2026-10-31 22:35 to 2026-11-01 05:55); stop and reassess at the limit.
 
-Next action: the second increment, cutting `GraphValidation`'s `import all` chain into `RuntimePositionValidity` (fan-out model: the largest single carrier, about 359 modules of `GraphValidation`'s body edit), under a reviewed Rule 2 declaration that selects consumers by compile, as the [consumers rule](LEAN-BUILD-MODULARITY-SPEC.md#module-rules) requires.
+Next action: the third increment, ranked by mean contribution: `ValueDomain` (body edit 470, only two `import all` openers, so exposed bodies drive it): establish by compile which bodies importers reduce and hide the rest; if most are reduced, cut `CommandAdmission`'s largest carrier `TransitionTrace` instead. Both run under a reviewed Rule 2 declaration selecting consumers by compile.
 
 Oracle: the replay's per-module rebuild counts, mean and p90 at the increment's commit against `afd2b1ba`.
 
