@@ -82,7 +82,7 @@ def nestedScopeScenarioStartAdmitted (program : Program) : Stimulus → Bool
       !nestedScopeDataProgram program ||
         (!instanceId.value.isEmpty && if embeddedScopeDataBearing program
           then NestedScopeControl.startBindingsAdmitted program bindings
-          else NestedScopeData.startBindingsAdmitted program bindings)
+          else StructuredScopeData.startBindingsRouted program bindings)
   | _ => !nestedScopeDataProgram program
 
 /-- CDATA-RESUME-01 and COMPSTART-DATA-01 require the selected initializing data before a supported scenario can enter its first Process. -/

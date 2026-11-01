@@ -81,7 +81,7 @@ def admitted (program : Program) (instanceId : SemanticId) (bindings : List Vari
   else if program.identity.semanticProfile = portableEffectDataProfileId then
     EffectData.startBindingsAdmitted program bindings
   else if program.identity.semanticProfile = nestedScopeDataProfileId then
-    NestedScopeData.startBindingsAdmitted program bindings
+    StructuredScopeData.startBindingsRouted program bindings
   else if embeddedScopeDataBearing program then
     NestedScopeControl.startBindingsAdmitted program bindings
   else if program.identity.semanticProfile = callDataCheckpointProfileId then

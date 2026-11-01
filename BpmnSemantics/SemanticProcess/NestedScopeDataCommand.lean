@@ -77,17 +77,19 @@ def calledTaskOfHost (state : RuntimeState) (host : SemanticId) (taskId : UserTa
     record.caller.processInstanceId == host && record.calledRoot.processInstanceId == taskId.processInstanceId
 
 /-- The admission both completions re-check: the nested scope-control analysis for a data-bearing
-embedded completion Program (CSD-ADMIT-01), otherwise the nested scope-data profile's serial analysis. -/
+embedded completion Program (CSD-ADMIT-01), otherwise the nested scope-data profile's routed analysis
+(CSSD-ROUTE-01). -/
 def programAdmitted (program : Program) : Bool :=
   if embeddedScopeDataBearing program then (NestedScopeControl.programAnalysis program).isSome
-  else (programAnalysis program).isSome
+  else StructuredScopeData.programRouted program
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`programAdmitted]
 
 /-- Neither analysis admits a single scope, so a one-scope Program completes no task through this path. -/
 theorem programAdmitted_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
     programAdmitted program = false := by
-  simp [programAdmitted, programAnalysis_one_scope program one, NestedScopeControl.programAnalysis_one_scope program one]
+  simp [programAdmitted, StructuredScopeData.programRouted_one_scope program one,
+    NestedScopeControl.programAnalysis_one_scope program one]
 
 /-- Both completions re-check Program admission, as the parallel Multi-Instance stimulus gate does, so
 a Program that admission refuses completes no task. -/

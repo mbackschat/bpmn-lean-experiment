@@ -600,7 +600,7 @@ def checkedProfileCapabilitiesValid (source : CheckedProcess) : Bool :=
   else if source.identity.semanticProfile == portableEffectDataProfileId then
     (EffectData.checkedAnalysis source).isSome
   else if source.identity.semanticProfile == nestedScopeDataProfileId then
-    (NestedScopeData.checkedAnalysis source).isSome
+    StructuredScopeData.checkedRouted source
   else if source.identity.semanticProfile == structuredCompositionCheckpointProfileId then
     structuredCompositionCheckedGraph source
   else if source.identity.semanticProfile == portableHandoffProfileId then
@@ -714,7 +714,7 @@ def programUndispatchedCapabilities (program : Program) : Bool :=
       else if program.identity.semanticProfile == portableEffectDataProfileId then
         (EffectData.programAnalysis program).isSome
       else if program.identity.semanticProfile == nestedScopeDataProfileId then
-        (NestedScopeData.programAnalysis program).isSome
+        StructuredScopeData.programRouted program
       else if program.identity.semanticProfile == portableHandoffProfileId then
         portableHandoffProgramGraph program
       else program.identity.semanticProfile == structuredCompositionCheckpointProfileId &&

@@ -679,10 +679,10 @@ def programBodies (program : Program) (data : Option Data) : Option (List RawBod
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`programBodies]
 
-/-- A data-bearing embedded completion Program's declarations, handlers, mapped Service Tasks and mapped
-Calls. -/
+/-- A data-bearing embedded completion Program's, or any nested scope-data Program's (CSSD-ADMIT-01),
+declarations, handlers, mapped Service Tasks and mapped Calls. -/
 private def programData (program : Program) : Option Data :=
-  if embeddedScopeDataBearing program then
+  if program.identity.semanticProfile == nestedScopeDataProfileId || embeddedScopeDataBearing program then
     some { records := program.scopeLocalData, handlers := SerialBusinessTask.programHandlers program
            accesses := program.operations.filterMap fun op => match op with
              | .awaitEffect id _ _ _ effect _ => some (id.value, serviceAccess effect.inputMappings effect.outputMappings)
@@ -705,14 +705,16 @@ private def programModel (program : Program) : Option (Nat × List String × Opt
     | .completeScope _ _ scopeId none => scopeId == root.id
     | _ => false
   -- CSE-ADMIT-01: the source overlay binds Service Task handlers, so a Program carries one exactly when it
-  -- has an effect.
+  -- has an effect; CSSD-ADMIT-01 keeps the nested scope-data profile's overlay on every model.
+  let structured := program.identity.semanticProfile == nestedScopeDataProfileId
   let hasEffect := program.operations.any fun op => match op with
     | .awaitEffect .. => true
     | _ => false
-  if !(program.identity.sourceOverlay.isSome == hasEffect && program.internalSchedulingMode == .rejectObservableChoice &&
+  if !(program.identity.sourceOverlay.isSome == (structured || hasEffect) &&
+      program.internalSchedulingMode == .rejectObservableChoice &&
       program.compensationActivityRetention.isNone && program.compensationEventSubProcessSnapshots.isNone &&
       program.compensationExecution.isNone && program.interruptingMessageEventSubProcesses.isEmpty &&
-      (program.scopeLocalData.isEmpty || program.identity.semanticProfile == embeddedCompletionProfileId) &&
+      (program.scopeLocalData.isEmpty || program.identity.semanticProfile == embeddedCompletionProfileId || structured) &&
       rootCompleted.length == 1 &&
       completions.length + calledRoots.length == program.definitionScopes.length &&
       -- Every return pairs with exactly one invocation, so no called root completes without a caller.
@@ -754,3 +756,120 @@ def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) 
           required.contains binding.name || optional.contains binding.name
 
 end BpmnSemantics.SemanticProcess.NestedScopeControl
+
+/-! ## Structured scope-data routing
+
+CSSD-ROUTE-01 and CSSD-ADMIT-01 for `nestedScopeDataProfileId`, per the
+[concurrent structured scope data proposal](../../docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md#stable-rules).
+A Program or checked graph of the profile is concurrent exactly when it splits a token. The serial analysis
+refuses every split, so no model it admits is ever routed elsewhere; a concurrent one takes this module's
+analysis, restricted to a source overlay on every model, forks only in Sub-Process bodies, no merge region and
+the profile's own Call bound. Transcribed independently by the TypeScript `structured-scope-data-routing`
+module. -/
+
+namespace BpmnSemantics.SemanticProcess.StructuredScopeData
+
+open BpmnSemantics
+
+private def splits (operations : List SemanticOperation) : Bool :=
+  operations.any fun
+    | .duplicate .. => true
+    | _ => false
+
+/-- CSSD-ROUTE-01: a Program of the nested scope-data profile that splits a token. -/
+def concurrentProgram (program : Program) : Bool :=
+  program.identity.semanticProfile == nestedScopeDataProfileId && splits program.operations
+
+/-- The checked-graph counterpart of `concurrentProgram`, consulted only under the profile. -/
+private def checkedConcurrent (source : CheckedProcess) : Bool :=
+  source.nodes.any fun
+    | .parallelGateway _ .diverging => true
+    | _ => false
+
+/-- The scope a Process root body runs in, which the profile keeps one serial path. -/
+private def rootScope? (scopes : List DefinitionScope) (processId : ProcessId) : Option DefinitionScopeId :=
+  (scopes.find? fun scope => scope.parentScopeId.isNone && scope.originElementId.value == processId.value).map (·.id)
+
+/-- The profile's Call bound (CVM-ADMIT-01, Stage B): at most two Calls, all mapped, all naming the one
+called Process of a two-Process document. -/
+private def callsAdmitted (calls : List (ProcessId × CallDataInterface)) : Bool :=
+  calls.length ≤ NestedScopeData.callLimit && (calls.map (·.1.value)).eraseDups.length ≤ 1 &&
+    calls.all fun
+      | (_, .variableMappings ..) => true
+      | _ => false
+
+private def programRestrictionsHold (program : Program) : Bool :=
+  match rootScope? program.definitionScopes program.processId with
+  | none => false
+  | some root =>
+      let scopeOf := fun (id : OperationId) =>
+        (program.operationScopes.find? (·.operationId == id)).map (·.scopeId)
+      program.identity.sourceOverlay.isSome &&
+        !(program.operations.any fun
+          | .mergeExclusive .. => true
+          | .duplicate id .. => scopeOf id == some root
+          | _ => false) &&
+        callsAdmitted (program.operations.filterMap fun
+          | .invokeProcess _ _ _ calledProcessId _ _ _ data => some (calledProcessId, data)
+          | _ => none)
+
+private def checkedRestrictionsHold (source : CheckedProcess) : Bool :=
+  match rootScope? source.definitionScopes source.processId with
+  | none => false
+  | some root =>
+      let scopeOf := fun (id : NodeId) => (source.nodeScopes.find? (·.nodeId == id)).map (·.scopeId)
+      source.identity.sourceOverlay.isSome &&
+        !(source.nodes.any fun
+          | .exclusiveMerge _ => true
+          | .parallelGateway id .diverging => scopeOf id == some root
+          | _ => false) &&
+        callsAdmitted (source.nodes.filterMap fun
+          | .callActivity _ calledProcessId data => some (calledProcessId, data)
+          | _ => none)
+
+/-- CSSD-ADMIT-01 over the Program: the serial analysis for a serial Program, the restricted nested
+scope-control analysis for a concurrent one. -/
+def programRouted (program : Program) : Bool :=
+  if concurrentProgram program then
+    programRestrictionsHold program && (NestedScopeControl.programAnalysis program).isSome
+  else (NestedScopeData.programAnalysis program).isSome
+
+/-- CSSD-ADMIT-01 over the checked graph, independent of the Program. -/
+def checkedRouted (source : CheckedProcess) : Bool :=
+  if checkedConcurrent source then
+    checkedRestrictionsHold source && (NestedScopeControl.checkedAnalysis source).isSome
+  else (NestedScopeData.checkedAnalysis source).isSome
+
+/-- NSD-AVAILABLE-01 for a serial Program; CSD-AVAILABLE-01 and CMCALL-START-01 under the profile's
+`SingletonBusinessItem` policy for a concurrent one. -/
+def startBindingsRouted (program : Program) (bindings : List VariableBinding) : Bool :=
+  if concurrentProgram program then
+    programRestrictionsHold program && NestedScopeControl.startBindingsAdmitted program bindings
+  else NestedScopeData.startBindingsAdmitted program bindings
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredScopeData #[`concurrentProgram, `programRouted, `checkedRouted, `startBindingsRouted]
+
+/-- CSSD-ROUTE-01: without a split, Program admission is the serial analysis's. -/
+private theorem programRouted_serial (program : Program) (serial : concurrentProgram program = false) :
+    programRouted program = (NestedScopeData.programAnalysis program).isSome := by
+  simp [programRouted, serial]
+
+/-- CSSD-ROUTE-01: without a fork, checked admission is the serial analysis's. -/
+private theorem checkedRouted_serial (source : CheckedProcess) (serial : checkedConcurrent source = false) :
+    checkedRouted source = (NestedScopeData.checkedAnalysis source).isSome := by
+  simp [checkedRouted, serial]
+
+/-- CSSD-ROUTE-01: without a split, the Start rule is the serial analysis's. -/
+private theorem startBindingsRouted_serial (program : Program) (bindings : List VariableBinding)
+    (serial : concurrentProgram program = false) :
+    startBindingsRouted program bindings = NestedScopeData.startBindingsAdmitted program bindings := by
+  simp [startBindingsRouted, serial]
+
+/-- Neither routed analysis admits a single scope. -/
+theorem programRouted_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
+    programRouted program = false := by
+  unfold programRouted
+  split <;> simp [NestedScopeControl.programAnalysis_one_scope program one,
+    NestedScopeData.programAnalysis_one_scope program one]
+
+end BpmnSemantics.SemanticProcess.StructuredScopeData
