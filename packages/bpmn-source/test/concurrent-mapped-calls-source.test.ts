@@ -180,6 +180,46 @@ test("CMCALL-ADMIT-01 refuses a Service Task beside a mapped Call", async () => 
   assert.equal((await compile(xml, await facilityHandlers())).status, BpmnCompilationStatus.Rejected);
 });
 
+test("CMCALL-ADMIT-01 refuses a mapped Call in a merge-target body and admits it after a join", async () => {
+  // Sub-Process Work forks into two User Tasks that meet at `meet`, then runs Fix, whose body holds a User Task
+  // and then `leaf`; an exclusive merge makes Fix a merge target, which two live occurrences can share. The called
+  // Process is present only when `leaf` calls it, since an uncalled second Process would be a second entry.
+  const region = (meet: "exclusiveGateway" | "parallelGateway", leaf: string, called: string): string => `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_Region" targetNamespace="urn:test">
+  <process id="Process_Region" isExecutable="true">
+    <startEvent id="Started" />
+    <subProcess id="Work"><startEvent id="WorkStart" /><parallelGateway id="WorkFork" />
+      <userTask id="ReviewA" /><userTask id="ReviewB" /><${meet} id="WorkMeet" />
+      <subProcess id="Fix"><startEvent id="FixStart" /><userTask id="FixTask" />${leaf}<endEvent id="FixEnd" />
+        <sequenceFlow id="Flow_FixStart" sourceRef="FixStart" targetRef="FixTask" />
+        <sequenceFlow id="Flow_FixTask" sourceRef="FixTask" targetRef="FixLeaf" />
+        <sequenceFlow id="Flow_FixLeaf" sourceRef="FixLeaf" targetRef="FixEnd" /></subProcess>
+      <endEvent id="WorkEnd" />
+      <sequenceFlow id="Flow_WorkStart" sourceRef="WorkStart" targetRef="WorkFork" />
+      <sequenceFlow id="Flow_ForkA" sourceRef="WorkFork" targetRef="ReviewA" />
+      <sequenceFlow id="Flow_ForkB" sourceRef="WorkFork" targetRef="ReviewB" />
+      <sequenceFlow id="Flow_ReviewA" sourceRef="ReviewA" targetRef="WorkMeet" />
+      <sequenceFlow id="Flow_ReviewB" sourceRef="ReviewB" targetRef="WorkMeet" />
+      <sequenceFlow id="Flow_Meet" sourceRef="WorkMeet" targetRef="Fix" />
+      <sequenceFlow id="Flow_Fix" sourceRef="Fix" targetRef="WorkEnd" /></subProcess>
+    <endEvent id="Ended" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Work" />
+    <sequenceFlow id="Flow_Done" sourceRef="Work" targetRef="Ended" />
+  </process>${called}
+</definitions>`;
+  const budgetCheck = `
+  <process id="Process_BudgetCheck" isExecutable="true">
+    <startEvent id="BudgetStarted" /><userTask id="CheckBudget" /><endEvent id="BudgetEnded" />
+    <sequenceFlow id="Flow_BudgetStarted" sourceRef="BudgetStarted" targetRef="CheckBudget" />
+    <sequenceFlow id="Flow_BudgetChecked" sourceRef="CheckBudget" targetRef="BudgetEnded" />
+  </process>`;
+  const call = '<callActivity id="FixLeaf" calledElement="Process_BudgetCheck"><extensionElements>' +
+    '<camunda:in source="traveller" target="traveller" /></extensionElements></callActivity>';
+  await admitted(region("parallelGateway", call, budgetCheck));
+  await admitted(region("exclusiveGateway", '<userTask id="FixLeaf" />', ""));
+  assert.equal((await compile(region("exclusiveGateway", call, budgetCheck))).status, BpmnCompilationStatus.Rejected);
+});
+
 test("CMCALL-ADMIT-01 refuses a mapped Call in a Sub-Process body three levels deep", async () => {
   // `levels` Sub-Processes nested in a chain, the innermost body holding a User Task then the mapped Call.
   const deep = (levels: number): string => {

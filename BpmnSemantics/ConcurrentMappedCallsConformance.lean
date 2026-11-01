@@ -21,7 +21,7 @@ namespace BpmnSemantics.ConcurrentMappedCallsConformance
 
 open BpmnSemantics
 open BpmnSemantics.SemanticProcess
-open BpmnSemantics.ConcurrentEmbeddedActivationsConformance (build node start finish fork join task sub scope admitted)
+open BpmnSemantics.ConcurrentEmbeddedActivationsConformance (build node start finish fork join merge task sub scope admitted)
 open BpmnSemantics.ConcurrentScopeServiceTasksConformance (activityProtocol)
 open BpmnSemantics.ConcurrentScopeDataConformance (literal enclosing copied)
 
@@ -45,27 +45,30 @@ private def reviews : List ScopeLocalData :=
       [copied "financialVerdict" "verdict"] ]
 
 /-- Supplier onboarding: `P` forks Financial review against Compliance review, each preparing its file and
-then calling Expert opinion `X`, and approves after the join. `compliance` is the compliance Call's node. -/
-private def supplierWith (compliance : String × String × CheckedNode) : CheckedProcess :=
+then calling Expert opinion `X`, and approves after the join. `compliance` is the compliance Call's node;
+`complianceLeads` drops the compliance review's preparing task, so its Call leads that body. -/
+private def supplierWith (compliance : String × String × CheckedNode) (complianceLeads : Bool := false) : CheckedProcess :=
+  let prepare := if complianceLeads then [] else [task "ComplianceReview" "PrepareComplianceFile"]
+  let opened := if complianceLeads then [("CA", "ComplianceExpertOpinion")]
+    else [("CA", "PrepareComplianceFile"), ("PrepareComplianceFile", "ComplianceExpertOpinion")]
   withData reviews <| build [("P", none), ("FinancialReview", some "P"), ("ComplianceReview", some "P"), ("X", none)]
-    [ start "P" "PA", fork "P" "PF", sub "P" "FinancialReview", sub "P" "ComplianceReview", join "P" "PJ"
+    ([ start "P" "PA", fork "P" "PF", sub "P" "FinancialReview", sub "P" "ComplianceReview", join "P" "PJ"
     , task "P" "ApproveSupplier", finish "P" "PZ"
     , start "FinancialReview" "FA", task "FinancialReview" "PrepareFinancialFile"
     , mappedCall "FinancialReview" "FinancialExpertOpinion" "X" [enclosing "dossier" "file"] [copied "verdict" "opinion"]
     , finish "FinancialReview" "FZ"
-    , start "ComplianceReview" "CA", task "ComplianceReview" "PrepareComplianceFile", compliance
-    , finish "ComplianceReview" "CZ"
-    , start "X" "XA", task "X" "GiveExpertOpinion", finish "X" "XZ" ]
-    [ ("PA", "PF"), ("PF", "FinancialReview"), ("PF", "ComplianceReview"), ("FinancialReview", "PJ")
+    , start "ComplianceReview" "CA" ] ++ prepare ++ [ compliance, finish "ComplianceReview" "CZ"
+    , start "X" "XA", task "X" "GiveExpertOpinion", finish "X" "XZ" ])
+    ([ ("PA", "PF"), ("PF", "FinancialReview"), ("PF", "ComplianceReview"), ("FinancialReview", "PJ")
     , ("ComplianceReview", "PJ"), ("PJ", "ApproveSupplier"), ("ApproveSupplier", "PZ")
     , ("FA", "PrepareFinancialFile"), ("PrepareFinancialFile", "FinancialExpertOpinion")
-    , ("FinancialExpertOpinion", "FZ"), ("CA", "PrepareComplianceFile")
-    , ("PrepareComplianceFile", "ComplianceExpertOpinion"), ("ComplianceExpertOpinion", "CZ")
-    , ("XA", "GiveExpertOpinion"), ("GiveExpertOpinion", "XZ") ]
+    , ("FinancialExpertOpinion", "FZ") ] ++ opened ++ [ ("ComplianceExpertOpinion", "CZ")
+    , ("XA", "GiveExpertOpinion"), ("GiveExpertOpinion", "XZ") ])
 
-private def supplier : CheckedProcess :=
-  supplierWith (mappedCall "ComplianceReview" "ComplianceExpertOpinion" "X" [enclosing "screeningFile" "file"]
-    [copied "verdict" "finding"])
+private def complianceCall :=
+  mappedCall "ComplianceReview" "ComplianceExpertOpinion" "X" [enclosing "screeningFile" "file"] [copied "verdict" "finding"]
+
+private def supplier : CheckedProcess := supplierWith complianceCall
 
 /-- Travel request: `P` forks straight into Budget check `BC`, Visa check `VC` and Booking, whose local
 `budget` starts from `approvedBudget`. `visa` is the Visa check Call's node and `callee` names its definition. -/
@@ -185,18 +188,47 @@ private def called_patch_stays_in_its_instance : Bool :=
   after.outcome == .committed && frameOf after.state compliance == frameOf bothExpertsOpen compliance &&
     after.state.variables.process.bindings == [bind "financialVerdict" "solvent", bind "supplierName" "Acme"]
 
-/-- The nearest checked non-law: the two live records of one definition name Calls whose input targets
-differ, so selecting the called-root mappings by called definition would give one instance the other's. -/
-private def live_records_of_one_definition_carry_different_mappings : Bool :=
+/-- The nearest checked non-law: `calledRootMappings?` gives the two live roots of one definition different
+mappings, so a selector by called definition, which returns one invocation's mappings for both roots,
+disagrees with it on one of them. Mappings are compared by their target names. -/
+private def mappings_by_definition_differ_from_mappings_by_record : Bool :=
   let program := lowerCheckedProcess supplier
-  let targets := fun (calledId : SemanticId) =>
-    match bothExpertsOpen.calledProcessOccurrences.find? (·.calledRoot.processInstanceId == calledId) with
-    | some record => program.operations.findSome? fun operation => match operation with
-        | .invokeProcess _ _ _ _ _ _ returned (.variableMappings inputs _) =>
-            if returned == record.returnOperationId then some (inputs.map (·.target)) else none
-        | _ => none
-    | none => none
-  targets financial == some ["dossier"] && targets compliance == some ["screeningFile"]
+  let names := fun (mappings : List VariableMapping × List VariableMapping) =>
+    (mappings.1.map (·.target), mappings.2.map (·.target))
+  let byDefinition := fun (root : ScopeOccurrenceId) => program.operations.findSome? fun operation =>
+    match operation with
+    | .invokeProcess _ _ _ _ calledRootScopeId _ _ (.variableMappings inputs outputs) =>
+        if calledRootScopeId == root.definitionScopeId then some (names (inputs, outputs)) else none
+    | _ => none
+  let byRecord := fun (root : ScopeOccurrenceId) =>
+    (NestedScopeData.calledRootMappings? program bothExpertsOpen.calledProcessOccurrences root).map names
+  let roots := bothExpertsOpen.calledProcessOccurrences.map (·.calledRoot)
+  roots.length == 2 && roots.all (byRecord · |>.isSome) &&
+    (roots.map byRecord).eraseDups.length == 2 && roots.any fun root => byDefinition root != byRecord root
+
+/-- CMCALL-ADMIT-01: a mapped Call leading its Sub-Process body on a fork branch is refused, since its
+invocation would be co-enabled with sibling work from a non-root caller; `supplier` differs only in the
+compliance review's preparing task. -/
+private def mapped_call_leading_a_body_is_refused : Bool :=
+  !admitted (supplierWith complianceCall (complianceLeads := true)) && admitted supplier
+
+/-- `W` forks into two User Tasks that meet at a merge (`merged`) or a join, then runs `T`, whose body holds a
+User Task and then a mapped Call of `X`. -/
+private def nestedCallAfter (merged : Bool) : CheckedProcess :=
+  build [("P", none), ("W", some "P"), ("T", some "W"), ("X", none)]
+    [ start "P" "PA", sub "P" "W", finish "P" "PZ"
+    , start "W" "WA", fork "W" "WF", task "W" "ReviewA", task "W" "ReviewB"
+    , if merged then merge "W" "WM" else join "W" "WM", sub "W" "T", finish "W" "WZ"
+    , start "T" "TA", task "T" "FixTask", mappedCall "T" "FixCall" "X" [enclosing "traveller" "traveller"] []
+    , finish "T" "TZ", start "X" "XA", task "X" "CheckBudget", finish "X" "XZ" ]
+    [ ("PA", "W"), ("W", "PZ"), ("WA", "WF"), ("WF", "ReviewA"), ("WF", "ReviewB"), ("ReviewA", "WM")
+    , ("ReviewB", "WM"), ("WM", "T"), ("T", "WZ"), ("TA", "FixTask"), ("FixTask", "FixCall"), ("FixCall", "TZ")
+    , ("XA", "CheckBudget"), ("CheckBudget", "XZ") ]
+
+/-- CMCALL-ADMIT-01: a mapped Call in a merge-target body is refused, since two live occurrences of the
+target would hold two records of one Call element; after a join, the same Call is admitted. -/
+private def mapped_call_in_a_merge_target_is_refused : Bool :=
+  !admitted (nestedCallAfter true) && admitted (nestedCallAfter false)
 
 /-- CMCALL-ADMIT-01: a fork straight into two Calls of one definition is refused. -/
 private def fork_into_two_calls_of_one_definition_is_refused : Bool :=
@@ -226,7 +258,9 @@ def concurrentMappedCallsConformanceChecks : List (String × Bool) := [
   ("patch_names_follow_the_call", patch_names_follow_the_call),
   ("completions_route_by_identity", completions_route_by_identity),
   ("called_patch_stays_in_its_instance", called_patch_stays_in_its_instance),
-  ("live_records_of_one_definition_carry_different_mappings", live_records_of_one_definition_carry_different_mappings),
+  ("mappings_by_definition_differ_from_mappings_by_record", mappings_by_definition_differ_from_mappings_by_record),
+  ("mapped_call_leading_a_body_is_refused", mapped_call_leading_a_body_is_refused),
+  ("mapped_call_in_a_merge_target_is_refused", mapped_call_in_a_merge_target_is_refused),
   ("fork_into_two_calls_of_one_definition_is_refused", fork_into_two_calls_of_one_definition_is_refused),
   ("mapped_and_unmapped_calls_of_one_definition_are_refused", mapped_and_unmapped_calls_of_one_definition_are_refused),
   ("unmapped_call_of_another_definition_is_admitted", unmapped_call_of_another_definition_is_admitted),
