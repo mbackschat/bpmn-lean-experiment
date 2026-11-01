@@ -76,6 +76,8 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "a second Call of the same Process gets its own called instance and task activations",
     "a third Call, nested Calls, Calls on concurrent branches",
     "a hosted Start whose copied values cannot fit the capacity envelope is refused",
+    "each call reads its inputs and writes its outputs through its own caller occurrence, whatever the completion order",
+    "one Process is never called both with and without mappings",
   ]],
   ["parallelGateway", "restriction", [
     "paired forks and joins of two or more branches inside Sub-Process bodies",
