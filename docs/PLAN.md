@@ -93,17 +93,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the next Practical CIB7 Coverage family, after the [structured Message-payload amendment](capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#message-payload-closure-acceptance) closed approved on 2026-11-01. The hub fix in [Lean build follow-ups](#lean-build-follow-ups) stopped at its fixture item. Multi-Instance closure stays held. Pull request #38 is the owner's to land.
+Current task: the closure review of the concurrent mapped Calls family. The hub fix in [Lean build follow-ups](#lean-build-follow-ups) stopped at its fixture item and resumes after this family, behind a re-assessment of replay mean, p90, modules above 500 and fixture time. Multi-Instance closure stays held. Pull request #38 is the owner's to land.
 
 Deliverable: the concurrent mapped Calls family: `PC-DATA-04`'s mapped Calls on concurrent branches, whose outputs land at the associated caller under reverse completion, with the Call-host input and output obligations of `PC-DATA-05` and `PC-DATA-06`, implemented and closure-reviewed under its [approved proposal](capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md).
 
 Acceptance blockers: none recorded.
 
-Current result: the amendment closed after one correction audit ([current evidence](#current-evidence)); `PC-DATA-03` and `PC-MESSAGE-03` stay open. The hub fix lowered the replay mean 262.4 → 239.0 and p90 682 → 619; executable guards cannot bring the closed-world fixtures below contract item 5's 900 seconds ([fixture time](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)).
+Current result: every closure gate is green ([closure gates](capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md#evidence-and-acceptance)), after one disclosure correction. The hub fix lowered the replay mean 262.4 → 239.0 and p90 682 → 619; executable guards cannot bring the closed-world fixtures below contract item 5's 900 seconds ([fixture time](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)).
 
 Effort budget: 16 hours for the family's implementation through closure, from 2026-11-01 11:00 CET; stop and reassess at the limit.
 
-Next action: implement the approved [concurrent mapped Calls proposal](capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md) red/green, starting with the TypeScript admission refusals of `CMCALL-ADMIT-01`. Expressions (`PC-DATA-07`) would reopen the owner-deferred JUEL lane and adopt its approved dependency set, which this resume point's stop rule holds for an owner direction.
+Next action: the cold closure review of the [concurrent mapped Calls proposal](capsules/CONCURRENT-MAPPED-CALLS-PROPOSAL.md) and its correction audit, then graduation to a specification. Expressions (`PC-DATA-07`) would reopen the owner-deferred JUEL lane and adopt its approved dependency set, which this resume point's stop rule holds for an owner direction.
 
 Oracle: the proposal's separating witnesses agreeing across Lean, the core and the pipeline, then the [capsule closure review](REVIEW-POLICY.md#capsule-closure-review).
 
