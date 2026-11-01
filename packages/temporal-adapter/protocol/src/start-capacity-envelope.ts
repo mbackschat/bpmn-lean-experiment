@@ -20,6 +20,7 @@ import {
   CommandOutcome,
   SemanticProfileId,
   StimulusKind,
+  concurrentStructuredScopeDataProgram,
   projectOpenFlowNodeOccurrences,
   stimulusCommandId,
   utf8ByteLength,
@@ -135,7 +136,10 @@ export const startCapacityBookkeepingAllowance = {
 } as const satisfies Record<StartCapacityEnvelopeBudget, StartCapacityBookkeepingAllowance>;
 
 export enum StartCapacityEnvelopeResultKind {
-  /** The Program's profile selects neither enveloped profile, so the envelope admits it unchanged. */
+  /**
+   * The Program's profile selects neither enveloped profile, or the Program is a concurrent nested scope-data one past
+   * its Program-level checks (CSSD-CAPACITY-01), so the envelope admits it unchanged.
+   */
   NotApplicable = "notApplicable",
   WithinCapacity = "withinCapacity",
   Exceeded = "exceeded",
@@ -143,7 +147,10 @@ export enum StartCapacityEnvelopeResultKind {
   EffectTaskExceeded = "effectTaskExceeded",
   /** The nested User Tasks admit more reserved completion combinations than the envelope evaluates. */
   ReservedCompletionsExceeded = "reservedCompletionsExceeded",
-  /** An embedded completion Start names a hosting identity longer than its bound; no journey is evaluated. */
+  /**
+   * An embedded completion or concurrent nested scope-data Start names a hosting identity longer than its bound; no
+   * journey is evaluated.
+   */
   HostingIdentityExceeded = "hostingIdentityExceeded",
 }
 
@@ -224,7 +231,10 @@ export function assessStartCapacityEnvelope(
   limits: StartCapacityEnvelopeLimits = productionStartCapacityEnvelopeLimits(),
   effectLimits: StartCapacityEffectLimits = productionStartCapacityEffectLimits(),
 ): StartCapacityEnvelopeResult {
-  if (program.identity.semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion &&
+  // CSSD-CAPACITY-01: a concurrent nested scope-data Program offers no single journey, so it keeps only the
+  // Program-level checks, the hosting identity bound its concurrent waits embed and the reserved-result checks.
+  const concurrentData = concurrentStructuredScopeDataProgram(program);
+  if ((program.identity.semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion || concurrentData) &&
     utf8ByteLength(start.instanceId) > embeddedCompletionHostingIdentityByteLimit) {
     return { kind: StartCapacityEnvelopeResultKind.HostingIdentityExceeded, failure: {
       configuredBound: embeddedCompletionHostingIdentityByteLimit, identityBytes: utf8ByteLength(start.instanceId) } };
@@ -237,6 +247,7 @@ export function assessStartCapacityEnvelope(
   // The reserved patch must pass its identity limits before the journey encodes it into a command ID.
   const unsupported = exceededReservedEffectResult(program, configuredEffects);
   if (unsupported !== null) return { kind: StartCapacityEnvelopeResultKind.EffectTaskExceeded, failure: unsupported };
+  if (concurrentData) return { kind: StartCapacityEnvelopeResultKind.NotApplicable };
   const journeys = startCapacityJourneys(start, program);
   if (journeys === null) {
     return { kind: StartCapacityEnvelopeResultKind.ReservedCompletionsExceeded,

@@ -8,8 +8,10 @@ import {
   MessageChannelKind,
   SemanticOperationKind,
   SemanticProfileId,
+  concurrentStructuredScopeDataProgram,
   isWellFormedSemanticProcessProgram,
   nestedScopeControlProgramAnalysis,
+  structuredScopeDataProgramAnalysis,
   profileAllowsProgramShape,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -132,10 +134,12 @@ export function assessTemporalHostCapability(
       };
   }
   // CSE hosting preflight: the ordinary-effect frontier hosts concurrent effect waits only of a Program the nested
-  // scope-control analysis admits, whose 32-Service-Task bound fits the frontier's pending-Activity limit.
-  if (canSplitTokens && hasHostDrivenWait &&
-      program.identity.semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion &&
-      isWellFormedSemanticProcessProgram(program) && nestedScopeControlProgramAnalysis(program) !== null) {
+  // scope-control analysis admits, whose 32-Service-Task bound fits the frontier's pending-Activity limit; under the
+  // nested scope-data profile, of a concurrent Program its routed analysis admits (CSSD-ROUTE-01).
+  if (canSplitTokens && hasHostDrivenWait && isWellFormedSemanticProcessProgram(program) &&
+      (program.identity.semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion
+        ? nestedScopeControlProgramAnalysis(program) !== null
+        : concurrentStructuredScopeDataProgram(program) && structuredScopeDataProgramAnalysis(program) !== null)) {
     return { kind: TemporalHostCapabilityResultKind.Admitted };
   }
   if (canSplitTokens && hasHostDrivenWait) {

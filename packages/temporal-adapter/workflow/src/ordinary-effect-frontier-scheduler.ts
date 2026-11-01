@@ -1,6 +1,7 @@
 import {
   SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
+  concurrentStructuredScopeDataProgram,
   projectEffectTransportMaterial,
   projectOpenEffects,
 } from "@bpmn-lean/semantic-core";
@@ -41,7 +42,11 @@ export type OrdinaryEffectFrontierAdapters = Readonly<{
 export type OrdinaryEffectFrontierHistory =
   Readonly<{ limits: WorkflowChainEventHistoryLimits | null; hasRetainedWork: () => boolean; requestRollover: () => void }>;
 
-/** The private sequential Multi-Instance profile and the concurrent scope Service Tasks of the embedded completion profile. */
+/**
+ * The private sequential Multi-Instance profile and the concurrent scope Service Tasks of the embedded completion profile;
+ * a concurrent Program of the nested scope-data profile joins them (CSSD-ROUTE-01), while its serial Programs keep their
+ * serial host path.
+ */
 const ordinaryEffectFrontierProfiles: ReadonlySet<string> = new Set([
   SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID,
   SemanticProfileId.EmbeddedSubProcessCompletion,
@@ -49,7 +54,7 @@ const ordinaryEffectFrontierProfiles: ReadonlySet<string> = new Set([
 
 /** Whether this frontier hosts the Program's effects; the rollover fence and scheduler selection share this set. */
 export function ordinaryEffectFrontierHosts(program: SemanticProcessProgram): boolean {
-  return ordinaryEffectFrontierProfiles.has(program.identity.semanticProfile);
+  return ordinaryEffectFrontierProfiles.has(program.identity.semanticProfile) || concurrentStructuredScopeDataProgram(program);
 }
 
 enum ActivityPhase {

@@ -3,6 +3,7 @@ import {
   SemanticOperationKind,
   SemanticProfileId,
   compareCanonicalStrings,
+  concurrentStructuredScopeDataProgram,
   isWellFormedWireString,
   nestedScopeControlServiceTaskLimit,
   utf8ByteLength,
@@ -117,9 +118,10 @@ export function workflowChainProductionLimit(
 }
 
 /**
- * The pending-Activity ceiling of one Program's Workflow chain. The two profiles hosted by the ordinary-effect frontier
+ * The pending-Activity ceiling of one Program's Workflow chain. The Programs hosted by the ordinary-effect frontier
  * issue concurrent Activities whose drain the ordinary-effect History reservation projects before issuing them: the
- * embedded completion profile up to its admitted Service Task bound (CSE-ADMIT-01), and the sequential Multi-Instance
+ * embedded completion profile and the concurrent Programs of the nested scope-data profile up to the nested
+ * scope-control Service Task bound (CSE-ADMIT-01, CSSD-ROUTE-01), and the sequential Multi-Instance
  * profile up to its Service Task count, because each Service Task has at most one live occurrence while its body runs
  * one iteration at a time. Every other profile keeps the production limit of one.
  */
@@ -127,6 +129,9 @@ export function workflowChainPendingActivityLimit(program: DeepReadonly<Semantic
   switch (program.identity.semanticProfile) {
     case SemanticProfileId.EmbeddedSubProcessCompletion:
       return nestedScopeControlServiceTaskLimit;
+    case SemanticProfileId.NestedEmbeddedScopeData:
+      return concurrentStructuredScopeDataProgram(program as SemanticProcessProgram)
+        ? nestedScopeControlServiceTaskLimit : workflowChainProductionLimit(WorkflowChainBudgetKind.PendingActivities);
     case SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID:
       return program.operations.filter(operation => operation.kind === SemanticOperationKind.AwaitEffect).length;
     default:
