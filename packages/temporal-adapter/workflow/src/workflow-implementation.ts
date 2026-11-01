@@ -124,7 +124,7 @@ import {
 import { workflowChainRolloverTriggered } from "./workflow-event-history-capacity.js";
 import {
   WorkflowSemanticCandidatePreflightKind,
-  preflightWorkflowSemanticCandidate,
+  preflightWorkflowCommitCandidate,
 } from "./workflow-semantic-candidate.js";
 import {
   WorkflowRunRetentionPreflightKind,
@@ -525,11 +525,11 @@ export async function runBpmnProcessWithHostEffects(
         { kind: WorkflowRunRetentionPreflightKind.Ready }
       > | null = null;
       if (workflowChain !== null) {
-        const preflight = preflightWorkflowSemanticCandidate({
+        const preflight = preflightWorkflowCommitCandidate({
           state: step.state,
           publicationBefore: commandPublication,
           publication: completePublicationCandidate,
-        });
+        }, workflowChain);
         switch (preflight.kind) {
           case WorkflowSemanticCandidatePreflightKind.Ready:
             break;

@@ -23,7 +23,7 @@ test("registers the Query before commit and publishes before command-result reso
   const append = source.indexOf("integrateCommandPublication(", evaluation);
   const record = source.indexOf("recordCommandPublicationOutcome(", append);
   const capacityPreflight = source.indexOf(
-    "preflightWorkflowSemanticCandidate(",
+    "preflightWorkflowCommitCandidate(",
     record,
   );
   const capacityRetention = source.indexOf(

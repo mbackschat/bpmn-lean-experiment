@@ -12,6 +12,7 @@ import {
   WorkflowPublicationSegmentQueryResultKind,
   WorkflowPublicationSegmentSelectionResultKind,
   bpmnWorkflowPublicationSegmentsV1,
+  workflowChainCanonicalUtf8ByteLength,
 } from "@bpmn-lean/temporal-protocol";
 
 import {
@@ -31,6 +32,9 @@ import type {
 import type {
   WorkflowPublicationSegmentRuntime,
 } from "../dist/workflow-publication-segments.js";
+import {
+  measureWorkflowContinuationPublicationBytes,
+} from "../dist/workflow-publication-continuation.js";
 import {
   createCommandPublicationState,
 } from "../dist/command-publication-integration.js";
@@ -207,6 +211,30 @@ test("returns aligned gaps inside a command batch and empty pages at the global 
   assert.deepEqual(empty.execution.page.batches, []);
   assert.deepEqual(empty.flowNodeOccurrences.page.batches, []);
   assert.equal(empty.execution.page.current?.revision, continued.execution.headRevision);
+});
+
+// The commit preflight measures with a placeholder digest; this locks that its count equals the carried continuation's.
+test("the measured continuation publication has the exact bytes of the successor snapshot, before and after a rollover", () => {
+  const { publication: firstPublication, state, runtime: first } = firstRunPublication();
+  const continuation = snapshotWorkflowPublicationForSuccessor(firstPublication, first);
+  assert.equal(
+    measureWorkflowContinuationPublicationBytes(firstPublication, first),
+    workflowChainCanonicalUtf8ByteLength(continuation.publication),
+  );
+  const second: WorkflowPublicationSegmentRuntime = {
+    runId: secondRunId,
+    runOrdinal: 2,
+    firstExecutionRunId: firstRunId,
+    segmentDirectory: continuation.publication.segmentDirectory,
+  };
+  const completion = publicationCompletion("UserTask_A");
+  const step = advanceScenario(publicationProgram, state, completion);
+  if (step.kind !== ScenarioStepKind.Committed) assert.fail("completion did not commit");
+  const after = publish(restoreWorkflowCommandPublication(continuation.publication), completion, step, 2_000);
+  assert.equal(
+    measureWorkflowContinuationPublicationBytes(after, second),
+    workflowChainCanonicalUtf8ByteLength(snapshotWorkflowPublicationForSuccessor(after, second).publication),
+  );
 });
 
 test("accepts the exact nonzero segment-start cursor and reports a changed current descriptor", () => {

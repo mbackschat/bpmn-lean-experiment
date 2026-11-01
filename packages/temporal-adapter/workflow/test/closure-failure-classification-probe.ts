@@ -164,9 +164,10 @@ const candidateMockOptions = {
   cache: false,
   exports: {
     ...candidatePreflight,
-    preflightWorkflowSemanticCandidate: (candidate: WorkflowSemanticCandidate) => {
+    preflightWorkflowCommitCandidate: (candidate: WorkflowSemanticCandidate,
+      segments: Parameters<typeof candidatePreflight.preflightWorkflowCommitCandidate>[1]) => {
       if (timerFailure !== TimerFailureMode.Capacity || timerEvaluations === 0) {
-        return candidatePreflight.preflightWorkflowSemanticCandidate(candidate);
+        return candidatePreflight.preflightWorkflowCommitCandidate(candidate, segments);
       }
       const result = candidatePreflight.preflightWorkflowSemanticCandidate(candidate, {
         committedRuntimeStateBytes: 1,

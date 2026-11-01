@@ -10,7 +10,6 @@ import {
 import {
   WorkflowPublicationSegmentQueryResultKind,
   WorkflowPublicationSegmentSelectionResultKind,
-  bpmnWorkflowPublicationSegmentDescriptorV1,
   bpmnWorkflowPublicationSegmentDirectoryV1,
   bpmnWorkflowPublicationSegmentQueryName,
   bpmnWorkflowPublicationSegmentSelectionQueryName,
@@ -39,6 +38,14 @@ import type {
   CommandPublicationState,
 } from "./command-publication-integration.js";
 import {
+  requireWorkflowPublicationAlignment,
+  workflowPublicationSegmentDescriptor,
+  workflowSuccessorPublication,
+} from "./workflow-publication-continuation.js";
+import type {
+  WorkflowPublicationSegmentRuntime,
+} from "./workflow-publication-continuation.js";
+import {
   queryExecutionPublication,
   registerExecutionPublicationQueryHandler,
 } from "./execution-publication-query-handler.js";
@@ -63,15 +70,10 @@ export const bpmnWorkflowPublicationSegmentQuery = defineQuery<
   [request: WorkflowPublicationSegmentQueryRequestV1]
 >(bpmnWorkflowPublicationSegmentQueryName);
 
+export type { WorkflowPublicationSegmentRuntime } from "./workflow-publication-continuation.js";
+
 export const bpmnWorkflowContinuationInvalidFailureType =
   "BpmnWorkflowContinuationInvalid" as const;
-
-export type WorkflowPublicationSegmentRuntime = Readonly<{
-  runId: string;
-  runOrdinal: number;
-  firstExecutionRunId: string;
-  segmentDirectory: WorkflowPublicationSegmentDirectoryV1;
-}>;
 
 export function emptyWorkflowPublicationSegmentDirectory():
 WorkflowPublicationSegmentDirectoryV1 {
@@ -88,33 +90,16 @@ export function snapshotWorkflowPublicationForSuccessor(
   publication: BpmnWorkflowContinuationPublicationV1;
   directorySha256: string;
 }> {
-  const descriptor = describeCurrentWorkflowPublicationSegment(state, runtime);
-  const directory: WorkflowPublicationSegmentDirectoryV1 = {
-    format: bpmnWorkflowPublicationSegmentDirectoryV1,
-    segments: [...runtime.segmentDirectory.segments, descriptor],
-  };
-  const publication: BpmnWorkflowContinuationPublicationV1 = {
-    execution: {
-      definition: state.execution.definition,
-      processId: state.execution.processId,
-      processInstanceId: state.execution.processInstanceId,
-      headRevision: state.execution.headRevision,
-      current: state.execution.current,
-    },
-    flowNodeOccurrences: {
-      definition: state.flowNodeOccurrences.definition,
-      processId: state.flowNodeOccurrences.processId,
-      processInstanceId: state.flowNodeOccurrences.processInstanceId,
-      headRevision: state.flowNodeOccurrences.headRevision,
-      currentOpen: state.flowNodeOccurrences.currentOpen,
-      retainedOpen: state.flowNodeOccurrences.retainedOpen,
-      lastCommittedAtEpochMs: state.flowNodeOccurrences.lastCommittedAtEpochMs,
-    },
-    segmentDirectory: directory,
-  };
+  const publication = workflowSuccessorPublication(
+    state,
+    describeCurrentWorkflowPublicationSegment(state, runtime),
+    runtime,
+  );
   return {
     publication,
-    directorySha256: workflowPublicationSegmentDirectorySha256(directory),
+    directorySha256: workflowPublicationSegmentDirectorySha256(
+      publication.segmentDirectory,
+    ),
   };
 }
 
@@ -157,20 +142,13 @@ export function describeCurrentWorkflowPublicationSegment(
   state: CommandPublicationState,
   runtime: WorkflowPublicationSegmentRuntime,
 ): WorkflowPublicationSegmentDescriptorV1 {
-  requireLocalPublicationAlignment(state, runtime);
-  const fromRevision = runtime.segmentDirectory.segments.at(-1)?.throughRevision ?? 0;
-  return {
-    format: bpmnWorkflowPublicationSegmentDescriptorV1,
-    runId: runtime.runId,
-    runOrdinal: runtime.runOrdinal,
-    fromRevision,
-    throughRevision: state.execution.headRevision,
-    sha256: workflowPublicationSegmentSha256(
-      state.execution.batches,
-      state.flowNodeOccurrences.batches,
-    ),
-  };
+  requireWorkflowPublicationAlignment(state, runtime);
+  return workflowPublicationSegmentDescriptor(state, runtime, workflowPublicationSegmentSha256(
+    state.execution.batches,
+    state.flowNodeOccurrences.batches,
+  ));
 }
+
 
 /** Installs both private chain-navigation Queries before semantic evaluation. */
 export function registerWorkflowPublicationQueries(
@@ -327,37 +305,6 @@ function snapshotWorkflowPublication(
   };
 }
 
-function requireLocalPublicationAlignment(
-  state: CommandPublicationState,
-  runtime: WorkflowPublicationSegmentRuntime,
-): void {
-  const execution = state.execution;
-  const occurrences = state.flowNodeOccurrences;
-  const start = runtime.segmentDirectory.segments.at(-1)?.throughRevision ?? 0;
-  const aligned = execution.headRevision === occurrences.headRevision &&
-    execution.batches.length === occurrences.batches.length &&
-    execution.processId === occurrences.processId &&
-    execution.processInstanceId === occurrences.processInstanceId &&
-    runtime.segmentDirectory.segments.length === runtime.runOrdinal - 1 &&
-    (runtime.runOrdinal !== 1 || runtime.runId === runtime.firstExecutionRunId) &&
-    !runtime.segmentDirectory.segments.some(({ runId }) => runId === runtime.runId) &&
-    execution.batches.every((batch, index) => {
-      const occurrence = occurrences.batches[index];
-      const previous = execution.batches[index - 1];
-      return occurrence !== undefined &&
-        batch.fromRevision === (previous?.throughRevision ?? start) &&
-        batch.commandId === occurrence.commandId &&
-        batch.fromRevision === occurrence.fromRevision &&
-        batch.throughRevision === occurrence.throughRevision &&
-        batch.transitions.length === occurrence.transitions.length &&
-        batch.transitions.every((transition, transitionIndex) =>
-          transition.revision === occurrence.transitions[transitionIndex]?.revision);
-    }) &&
-    (execution.batches.at(-1)?.throughRevision ?? start) === execution.headRevision;
-  if (!aligned) {
-    throw new TypeError("Workflow publication segment lost paired local continuity");
-  }
-}
 
 function requireDescriptorTargetsCurrentRun(
   requested: WorkflowPublicationSegmentDescriptorV1,

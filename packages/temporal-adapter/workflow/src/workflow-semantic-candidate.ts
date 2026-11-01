@@ -10,6 +10,12 @@ import {
 import type {
   CommandPublicationState,
 } from "./command-publication-integration.js";
+import {
+  measureWorkflowContinuationPublicationBytes,
+} from "./workflow-publication-continuation.js";
+import type {
+  WorkflowPublicationSegmentRuntime,
+} from "./workflow-publication-continuation.js";
 
 export type WorkflowSemanticCandidateLimits = Readonly<{
   committedRuntimeStateBytes: number;
@@ -41,7 +47,8 @@ export type WorkflowSemanticCandidatePreflight =
 export type WorkflowSemanticCandidateCapacityBound = Readonly<{
   budget:
     | WorkflowChainBudgetKind.CommittedRuntimeStateBytes
-    | WorkflowChainBudgetKind.PublicationBatchBytes;
+    | WorkflowChainBudgetKind.PublicationBatchBytes
+    | WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes;
   configuredBound: number;
   observedValue: number;
 }>;
@@ -82,6 +89,36 @@ export function preflightWorkflowSemanticCandidate(
     observedStateBytes,
     observedPublicationBatchBytes,
   };
+}
+
+/**
+ * The semantic preflight followed by the publication continuation that a Continue-As-New directly after this commit
+ * would carry. Measuring it here refuses, before commit, a successor that the Workflow could commit but never continue:
+ * a concurrent Program's open occurrences and current execution repeat its structured values beside the committed
+ * state, so the continuation can outgrow its budget while the state still fits (`CSSD-CAPACITY-01`).
+ */
+export function preflightWorkflowCommitCandidate(
+  candidate: WorkflowSemanticCandidate,
+  segments: WorkflowPublicationSegmentRuntime,
+): WorkflowSemanticCandidatePreflight {
+  const semantic = preflightWorkflowSemanticCandidate(candidate);
+  if (semantic.kind !== WorkflowSemanticCandidatePreflightKind.Ready) {
+    return semantic;
+  }
+  const bound = workflowChainProductionLimit(
+    WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes,
+  );
+  const observed = measureWorkflowContinuationPublicationBytes(
+    candidate.publication,
+    segments,
+  );
+  return observed > bound
+    ? capacityExceeded(
+        WorkflowChainBudgetKind.PublicationContinuationAndSegmentDirectoryBytes,
+        bound,
+        observed,
+      )
+    : semantic;
 }
 
 function pairedPublicationBatch(candidate: WorkflowSemanticCandidate) {
