@@ -1,6 +1,6 @@
 /**
  * Measures the two retained concurrent structured scope data models against every hosted budget, the capacity account of
- * the concurrent structured scope data proposal (`CSSD-CAPACITY-01`). A concurrent Program claims no Start capacity
+ * the concurrent structured scope data specification (`CSSD-CAPACITY-01`). A concurrent Program claims no Start capacity
  * envelope, so the oracle is each budget's production limit; this is a component measurement of these two models, not a
  * claim about other Programs.
  *

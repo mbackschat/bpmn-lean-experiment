@@ -760,7 +760,7 @@ end BpmnSemantics.SemanticProcess.NestedScopeControl
 /-! ## Structured scope-data routing
 
 CSSD-ROUTE-01 and CSSD-ADMIT-01 for `nestedScopeDataProfileId`, per the
-[concurrent structured scope data proposal](../../docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md#stable-rules).
+[concurrent structured scope data specification](../../docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md#stable-rules).
 A Program or checked graph of the profile is concurrent exactly when it splits a token. The serial analysis
 refuses every split, so no model it admits is ever routed elsewhere; a concurrent one takes this module's
 analysis, restricted to a source overlay on every model, forks only in Sub-Process bodies, no merge region and

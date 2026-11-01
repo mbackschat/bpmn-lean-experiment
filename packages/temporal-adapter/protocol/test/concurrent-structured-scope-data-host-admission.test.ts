@@ -1,5 +1,5 @@
 /**
- * Hosting preflight of the concurrent structured scope data proposal (CSSD-ROUTE-01, CSSD-CAPACITY-01) over the retained
+ * Hosting preflight of the concurrent structured scope data specification (CSSD-ROUTE-01, CSSD-CAPACITY-01) over the retained
  * order fulfilment and loan assessment models: the host admits a concurrent Program of the nested scope-data profile only
  * while its routed analysis admits it, and the Start capacity envelope gives it the Program-level checks alone, the
  * 256-byte hosting identity bound and the reserved-result checks, and no journey. The serial expense claim model is the

@@ -1,6 +1,6 @@
 /**
  * Locks the registered order fulfilment and loan assessment schedules against the concurrent structured scope data
- * proposal's separating witnesses without Lean or Temporal: the open work after every command, the Process variables
+ * specification's separating witnesses without Lean or Temporal: the open work after every command, the Process variables
  * each branch output and return publishes (CSSD-VALUE-01, CSSD-REUSE-01), the open effect snapshot a sibling write
  * leaves unchanged (CSSD-SNAPSHOT-01), the refused root-List patch (CSSD-REFUSE-01), and every named seeded mutation,
  * each of which must move exactly the observation it names.

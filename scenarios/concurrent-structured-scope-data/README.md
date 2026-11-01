@@ -1,6 +1,6 @@
 # Concurrent structured scope data sources
 
-The [concurrent structured scope data proposal](../../docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md#separating-witnesses) owns the bounded account. Both retained project-authored models run under the [nested scope-data profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) with Parallel forks inside Sub-Process bodies, each with its own exact source overlay.
+The [concurrent structured scope data specification](../../docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md#separating-witnesses) owns the bounded account. Both retained project-authored models run under the [nested scope-data profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) with Parallel forks inside Sub-Process bodies, each with its own exact source overlay.
 
 | Model | Journey |
 |---|---|

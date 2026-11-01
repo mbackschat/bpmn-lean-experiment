@@ -85,7 +85,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Concurrent mapped Calls closure. Command: `LEAN_FULL_GATE=concurrent-mapped-calls ./scripts/lake.sh test` and `build BpmnConformance`, `./scripts/verify.sh lean-checks`, `./scripts/pnpm.sh run test:pipeline`, `./scripts/pnpm.sh run test:temporal`, `./scripts/verify.sh composition-parity`, `./scripts/verify.sh runtime`. Status: `exit 0`. Date: `2026-11-01`. Commit: `77c9b9c9`; `runtime` at `2416dc49` after its About-disclosure failure at `77c9b9c9`; `BpmnConformance`, `lean-checks` and `test:pipeline` again at `82033590` after the review's corrections.
+- Concurrent structured scope data closure. Command: `./scripts/verify.sh`. Status: `exit 0`. Date: `2026-11-01`. Commit: `eaa46d8a`, after the closure review's corrections; the pipeline's 147 cases ran warm in 114.4 seconds within the 191.1-second budget.
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -93,18 +93,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the closure review of the concurrent structured scope data family of [delivery batch](#scheduled-delivery-batches) 3: `PC-DATA-03` primary, with the structured clauses of `PC-DATA-05` and `PC-DATA-06`. The owner closed the hub fix on 2026-11-01 ([restated residual](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)). Multi-Instance closure stays held. Pull request #38 is the owner's to land.
+Current task: select the next family of [delivery batch](#scheduled-delivery-batches) 3 after the concurrent structured scope data family closed ([specification](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md), closure-approved on 2026-11-01). Multi-Instance closure stays held. Pull requests #38 and #39 are the owner's to land.
 
-Deliverable: the family implemented and closure-reviewed under its [approved proposal](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md): the nested scope-data profile admits Parallel forks in Sub-Process bodies, with structured values through concurrent frames, effect snapshots and Calls.
+Deliverable: one approved family proposal for the next batch 3 mechanism, or a recorded finding that batch 3 holds only clauses behind the held expression and Multi-Instance work.
 
 Acceptance blockers: none recorded.
 
-Current result: implemented; the five corrections the closure review required are committed; about 3 of the 16 budgeted hours spent by 2026-11-01 22:05 CET.
+Current result: the family took about 4 of its 16 budgeted hours, 2026-11-01 19:15 to 23:15 CET.
 
-Effort budget: 16 hours for the family's implementation through closure, from 2026-11-01 19:15 CET; stop and reassess at the limit.
+Effort budget: 2 hours for the selection and proposal draft.
 
-Next action: rerun the complete `verify.sh` once over the corrections, then the same reviewer's correction audit of the [concurrent structured scope data proposal](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md), then graduation to a specification. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
+Next action: read the open clauses of `PC-DATA-04` and `PC-DATA-09` and their dependency rows, and decide whether either has an unheld shared mechanism; otherwise open batch 4. Expressions (`PC-DATA-07`) stay held for an owner direction under this resume point's stop rule.
 
-Oracle: the proposal's separating witnesses agreeing across Lean, the core and the pipeline, then the [capsule closure review](REVIEW-POLICY.md#capsule-closure-review).
+Oracle: the cold design review of the selected family proposal.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

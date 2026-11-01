@@ -2,7 +2,7 @@
  * CSSD-ROUTE-01: the nested scope-data profile's routing between its serial account and the concurrent account it
  * shares with the embedded completion profile. A Program or checked graph of the profile is concurrent exactly when
  * it splits a token; the serial analysis refuses every split, so no model it admits is ever routed elsewhere. Owner:
- * the [concurrent structured scope data proposal](../../../docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md).
+ * the [concurrent structured scope data specification](../../../docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md).
  */
 import { CallDataKind } from "./call-data-contract.js";
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";

@@ -13,7 +13,7 @@ refusals are Lean executions of the registered scenarios in the pipeline, and th
 law beside the routing in `NestedScopeControlAdmission`. It imports admission owners only, never a module that
 runs commands, so it stays outside `CommandAdmission`'s hidden-edit cone (`lean-fanout`); that is why it builds
 its graphs itself instead of through `NestedScopeControlConformance.build`. See the
-[concurrent structured scope data proposal](../docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-PROPOSAL.md#separating-witnesses).
+[concurrent structured scope data specification](../docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md#separating-witnesses).
 -/
 
 public section

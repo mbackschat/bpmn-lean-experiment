@@ -1,7 +1,7 @@
 /**
  * CSSD-ADMIT-01 and CSSD-ROUTE-01 boundary witnesses for the nested scope-data profile's concurrent Programs, driven
  * through the exact-bytes source path and the core's checked-graph and Program gates. The oracle is the "Required,
- * optional and excluded scope" account of the concurrent structured scope data proposal. Every refusal is paired with
+ * optional and excluded scope" account of the concurrent structured scope data specification. Every refusal is paired with
  * an admitted control that differs in exactly one fact, so a gate that refused everything could not pass.
  */
 import assert from "node:assert/strict";

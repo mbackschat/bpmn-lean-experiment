@@ -1,5 +1,5 @@
 /**
- * The core journeys of the concurrent structured scope data proposal over its retained models (CSSD-VALUE-01,
+ * The core journeys of the concurrent structured scope data specification over its retained models (CSSD-VALUE-01,
  * CSSD-SNAPSHOT-01 and the reused CSD and CMCALL frame rules). Frame contents are runtime-only, so this test reads
  * committed state directly; every expected value is read off the proposal's witness-model account, not off a run.
  */

@@ -16,7 +16,7 @@ import org.cibseven.bpm.engine.delegate.JavaDelegate;
 import org.junit.Test;
 
 /**
- * Calibrates the concurrent structured scope data proposal's widening of `CIB-EXT-0020`, `CIB-EXT-0021`, `CIB-OP-0010`
+ * Calibrates the concurrent structured scope data specification's widening of `CIB-EXT-0020`, `CIB-EXT-0021`, `CIB-OP-0010`
  * and `CIB-EXT-0015` (`CSSD-VALUE-01`, `CSSD-SNAPSHOT-01`, `CSSD-REUSE-01`) on the two retained models with Java
  * {@code Map} and {@code List} values. Each async-before continuation job runs before the next command, so a delegate's
  * call and completion commit together and the order fulfilment realizes the Pick items first order only: the probe
