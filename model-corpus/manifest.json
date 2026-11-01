@@ -1068,6 +1068,88 @@
       }
     },
     {
+      "id": "order-fulfilment-concurrent-structured-data",
+      "title": "Fulfil an order",
+      "businessPurpose": "Fulfil a structured order by picking its items and planning its shipment at the same time, each from its own copy of the order, let the route review change the instructions without touching the picking already under way, rate the shipment, notify the customer and confirm and close the order once both are done.",
+      "cloneFamily": "order-fulfilment-concurrent-structured-data",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/concurrent-structured-scope-data/order-fulfilment.bpmn",
+        "sha256": "71f4011dab50293ae1b3849f808bdda49dc78680ecd61ad1245a116df433565a",
+        "scenarioRelativePath": "scenarios/concurrent-structured-scope-data/order-review-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "concurrent-structured-scope-data-order-review-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for concurrent structured scope data; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "loan-assessment-concurrent-expert-reviews",
+      "title": "Assess a loan application",
+      "businessPurpose": "Assess a structured loan application by checking credit and valuing the collateral at the same time, let each check prepare its own dossier and ask one shared expert review process, publish each dossier and opinion to the application and decide the loan once both checks are done.",
+      "cloneFamily": "loan-assessment-concurrent-expert-reviews",
+      "constructs": [
+        "callActivity",
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "calledProcess",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/concurrent-structured-scope-data/loan-assessment.bpmn",
+        "sha256": "2564e4b1636d94b6edc519227291dce39cd459249fe59ab26c4604ea4c8bc062",
+        "scenarioRelativePath": "scenarios/concurrent-structured-scope-data/loan-credit-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "concurrent-structured-scope-data-loan-credit-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for concurrent structured scope data; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",
