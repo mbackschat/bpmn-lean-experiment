@@ -21,7 +21,9 @@ import type { DeepReadonly } from "@bpmn-lean/contract-types";
  * `peakResidentKib` is GNU `time`'s `ru_maxrss` in KiB, exactly as measured.
  * `elapsedSeconds` is recorded as reading context only and is deliberately not
  * ratcheted: memory is the resource that terminates a build, and rebuild time
- * cannot manufacture the headroom that a raised memory figure would.
+ * cannot manufacture the headroom that a raised memory figure would. Only the
+ * per-commit sums that the owner restated on 2026-11-01 are bounded, by
+ * [`lean-fanout-replay-residual.test.ts`](./lean-fanout-replay-residual.test.ts).
  * `codeSha256` binds the measured source with its comments removed, as
  * [`leanCodeWithoutComments`](./lean-source-analysis.ts) defines it: comments
  * are not elaboration input, so a comment repair keeps the measurement while any
