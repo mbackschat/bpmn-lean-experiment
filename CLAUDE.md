@@ -199,6 +199,17 @@ Comments carry non-obvious contracts and invariants that names, types and contro
 
 Keep each source file, class, namespace, and function at one responsibility and abstraction level; a third independent responsibility stops feature work until cohesive owners are extracted. Hand-written Lean, TypeScript, JavaScript, and Java files target 800 nonblank lines with a hard ceiling of 1,200; a file above 800 needs an owner-approved exception in the source-hygiene guard, never one an agent adds itself. Before writing or growing such source, read [the code style guide](docs/CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries). Before changing decision tactics or measuring Lean cost, read [Lean decision procedures](docs/CONTRIBUTOR-SETUP-GUIDE.md#lean-decision-procedures-and-build-memory); when an enforced resource ceiling catches a regression, follow [resource-ceiling breaches](docs/CONTRIBUTOR-SETUP-GUIDE.md#resource-ceiling-breaches) and never raise or bypass the limit.
 
+#### Lean build efficiency
+
+Build time is a delivery constraint (owner direction, 2026-11-01): design every Lean change for its rebuild set as well as its correctness. The [module rules](docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules) and the [Lean section of the code style guide](docs/CODE-STYLE-GUIDE.md#code-hygiene-and-module-boundaries) own the details; before the first Lean edit of a change, apply this checklist.
+
+- **Stay off hubs.** Never add to or change the interface of a hub or closed-world function that the [current boundary](docs/LEAN-BUILD-MODULARITY-SPEC.md#current-boundary) names when a family module or a body edit can serve; a proposal names each hub it must touch and why.
+- **Leaf, private, body.** Put a new declaration, private by default, in a family-owned leaf module; prefer a hidden body edit to an interface edit; `public import` only what public declarations name and `import all` only where the file unfolds or kernel-reduces.
+- **Laws, not bodies.** Consume another module through its laws (`<Hub>Laws`), never by unfolding or rewriting with its hidden body; a rewrite that cannot be avoided declares `privateEquations` first.
+- **Execute, don't decide.** Check finite examples by execution (pipeline or compiled check runner); kernel-decide only facts a proof consumes, opening exactly the owners its decisions unfold.
+- **Build narrow, batch wide.** Iterate on `./scripts/lake.sh build <Module>` targets only; land edits that reach closed-world functions or global fixtures in one commit so the fixtures rebuild once; run the full library once per family closure.
+- **A fan-out guard is a design signal.** When [`lean-fanout`](scripts/lean-fanout.test.ts) or a size guard fires, re-cut the change; raising a bound is a [Rule 2](#rule-2-declare-review-and-check-every-bulk-change) bound change, never a fix.
+
 ### Pre-release evolution
 
 Keep exactly one current representation of every wire contract; a breaking change replaces every producer, consumer, fixture, schema and test atomically. Before an approved durable baseline add no format counters, legacy readers, compatibility switches, migrations, Workflow patch branches, retained Event History fixtures, or deployment fallbacks; every new Workflow execution carries the admitted current definition, never a fallback constructor's invention. [The pre-release evolution policy](docs/PROJECT-DESIGN.md#pre-release-evolution-policy) owns details and post-baseline obligations.
