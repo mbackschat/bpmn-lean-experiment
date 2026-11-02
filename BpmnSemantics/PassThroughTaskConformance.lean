@@ -88,11 +88,10 @@ private def chained (owner source target : String) (count : Nat) :
 
 /-- Equipment return: root `P` schedules the pickup, inspects the returned equipment in a Sub-Process whose body
 unpacks it by hand and records its condition, refunds the deposit and closes the return ticket. `chain` inserts that
-many plain Tasks between the refund and the ticket; `forked` gives *Close return ticket* a second outgoing flow and
-`joined` a second incoming one from *Schedule pickup*, the edit the source test makes. `branched` puts *Unpack
+many plain Tasks between the refund and the ticket. `branched` puts *Unpack
 equipment* and *Record condition* on the two branches of a Parallel fork in the body; `asUserTasks` turns both Tasks
 into User Tasks, the control that leaves the Tasks as the only difference. -/
-private def equipmentWith (chain : Nat := 0) (forked joined branched asUserTasks : Bool := false) : CheckedProcess :=
+private def equipmentWith (chain : Nat := 0) (branched asUserTasks : Bool := false) : CheckedProcess :=
   let (links, linkEdges) := chained "P" "RefundDeposit" "CloseReturnTicket" chain
   let passOr := fun (owner id : String) (taskNotation : TaskNotation) =>
     if asUserTasks then task owner id else pass owner id taskNotation
@@ -109,24 +108,27 @@ private def equipmentWith (chain : Nat := 0) (forked joined branched asUserTasks
      , task "InspectReturnedEquipment" "RecordCondition", finish "InspectReturnedEquipment" "InspectionClosed" ]
       ++ (if branched then [ gateway "InspectReturnedEquipment" "Fork" .diverging
                            , gateway "InspectReturnedEquipment" "Join" .converging ] else [])
-      ++ links ++ (if forked then [finish "P" "TicketDuplicated"] else []))
+      ++ links)
     ([ ("ReturnRequested", "SchedulePickup"), ("SchedulePickup", "InspectReturnedEquipment")
      , ("InspectReturnedEquipment", "RefundDeposit"), ("CloseReturnTicket", "ReturnClosed") ]
-      ++ body ++ linkEdges ++ (if forked then [("CloseReturnTicket", "TicketDuplicated")] else [])
-      ++ (if joined then [("SchedulePickup", "CloseReturnTicket")] else []))
+      ++ body ++ linkEdges)
     []
 
 /-- Document intake: root `P` merges into the *Classify document* Sub-Process, whose body records the format in its
 own `format`, copied out to `documentFormat`, and chooses by it: paper is archived in a Sub-Process whose body files
 the original by hand and indexes its location, illegible phones the sender and re-enters the Merge, and the default
 registers the digital copy; both filings merge before the End. `chain` inserts that many plain Tasks between the
-registration and the filing Merge; `conditioned` puts a condition on *Register digital copy*'s outgoing flow. -/
-private def intakeWith (chain : Nat := 0) (conditioned : Bool := false) : CheckedProcess :=
+registration and the filing Merge; `conditioned` puts a condition on *Register digital copy*'s outgoing flow.
+`split` gives *Register digital copy* a second outgoing flow into the Merge *Intake requested*, which takes any number
+of inputs. `recontact` drops the Merge *Intake requested*, so the received document goes straight to classification, and sends
+*Phone sender* to the given node instead. -/
+private def intakeWith (chain : Nat := 0) (conditioned split : Bool := false) (recontact : Option String := none) :
+    CheckedProcess :=
   let (links, linkEdges) := chained "P" "RegisterDigitalCopy" "Filed" chain
   build [{ scopeId := scope "ClassifyDocument", localInputs := [literal "format" "unclassified"],
            localOutputs := [copied "documentFormat" "format"] }]
     [("P", none), ("ClassifyDocument", some "P"), ("ArchivePaperOriginal", some "P")]
-    ([ start "P" "DocumentReceived", merge "P" "IntakeRequested", sub "P" "ClassifyDocument"
+    ([ start "P" "DocumentReceived", sub "P" "ClassifyDocument"
      , choice "P" "DocumentFormat" ["ArchivePaperOriginal", "PhoneSender"] "RegisterDigitalCopy"
      , sub "P" "ArchivePaperOriginal", pass "P" "PhoneSender" .manualTask, pass "P" "RegisterDigitalCopy" .abstractTask
      , merge "P" "Filed", finish "P" "DocumentFiled"
@@ -134,15 +136,20 @@ private def intakeWith (chain : Nat := 0) (conditioned : Bool := false) : Checke
      , finish "ClassifyDocument" "ClassificationClosed"
      , start "ArchivePaperOriginal" "ArchivingOpened", pass "ArchivePaperOriginal" "FilePaperOriginal" .manualTask
      , service "ArchivePaperOriginal" "IndexArchiveLocation" "indexArchiveLocation"
-     , finish "ArchivePaperOriginal" "ArchivingClosed" ] ++ links)
-    ([ ("DocumentReceived", "IntakeRequested"), ("IntakeRequested", "ClassifyDocument")
-     , ("ClassifyDocument", "DocumentFormat"), ("DocumentFormat", "ArchivePaperOriginal")
+     , finish "ArchivePaperOriginal" "ArchivingClosed" ] ++ links
+      ++ (if recontact.isNone then [merge "P" "IntakeRequested"] else []))
+    ((match recontact with
+      | none => [ ("DocumentReceived", "IntakeRequested"), ("IntakeRequested", "ClassifyDocument")
+                , ("PhoneSender", "IntakeRequested") ]
+      | some target => [("DocumentReceived", "ClassifyDocument"), ("PhoneSender", target)]) ++
+     [ ("ClassifyDocument", "DocumentFormat"), ("DocumentFormat", "ArchivePaperOriginal")
      , ("DocumentFormat", "PhoneSender"), ("DocumentFormat", "RegisterDigitalCopy")
-     , ("ArchivePaperOriginal", "Filed"), ("PhoneSender", "IntakeRequested"), ("Filed", "DocumentFiled")
+     , ("ArchivePaperOriginal", "Filed"), ("Filed", "DocumentFiled")
      , ("ArchivingOpened", "FilePaperOriginal"), ("FilePaperOriginal", "IndexArchiveLocation")
      , ("IndexArchiveLocation", "ArchivingClosed"), ("ClassificationOpened", "RecordDocumentFormat")
      , ("RecordDocumentFormat", "ClassificationClosed") ]
-      ++ (if chain = 0 then [("RegisterDigitalCopy", "Filed")] else linkEdges))
+      ++ (if chain = 0 then [("RegisterDigitalCopy", "Filed")] else linkEdges)
+      ++ (if split then [("RegisterDigitalCopy", "IntakeRequested")] else []))
     ([(("DocumentFormat", "ArchivePaperOriginal"), equals "documentFormat" "paper"),
       (("DocumentFormat", "PhoneSender"), equals "documentFormat" "illegible")]
       ++ (if conditioned then [(("RegisterDigitalCopy", "Filed"), equals "documentFormat" "digital")] else []))
@@ -199,11 +206,13 @@ private def reentry_burst_of_eight_is_admitted_and_nine_refused : Bool :=
   ScopeReentry.checkedBurst? (intakeWith (chain := 1)) = some 8 && admitted (intakeWith (chain := 1)) &&
     !admitted (intakeWith (chain := 2))
 
-/-- PTT-ADMIT-01: a Task with a second outgoing flow is refused. -/
-private def second_outgoing_flow_is_refused : Bool := !admitted (equipmentWith (forked := true))
+/-- PTT-ADMIT-01: a Task with a second outgoing flow is refused; its target, a Merge, admits the extra input. -/
+private def second_outgoing_flow_is_refused : Bool := !admitted (intakeWith (split := true))
 
-/-- PTT-ADMIT-01: a Task with a second incoming flow is refused. -/
-private def second_incoming_flow_is_refused : Bool := !admitted (equipmentWith (joined := true))
+/-- PTT-ADMIT-01: a Task with a second incoming flow is refused, while the same graph sending that flow to the Merge
+*Filed* instead is admitted, so the Task's in-degree is the only difference. -/
+private def second_incoming_flow_is_refused : Bool :=
+  admitted (intakeWith (recontact := some "Filed")) && !admitted (intakeWith (recontact := some "RegisterDigitalCopy"))
 
 /-- PTT-ADMIT-01: a Task whose outgoing flow carries a condition is refused. -/
 private def conditioned_outgoing_flow_is_refused : Bool := !admitted (intakeWith (conditioned := true))

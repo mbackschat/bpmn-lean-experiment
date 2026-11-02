@@ -176,12 +176,6 @@ test("each excluded Task form is refused", async () => {
     '</multiInstanceLoopCharacteristics></task>'), "Multi-Instance");
   await refused("equipment-return", replaceOnce(equipment, close,
     '<task id="CloseReturnTicket" name="Close return ticket" isForCompensation="true" />'), "compensation handler");
-  await refused("equipment-return", replaceOnce(equipment, '<endEvent id="ReturnClosed" name="Return closed" />',
-    '<endEvent id="ReturnClosed" name="Return closed" /><sequenceFlow id="Flow_Split" sourceRef="CloseReturnTicket" ' +
-    'targetRef="ReturnClosed" />'), "two outgoing flows");
-  await refused("equipment-return", replaceOnce(equipment, '<endEvent id="ReturnClosed" name="Return closed" />',
-    '<endEvent id="ReturnClosed" name="Return closed" /><sequenceFlow id="Flow_Join" sourceRef="SchedulePickup" ' +
-    'targetRef="CloseReturnTicket" />'), "two incoming flows");
   await refused("equipment-return", replaceOnce(equipment, close,
     '<task id="CloseReturnTicket" name="Close return ticket" camunda:asyncAfter="true" />'), "asynchronous continuation after");
   await refused("equipment-return", replaceOnce(equipment, '<manualTask id="UnpackEquipment" name="Unpack equipment" />',
@@ -200,6 +194,22 @@ test("each excluded Task form is refused", async () => {
   await refused("equipment-return", replaceOnce(equipment, close,
     '<task id="CloseReturnTicket" name="Close return ticket" default="Flow_Requested" />'), "default naming another flow");
   const intake = await source("document-intake");
+  // Two outgoing flows: the second enters the Merge *Intake requested*, which takes any number of inputs.
+  await refused("document-intake", replaceOnce(intake, '<sequenceFlow id="Flow_Recontacted" ',
+    '<sequenceFlow id="Flow_Split" sourceRef="RegisterDigitalCopy" targetRef="IntakeRequested" />' +
+    '<sequenceFlow id="Flow_Recontacted" '), "two outgoing flows");
+  // Two incoming flows: without the Merge *Intake requested*, *Phone sender* feeds *Register digital copy*; the control
+  // sends it to the Merge *Filed* instead, so the Task's in-degree is the only difference.
+  const unmerged = replaceOnce(replaceOnce(replaceOnce(intake,
+    '<exclusiveGateway id="IntakeRequested" name="Intake requested" gatewayDirection="Converging" />', ""),
+    '<sequenceFlow id="Flow_Received" sourceRef="DocumentReceived" targetRef="IntakeRequested" />',
+    '<sequenceFlow id="Flow_Received" sourceRef="DocumentReceived" targetRef="ClassifyDocument" />'),
+    '<sequenceFlow id="Flow_Intake" sourceRef="IntakeRequested" targetRef="ClassifyDocument" />', "");
+  const recontacted = '<sequenceFlow id="Flow_Recontacted" sourceRef="PhoneSender" targetRef="IntakeRequested" />';
+  await admitted("document-intake", replaceOnce(unmerged, recontacted,
+    '<sequenceFlow id="Flow_Recontacted" sourceRef="PhoneSender" targetRef="Filed" />'));
+  await refused("document-intake", replaceOnce(unmerged, recontacted,
+    '<sequenceFlow id="Flow_Recontacted" sourceRef="PhoneSender" targetRef="RegisterDigitalCopy" />'), "two incoming flows");
   await refused("document-intake", replaceOnce(intake,
     '<sequenceFlow id="Flow_DigitalFiled" sourceRef="RegisterDigitalCopy" targetRef="Filed" />',
     '<sequenceFlow id="Flow_DigitalFiled" sourceRef="RegisterDigitalCopy" targetRef="Filed">' +
