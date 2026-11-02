@@ -65,6 +65,7 @@ export function isAdmittedCheckedProcess(
     ) &&
     admittedGraph !== undefined &&
     checkedNodeIdentitiesAreValid(graph.nodes) &&
+    conditionsStandOnGatewayCandidates(graph.nodes, graph.flows) &&
     (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || graph.nodes.every(node => node.kind !== CheckedNodeKind.ExclusiveGateway || node.candidateFlowIds.length === 2)) &&
     ((semanticProfile !== MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID && semanticProfile !== MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID) || mixedTaskControlCheckedGraph(graph, semanticProfile)) &&
     embeddedNodesOwnChildScopes(graph, admittedGraph.nodeScopes, semanticProfile) &&
@@ -103,6 +104,22 @@ export function isAdmittedCheckedProcess(
       graph,
       admittedGraph.nodeScopes,
     );
+}
+
+/**
+ * A condition stands only on a candidate of an Exclusive or diverging Inclusive Gateway, as Lean's `checkedWellFormed`
+ * requires for every profile; lowering reads conditions only there, so a condition elsewhere would be dropped and its
+ * flow taken unconditionally.
+ */
+function conditionsStandOnGatewayCandidates(
+  nodes: ReadonlyArray<CheckedNode>,
+  flows: ReadonlyArray<CheckedSequenceFlow>,
+): boolean {
+  const candidates = new Set(nodes.flatMap(node =>
+    node.kind === CheckedNodeKind.ExclusiveGateway ||
+      (node.kind === CheckedNodeKind.InclusiveGateway && node.direction === GatewayDirection.Diverging)
+      ? node.candidateFlowIds : []));
+  return flows.every(flow => flow.condition === null || candidates.has(flow.id));
 }
 
 /** Keeps composed Activity-data roles distinguishable before lowering, matching Lean checked admission. */

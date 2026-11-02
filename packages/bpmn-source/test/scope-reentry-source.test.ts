@@ -158,6 +158,20 @@ test("a root body with a second None End is refused", async () => {
     ['<sequenceFlow id="Flow_Closed" sourceRef="ClaimClosing" targetRef="ClaimClosed" />', ""]), "second root End");
 });
 
+// A condition outside an Exclusive candidate would otherwise be dropped by lowering, so the flow would be taken
+// unconditionally; Lean's checked placement clause (`checkedWellFormed`) refuses both.
+test("a condition on a root Start flow or a root User Task flow is refused", async () => {
+  const condition = '<conditionExpression xsi:type="tFormalExpression">stringEquals(claimSummary,"never")</conditionExpression>';
+  await refused("claim-rework", edit(await source("claim-rework"),
+    ['<sequenceFlow id="Flow_Received" sourceRef="ClaimReceived" targetRef="AssessmentRequested" />',
+      `<sequenceFlow id="Flow_Received" sourceRef="ClaimReceived" targetRef="AssessmentRequested">${condition}</sequenceFlow>`]),
+    "condition on the Start flow");
+  await refused("claim-rework", edit(await source("claim-rework"),
+    ['<sequenceFlow id="Flow_Approved" sourceRef="ApproveSettlement" targetRef="ClaimClosing" />',
+      `<sequenceFlow id="Flow_Approved" sourceRef="ApproveSettlement" targetRef="ClaimClosing">${condition}</sequenceFlow>`]),
+    "condition on a User Task flow");
+});
+
 test("a model that both forks and chooses is refused", async () => {
   await refused("claim-rework", edit(await source("claim-rework"),
     ['<sequenceFlow id="Flow_AssessmentOpened" sourceRef="AssessmentOpened" targetRef="InspectDamage" />',
