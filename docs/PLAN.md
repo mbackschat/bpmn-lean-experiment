@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: write and cold-review the proposal of the User Task local data family of [delivery batch](#scheduled-delivery-batches) 3: CIB `camunda:inputOutput` on User Tasks under the nested scope-data profile, so a mapped User Task owns locals from entry to completion, its completion patch may write them, its outputs publish at completion, and hosted task detail resolves names through the frame chain. Rows: the Activity-owner clauses of `PC-DATA-04`, `PC-DATA-05` and `PC-DATA-06`, and the mapped-result clause of `PC-HUM-01`; each row's expression and Multi-Instance clauses stay held. Scope re-entry landed on `main` at `8eb93c88` (2026-11-02 04:12) through pull request #41.
+Current task: propose the User Task local data family of [delivery batch](#scheduled-delivery-batches) 3: CIB `camunda:inputOutput` on User Tasks under the nested scope-data profile, the task owning locals from entry to completion, with hosted task detail resolving through the frame chain. Rows: the Activity-owner clauses of `PC-DATA-04` to `PC-DATA-06` and the mapped-result clause of `PC-HUM-01`. Scope re-entry landed at `8eb93c88`.
 
-Deliverable: an approved proposal for the family, with CIB Seven `2.2.0` depth established from pinned source and every Lean hub it must touch named with its reason.
+Deliverable: an approved proposal with CIB `2.2.0` depth from pinned source and every Lean hub it touches named with its reason.
 
 Acceptance blockers: none recorded.
 
-Current result: the inventory of batch 3 (2026-11-02) leaves only this mechanism unheld; the remaining clauses of `PC-DATA-03` to `PC-DATA-09` need the held expression lane or Multi-Instance owners. Reach is low: 3 of 1,545 User Tasks in the pinned CIB resources carry `inputOutput`, all engine tests. Open design point: every child definition scope must be owned by an `EmbeddedSubProcess` node today, so a task-owned frame needs either a checked node or field (a kernel type change under [contract item 4](LEAN-BUILD-MODULARITY-SPEC.md#contract)) or an admission rule that lets a mapped User Task own its own definition scope.
+Current result: every other open batch-3 clause needs held expressions or Multi-Instance owners. Reach is low: 3 of 1,545 pinned CIB User Tasks carry `inputOutput`. Open design point: a child definition scope must be owned by an `EmbeddedSubProcess` node, so a task-owned frame needs a kernel type change ([contract item 4](LEAN-BUILD-MODULARITY-SPEC.md#contract)) or an admission rule letting a mapped User Task own its scope.
 
 Effort budget: 2 hours for the proposal stage, from 2026-11-02 04:15 CET.
 
-Next action: settle the representation against the checked ownership rule and the Program's `enterScope`, then write the proposal. Expressions (`PC-DATA-07`) stay held.
+Next action: settle that representation, then write the proposal. Expressions (`PC-DATA-07`) stay held.
 
 Oracle: the cold proposal review of the family.
 
