@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and delivery boundary
 
@@ -139,7 +139,7 @@ Profile control (wrong algorithm 2), per locus rather than per model, because a 
 - **TypeScript, checked level:** the profile-to-arity decision of the checked-process admission and of `hasSelectedArity` is extracted into one exported predicate over the profile id, which both loci call, and the same loop enumerates that predicate per registered profile, so neither locus can lift the bound alone;
 - **Lean, Program level:** the new Lean conformance module evaluates `operationWellFormed` of [`ProgramStructuralValidation`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) on one three-candidate `choose` under a profile id that keeps two, which consults only the `choose` arm.
 
-Recorded gap: the Lean checked level has no profile control. Its profile-to-flag mapping is computed inside `checkedWellFormed`, a profile id cannot reach `checkedNodeArityValid` directly, and evaluating `checkedWellFormed` is masked by the exact profile shapes. Naming the mapping as a predicate the module could enumerate would add a public declaration or an import to the hubs this family edits only in their bodies, against the [Lean build efficiency rule](../../CLAUDE.md#lean-build-efficiency). A lift of that mapping for every profile is therefore caught only where it changes a retained model's admission.
+Recorded gap: the Lean checked level has no profile control. Its profile-to-flag mapping is computed inside `checkedWellFormed`, a profile id cannot reach `checkedNodeArityValid` directly, and evaluating `checkedWellFormed` is masked by the exact profile shapes. Naming the mapping as a predicate the module could enumerate would add a public declaration or an import to the hubs this family edits only in their bodies, against the [Lean build efficiency rule](../../CLAUDE.md#lean-build-efficiency). A lift of that mapping for every profile is therefore caught only where it changes a retained model's admission. It cannot make Lean admit a wider Choice under another profile, because Lean admission also requires the Program-level `operationWellFormed`, which the Lean Program-level control covers; it weakens only the independent checked-graph check.
 
 Existing witnesses that change: the refusal of one and three conditions in the [scope re-entry source test](../../packages/bpmn-source/test/scope-reentry-source.test.ts) and `choice_arity_is_two_conditions` in the [re-entry conformance module](../../BpmnSemantics/ScopeReentryConformance.lean) become admitted witnesses of those edits.
 
@@ -224,6 +224,6 @@ Guards the implementation must change or satisfy:
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `736861f6` | `fork-turns-none` | `approve-with-required-edits` | `4ffdef0f, 99960eb9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
