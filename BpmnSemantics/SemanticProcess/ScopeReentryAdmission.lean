@@ -71,16 +71,17 @@ private def rootArityValid (v : Vertex) : Bool :=
 /-- SRE-ADMIT-01 over one root graph: the serial structure rule, every root vertex's own walk, each caller vertex
 visited once and every called vertex walked from some Call, one Start and one End at the root, and a burst within
 the limit, returned beside the analysis; the Start names follow SRE-AVAILABLE-01. Each Choice and Merge arrives
-with its arity checked. -/
+with its arity checked. `rootEnds` counts the root's None End elements, which each analysis level counts its own way
+(NEF-END-01). -/
 private def rootGraphAnalysis (vertices : List Vertex) (joints : List (String × List String))
-    (records : List ScopeLocalData) (scopes : List DefinitionScope) (root entry : String) (handlers : List String) :
-    Option (Analysis × Nat) := do
+    (records : List ScopeLocalData) (scopes : List DefinitionScope) (root entry : String) (handlers : List String)
+    (rootEnds : Nat) : Option (Analysis × Nat) := do
   let rootVertices := vertices.filter (·.scope == root)
   let ids := vertices.map (·.id) ++ joints.map (·.1)
   let rootIds := rootVertices.map (·.id) ++ joints.map (·.1)
   if !(structureAdmitted vertices records scopes root handlers && ids.eraseDups.length == ids.length &&
       rootVertices.any (·.id == entry) &&
-      (rootVertices.filter (·.kind == .start)).length == 1 && (rootVertices.filter (·.kind == .finish)).length == 1 &&
+      (rootVertices.filter (·.kind == .start)).length == 1 && rootEnds == 1 &&
       rootVertices.all rootArityValid &&
       (rootVertices.flatMap (·.outputs) ++ joints.flatMap (·.2)).all rootIds.contains) then none
   else do
@@ -101,7 +102,8 @@ private def rootGraphAnalysis (vertices : List Vertex) (joints : List (String ×
 
 private theorem rootGraphAnalysis_one_scope (vertices : List Vertex) (joints : List (String × List String))
     (records : List ScopeLocalData) (scopes : List DefinitionScope) (root entry : String) (handlers : List String)
-    (one : scopes.length = 1) : rootGraphAnalysis vertices joints records scopes root entry handlers = none := by
+    (rootEnds : Nat) (one : scopes.length = 1) :
+    rootGraphAnalysis vertices joints records scopes root entry handlers rootEnds = none := by
   -- `delta` unfolds without realizing equation lemmas, which Lean would export; this module stays off the
   -- `meta import` of the equation helper, whose hidden-edit fan-out is at its recorded bound.
   delta rootGraphAnalysis
@@ -165,14 +167,20 @@ private def checkedAdmission (source : CheckedProcess) : Option (Analysis × Nat
   let vertices ← (source.nodes.filter (!checkedJoint ·)).mapM (checkedVertex? source)
   let joints ← (source.nodes.filter checkedJoint).mapM (checkedJoint? source root)
   rootGraphAnalysis vertices joints source.scopeLocalData source.definitionScopes root.value entry.value
-    (SerialBusinessTask.checkedHandlers source)
+    (SerialBusinessTask.checkedHandlers source) (vertices.filter fun v => v.scope == root.value && v.kind == .finish).length
 
 private def programAdmission (program : Program) : Option (Analysis × Nat) := do
   let (root, start, operations) ← programEnvelope? program
   let vertices ← (operations.filter (!operationJoint ·)).mapM (operationVertex? program)
   let joints ← (operations.filter operationJoint).mapM (operationJoint? program root.value)
+  -- A fan-in End lowers to one Finish vertex per incoming flow, all with the End as origin (NEF-END-01), so the
+  -- Program counts the distinct origins of its root arrivals where the checked graph counts End vertices.
+  let rootEnds := (operations.filterMap fun op => match op with
+    | .reachNoneEnd _ origin _ =>
+        if dataOperationScope? program op == some root.value then some origin.elementId.value else none
+    | _ => none).eraseDups.length
   rootGraphAnalysis vertices joints program.scopeLocalData program.definitionScopes root.value start.value
-    (SerialBusinessTask.programHandlers program)
+    (SerialBusinessTask.programHandlers program) rootEnds
 
 /-- SRE-ADMIT-01 over the checked graph; conditions are left to the generic rule placing them on Choice
 candidates. -/
@@ -191,7 +199,7 @@ def programBurst? (program : Program) : Option Nat := (programAdmission program)
 theorem programAnalysis_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
     programAnalysis program = none := by
   delta programAnalysis programAdmission
-  cases programEnvelope? program <;> simp [rootGraphAnalysis_one_scope _ _ _ _ _ _ _ one]
+  cases programEnvelope? program <;> simp [rootGraphAnalysis_one_scope _ _ _ _ _ _ _ _ one]
 
 /-- SRE-AVAILABLE-01 and the profile's Start domain over the re-entry analysis. -/
 def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) : Bool :=

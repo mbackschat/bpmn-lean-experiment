@@ -599,6 +599,8 @@ def lowerNode (source : CheckedProcess) :
         (lowerInterruptingErrorHandler source scopeId error), scopeId)
   | .terminateEndEvent id => lowerTerminateEnd? source id
   | .noneEndEvent id =>
+      -- NEF-END-01: an End with several incoming flows lowers per flow in `lowerCheckedProcess`.
+      if 2 ≤ (incomingPlaces source id).length then none else
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.reachNoneEnd
         (nodeOperationId id)
@@ -726,6 +728,19 @@ def lowerCheckedProcess (source : CheckedProcess) : Program :=
   let scopedOperations := sortScopedOperations
     (source.nodes.filterMap (lowerNode source) ++
       source.nodes.filterMap (lowerParallelMultiInstanceCompletion? source) ++
+      -- NEF-END-01: one `reachNoneEnd` per incoming flow of a None End with several, so each token ends on its own.
+      -- `operation:<End>:from:<flow>` is the Lean spelling of `noneEndArrivalOperationId`, which
+      -- `semantic-process-identifiers.ts` owns; `DefinitionInput`'s lowering equality guards the two spellings.
+      source.nodes.flatMap (fun node => match node with
+        | .noneEndEvent id =>
+            let arrivals := source.sequenceFlows.filter (·.targetId == id)
+            match checkedNodeScopeId? source id with
+            | some scopeId =>
+                if arrivals.length < 2 then [] else arrivals.map fun flow =>
+                  (.reachNoneEnd ⟨(nodeOperationId id).value ++ ":from:" ++ flow.id.value⟩ { elementId := id }
+                    (flowControlPlaceId flow.id), scopeId)
+            | none => []
+        | _ => []) ++
       source.definitionScopes.flatMap (lowerScopeCompletions source))
   { identity :=
       { compiler := .bpmnSourceSemanticProcess

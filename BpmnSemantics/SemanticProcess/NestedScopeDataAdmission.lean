@@ -399,14 +399,22 @@ def programEnvelope? (program : Program) : Option (DefinitionScopeId × Operatio
     let rootCompleted := completions.any fun op => match op with
       | .completeScope _ _ scopeId none => scopeId == root.id
       | _ => false
+    -- NEF-ADMIT-01: the arrivals of one fan-in End share its origin and count once, only when all lie in the root
+    -- graph; every other repeated origin still refuses, keeping one vertex per element.
+    let arrivals := operations.filterMap fun op => match op with
+      | .reachNoneEnd id origin _ => some (origin.elementId.value, id)
+      | _ => none
+    let arrivalsRooted := arrivals.all fun (origin, id) =>
+      (arrivals.filter (·.1 == origin)).length == 1 ||
+        (program.operationScopes.find? (·.operationId == id)).map (·.scopeId) == some root.id
     let identities := program.processId.value :: operations.filterMap (fun op =>
       match op with
-      | .initiate _ origin _ | .reachNoneEnd _ origin _ | .awaitUserTask _ origin ..
+      | .initiate _ origin _ | .awaitUserTask _ origin ..
       | .awaitEffect _ origin .. | .enterScope _ origin .. | .invokeProcess _ origin ..
       | .choose _ origin .. | .mergeExclusive _ origin .. => some origin.elementId.value
-      | _ => none) ++ program.controlPlaces.map (·.origin.elementId.value)
+      | _ => none) ++ (arrivals.map (·.1)).eraseDups ++ program.controlPlaces.map (·.origin.elementId.value)
     if !(rootCompleted && completions.length == program.definitionScopes.length - calledRoots &&
-        identities.eraseDups.length == identities.length) then none
+        arrivalsRooted && identities.eraseDups.length == identities.length) then none
     else do
       let start ← StructuredComposition.unique? (operations.filter fun op => match op with
         | .initiate .. => true

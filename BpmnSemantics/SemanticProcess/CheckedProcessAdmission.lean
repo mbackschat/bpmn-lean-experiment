@@ -416,7 +416,11 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
   | .terminateEndEvent id =>
       incomingCount flows id = 1 && outgoingCount flows id = 0
   | .noneEndEvent id =>
-      incomingCount flows id = 1 && outgoingCount flows id = 0
+      -- NEF-ADMIT-01: `mixed && variableMerge` holds for the nested scope-data profile alone (`checkedWellFormed` passes
+      -- `checkedVariableChoiceProfile` and `checkedVariableMergeProfile`), which admits a None End with several incoming
+      -- flows; `NoneEndFanInConformance` checks that no other profile either flag names does.
+      (if mixed && variableMerge then incomingCount flows id ≥ 1 else incomingCount flows id = 1) &&
+        outgoingCount flows id = 0
 
 /-- Legacy deadline-owning Activity kinds; the subscription profile separately selects monitored child entry. -/
 def checkedOwnsBoundaryTimerDeadline (node : CheckedNode)
@@ -460,6 +464,17 @@ def checkedBoundaryMessageAttachmentValid (source : CheckedProcess) : Bool :=
         (hosts.filter (· = attachedToRef)).length = 1
     | _ => true
 
+/-- XCA-ADMIT-01: the profiles whose Exclusive Choices take any positive number of conditions, the `mixed` flag of
+`checkedNodeArityValid`. The nested scope-data profile shares the variable Choice arity. -/
+def checkedVariableChoiceProfile (profile : ProfileId) : Bool :=
+  profile == mixedTaskControlFlowProfileId || profile == mixedTaskBusinessErrorProfileId ||
+    profile == nestedScopeDataProfileId
+
+/-- SRE-ADMIT-01: the profiles whose Exclusive Merges join two or more flows, the `variableMerge` flag of
+`checkedNodeArityValid`. -/
+def checkedVariableMergeProfile (profile : ProfileId) : Bool :=
+  profile.value == embeddedCompletionProfile || profile == nestedScopeDataProfileId
+
 /-- Independent static admission for the exact currently implemented checked-graph profiles. -/
 def checkedWellFormed (source : CheckedProcess) : Bool :=
   nonempty source.identity.semanticProfile.value &&
@@ -500,13 +515,9 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
         -- CSE-ADMIT-01 binds named handlers; the nested scope-control analysis then admits only data-free ones.
         source.identity.semanticProfile.value == embeddedCompletionProfile)
       (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
-      -- XCA-ADMIT-01: the nested scope-data profile shares the variable Choice arity; its Merge arity is already variable.
-      (source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId ||
-        source.identity.semanticProfile == nestedScopeDataProfileId)
+      (checkedVariableChoiceProfile source.identity.semanticProfile)
       (source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
-      -- SRE-ADMIT-01: a nested scope-data Merge joins two or more flows.
-      (source.identity.semanticProfile.value == embeddedCompletionProfile ||
-        source.identity.semanticProfile == nestedScopeDataProfileId)
+      (checkedVariableMergeProfile source.identity.semanticProfile)
       (source.interruptingMessageEventSubProcesses.map (·.elementId)) source.sequenceFlows) &&
     checkedInclusivePairingValid source &&
     checkedEventRaceConfigurationValid source &&

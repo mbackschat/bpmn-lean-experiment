@@ -194,6 +194,15 @@ test("only the mixed and nested scope-data profiles give checked Exclusive choic
   }
 });
 
+// NEF-ADMIT-01's checked-level profile control (wrong algorithm 2): every other profile keeps single-incoming None Ends.
+test("only the nested scope-data profile gives checked None Ends several incoming flows", async () => {
+  type GraphModule = typeof import("../src/checked-process-graph-admission.ts");
+  const { noneEndFanIn } = await import(new URL("../dist/checked-process-graph-admission.js", import.meta.url).href) as GraphModule;
+  for (const registeredProfile of Object.values(SemanticProfileId)) {
+    assert.equal(noneEndFanIn(registeredProfile), registeredProfile === SemanticProfileId.NestedEmbeddedScopeData, registeredProfile);
+  }
+});
+
 test("assessment routes require initial data exactly when a branch can bypass all Service writers", async () => {
   const original = await readFile(new URL("./fixtures/mixed-task-assessment-routing.bpmn", import.meta.url), "utf8");
   for (const bothWrite of [false, true]) {

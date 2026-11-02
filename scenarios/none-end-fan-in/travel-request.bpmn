@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TravelRequest" targetNamespace="urn:bpmn-lean:travel-request"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_TravelRequest" name="Handle a travel request" isExecutable="true">
+    <startEvent id="RequestReceived" name="Request received" />
+    <subProcess id="AssessRequest" name="Assess request">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="decision">pending</camunda:inputParameter>
+          <camunda:inputParameter name="channel">email</camunda:inputParameter>
+          <camunda:outputParameter name="decision">${decision}</camunda:outputParameter>
+          <camunda:outputParameter name="channel">${channel}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="AssessmentOpened" name="Assessment opened" />
+      <userTask id="CheckRequest" name="Check request" />
+      <endEvent id="AssessmentClosed" name="Assessment closed" />
+      <sequenceFlow id="Flow_AssessmentOpened" sourceRef="AssessmentOpened" targetRef="CheckRequest" />
+      <sequenceFlow id="Flow_Checked" sourceRef="CheckRequest" targetRef="AssessmentClosed" />
+    </subProcess>
+    <exclusiveGateway id="RouteRequest" name="Route request" gatewayDirection="Diverging" default="Flow_Book">
+      <incoming>Flow_Assessed</incoming>
+      <outgoing>Flow_Reject</outgoing>
+      <outgoing>Flow_Call</outgoing>
+      <outgoing>Flow_Book</outgoing>
+    </exclusiveGateway>
+    <userTask id="CallTraveller" name="Call traveller" />
+    <serviceTask id="BookTravel" name="Book travel"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${bookTravel}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="traveller">${traveller}</camunda:inputParameter>
+          <camunda:outputParameter name="bookingNumber">${booking}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="RequestClosed" name="Request closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="RequestReceived" targetRef="AssessRequest" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="AssessRequest" targetRef="RouteRequest" />
+    <sequenceFlow id="Flow_Reject" sourceRef="RouteRequest" targetRef="RequestClosed">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(decision,"reject")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Call" sourceRef="RouteRequest" targetRef="CallTraveller">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(channel,"phone")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Book" sourceRef="RouteRequest" targetRef="BookTravel" />
+    <sequenceFlow id="Flow_Called" sourceRef="CallTraveller" targetRef="RequestClosed" />
+    <sequenceFlow id="Flow_Booked" sourceRef="BookTravel" targetRef="RequestClosed" />
+  </process>
+</definitions>

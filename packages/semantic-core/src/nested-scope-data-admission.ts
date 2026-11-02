@@ -539,9 +539,22 @@ export function nestedScopeProgramModel(program: SemanticProcessProgram): ScopeD
   const rootCompleted = completions.some(operation =>
     operation.kind === SemanticOperationKind.CompleteScope && operation.parentOutput === null && operation.scopeId === root.id);
   const identities: string[] = [program.processId];
+  // NEF-ADMIT-01: the arrivals of one fan-in End share its origin and count once, only when all lie in the root graph;
+  // every other repeated origin still refuses, keeping one vertex per element.
+  const arrivalScopes = new Map<string, string[]>();
   for (const operation of operations) {
     if (!("elementId" in operation.origin)) return null;
-    identities.push(operation.origin.elementId);
+    if (operation.kind !== SemanticOperationKind.ReachNoneEnd) {
+      identities.push(operation.origin.elementId);
+      continue;
+    }
+    const scopes = arrivalScopes.get(operation.origin.elementId) ?? [];
+    scopes.push(program.operationScopes.find(({ operationId }) => operationId === operation.id)?.scopeId ?? "");
+    arrivalScopes.set(operation.origin.elementId, scopes);
+  }
+  for (const [origin, scopes] of arrivalScopes) {
+    if (scopes.length > 1 && scopes.some(scope => scope !== root.id)) return null;
+    identities.push(origin);
   }
   identities.push(...program.controlPlaces.map(({ origin }) => origin.elementId));
   if (!rootCompleted || completions.length !== program.definitionScopes.length - calledRoots ||

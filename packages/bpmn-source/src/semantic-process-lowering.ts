@@ -38,6 +38,7 @@ import {
 } from "./conditional-branch-lowering.js";
 import {
   controlPlaceId,
+  noneEndArrivalOperationId,
   operationId,
 } from "./semantic-process-identifiers.js";
 import { lowerTerminateEndEvent } from "./terminate-end-event-lowering.js";
@@ -484,12 +485,17 @@ function lowerNode(
         },
       });
     }
-    case CheckedNodeKind.NoneEndEvent:
-      return scoped({
-        ...base,
-        kind: SemanticOperationKind.ReachNoneEnd,
-        input: requireOnly(incoming, node.id, "incoming"),
-      });
+    case CheckedNodeKind.NoneEndEvent: {
+      // NEF-END-01: one `reachNoneEnd` per incoming flow, so each arriving token ends on its own; admission decides
+      // which profiles and placements may have more than one.
+      const arrivals = source.sequenceFlows.filter(({ targetId }) => targetId === node.id);
+      return arrivals.length < 2
+        ? scoped({ ...base, kind: SemanticOperationKind.ReachNoneEnd, input: requireOnly(incoming, node.id, "incoming") })
+        : arrivals.map(flow => ({ scopeId, operation: {
+          ...base, id: noneEndArrivalOperationId(node.id, flow.id), kind: SemanticOperationKind.ReachNoneEnd,
+          input: controlPlaceId(flow.id),
+        } }));
+    }
   }
 }
 

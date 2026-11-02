@@ -53,23 +53,35 @@ export function scopeReentryChecked(source: CheckedProcess): boolean {
 /** SRE-ADMIT-01 over the checked graph; `null` refuses it or routes it elsewhere. */
 export function scopeReentryCheckedAnalysis(source: CheckedProcess): ScopeReentryAnalysis | null {
   const model = nestedScopeCheckedModel(source);
-  return model === null || !scopeReentryModel(model) ? null : analyzeRootGraph(model);
+  return model === null || !scopeReentryModel(model) ? null
+    : analyzeRootGraph(model, model.vertices.filter(({ kind, scope }) =>
+      kind === ScopeDataVertexKind.Finish && scope === model.root).length);
 }
 
 /** SRE-ADMIT-01 over the Program, independent of the checked graph. */
 export function scopeReentryProgramAnalysis(program: SemanticProcessProgram): ScopeReentryAnalysis | null {
   const model = nestedScopeProgramModel(program);
-  return model === null || !scopeReentryModel(model) ? null : analyzeRootGraph(model);
+  return model === null || !scopeReentryModel(model) ? null : analyzeRootGraph(model, rootEndElements(program, model.root));
 }
 
-function analyzeRootGraph(model: ScopeDataModel): ScopeReentryAnalysis | null {
+/**
+ * The None End elements of the root graph: a fan-in End lowers to one Finish vertex per incoming flow, all with the End
+ * as origin (NEF-END-01), so the Program counts distinct origins where the checked graph counts End vertices.
+ */
+function rootEndElements(program: SemanticProcessProgram, root: string): number {
+  return new Set(program.operations.flatMap(operation => operation.kind === SemanticOperationKind.ReachNoneEnd &&
+    program.operationScopes.some(({ operationId, scopeId }) => operationId === operation.id && scopeId === root)
+    ? [operation.origin.elementId] : [])).size;
+}
+
+/** `rootEnds` is the number of None End elements in the root graph, which each analysis level counts its own way. */
+function analyzeRootGraph(model: ScopeDataModel, rootEnds: number): ScopeReentryAnalysis | null {
   const { vertices, root, entry } = model;
   if (!scopeDataStructureAdmitted(model)) return null;
   const byId = new Map(vertices.map(vertex => [vertex.id, vertex]));
   const rootVertices = vertices.filter(({ scope }) => scope === root);
   // SRE-ADMIT-01: one None Start, the entry, and one None End at the root.
-  if (byId.size !== vertices.length || byId.get(entry)?.scope !== root ||
-      rootVertices.filter(({ kind }) => kind === ScopeDataVertexKind.Finish).length !== 1 ||
+  if (byId.size !== vertices.length || byId.get(entry)?.scope !== root || rootEnds !== 1 ||
       !rootVertices.every(vertex => rootArityValid(vertex) && vertex.outputs.every(id => byId.get(id)?.scope === root))) {
     return null;
   }

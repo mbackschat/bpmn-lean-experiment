@@ -53,6 +53,14 @@ export function variableExclusiveChoiceArity(semanticProfile: string): boolean {
     semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
 }
 
+/**
+ * NEF-ADMIT-01: the profiles whose None Ends may take several incoming flows. Placement (the re-entry root graph only) is
+ * the profile's own admission; the Lean twin is the `mixed && variableMerge` conjunction of `checkedNodeArityValid`.
+ */
+export function noneEndFanIn(semanticProfile: string): boolean {
+  return semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+}
+
 export function resolveAdmittedCheckedProcessGraph(
   graph: CheckedProcessGraph,
   semanticProfile: string = SemanticProfileId.UserTask,
@@ -265,8 +273,9 @@ function hasSelectedArity(
     case CheckedNodeKind.CancelEndEvent:
     case CheckedNodeKind.ErrorEndEvent:
     case CheckedNodeKind.TerminateEndEvent:
-    case CheckedNodeKind.NoneEndEvent:
       return incoming === 1 && outgoing === 0;
+    case CheckedNodeKind.NoneEndEvent:
+      return (noneEndFanIn(semanticProfile) ? incoming >= 1 : incoming === 1) && outgoing === 0;
   }
 }
 
