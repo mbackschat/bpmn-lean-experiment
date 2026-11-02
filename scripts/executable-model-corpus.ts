@@ -140,6 +140,7 @@ const corpusConstructs = new Set([
   "intermediateThrowEvent",
   "lane",
   "laneSet",
+  "manualTask",
   "parallelGateway",
   "participant",
   "process",
