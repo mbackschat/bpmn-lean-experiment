@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: close [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md) for the nested scope-data profile, batch 4 (`PC-CF-02`, its candidate-count clause). Root Parallel forks landed at `7e4891d4`. Chosen on reach: of the 90 CIB engine test models holding an Exclusive Gateway, 26 have one condition plus a default and only 1 the admitted two-plus-default shape; default-less Choices (about 39 models) need an exception outcome and are the next candidate. Batch 3 stays open behind the owner's holds.
+Current task: land [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md) for the nested scope-data profile, batch 4 (`PC-CF-02`, its candidate-count clause). Root Parallel forks landed at `7e4891d4`. Chosen on reach: of the 90 CIB engine test models holding an Exclusive Gateway, 26 have one condition plus a default and only 1 the admitted two-plus-default shape; default-less Choices (about 39 models) need an exception outcome and are the next candidate. Batch 3 stays open behind the owner's holds.
 
 Deliverable: Exclusive Choices with one or more conditional flows and a default in the root graph of the nested scope-data profile, landed on `main`.
 
-Acceptance blockers: the closure review, graduation and landing.
+Acceptance blockers: landing through the branch flow with green hosted checks.
 
-Current result: implemented and registered; `BpmnConformance` green at `e6ead9a9`, `verify.sh` (160 pipeline cases, warm 119.6 s) and the 85-model corpus lane green at `5a1148ac`, the CIB probe green.
+Current result: the family is closure-approved (review of `2378dbb2`, audit `ec385812`) and graduated; `BpmnConformance` green at `e6ead9a9`, `verify.sh` (160 pipeline cases, warm 119.6 s) and the 85-model corpus lane green at `5a1148ac`, the CIB probe green.
 
-Effort budget: 6 hours for proposal, implementation and closure, from 2026-11-02 13:45 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
+Effort budget: 6 hours for proposal, implementation and closure, from 2026-11-02 13:45 CET; one full `BpmnConformance` build at closure plus at most one after a correction; one used.
 
-Next action: the cold closure review of the committed closure target.
+Next action: push the branch, open the pull request and fast-forward `main` on green hosted checks; then the owner's pipeline-budget decision and the next family, default-less Choices.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and an approving closure review.
 

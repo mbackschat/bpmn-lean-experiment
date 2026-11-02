@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
