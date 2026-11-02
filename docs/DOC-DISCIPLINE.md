@@ -156,6 +156,8 @@ That commitment was tested and kept for the semantic-family maps. The family map
 
 On 2026-10-18 the family map reached 3,998 words when the nested embedded scope-data family needed recording, which applied the stated-split rule instead of compression or a raise. Families whose BPMN capability is Process, Activity or scope data flow (data inputs and outputs, mapped task data, payloads and scope-local data) moved to [`implementation-status-owner:ENGINE-DATA-FAMILY`](ENGINE-DATA-FAMILY-IMPLEMENTATION-MAP.md) under that axis, and the family map and the data-flow map both keep the 4,000-word default.
 
+On 2026-11-02 the data-flow map reached 3,999 words when None End fan-in needed recording, and the same rule applied again. Control-flow families that grow a data-bearing profile (scope re-entry, pass-through Tasks, root Parallel forks, Exclusive choice arity and None End fan-in) moved to [`implementation-status-owner:ENGINE-CONTROL-FLOW-FAMILY`](ENGINE-CONTROL-FLOW-FAMILY-IMPLEMENTATION-MAP.md), which keeps the 4,000-word default.
+
 ## Project document homes
 
 | Information | Owner role |

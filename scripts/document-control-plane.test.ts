@@ -327,6 +327,16 @@ test("routes overrides and explicit multi-area paths without plan knowledge", ()
   assert.throws(() => routeImplementationPath("root-new-engine.ts"), /unrouted/u);
 });
 
+test("routes the control-flow family artifacts to the control-flow family map beside their tree owner", () => {
+  for (const [file, owner] of [
+    ["BpmnSemantics/SemanticProcess/ScopeReentryAdmission.lean", AreaId.EngineRuntimeProof],
+    ["BpmnSemantics/NoneEndFanInConformance.lean", AreaId.EngineRuntimeProof],
+    ["scenarios/none-end-fan-in/README.md", AreaId.AssuranceAdoption],
+    ["scenarios/exclusive-choice-arity/complaint-handling.bpmn", AreaId.AssuranceAdoption],
+  ] as const) assert.deepEqual(routeImplementationPath(file), [owner, AreaId.EngineControlFlowFamily], file);
+  assert.deepEqual(routeImplementationPath("BpmnSemantics/SemanticProcess/Lowering.lean"), [AreaId.EngineRuntimeProof]);
+});
+
 test("routes the nested scope-data artifacts to the data-flow family map beside their tree owner", () => {
   for (const [file, owner] of [
     ["BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean", AreaId.EngineRuntimeProof],

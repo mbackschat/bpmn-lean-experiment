@@ -12,6 +12,7 @@ export const AreaId = Object.freeze({
   EngineRuntimeProof: "ENGINE-RUNTIME-PROOF",
   EngineSemanticFamily: "ENGINE-SEMANTIC-FAMILY",
   EngineDataFamily: "ENGINE-DATA-FAMILY",
+  EngineControlFlowFamily: "ENGINE-CONTROL-FLOW-FAMILY",
   EngineSemanticInvariant: "ENGINE-SEMANTIC-INVARIANT",
   TemporalHosting: "TEMPORAL-HOSTING",
   BpmPlatform: "BPM-PLATFORM",
@@ -398,6 +399,17 @@ function withNestedScopeDataOwner(file: string, routes: ReadonlyArray<AreaId>): 
   return nestedScopeData ? [...routes, AreaId.EngineDataFamily] : routes;
 }
 
+/**
+ * Control-flow family artifacts that grow a data-bearing profile, which the control-flow family map owns beside their
+ * top-level area, routed by path for the same reason as {@link withNestedScopeDataOwner}.
+ */
+function withControlFlowFamilyOwner(file: string, routes: ReadonlyArray<AreaId>): ReadonlyArray<AreaId> {
+  const controlFlow =
+    /^BpmnSemantics\/(?:SemanticProcess\/(?:ScopeReentryAdmission|ScopeDataBurst)|(?:ScopeReentry|PassThroughTask|RootParallelForks|ExclusiveChoiceArity|NoneEndFanIn)Conformance)\.lean$/u.test(file) ||
+    /^scenarios\/(?:scope-reentry|pass-through-task|root-parallel-forks|exclusive-choice-arity|none-end-fan-in)\//u.test(file);
+  return controlFlow ? [...routes, AreaId.EngineControlFlowFamily] : routes;
+}
+
 function packageRoutes(pathParts: ReadonlyArray<string>): ReadonlyArray<AreaId> {
   switch (pathParts[1]) {
     case "bpmn-source":
@@ -497,9 +509,9 @@ export function routeImplementationPath(file: string, routing?: DocumentRouting)
     case "scripts":
       return [AreaId.AssuranceAdoption];
     case "scenarios":
-      return withNestedScopeDataOwner(file, [AreaId.AssuranceAdoption]);
+      return withControlFlowFamilyOwner(file, withNestedScopeDataOwner(file, [AreaId.AssuranceAdoption]));
     case "BpmnSemantics":
-      return withNestedScopeDataOwner(file, [AreaId.EngineRuntimeProof]);
+      return withControlFlowFamilyOwner(file, withNestedScopeDataOwner(file, [AreaId.EngineRuntimeProof]));
     case "contracts":
       return [AreaId.EngineContractsSource];
     case "profiles":
