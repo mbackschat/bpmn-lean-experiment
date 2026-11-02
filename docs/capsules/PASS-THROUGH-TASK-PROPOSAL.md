@@ -82,7 +82,7 @@ This family makes one kernel type change, allowed once per family by [contract i
 The shared scope-data vertex model gains a `PassThrough` vertex with no reads or writes and one output. It is projected from the checked arm, and on the Program side from a one-input `mergeExclusive`.
 
 - **Serial walk.** Accepts the vertex on the root path and on Sub-Process paths. The called-path rule is unchanged, so a called Process refuses it.
-- **Re-entry route, amended.** Today the Program-level predicate of `SRE-ROUTE-01` counts every root `mergeExclusive` (`scope-reentry-admission.ts:32-38`; Lean `ScopeReentry.programReentry`, consumed at `NestedScopeControlAdmission.lean:834`). This family amends it to count only a `mergeExclusive` with at least two inputs, so a serial model with a root pass-through Task stays on the serial route at both levels and the [Start capacity envelope](../../packages/temporal-adapter/protocol/test/start-capacity-envelope.test.ts) keeps its routing. The amendment is additive: every model admitted today has no one-input `mergeExclusive`. The [scope re-entry specification](SCOPE-REENTRY-SPEC.md#admission) will record it, and *Close return ticket* at the root of Equipment return is the witness that locks the route.
+- **Re-entry route, amended.** Today the Program-level predicate of `SRE-ROUTE-01` counts every root `mergeExclusive` (`scope-reentry-admission.ts:32-38`; Lean `ScopeReentry.programReentry`, consumed at `NestedScopeControlAdmission.lean:834`). This family amends it to count only a `mergeExclusive` with at least two inputs, so a serial model with a root pass-through Task stays on the serial route at both levels and the [Start capacity envelope](../../packages/temporal-adapter/protocol/test/start-capacity-envelope.test.ts) keeps its routing. The amendment is additive: every model admitted today has no one-input `mergeExclusive`. The [scope re-entry specification](SCOPE-REENTRY-SPEC.md#admission) records it, and *Close return ticket* at the root of Equipment return is the witness that locks the route.
 - **Burst.** The re-entry burst (`SRE-BURST-01`) gives the vertex a cost of one, without stopping.
 - **Serial-route burst.** A serial-route model holding a pass-through Task is admitted only when the same burst computation stays within the closure limit of eight (`PTT-BURST-01`). The serial route's recorded lack of a burst rule stays as disclosed for models without one. Adding the rule to those models would narrow admitted behavior and needs a new profile identity.
 - **Concurrent account.** Refuses the checked arm and the one-input `mergeExclusive`, unchanged.
@@ -133,7 +133,7 @@ Both models carry one mapped Service Task bound by an exact source overlay and a
 
 Lane shape: checked
 
-Evidence: the family adds no transition family and no runtime law, because the Program it produces uses only `mergeExclusive`; a `rfl` lowering lemma for the new arm in [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean) states its exact operation, and an executable conformance module checks the admission, kind, lowering and burst over both models and every refused edit, reusing the burst analysis of [`ScopeReentryAdmission`](../../BpmnSemantics/SemanticProcess/ScopeReentryAdmission.lean).
+Evidence: the family adds no transition family and no runtime law, because the Program it produces uses only `mergeExclusive`; a `rfl` lowering lemma for the new arm in [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean) states its exact operation, and an executable conformance module checks the admission, kind, lowering and burst over both models and every refused edit, reusing the burst analysis that the family leaf [`ScopeDataBurst`](../../BpmnSemantics/SemanticProcess/ScopeDataBurst.lean) now shares with the re-entry account.
 
 Not proved, and recorded as such: that every actual closure stays within the computed burst. The runtime closure bound rolls an over-limit closure back atomically.
 
@@ -164,6 +164,18 @@ Nearest unsupported claims:
 - pass-through Tasks on Parallel branches, with token multiplicity above one, in called Processes and with several flows;
 - asynchronous continuations, listeners and mappings on them;
 - quantified bounded closure.
+
+Closure gates, 2026-11-02:
+
+- **Green at `e5547d55`:** the complete `verify.sh`: the full Lean library and the `BpmnConformance` root with the [conformance module](../../BpmnSemantics/PassThroughTaskConformance.lean); the runtime stage with the CIB oracle and the [calibration probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPassThroughTaskProbeTest.java); the complete Temporal gate; the pipeline with all 154 registered cases agreeing across Lean, the core and Temporal and each family mutation detected, warm in 116.7 seconds within the 200.2-second budget and over the 77-second soft feedback target, at a load of 0.25 to 0.71 per core; the value-domain matrix; and composition parity.
+- **Green at `81f2171a`:** the research doctor and `test:model-corpus` over all 83 models. The corpus lane, first run at closure, found that its closed construct vocabulary lacked `manualTask`, so the equipment return read as inventory drift; `81f2171a` adds it and brings the pinned counts and generated map to 76 retained models and 50 variants. The research doctor ran with the owner's untracked `.locmetryrc` tool configurations moved aside from the four research checkouts whose only local change they are, and restored after.
+
+As implemented, where the account above left a choice or a witness changed:
+
+- **Witness models.** [Separating witnesses](#separating-witnesses) states two amendments to the approved models, which the probe, scenarios, source test and conformance module use. Both models gained a mapped Service Task and Document intake its Sub-Processes, because `CSSD-ADMIT-01` admits a serial or re-entry model only with a bound handler and a Sub-Process. *Classify document* became a Sub-Process with a local `format` copied out to `documentFormat`, because under `NSD-TASK-01` the approved root User Task could not decide the Choice. The longest bursts, stated as five for both models before implementation, are three and seven, within the eight-step bound.
+- **Lean owners.** The burst analysis moved from `ScopeReentryAdmission` into the family leaf [`ScopeDataBurst`](../../BpmnSemantics/SemanticProcess/ScopeDataBurst.lean), which both routes import in place of `ClosureLimit`; `ProfileShapeCatalog` needed no arm, because its matches over checked nodes are not exhaustive. The `TaskNotation` binder is `taskNotation`, since `notation` is a Lean keyword.
+- **Ride-along follow-ups.** PLAN's two follow-ups scheduled at the next kernel-type change were neither declared nor run before the kernel commit `e9429385`, so they did not share its rebuild; they stay scheduled in [PLAN](../PLAN.md#lean-build-follow-ups) for the next kernel-type change.
+- **Pipeline budget.** The three cases raised the warm pipeline budget from 196,300 to 200,200 ms and the hosted budget from 294,450 to 300,300 ms, at the unchanged 1,300 ms per-case rate the [verification entrypoint guard](../../scripts/verification-entrypoint.test.ts) requires; the owner approved the raise after a fresh direction review and a Rule 2 bound review.
 
 ## Versioning consequences
 

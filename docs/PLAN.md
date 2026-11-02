@@ -98,13 +98,13 @@ Current task: implement the [pass-through Task proposal](capsules/PASS-THROUGH-T
 
 Deliverable: source-admitted Plain and Manual Tasks that pass through without a wait in serial, Choice-branched and scoped graphs of the nested scope-data profile, landed on `main`; both rows stay open only on their Parallel-branch and implicit split and merge clauses.
 
-Acceptance blockers: TypeScript admission, lowering and the amended re-entry route; the `nonOperationalTask` kernel arm and its Lean owners in one commit; registration and the heavy lanes once at closure; the cold closure review.
+Acceptance blockers: the cold closure review; then graduation and landing through the branch flow.
 
-Current result: proposal approved; the CIB probe passes on both witness models.
+Current result: TypeScript, the `nonOperationalTask` kernel arm with its Lean owners, the conformance module, three registered pipeline cases, value-domain rows, corpus rows, `CIB-EXT-0022` and the probe are implemented; the complete `verify.sh` is green at `e5547d55` and the model-corpus lane at `81f2171a`. PLAN's two Lean build follow-ups for the next kernel-type change did not ride this family's kernel commit and stay scheduled.
 
 Effort budget: 6 hours for implementation and closure, from 2026-11-02 05:25 CET.
 
-Next action: TypeScript checked arm, source projection, lowering and admission, red/green.
+Next action: the cold closure review of the family closure commit.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and an approving closure review.
 
