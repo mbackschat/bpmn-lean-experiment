@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: propose [root-body Parallel forks](capsules/ROOT-PARALLEL-FORKS-PROPOSAL.md) for the nested scope-data profile, batch 4 (`PC-CF-03` primary; the Parallel-branch clauses of `PC-HUM-04` and `PC-HUM-05`). Pass-through Tasks landed at `c90ebc40`. Chosen over implicit Activity split and merge (`PC-CF-07`) on reach: Parallel Gateways appear in 144 pinned CIB test files, Activities with two incoming or outgoing flows in 17 and 13. Batch 3 stays open behind the owner's holds.
+Current task: propose [root-body Parallel forks](capsules/ROOT-PARALLEL-FORKS-PROPOSAL.md) for the nested scope-data profile, batch 4 (`PC-CF-03` primary; the root-fork clauses of `PC-DATA-03`, `PC-DATA-05` and `PC-DATA-06`). Pass-through Tasks landed at `c90ebc40`. Chosen over implicit Activity split and merge (`PC-CF-07`) on reach: of 1,947 BPMN models in the pinned CIB engine sources, 263 hold a Parallel Gateway, 17 and 13 an Activity with two incoming or outgoing flows. Batch 3 stays open behind the owner's holds.
 
-Deliverable: Parallel forks and joins in the Process root body of the nested scope-data profile, with User Tasks, mapped Service Tasks, Sub-Processes and pass-through Tasks on their branches, landed on `main`.
+Deliverable: Parallel forks and joins in the Process root body of the nested scope-data profile, with User Tasks, mapped Service Tasks and Sub-Processes over structured values on their branches, landed on `main`.
 
-Acceptance blockers: the family proposal and its cold review; then implementation, registration, the heavy lanes and the cold closure review.
+Acceptance blockers: the correction audit of the family proposal's cold review; then implementation, registration, the heavy lanes and the cold closure review.
 
 Current result: the concurrent structured scope data account admits paired forks only inside Sub-Process bodies; it records the root fork as an admission bound that broadens without reinterpreting an admitted model.
 
 Effort budget: 8 hours for proposal, implementation and closure, from 2026-11-02 10:45 CET.
 
-Next action: write the proposal against the concurrent structured scope data and pass-through Task specifications.
+Next action: on an approving correction audit, change the root restriction in TypeScript and Lean, then add the onboarding witness and its registration.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and an approving closure review.
 
