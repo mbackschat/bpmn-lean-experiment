@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and delivery boundary
 
@@ -19,7 +19,7 @@ Screened out, each with its reason:
 - `PC-BASIC-01`'s None Intermediate Throw clause. It runs the same lowering, but it is a new source element, so it needs a new checked node or notation in `CheckedProcessContract`, whose interface cone is 1,014 modules (`scripts/lean-fanout.ts` at `20933b89`). It is the next candidate.
 - Link Events (`PC-BASIC-02`). CIB records no activity for either Link Event: `BpmnParse#parseIntermediateThrowEvent` creates no activity for a throwing Link and redirects its incoming flows to the catch, and `HistoryParseListener#parseIntermediateCatchEvent` writes no history for the catch, so a Link needs a non-publishing step or place aliasing, a representation change. Its reach is 4 of the 1,947 CIB engine test models.
 
-Selection, 2026-11-02: chosen on clause value, semantic risk and reach. Of the 1,947 BPMN models in the pinned CIB engine test resources, 83 hold a plain or Manual Task and 17 of those also hold a Parallel Gateway, against 6 holding a None Intermediate Throw and 4 holding a Link Event. Of the 17, 12 have a plain or Manual Task on a Parallel branch. Classified against this profile's class, they are CIB engine fixtures rather than whole models: 3 end such branches at separate None Ends of a terminal root fork, which the profile refuses for every branch kind; 5 end at a join with no outgoing flow, which the join arity refuses (`HistoricActivityInstanceTest` and `HistoricActivityInstanceStateTest.testEndParallelJoin`, `ParallelGatewayTest.testCompletingJoin`, `testCompletingJoinInSubProcess` and `testAsyncParallelGateway`); 2 are unstructured (`ParallelGatewayTest.testUnstructuredConcurrencyTwoForks` and `TwoJoins`); 1 holds no wait at all; and only `threeTasksProcess` has a shape the profile otherwise admits. In 10 of the 12 some fork has only pass-through branches, the shape CIB's join tests use, so the branch rule, not the reach, is what this family must get right. Close call against the None Throw: it is cheaper in proof work, but it accepts no clause beyond `PC-BASIC-01`'s and needs the kernel contract change above, while this family removes the concurrency restriction that blocks every pass-through Task on a branch.
+Selection, 2026-11-02: chosen on clause value, semantic risk and reach. Of the 1,947 BPMN models in the pinned CIB engine test resources, 83 hold a plain or Manual Task and 17 of those also hold a Parallel Gateway, against 6 holding a None Intermediate Throw and 4 holding a Link Event. Of the 17, 12 have a plain or Manual Task on a Parallel branch. Classified against this profile's class, they are CIB engine fixtures rather than whole models: 3 end such branches at a terminal root fork, which the profile refuses for every branch kind (`ParallelTest.testParallel` at separate None Ends, and `HistoricActivityInstanceStateTest.testTwoEndActivities` and `testSingleEndEventAndSingleEndActivity` at Tasks with no outgoing flow); 5 end at a join with no outgoing flow, which the join arity refuses (`HistoricActivityInstanceTest` and `HistoricActivityInstanceStateTest.testEndParallelJoin`, `ParallelGatewayTest.testCompletingJoin`, `testCompletingJoinInSubProcess` and `testAsyncParallelGateway`); 2 are unstructured (`ParallelGatewayTest.testUnstructuredConcurrencyTwoForks` and `TwoJoins`); 1 holds no wait at all; and only `threeTasksProcess` has a shape the profile otherwise admits. In 10 of the 12 some fork has only pass-through branches, the shape CIB's join tests use, so the branch rule, not the reach, is what this family must get right. Close call against the None Throw: it is cheaper in proof work, but it accepts no clause beyond `PC-BASIC-01`'s and needs the kernel contract change above, while this family removes the concurrency restriction that blocks every pass-through Task on a branch.
 
 ## Normative basis and CIB classification
 
@@ -213,6 +213,6 @@ Registration: the `CIB-EXT-0022` scope in the [register](../CIB-BPMN-RELATION-RE
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `4d79c06e` | `fork-turns-none` | `approve-with-required-edits` | `754dcef8` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

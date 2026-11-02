@@ -98,9 +98,9 @@ Current task: [pass-through Tasks on Parallel branches](capsules/PASS-THROUGH-PA
 
 Deliverable: plain and Manual Tasks as pass-through on Parallel branches of the root and Sub-Process bodies, landed on `main`; `PC-HUM-04` stays open only on wait-free terminal branches in bodies.
 
-Acceptance blockers: the correction audit; the proved `mergeInput` pair law; implementation, registration and closure.
+Acceptance blockers: implementation, registration and closure.
 
-Current result: the proposal review rejected `0aa6cb51` (its kept branch cut refused both witnesses); the redesign `4d79c06e` is under a new cold review.
+Current result: the redesign `4d79c06e` is approved with edits, audited at `754dcef8`; the `mergeInput` × `declaredEntry` pair law is proved.
 
 Effort budget: 6 hours from 2026-11-02 21:45 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
