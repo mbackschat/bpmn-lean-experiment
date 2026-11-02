@@ -571,7 +571,7 @@ BPMN 2.0.2 Clause 10.3.6 transfers Call data only through matching Call Activity
 
 ### CIB-EXT-0022 — Abstract and Manual Tasks as immediate pass-through
 
-**Status:** Selected bounded extension under the [pass-through Task proposal](capsules/PASS-THROUGH-TASK-PROPOSAL.md#normative-basis-and-cib-classification) for the nested scope-data profile, calibrated against CIB Seven `2.2.0` on its two retained models.
+**Status:** Selected bounded extension under the [pass-through Task specification](capsules/PASS-THROUGH-TASK-SPEC.md#normative-basis-and-cib-classification) for the nested scope-data profile, calibrated against CIB Seven `2.2.0` on its two retained models.
 
 BPMN 2.0.2 Clause 13.1 makes the Manual Task and the Abstract Task non-operational and lets an implementation extend them to execute; Clause 13.3.3 completes an Abstract Task on activation and has a Manual Task's work done by people outside the engine, and Clause 10.3.4.1 calls a Manual Task unmanaged, with no start or completion tracked by the engine. CIB Seven `2.2.0` gives a plain `task` a `TaskActivityBehavior` and a `manualTask` its empty subclass `ManualTaskActivityBehavior` (`BpmnParse.parseTask`, `parseManualTask`), whose `execute` calls `leave` and takes the default outgoing behavior at once (`TaskActivityBehavior`, `BpmnActivityBehavior.performDefaultOutgoingBehavior`). It records each activation as a historic activity instance of type `task` or `manualTask` that starts and ends inside the command that reached it, and creates no task entity and no job. For a Manual Task that record goes beyond Clause 10.3.4.1's untracked conceptual work, and the work is not distributed.
 

@@ -1,5 +1,5 @@
 /**
- * Locks the registered equipment return and document intake schedules against the pass-through Task proposal's separating
+ * Locks the registered equipment return and document intake schedules against the pass-through Task specification's separating
  * witnesses without Lean or Temporal: the open work and Process variables after every command, the amended SRE-ROUTE-01
  * route of each model, the Task occurrences each command publishes (PTT-PASS-01, PTT-FRESH-01), and every named seeded
  * mutation, each of which must move exactly the observation it names.

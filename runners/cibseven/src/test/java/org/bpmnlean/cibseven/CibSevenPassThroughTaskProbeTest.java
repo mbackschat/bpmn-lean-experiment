@@ -16,7 +16,7 @@ import org.cibseven.bpm.engine.history.HistoricActivityInstance;
 import org.junit.Test;
 
 /**
- * Calibrates the pass-through Task proposal's `CIB-EXT-0022` (`PTT-PASS-01`, `PTT-FRESH-01`) on its two witness models:
+ * Calibrates the pass-through Task specification's `CIB-EXT-0022` (`PTT-PASS-01`, `PTT-FRESH-01`) on its two witness models:
  * CIB Seven `2.2.0` runs a plain Task and a Manual Task through `TaskActivityBehavior.leave` (BpmnParse.java:2711-2739),
  * so each activation is a historic activity instance of type `task` or `manualTask` that ends inside the command that
  * reached it, with no task entity and no job. CIB does not execute the project's Simple Boolean v1 conditions, so each

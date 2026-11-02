@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: implement the [pass-through Task proposal](capsules/PASS-THROUGH-TASK-PROPOSAL.md), approved after one correction audit, for batch 4 (`PC-HUM-04` primary, `PC-HUM-05`). Batch 3 stays open behind the owner's holds; User Task local data is deferred on cost against reach.
+Current task: land the [pass-through Task specification](capsules/PASS-THROUGH-TASK-SPEC.md), closure-approved after two correction audits, for batch 4 (`PC-HUM-04` primary, `PC-HUM-05`). Batch 3 stays open behind the owner's holds; User Task local data is deferred on cost against reach.
 
 Deliverable: source-admitted Plain and Manual Tasks that pass through without a wait in serial, Choice-branched and scoped graphs of the nested scope-data profile, landed on `main`; both rows stay open only on Parallel branches, and `PC-HUM-05` also on its implicit split and merge clause.
 
-Acceptance blockers: the cold closure review; then graduation and landing through the branch flow.
+Acceptance blockers: green hosted checks on PR #42's landing SHA, then the fast-forward of `main`.
 
-Current result: TypeScript, the `nonOperationalTask` kernel arm with its Lean owners, the conformance module, three registered pipeline cases, value-domain rows, corpus rows, `CIB-EXT-0022` and the probe are implemented; the complete `verify.sh` is green at `e5547d55` and the model-corpus lane at `81f2171a`. PLAN's two Lean build follow-ups for the next kernel-type change did not ride this family's kernel commit and stay scheduled.
+Current result: TypeScript, the `nonOperationalTask` kernel arm with its Lean owners, the conformance module, three registered pipeline cases, value-domain rows, corpus rows, `CIB-EXT-0022` and the probe are implemented; the complete `verify.sh` is green at `e5547d55` and the model-corpus lane at `81f2171a`; the closure review of `37ca8be5` approved after the audits `bc24e751` and `96af76e5`, and the proposal graduated. PLAN's two Lean build follow-ups for the next kernel-type change did not ride this family's kernel commit and stay scheduled.
 
 Effort budget: 6 hours for implementation and closure, from 2026-11-02 05:25 CET.
 
-Next action: the cold closure review of the family closure commit.
+Next action: land PR #42, then select the next family from the [scheduled delivery batches](#scheduled-delivery-batches).
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and an approving closure review.
 

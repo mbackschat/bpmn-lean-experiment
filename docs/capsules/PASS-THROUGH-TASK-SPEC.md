@@ -1,9 +1,9 @@
-# Pass-through Task proposal
+# Pass-through Task specification
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and delivery boundary
 
@@ -133,7 +133,7 @@ Both models carry one mapped Service Task bound by an exact source overlay and a
 
 Lane shape: checked
 
-Evidence: the family adds no transition family and no runtime law, because the Program it produces uses only `mergeExclusive`; a `rfl` lowering lemma for the new arm in [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean) states its exact operation, and an executable conformance module checks the admission, lowering and burst over both models, the decoding of each notation, and the refused second outgoing flow, second incoming flow, conditioned outgoing flow and forking Program; the other refused forms are source-level edits that only the source test checks, reusing the burst analysis that the family leaf [`ScopeDataBurst`](../../BpmnSemantics/SemanticProcess/ScopeDataBurst.lean) now shares with the re-entry account.
+Evidence: the family adds no transition family and no runtime law, because the Program it produces uses only `mergeExclusive`; a `rfl` lowering lemma for the new arm, the private `lower_non_operational_task_is_one_input_merge` of [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean), states its exact operation, and an executable conformance module, [`passThroughTaskConformanceChecks`](../../BpmnSemantics/PassThroughTaskConformance.lean#passThroughTaskConformanceChecks), checks the admission, lowering and burst over both models, the decoding of each notation, and the refused second outgoing flow, second incoming flow, conditioned outgoing flow and forking Program; the other refused forms are source-level edits that only the source test checks, reusing the burst analysis that the family leaf [`ScopeDataBurst`](../../BpmnSemantics/SemanticProcess/ScopeDataBurst.lean) now shares with the re-entry account.
 
 Not proved, and recorded as such: that every actual closure stays within the computed burst. The runtime closure bound rolls an over-limit closure back atomically.
 
@@ -235,4 +235,4 @@ Guards the implementation must change or satisfy:
 |---|---|---|---|---|
 | Proposal | `76fb189a` | `fork-turns-none` | `approve-with-required-edits` | `110afb5c` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `37ca8be5` | `fork-turns-none` | `approve-with-required-edits` | `bc24e751, 96af76e5` |

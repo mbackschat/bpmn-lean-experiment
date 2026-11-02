@@ -7,7 +7,7 @@ import BpmnSemantics.SemanticProcess.ClosureLimit
 
 SRE-BURST-01 and PTT-BURST-01 for `nestedScopeDataProfileId`: the longest automatic burst of a scope-data model, from
 Start or from any wait's resumption, per the [scope re-entry specification](../../docs/capsules/SCOPE-REENTRY-SPEC.md#capacity)
-and the [pass-through Task proposal](../../docs/capsules/PASS-THROUGH-TASK-PROPOSAL.md). The re-entry account applies it
+and the [pass-through Task specification](../../docs/capsules/PASS-THROUGH-TASK-SPEC.md). The re-entry account applies it
 to every root graph; the serial route applies it only to a model holding a pass-through Task, so serial models without
 one keep their admission. Transcribed independently by the TypeScript `scopeDataMaximumBurst`.
 -/

@@ -13,7 +13,7 @@ models; their routes, Start names and bursts are the TypeScript analysis's value
 graph differs from an admitted one in the fact its name states. The module runs no command: the Tasks' instantaneous
 occurrences are Lean executions of the registered scenarios in the pipeline. It imports admission owners only, as
 `ScopeReentryConformance` does, so it stays outside `CommandAdmission`'s hidden-edit cone (`lean-fanout`). See the
-[pass-through Task proposal](../docs/capsules/PASS-THROUGH-TASK-PROPOSAL.md).
+[pass-through Task specification](../docs/capsules/PASS-THROUGH-TASK-SPEC.md).
 -/
 
 public section
