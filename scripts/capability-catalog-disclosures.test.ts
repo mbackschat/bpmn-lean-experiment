@@ -67,8 +67,13 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "A User Task completion may name only declared locals, within 16,384 canonical bytes",
     "a hosted Start whose structured values cannot fit the capacity envelope is refused",
     "an effect's arguments are fixed when it is armed, so a sibling's later write never reaches an open effect",
-    "a run with Parallel branches whose data outgrows a hosted budget ends with a typed capacity failure",
+    "a run with Parallel branches or root-body Exclusive Gateways whose data outgrows a hosted budget ends with a typed capacity failure",
+    "iterations being bounded only by the hosted continuation and Run bounds",
     "only the retained models are measured clear of the untyped retained Run trace path",
+    "each re-entry is a fresh activation whose locals initialize afresh from the enclosing values",
+    "a completion addressed to an earlier activation is rejected unchanged",
+    "A model whose automatic burst from Start or any resumption exceeds eight steps is refused at admission",
+    "Exclusive Gateways inside a Sub-Process body or the called Process",
   ]],
   ["callActivityVariableMappings", "restriction", [
     "up to two Calls of one in-document Process of one to three serial User Tasks",
@@ -83,13 +88,18 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "a hosted Start whose copied values cannot fit the capacity envelope is refused",
     "each call reads its inputs and writes its outputs through its own caller occurrence, whatever the completion order",
     "one Process is never called both with and without mappings",
+    "each invocation gets a fresh called instance holding only its own copied inputs",
   ]],
   ["parallelGateway", "restriction", [
     "paired forks and joins of two or more branches inside Sub-Process bodies",
     "a fork whose task branches all end at one Exclusive merge into a Sub-Process",
     "The nested scope-data profile admits the same paired forks and joins inside Sub-Process bodies, never in the Process root body or into a merge",
   ]],
-  ["exclusiveGateway", "restriction", ["which passes each arriving token on its own"]],
+  ["exclusiveGateway", "restriction", [
+    "which passes each arriving token on its own",
+    "two-condition Choices with a default and pass-through merges in the Process root body only",
+    "never in a model that also forks",
+  ]],
 ];
 
 test("every catalog row discloses its required boundaries in its own text", () => {
