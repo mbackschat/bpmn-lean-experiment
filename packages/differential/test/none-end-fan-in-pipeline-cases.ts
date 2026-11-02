@@ -28,9 +28,9 @@ const ended = (index: number) => ({
 });
 
 const cases = {
-  // The rejection ends straight from Route request, the first flow; a joining End would wait for the other two.
+  // The checked graph orders the End's flows by id: Flow_Booked, Flow_Called, Flow_Reject. A joining End strands every
+  // journey; a lowering of only the first flow strands the rejected and phone journeys and keeps the booked one.
   "travel-rejected": ended(4),
-  // The phone and booked journeys arrive on flows other than the first, which a first-flow-only lowering strands.
   "travel-by-phone": ended(6),
   "travel-booked": ended(6),
 } as const satisfies Record<NoneEndFanInName, Readonly<{

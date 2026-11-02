@@ -107,7 +107,7 @@ Journeys, each ending at *Request closed* on a different incoming flow:
 - **By phone.** The token ends from *Call traveller* after its completion.
 - **Booked.** The token ends from *Book travel* after its effect result.
 
-Each separates wrong algorithms 3 and 4: the second and third journeys arrive on a flow other than the first declared, and every journey must complete the Process with one End occurrence.
+Together they separate wrong algorithms 3 and 4: the checked graph orders the End's flows by id (`Flow_Booked`, `Flow_Called`, `Flow_Reject`), so a first-flow lowering strands the rejected and phone journeys, and every journey must complete the Process with one End occurrence.
 
 Admission witnesses at both levels, besides the model:
 
@@ -151,9 +151,9 @@ Acceptance:
 Closure gates:
 
 - **Green at `d5c9b537`:** `LEAN_FULL_GATE=nef-family-closure ./scripts/lake.sh build BpmnConformance`, 935 jobs, with the [conformance module](../../BpmnSemantics/NoneEndFanInConformance.lean); its six checks, the twelve of the re-entry module and the five of the Exclusive choice arity module evaluate true.
-- **Green at `8fe8b856`:** the complete `verify.sh`: the Lean library and executable checks, the runtime stage with the CIB oracle and probe, the complete Temporal gate and the pipeline over all 163 registered cases, warm in 120.3 s, 57% of its derived 211.9 s ceiling; then `test:model-corpus` over all 86 models. The research doctor failed only on an untracked `.locmetryrc` of 2026-10-23 in the pinned CIB checkout, outside this family and left in place.
+- **Green at `8fe8b856`:** the complete `verify.sh`: the Lean library and executable checks, the runtime stage with the CIB oracle and probe, the complete Temporal gate and the pipeline over all 163 registered cases, warm in 120.3 s, 57% of its derived 211.9 s ceiling; then `test:model-corpus` over all 86 models. The research doctor fails only on untracked `.locmetryrc` files of 2026-10-23 in the pinned CIB and `temporal/sdk-typescript` checkouts, outside this family; the corpus lane ran with the CIB file moved aside and restored byte-identical, and their removal is left to the owner.
 - **Calibration:** the three travel request tests of the [scope re-entry probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScopeReentryProbeTest.java) pass with its six other tests on pinned CIB Seven `2.2.0`.
-- **Fork refusal:** a fan-in End under a root fork is refused at three checked loci, the concurrent body End arity, its second-visit check and the root terminal-fork rule; relaxing the arity alone leaves the edit refused.
+- **Fork refusal:** a fan-in End under a root fork is refused at three checked loci, the concurrent body End arity, its second-visit check and the root terminal-fork rule; relaxing the arity alone leaves the edit refused (a scratch probe of 2026-11-02; the source test retains the overall refusal).
 
 Then `BPMN-MECH-FLOW-01` is evidenced for uncontrolled incoming flow at a None End in this profile's root graph, which is slice evidence toward `PC-BASIC-01`'s None End clause; both stay open, and no checklist clause closes.
 
@@ -161,7 +161,8 @@ Nearest unsupported claims:
 
 - fan-in at Activities, Gateways other than Merges, or other End kinds;
 - fan-in at an End in bodies, in the called Process or under forks;
-- fan-in in any other profile.
+- fan-in in any other profile;
+- Lean agreement on admission for the optional predecessors (a Merge, Sub-Process, Call or pass-through Task) and cyclic graphs, which only the TypeScript levels witness; the Lean witnesses cover Choice, User Task and Service Task predecessors.
 
 ## Versioning consequences
 
@@ -169,7 +170,7 @@ Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy):
 
 ### Owners this implementation grows
 
-Build cost is a constraint. No kernel type changes and no declaration is added to a hub. Two Lean hub bodies change, in one commit so the global fixtures that kernel-decide `lowerCheckedProcess … = program` rebuild once; should the module system count a body change of an exposed definition as an interface change, `Lowering`'s fan-out bound is the one that guard checks:
+Build cost is a constraint. No kernel type changes. One hub interface grew: `CheckedProcessAdmission` gained the public predicates `checkedVariableChoiceProfile` and `checkedVariableMergeProfile`, extracted from `checkedWellFormed` so the conformance module can check the profile control executably; its interface cone is 156 modules against a body cone of 27 (`scripts/lean-fanout.ts` at `8d48cbe1`), a one-time rebuild already paid, and later edits of their bodies stay body-only. Two Lean hub bodies change, in one commit so the global fixtures that kernel-decide `lowerCheckedProcess … = program` rebuild once; should the module system count a body change of an exposed definition as an interface change, `Lowering`'s fan-out bound is the one that guard checks:
 
 - `Lowering`, for the End lane, because the Lean lowering must equal the TypeScript one;
 - the None End arm of `checkedNodeArityValid` in `CheckedProcessAdmission`, because the checked arity is the first refusal.

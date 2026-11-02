@@ -8,6 +8,6 @@ The [source test](../../packages/bpmn-source/test/none-end-fan-in-source.test.ts
 
 Three answer-free schedules are registered as standards-only pipeline cases by the [pipeline cases](../../packages/differential/test/none-end-fan-in-pipeline-cases.ts), each with one seeded mutation:
 
-- [Rejected](travel-rejected.scenario.json) ends from *Route request* in the closure that chose. Its mutation leaves the Process running, as an End that joins its incoming flows would.
-- [By phone](travel-by-phone.scenario.json) ends from *Call traveller* after its completion. Its mutation leaves the Process running, as a lowering of only the first incoming flow would.
-- [Booked](travel-booked.scenario.json) ends from *Book travel* after its effect result. Its mutation leaves the Process running, as a lowering of only the first incoming flow would.
+- [Rejected](travel-rejected.scenario.json) ends from *Route request* in the closure that chose. Its mutation leaves the Process running, as an End that joins its incoming flows would, or a lowering of only the first incoming flow in the checked graph's id order, `Flow_Booked`.
+- [By phone](travel-by-phone.scenario.json) ends from *Call traveller* after its completion. Its mutation leaves the Process running, as either wrong algorithm would.
+- [Booked](travel-booked.scenario.json) ends from *Book travel* after its effect result. Its mutation leaves the Process running, as an End that joins its incoming flows would; its flow comes first in id order, so a first-flow lowering keeps it.
