@@ -1150,6 +1150,92 @@
       }
     },
     {
+      "id": "claim-assessment-rework",
+      "title": "Assess an insurance claim with rework",
+      "businessPurpose": "Assess an insurance claim in a scope that keeps its own decision and notes, inspect the damage and price the repair, and send the claim back for a fresh assessment that starts again from the claim summary until the assessor approves or rejects it, then approve the settlement or notify the claimant.",
+      "cloneFamily": "claim-assessment-rework",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "conditionalRouting",
+        "cyclicControlFlow",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/scope-reentry/claim-rework.bpmn",
+        "sha256": "7c5a4b8173f6781da38549d27ebe05ccce152a9526fcad4f154e87bcb98e5c31",
+        "scenarioRelativePath": "scenarios/scope-reentry/claim-rework-then-approve.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "scope-reentry-claim-rework-then-approve",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for scope re-entry; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "contract-revision-legal-review",
+      "title": "Revise a supplier contract until legal clears it",
+      "businessPurpose": "Edit a supplier contract draft, send each draft to a reusable legal review process with its own copy of the text, and repeat the edit and a new review whenever legal asks for a revision, then sign and file the contract or close the negotiation when legal withdraws.",
+      "cloneFamily": "contract-revision-legal-review",
+      "constructs": [
+        "callActivity",
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "calledProcess",
+        "embeddedSubProcess",
+        "conditionalRouting",
+        "cyclicControlFlow",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/scope-reentry/contract-revision.bpmn",
+        "sha256": "772941c232e3392cfe914c72d6a708b0aae04623b61d10161c1fdd04051547e2",
+        "scenarioRelativePath": "scenarios/scope-reentry/contract-revise-then-sign.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "scope-reentry-contract-revise-then-sign",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for scope re-entry; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",
