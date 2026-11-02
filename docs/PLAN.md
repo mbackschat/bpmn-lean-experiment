@@ -86,7 +86,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Scope re-entry closure. Command: `./scripts/verify.sh`. Status: `exit 0`. Date: `2026-11-02`. Commit: `deeced6c`; the pipeline's 151 cases ran warm in 115.7 seconds within the 196.3-second budget.
+- Pass-through Tasks on Parallel branches closure. Command: `./scripts/verify.sh`. Status: `exit 0`. Date: `2026-11-03`. Commit: `d13862c5`; the pipeline's 166 cases ran warm in 132.1 seconds at a start load of 0.52 per core.
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -98,13 +98,13 @@ Current task: [pass-through Tasks on Parallel branches](capsules/PASS-THROUGH-PA
 
 Deliverable: plain and Manual Tasks as pass-through on Parallel branches of the root and Sub-Process bodies, landed on `main`; `PC-HUM-04` stays open only on wait-free terminal branches in bodies.
 
-Acceptance blockers: implementation, registration and closure.
+Acceptance blockers: the closure review, graduation and landing.
 
-Current result: the redesign `4d79c06e` is approved with edits, audited at `754dcef8`; the `mergeInput` × `declaredEntry` pair law is proved.
+Current result: implemented and registered through `d13862c5`; `verify.sh` and the model corpus are green there, after one correction that flipped two stale Lean refusal locks.
 
 Effort budget: 6 hours from 2026-11-02 21:45 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: act on the proposal review, then implement.
+Next action: the cold closure review, then graduation to a specification and the branch flow.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
