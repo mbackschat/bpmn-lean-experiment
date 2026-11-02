@@ -100,7 +100,7 @@ Deliverable: plain and Manual Tasks as pass-through on Parallel branches of the 
 
 Acceptance blockers: the proposal review; the proved `mergeInput` pair laws; implementation, registration and closure.
 
-Current result: proposal committed (`0aa6cb51`), under cold review.
+Current result: the proposal review rejected `0aa6cb51` (its kept branch cut refused both witnesses); the redesign `4d79c06e` is under a new cold review.
 
 Effort budget: 6 hours from 2026-11-02 21:45 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
