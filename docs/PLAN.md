@@ -94,18 +94,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: owner decision on batch 3. The [User Task local data proposal](capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md) is the only unheld batch-3 mechanism; its [receipt](capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md#independent-cold-review-receipt) records why its representation needs a redesign. Scope re-entry landed at `8eb93c88`.
+Current task: the Plain and Manual Task pass-through proposal of batch 4 (`PC-HUM-04` primary, `PC-HUM-05`). Batch 3 stays open behind the owner's holds: its only unheld mechanism, User Task local data, is deferred because its [rejected proposal](capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md#independent-cold-review-receipt) needs a redesign plus a kernel type change for 22 of 2,628 pinned CIB User Tasks, all tests, a poor cost for that reach. Scope re-entry landed at `8eb93c88`.
 
-Deliverable: an owner decision on how batch 3 continues.
+Deliverable: a cold-approved family proposal for source-admitted Plain and Manual Tasks that advance without a wait, effect or receipt command.
 
-Acceptance blockers: every remaining batch-3 clause needs the held expression lane (`PC-DATA-07` to `PC-DATA-09`), held Multi-Instance owners, or a User Task local owner whose two representations each need a kernel type change or the `CheckedGraphValidation` and occurrence-publication hubs, for 22 of 2,628 pinned CIB User Tasks, all tests.
+Acceptance blockers: the pinned CIB 2.2.0 pass-through and history account; a representation that keeps the source kind and publishes one occurrence; the implicit split and merge clause of `PC-HUM-05` against open `PC-CF-07`.
 
-Current result: stalled at the proposal stage after about 45 minutes of its 2-hour budget.
+Current result: proposal stage started.
 
-Effort budget: 2 hours for the proposal stage, from 2026-11-02 04:15 CET; held after about 45 minutes and not renewed before the owner decides.
+Effort budget: 2 hours for the proposal stage, from 2026-11-02 04:55 CET.
 
-Next action: the owner chooses between releasing the expression hold, accepting a kernel type change for User Task local data, and moving to batch 4.
+Next action: establish the CIB depth from pinned source, then write and cold-review the proposal.
 
-Oracle: the owner decision.
+Oracle: an approving cold proposal review.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
