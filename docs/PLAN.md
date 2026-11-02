@@ -98,13 +98,13 @@ Current task: propose [root-body Parallel forks](capsules/ROOT-PARALLEL-FORKS-PR
 
 Deliverable: Parallel forks and joins in the Process root body of the nested scope-data profile, with User Tasks, mapped Service Tasks and Sub-Processes over structured values on their branches, landed on `main`.
 
-Acceptance blockers: the correction audit of the family proposal's cold review; then implementation, registration, the heavy lanes and the cold closure review.
+Acceptance blockers: proposal approved at `01f288d2`; then implementation, registration, the heavy lanes and the cold closure review.
 
 Current result: the concurrent structured scope data account admits paired forks only inside Sub-Process bodies; it records the root fork as an admission bound that broadens without reinterpreting an admitted model.
 
 Effort budget: 8 hours for proposal, implementation and closure, from 2026-11-02 10:45 CET.
 
-Next action: on an approving correction audit, change the root restriction in TypeScript and Lean, then add the onboarding witness and its registration.
+Next action: change the root restriction in TypeScript and Lean, then add the onboarding witness, the root Call pair and their registration.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and an approving closure review.
 
