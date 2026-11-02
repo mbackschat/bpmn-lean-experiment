@@ -1,5 +1,5 @@
 /**
- * Locks the registered claim rework and contract revision schedules against the scope re-entry proposal's separating
+ * Locks the registered claim rework and contract revision schedules against the scope re-entry specification's separating
  * witnesses without Lean or Temporal: the open work and its activation ordinals after every command (SRE-FRESH-01),
  * the Process variables each iteration's outputs leave (SRE-RETAIN-01, SRE-OUTPUT-01), the fresh frame's effect
  * argument (SRE-INIT-01), the refused stale completions (SRE-STALE-01), the second called instance, and every named

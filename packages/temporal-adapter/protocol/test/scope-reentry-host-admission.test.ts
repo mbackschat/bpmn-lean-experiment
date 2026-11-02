@@ -1,5 +1,5 @@
 /**
- * Hosting preflight of the scope re-entry proposal over its retained claim rework and contract revision models: the host
+ * Hosting preflight of the scope re-entry specification over its retained claim rework and contract revision models: the host
  * admits each re-entry Program on its serial path, and the Start capacity envelope gives it the Program-level
  * reserved-result checks and no journey, because a cyclic root graph offers no single one (the proposal's capacity
  * section). Serial Programs of the profile keep the full envelope, which the concurrent structured scope data test locks.

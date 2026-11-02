@@ -6,7 +6,7 @@ import BpmnSemantics.SemanticProcess.ClosureLimit
 /-! # Scope re-entry admission
 
 SRE-ROUTE-01, SRE-ADMIT-01, SRE-AVAILABLE-01 and SRE-BURST-01 for `nestedScopeDataProfileId`, per the
-[scope re-entry proposal](../../docs/capsules/SCOPE-REENTRY-PROPOSAL.md#admission). A Process root body is a graph
+[scope re-entry specification](../../docs/capsules/SCOPE-REENTRY-SPEC.md#admission). A Process root body is a graph
 of tasks, Sub-Processes, Calls, two-condition Choices and Merges, possibly cyclic. The profile's envelope, its
 structure rule and the serial walk of each Sub-Process body and called Process stay `NestedScopeData`'s; this module
 adds only the root graph. A Choice or Merge, which only routes, is a pair of its id and its outputs, a Choice's

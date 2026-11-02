@@ -2,7 +2,7 @@
  * SRE-ADMIT-01, SRE-AVAILABLE-01 and SRE-BURST-01: the nested scope-data profile's account of a Process root body that
  * is a graph of tasks, Sub-Processes, Calls, two-condition Choices and Merges, possibly cyclic. Each Sub-Process body
  * and called Process keeps the serial account's walk; this module adds only the root graph. Owner: the
- * [scope re-entry proposal](../../../docs/capsules/SCOPE-REENTRY-PROPOSAL.md).
+ * [scope re-entry specification](../../../docs/capsules/SCOPE-REENTRY-SPEC.md).
  */
 import {
   ScopeDataVertexKind, nestedScopeCheckedModel, nestedScopeProgramModel, optionalCallNames, requiredReads,

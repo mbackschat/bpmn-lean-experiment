@@ -1,6 +1,6 @@
 /**
  * Source edits of the retained scope re-entry models shared by the source and runtime tests: each names the witness
- * topology of the [scope re-entry proposal](../../../docs/capsules/SCOPE-REENTRY-PROPOSAL.md#separating-witnesses) it
+ * topology of the [scope re-entry specification](../../../docs/capsules/SCOPE-REENTRY-SPEC.md#separating-witnesses) it
  * builds, and refuses to apply unless its anchor occurs exactly once.
  */
 import assert from "node:assert/strict";

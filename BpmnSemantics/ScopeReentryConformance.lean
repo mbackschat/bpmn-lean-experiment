@@ -12,7 +12,7 @@ the nested scope-data profile. The claim rework and contract revision graphs tra
 graphs, and each refused graph differs from an admitted one in the fact its name states. The module runs no
 command: fresh occurrences, frames and stale-command refusals are Lean executions of the registered scenarios in the
 pipeline. It imports admission owners only, so it stays outside `CommandAdmission`'s hidden-edit cone
-(`lean-fanout`). See the [scope re-entry proposal](../docs/capsules/SCOPE-REENTRY-PROPOSAL.md#separating-witnesses).
+(`lean-fanout`). See the [scope re-entry specification](../docs/capsules/SCOPE-REENTRY-SPEC.md#separating-witnesses).
 -/
 
 public section

@@ -1,4 +1,4 @@
-# Scope re-entry proposal
+# Scope re-entry specification
 
 ## Status
 

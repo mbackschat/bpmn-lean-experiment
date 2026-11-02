@@ -19,7 +19,7 @@ import org.cibseven.bpm.engine.history.HistoricActivityInstance;
 import org.junit.Test;
 
 /**
- * Calibrates the scope re-entry proposal's widening of `CIB-EXT-0020` and `CIB-EXT-0021` from one activation to each
+ * Calibrates the scope re-entry specification's widening of `CIB-EXT-0020` and `CIB-EXT-0021` from one activation to each
  * activation (`SRE-FRESH-01`, `SRE-INIT-01`, `SRE-RETAIN-01`, `SRE-STALE-01`, `SRE-OUTPUT-01`) on the two retained
  * models. CIB does not execute the project's Simple Boolean v1 conditions, so each root condition is rendered as JUEL
  * under `CIB-CFG-0005` before deployment; the probe compares re-entry, frames and identities, never condition truth.

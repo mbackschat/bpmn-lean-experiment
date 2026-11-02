@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the closure review of the [scope re-entry proposal](capsules/SCOPE-REENTRY-PROPOSAL.md) of [delivery batch](#scheduled-delivery-batches) 3: `PC-CF-06` primary, with the repeated-lifetime clause of `PC-DATA-04`, the re-entry clause of `PC-SCOPE-02` and the scoped-rework clause of `PC-HUM-01`. Pull requests #38 and #39 are the owner's to land.
+Current task: the closure review of the [scope re-entry specification](capsules/SCOPE-REENTRY-SPEC.md) of [delivery batch](#scheduled-delivery-batches) 3: `PC-CF-06` primary, with the repeated-lifetime clause of `PC-DATA-04`, the re-entry clause of `PC-SCOPE-02` and the scoped-rework clause of `PC-HUM-01`. Pull requests #38 and #39 are the owner's to land.
 
 Deliverable: the family closed by its cold closure review: both retained models agree across Lean, core, pipeline, CIB probe and the hosted pipeline under the grown nested scope-data profile.
 
 Acceptance blockers: none recorded.
 
-Current result: implemented, and every closure gate is green ([closure gates](capsules/SCOPE-REENTRY-PROPOSAL.md#evidence-and-acceptance)); about 2.4 of the 10 budgeted hours spent by 2026-11-02 03:10 CET. The four schedules raised the warm pipeline budget to 196.3 seconds at the unchanged per-case rate, after a direction review, a Rule 2 bound review and a post-check.
+Current result: implemented, and every closure gate is green ([closure gates](capsules/SCOPE-REENTRY-SPEC.md#evidence-and-acceptance)); about 2.4 of the 10 budgeted hours spent by 2026-11-02 03:10 CET. The four schedules raised the warm pipeline budget to 196.3 seconds at the unchanged per-case rate, after a direction review, a Rule 2 bound review and a post-check.
 
 Effort budget: 10 hours for implementation through the closure review, from 2026-11-02 00:45 CET.
 
-Next action: the cold closure review of the [scope re-entry proposal](capsules/SCOPE-REENTRY-PROPOSAL.md) and its correction audit, then graduation to a specification and a push for hosted CI. Expressions (`PC-DATA-07`) stay held.
+Next action: the cold closure review of the [scope re-entry specification](capsules/SCOPE-REENTRY-SPEC.md) and its correction audit, then graduation to a specification and a push for hosted CI. Expressions (`PC-DATA-07`) stay held.
 
 Oracle: the cold closure review of the family.
 

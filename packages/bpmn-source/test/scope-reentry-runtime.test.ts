@@ -1,5 +1,5 @@
 /**
- * The core journeys of the scope re-entry proposal over the retained claim rework model (SRE-FRESH-01, SRE-INIT-01,
+ * The core journeys of the scope re-entry specification over the retained claim rework model (SRE-FRESH-01, SRE-INIT-01,
  * SRE-RETAIN-01, SRE-STALE-01, SRE-OUTPUT-01). Frame contents are runtime-only, so this test reads committed state
  * directly; every expected value is read off the proposal's witness-model account, not off a run.
  */
