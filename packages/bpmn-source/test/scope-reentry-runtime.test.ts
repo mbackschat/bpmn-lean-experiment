@@ -114,6 +114,23 @@ test("the admitted burst of eight equals the scheduler's actual closure after a 
   assert.equal(result(7).internalStepBoundExceeded, true);
 });
 
+test("the admitted burst of eight equals the scheduler's actual closure after a called-side resumption", async () => {
+  const contract = await program("contract-revision",
+    nest(await source("contract-revision"), '<userTask id="EditDraft" name="Edit draft" />', "EditDraft", 2));
+  const id = "Contract_1";
+  let state = commit(contract, initialState, { kind: StimulusKind.StartProcess, commandId: "start",
+    processId: "Process_ContractRevision", instanceId: id, initialVariables: [bind("contractText", text("v1"))] }, id);
+  state = commit(contract, state, { kind: StimulusKind.CompleteUserTaskInstance, commandId: "edit-1",
+    taskId: { processInstanceId: id, elementId: "EditDraft", activation: 1 }, submittedValues: [] }, id);
+  const review = state.userTaskWaits.find(({ id: task }) => task.elementId === "ReviewClauses")!.id;
+  // Called End and return, Choice, Merge, three entries and the arming of iteration 2's Edit draft.
+  const result = (limit: number) => applyStimulus(contract, state, { kind: StimulusKind.CompleteUserTaskInstance,
+    commandId: "review-1", taskId: review, submittedValues: [bind("verdict", text("revise"))] }, limit);
+  assert.equal(result(8).outcome, CommandOutcome.Committed);
+  assert.equal(result(7).outcome, CommandOutcome.RolledBack);
+  assert.equal(result(7).internalStepBoundExceeded, true);
+});
+
 test("a revision re-invokes Legal review with a fresh called instance and refuses the earlier review", async () => {
   const contract = await program("contract-revision");
   const id = "Contract_1";
