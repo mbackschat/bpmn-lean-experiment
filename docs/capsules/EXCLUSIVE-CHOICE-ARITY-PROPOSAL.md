@@ -128,16 +128,18 @@ Source-order witnesses on *Route complaint* (`XCA-ORDER-01`, [`CIB-INT-0001`](..
 
 Refused edits of this model:
 
-- *Route complaint* without its default: the default flow and its Merge input are removed, so the gateway keeps three conditional flows and no default;
+- *Route complaint* without its default: the `default` attribute, *Answer customer* and its two flows are removed, so the gateway keeps three conditional flows and no default, and no other node changes arity;
 - a fourth outgoing flow without a condition;
 - a condition on the default;
 - *Route complaint* moved into the body of *Review complaint*.
 
 Profile control (wrong algorithm 2), per locus rather than per model, because a profile with exact shapes refuses a three-condition model elsewhere whether or not the arity bound is lifted:
 
-- the existing per-profile loop of the [mixed-task control-flow source test](../../packages/bpmn-source/test/mixed-task-control-flow-source.test.ts) gains the nested profile, admitting any positive count, while every other profile except the mixed ones keeps exactly two;
-- the same enumeration covers the two TypeScript checked predicates, in the checked-process admission and `hasSelectedArity`;
-- the new Lean conformance module evaluates the Program-level operation well-formedness and `checkedNodeArityValid` on a three-candidate Choice under a profile id that keeps two, where no other locus is consulted.
+- **TypeScript, Program level:** the existing per-profile loop of the [mixed-task control-flow source test](../../packages/bpmn-source/test/mixed-task-control-flow-source.test.ts), which calls the operation admission per profile, gains the nested profile, admitting any positive count, while every other profile except the mixed ones keeps exactly two;
+- **TypeScript, checked level:** the profile-to-arity decision of the checked-process admission and of `hasSelectedArity` is extracted into one exported predicate over the profile id, which both loci call, and the same loop enumerates that predicate per registered profile, so neither locus can lift the bound alone;
+- **Lean, Program level:** the new Lean conformance module evaluates `operationWellFormed` of [`ProgramStructuralValidation`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) on one three-candidate `choose` under a profile id that keeps two, which consults only the `choose` arm.
+
+Recorded gap: the Lean checked level has no profile control. Its profile-to-flag mapping is computed inside `checkedWellFormed`, a profile id cannot reach `checkedNodeArityValid` directly, and evaluating `checkedWellFormed` is masked by the exact profile shapes. Naming the mapping as a predicate the module could enumerate would add a public declaration or an import to the hubs this family edits only in their bodies, against the [Lean build efficiency rule](../../CLAUDE.md#lean-build-efficiency). A lift of that mapping for every profile is therefore caught only where it changes a retained model's admission.
 
 Existing witnesses that change: the refusal of one and three conditions in the [scope re-entry source test](../../packages/bpmn-source/test/scope-reentry-source.test.ts) and `choice_arity_is_two_conditions` in the [re-entry conformance module](../../BpmnSemantics/ScopeReentryConformance.lean) become admitted witnesses of those edits.
 
@@ -145,7 +147,7 @@ Existing witnesses that change: the refusal of one and three conditions in the [
 
 | Rule | Positive and negative witness | Lanes | Killing mutation |
 |---|---|---|---|
-| `XCA-ADMIT-01` | The model admitted at both levels; each refused edit refused; the per-locus profile control; every retained model of every profile keeps its admission | Source, core, Lean conformance module, corpus | Keep the two-condition bound at any one locus, or lift it for every profile at any one locus |
+| `XCA-ADMIT-01` | The model admitted at both levels; each refused edit refused; the per-locus profile control; every retained model of every profile keeps its admission | Source, core, Lean conformance module, corpus | Keep the two-condition bound at any one locus, or lift it for every profile at any locus other than the Lean checked mapping (recorded gap) |
 | `XCA-ORDER-01` | Urgent billing selects the first of two true candidates; billing alone selects the middle one; delivery selects the third after two false; reversed declarations flip the selection and renamed ids change nothing | Pipeline, core runtime test, source test, CIB probe | Select the last true candidate, skip a middle candidate, evaluate only the first two, or order candidates by flow id or `<outgoing>` reference |
 | `XCA-DEFAULT-01` | Product complaint takes both defaults; the delivery complaint's one-condition Choice takes its candidate | Pipeline, CIB probe | Take the default while a candidate is true |
 
@@ -176,6 +178,7 @@ Then `PC-CF-02` is evidenced for the candidate count of this profile's root Choi
 
 Nearest unsupported claims:
 
+- that the Lean checked level keeps two conditions for every other profile, beyond the retained models (recorded gap above);
 - Choices without a default, where a no-match is a runtime exception;
 - Choices in Sub-Process bodies or the called Process;
 - Choices in models that fork.
