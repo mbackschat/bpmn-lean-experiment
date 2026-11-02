@@ -236,7 +236,7 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
         if (!reader.gateways) return "The flow element is outside the nested scope-data contract.";
         node = reader.rootChoices && depth === 0 && element.$type === "bpmn:ExclusiveGateway"
           ? projectExclusiveMerge(element, readId(element) ?? "", flows, true) ??
-            projectExclusiveGateway(element, readId(element) ?? "", flows)
+            projectExclusiveGateway(element, readId(element) ?? "", flows, true)
           : projectGateway(element, flows, reader.semanticProfile);
         break;
       default: return "The flow element is outside the nested scope-data contract.";

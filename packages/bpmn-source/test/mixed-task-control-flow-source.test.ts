@@ -152,7 +152,7 @@ test("raw IL rejects duplicate consumers, reused source identities and unbound o
   for (const candidate of badPrograms) assert.equal(isWellFormedSemanticProcessProgram(candidate), false);
 });
 
-test("mixed profiles admit nonempty Exclusive choices while Inclusive and other profiles retain two", async () => {
+test("mixed and nested scope-data profiles admit nonempty Exclusive choices while Inclusive and other profiles retain two", async () => {
   type OperationModule = typeof import("../../semantic-core/src/semantic-process-operation-admission.ts");
   const { isWellFormedSemanticOperation } = await import(new URL("../../semantic-core/dist/semantic-process-operation-admission.js", import.meta.url).href) as OperationModule;
   const { semanticProcess: program } = await accepted();
@@ -169,6 +169,7 @@ test("mixed profiles admit nonempty Exclusive choices while Inclusive and other 
       switch (registeredProfile) {
         case SemanticProfileId.MixedTaskControlFlow:
         case SemanticProfileId.MixedTaskBusinessError:
+        case SemanticProfileId.NestedEmbeddedScopeData:
           assert.equal(admitted, count > 0, registeredProfile);
           break;
         default:
@@ -178,6 +179,18 @@ test("mixed profiles admit nonempty Exclusive choices while Inclusive and other 
     const node = { kind: CheckedNodeKind.ExclusiveGateway, id: "choice", direction: "diverging", candidateFlowIds: candidates.map(candidate => candidate.origin.elementId), defaultFlowId: "fallback" };
     assert.equal(nodeValid(node), count > 0);
     assert.equal(nodeValid({ ...node, kind: CheckedNodeKind.InclusiveGateway }), count === 2);
+  }
+});
+
+// XCA-ADMIT-01's checked-level profile control: both checked arity loci call this one predicate, so neither can lift the
+// two-condition bound for another profile alone.
+test("only the mixed and nested scope-data profiles give checked Exclusive choices a variable arity", async () => {
+  type GraphModule = typeof import("../src/checked-process-graph-admission.ts");
+  const { variableExclusiveChoiceArity } = await import(new URL("../dist/checked-process-graph-admission.js", import.meta.url).href) as GraphModule;
+  for (const registeredProfile of Object.values(SemanticProfileId)) {
+    const variable = registeredProfile === SemanticProfileId.MixedTaskControlFlow ||
+      registeredProfile === SemanticProfileId.MixedTaskBusinessError || registeredProfile === SemanticProfileId.NestedEmbeddedScopeData;
+    assert.equal(variableExclusiveChoiceArity(registeredProfile), variable, registeredProfile);
   }
 });
 

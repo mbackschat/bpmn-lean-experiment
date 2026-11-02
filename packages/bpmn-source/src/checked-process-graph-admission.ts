@@ -43,6 +43,16 @@ type AdmittedCheckedProcessGraph = Readonly<{
 }>;
 
 /** Resolves ownership only when every definition scope satisfies the selected profile graph policy. */
+/**
+ * Whether a profile admits checked Exclusive Choices with any positive number of conditional flows (MTCF-CHOICE-01,
+ * XCA-ADMIT-01); every other profile keeps exactly two. The one decision both checked arity loci consult, so that a
+ * profile control can enumerate it (Exclusive choice arity proposal, "Separating witnesses").
+ */
+export function variableExclusiveChoiceArity(semanticProfile: string): boolean {
+  return semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID ||
+    semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+}
+
 export function resolveAdmittedCheckedProcessGraph(
   graph: CheckedProcessGraph,
   semanticProfile: string = SemanticProfileId.UserTask,
@@ -238,7 +248,7 @@ function hasSelectedArity(
           return (wideParallelGateways(semanticProfile) ? incoming >= 2 : incoming === 2) && outgoing === 1;
       }
     case CheckedNodeKind.ExclusiveGateway:
-      return incoming === 1 && (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ? outgoing >= 2 : outgoing === 3);
+      return incoming === 1 && (variableExclusiveChoiceArity(semanticProfile) ? outgoing >= 2 : outgoing === 3);
     case CheckedNodeKind.ExclusiveMerge:
       return (semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID ||
         semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion ||

@@ -257,11 +257,12 @@ private def task_free_body_cycle_is_refused : Bool :=
 /-- SRE-CYCLE-01's cut excludes a cycle whose only resumption lies in the called Process. -/
 private def called_only_resumption_is_refused : Bool := !admitted (contractWith (edited := false))
 
-/-- SRE-ADMIT-01: a Choice with one or three conditions is refused. -/
-private def choice_arity_is_two_conditions : Bool :=
-  !admitted (claimWith (choiceTargets := []) (drop := ["NotifyClaimant", "ClaimClosing"])
+/-- XCA-ADMIT-01: a Choice with one or three conditions is admitted, as the Exclusive choice arity proposal widened
+SRE-ADMIT-01's two. -/
+private def choice_arity_is_any_positive_count : Bool :=
+  admitted (claimWith (choiceTargets := []) (drop := ["NotifyClaimant", "ClaimClosing"])
       (extraEdges := [("ApproveSettlement", "ClaimClosed")])) &&
-    !admitted (claimWith (choiceTargets := ["NotifyClaimant", "ClaimClosing"])
+    admitted (claimWith (choiceTargets := ["NotifyClaimant", "ClaimClosing"])
       (extraEdges := [("AssessmentOutcome", "ClaimClosing")])
       (extraConditions := [(("AssessmentOutcome", "ClaimClosing"), equals "assessment" "withdrawn")]))
 
@@ -299,7 +300,7 @@ def scopeReentryConformanceChecks : List (String × Bool) := [
   ("internal_only_cycle_is_refused", internal_only_cycle_is_refused),
   ("task_free_body_cycle_is_refused", task_free_body_cycle_is_refused),
   ("called_only_resumption_is_refused", called_only_resumption_is_refused),
-  ("choice_arity_is_two_conditions", choice_arity_is_two_conditions),
+  ("choice_arity_is_any_positive_count", choice_arity_is_any_positive_count),
   ("body_choice_is_refused", body_choice_is_refused),
   ("fork_and_choice_is_refused", fork_and_choice_is_refused),
   ("second_root_end_is_refused", second_root_end_is_refused)

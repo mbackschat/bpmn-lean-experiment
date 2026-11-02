@@ -1,7 +1,7 @@
 /**
  * SRE-ADMIT-01, SRE-AVAILABLE-01 and SRE-BURST-01: the nested scope-data profile's account of a Process root body that
- * is a graph of tasks, Sub-Processes, Calls, two-condition Choices and Merges, possibly cyclic. Each Sub-Process body
- * and called Process keeps the serial account's walk; this module adds only the root graph. Owner: the
+ * is a graph of tasks, Sub-Processes, Calls, Choices with one or more conditions and Merges, possibly cyclic. Each
+ * Sub-Process body and called Process keeps the serial account's walk; this module adds only the root graph. Owner: the
  * [scope re-entry specification](../../../docs/capsules/SCOPE-REENTRY-SPEC.md).
  */
 import {
@@ -98,7 +98,7 @@ function analyzeRootGraph(model: ScopeDataModel): ScopeReentryAnalysis | null {
 function rootArityValid(vertex: ScopeDataVertex): boolean {
   switch (vertex.kind) {
     case ScopeDataVertexKind.Finish: return vertex.outputs.length === 0;
-    case ScopeDataVertexKind.Choice: return vertex.outputs.length === 3;
+    case ScopeDataVertexKind.Choice: return vertex.outputs.length >= 2;
     default: return vertex.outputs.length === 1;
   }
 }

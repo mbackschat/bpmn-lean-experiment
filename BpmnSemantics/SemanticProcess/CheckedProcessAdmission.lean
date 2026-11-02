@@ -500,7 +500,9 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
         -- CSE-ADMIT-01 binds named handlers; the nested scope-control analysis then admits only data-free ones.
         source.identity.semanticProfile.value == embeddedCompletionProfile)
       (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
-      (source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
+      -- XCA-ADMIT-01: the nested scope-data profile shares the variable Choice arity; its Merge arity is already variable.
+      (source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId ||
+        source.identity.semanticProfile == nestedScopeDataProfileId)
       (source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
       -- SRE-ADMIT-01: a nested scope-data Merge joins two or more flows.
       (source.identity.semanticProfile.value == embeddedCompletionProfile ||

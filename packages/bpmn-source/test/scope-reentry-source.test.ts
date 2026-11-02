@@ -117,20 +117,21 @@ test("a cycle whose Sub-Process body holds no task is refused", async () => {
     ['<sequenceFlow id="Flow_Priced" sourceRef="PriceRepair" targetRef="AssessmentClosed" />', ""]), "task-free body cycle");
 });
 
-test("Choices with one or three conditions are refused", async () => {
+// XCA-ADMIT-01 widened the re-entry account from exactly two conditions; the Exclusive choice arity witnesses own the rest.
+test("Choices with one or three conditions are admitted", async () => {
   const claim = await source("claim-rework");
-  await refused("claim-rework", edit(claim,
+  await admitted("claim-rework", edit(claim,
     [/<sequenceFlow id="Flow_Reject"[\s\S]*?<\/sequenceFlow>/.exec(claim)![0], ""],
     ['<userTask id="NotifyClaimant" name="Notify claimant" />', ""],
     ['<exclusiveGateway id="ClaimClosing" name="Claim closing" gatewayDirection="Converging" />', ""],
     ['<sequenceFlow id="Flow_Notified" sourceRef="NotifyClaimant" targetRef="ClaimClosing" />', ""],
     ['<sequenceFlow id="Flow_Closed" sourceRef="ClaimClosing" targetRef="ClaimClosed" />', ""],
     ['<sequenceFlow id="Flow_Approved" sourceRef="ApproveSettlement" targetRef="ClaimClosing" />',
-      '<sequenceFlow id="Flow_Approved" sourceRef="ApproveSettlement" targetRef="ClaimClosed" />']), "one condition");
-  await refused("claim-rework", edit(claim, ['<sequenceFlow id="Flow_Approve"',
+      '<sequenceFlow id="Flow_Approved" sourceRef="ApproveSettlement" targetRef="ClaimClosed" />']));
+  await admitted("claim-rework", edit(claim, ['<sequenceFlow id="Flow_Approve"',
     '<sequenceFlow id="Flow_Withdraw" sourceRef="AssessmentOutcome" targetRef="ClaimClosing"><conditionExpression ' +
     'xsi:type="tFormalExpression">stringEquals(assessment,"withdrawn")</conditionExpression></sequenceFlow>' +
-    '<sequenceFlow id="Flow_Approve"']), "three conditions");
+    '<sequenceFlow id="Flow_Approve"']));
 });
 
 test("a Choice inside a Sub-Process body is refused", async () => {

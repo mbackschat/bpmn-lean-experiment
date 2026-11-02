@@ -451,7 +451,7 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
       nonempty id.value &&
         nonempty origin.elementId.value &&
         placeExists places input &&
-        (if program.identity.semanticProfile == mixedTaskControlFlowProfileId || program.identity.semanticProfile == mixedTaskBusinessErrorProfileId then !candidates.isEmpty else candidates.length = 2) &&
+        (if program.identity.semanticProfile == mixedTaskControlFlowProfileId || program.identity.semanticProfile == mixedTaskBusinessErrorProfileId || program.identity.semanticProfile == nestedScopeDataProfileId then !candidates.isEmpty else candidates.length = 2) &&
         (candidates.map (·.output)).eraseDups.length = candidates.length &&
         !((candidates.map (·.output)).contains defaultOutput) &&
         candidates.all fun candidate =>

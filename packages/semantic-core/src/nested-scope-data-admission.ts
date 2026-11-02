@@ -350,7 +350,7 @@ function checkedVertex(source: CheckedProcess, node: CheckedProcess["nodes"][num
       // SRE-ADMIT-01: two ordered conditional candidates, then the default.
       const target = (flowId: string) => source.sequenceFlows.find(({ id }) => id === flowId)?.targetId;
       const targets = [...node.candidateFlowIds, node.defaultFlowId].map(target);
-      return node.candidateFlowIds.length === 2 && targets.every(id => id !== undefined)
+      return node.candidateFlowIds.length > 0 && targets.every(id => id !== undefined)
         ? { ...base, kind: VertexKind.Choice, outputs: targets as string[] } : null;
     }
     case CheckedNodeKind.ExclusiveMerge: return { ...base, kind: VertexKind.Merge };
@@ -472,7 +472,7 @@ function operationVertex(program: SemanticProcessProgram, operation: SemanticOpe
     }
     case SemanticOperationKind.Choose: {
       const targets = [...operation.candidates.map(({ output }) => output), operation.defaultOutput].map(following);
-      return operation.candidates.length === 2 && targets.every(target => target !== null)
+      return operation.candidates.length > 0 && targets.every(target => target !== null)
         ? { ...base, kind: VertexKind.Choice, outputs: targets.flatMap(target => target ?? []) } : null;
     }
     case SemanticOperationKind.MergeExclusive: {

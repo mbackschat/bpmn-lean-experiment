@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ComplaintHandling" targetNamespace="urn:bpmn-lean:complaint-handling"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_ComplaintHandling" name="Handle a customer complaint" isExecutable="true">
+    <startEvent id="ComplaintReceived" name="Complaint received" />
+    <subProcess id="ReviewComplaint" name="Review complaint">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="category">unclassified</camunda:inputParameter>
+          <camunda:inputParameter name="priority">normal</camunda:inputParameter>
+          <camunda:outputParameter name="category">${category}</camunda:outputParameter>
+          <camunda:outputParameter name="priority">${priority}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="ReviewOpened" name="Review opened" />
+      <userTask id="ClassifyComplaint" name="Classify complaint" />
+      <endEvent id="ReviewClosed" name="Review closed" />
+      <sequenceFlow id="Flow_ReviewOpened" sourceRef="ReviewOpened" targetRef="ClassifyComplaint" />
+      <sequenceFlow id="Flow_Classified" sourceRef="ClassifyComplaint" targetRef="ReviewClosed" />
+    </subProcess>
+    <exclusiveGateway id="RouteComplaint" name="Route complaint" gatewayDirection="Diverging" default="Flow_Answer">
+      <incoming>Flow_Reviewed</incoming>
+      <outgoing>Flow_Escalate</outgoing>
+      <outgoing>Flow_Invoice</outgoing>
+      <outgoing>Flow_Reship</outgoing>
+      <outgoing>Flow_Answer</outgoing>
+    </exclusiveGateway>
+    <userTask id="EscalateToSupervisor" name="Escalate to supervisor" />
+    <userTask id="CorrectInvoice" name="Correct invoice" />
+    <serviceTask id="ReshipOrder" name="Reship order"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${reshipOrder}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="order">${orderNumber}</camunda:inputParameter>
+          <camunda:outputParameter name="trackingNumber">${tracking}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="AnswerCustomer" name="Answer customer" />
+    <exclusiveGateway id="ComplaintHandled" name="Complaint handled" gatewayDirection="Converging" />
+    <exclusiveGateway id="FollowUpNeeded" name="Follow-up needed" gatewayDirection="Diverging" default="Flow_NoFollowUp" />
+    <userTask id="ConfirmDelivery" name="Confirm delivery" />
+    <exclusiveGateway id="FollowUpDone" name="Follow-up done" gatewayDirection="Converging" />
+    <endEvent id="ComplaintClosed" name="Complaint closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ComplaintReceived" targetRef="ReviewComplaint" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewComplaint" targetRef="RouteComplaint" />
+    <sequenceFlow id="Flow_Escalate" sourceRef="RouteComplaint" targetRef="EscalateToSupervisor">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(priority,"urgent")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Invoice" sourceRef="RouteComplaint" targetRef="CorrectInvoice">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(category,"billing")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Reship" sourceRef="RouteComplaint" targetRef="ReshipOrder">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(category,"delivery")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Answer" sourceRef="RouteComplaint" targetRef="AnswerCustomer" />
+    <sequenceFlow id="Flow_Escalated" sourceRef="EscalateToSupervisor" targetRef="ComplaintHandled" />
+    <sequenceFlow id="Flow_Corrected" sourceRef="CorrectInvoice" targetRef="ComplaintHandled" />
+    <sequenceFlow id="Flow_Reshipped" sourceRef="ReshipOrder" targetRef="ComplaintHandled" />
+    <sequenceFlow id="Flow_Answered" sourceRef="AnswerCustomer" targetRef="ComplaintHandled" />
+    <sequenceFlow id="Flow_Handled" sourceRef="ComplaintHandled" targetRef="FollowUpNeeded" />
+    <sequenceFlow id="Flow_FollowUp" sourceRef="FollowUpNeeded" targetRef="ConfirmDelivery">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(category,"delivery")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_NoFollowUp" sourceRef="FollowUpNeeded" targetRef="FollowUpDone" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmDelivery" targetRef="FollowUpDone" />
+    <sequenceFlow id="Flow_Closed" sourceRef="FollowUpDone" targetRef="ComplaintClosed" />
+  </process>
+</definitions>

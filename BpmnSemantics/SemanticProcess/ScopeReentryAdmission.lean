@@ -7,11 +7,11 @@ import BpmnSemantics.SemanticProcess.ScopeDataBurst
 
 SRE-ROUTE-01, SRE-ADMIT-01, SRE-AVAILABLE-01 and SRE-BURST-01 for `nestedScopeDataProfileId`, per the
 [scope re-entry specification](../../docs/capsules/SCOPE-REENTRY-SPEC.md#admission). A Process root body is a graph
-of tasks, Sub-Processes, Calls, two-condition Choices and Merges, possibly cyclic. The profile's envelope, its
-structure rule and the serial walk of each Sub-Process body and called Process stay `NestedScopeData`'s; this module
-adds only the root graph; the burst is `ScopeDataBurst`'s. A Choice or Merge, which only routes, is a pair of its id
-and its outputs, a Choice's being its two candidates' targets in declaration order, then its default's. Transcribed
-independently by the TypeScript `scope-reentry-admission` module.
+of tasks, Sub-Processes, Calls, Choices with one or more conditions and Merges, possibly cyclic. The profile's
+envelope, its structure rule and the serial walk of each Sub-Process body and called Process stay
+`NestedScopeData`'s; this module adds only the root graph; the burst is `ScopeDataBurst`'s. A Choice or Merge, which
+only routes, is a pair of its id and its outputs, a Choice's being its candidates' targets in declaration order, then
+its default's. Transcribed independently by the TypeScript `scope-reentry-admission` module.
 -/
 
 public section
@@ -111,11 +111,12 @@ private def checkedJoint : CheckedNode → Bool
   | .exclusiveGateway .. | .exclusiveMerge .. => true
   | _ => false
 
-/-- SRE-ADMIT-01: a two-condition Choice or a single-output Merge of the root scope; one in a body refuses. -/
+/-- SRE-ADMIT-01, XCA-ADMIT-01: a Choice with one or more conditions or a single-output Merge of the root scope; one in a
+body refuses. -/
 private def checkedJoint? (source : CheckedProcess) (root : DefinitionScopeId) :
     CheckedNode → Option (String × List String)
   | .exclusiveGateway id candidates default => do
-      if dataCheckedNodeScope? source id != some root || candidates.length != 2 then none else do
+      if dataCheckedNodeScope? source id != some root || candidates.isEmpty then none else do
       let outputs ← (candidates ++ [default]).mapM fun flowId =>
         (source.sequenceFlows.find? (·.id == flowId)).map (·.targetId.value)
       some (id.value, outputs)
@@ -132,13 +133,13 @@ private def operationJoint : SemanticOperation → Bool
   | .mergeExclusive _ _ inputs _ => 2 ≤ inputs.length
   | _ => false
 
-/-- SRE-ADMIT-01: a two-condition Choice or a Merge of the root scope; one in a body refuses. -/
+/-- SRE-ADMIT-01, XCA-ADMIT-01: a Choice with one or more conditions or a Merge of the root scope; one in a body refuses. -/
 private def operationJoint? (program : Program) (root : String) (operation : SemanticOperation) :
     Option (String × List String) := do
   if dataOperationScope? program operation != some root then none else
   match operation with
   | .choose id _ _ candidates defaultOutput _ =>
-      if candidates.length != 2 then none
+      if candidates.isEmpty then none
       else return (id.value, ← (candidates.map (·.output) ++ [defaultOutput]).mapM (consumer? program))
   | .mergeExclusive id _ _ output => return (id.value, [← consumer? program output])
   | _ => none
