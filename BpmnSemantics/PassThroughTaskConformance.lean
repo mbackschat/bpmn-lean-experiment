@@ -217,10 +217,10 @@ private def second_incoming_flow_is_refused : Bool :=
 /-- PTT-ADMIT-01: a Task whose outgoing flow carries a condition is refused. -/
 private def conditioned_outgoing_flow_is_refused : Bool := !admitted (intakeWith (conditioned := true))
 
-/-- PTT-ADMIT-01: a Program with a Parallel fork refuses its Tasks, while the same graph with User Tasks in their
-places is admitted. -/
-private def tasks_in_a_forking_program_are_refused : Bool :=
-  admitted (equipmentWith (branched := true) (asUserTasks := true)) && !admitted (equipmentWith (branched := true))
+/-- PTPB-ADMIT-01 since admits a Task on a joined branch of a forking Program, as it admits the same graph with User
+Tasks in their places; the refusal PTT-ADMIT-01 first recorded here is lifted. -/
+private def tasks_in_a_forking_program_are_admitted : Bool :=
+  admitted (equipmentWith (branched := true) (asUserTasks := true)) && admitted (equipmentWith (branched := true))
 
 /-- The strict decoder's reading of one checked Task node whose notation is `spelling`. -/
 private def decodedTask (spelling : String) : Except String CheckedNode :=
@@ -248,7 +248,7 @@ def passThroughTaskConformanceChecks : List (String × Bool) := [
   ("second_outgoing_flow_is_refused", second_outgoing_flow_is_refused),
   ("second_incoming_flow_is_refused", second_incoming_flow_is_refused),
   ("conditioned_outgoing_flow_is_refused", conditioned_outgoing_flow_is_refused),
-  ("tasks_in_a_forking_program_are_refused", tasks_in_a_forking_program_are_refused),
+  ("tasks_in_a_forking_program_are_admitted", tasks_in_a_forking_program_are_admitted),
   ("notations_decode_to_their_own_kind", notations_decode_to_their_own_kind)
 ]
 

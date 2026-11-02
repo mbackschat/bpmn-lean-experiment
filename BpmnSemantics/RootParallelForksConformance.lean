@@ -179,9 +179,9 @@ private def call_in_a_forking_root_is_refused : Bool :=
     (extraEdges := [("CheckReferences", "StartOnboarding")])
     (entry := "CheckReferences"))
 
-/-- A pass-through Manual Task on a root branch is refused. -/
-private def pass_through_on_a_root_branch_is_refused : Bool :=
-  admitted onboarding && !admitted (onboardingWith (extra := [manual "P" "HandOverBadge"])
+/-- PTPB-ADMIT-01: a pass-through Manual Task on a root branch is admitted, which RPF-ADMIT-01 first refused. -/
+private def pass_through_on_a_root_branch_is_admitted : Bool :=
+  admitted onboarding && admitted (onboardingWith (extra := [manual "P" "HandOverBadge"])
     (extraEdges := [("StartOnboarding", "HandOverBadge")])
     (workstationEntry := "HandOverBadge"))
 
@@ -213,7 +213,7 @@ def rootParallelForksConformanceChecks : List (String × Bool) := [
   ("sequenced_branches_stay_serial", sequenced_branches_stay_serial),
   ("terminal_root_fork_is_refused", terminal_root_fork_is_refused),
   ("call_in_a_forking_root_is_refused", call_in_a_forking_root_is_refused),
-  ("pass_through_on_a_root_branch_is_refused", pass_through_on_a_root_branch_is_refused),
+  ("pass_through_on_a_root_branch_is_admitted", pass_through_on_a_root_branch_is_admitted),
   ("root_merge_is_refused", root_merge_is_refused),
   ("root_call_pair_separates_the_restriction", root_call_pair_separates_the_restriction),
   ("call_in_a_root_branch_sub_process_is_admitted", call_in_a_root_branch_sub_process_is_admitted)
