@@ -1600,7 +1600,7 @@ The owner directed that ordinary work never need a complete Lean rebuild. The wh
 A bulk repair script ran without a declared target effect or an independent check, and a green build was taken as its success, so it reversed the outcome it served.
 
 Instances
-: 1
+: 2
 
 Disposition
 : `executable guard`
@@ -1611,6 +1611,8 @@ Evidence
 **First observed:** the uncommitted build modularity conversion of 2026-10-27 and 2026-10-28, reverted to `7bedde10` before any commit.
 
 Hiding hub bodies broke proofs in their importers. A repair script answered each break with `import all` for the module's whole import closure and left trimming to a comment; a second script redirected imports without checking their use and dropped 1,177, whose repair added more. `import all` lines grew from 2,172 to 13,002 and import lines from 8,018 to 45,122, with 331 new files, 28 files above the size ceiling and 49,880 more Lean lines, while every build was green. Each `import all` reopens a body the conversion hid, so the scripts undid the outcome. Nothing measured the contract metric or the net size against `HEAD`, no review sits between a family's proposal and closure, and no check was delegated. The controls: the fan-out test ratchets the library's `import all` total and rejects any bound above the last commit's without a stated reason, and Rule 2 requires every bulk script to declare its intention, scope and target effect, an approving review before it runs and an independent check after.
+
+**Second instance (2026-11-02):** two hand-authored family commits of 21 and 23 files, `1d7afa1f` and `e6ead9a9` in [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-PROPOSAL.md#evidence-and-acceptance), crossed Rule 2's 20-file trigger with only the approved proposal's inventory as declaration; the closure review caught it and a later LOW post-check found no growth beyond that inventory.
 
 ### Finding 85
 
