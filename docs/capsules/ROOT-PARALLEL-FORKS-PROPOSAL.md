@@ -59,9 +59,9 @@ Admission stays [profile-parameterized](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.
 
 1. a root fork still refused, which refuses the onboarding model;
 2. a terminal root fork or a second root End admitted, which leaves the class;
-3. a Call admitted in a forking root, which co-enables a mapped invocation with sibling root work;
+3. a Call admitted in a forking root, which drops the admission bound that keeps every mapped invocation of this profile from being enabled together with other work;
 4. a pass-through Task or a merge admitted in a forking model, which the commutation relation turns into an observable choice beside a declared entry;
-5. the root-Call clause applied to a model without a root fork, which refuses a model admitted today.
+5. the root-Call clause applied to every concurrent Program, which refuses a model admitted today with a root Call before a body fork.
 
 ## Stable rules
 
@@ -89,17 +89,19 @@ The model carries a source overlay and a mapped Service Task, as the profile req
   - Journey two: *Confirm documents*, then *Prepare workstation*, then the result. *Order laptop* arms after the write and carries the second `employee`; `onboardingStage` ends as `equipment-ordered` because the result commits last.
   - Journey three: *Prepare workstation*, the *Order laptop* result, then *Confirm documents*: `onboardingStage` ends as `documents-filed`.
   - In every journey the join continues once, after both branches (`RPF-ROOT-01`).
+- **Refused completion** (`RPF-VALUE-01`, refusal clause): while *Order laptop* is open, a *Confirm documents* patch of `record` whose encoding exceeds the `NSD-TASK-01` cap of 16,384 bytes is `rejected` and leaves the open argument snapshot, the *Collect documents* frame and the Process unchanged; the same patch at exactly 16,384 bytes commits.
 - **Refused edits** of this model: a second root End reached by a terminal root fork; a mapped Call at the root before the fork; a pass-through Task on a branch; a root Merge of two inputs. The same model without its fork, with both branches in sequence, stays admitted on the serial route.
+- **Root Call pair**: the retained [loan assessment](../../scenarios/concurrent-structured-scope-data/loan-assessment.bpmn) with its valuation Call removed and a mapped Call *Triage application* to the same called Process on the root path before *Assess application* is admitted today as a concurrent Program, since its fork sits in a Sub-Process body, and stays admitted; the same model with a root fork around *Triage application* and *Assess application* is refused.
 - **Existing witness that flips:** the [concurrent structured scope data conformance module](../../BpmnSemantics/ConcurrentStructuredScopeDataConformance.lean)'s `root_body_fork_is_refused` and the `fork in the root body` case of its [source test](../../packages/bpmn-source/test/concurrent-structured-scope-data-admission.test.ts) become admitted witnesses.
 
 ## Rule-to-evidence matrix
 
 | Rule | Positive and negative witness | Lanes | Killing mutation |
 |---|---|---|---|
-| `RPF-ADMIT-01` | The model admitted; each refused edit refused; every retained model of the profile keeps its admission | Source, core, Lean conformance module, corpus | Keep refusing a root fork, or admit a terminal root fork |
+| `RPF-ADMIT-01` | The model and the root Call pair's control admitted; each refused edit and the forking root Call refused; every retained model of the profile keeps its admission | Source, core, Lean conformance module, corpus | Keep refusing a root fork, admit a terminal root fork, admit a Call in a forking root, or apply the root-Call clause to every concurrent Program |
 | `RPF-ROOT-01` | Each journey reaches *Hold welcome meeting* once, after both branches | Pipeline, CIB probe on journeys two and three | Continue the join on its first token |
 | `RPF-WRITE-01` | `onboardingStage` differs between journeys two and three | Pipeline, CIB probe | Apply branch writes in Program order |
-| `RPF-VALUE-01` | The open *Order laptop* argument holds the first `employee` after the sibling write in journey one, and the second in journey two | Pipeline, value-domain matrix | Re-read the argument when the result arrives |
+| `RPF-VALUE-01` | The open *Order laptop* argument holds the first `employee` after the sibling write in journey one, and the second in journey two; the over-cap patch rejected without a change, the at-cap patch committed | Pipeline, value-domain matrix, core runtime test | Re-read the argument when the result arrives, or apply a rejected patch to the sibling frame |
 
 ## Lean assurance lane
 
