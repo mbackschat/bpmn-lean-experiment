@@ -1,0 +1,72 @@
+{
+  "kind": "scenario",
+  "id": "none-end-fan-in-travel-booked",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "travel-request",
+    "relativePath": "scenarios/none-end-fan-in/travel-request.bpmn",
+    "sha256": "229fbc8355bd03bfab48547d01a0ef4b2369b941a574d6f888a4115dccff39a0",
+    "sourceOverlay": {
+      "id": "travel-request-handlers",
+      "sha256": "106fc5ca4d341e7b92c2f3a52cf4ee683d87e9ec2df0e98590953cd1c8c0cd78"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_TravelRequest",
+      "instanceId": "Instance_1",
+      "initialVariables": [
+        { "name": "traveller", "value": { "kind": "string", "value": "Ada" } }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-check-request",
+      "taskId": { "processInstanceId": "Instance_1", "elementId": "CheckRequest", "activation": 1 },
+      "submittedValues": [
+        { "name": "channel", "value": { "kind": "string", "value": "email" } },
+        { "name": "decision", "value": { "kind": "string", "value": "approve" } }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:78a37e89fa42e4ff810b700759002ee40c961786b5c9874a02809467f98e12fd",
+      "effectId": { "processInstanceId": "Instance_1", "elementId": "BookTravel", "activation": 1 },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          { "name": "booking", "value": { "kind": "string", "value": "BK-9" } }
+        ]
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.3",
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Clause 13.4.2",
+      "BPMN 2.0.2 Clause 13.5.6"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-AGR-0006",
+      "CIB-AGR-0015",
+      "CIB-EXT-0020"
+    ]
+  }
+}

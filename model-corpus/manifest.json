@@ -1403,6 +1403,47 @@
       }
     },
     {
+      "id": "travel-request-routed-closure",
+      "title": "Route a travel request to one closure",
+      "businessPurpose": "Assess a travel request in a review scope, then close a rejected request at once, call the traveller about a phone request or otherwise book the travel, every route ending at the same request closure.",
+      "cloneFamily": "travel-request-routed-closure",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "conditionalRouting",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/none-end-fan-in/travel-request.bpmn",
+        "sha256": "229fbc8355bd03bfab48547d01a0ef4b2369b941a574d6f888a4115dccff39a0",
+        "scenarioRelativePath": "scenarios/none-end-fan-in/travel-booked.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "none-end-fan-in-travel-booked",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for None End fan-in; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

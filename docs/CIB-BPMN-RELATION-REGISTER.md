@@ -22,7 +22,7 @@ The counts below cover only entries recorded by this project, including the sepa
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Normative agreement records | 14 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
+| Normative agreement records | 15 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 2 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
@@ -253,6 +253,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 **Evidence:** The [parallel mixed-task probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenParallelMultiInstanceDataProbeTest.java) runs two concurrent bodies through Review, mapped validation and Confirm. Changing the Process condition during Review does not finish the body; completing Confirm cancels the sibling, rejects its stale Task completion and offers one parent continuation. Natural completion preserves the other body's open work. [Research](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md#parallel-body-data-and-condition-context) retains the source and executable boundary.
 
 **Boundary:** Public task/variable APIs and Process existence, explicit command order, synchronous calibration delegates and disabled background jobs. This does not establish arbitrary nested MI, inner parallel control, production effect cancellation, Temporal refinement or public capability registration. The sequential relationship remains separate. [Artifact-reference verification](../scripts/contract-artifact-projections.test.ts) covers this candidate ID without admitting a new profile.
+
+### CIB-AGR-0015 — uncontrolled incoming Sequence Flow at a None End Event ends each token separately
+
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [None End fan-in account](capsules/NONE-END-FAN-IN-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
+
+**BPMN basis:** Clause 10.5.3 lets an End Event have several incoming Sequence Flows and makes it a sink for every arriving token; Clause 13.5.6 ends each arriving token and completes the Process once no token remains. Nothing joins the arrivals.
+
+**Evidence:** At pinned `5a45b47`, a transition's execution enters its destination without consulting the destination's other incoming transitions (`AbstractPvmAtomicOperationTransitionNotifyListenerTake`), and only the Parallel, Inclusive and parallel Multi-Instance behaviors collect joining executions. The travel request tests of the [scope re-entry probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScopeReentryProbeTest.java) drive the [retained travel request](../scenarios/none-end-fan-in/README.md) through its three journeys in CIB Seven `2.2.0` (2026-11-02): each reaches *Request closed* on a different incoming flow, the Process ends, and *Request closed* has exactly one historic activity instance.
+
+**Boundary:** A None End of the profile's re-entry root graph only, with JUEL renditions of the conditions under `CIB-CFG-0005`; public task, job, variable and history APIs. It does not cover fan-in at Activities, at Ends in Sub-Process bodies or called Processes, or under forks, and claims no Temporal refinement beyond the registered pipeline cases.
 
 ## Interpretation register
 

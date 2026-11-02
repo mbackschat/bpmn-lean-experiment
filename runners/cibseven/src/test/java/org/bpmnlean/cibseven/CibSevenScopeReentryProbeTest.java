@@ -25,13 +25,16 @@ import org.junit.Test;
  * under `CIB-CFG-0005` before deployment; the probe compares re-entry, frames and identities, never condition truth.
  * The complaint handling tests calibrate the Exclusive choice arity specification's widening of `CIB-AGR-0006`
  * (`XCA-ORDER-01`, `XCA-DEFAULT-01`): a three-condition and a one-condition Choice, each with a default, over the four
- * schedules of *Route complaint*, compared by the task or job each Choice selects in declaration order. Expected values
- * are built here from the proposals' witness-model accounts, never read from a target result.
+ * schedules of *Route complaint*, compared by the task or job each Choice selects in declaration order. The travel request
+ * tests calibrate the None End fan-in proposal's `CIB-AGR-0015` (`NEF-END-01`): each of three journeys reaches *Request
+ * closed* on a different incoming flow, and the token ends there alone, with no join. Expected values are built here from
+ * the proposals' witness-model accounts, never read from a target result.
  */
 public final class CibSevenScopeReentryProbeTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
   private static final Path MODELS = PROJECT_ROOT.resolve("scenarios/scope-reentry");
   private static final Path ARITY_MODELS = PROJECT_ROOT.resolve("scenarios/exclusive-choice-arity");
+  private static final Path FAN_IN_MODELS = PROJECT_ROOT.resolve("scenarios/none-end-fan-in");
   private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
   private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
 
@@ -147,6 +150,40 @@ public final class CibSevenScopeReentryProbeTest {
     }
   }
 
+  @Test
+  public void aRejectedRequestEndsStraightFromTheChoice() throws Exception {
+    try (var session = new Session(FAN_IN_MODELS, "travel-request", 2, Map.of())) {
+      var request = session.assessedRequest("reject", "email");
+      session.assertClosedOnceAfter(request, List.of(), Map.of("channel", "email", "decision", "reject", "traveller", "Ada"));
+    }
+  }
+
+  @Test
+  public void aPhoneRequestEndsAfterTheTravellerIsCalled() throws Exception {
+    try (var session = new Session(FAN_IN_MODELS, "travel-request", 2, Map.of())) {
+      var request = session.assessedRequest("approve", "phone");
+      session.engine.getTaskService().complete(session.task(request, "CallTraveller"));
+      session.assertClosedOnceAfter(request, List.of("CallTraveller"),
+          Map.of("channel", "phone", "decision", "approve", "traveller", "Ada"));
+    }
+  }
+
+  @Test
+  public void aBookedRequestEndsAfterTheBookingResult() throws Exception {
+    var arguments = new HashMap<String, Object>();
+    JavaDelegate bookTravel = execution -> {
+      arguments.putAll(execution.getVariablesLocal());
+      execution.setVariableLocal("booking", "BK-9");
+    };
+    try (var session = new Session(FAN_IN_MODELS, "travel-request", 2, Map.of("bookTravel", bookTravel))) {
+      var request = session.assessedRequest("approve", "email");
+      session.runJob(request);
+      assertEquals(Map.of("traveller", "Ada"), arguments);
+      session.assertClosedOnceAfter(request, List.of("BookTravel"),
+          Map.of("bookingNumber", "BK-9", "channel", "email", "decision", "approve", "traveller", "Ada"));
+    }
+  }
+
   /** Classifies a complaint, completes the one task `routed` opens and expects the Process to end without a follow-up. */
   private static void complaintRoutesTo(String category, String priority, String routed) throws Exception {
     try (var session = new Session(ARITY_MODELS, "complaint-handling", 4, Map.of())) {
@@ -196,6 +233,24 @@ public final class CibSevenScopeReentryProbeTest {
       var complaint = start("Process_ComplaintHandling", Map.of("orderNumber", "ORD-7"));
       engine.getTaskService().complete(task(complaint, "ClassifyComplaint"), Map.of("category", category, "priority", priority));
       return complaint;
+    }
+
+    /** Starts a request for traveller Ada and completes *Check request*, so both names *Route request* reads are written. */
+    String assessedRequest(String decision, String channel) {
+      var request = start("Process_TravelRequest", Map.of("traveller", "Ada"));
+      engine.getTaskService().complete(task(request, "CheckRequest"), Map.of("decision", decision, "channel", channel));
+      return request;
+    }
+
+    /**
+     * The request ended with `expected` Process values after activating exactly `reached` of *Route request*'s two
+     * Activity targets, and *Request closed* ran once: the arriving token ended alone, never waiting for another flow.
+     */
+    void assertClosedOnceAfter(String instance, List<String> reached, Map<String, Object> expected) {
+      assertEnded(instance, expected);
+      assertEquals(reached, List.of("BookTravel", "CallTraveller").stream()
+          .filter(element -> !activations(instance, element).isEmpty()).toList());
+      assertEquals(1, activations(instance, "RequestClosed").size());
     }
 
     /** Of the four branch targets of *Route complaint* and *Confirm delivery*, exactly `reached` were activated. */

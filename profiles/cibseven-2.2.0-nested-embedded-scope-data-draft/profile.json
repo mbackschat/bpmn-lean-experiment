@@ -11,6 +11,7 @@
       "Clause 10.3.5",
       "Clause 10.3.6",
       "Clause 10.4.1",
+      "Clause 10.5.3",
       "Clause 10.6.2",
       "Clause 10.6.4",
       "Clause 13.1",
@@ -18,7 +19,8 @@
       "Clause 13.3.3",
       "Clause 13.3.4",
       "Clause 13.4.1",
-      "Clause 13.4.2"
+      "Clause 13.4.2",
+      "Clause 13.5.6"
     ]
   },
   "bpmn": {
@@ -64,6 +66,7 @@
       "abstract-task-pass-through",
       "manual-task-pass-through",
       "none-end-event",
+      "none-end-event-uncontrolled-incoming-flow",
       "sequence-flow",
       "process-completion",
       "finite-serial-scope-chain",
@@ -82,6 +85,7 @@
       "CIB-AGR-0001",
       "CIB-AGR-0002",
       "CIB-AGR-0006",
+      "CIB-AGR-0015",
       "CIB-CFG-0009",
       "CIB-EXT-0005",
       "CIB-EXT-0006",

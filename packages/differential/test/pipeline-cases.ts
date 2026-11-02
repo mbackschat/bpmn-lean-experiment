@@ -14,6 +14,7 @@ import { scopeReentryPipelineCases } from "./scope-reentry-pipeline-cases.ts";
 import { passThroughTaskPipelineCases } from "./pass-through-task-pipeline-cases.ts";
 import { rootParallelForksPipelineCases } from "./root-parallel-forks-pipeline-cases.ts";
 import { exclusiveChoiceArityPipelineCases } from "./exclusive-choice-arity-pipeline-cases.ts";
+import { noneEndFanInPipelineCases } from "./none-end-fan-in-pipeline-cases.ts";
 import { repeatedNestedConcurrentCallsPipelineCases } from "./repeated-nested-concurrent-calls-pipeline-cases.ts";
 import { embeddedMappedCallsPipelineCases } from "./embedded-mapped-calls-pipeline-cases.ts";
 import { portableMessagePayloadPipelineCases } from "./portable-message-payload-pipeline-cases.ts";
@@ -593,6 +594,7 @@ export const pipelineCases = Object.freeze([
   ...passThroughTaskPipelineCases,
   ...rootParallelForksPipelineCases,
   ...exclusiveChoiceArityPipelineCases,
+  ...noneEndFanInPipelineCases,
   ...repeatedNestedConcurrentCallsPipelineCases,
   ...embeddedMappedCallsPipelineCases,
   ...subprocessErrorPipelineCases,

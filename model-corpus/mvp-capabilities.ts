@@ -96,7 +96,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "End Events",
     element: "None End Event",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Ordinary completion only inside the bounded registered Process and scope shapes.",
+    restriction: "Ordinary completion only inside the bounded registered Process and scope shapes. The nested scope-data profile also admits several incoming flows at the None End of its Process root body when that body routes through Exclusive Gateways and never forks: each arriving token ends there on its own, never waiting for another flow; Ends inside Sub-Process bodies or the called Process keep one incoming flow.",
     cibEvidence: exactCib("user-task-assignment-form-metadata"),
   },
   {
