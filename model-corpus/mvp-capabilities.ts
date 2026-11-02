@@ -200,7 +200,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Abstract Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Under the nested scope-data profile only: a plain Task with only an id and a name, one incoming flow and one unconditioned, non-default outgoing flow, on the serial path of the Process root or a Sub-Process body, or on a Choice branch or cycle of a re-entry root graph. It passes the token on at once and publishes one occurrence that starts and ends in that step, a fresh one on each re-entry. A model holding one is admitted only when every automatic burst stays within eight steps. No Parallel branches, called Processes, several flows, asynchronous continuations, mappings, listeners, Multi-Instance or boundary Events.",
+    restriction: "Under the nested scope-data profile only: a plain Task with only an id and a name, one incoming flow and one unconditioned, non-default outgoing flow, on the serial path of the Process root or a Sub-Process body, on a Choice branch or cycle of a re-entry root graph, or on a Parallel branch of the Process root or a Sub-Process body. It passes the token on at once and publishes one occurrence that starts and ends in that step, a fresh one on each re-entry. A Parallel branch that reaches its join may hold only such Tasks, while a branch that ends at its own None End must reach a User or Service Task before it, and a Call never follows only such Tasks from its body's Start. A model holding one is admitted only when every automatic burst stays within eight steps. No called Processes, several flows, asynchronous continuations, mappings, listeners, Multi-Instance or boundary Events.",
     cibEvidence: notSelected,
   },
   {

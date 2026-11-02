@@ -97,6 +97,10 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "The nested scope-data profile admits the same paired forks and joins inside Sub-Process bodies and in the Process root body, never into a merge",
     "a model whose root body forks holds no Call in it",
   ]],
+  ["abstractTask", "restriction", [
+    "or on a Parallel branch of the Process root or a Sub-Process body",
+    "a branch that ends at its own None End must reach a User or Service Task before it",
+  ]],
   ["noneEndEvent", "restriction", [
     "each arriving token ends there on its own, never waiting for another flow",
     "Ends inside Sub-Process bodies or the called Process keep one incoming flow",

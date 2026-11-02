@@ -1,0 +1,87 @@
+{
+  "kind": "scenario",
+  "id": "pass-through-parallel-branches-invoice-settled",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "invoice-settlement",
+    "relativePath": "scenarios/pass-through-parallel-branches/invoice-settlement.bpmn",
+    "sha256": "ae08baca46a46c7c5b9ef4c978c102326fe6c1ddd25d9a9bdc722791cdf4bd31",
+    "sourceOverlay": {
+      "id": "invoice-settlement-handlers",
+      "sha256": "a32d95def7c2705cf320a7817134dae37b567c37b239040e2b031a7222f3b851"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_InvoiceSettlement",
+      "instanceId": "Invoice_1",
+      "initialVariables": [
+        {
+          "name": "invoice",
+          "value": {
+            "kind": "string",
+            "value": "INV-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-check-invoice",
+      "taskId": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "CheckInvoice",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:c1902e6ff96a49279cfce19975af2476170ff510fb166c687e3eea1c4d9ae9b3",
+      "effectId": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "PayInvoice",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "reference",
+            "value": {
+              "kind": "string",
+              "value": "PAY-3"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.4",
+      "BPMN 2.0.2 Clause 13.3.1",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.1"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-EXT-0020",
+      "CIB-EXT-0022"
+    ]
+  }
+}

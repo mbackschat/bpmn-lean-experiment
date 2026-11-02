@@ -1,0 +1,97 @@
+{
+  "kind": "scenario",
+  "id": "pass-through-parallel-branches-relocation-movers-first",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "office-relocation",
+    "relativePath": "scenarios/pass-through-parallel-branches/office-relocation.bpmn",
+    "sha256": "c560d61a57ed2666736be695e8352c04d343e3d1a83c7b5213ff318271c15147",
+    "sourceOverlay": {
+      "id": "office-relocation-handlers",
+      "sha256": "7f35fbc240e37b6f8340b4e59140baac91e1320c3fae8b5f75caa10c9e27ca08"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_OfficeRelocation",
+      "instanceId": "Relocation_1",
+      "initialVariables": [
+        {
+          "name": "employee",
+          "value": {
+            "kind": "string",
+            "value": "Ada"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-approve-relocation",
+      "taskId": {
+        "processInstanceId": "Relocation_1",
+        "elementId": "ApproveRelocation",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:01a851fc3627b343c62b3e449c0d7b7aa013e0a154a9b9bfbb1473d5f161644b",
+      "effectId": {
+        "processInstanceId": "Relocation_1",
+        "elementId": "BookMovers",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "booking",
+            "value": {
+              "kind": "string",
+              "value": "MV-7"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-pack-boxes",
+      "taskId": {
+        "processInstanceId": "Relocation_1",
+        "elementId": "PackBoxes",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.4",
+      "BPMN 2.0.2 Clause 13.3.1",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.1"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-EXT-0020",
+      "CIB-EXT-0022"
+    ]
+  }
+}

@@ -107,16 +107,16 @@ It writes `scopeVariableScope` of the new frame. Two sibling entries read the sa
 - aggregate `runtimeStateWellFormed` preservation, from `apply`'s preservation and the frame insertion's variables-only frame;
 - complete footprint frames for declared/declared, declared/undeclared and declared/arming pairs;
 - literal-state commutation of two declared entries, and of a declared entry with an arming and with local control, from distinct-owner frame insertion commutation;
-- membership in finite batch induction, under one explicit premise: a batch that contains a declared entry contains only scope creations (declared or undeclared), ordinary armings and local-control members;
+- membership in finite batch induction, under one explicit premise: a batch that contains a declared entry contains only scope creations (declared or undeclared), ordinary armings, local-control members and, by the [pass-through branch proposal](PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md#representation-and-runtime-ownership)'s proved pair law, merge inputs;
 - unchanged publication, because frames are not published and the publication stays numbering-free.
 
 The batch induction ([InternalTransitionBatch](../../BpmnSemantics/SemanticProcess/InternalTransitionBatch.lean)) also pairs scope creation with other families: message task, bounded scope, timer task, regional, ordinary End and merge input. Their pair modules (`InternalRegionalScopeCreationCommutation`, `InternalEndScopeCreationCommutation`, `InternalMergeScopeCreationCommutation`, `InternalBoundedScopeCreationPair`, and the message-task and timer-task transition pairs) are not re-established for the declared constructor. Its batch case instead takes the premise above as a hypothesis.
 
 For admitted Programs of this profile, the singleton argument below establishes that premise:
 - the profile admits no Message, Timer or bounded-scope family;
-- regional completion, End and merge input are never co-enabled with an entry.
+- regional completion and End are never co-enabled with an entry; the [pass-through branch proposal](PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md#representation-and-runtime-ownership) restates this for the wait-free joined branches it admits, whose merge inputs its pair law covers.
 
-That establishment is not proved. Both languages encode the premise in prepared independence: Lean's `PreparedInternalTransition.Independent` and the core's `preparedInternalTransitionsAreIndependent` make a declared entry dependent on every companion outside declared entries, scope creations, armings and local control. The production frontier rule therefore never batches a declared entry with such a companion, and a [core test](../../packages/bpmn-source/test/concurrent-scope-data-runtime.test.ts) locks that refusal for every other family. Admitting Message, Timer, interruption or wait-free paths beside data reopens it, together with the singleton argument.
+That establishment is not proved. Both languages encode the premise in prepared independence: Lean's `PreparedInternalTransition.Independent` and the core's `preparedInternalTransitionsAreIndependent` make a declared entry dependent on every companion outside declared entries, scope creations, armings, local control and merge inputs. The production frontier rule therefore never batches a declared entry with such a companion, and a [core test](../../packages/bpmn-source/test/concurrent-scope-data-runtime.test.ts) locks that refusal for every other family. Admitting Message, Timer, interruption or wait-free terminal paths beside data reopens it, together with the singleton argument.
 
 The [commutation proposal](../INTERNAL-COMMUTATION-PROPOSAL.md#scope-creation-preparation-prerequisite)'s scope-creation section names the declared constructor.
 

@@ -1444,6 +1444,93 @@
       }
     },
     {
+      "id": "office-relocation-parallel-handover",
+      "title": "Relocate an employee's office",
+      "businessPurpose": "Approve an office relocation, then pack the workplace in its own scope, hand over the keys by hand and book movers through a moving service, and notify facilities in parallel, closing the relocation ticket once all three are done.",
+      "cloneFamily": "office-relocation-parallel-handover",
+      "constructs": [
+        "endEvent",
+        "manualTask",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "task",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/pass-through-parallel-branches/office-relocation.bpmn",
+        "sha256": "c560d61a57ed2666736be695e8352c04d343e3d1a83c7b5213ff318271c15147",
+        "scenarioRelativePath": "scenarios/pass-through-parallel-branches/relocation-packing-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "pass-through-parallel-branches-relocation-packing-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for pass-through Tasks on Parallel branches; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "invoice-settlement-parallel-recording",
+      "title": "Settle a supplier invoice",
+      "businessPurpose": "Check a supplier invoice in a review scope, archive its receipt and notify accounting in parallel without further work, then pay the invoice through a payment service.",
+      "cloneFamily": "invoice-settlement-parallel-recording",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "task",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/pass-through-parallel-branches/invoice-settlement.bpmn",
+        "sha256": "ae08baca46a46c7c5b9ef4c978c102326fe6c1ddd25d9a9bdc722791cdf4bd31",
+        "scenarioRelativePath": "scenarios/pass-through-parallel-branches/invoice-settled.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "pass-through-parallel-branches-invoice-settled",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for pass-through Tasks on Parallel branches; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

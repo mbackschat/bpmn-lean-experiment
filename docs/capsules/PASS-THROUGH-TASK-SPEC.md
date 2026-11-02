@@ -50,10 +50,10 @@ Optional: several pass-through Tasks in one model, and one re-entered by a cycle
 
 Excluded, each refused at admission:
 
-- a pass-through Task in a Program that forks: the concurrent account refuses every `mergeExclusive` and has no pass-through vertex;
+- a pass-through Task in a Program that forks, which this account leaves to the concurrent account; the [pass-through branch proposal](PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md) admits it there;
 - in a called Process, whose body stays one to three User Tasks;
 - several incoming or outgoing flows, or a conditional or default outgoing flow (`PC-CF-07`);
-- a pass-through Task on a Parallel branch, the open clause of `PC-HUM-04`;
+- a pass-through Task on a Parallel branch, which the [pass-through branch proposal](PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md) admits;
 - `camunda:asyncBefore` or `asyncAfter`, execution listeners, `camunda:inputOutput` or other extension elements;
 - loop or Multi-Instance characteristics;
 - attached boundary events, and `isForCompensation`.
@@ -161,7 +161,7 @@ Then `PC-HUM-04` is evidenced except its Parallel-branch clause, and `PC-HUM-05`
 
 Nearest unsupported claims:
 
-- pass-through Tasks on Parallel branches, with token multiplicity above one, in called Processes and with several flows;
+- pass-through Tasks with token multiplicity above one, in called Processes and with several flows;
 - asynchronous continuations, listeners and mappings on them;
 - quantified bounded closure.
 

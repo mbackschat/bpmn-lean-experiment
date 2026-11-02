@@ -16,7 +16,7 @@ This is the next family of batch 4 in [PLAN](../PLAN.md#scheduled-delivery-batch
 
 No row closes in this family. `PC-CF-03` keeps its separate body Ends and scoped-quiescence clauses on the embedded completion profile's evidence and its `PC-AUTO-01` and `PC-HUM-01` prerequisites; the three data rows keep their cycle, Multi-Instance, expression-mapping, exceptional-exit and merge-region clauses.
 
-Pass-through Tasks on Parallel branches, the remaining clause of `PC-HUM-04` and `PC-HUM-05`, do not share this mechanism. A pass-through Task runs as a one-input `mergeExclusive`, whose prepared family the commutation relation makes dependent on declared Sub-Process entries and mapped invocations (`Independent` in [`InternalPreparedTransition`](../../BpmnSemantics/SemanticProcess/InternalPreparedTransition.lean)), so beside a declaring Sub-Process entry a concurrent closure becomes an observable choice that this profile's scheduling mode rejects. Admitting them needs that relation extended with proved pair laws, a family of its own.
+Pass-through Tasks on Parallel branches, the remaining clause of `PC-HUM-04` and `PC-HUM-05`, do not share this mechanism: a pass-through Task runs as a one-input `mergeExclusive`, whose prepared family the commutation relation made dependent on declared Sub-Process entries (`Independent` in [`InternalPreparedTransition`](../../BpmnSemantics/SemanticProcess/InternalPreparedTransition.lean)). The [pass-through branch proposal](PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md) proves that pair law and admits them in this class.
 
 Selection, 2026-11-02: chosen over implicit Activity split and merge (`PC-CF-07`) on reach. Of the 1,947 BPMN models in the pinned CIB engine sources, 263 hold a Parallel Gateway, while 17 hold an Activity with two incoming and 13 one with two outgoing Sequence Flows, many of them loop back-edges or parse-invalid fixtures.
 
@@ -35,11 +35,11 @@ Required: every model the profile admits today, unchanged, and in addition every
 - **Forks in the Process root body.** Paired Parallel blocks may sit in the Process root body as in Sub-Process bodies, nested in any order inside branches. The root keeps its one None End and admits no terminal unjoined fork, as the [nested scope-control class](NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#required-optional-and-excluded-scope) requires.
 - **No Call in a forking root.** A model whose root body forks holds no Call in its root body. A Sub-Process on a root branch keeps the existing Call placements: a mapped Call in a serial Sub-Process body, never its first vertex, so its invocation follows a wait and is never co-enabled with sibling work.
 
-The other restrictions hold unchanged: a source overlay on every model, no Exclusive merge, so no pass-through Task and no root Choice or Merge in a forking model (`SRE-ROUTE-01` keeps refusing a split beside them), the Call bounds and the data bounds.
+The other restrictions hold unchanged: a source overlay on every model, no Exclusive merge of two or more inputs, so no root Choice or Merge in a forking model, while the [pass-through branch proposal](PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md) admits a pass-through Task's one-input merge (`SRE-ROUTE-01` keeps refusing a split beside them), the Call bounds and the data bounds.
 
 Optional: several forks in the root body, in sequence or nested in branches.
 
-Excluded: a terminal fork or a second None End in the Process root body; a Call in a forking root; a forking model without an embedded Sub-Process, which holds a single scope, since a Call may not sit in its root, and which the profile's shape check therefore refuses; pass-through Tasks and every other Exclusive merge in a forking model; every other exclusion of the concurrent structured scope data account. These bound admission only: a later root Call, merge region or pass-through Task on a branch broadens the class without reinterpreting an admitted model.
+Excluded: a terminal fork or a second None End in the Process root body; a Call in a forking root; a forking model without an embedded Sub-Process, which holds a single scope, since a Call may not sit in its root, and which the profile's shape check therefore refuses; every Exclusive merge of two or more inputs in a forking model; every other exclusion of the concurrent structured scope data account. These bound admission only: a later root Call, merge region or pass-through Task on a branch broadens the class without reinterpreting an admitted model.
 
 ## Profile and public contract
 
@@ -90,7 +90,7 @@ The model carries a source overlay and a mapped Service Task, as the profile req
   - Journey three: *Prepare workstation*, the *Order laptop* result, then *Confirm documents*: `onboardingStage` ends as `documents-filed`.
   - In every journey the join continues once, after both branches (`RPF-ROOT-01`).
 - **Refused completion** (`RPF-VALUE-01`, refusal clause): while *Order laptop* is open, a *Confirm documents* patch of `record` whose encoding exceeds the `NSD-TASK-01` cap of 16,384 bytes is `rejected` and leaves the open argument snapshot, the *Collect documents* frame and the Process unchanged; the same patch at exactly 16,384 bytes commits.
-- **Refused edits** of this model: a second root End reached by a terminal root fork; a mapped Call at the root before the fork; a pass-through Task on a branch; a root Merge of two inputs. The same model without its fork, with both branches in sequence, stays admitted on the serial route.
+- **Refused edits** of this model: a second root End reached by a terminal root fork; a mapped Call at the root before the fork; a root Merge of two inputs. A pass-through Task on a branch, refused here, is admitted by the [pass-through branch proposal](PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md). The same model without its fork, with both branches in sequence, stays admitted on the serial route.
 - **Root Call pair** (*Loan intake*): a mapped Call *Triage application* to a called *Expert review* Process, then a Sub-Process *Assess application* whose body forks into User Tasks *Check credit* and *Value collateral* and joins. It is a concurrent Program admitted today and stays admitted. The same model with a root fork around *Triage application* and *Assess application* is refused, and only by the root-Call clause: with that clause removed it is admitted. The mapped Call edit of the onboarding model is also refused by `CSE-ADMIT-01`, a Service Task beside a Call, so this pair alone separates the clause.
 - **Call in a root-branch Sub-Process** (*Loan review*): a root fork into the Sub-Process *Review application*, whose body runs User Task *Prepare file* and then a mapped Call *Request opinion* to *Expert review*, beside User Task *Check identity*, joined before *Decide loan*. It is admitted at both analysis levels, so a root-Call clause widened to every Call of a forking model fails.
 - **Optional scope:** root forks nested in a root branch and root forks in sequence, each beside a Sub-Process, are admitted as concurrent Programs. A root fork around the retained loan assessment's Call-bearing body is no such witness, because its entry closure exceeds the closure limit and the shared analysis refuses it on its own.
@@ -132,7 +132,7 @@ Then `PC-CF-03` is evidenced for root forks of this profile and `PC-DATA-03`, `P
 
 Nearest unsupported claims:
 
-- root Calls, merge regions and pass-through Tasks in forking models of this profile;
+- root Calls and merge regions in forking models of this profile, and pass-through Tasks beyond the [pass-through branch proposal](PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md);
 - argument agreement with CIB when a sibling commits before a continuation job runs (`CIB-OP-0010`);
 - quantified bounded closure.
 

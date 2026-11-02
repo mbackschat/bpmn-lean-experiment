@@ -144,7 +144,8 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   assert.ok(claim !== undefined, "the claim damage assessment schedule is registered");
   addConcurrentScopeDataCases(claim, add);
   for (const id of ["concurrent-structured-scope-data-order-review-first", "concurrent-structured-scope-data-loan-credit-first",
-    "root-parallel-forks-onboarding-documents-while-laptop-open"]) {
+    "root-parallel-forks-onboarding-documents-while-laptop-open", "pass-through-parallel-branches-relocation-packing-first",
+    "pass-through-parallel-branches-invoice-settled"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addConcurrentStructuredScopeDataCases(context, add);
@@ -415,7 +416,8 @@ function addRequiredStartNameCases(context: DomainContext, add: AddCase) {
 }
 
 /**
- * The order fulfilment, loan assessment and root-forking employee onboarding (RPF-VALUE-01) are concurrent Programs of
+ * The order fulfilment, loan assessment, root-forking employee onboarding (RPF-VALUE-01), and the office relocation and
+ * invoice settlement whose branches hold pass-through Tasks (PTPB-ADMIT-01) are concurrent Programs of
  * the nested scope-data profile, which keep its SingletonBusinessItem domain on every surface (CSSD-VALUE-01) and derive
  * their required Start names from the occurrence chain (CSD-AVAILABLE-01, CMCALL-START-01): each requires only its
  * business object, a present null satisfies it, and the loan refuses a Start naming a declared local or a name only the called Process knows. Each case changes one fact of the

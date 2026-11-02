@@ -16,7 +16,8 @@ import org.cibseven.bpm.engine.history.HistoricActivityInstance;
 import org.junit.Test;
 
 /**
- * Calibrates the pass-through Task specification's `CIB-EXT-0022` (`PTT-PASS-01`, `PTT-FRESH-01`) on its two witness models:
+ * Calibrates the pass-through Task specification's `CIB-EXT-0022` (`PTT-PASS-01`, `PTT-FRESH-01`) on its two witness models,
+ * and the pass-through branch proposal's `PTPB-PASS-01` on its two, where the Tasks sit on Parallel branches:
  * CIB Seven `2.2.0` runs a plain Task and a Manual Task through `TaskActivityBehavior.leave` (BpmnParse.java:2711-2739),
  * so each activation is a historic activity instance of type `task` or `manualTask` that ends inside the command that
  * reached it, with no task entity and no job. CIB does not execute the project's Simple Boolean v1 conditions, so each
@@ -26,6 +27,7 @@ import org.junit.Test;
 public final class CibSevenPassThroughTaskProbeTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
   private static final Path MODELS = PROJECT_ROOT.resolve("scenarios/pass-through-task");
+  private static final Path BRANCH_MODELS = PROJECT_ROOT.resolve("scenarios/pass-through-parallel-branches");
   private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
   private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
 
@@ -74,17 +76,74 @@ public final class CibSevenPassThroughTaskProbeTest {
     }
   }
 
+  @Test
+  public void theForkClosurePassesBothBranchTasksAndTheBodyTaskBeforeThePackingAndMoversResults() throws Exception {
+    try (var session = new Session(BRANCH_MODELS, "office-relocation", 0, "bookMovers", "booking", "MV-7")) {
+      var instance = session.start("Process_OfficeRelocation", Map.of("employee", "Ada"));
+      session.complete(instance, "ApproveRelocation");
+      session.assertPassedThrough(instance, "HandOverKeys", "manualTask", 1);
+      session.assertPassedThrough(instance, "NotifyFacilities", "task", 1);
+      session.assertPassedThrough(instance, "LabelBoxes", "manualTask", 1);
+      session.assertOnlyOpenTask(instance, "PackBoxes");
+
+      session.complete(instance, "PackBoxes");
+      session.assertPassedThrough(instance, "FileMoversConfirmation", "task", 0);
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "FileMoversConfirmation", "task", 1);
+      session.assertPassedThrough(instance, "CloseRelocationTicket", "task", 1);
+      session.assertEnded(instance);
+    }
+  }
+
+  @Test
+  public void theMoversResultPassesItsBranchTaskAndPackingThenFiresTheJoin() throws Exception {
+    try (var session = new Session(BRANCH_MODELS, "office-relocation", 0, "bookMovers", "booking", "MV-7")) {
+      var instance = session.start("Process_OfficeRelocation", Map.of("employee", "Ada"));
+      session.complete(instance, "ApproveRelocation");
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "FileMoversConfirmation", "task", 1);
+      session.assertPassedThrough(instance, "CloseRelocationTicket", "task", 0);
+      session.assertOnlyOpenTask(instance, "PackBoxes");
+
+      session.complete(instance, "PackBoxes");
+      session.assertPassedThrough(instance, "CloseRelocationTicket", "task", 1);
+      session.assertEnded(instance);
+    }
+  }
+
+  @Test
+  public void theInvoiceReviewForksIntoTwoPlainTasksThatJoinInsideTheCheckCommand() throws Exception {
+    try (var session = new Session(BRANCH_MODELS, "invoice-settlement", 0, "payInvoice", "reference", "PAY-3")) {
+      var instance = session.start("Process_InvoiceSettlement", Map.of("invoice", "INV-1"));
+      session.complete(instance, "CheckInvoice");
+      session.assertPassedThrough(instance, "ArchiveReceipt", "task", 1);
+      session.assertPassedThrough(instance, "NotifyAccounting", "task", 1);
+      session.runJob(instance);
+      session.assertEnded(instance);
+    }
+  }
+
   private static final class Session implements AutoCloseable {
     final ProcessEngine engine;
     final String deployment;
 
     /** `handler` names the model's one Service Task delegate, a no-op: the probe observes Tasks, not effects. */
     Session(String model, int conditions, String handler) throws Exception {
-      JavaDelegate noOp = execution -> { };
+      this(MODELS, model, conditions, handler, null, null);
+    }
+
+    /**
+     * As above, from `models`; a non-null `result` is the local the delegate writes with `value`, which the Service Task's
+     * output mapping reads.
+     */
+    Session(Path models, String model, int conditions, String handler, String result, Object value) throws Exception {
+      JavaDelegate delegate = execution -> {
+        if (result != null) execution.setVariableLocal(result, value);
+      };
       engine = CibSevenTestEngine.create("pass-through-task-" + model,
-          configuration -> configuration.setBeans(Map.<Object, Object>of(handler, noOp)));
+          configuration -> configuration.setBeans(Map.<Object, Object>of(handler, delegate)));
       try {
-        var source = Files.readString(MODELS.resolve(model + ".bpmn"));
+        var source = Files.readString(models.resolve(model + ".bpmn"));
         assertEquals(conditions, STRING_EQUALS.matcher(source).results().count());
         var rendition = STRING_EQUALS.matcher(source.replace(SIMPLE_BOOLEAN, "")).replaceAll("\\${$1 == \"$2\"}");
         deployment = engine.getRepositoryService().createDeployment().addString(model + ".bpmn", rendition).deploy()
@@ -96,7 +155,11 @@ public final class CibSevenPassThroughTaskProbeTest {
     }
 
     String start(String processId) {
-      return engine.getRuntimeService().startProcessInstanceByKey(processId).getId();
+      return start(processId, Map.of());
+    }
+
+    String start(String processId, Map<String, Object> variables) {
+      return engine.getRuntimeService().startProcessInstanceByKey(processId, new HashMap<>(variables)).getId();
     }
 
     /** Runs the one open asynchronous continuation before the next command. */
