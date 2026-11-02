@@ -63,7 +63,9 @@ function analyzeRootGraph(model: ScopeDataModel): ScopeReentryAnalysis | null {
   if (!scopeDataStructureAdmitted(model)) return null;
   const byId = new Map(vertices.map(vertex => [vertex.id, vertex]));
   const rootVertices = vertices.filter(({ scope }) => scope === root);
+  // SRE-ADMIT-01: one None Start, the entry, and one None End at the root.
   if (byId.size !== vertices.length || byId.get(entry)?.scope !== root ||
+      rootVertices.filter(({ kind }) => kind === ScopeDataVertexKind.Finish).length !== 1 ||
       !rootVertices.every(vertex => rootArityValid(vertex) && vertex.outputs.every(id => byId.get(id)?.scope === root))) {
     return null;
   }

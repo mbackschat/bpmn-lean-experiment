@@ -147,6 +147,17 @@ test("a Choice inside a Sub-Process body is refused", async () => {
       '<sequenceFlow id="Flow_Kinded" sourceRef="DraftKindJoin" targetRef="EditDraft" />']), "body Choice");
 });
 
+test("a root body with a second None End is refused", async () => {
+  await refused("claim-rework", edit(await source("claim-rework"),
+    ['<exclusiveGateway id="ClaimClosing" name="Claim closing" gatewayDirection="Converging" />',
+      '<endEvent id="ClaimSettled" name="Claim settled" />'],
+    ['<sequenceFlow id="Flow_Notified" sourceRef="NotifyClaimant" targetRef="ClaimClosing" />',
+      '<sequenceFlow id="Flow_Notified" sourceRef="NotifyClaimant" targetRef="ClaimClosed" />'],
+    ['<sequenceFlow id="Flow_Approved" sourceRef="ApproveSettlement" targetRef="ClaimClosing" />',
+      '<sequenceFlow id="Flow_Approved" sourceRef="ApproveSettlement" targetRef="ClaimSettled" />'],
+    ['<sequenceFlow id="Flow_Closed" sourceRef="ClaimClosing" targetRef="ClaimClosed" />', ""]), "second root End");
+});
+
 test("a model that both forks and chooses is refused", async () => {
   await refused("claim-rework", edit(await source("claim-rework"),
     ['<sequenceFlow id="Flow_AssessmentOpened" sourceRef="AssessmentOpened" targetRef="InspectDamage" />',
