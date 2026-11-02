@@ -244,4 +244,4 @@ Guards the implementation must change or satisfy:
 |---|---|---|---|---|
 | Proposal | `736861f6` | `fork-turns-none` | `approve-with-required-edits` | `4ffdef0f, 99960eb9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `2378dbb2` | `fork-turns-none` | `approve-with-required-edits` | `ec385812` |
