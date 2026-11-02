@@ -94,18 +94,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the closure review of the [scope re-entry specification](capsules/SCOPE-REENTRY-SPEC.md) of [delivery batch](#scheduled-delivery-batches) 3: `PC-CF-06` primary, with the repeated-lifetime clause of `PC-DATA-04`, the re-entry clause of `PC-SCOPE-02` and the scoped-rework clause of `PC-HUM-01`. Pull requests #38 and #39 are the owner's to land.
+Current task: land the [scope re-entry specification](capsules/SCOPE-REENTRY-SPEC.md) of [delivery batch](#scheduled-delivery-batches) 3 (`PC-CF-06` primary, with the repeated-lifetime clause of `PC-DATA-04`, the re-entry clause of `PC-SCOPE-02` and the scoped-rework clause of `PC-HUM-01`) through pull request #41.
 
-Deliverable: the family closed by its cold closure review: both retained models agree across Lean, core, pipeline, CIB probe and the hosted pipeline under the grown nested scope-data profile.
+Deliverable: the closed family on `main`, fast-forwarded to the exact SHA whose hosted checks, `verify-complete` included, are green.
 
 Acceptance blockers: none recorded.
 
-Current result: implemented, and every closure gate is green ([closure gates](capsules/SCOPE-REENTRY-SPEC.md#evidence-and-acceptance)); about 2.4 of the 10 budgeted hours spent by 2026-11-02 03:10 CET. The four schedules raised the warm pipeline budget to 196.3 seconds at the unchanged per-case rate, after a direction review, a Rule 2 bound review and a post-check.
+Current result: closure-approved (review `1a2eaaf6`, audit `168546e1`) and graduated; every closure gate is green ([closure gates](capsules/SCOPE-REENTRY-SPEC.md#evidence-and-acceptance)) and the pipeline reran green at `168546e1` after the condition-placement correction; about 3 of the 10 budgeted hours spent by 2026-11-02 03:50 CET.
 
 Effort budget: 10 hours for implementation through the closure review, from 2026-11-02 00:45 CET.
 
-Next action: the cold closure review of the [scope re-entry specification](capsules/SCOPE-REENTRY-SPEC.md) and its correction audit, then graduation to a specification and a push for hosted CI. Expressions (`PC-DATA-07`) stay held.
+Next action: on green hosted checks for the pushed SHA, fast-forward `main`; then select the next batch-3 family from the open rows that need no held expression lane. Expressions (`PC-DATA-07`) stay held.
 
-Oracle: the cold closure review of the family.
+Oracle: the hosted checks of pull request #41 on the exact SHA.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

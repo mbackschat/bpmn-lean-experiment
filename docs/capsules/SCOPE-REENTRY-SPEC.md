@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and delivery boundary
 
@@ -212,4 +212,6 @@ Guards the implementation must change or satisfy:
 |---|---|---|---|---|
 | Proposal | `c4d87c3c` | `fork-turns-none` | `approve-with-required-edits` | `6da46da8` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `1a2eaaf6` | `fork-turns-none` | `approve-with-required-edits` | `168546e1` |
+
+The closure review of `1a2eaaf6` (packet `324cfcc2638ef23d6fe42db263449499d30fc0bfdb5f04432fc87178e45eca61`) required five corrections: a condition outside an Exclusive candidate that TypeScript admitted and lowering dropped, now refused for every profile as Lean refuses it; an About burst claim that the serial account falsifies, now scoped to re-entry models with the serial stall disclosed; two maps still listing re-entry cycles as absent; a called-side exact-limit burst no guard checked against the actual closure; and a modularity Acceptance bound the family's own finding refutes, now disclosed. One correction audit at `168546e1` approved them.
