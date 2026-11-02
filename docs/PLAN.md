@@ -94,18 +94,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: land the [scope re-entry specification](capsules/SCOPE-REENTRY-SPEC.md) of [delivery batch](#scheduled-delivery-batches) 3 (`PC-CF-06` primary, with the repeated-lifetime clause of `PC-DATA-04`, the re-entry clause of `PC-SCOPE-02` and the scoped-rework clause of `PC-HUM-01`) through pull request #41.
+Current task: write and cold-review the proposal of the User Task local data family of [delivery batch](#scheduled-delivery-batches) 3: CIB `camunda:inputOutput` on User Tasks under the nested scope-data profile, so a mapped User Task owns locals from entry to completion, its completion patch may write them, its outputs publish at completion, and hosted task detail resolves names through the frame chain. Rows: the Activity-owner clauses of `PC-DATA-04`, `PC-DATA-05` and `PC-DATA-06`, and the mapped-result clause of `PC-HUM-01`; each row's expression and Multi-Instance clauses stay held. Scope re-entry landed on `main` at `8eb93c88` (2026-11-02 04:12) through pull request #41.
 
-Deliverable: the closed family on `main`, fast-forwarded to the exact SHA whose hosted checks, `verify-complete` included, are green.
+Deliverable: an approved proposal for the family, with CIB Seven `2.2.0` depth established from pinned source and every Lean hub it must touch named with its reason.
 
 Acceptance blockers: none recorded.
 
-Current result: closure-approved (review `1a2eaaf6`, audit `168546e1`) and graduated; every closure gate is green ([closure gates](capsules/SCOPE-REENTRY-SPEC.md#evidence-and-acceptance)) and the pipeline reran green at `168546e1` after the condition-placement correction; about 3 of the 10 budgeted hours spent by 2026-11-02 03:50 CET.
+Current result: the inventory of batch 3 (2026-11-02) leaves only this mechanism unheld; the remaining clauses of `PC-DATA-03` to `PC-DATA-09` need the held expression lane or Multi-Instance owners. Reach is low: 3 of 1,545 User Tasks in the pinned CIB resources carry `inputOutput`, all engine tests. Open design point: every child definition scope must be owned by an `EmbeddedSubProcess` node today, so a task-owned frame needs either a checked node or field (a kernel type change under [contract item 4](LEAN-BUILD-MODULARITY-SPEC.md#contract)) or an admission rule that lets a mapped User Task own its own definition scope.
 
-Effort budget: 10 hours for implementation through the closure review, from 2026-11-02 00:45 CET.
+Effort budget: 2 hours for the proposal stage, from 2026-11-02 04:15 CET.
 
-Next action: on green hosted checks for the pushed SHA, fast-forward `main`; then select the next batch-3 family from the open rows that need no held expression lane. Expressions (`PC-DATA-07`) stay held.
+Next action: settle the representation against the checked ownership rule and the Program's `enterScope`, then write the proposal. Expressions (`PC-DATA-07`) stay held.
 
-Oracle: the hosted checks of pull request #41 on the exact SHA.
+Oracle: the cold proposal review of the family.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
