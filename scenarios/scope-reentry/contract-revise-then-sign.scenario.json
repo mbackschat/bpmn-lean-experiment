@@ -1,0 +1,171 @@
+{
+  "kind": "scenario",
+  "id": "scope-reentry-contract-revise-then-sign",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "contract-revision",
+    "relativePath": "scenarios/scope-reentry/contract-revision.bpmn",
+    "sha256": "772941c232e3392cfe914c72d6a708b0aae04623b61d10161c1fdd04051547e2",
+    "sourceOverlay": {
+      "id": "contract-revision-handlers",
+      "sha256": "c1c6a1e8cddf5ca1b860b9559e6102ccd63375d1c0658dc40ea8facb9f99ee54"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ContractRevision",
+      "instanceId": "Instance_1",
+      "initialVariables": [
+        {
+          "name": "contractText",
+          "value": {
+            "kind": "string",
+            "value": "v1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-edit-draft",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "EditDraft",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "draft",
+          "value": {
+            "kind": "string",
+            "value": "v2"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-clauses",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:11:LegalReview:1",
+        "elementId": "ReviewClauses",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "verdict",
+          "value": {
+            "kind": "string",
+            "value": "revise"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-edit-draft-2",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "EditDraft",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "draft",
+          "value": {
+            "kind": "string",
+            "value": "v3"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-stale-review-clauses",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:11:LegalReview:1",
+        "elementId": "ReviewClauses",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "verdict",
+          "value": {
+            "kind": "string",
+            "value": "sign"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-clauses-2",
+      "taskId": {
+        "processInstanceId": "call:10:Instance_1:11:LegalReview:2",
+        "elementId": "ReviewClauses",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "verdict",
+          "value": {
+            "kind": "string",
+            "value": "sign"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-sign-contract",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "SignContract",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:af7103c60dc85e6faebef7553f86338e3da69c1441e28be02d15ea2a2ac2cf24",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FileContract",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.3.6",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0020",
+      "CIB-EXT-0021"
+    ]
+  }
+}

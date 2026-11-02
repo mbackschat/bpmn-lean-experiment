@@ -1,0 +1,169 @@
+{
+  "kind": "scenario",
+  "id": "scope-reentry-claim-rework-then-approve",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "claim-rework",
+    "relativePath": "scenarios/scope-reentry/claim-rework.bpmn",
+    "sha256": "7c5a4b8173f6781da38549d27ebe05ccce152a9526fcad4f154e87bcb98e5c31",
+    "sourceOverlay": {
+      "id": "claim-rework-handlers",
+      "sha256": "7bb98ec13dc7e40fed3162b15ba5095ac60c5713d5e58cb5080133c59a58721f"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ClaimRework",
+      "instanceId": "Instance_1",
+      "initialVariables": [
+        {
+          "name": "claimSummary",
+          "value": {
+            "kind": "string",
+            "value": "hail damage"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-inspect-damage",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "InspectDamage",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "rework"
+          }
+        },
+        {
+          "name": "notes",
+          "value": {
+            "kind": "string",
+            "value": "photos missing"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:2aa68c5fbd2c575586dc11fa8c9b04f358ada54bd9595d4bd8cee0c7a1575b88",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "PriceRepair",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "1200"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-stale-inspect-damage",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "InspectDamage",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "approve"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-inspect-damage-2",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "InspectDamage",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "decision",
+          "value": {
+            "kind": "string",
+            "value": "approve"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:643658a9746dcddde5ff033c51f99be66e60c536592018365e61ded710b7ddc2",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "PriceRepair",
+        "activation": 2
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "800"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-approve-settlement",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ApproveSettlement",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-EXT-0020"
+    ]
+  }
+}
