@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -131,7 +131,7 @@ Lowering witnesses: the model's Program holds three `reachNoneEnd` operations wi
 
 Lane shape: checked
 
-Evidence: the family adds no transition family and no runtime law; each arrival fires the existing `reachNoneEnd` step, and publication is unchanged. A new executable conformance module, beside the [re-entry conformance module](../../BpmnSemantics/ScopeReentryConformance.lean) whose admission owners it shares, checks admission of the model at both levels, the refused edits, the envelope negative and the profile control, and that `lowerCheckedProcess` yields the three End operations; the pipeline checks Lean, core and Temporal agreement on the journeys.
+Evidence: the family adds no transition family and no runtime law; each arrival fires the existing `reachNoneEnd` step, and publication is unchanged. An executable conformance module, [`noneEndFanInConformanceChecks`](../../BpmnSemantics/NoneEndFanInConformance.lean#noneEndFanInConformanceChecks), beside the [re-entry conformance module](../../BpmnSemantics/ScopeReentryConformance.lean) whose admission owners it shares, checks admission of the model at both levels, the refused edits, the envelope negative and the profile control, and that `lowerCheckedProcess` yields the three End operations; the pipeline checks Lean, core and Temporal agreement on the journeys.
 
 ## Temporal hosting and refinement preflight
 

@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [None End fan-in](capsules/NONE-END-FAN-IN-SPEC.md) for the nested scope-data profile, batch 4 (`BPMN-MECH-FLOW-01` uncontrolled incoming flow at a None End, `PC-BASIC-01` None End clause). Exclusive choice arity landed at `81f4934d`, the derived pipeline ceiling at `718ec63c`. The [implicit fan-in proposal](capsules/IMPLICIT-FAN-IN-PROPOSAL.md) was rejected at `db3c1f6a`: an Activity's entry merge needs a kernel extension. Close call against default-less Choices: within the profile's Sub-Process class 55 CIB files against 8, none and one clean, and their no-match needs a kernel default and a closure rollback channel. Batch 3 stays open behind the owner's holds.
+Current task: land [None End fan-in](capsules/NONE-END-FAN-IN-SPEC.md) for the nested scope-data profile, batch 4 (`BPMN-MECH-FLOW-01` uncontrolled incoming flow at a None End, `PC-BASIC-01` None End clause). Its close call against default-less Choices is recorded in the specification. Batch 3 stays open behind the owner's holds.
 
 Deliverable: a None End with several incoming flows in the root graph of the nested scope-data profile, each token ending on its own, landed on `main`; slice evidence toward `PC-BASIC-01`, which closes no checklist clause.
 
-Acceptance blockers: the closure review; landing.
+Acceptance blockers: landing through the branch flow with green hosted checks.
 
-Current result: implemented and registered (`3c160e98`, `71be0645`); `BpmnConformance` green at `d5c9b537` and the complete verification with the model corpus green at `8fe8b856`; control-flow families moved to their own detail map under the stated-split rule.
+Current result: closure-approved (review of `8d48cbe1`, audit `6b0050d8`) and graduated; implemented and registered (`3c160e98`, `71be0645`); `BpmnConformance` green at `d5c9b537` and the complete verification with the model corpus green at `8fe8b856`; control-flow families moved to their own detail map.
 
-Effort budget: 6 hours from 2026-11-02 18:35 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
+Effort budget: 6 hours from 2026-11-02 18:35 CET; one full `BpmnConformance` build at closure plus at most one after a correction; one used.
 
-Next action: cold closure review of the family, then the branch push flow.
+Next action: push the branch, open the pull request and fast-forward `main` on green hosted checks; then the next family, Link and None Throw Events (`PC-BASIC-02` and `PC-BASIC-01`'s None Throw clause), which continues `PC-BASIC-01`.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
