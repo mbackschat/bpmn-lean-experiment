@@ -1,6 +1,6 @@
 /**
  * NEF-ADMIT-01 and the lowering half of NEF-END-01 over the retained travel request model, through the exact-bytes source
- * path and the core's checked-graph and Program analyses. The oracle is the None End fan-in proposal's "Separating
+ * path and the core's checked-graph and Program analyses. The oracle is the None End fan-in specification's "Separating
  * witnesses": each refused edit differs from an admitted model in the one fact its label names, and each Program
  * negative edits one origin or scope of the admitted Program, so only the rule it names can refuse it.
  */

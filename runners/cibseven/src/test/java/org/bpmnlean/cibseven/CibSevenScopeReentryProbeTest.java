@@ -26,7 +26,7 @@ import org.junit.Test;
  * The complaint handling tests calibrate the Exclusive choice arity specification's widening of `CIB-AGR-0006`
  * (`XCA-ORDER-01`, `XCA-DEFAULT-01`): a three-condition and a one-condition Choice, each with a default, over the four
  * schedules of *Route complaint*, compared by the task or job each Choice selects in declaration order. The travel request
- * tests calibrate the None End fan-in proposal's `CIB-AGR-0015` (`NEF-END-01`): each of three journeys reaches *Request
+ * tests calibrate the None End fan-in specification's `CIB-AGR-0015` (`NEF-END-01`): each of three journeys reaches *Request
  * closed* on a different incoming flow, and the token ends there alone, with no join. Expected values are built here from
  * the proposals' witness-model accounts, never read from a target result.
  */

@@ -1,4 +1,4 @@
-# None End fan-in proposal
+# None End fan-in specification
 
 ## Status
 

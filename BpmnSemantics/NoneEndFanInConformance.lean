@@ -14,7 +14,7 @@ Program negative edits one origin of the admitted Program, so only the rule it n
 onboarding graph transcribes the retained `scenarios/root-parallel-forks` model for the fork negative. The module runs
 no command: each End arrival is a Lean execution of the registered scenarios in the pipeline. It imports admission
 owners only, as `ScopeReentryConformance` does, so it stays outside `CommandAdmission`'s hidden-edit cone
-(`lean-fanout`). See the [None End fan-in proposal](../docs/capsules/NONE-END-FAN-IN-PROPOSAL.md#separating-witnesses).
+(`lean-fanout`). See the [None End fan-in specification](../docs/capsules/NONE-END-FAN-IN-SPEC.md#separating-witnesses).
 -/
 
 public section

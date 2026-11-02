@@ -1,5 +1,5 @@
 /**
- * Locks the registered travel request schedules against the None End fan-in proposal's separating witnesses without Lean
+ * Locks the registered travel request schedules against the None End fan-in specification's separating witnesses without Lean
  * or Temporal: the open work and Process variables after every command, the non-concurrent re-entry route, and every
  * named seeded mutation, each of which must move exactly the observation it names.
  *

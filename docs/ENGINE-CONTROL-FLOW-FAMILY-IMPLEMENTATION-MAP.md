@@ -54,7 +54,7 @@ The [root Parallel forks account](capsules/ROOT-PARALLEL-FORKS-SPEC.md) grows th
 
 ## None End fan-in
 
-The [None End fan-in account](capsules/NONE-END-FAN-IN-PROPOSAL.md) grows the same profile with several incoming flows at the root None End of a re-entry graph (`CIB-AGR-0015`); its receipt owns review state.
+The [None End fan-in account](capsules/NONE-END-FAN-IN-SPEC.md) grows the same profile with several incoming flows at the root None End of a re-entry graph (`CIB-AGR-0015`); its receipt owns review state.
 
 **Implemented.** No kernel change: a fan-in End lowers to one `reachNoneEnd` per incoming flow, named `operation:<End>:from:<flow>`, so each token ends on its own (`NEF-END-01`); a single-incoming End keeps its identifier. The checked None End arity widens for this profile alone, the Program envelope counts the arrivals' shared origin once only when all lie in the root graph, and the re-entry one-End rule counts End elements at both levels (`NEF-ADMIT-01`). The travel request witnesses all three arrivals through a [conformance module](../BpmnSemantics/NoneEndFanInConformance.lean), three pipeline cases, a corpus row, About and the CIB probe.
 
