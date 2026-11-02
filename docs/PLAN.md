@@ -96,9 +96,9 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: [pass-through Tasks on Parallel branches](capsules/PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md) of the nested scope-data profile, batch 4 (`PC-HUM-04`'s last clause, `PC-HUM-05`'s branch clause). None End fan-in landed at `20933b89`. Close call against the None Throw and Link Events recorded in the proposal. Batch 3 stays open behind the owner's holds.
 
-Deliverable: plain and Manual Tasks as pass-through on Parallel branches of the root and Sub-Process bodies, landed on `main`, closing `PC-HUM-04`.
+Deliverable: plain and Manual Tasks as pass-through on Parallel branches of the root and Sub-Process bodies, landed on `main`; `PC-HUM-04` stays open only on wait-free terminal branches in bodies.
 
-Acceptance blockers: the proposal review; the proved `mergeInput` pair laws; implementation, registration and closure.
+Acceptance blockers: the correction audit; the proved `mergeInput` pair law; implementation, registration and closure.
 
 Current result: the proposal review rejected `0aa6cb51` (its kept branch cut refused both witnesses); the redesign `4d79c06e` is under a new cold review.
 
