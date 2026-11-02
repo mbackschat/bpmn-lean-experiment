@@ -98,6 +98,7 @@ public import BpmnSemantics.RuntimeStateWellFormedSuccessorConformance
 public import BpmnSemantics.ScopeCancellationConformance
 public import BpmnSemantics.ScopeCompletionConformance
 public import BpmnSemantics.ScopeCreationMixedBatchConformance
+public import BpmnSemantics.ScopeReentryConformance
 public import BpmnSemantics.ScopeStorageOrderConformance
 public import BpmnSemantics.ScopeVariableDataConformance
 public import BpmnSemantics.SemanticProcess.CyclicControlFlowConformanceCheckFixtures
@@ -261,6 +262,7 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("ScopeCancellationConformance", BpmnSemantics.ScopeCancellationConformance.checks),
   ("ScopeCompletionConformance", BpmnSemantics.ScopeCompletionConformance.checks),
   ("ScopeCreationMixedBatchConformance", BpmnSemantics.ScopeCreationMixedBatchConformance.checks),
+  ("ScopeReentryConformance", BpmnSemantics.ScopeReentryConformance.scopeReentryConformanceChecks),
   ("ScopeStorageOrderConformance", BpmnSemantics.ScopeStorageOrderConformance.checks),
   ("ScopeVariableDataConformance", BpmnSemantics.ScopeVariableDataConformance.checks),
   ("SemanticProcess.RuntimeStateCollectionStorageConformance", BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorageConformance.checks),

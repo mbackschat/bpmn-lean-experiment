@@ -498,7 +498,9 @@ def checkedWellFormed (source : CheckedProcess) : Bool :=
       (source.identity.semanticProfile == repeatableSubscriptionCheckpointProfileId)
       (source.identity.semanticProfile == mixedTaskControlFlowProfileId || source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
       (source.identity.semanticProfile == mixedTaskBusinessErrorProfileId)
-      (source.identity.semanticProfile.value == embeddedCompletionProfile)
+      -- SRE-ADMIT-01: a nested scope-data Merge joins two or more flows.
+      (source.identity.semanticProfile.value == embeddedCompletionProfile ||
+        source.identity.semanticProfile == nestedScopeDataProfileId)
       (source.interruptingMessageEventSubProcesses.map (·.elementId)) source.sequenceFlows) &&
     checkedInclusivePairingValid source &&
     checkedEventRaceConfigurationValid source &&

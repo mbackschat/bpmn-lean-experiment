@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 public import BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability
+import BpmnSemantics.SemanticProcess.ScopeReentryAdmission
 import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 meta import BpmnSemantics.PrivateEquationLemmas
 
@@ -764,8 +765,9 @@ CSSD-ROUTE-01 and CSSD-ADMIT-01 for `nestedScopeDataProfileId`, per the
 A Program or checked graph of the profile is concurrent exactly when it splits a token. The serial analysis
 refuses every split, so no model it admits is ever routed elsewhere; a concurrent one takes this module's
 analysis, restricted to a source overlay on every model, forks only in Sub-Process bodies, no merge region and
-the profile's own Call bound. Transcribed independently by the TypeScript `structured-scope-data-routing`
-module. -/
+the profile's own Call bound. SRE-ROUTE-01 sends a model whose root body holds a Choice or Merge to the
+re-entry account (`ScopeReentryAdmission`) and refuses one that also splits. Transcribed independently by the
+TypeScript `structured-scope-data-routing` module. -/
 
 namespace BpmnSemantics.SemanticProcess.StructuredScopeData
 
@@ -830,46 +832,63 @@ private def checkedRestrictionsHold (source : CheckedProcess) : Bool :=
 /-- CSSD-ADMIT-01 over the Program: the serial analysis for a serial Program, the restricted nested
 scope-control analysis for a concurrent one. -/
 def programRouted (program : Program) : Bool :=
-  if concurrentProgram program then
+  if ScopeReentry.programReentry program then
+    !concurrentProgram program && (ScopeReentry.programAnalysis program).isSome
+  else if concurrentProgram program then
     programRestrictionsHold program && (NestedScopeControl.programAnalysis program).isSome
   else (NestedScopeData.programAnalysis program).isSome
 
 /-- CSSD-ADMIT-01 over the checked graph, independent of the Program. -/
 def checkedRouted (source : CheckedProcess) : Bool :=
-  if checkedConcurrent source then
+  if ScopeReentry.checkedReentry source then
+    !checkedConcurrent source && (ScopeReentry.checkedAnalysis source).isSome
+  else if checkedConcurrent source then
     checkedRestrictionsHold source && (NestedScopeControl.checkedAnalysis source).isSome
   else (NestedScopeData.checkedAnalysis source).isSome
 
 /-- NSD-AVAILABLE-01 for a serial Program; CSD-AVAILABLE-01 and CMCALL-START-01 under the profile's
 `SingletonBusinessItem` policy for a concurrent one. -/
 def startBindingsRouted (program : Program) (bindings : List VariableBinding) : Bool :=
-  if concurrentProgram program then
+  if ScopeReentry.programReentry program then
+    !concurrentProgram program && ScopeReentry.startBindingsAdmitted program bindings
+  else if concurrentProgram program then
     programRestrictionsHold program && NestedScopeControl.startBindingsAdmitted program bindings
   else NestedScopeData.startBindingsAdmitted program bindings
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredScopeData #[`concurrentProgram, `programRouted, `checkedRouted, `startBindingsRouted]
 
 /-- CSSD-ROUTE-01: without a split, Program admission is the serial analysis's. -/
-private theorem programRouted_serial (program : Program) (serial : concurrentProgram program = false) :
+private theorem programRouted_serial (program : Program) (serial : concurrentProgram program = false)
+    (unchosen : ScopeReentry.programReentry program = false) :
     programRouted program = (NestedScopeData.programAnalysis program).isSome := by
-  simp [programRouted, serial]
+  simp [programRouted, serial, unchosen]
 
 /-- CSSD-ROUTE-01: without a fork, checked admission is the serial analysis's. -/
-private theorem checkedRouted_serial (source : CheckedProcess) (serial : checkedConcurrent source = false) :
+private theorem checkedRouted_serial (source : CheckedProcess) (serial : checkedConcurrent source = false)
+    (unchosen : ScopeReentry.checkedReentry source = false) :
     checkedRouted source = (NestedScopeData.checkedAnalysis source).isSome := by
-  simp [checkedRouted, serial]
+  simp [checkedRouted, serial, unchosen]
 
 /-- CSSD-ROUTE-01: without a split, the Start rule is the serial analysis's. -/
 private theorem startBindingsRouted_serial (program : Program) (bindings : List VariableBinding)
-    (serial : concurrentProgram program = false) :
+    (serial : concurrentProgram program = false) (unchosen : ScopeReentry.programReentry program = false) :
     startBindingsRouted program bindings = NestedScopeData.startBindingsAdmitted program bindings := by
-  simp [startBindingsRouted, serial]
+  simp [startBindingsRouted, serial, unchosen]
+
+/-- SRE-ROUTE-01's preservation: a Program without a root Choice or Merge routes exactly as before this account
+existed, the concurrent and serial routes unchanged. -/
+private theorem programRouted_unchosen (program : Program) (unchosen : ScopeReentry.programReentry program = false) :
+    programRouted program = if concurrentProgram program then
+      programRestrictionsHold program && (NestedScopeControl.programAnalysis program).isSome
+    else (NestedScopeData.programAnalysis program).isSome := by
+  simp [programRouted, unchosen]
 
 /-- Neither routed analysis admits a single scope. -/
 theorem programRouted_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
     programRouted program = false := by
   unfold programRouted
-  split <;> simp [NestedScopeControl.programAnalysis_one_scope program one,
-    NestedScopeData.programAnalysis_one_scope program one]
+  repeat' split
+  all_goals simp [NestedScopeControl.programAnalysis_one_scope program one,
+    NestedScopeData.programAnalysis_one_scope program one, ScopeReentry.programAnalysis_one_scope program one]
 
 end BpmnSemantics.SemanticProcess.StructuredScopeData

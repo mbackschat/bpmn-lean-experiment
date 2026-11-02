@@ -193,12 +193,11 @@ def optionalCallNames : List Access → List String → List String
       optionalCallNames rest (if frames.any (·.contains name) then produced else name :: produced)
   | .read .. :: rest, produced => optionalCallNames rest produced
 
-/-- Every caller vertex is visited exactly once from the root's entry and every called vertex is
-walked from some Call, the two disjoint; the scope list holds the root, one child per Sub-Process and
-one called root for the Calls, at most `callLimit` of one called definition; and every record keys a
-Sub-Process scope. -/
-def analyze (vertices : List Vertex) (records : List ScopeLocalData) (scopes : List DefinitionScope)
-    (root entry : String) (handlers : List String) : Option Analysis := do
+/-- The scope list holds the root, one child per Sub-Process and one called root for the Calls, at most
+`callLimit` of one called definition; and every record keys a Sub-Process scope. The re-entry account
+(`ScopeReentryAdmission`) applies it to a root graph. -/
+def structureAdmitted (vertices : List Vertex) (records : List ScopeLocalData) (scopes : List DefinitionScope)
+    (root : String) (handlers : List String) : Bool :=
   let children := vertices.filterMap fun v => match v.kind with
     | .subProcess child .. => some child
     | _ => none
@@ -207,33 +206,48 @@ def analyze (vertices : List Vertex) (records : List ScopeLocalData) (scopes : L
     | _ => none
   let calledScopes := (calls.map (·.1)).eraseDups
   let roots := (scopes.filter (·.parentScopeId.isNone)).map (·.id.value)
-  if !(scopes.length == children.length + calledScopes.length + 1 && !children.isEmpty &&
-      calls.length ≤ callLimit && calledScopes.length ≤ 1 &&
-      roots.length == calledScopes.length + 1 && roots.contains root &&
-      calls.all (fun (calledScope, inputs, outputs) =>
-        calledScope != root && variableMappingsValid inputs outputs && callMappingsAdmitted handlers inputs outputs) &&
-      strictlySortedStrings (records.map (·.scopeId.value)) &&
-      records.all (fun record => children.contains record.scopeId.value && recordValid handlers record))
-  then none
-  else do
-    let (accesses, visited, called) ← walk vertices records scopes (vertices.length + 1) 0 [] root entry
-    let calledVertices := called.eraseDups
-    if visited.eraseDups.length != visited.length || visited.any calledVertices.contains ||
-        visited.length + calledVertices.length != vertices.length then none
-    else some { accesses, required := (requiredReads accesses []).eraseDups,
-                optional := if calls.isEmpty then none else some (optionalCallNames accesses []).eraseDups }
+  scopes.length == children.length + calledScopes.length + 1 && !children.isEmpty &&
+    calls.length ≤ callLimit && calledScopes.length ≤ 1 &&
+    roots.length == calledScopes.length + 1 && roots.contains root &&
+    calls.all (fun (calledScope, inputs, outputs) =>
+      calledScope != root && variableMappingsValid inputs outputs && callMappingsAdmitted handlers inputs outputs) &&
+    strictlySortedStrings (records.map (·.scopeId.value)) &&
+    records.all (fun record => children.contains record.scopeId.value && recordValid handlers record)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`structureAdmitted]
 
 private theorem one_scope_guard (scopes : List DefinitionScope) (children : List String) (calls : Nat)
     (one : scopes.length = 1) :
     (scopes.length == children.length + calls + 1 && !children.isEmpty) = false := by
   cases children <;> simp [one]
 
+theorem structureAdmitted_one_scope (vertices : List Vertex) (records : List ScopeLocalData)
+    (scopes : List DefinitionScope) (root : String) (handlers : List String) (one : scopes.length = 1) :
+    structureAdmitted vertices records scopes root handlers = false := by
+  unfold structureAdmitted
+  dsimp only
+  rw [one_scope_guard scopes _ _ one]
+  rfl
+
+/-- Every caller vertex is visited exactly once from the root's entry and every called vertex is
+walked from some Call, the two disjoint, under `structureAdmitted`. -/
+def analyze (vertices : List Vertex) (records : List ScopeLocalData) (scopes : List DefinitionScope)
+    (root entry : String) (handlers : List String) : Option Analysis := do
+  if !structureAdmitted vertices records scopes root handlers then none
+  else do
+    let (accesses, visited, called) ← walk vertices records scopes (vertices.length + 1) 0 [] root entry
+    let calledVertices := called.eraseDups
+    if visited.eraseDups.length != visited.length || visited.any calledVertices.contains ||
+        visited.length + calledVertices.length != vertices.length then none
+    else some { accesses, required := (requiredReads accesses []).eraseDups,
+                optional := if vertices.any (fun v => match v.kind with | .call .. => true | _ => false)
+                  then some (optionalCallNames accesses []).eraseDups else none }
+
 theorem analyze_one_scope (vertices : List Vertex) (records : List ScopeLocalData)
     (scopes : List DefinitionScope) (root entry : String) (handlers : List String) (one : scopes.length = 1) :
     analyze vertices records scopes root entry handlers = none := by
   unfold analyze
-  dsimp only
-  rw [one_scope_guard scopes _ _ one]
+  rw [structureAdmitted_one_scope vertices records scopes root handlers one]
   rfl
 
 def metadataValid (handlers : List String) (metadata : Option UserTaskMetadata) : Bool :=
@@ -282,19 +296,26 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`checkedVertex?]
 
-def checkedAnalysis (source : CheckedProcess) : Option Analysis := do
+/-- The profile's checked envelope, which the re-entry account shares: the root scope and its Start. -/
+def checkedEnvelope? (source : CheckedProcess) : Option (DefinitionScopeId × NodeId) := do
   let identities := source.processId.value :: source.nodes.map (·.id.value) ++
     source.sequenceFlows.map (·.id.value)
   if !(source.identity.sourceOverlay.isSome && source.compensation.isNone &&
       source.transactionCancellation.isNone && source.interruptingMessageEventSubProcesses.isEmpty &&
-      identities.eraseDups.length == identities.length && source.sequenceFlows.all (·.condition.isNone))
+      identities.eraseDups.length == identities.length)
   then none
   else do
     let root ← StructuredComposition.unique? (source.definitionScopes.filter fun scope =>
       scope.parentScopeId.isNone && scope.originElementId.value == source.processId.value)
     let entry ← checkedStart? source root.id
-    analyze (← source.nodes.mapM (checkedVertex? source)) source.scopeLocalData source.definitionScopes
-      root.id.value entry.value (SerialBusinessTask.checkedHandlers source)
+    some (root.id, entry)
+
+def checkedAnalysis (source : CheckedProcess) : Option Analysis := do
+  let (root, entry) ← checkedEnvelope? source
+  if !source.sequenceFlows.all (·.condition.isNone) then none else do
+  let vertices ← source.nodes.mapM (checkedVertex? source)
+  analyze vertices source.scopeLocalData source.definitionScopes root.value entry.value
+    (SerialBusinessTask.checkedHandlers source)
 
 def dataOperationScope? (program : Program) (operation : SemanticOperation) : Option String := do
   let owner ← StructuredComposition.unique?
@@ -310,8 +331,10 @@ def childCompletion? (program : Program) (child : DefinitionScopeId) : Option Co
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`childCompletion?]
 
+/-- A root Choice's and Merge's inputs too, which only the re-entry account's root graph admits. -/
 def operationInputs : SemanticOperation → List ControlPlaceId
-  | .enterScope _ _ input .. | .invokeProcess _ _ input .. => [input]
+  | .enterScope _ _ input .. | .invokeProcess _ _ input .. | .choose _ _ input .. => [input]
+  | .mergeExclusive _ _ inputs _ => inputs
   | operation => SerialBusinessTask.operationInputs operation
 
 /-- The unique operation consuming `place`; scope completions consume no place. -/
@@ -350,7 +373,9 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`operationVertex?]
 
-def programAnalysis (program : Program) : Option Analysis := do
+/-- The profile's Program envelope, which the re-entry account shares: the root scope, the Start operation and
+the operations that become vertices. -/
+def programEnvelope? (program : Program) : Option (DefinitionScopeId × OperationId × List SemanticOperation) := do
   if !(program.identity.sourceOverlay.isSome &&
       program.internalSchedulingMode == .rejectObservableChoice &&
       program.compensationActivityRetention.isNone && program.compensationEventSubProcessSnapshots.isNone &&
@@ -370,7 +395,8 @@ def programAnalysis (program : Program) : Option Analysis := do
     let identities := program.processId.value :: operations.filterMap (fun op =>
       match op with
       | .initiate _ origin _ | .reachNoneEnd _ origin _ | .awaitUserTask _ origin ..
-      | .awaitEffect _ origin .. | .enterScope _ origin .. | .invokeProcess _ origin .. => some origin.elementId.value
+      | .awaitEffect _ origin .. | .enterScope _ origin .. | .invokeProcess _ origin ..
+      | .choose _ origin .. | .mergeExclusive _ origin .. => some origin.elementId.value
       | _ => none) ++ program.controlPlaces.map (·.origin.elementId.value)
     if !(rootCompleted && completions.length == program.definitionScopes.length - calledRoots &&
         identities.eraseDups.length == identities.length) then none
@@ -378,23 +404,31 @@ def programAnalysis (program : Program) : Option Analysis := do
       let start ← StructuredComposition.unique? (operations.filter fun op => match op with
         | .initiate .. => true
         | _ => false)
-      analyze (← operations.mapM (operationVertex? program)) program.scopeLocalData
-        program.definitionScopes root.id.value start.id.value (SerialBusinessTask.programHandlers program)
+      some (root.id, start.id, operations)
 
-run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`programAnalysis]
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`programEnvelope?]
+
+def programAnalysis (program : Program) : Option Analysis := do
+  let (root, start, operations) ← programEnvelope? program
+  let vertices ← operations.mapM (operationVertex? program)
+  analyze vertices program.scopeLocalData program.definitionScopes root.value start.value
+    (SerialBusinessTask.programHandlers program)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`programAnalysis]
 
 /-- A one-scope Program is never admitted: the profile requires at least one Sub-Process. -/
 theorem programAnalysis_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
     programAnalysis program = none := by
   unfold programAnalysis
-  simp only [analyze_one_scope _ _ _ _ _ _ one]
-  repeat' first | rfl | split | simp
+  cases programEnvelope? program <;> simp [analyze_one_scope _ _ _ _ _ _ one]
 
 /-- NSD-AVAILABLE-01 and the profile's Start domain: admitted names, each a `SingletonBusinessItem`,
 covering every required name; a present null counts as present. CVM-START-01 restricts the names to
-required and optional ones only in Programs with a Call, keeping every earlier admission unchanged. -/
-def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) : Bool :=
-  match programAnalysis program with
+required and optional ones only in Programs with a Call, keeping every earlier admission unchanged. The
+serial and re-entry accounts each supply their own analysis. -/
+def startBindingsAdmittedBy (analysis : Option Analysis) (program : Program) (bindings : List VariableBinding) :
+    Bool :=
+  match analysis with
   | none => false
   | some analysis =>
       EffectData.bindingsValidWith (EffectMappingValuePolicy.singletonBusinessItem.admits true)
@@ -402,6 +436,9 @@ def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) 
         analysis.required.all (fun name => bindings.any (·.name == name)) &&
         analysis.optional.all (fun optional => bindings.all fun binding =>
           analysis.required.contains binding.name || optional.contains binding.name)
+
+def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) : Bool :=
+  startBindingsAdmittedBy (programAnalysis program) program bindings
 
 end NestedScopeData
 end BpmnSemantics.SemanticProcess

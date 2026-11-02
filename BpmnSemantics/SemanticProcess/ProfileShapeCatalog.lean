@@ -521,7 +521,9 @@ inductive ProfileGraphPolicy where
   deriving Repr, DecidableEq
 
 def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
-  if profile = mixedTaskControlFlowProfileId.value || profile = mixedTaskBusinessErrorProfileId.value then some .mixedTaskResumptionBounded
+  -- SRE-CYCLE-01: root cycles of the nested scope-data profile cross a User or Service Task, possibly in a body.
+  if profile = mixedTaskControlFlowProfileId.value || profile = mixedTaskBusinessErrorProfileId.value ||
+      profile = nestedScopeDataProfileId.value then some .mixedTaskResumptionBounded
   else if profile = "bpmn-2.0.2-user-task-cycle-draft" then
     some .resumptionBounded
   else if profile = transactionCancellationCheckpointProfileId.value ||
@@ -529,7 +531,6 @@ def profileGraphPolicy? (profile : String) : Option ProfileGraphPolicy :=
       profile = portableHandoffProfileId.value ||
       profile = serialBusinessTaskProfileId.value ||
       profile = portableEffectDataProfileId.value ||
-      profile = nestedScopeDataProfileId.value ||
       profile = "cibseven-2.2.0-sequential-multi-instance-subprocess-draft" ||
       profile = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" ||
       profile = callDataCheckpointProfileId.value ||

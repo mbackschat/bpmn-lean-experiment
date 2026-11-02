@@ -181,9 +181,20 @@ def checkedGraphPolicyValid (source : CheckedProcess)
   | some .resumptionBounded =>
       acyclicClosed (checkedResumptionCutEdges nodes edges) fuel
   | some .mixedTaskResumptionBounded =>
+      -- SRE-CYCLE-01: checked validation sees one scope at a time, so a Sub-Process whose body, through nested
+      -- Sub-Processes, holds a task cuts like the task, as at the Program level, whose order graph threads through
+      -- every body. `bearing` grows from the tasks' scopes by one parent per round; the scope count bounds the depth.
+      let tasks := source.nodeScopes.filter fun owner => source.nodes.any fun node =>
+        checkedNodeId node == owner.nodeId && match node with
+          | .userTask .. | .serviceTask .. => true
+          | _ => false
+      let bearing := (List.range source.definitionScopes.length).foldl (fun found _ =>
+        found ++ source.definitionScopes.filterMap fun scope =>
+          if found.contains scope.id then scope.parentScopeId else none) (tasks.map (·.scopeId))
       acyclicClosed (edges.filter fun edge => !nodes.any (fun node =>
         checkedNodeId node == edge.source && match node with
           | .userTask .. | .serviceTask .. => true
+          | .embeddedSubProcess _ child => bearing.contains child
           | _ => false)) fuel
   | none => false
 
