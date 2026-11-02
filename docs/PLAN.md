@@ -102,7 +102,7 @@ Acceptance blockers: proposal approved at `01f288d2`; then implementation, regis
 
 Current result: the concurrent structured scope data account admits paired forks only inside Sub-Process bodies; it records the root fork as an admission bound that broadens without reinterpreting an admitted model.
 
-Effort budget: 8 hours for proposal, implementation and closure, from 2026-11-02 10:45 CET.
+Effort budget: 8 hours for proposal, implementation and closure, from 2026-11-02 10:45 CET; Lean batch `root-parallel-forks`, one full `BpmnConformance` build at closure plus at most one after a correction.
 
 Next action: change the root restriction in TypeScript and Lean, then add the onboarding witness, the root Call pair and their registration.
 
