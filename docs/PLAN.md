@@ -94,18 +94,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: propose the User Task local data family of [delivery batch](#scheduled-delivery-batches) 3: CIB `camunda:inputOutput` on User Tasks under the nested scope-data profile, the task owning locals from entry to completion, with hosted task detail resolving through the frame chain. Rows: the Activity-owner clauses of `PC-DATA-04` to `PC-DATA-06` and the mapped-result clause of `PC-HUM-01`. Scope re-entry landed at `8eb93c88`.
+Current task: owner decision on batch 3. The [User Task local data proposal](capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md) is the only unheld batch-3 mechanism; its [receipt](capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md#independent-cold-review-receipt) records why its representation needs a redesign. Scope re-entry landed at `8eb93c88`.
 
-Deliverable: an approved proposal with CIB `2.2.0` depth from pinned source and every Lean hub it touches named with its reason.
+Deliverable: an owner decision on how batch 3 continues.
 
-Acceptance blockers: none recorded.
+Acceptance blockers: every remaining batch-3 clause needs the held expression lane (`PC-DATA-07` to `PC-DATA-09`), held Multi-Instance owners, or a User Task local owner whose two representations each need a kernel type change or the `CheckedGraphValidation` and occurrence-publication hubs, for 22 of 2,628 pinned CIB User Tasks, all tests.
 
-Current result: every other open batch-3 clause needs held expressions or Multi-Instance owners. Reach is low: 3 of 1,545 pinned CIB User Tasks carry `inputOutput`. Open design point: a child definition scope must be owned by an `EmbeddedSubProcess` node, so a task-owned frame needs a kernel type change ([contract item 4](LEAN-BUILD-MODULARITY-SPEC.md#contract)) or an admission rule letting a mapped User Task own its scope.
+Current result: stalled at the proposal stage after about 45 minutes of its 2-hour budget.
 
-Effort budget: 2 hours for the proposal stage, from 2026-11-02 04:15 CET.
+Effort budget: 2 hours for the proposal stage, from 2026-11-02 04:15 CET; held after about 45 minutes and not renewed before the owner decides.
 
-Next action: settle that representation, then write the proposal. Expressions (`PC-DATA-07`) stay held.
+Next action: the owner chooses between releasing the expression hold, accepting a kernel type change for User Task local data, and moving to batch 4.
 
-Oracle: the cold proposal review of the family.
+Oracle: the owner decision.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

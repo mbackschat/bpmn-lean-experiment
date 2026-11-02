@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: rejected
 
 ## Question and delivery boundary
 
@@ -161,6 +161,8 @@ Guards the implementation must change or satisfy:
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `0aff81dd` | `fork-turns-none` | `reject` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal review of `0aff81dd` (packet `a1c2239306df652d8d4daca59aeb03dd02485c0a50e6692d661f52add661283c`) rejected the task-owned definition scope: the existing flow-node occurrence projection would publish the scope and a synthetic End as further occurrences of the task element, which CIB does not; per-scope checked graph validation requires a Start in every definition scope; and the nested scope-data and re-entry analyses need interface edits the owner list omitted. It also corrected the reach count to 22 of 2,628 User Tasks in the pinned resources, all tests, and asked that the Activity-owned scope of `awaitDataInputOutputUserTask` be weighed; that operation carries BPMN DataInput and DataOutput endpoints, so reusing it for CIB names needs new operation variants, a kernel type change. Redesign is held for the owner decision recorded in [PLAN](../PLAN.md#exact-resume-point).
