@@ -94,18 +94,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: derive the portable warm-pipeline ceiling from the case-identifier registry and guard the hosted pipeline job timeout (owner decision, 2026-11-02). [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md) (batch 4, `PC-CF-02` candidate-count clause) landed at `81f4934d`. Default-less Choices (about 39 of the 90 CIB engine test models holding an Exclusive Gateway) are the next family candidate; they need an optional default in the IL and a no-match exception outcome. Batch 3 stays open behind the owner's holds.
+Current task: [Implicit fan-in](capsules/IMPLICIT-FAN-IN-PROPOSAL.md) for the nested scope-data profile, batch 4 (`PC-CF-07` merge clause, `PC-HUM-05` implicit merge clause, `BPMN-MECH-FLOW-01` uncontrolled incoming flow). Exclusive choice arity landed at `81f4934d`, the derived pipeline ceiling at `718ec63c`. Close call against default-less Choices (27 clean CIB models against 19): their no-match needs an optional kernel default and a closure rollback channel; recorded in the proposal's selection. Batch 3 stays open behind the owner's holds.
 
-Deliverable: a derived portable ceiling, a hosted factor and a job-timeout guard, landed on `main`.
+Deliverable: Activities and None End Events with several incoming flows in the root graph of the nested scope-data profile, one occurrence per arriving token, landed on `main`.
 
-Acceptance blockers: landing through the branch flow with green hosted checks.
+Acceptance blockers: approving cold proposal review; implementation; closure gates and review; landing.
 
-Current result: hosted run 41473082509 (160 cases) spent 355 s of the 600 s pipeline job, 177 s of it warm; the guard fires beyond 194 cases, which then requires splitting the job.
+Current result: proposal drafted.
 
-Effort budget: 2 hours from the landing of `81f4934d`; no heavy lane beyond the hosted checks.
+Effort budget: 10 hours from 2026-11-02 19:10 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: land the budget change through the branch flow, then propose default-less Choices.
+Next action: commit the proposal and run its cold review.
 
-Oracle: the pipeline-budget guard, the Rule 2 review and post-check, and green hosted checks.
+Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
