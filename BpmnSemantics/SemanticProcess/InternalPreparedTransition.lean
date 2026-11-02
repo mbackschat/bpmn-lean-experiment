@@ -176,6 +176,9 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .localControl first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .declaredEntry first, .arming second => localControlStateFootprintsNonInterfering first.footprint second.stateFootprint = true
   | .arming first, .declaredEntry second => localControlStateFootprintsNonInterfering first.stateFootprint second.footprint = true
+  -- PTPB-COMMUTE-01: a one-input Merge on another Parallel branch only moves tokens beside the entry's frame.
+  | .declaredEntry first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  | .mergeInput first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .mappedInvocation first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .mappedInvocation first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .declaredEntry first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
@@ -186,7 +189,8 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .mappedInvocation first, .arming second => localControlStateFootprintsNonInterfering first.footprint second.stateFootprint = true
   | .arming first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.stateFootprint second.footprint = true
   -- CSD-PREPARE-01's and CMCALL-PREPARE-01's batch premise: a frame-inserting member's commutation is
-  -- established only beside the frame-inserting families, scope creations, local control and armings, so every
+  -- established only beside the frame-inserting families, scope creations, local control, armings and (for a
+  -- declared entry) Merge inputs, so every
   -- other companion refuses the batch.
   | .declaredEntry _, _ | _, .declaredEntry _ | .mappedInvocation _, _ | _, .mappedInvocation _ => False
   | .messageTask .., _ | _, .messageTask .. | .boundedScope .., _ | _, .boundedScope ..

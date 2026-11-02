@@ -256,7 +256,11 @@ private theorem prepared_merge_transition_pair (program : Program) [Interruption
         merge.selection.alternative merge creation mergeFound otherFound.1 canonical
           (localControlStateFootprintsNonInterfering_symm _ _ independent)
       exact ⟨⟨pair.2.1, otherFound.2⟩, pair.1, pair.2.2.symm⟩
-  | declaredEntry _ | mappedInvocation _ => exact (independent : False).elim
+  | declaredEntry entry =>
+      have pair := prepared_declared_entry_merge_pair program state entry.control.selection.operation entry merge
+        otherFound mergeFound canonical (localControlStateFootprintsNonInterfering_symm _ _ independent)
+      exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
+  | mappedInvocation _ => exact (independent : False).elim
   | mergeInput right =>
       have pair := prepared_merge_pair_commutes program state merge.selection.operation right.selection.operation
         merge.selection.alternative right.selection.alternative merge right mergeFound otherFound canonical independent
@@ -436,8 +440,11 @@ theorem prepared_transition_pair (program : Program) [InterruptionInvocationsRoo
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | declaredEntry left =>
       cases right with
-      | messageTask _ _ | boundedScope _ _ | timerTask _ _ | regional _ | ordinaryEnd _
-      | mergeInput _ => exact (independent : False).elim
+      | messageTask _ _ | boundedScope _ _ | timerTask _ _ | regional _ | ordinaryEnd _ =>
+          exact (independent : False).elim
+      | mergeInput right =>
+          exact prepared_declared_entry_merge_pair program state left.control.selection.operation left right
+            leftPrepared rightPrepared canonical independent
       | arming right =>
           exact prepared_declared_entry_arming_pair program state left.control.selection.operation left right
             leftPrepared rightPrepared canonical independent
