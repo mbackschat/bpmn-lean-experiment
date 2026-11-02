@@ -1,0 +1,13 @@
+# Root Parallel forks scenarios
+
+The [root Parallel forks proposal](../../docs/capsules/ROOT-PARALLEL-FORKS-PROPOSAL.md#separating-witnesses) owns the bounded account; the model is a witness for the [nested scope-data profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json), with an exact source overlay binding its one Service Task to a caller-supplied Activity handler.
+
+The [employee onboarding](employee-onboarding.bpmn) with its [handler](employee-onboarding-overlay.json) forks its Process root at *Start onboarding*. One branch prepares the workstation and orders a laptop, whose Service Task reads the structured `employee` and writes `assetTag` and `onboardingStage`; the other runs the Sub-Process *Collect documents*, which copies `employee` into its local `record`, lets *Confirm documents* amend it and copies it back out with its own `onboardingStage`. *Onboarding ready* joins both before *Hold welcome meeting*.
+
+The [source test](../../packages/bpmn-source/test/root-parallel-forks-source.test.ts) compiles the model and locks the refused one-fact edits and the root Call pair; the [runtime test](../../packages/bpmn-source/test/root-parallel-forks-runtime.test.ts) reads the open snapshot, the Process values and the refused over-allowance patch in committed state. The [concurrent structured scope data probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConcurrentStructuredScopeDataProbeTest.java) calibrates the two schedules CIB Seven `2.2.0` realizes.
+
+Three answer-free schedules are registered as standards-only pipeline cases by the [pipeline cases](../../packages/differential/test/root-parallel-forks-pipeline-cases.ts), each with one seeded mutation:
+
+- [Documents while the laptop order is open](onboarding-documents-while-laptop-open.scenario.json) prepares the workstation, then confirms the documents with an amended department while *Order laptop* is open, so the open order keeps the first `employee`. Its mutation rewrites that open snapshot, as rewriting open snapshots on a Process write would.
+- [Documents first](onboarding-documents-first.scenario.json) confirms the documents before the workstation is prepared, so *Order laptop* is armed with the amended `employee`. Its mutation opens *Hold welcome meeting* beside *Prepare workstation*, as a join continuing on its first token would.
+- [Laptop first](onboarding-laptop-first.scenario.json) completes the laptop order before the documents, so the documents' `onboardingStage` is written last and stays. Its mutation keeps the first write, as applying branch writes in another order would.

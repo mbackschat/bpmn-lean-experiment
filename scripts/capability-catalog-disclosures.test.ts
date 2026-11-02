@@ -94,7 +94,8 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ["parallelGateway", "restriction", [
     "paired forks and joins of two or more branches inside Sub-Process bodies",
     "a fork whose task branches all end at one Exclusive merge into a Sub-Process",
-    "The nested scope-data profile admits the same paired forks and joins inside Sub-Process bodies, never in the Process root body or into a merge",
+    "The nested scope-data profile admits the same paired forks and joins inside Sub-Process bodies and in the Process root body, never into a merge",
+    "a model whose root body forks holds no Call in it",
   ]],
   ["exclusiveGateway", "restriction", [
     "which passes each arriving token on its own",

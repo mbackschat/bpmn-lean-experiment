@@ -1321,6 +1321,47 @@
       }
     },
     {
+      "id": "employee-onboarding-root-fork",
+      "title": "Onboard a new employee",
+      "businessPurpose": "Prepare a workstation and order a laptop through an equipment service while, in parallel, a documents scope confirms the employee's record, then hold one welcome meeting once both are done.",
+      "cloneFamily": "employee-onboarding-root-fork",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/root-parallel-forks/employee-onboarding.bpmn",
+        "sha256": "03b727103fdb14cdd88b67f71c15b29f2863f420f1a408f0a3d9db471343fff7",
+        "scenarioRelativePath": "scenarios/root-parallel-forks/onboarding-documents-while-laptop-open.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "root-parallel-forks-onboarding-documents-while-laptop-open",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for root Parallel forks; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

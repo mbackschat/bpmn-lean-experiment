@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_EmployeeOnboarding" targetNamespace="urn:bpmn-lean:employee-onboarding">
+  <process id="Process_EmployeeOnboarding" name="Onboard a new employee" isExecutable="true">
+    <startEvent id="HireRecorded" name="Hire recorded" />
+    <parallelGateway id="StartOnboarding" name="Start onboarding" />
+    <userTask id="PrepareWorkstation" name="Prepare workstation" />
+    <serviceTask id="OrderLaptop" name="Order laptop"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${orderLaptop}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="employee">${employee}</camunda:inputParameter>
+          <camunda:outputParameter name="assetTag">${tag}</camunda:outputParameter>
+          <camunda:outputParameter name="onboardingStage">${stage}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <subProcess id="CollectDocuments" name="Collect documents">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="record">${employee}</camunda:inputParameter>
+          <camunda:inputParameter name="stage">documents-filed</camunda:inputParameter>
+          <camunda:outputParameter name="employee">${record}</camunda:outputParameter>
+          <camunda:outputParameter name="onboardingStage">${stage}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="DocumentsRequested" name="Documents requested" />
+      <userTask id="ConfirmDocuments" name="Confirm documents" />
+      <endEvent id="DocumentsFiled" name="Documents filed" />
+      <sequenceFlow id="Flow_DocumentsRequested" sourceRef="DocumentsRequested" targetRef="ConfirmDocuments" />
+      <sequenceFlow id="Flow_DocumentsConfirmed" sourceRef="ConfirmDocuments" targetRef="DocumentsFiled" />
+    </subProcess>
+    <parallelGateway id="OnboardingReady" name="Onboarding ready" />
+    <userTask id="HoldWelcomeMeeting" name="Hold welcome meeting" />
+    <endEvent id="EmployeeOnboarded" name="Employee onboarded" />
+    <sequenceFlow id="Flow_HireRecorded" sourceRef="HireRecorded" targetRef="StartOnboarding" />
+    <sequenceFlow id="Flow_ToWorkstation" sourceRef="StartOnboarding" targetRef="PrepareWorkstation" />
+    <sequenceFlow id="Flow_ToDocuments" sourceRef="StartOnboarding" targetRef="CollectDocuments" />
+    <sequenceFlow id="Flow_WorkstationPrepared" sourceRef="PrepareWorkstation" targetRef="OrderLaptop" />
+    <sequenceFlow id="Flow_LaptopOrdered" sourceRef="OrderLaptop" targetRef="OnboardingReady" />
+    <sequenceFlow id="Flow_DocumentsCollected" sourceRef="CollectDocuments" targetRef="OnboardingReady" />
+    <sequenceFlow id="Flow_Ready" sourceRef="OnboardingReady" targetRef="HoldWelcomeMeeting" />
+    <sequenceFlow id="Flow_Welcomed" sourceRef="HoldWelcomeMeeting" targetRef="EmployeeOnboarded" />
+  </process>
+</definitions>

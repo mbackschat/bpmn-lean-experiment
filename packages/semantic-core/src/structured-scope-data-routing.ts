@@ -35,7 +35,7 @@ export function concurrentStructuredScopeDataProgram(program: SemanticProcessPro
   return program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData && splits(program.operations);
 }
 
-/** The scope a Process root body runs in, which the profile keeps one serial path. */
+/** The scope a Process root body runs in, whose Calls the profile refuses once it forks (RPF-ADMIT-01). */
 function rootScope(scopes: readonly Readonly<{ id: string; parentScopeId: string | null; originElementId: string }>[],
   processId: string): string | undefined {
   return scopes.find(({ parentScopeId, originElementId }) => parentScopeId === null && originElementId === processId)?.id;
@@ -48,15 +48,18 @@ function calledProcessesAdmitted(calls: readonly Readonly<{ calledProcessId: str
 }
 
 /**
- * CSSD-ADMIT-01's profile restrictions on the shared concurrent class: a source overlay on every model, forks only in
- * Sub-Process bodies, no merge region, and the profile's Call bound.
+ * CSSD-ADMIT-01's profile restrictions on the shared concurrent class, as RPF-ADMIT-01 widened them: a source overlay on
+ * every model, no merge region, no Call in a forking root body, and the profile's Call bound. A root Call beside a root
+ * fork could be enabled together with sibling work, which the profile's structured values were never admitted for.
  */
 function programRestrictionsHold(program: SemanticProcessProgram): boolean {
   const root = rootScope(program.definitionScopes, program.processId);
   const scopeOf = new Map(program.operationScopes.map(({ operationId, scopeId }) => [operationId, scopeId]));
+  const inRoot = (kind: SemanticOperationKind): boolean =>
+    program.operations.some(operation => operation.kind === kind && scopeOf.get(operation.id) === root);
   return program.identity.sourceOverlay !== null && root !== undefined &&
-    !program.operations.some(({ id, kind }) =>
-      kind === SemanticOperationKind.MergeExclusive || (kind === SemanticOperationKind.Duplicate && scopeOf.get(id) === root)) &&
+    !program.operations.some(({ kind }) => kind === SemanticOperationKind.MergeExclusive) &&
+    !(inRoot(SemanticOperationKind.Duplicate) && inRoot(SemanticOperationKind.InvokeProcess)) &&
     calledProcessesAdmitted(program.operations.flatMap(operation =>
       operation.kind === SemanticOperationKind.InvokeProcess ? [operation] : []));
 }
@@ -64,10 +67,10 @@ function programRestrictionsHold(program: SemanticProcessProgram): boolean {
 function checkedRestrictionsHold(source: CheckedProcess): boolean {
   const root = rootScope(source.definitionScopes, source.processId);
   const scopeOf = new Map(source.nodeScopes.map(({ nodeId, scopeId }) => [nodeId, scopeId]));
+  const rootNodes = source.nodes.filter(({ id }) => scopeOf.get(id) === root);
   return source.identity.sourceOverlay !== null && root !== undefined &&
-    !source.nodes.some(node => node.kind === CheckedNodeKind.ExclusiveMerge ||
-      (node.kind === CheckedNodeKind.ParallelGateway && node.direction === GatewayDirection.Diverging &&
-        scopeOf.get(node.id) === root)) &&
+    !source.nodes.some(({ kind }) => kind === CheckedNodeKind.ExclusiveMerge) &&
+    !(forks(rootNodes) && rootNodes.some(({ kind }) => kind === CheckedNodeKind.CallActivity)) &&
     calledProcessesAdmitted(source.nodes.flatMap(node => node.kind === CheckedNodeKind.CallActivity ? [node] : []));
 }
 

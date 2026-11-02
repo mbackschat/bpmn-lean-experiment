@@ -67,9 +67,11 @@ test("CSSD-ROUTE-01 keeps a serial Program of the profile on its serial account"
   assert.notEqual(structuredScopeDataProgramAnalysis(semanticProcess), null);
 });
 
-test("CSSD-ADMIT-01 refuses a fork in the Process root body while the same fork inside a Sub-Process is admitted", async () => {
+// RPF-ADMIT-01 widened this boundary: the root body forks under the same class as a Sub-Process body.
+test("CSSD-ADMIT-01 admits a fork in the Process root body as inside a Sub-Process body", async () => {
   await compileAccepted("fork in a body", processOf([joinedBody]));
-  await assertRefused("fork in the root body", rootForkModel());
+  const { semanticProcess } = await compileAccepted("fork in the root body", rootForkModel());
+  assert.equal(concurrentStructuredScopeDataProgram(semanticProcess), true);
 });
 
 test("CSSD-ADMIT-01 refuses a merge region while the same branches closed by a Parallel join are admitted", async () => {

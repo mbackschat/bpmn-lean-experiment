@@ -18,7 +18,8 @@ import org.junit.Test;
 /**
  * Calibrates the concurrent structured scope data specification's widening of `CIB-EXT-0020`, `CIB-EXT-0021`, `CIB-OP-0010`
  * and `CIB-EXT-0015` (`CSSD-VALUE-01`, `CSSD-SNAPSHOT-01`, `CSSD-REUSE-01`) on the two retained models with Java
- * {@code Map} and {@code List} values. Each async-before continuation job runs before the next command, so a delegate's
+ * {@code Map} and {@code List} values, and the root Parallel forks proposal's further widening of `CIB-EXT-0020` to the
+ * Process root body (`RPF-ROOT-01`, `RPF-WRITE-01`) on the employee onboarding model. Each async-before continuation job runs before the next command, so a delegate's
  * call and completion commit together and the order fulfilment realizes the Pick items first order only: the probe
  * calibrates the arguments of that released-job schedule and does not drive a sibling command before a continuation
  * job, which the proposal's effect argument timing classifies. Delegate arguments, the caller's Process variables at the
@@ -28,6 +29,7 @@ import org.junit.Test;
 public final class CibSevenConcurrentStructuredScopeDataProbeTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
   private static final Path MODELS = PROJECT_ROOT.resolve("scenarios/concurrent-structured-scope-data");
+  private static final Path ROOT_FORK_MODELS = PROJECT_ROOT.resolve("scenarios/root-parallel-forks");
 
   @Test
   public void eachBranchArmsWithItsOwnCopyAndTheJoinPublishesTheStructuredOutputs() throws Exception {
@@ -77,6 +79,42 @@ public final class CibSevenConcurrentStructuredScopeDataProbeTest {
     }
   }
 
+  /**
+   * Journeys two and three of the root fork witness: whichever root branch commits its `onboardingStage` write last
+   * wins, the laptop order carries the `employee` visible when its job runs, and the join continues once.
+   */
+  @Test
+  public void rootBranchesWriteTheProcessInTheirCommitOrderAndJoinOnce() throws Exception {
+    for (var documentsFirst : List.of(true, false)) {
+      var arguments = new LinkedHashMap<String, Map<String, Object>>();
+      var beans = Map.<Object, Object>of("orderLaptop", (JavaDelegate) execution -> {
+        arguments.put("OrderLaptop", new HashMap<>(execution.getVariablesLocal()));
+        execution.setVariableLocal("tag", "LT-0042");
+        execution.setVariableLocal("stage", "equipment-ordered");
+      });
+      try (var session = new Session(ROOT_FORK_MODELS, "employee-onboarding", beans)) {
+        var instance = session.start("Process_EmployeeOnboarding", Map.of("employee", employee("Sales")));
+        if (documentsFirst) {
+          session.complete(instance, "ConfirmDocuments", Map.of("record", employee("Finance")));
+          assertEquals(Map.of("employee", employee("Finance"), "onboardingStage", "documents-filed"),
+              session.processVariables(instance));
+        }
+        session.complete(instance, "PrepareWorkstation", Map.of());
+        session.runJob(instance);
+        var seen = documentsFirst ? employee("Finance") : employee("Sales");
+        assertEquals(Map.of("employee", seen), arguments.get("OrderLaptop"));
+        if (!documentsFirst) {
+          session.complete(instance, "ConfirmDocuments", Map.of("record", employee("Finance")));
+        }
+        assertEquals(1, session.engine.getTaskService().createTaskQuery().processInstanceId(instance)
+            .taskDefinitionKey("HoldWelcomeMeeting").count());
+        session.complete(instance, "HoldWelcomeMeeting", Map.of());
+        session.assertEnded(instance, Map.of("assetTag", "LT-0042", "employee", employee("Finance"),
+            "onboardingStage", documentsFirst ? "equipment-ordered" : "documents-filed"));
+      }
+    }
+  }
+
   /** A delegate that records its mapped inputs and, when `output` is named, sets that local result. */
   private static JavaDelegate recording(Map<String, Map<String, Object>> arguments, String element, String output,
       Object result) {
@@ -111,6 +149,10 @@ public final class CibSevenConcurrentStructuredScopeDataProbeTest {
     return Map.of("carrier", "north", "price", new BigDecimal("12.49"));
   }
 
+  private static Map<String, Object> employee(String department) {
+    return new HashMap<>(Map.of("department", department, "name", "Grace"));
+  }
+
   private static Map<String, Object> application() {
     var applicant = new HashMap<String, Object>();
     applicant.put("employer", null);
@@ -139,11 +181,15 @@ public final class CibSevenConcurrentStructuredScopeDataProbeTest {
     final String deployment;
 
     Session(String model, Map<Object, Object> beans) throws Exception {
+      this(MODELS, model, beans);
+    }
+
+    Session(Path models, String model, Map<Object, Object> beans) throws Exception {
       engine = CibSevenTestEngine.create("concurrent-structured-scope-data-" + model,
           configuration -> configuration.setBeans(beans));
       try {
         deployment = engine.getRepositoryService().createDeployment()
-            .addString(model + ".bpmn", Files.readString(MODELS.resolve(model + ".bpmn"))).deploy().getId();
+            .addString(model + ".bpmn", Files.readString(models.resolve(model + ".bpmn"))).deploy().getId();
       } catch (RuntimeException | Error failure) {
         engine.close();
         throw failure;

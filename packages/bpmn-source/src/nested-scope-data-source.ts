@@ -71,8 +71,9 @@ const nestedScopeDataReader: ScopeDataReader = {
   semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, rootChoices: true, nonOperationalTasks: true,
   projectCall: projectMappedCall,
   caller: callerProcess, overlayRequired: true,
-  // CSSD-ADMIT-01: the routed analysis refuses the merges and root-body forks the shared gateway grammar reads, and only
-  // a model with a Parallel fork may bind no handler, so a serial model keeps NSD-ADMIT-01's overlay rule.
+  // CSSD-ADMIT-01: the routed analysis refuses the merges and forking-root Calls (RPF-ADMIT-01) the shared gateway
+  // grammar reads, and only a model with a Parallel fork may bind no handler, so a serial model keeps NSD-ADMIT-01's
+  // overlay rule.
   admitted: (checkedProcess, policy) => structuredScopeDataCheckedAnalysis(checkedProcess) !== null &&
     (policy.effectBindings.length > 0 || checkedProcess.nodes.some(node =>
       node.kind === CheckedNodeKind.ParallelGateway && node.direction === GatewayDirection.Diverging)),

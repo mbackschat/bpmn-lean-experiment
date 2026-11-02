@@ -789,7 +789,7 @@ private def checkedConcurrent (source : CheckedProcess) : Bool :=
     | .parallelGateway _ .diverging => true
     | _ => false
 
-/-- The scope a Process root body runs in, which the profile keeps one serial path. -/
+/-- The scope a Process root body runs in, whose Calls the profile refuses once it forks (RPF-ADMIT-01). -/
 private def rootScope? (scopes : List DefinitionScope) (processId : ProcessId) : Option DefinitionScopeId :=
   (scopes.find? fun scope => scope.parentScopeId.isNone && scope.originElementId.value == processId.value).map (·.id)
 
@@ -807,11 +807,11 @@ private def programRestrictionsHold (program : Program) : Bool :=
   | some root =>
       let scopeOf := fun (id : OperationId) =>
         (program.operationScopes.find? (·.operationId == id)).map (·.scopeId)
+      let inRoot := fun (id : OperationId) => scopeOf id == some root
       program.identity.sourceOverlay.isSome &&
-        !(program.operations.any fun
-          | .mergeExclusive .. => true
-          | .duplicate id .. => scopeOf id == some root
-          | _ => false) &&
+        !(program.operations.any fun | .mergeExclusive .. => true | _ => false) &&
+        !(program.operations.any (fun | .duplicate id .. => inRoot id | _ => false) &&
+          program.operations.any (fun | .invokeProcess id .. => inRoot id | _ => false)) &&
         callsAdmitted (program.operations.filterMap fun
           | .invokeProcess _ _ _ calledProcessId _ _ _ data => some (calledProcessId, data)
           | _ => none)
@@ -820,12 +820,11 @@ private def checkedRestrictionsHold (source : CheckedProcess) : Bool :=
   match rootScope? source.definitionScopes source.processId with
   | none => false
   | some root =>
-      let scopeOf := fun (id : NodeId) => (source.nodeScopes.find? (·.nodeId == id)).map (·.scopeId)
+      let inRoot := fun (id : NodeId) => (source.nodeScopes.find? (·.nodeId == id)).map (·.scopeId) == some root
       source.identity.sourceOverlay.isSome &&
-        !(source.nodes.any fun
-          | .exclusiveMerge _ => true
-          | .parallelGateway id .diverging => scopeOf id == some root
-          | _ => false) &&
+        !(source.nodes.any fun | .exclusiveMerge _ => true | _ => false) &&
+        !(source.nodes.any (fun | .parallelGateway id .diverging => inRoot id | _ => false) &&
+          source.nodes.any (fun | .callActivity id .. => inRoot id | _ => false)) &&
         callsAdmitted (source.nodes.filterMap fun
           | .callActivity _ calledProcessId data => some (calledProcessId, data)
           | _ => none)

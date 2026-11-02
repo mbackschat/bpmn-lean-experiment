@@ -76,17 +76,11 @@ private def build (records : List ScopeLocalData) (scopes : List (String × Opti
 
 /-- Order fulfilment: root `P` runs *Fulfil order*, then *Close order*. *Fulfil order* forks into *Pick stock*
 and *Plan shipment*, each copying the Process `order`, joins and notifies the customer. `closer` closes the
-fork and `extraBranch` adds a third User Task branch; `rootFork` forks the root into *Fulfil order* and
-*Close order* instead of running them in sequence. -/
+fork and `extraBranch` adds a third User Task branch. -/
 private def orderWith (closer : String → String → String × String × CheckedNode := join)
-    (extraBranch : Bool := false) (rootFork : Bool := false) : CheckedProcess :=
+    (extraBranch : Bool := false) : CheckedProcess :=
   let third := if extraBranch then [task "FulfilOrder" "CheckCredit"] else []
   let thirdEdges := if extraBranch then [("SplitFulfilment", "CheckCredit"), ("CheckCredit", "JoinFulfilment")] else []
-  let root := if rootFork then [fork "P" "RootSplit", join "P" "RootJoin"] else []
-  let rootEdges := if rootFork
-    then [("OrderReceived", "RootSplit"), ("RootSplit", "FulfilOrder"), ("RootSplit", "CloseOrder"),
-          ("FulfilOrder", "RootJoin"), ("CloseOrder", "RootJoin"), ("RootJoin", "OrderClosed")]
-    else [("OrderReceived", "FulfilOrder"), ("FulfilOrder", "CloseOrder"), ("CloseOrder", "OrderClosed")]
   build
     [ declare "FulfilOrder" [literal "instructions" "standard", literal "label" "none", literal "parcels" "none"]
         [copied "finalInstructions" "instructions", copied "shippedParcels" "parcels", copied "shippingLabel" "label"]
@@ -105,12 +99,13 @@ private def orderWith (closer : String → String → String × String × Checke
      , service "PlanShipment" "RateShipment" "rateShipment"
          [enclosing "instructions" "instructions", enclosing "shipment" "shipment"]
          [copied "carrierQuote" "quote", copied "label" "quote"]
-     , finish "PlanShipment" "PlanningClosed" ] ++ third ++ root)
+     , finish "PlanShipment" "PlanningClosed" ] ++ third)
     ([ ("FulfilmentOpened", "SplitFulfilment"), ("SplitFulfilment", "PickStock"), ("SplitFulfilment", "PlanShipment")
      , ("PickStock", "JoinFulfilment"), ("PlanShipment", "JoinFulfilment"), ("JoinFulfilment", "NotifyCustomer")
      , ("NotifyCustomer", "ConfirmFulfilment"), ("ConfirmFulfilment", "FulfilmentClosed")
      , ("PickingOpened", "PickItems"), ("PickItems", "PickingClosed"), ("PlanningOpened", "ReviewRoute")
-     , ("ReviewRoute", "RateShipment"), ("RateShipment", "PlanningClosed") ] ++ thirdEdges ++ rootEdges)
+     , ("ReviewRoute", "RateShipment"), ("RateShipment", "PlanningClosed")
+     , ("OrderReceived", "FulfilOrder"), ("FulfilOrder", "CloseOrder"), ("CloseOrder", "OrderClosed") ] ++ thirdEdges)
 
 /-- Loan assessment: root `P` runs *Assess application*, then *Decide loan*. Its body forks into *Credit check*
 and *Collateral valuation*, each copying `file` into its own `dossier`, preparing it and asking the one
@@ -191,9 +186,6 @@ private def start_requires_the_structured_business_object : Bool :=
   StructuredScopeData.startBindingsRouted program [{ name := "order", value := structured }] &&
     !StructuredScopeData.startBindingsRouted program []
 
-/-- A fork in the root body is refused, while the same fork inside *Fulfil order* is admitted. -/
-private def root_body_fork_is_refused : Bool := admitted order && !admitted (orderWith (rootFork := true))
-
 /-- Three branches closed by an Exclusive merge are refused, while the same branches closed by a join are
 admitted; three branches, because graph arity already refuses a two-way merge under this profile. -/
 private def merge_region_is_refused : Bool :=
@@ -230,7 +222,6 @@ def concurrentStructuredScopeDataConformanceChecks : List (String × Bool) := [
   ("retained_models_are_admitted_and_routed_concurrent", retained_models_are_admitted_and_routed_concurrent),
   ("start_names_follow_availability", start_names_follow_availability),
   ("start_requires_the_structured_business_object", start_requires_the_structured_business_object),
-  ("root_body_fork_is_refused", root_body_fork_is_refused),
   ("merge_region_is_refused", merge_region_is_refused),
   ("overlay_free_model_is_refused", overlay_free_model_is_refused),
   ("third_call_is_refused", third_call_is_refused),

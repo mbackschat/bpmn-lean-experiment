@@ -1,0 +1,100 @@
+{
+  "kind": "scenario",
+  "id": "root-parallel-forks-onboarding-documents-while-laptop-open",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "employee-onboarding",
+    "relativePath": "scenarios/root-parallel-forks/employee-onboarding.bpmn",
+    "sha256": "03b727103fdb14cdd88b67f71c15b29f2863f420f1a408f0a3d9db471343fff7",
+    "sourceOverlay": {
+      "id": "employee-onboarding-handlers",
+      "sha256": "d445c5e77d3cf785a4c7b14f94dc3adf9ac41d56e5f60cc120f063d30e045d85"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_EmployeeOnboarding",
+      "instanceId": "Instance_1",
+      "initialVariables": [
+        {
+          "name": "employee",
+          "value": {
+            "kind": "map",
+            "value": [
+              { "name": "department", "value": { "kind": "string", "value": "Sales" } },
+              { "name": "name", "value": { "kind": "string", "value": "Grace" } }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-prepare-workstation",
+      "taskId": { "processInstanceId": "Instance_1", "elementId": "PrepareWorkstation", "activation": 1 },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-documents",
+      "taskId": { "processInstanceId": "Instance_1", "elementId": "ConfirmDocuments", "activation": 1 },
+      "submittedValues": [
+        {
+          "name": "record",
+          "value": {
+            "kind": "map",
+            "value": [
+              { "name": "department", "value": { "kind": "string", "value": "Finance" } },
+              { "name": "name", "value": { "kind": "string", "value": "Grace" } }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:58d2b4c730865ca504ad74d3453165d629e35982251001defbe7f0fe3bebf1df",
+      "effectId": { "processInstanceId": "Instance_1", "elementId": "OrderLaptop", "activation": 1 },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          { "name": "stage", "value": { "kind": "string", "value": "equipment-ordered" } },
+          { "name": "tag", "value": { "kind": "string", "value": "LT-0042" } }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-hold-welcome-meeting",
+      "taskId": { "processInstanceId": "Instance_1", "elementId": "HoldWelcomeMeeting", "activation": 1 },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.6.4",
+      "BPMN 2.0.2 Clause 13.4.1"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-EXT-0015",
+      "CIB-EXT-0020",
+      "CIB-OP-0010"
+    ]
+  }
+}
