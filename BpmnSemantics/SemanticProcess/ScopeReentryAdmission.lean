@@ -1,7 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
-import BpmnSemantics.SemanticProcess.ClosureLimit
+import BpmnSemantics.SemanticProcess.ScopeDataBurst
 
 /-! # Scope re-entry admission
 
@@ -9,9 +9,9 @@ SRE-ROUTE-01, SRE-ADMIT-01, SRE-AVAILABLE-01 and SRE-BURST-01 for `nestedScopeDa
 [scope re-entry specification](../../docs/capsules/SCOPE-REENTRY-SPEC.md#admission). A Process root body is a graph
 of tasks, Sub-Processes, Calls, two-condition Choices and Merges, possibly cyclic. The profile's envelope, its
 structure rule and the serial walk of each Sub-Process body and called Process stay `NestedScopeData`'s; this module
-adds only the root graph. A Choice or Merge, which only routes, is a pair of its id and its outputs, a Choice's
-being its two candidates' targets in declaration order, then its default's. Transcribed independently by the
-TypeScript `scope-reentry-admission` module.
+adds only the root graph; the burst is `ScopeDataBurst`'s. A Choice or Merge, which only routes, is a pair of its id
+and its outputs, a Choice's being its two candidates' targets in declaration order, then its default's. Transcribed
+independently by the TypeScript `scope-reentry-admission` module.
 -/
 
 public section
@@ -20,91 +20,6 @@ namespace BpmnSemantics.SemanticProcess.ScopeReentry
 
 open BpmnSemantics
 open NestedScopeData
-
-/-- The automatic steps from `id` along one body's serial path, with whether a wait armed: arming a wait costs
-one and stops; a body's or called Process's Start is no operation and costs nothing; its End costs two, its own
-step and its scope's completion or the called Process's return; an enclosed Sub-Process or Call costs its entry
-plus its own body. `none` refuses, which the serial walk's admission of every body precludes. -/
-private def bodySteps (vertices : List Vertex) : Nat → String → String → Option (Nat × Bool)
-  | 0, _, _ => none
-  | fuel + 1, scope, id => do
-      let v ← vertices.find? (·.id == id)
-      if v.scope != scope then none else do
-      let here ← match v.kind with
-        | .human | .service => some (1, true)
-        | .start => some (0, false)
-        | .finish => some (2, false)
-        | .subProcess child entry _ | .call child entry .. => do
-            let (cost, stops) ← bodySteps vertices fuel child entry
-            some (1 + cost, stops)
-      if here.2 then some here else
-      match v.outputs with
-      | [] => some here
-      | [next] => do
-          let (cost, stops) ← bodySteps vertices fuel scope next
-          some (here.1 + cost, stops)
-      | _ => none
-
-private def rootOutputs (vertices : List Vertex) (joints : List (String × List String)) (id : String) :
-    List String :=
-  match joints.find? (·.1 == id) with
-  | some joint => joint.2
-  | none => ((vertices.find? (·.id == id)).map (·.outputs)).getD []
-
-/-- Entering one root vertex: a root Start costs one, its End two and stops the Process, a Choice or Merge one. -/
-private def rootEntry (vertices : List Vertex) (joints : List (String × List String)) (id : String) :
-    Option (Nat × Bool) :=
-  if joints.any (·.1 == id) then some (1, false) else do
-  let v ← vertices.find? (·.id == id)
-  match v.kind with
-  | .human | .service => some (1, true)
-  | .start => some (1, false)
-  | .finish => some (2, true)
-  | .subProcess child entry _ | .call child entry .. => do
-      let (cost, stops) ← bodySteps vertices (2 * vertices.length + 1) child entry
-      some (1 + cost, stops)
-
-/-- The longest automatic burst from entering root vertex `id`. Every root step costs at least one, so `fuel`
-of `scenarioClosureLimit + 1` root steps refuses exactly the bursts above the limit, an automatic cycle among
-them. -/
-private def rootSteps (vertices : List Vertex) (joints : List (String × List String)) : Nat → String → Option Nat
-  | 0, _ => none
-  | fuel + 1, id => do
-      let (cost, stops) ← rootEntry vertices joints id
-      if stops then some cost else do
-      let rests ← (rootOutputs vertices joints id).mapM (rootSteps vertices joints fuel)
-      some (cost + rests.foldl max 0)
-
-/-- The steps after vertex `v` completes: the rest of its body, then each enclosing owner's continuation; each
-recursion moves to an enclosing scope, so the vertex count bounds `fuel`. -/
-private def stepsAfter (vertices : List Vertex) (joints : List (String × List String)) (root : String) :
-    Nat → Vertex → Option Nat
-  | 0, _ => none
-  | fuel + 1, v =>
-      if v.scope == root then do
-        let rests ← v.outputs.mapM (rootSteps vertices joints (scenarioClosureLimit + 1))
-        some (rests.foldl max 0)
-      else do
-        let (cost, stops) ← match v.outputs with
-          | [next] => bodySteps vertices (2 * vertices.length + 1) v.scope next
-          | _ => none
-        if stops then some cost else do
-        let owners := vertices.filter fun owner => match owner.kind with
-          | .subProcess child .. | .call child .. => child == v.scope
-          | _ => false
-        if owners.isEmpty then none else do
-        let continued ← owners.mapM (stepsAfter vertices joints root fuel)
-        some (cost + continued.foldl max 0)
-
-/-- SRE-BURST-01: the longest burst from Start or from any wait's resumption, `none` above the limit. -/
-private def burst? (vertices : List Vertex) (joints : List (String × List String)) (root entry : String) :
-    Option Nat := do
-  let fromStart ← rootSteps vertices joints (scenarioClosureLimit + 1) entry
-  let resumed ← (vertices.filter fun v => match v.kind with
-    | .human | .service => true
-    | _ => false).mapM (stepsAfter vertices joints root (vertices.length + 1))
-  let burst := resumed.foldl max fromStart
-  if burst ≤ scenarioClosureLimit then some burst else none
 
 /-- Whether `target` is reachable from the pending vertices without leaving a barrier vertex; `fuel` exceeds the
 vertex count, as each vertex is pushed at most once. -/
@@ -177,9 +92,9 @@ private def rootGraphAnalysis (vertices : List Vertex) (joints : List (String ×
     if visited.eraseDups.length != visited.length || visited.any called.contains ||
         visited.length + called.length != vertices.length then none
     else do
-      let burst ← burst? vertices joints root entry
+      let burst ← ScopeDataBurst.scopeDataBurst? vertices joints root entry
       let walked := walks.map (·.1) ++ joints.map fun joint => (joint.1, [])
-      let outputs := rootOutputs vertices joints
+      let outputs := ScopeDataBurst.jointOutputs vertices joints
       some ({ accesses := walked.flatMap (·.2), required := barrierNames outputs entry walked requiredReads,
               optional := if vertices.any (fun v => match v.kind with | .call .. => true | _ => false)
                 then some (barrierNames outputs entry walked optionalCallNames) else none }, burst)
@@ -210,8 +125,11 @@ private def checkedJoint? (source : CheckedProcess) (root : DefinitionScopeId) :
       | _ => none
   | _ => none
 
+/-- A one-input merge is an Abstract or Manual Task (PTT-ADMIT-01), a vertex that keeps a serial model serial, so
+only a merge of two or more inputs is a joint (SRE-ROUTE-01). -/
 private def operationJoint : SemanticOperation → Bool
-  | .choose .. | .mergeExclusive .. => true
+  | .choose .. => true
+  | .mergeExclusive _ _ inputs _ => 2 ≤ inputs.length
   | _ => false
 
 /-- SRE-ADMIT-01: a two-condition Choice or a Merge of the root scope; one in a body refuses. -/

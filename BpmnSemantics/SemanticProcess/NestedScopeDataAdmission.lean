@@ -41,6 +41,9 @@ inductive Kind where
   | start
   | human
   | service
+  /-- An Abstract or Manual Task (PTT-ADMIT-01), on the Program side a one-input exclusive merge: it reads and
+  writes nothing and continues. -/
+  | passThrough
   /-- `entry` is the first vertex of the child scope and `origin` the Sub-Process element. -/
   | subProcess (child entry origin : String)
   /-- `scope` is the called root, `entry` its first vertex, `calledProcess` the called Process. -/
@@ -135,7 +138,7 @@ def walk (vertices : List Vertex) (records : List ScopeLocalData) (scopes : List
       if v.scope != scope then none else
       match v.kind, v.outputs with
       | .finish, [] => some ([], [v.id], [])
-      | .start, [next] | .human, [next] => do
+      | .start, [next] | .passThrough, [next] | .human, [next] => do
           let (accesses, visited, called) ← walk vertices records scopes fuel depth frames scope next
           some (accesses, v.id :: visited, called)
       | .service, [next] => do
@@ -276,6 +279,7 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
   match node with
   | .noneStartEvent _ => return { id, scope := scope.value, kind := .start, outputs }
   | .noneEndEvent _ => return { id, scope := scope.value, kind := .finish, outputs }
+  | .nonOperationalTask _ _ => return { id, scope := scope.value, kind := .passThrough, outputs }
   | .userTask _ _ metadata =>
       if !metadataValid handlers metadata then none
       else return { id, scope := scope.value, kind := .human, outputs }
@@ -351,6 +355,9 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
   match operation with
   | .initiate _ _ output => return { id, scope, kind := .start, outputs := [← consumer output] }
   | .reachNoneEnd .. => return { id, scope, kind := .finish, outputs := [] }
+  -- Every checked Exclusive merge has at least two inputs (`CheckedProcessAdmission`), so a one-input merge is an
+  -- Abstract or Manual Task (PTT-ADMIT-01); a merge of two or more is no serial vertex.
+  | .mergeExclusive _ _ [_] output => return { id, scope, kind := .passThrough, outputs := [← consumer output] }
   | .awaitUserTask _ _ _ output task =>
       if !metadataValid handlers task.metadata then none
       else return { id, scope, kind := .human, outputs := [← consumer output] }

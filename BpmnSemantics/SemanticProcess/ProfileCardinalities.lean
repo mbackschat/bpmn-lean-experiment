@@ -41,6 +41,8 @@ structure ShapeCardinalities where
   receiveTasks : Nat := 0
   timers : Nat := 0
   configuredTasks : Nat := 0
+  /-- Checked Abstract and Manual Tasks; no exact profile shape names one, so each such profile refuses them. -/
+  nonOperationalTasks : Nat := 0
   effects : Nat := 0
   duplicates : Nat := 0
   synchronizes : Nat := 0
@@ -121,6 +123,8 @@ def nodeCardinalities (nodes : List CheckedNode) : ShapeCardinalities :=
         { counts with receiveTasks := counts.receiveTasks + 1 }
     | .configuredTask .. =>
         { counts with configuredTasks := counts.configuredTasks + 1 }
+    | .nonOperationalTask .. =>
+        { counts with nonOperationalTasks := counts.nonOperationalTasks + 1 }
     | .serviceTask .. => { counts with effects := counts.effects + 1 }
     | .parallelGateway _ .diverging =>
         { counts with duplicates := counts.duplicates + 1 }

@@ -1,0 +1,191 @@
+module
+
+public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
+public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
+import BpmnSemantics.SemanticProcess.ScopeReentryAdmission
+
+/-! # Pass-through Task conformance
+
+Finite admission witnesses of PTT-ADMIT-01, PTT-PASS-01, PTT-BURST-01 and the amended SRE-ROUTE-01 under the nested
+scope-data profile. The equipment return and document intake graphs transcribe the retained `scenarios/pass-through-task`
+models; their routes, Start names and bursts are the TypeScript analysis's values for the same graphs, and each refused
+graph differs from an admitted one in the fact its name states. The module runs no command: the Tasks' instantaneous
+occurrences are Lean executions of the registered scenarios in the pipeline. It imports admission owners only, as
+`ScopeReentryConformance` does, so it stays outside `CommandAdmission`'s hidden-edit cone (`lean-fanout`). See the
+[pass-through Task proposal](../docs/capsules/PASS-THROUGH-TASK-PROPOSAL.md).
+-/
+
+public section
+
+namespace BpmnSemantics.PassThroughTaskConformance
+
+open BpmnSemantics
+open BpmnSemantics.SemanticProcess
+
+private def activityProtocol : String := "urn:bpmn-lean:effect-protocol:activity-v1"
+private def simpleBoolean : String := "urn:bpmn-lean:expression:simple-boolean:v1"
+
+private def scope (name : String) : DefinitionScopeId := ⟨"scope:" ++ name⟩
+private def flowId (source target : String) : SequenceFlowId := ⟨source ++ ">" ++ target⟩
+private def node (owner : String) (value : CheckedNode) : String × String × CheckedNode := (owner, value.id.value, value)
+private def start (owner id : String) := node owner (.noneStartEvent ⟨id⟩)
+private def finish (owner id : String) := node owner (.noneEndEvent ⟨id⟩)
+private def merge (owner id : String) := node owner (.exclusiveMerge ⟨id⟩)
+private def task (owner id : String) := node owner (.userTask ⟨id⟩ (some id))
+private def sub (owner id : String) := node owner (.embeddedSubProcess ⟨id⟩ (scope id))
+private def pass (owner id : String) (taskNotation : TaskNotation) := node owner (.nonOperationalTask ⟨id⟩ taskNotation)
+private def service (owner id operation : String) :=
+  node owner (.serviceTask ⟨id⟩ { protocol := activityProtocol, operation } [] [] none)
+
+/-- A Choice whose conditional candidates go to `conditioned`, in declaration order, and whose default goes to
+`fallback`. -/
+private def choice (owner id : String) (conditioned : List String) (fallback : String) :=
+  node owner (.exclusiveGateway ⟨id⟩ (conditioned.map (flowId id ·)) (flowId id fallback))
+
+/-- A Simple Boolean v1 test that the Process binding `name` equals `value`. -/
+private def equals (name value : String) : CheckedCondition :=
+  { language := simpleBoolean, body := "stringEquals(" ++ name ++ ",\"" ++ value ++ "\")" }
+
+private def overlay : SourceOverlayIdentity :=
+  { id := ⟨"pass-through-task-handlers"⟩, sha256 := "0000000000000000000000000000000000000000000000000000000000000009" }
+
+/-- A checked graph of the nested scope-data profile over scopes, members and edges sorted into the canonical id
+order, with a source overlay and the conditions keyed by their edges. -/
+private def build (scopes : List (String × Option String)) (members : List (String × String × CheckedNode))
+    (edges : List (String × String)) (conditions : List ((String × String) × CheckedCondition)) : CheckedProcess :=
+  let id := fun (edge : String × String) => (flowId edge.1 edge.2).value
+  let scopes := scopes.mergeSort fun left right => decide (left.1 ≤ right.1)
+  let members := members.mergeSort fun left right => decide (left.2.1 ≤ right.2.1)
+  let edges := edges.mergeSort fun left right => decide (id left ≤ id right)
+  let owner := fun (node : String) => ((members.find? (·.2.1 == node)).map (·.1)).getD ""
+  { identity :=
+      { semanticProfile := nestedScopeDataProfileId, sourceId := ⟨"pass-through-task"⟩
+        sourceSha256 := "000000000000000000000000000000000000000000000000000000000000000a"
+        sourceOverlay := some overlay }
+    processId := ⟨"P"⟩
+    definitionScopes := scopes.map fun (name, parent) =>
+      { id := scope name, parentScopeId := parent.map scope, originElementId := ⟨name⟩ }
+    nodeScopes := members.map fun (owner, id, _) => { nodeId := ⟨id⟩, scopeId := scope owner }
+    sequenceFlowScopes := edges.map fun edge => { sequenceFlowId := flowId edge.1 edge.2, scopeId := scope (owner edge.1) }
+    nodes := members.map (·.2.2)
+    sequenceFlows := edges.map fun edge =>
+      { id := flowId edge.1 edge.2, sourceId := ⟨edge.1⟩, targetId := ⟨edge.2⟩,
+        condition := (conditions.find? (·.1 == edge)).map (·.2) }
+    scopeLocalData := [] }
+
+/-- `count` plain Tasks of `owner` replacing the edge `from → to`: the members and the edges through them. -/
+private def chained (owner source target : String) (count : Nat) :
+    List (String × String × CheckedNode) × List (String × String) :=
+  let ids := (List.range count).map fun n => "Chained" ++ toString (n + 1)
+  let steps := source :: ids ++ [target]
+  (ids.map (pass owner · .abstractTask), steps.zip steps.tail)
+
+/-- Equipment return: root `P` schedules the pickup, inspects the returned equipment in a Sub-Process whose body
+unpacks it by hand and records its condition, refunds the deposit and closes the return ticket. `chain` inserts that
+many plain Tasks between the refund and the ticket; `forked` gives *Close return ticket* a second outgoing flow. -/
+private def equipmentWith (chain : Nat := 0) (forked : Bool := false) : CheckedProcess :=
+  let (links, linkEdges) := chained "P" "RefundDeposit" "CloseReturnTicket" chain
+  build [("P", none), ("InspectReturnedEquipment", some "P")]
+    ([ start "P" "ReturnRequested", task "P" "SchedulePickup", sub "P" "InspectReturnedEquipment"
+     , service "P" "RefundDeposit" "refundDeposit", pass "P" "CloseReturnTicket" .abstractTask, finish "P" "ReturnClosed"
+     , start "InspectReturnedEquipment" "InspectionOpened", pass "InspectReturnedEquipment" "UnpackEquipment" .manualTask
+     , task "InspectReturnedEquipment" "RecordCondition", finish "InspectReturnedEquipment" "InspectionClosed" ]
+      ++ links ++ (if forked then [finish "P" "TicketDuplicated"] else []))
+    ([ ("ReturnRequested", "SchedulePickup"), ("SchedulePickup", "InspectReturnedEquipment")
+     , ("InspectReturnedEquipment", "RefundDeposit"), ("CloseReturnTicket", "ReturnClosed")
+     , ("InspectionOpened", "UnpackEquipment"), ("UnpackEquipment", "RecordCondition")
+     , ("RecordCondition", "InspectionClosed") ]
+      ++ linkEdges ++ (if forked then [("CloseReturnTicket", "TicketDuplicated")] else []))
+    []
+
+/-- Document intake: root `P` merges into *Classify document* and chooses by format: paper is archived in a
+Sub-Process whose body files the original by hand and indexes its location, illegible phones the sender and re-enters
+the Merge, and the default registers the digital copy; both filings merge before the End. `chain` inserts that many
+plain Tasks between the registration and the filing Merge. -/
+private def intakeWith (chain : Nat := 0) : CheckedProcess :=
+  let (links, linkEdges) := chained "P" "RegisterDigitalCopy" "Filed" chain
+  build [("P", none), ("ArchivePaperOriginal", some "P")]
+    ([ start "P" "DocumentReceived", merge "P" "IntakeRequested", task "P" "ClassifyDocument"
+     , choice "P" "DocumentFormat" ["ArchivePaperOriginal", "PhoneSender"] "RegisterDigitalCopy"
+     , sub "P" "ArchivePaperOriginal", pass "P" "PhoneSender" .manualTask, pass "P" "RegisterDigitalCopy" .abstractTask
+     , merge "P" "Filed", finish "P" "DocumentFiled"
+     , start "ArchivePaperOriginal" "ArchivingOpened", pass "ArchivePaperOriginal" "FilePaperOriginal" .manualTask
+     , service "ArchivePaperOriginal" "IndexArchiveLocation" "indexArchiveLocation"
+     , finish "ArchivePaperOriginal" "ArchivingClosed" ] ++ links)
+    ([ ("DocumentReceived", "IntakeRequested"), ("IntakeRequested", "ClassifyDocument")
+     , ("ClassifyDocument", "DocumentFormat"), ("DocumentFormat", "ArchivePaperOriginal")
+     , ("DocumentFormat", "PhoneSender"), ("DocumentFormat", "RegisterDigitalCopy")
+     , ("ArchivePaperOriginal", "Filed"), ("PhoneSender", "IntakeRequested"), ("Filed", "DocumentFiled")
+     , ("ArchivingOpened", "FilePaperOriginal"), ("FilePaperOriginal", "IndexArchiveLocation")
+     , ("IndexArchiveLocation", "ArchivingClosed") ]
+      ++ (if chain = 0 then [("RegisterDigitalCopy", "Filed")] else linkEdges))
+    [(("DocumentFormat", "ArchivePaperOriginal"), equals "format" "paper"),
+     (("DocumentFormat", "PhoneSender"), equals "format" "illegible")]
+
+private def equipment : CheckedProcess := equipmentWith
+private def intake : CheckedProcess := intakeWith
+
+/-- Both checks, the lowered Program's capability catalog and the binding between the two. -/
+private def admitted (source : CheckedProcess) : Bool :=
+  let program := lowerCheckedProcess source
+  checkedWellFormed source && programWellFormed program && programProfileCapabilitiesValid program &&
+    definitionBindingValid source program
+
+/-- The lowered operation of Task `id` is a one-input merge whose origin is the Task. -/
+private def lowersToOneInputMerge (source : CheckedProcess) (id : String) : Bool :=
+  (lowerCheckedProcess source).operations.any fun
+    | .mergeExclusive operation origin [_] _ => operation == nodeOperationId ⟨id⟩ && origin.elementId.value == id
+    | _ => false
+
+/-- PTT-ADMIT-01: both retained graphs are admitted at both analysis levels. -/
+private def retained_models_are_admitted : Bool :=
+  admitted equipment && admitted intake &&
+    StructuredScopeData.checkedRouted equipment && StructuredScopeData.programRouted (lowerCheckedProcess equipment) &&
+    StructuredScopeData.checkedRouted intake && StructuredScopeData.programRouted (lowerCheckedProcess intake)
+
+/-- PTT-PASS-01: each Task, in a body or at the root and of either notation, lowers to a one-input merge. -/
+private def tasks_lower_to_one_input_merges : Bool :=
+  ["UnpackEquipment", "CloseReturnTicket"].all (lowersToOneInputMerge equipment) &&
+    ["FilePaperOriginal", "PhoneSender", "RegisterDigitalCopy"].all (lowersToOneInputMerge intake)
+
+/-- The amended SRE-ROUTE-01: one-input merges keep the equipment return on the serial route at both levels, while
+the intake's Choice and two-input Merges route it to the re-entry account. -/
+private def one_input_merges_keep_the_serial_route : Bool :=
+  !ScopeReentry.programReentry (lowerCheckedProcess equipment) && !ScopeReentry.checkedReentry equipment &&
+    ScopeReentry.programReentry (lowerCheckedProcess intake) && ScopeReentry.checkedReentry intake
+
+/-- SRE-AVAILABLE-01 and PTT-BURST-01 on the re-entry route: the intake requires no Start name and its longest
+burst, a digital copy registered, filed and ended, is five steps at both levels. -/
+private def intake_requires_nothing_and_bursts_five : Bool := decide <|
+  (ScopeReentry.checkedAnalysis intake).map (fun analysis => (analysis.required, analysis.optional)) = some ([], none) ∧
+    (ScopeReentry.programAnalysis (lowerCheckedProcess intake)).map
+      (fun analysis => (analysis.required, analysis.optional)) = some ([], none) ∧
+    ScopeReentry.checkedBurst? intake = some 5 ∧ ScopeReentry.programBurst? (lowerCheckedProcess intake) = some 5
+
+/-- PTT-BURST-01 on the serial route: five chained Tasks after the refund make a burst of exactly eight, admitted;
+six make nine, refused at both levels. -/
+private def serial_burst_of_eight_is_admitted_and_nine_refused : Bool :=
+  let nine := equipmentWith (chain := 6)
+  admitted (equipmentWith (chain := 5)) && !admitted nine &&
+    !StructuredScopeData.checkedRouted nine && !StructuredScopeData.programRouted (lowerCheckedProcess nine)
+
+/-- PTT-BURST-01 on the re-entry route: three chained Tasks after the registration make eight, four make nine. -/
+private def reentry_burst_of_eight_is_admitted_and_nine_refused : Bool :=
+  ScopeReentry.checkedBurst? (intakeWith (chain := 3)) = some 8 && admitted (intakeWith (chain := 3)) &&
+    !admitted (intakeWith (chain := 4))
+
+/-- PTT-ADMIT-01: a Task with a second outgoing flow is refused. -/
+private def second_outgoing_flow_is_refused : Bool := !admitted (equipmentWith (forked := true))
+
+/-- Every executable check of this module, named for the driver's failure report. -/
+def passThroughTaskConformanceChecks : List (String × Bool) := [
+  ("retained_models_are_admitted", retained_models_are_admitted),
+  ("tasks_lower_to_one_input_merges", tasks_lower_to_one_input_merges),
+  ("one_input_merges_keep_the_serial_route", one_input_merges_keep_the_serial_route),
+  ("intake_requires_nothing_and_bursts_five", intake_requires_nothing_and_bursts_five),
+  ("serial_burst_of_eight_is_admitted_and_nine_refused", serial_burst_of_eight_is_admitted_and_nine_refused),
+  ("reentry_burst_of_eight_is_admitted_and_nine_refused", reentry_burst_of_eight_is_admitted_and_nine_refused),
+  ("second_outgoing_flow_is_refused", second_outgoing_flow_is_refused)
+]
+
+end BpmnSemantics.PassThroughTaskConformance

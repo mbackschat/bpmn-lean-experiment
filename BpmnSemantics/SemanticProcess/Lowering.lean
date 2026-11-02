@@ -541,6 +541,14 @@ def lowerNode (source : CheckedProcess) :
         { elementId := id }
         (lowerExclusiveMergeInputs source id)
         (lowerExclusiveMergeOutput source id), scopeId)
+  | .nonOperationalTask id _ =>
+      -- PTT-PASS-01: the nonsynchronizing token move with the Task as origin; the notation stays in the checked graph.
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.mergeExclusive
+        (nodeOperationId id)
+        { elementId := id }
+        [firstPlace (incomingPlaces source id)]
+        (lowerExclusiveMergeOutput source id), scopeId)
   | .exclusiveGateway id candidateFlowIds defaultFlowId =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.choose
@@ -608,6 +616,20 @@ theorem lower_exclusive_merge_uses_checked_flow_endpoints
           (nodeOperationId id)
           { elementId := id }
           (lowerExclusiveMergeInputs source id)
+          (lowerExclusiveMergeOutput source id), scopeId) := by
+  rfl
+
+/-- PTT-PASS-01, PTT-KIND-01: an Abstract or Manual Task lowers to the one-input nonsynchronizing merge whose origin is
+the Task, the same operation for both notations, so its one activation is an instantaneous occurrence of the Task and no
+wait, effect or data operation is introduced. -/
+private theorem lower_non_operational_task_is_one_input_merge
+    (source : CheckedProcess) (id : NodeId) (taskNotation : TaskNotation) :
+    lowerNode source (.nonOperationalTask id taskNotation) =
+      (checkedNodeScopeId? source id).map fun scopeId =>
+        (.mergeExclusive
+          (nodeOperationId id)
+          { elementId := id }
+          [firstPlace (incomingPlaces source id)]
           (lowerExclusiveMergeOutput source id), scopeId) := by
   rfl
 

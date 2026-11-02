@@ -64,6 +64,7 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
         | errorEndEvent _ _ => simp [parseFrom, nodeResult] at result
         | terminateEndEvent _ => simp [parseFrom, nodeResult] at result
         | configuredTask _ _ => simp [parseFrom, nodeResult] at result
+        | nonOperationalTask _ _ => simp [parseFrom, nodeResult] at result
         | userTask _ _ metadata =>
             cases metadata with
             | none =>

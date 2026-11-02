@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 public import BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability
 import BpmnSemantics.SemanticProcess.ScopeReentryAdmission
+import BpmnSemantics.SemanticProcess.ScopeDataBurst
 import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 meta import BpmnSemantics.PrivateEquationLemmas
 
@@ -829,14 +830,14 @@ private def checkedRestrictionsHold (source : CheckedProcess) : Bool :=
           | .callActivity _ calledProcessId data => some (calledProcessId, data)
           | _ => none)
 
-/-- CSSD-ADMIT-01 over the Program: the serial analysis for a serial Program, the restricted nested
-scope-control analysis for a concurrent one. -/
+/-- CSSD-ADMIT-01 over the Program: the serial analysis for a serial Program, under PTT-BURST-01 when it holds a
+pass-through Task, the restricted nested scope-control analysis for a concurrent one. -/
 def programRouted (program : Program) : Bool :=
   if ScopeReentry.programReentry program then
     !concurrentProgram program && (ScopeReentry.programAnalysis program).isSome
   else if concurrentProgram program then
     programRestrictionsHold program && (NestedScopeControl.programAnalysis program).isSome
-  else (NestedScopeData.programAnalysis program).isSome
+  else (NestedScopeData.programAnalysis program).isSome && ScopeDataBurst.programSerialBurstAdmitted program
 
 /-- CSSD-ADMIT-01 over the checked graph, independent of the Program. -/
 def checkedRouted (source : CheckedProcess) : Bool :=
@@ -844,7 +845,7 @@ def checkedRouted (source : CheckedProcess) : Bool :=
     !checkedConcurrent source && (ScopeReentry.checkedAnalysis source).isSome
   else if checkedConcurrent source then
     checkedRestrictionsHold source && (NestedScopeControl.checkedAnalysis source).isSome
-  else (NestedScopeData.checkedAnalysis source).isSome
+  else (NestedScopeData.checkedAnalysis source).isSome && ScopeDataBurst.checkedSerialBurstAdmitted source
 
 /-- NSD-AVAILABLE-01 for a serial Program; CSD-AVAILABLE-01 and CMCALL-START-01 under the profile's
 `SingletonBusinessItem` policy for a concurrent one. -/
@@ -853,34 +854,37 @@ def startBindingsRouted (program : Program) (bindings : List VariableBinding) : 
     !concurrentProgram program && ScopeReentry.startBindingsAdmitted program bindings
   else if concurrentProgram program then
     programRestrictionsHold program && NestedScopeControl.startBindingsAdmitted program bindings
-  else NestedScopeData.startBindingsAdmitted program bindings
+  else NestedScopeData.startBindingsAdmitted program bindings && ScopeDataBurst.programSerialBurstAdmitted program
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredScopeData #[`concurrentProgram, `programRouted, `checkedRouted, `startBindingsRouted]
 
-/-- CSSD-ROUTE-01: without a split, Program admission is the serial analysis's. -/
+/-- CSSD-ROUTE-01: without a split, Program admission is the serial analysis's under PTT-BURST-01. -/
 private theorem programRouted_serial (program : Program) (serial : concurrentProgram program = false)
     (unchosen : ScopeReentry.programReentry program = false) :
-    programRouted program = (NestedScopeData.programAnalysis program).isSome := by
+    programRouted program =
+      ((NestedScopeData.programAnalysis program).isSome && ScopeDataBurst.programSerialBurstAdmitted program) := by
   simp [programRouted, serial, unchosen]
 
-/-- CSSD-ROUTE-01: without a fork, checked admission is the serial analysis's. -/
+/-- CSSD-ROUTE-01: without a fork, checked admission is the serial analysis's under PTT-BURST-01. -/
 private theorem checkedRouted_serial (source : CheckedProcess) (serial : checkedConcurrent source = false)
     (unchosen : ScopeReentry.checkedReentry source = false) :
-    checkedRouted source = (NestedScopeData.checkedAnalysis source).isSome := by
+    checkedRouted source =
+      ((NestedScopeData.checkedAnalysis source).isSome && ScopeDataBurst.checkedSerialBurstAdmitted source) := by
   simp [checkedRouted, serial, unchosen]
 
-/-- CSSD-ROUTE-01: without a split, the Start rule is the serial analysis's. -/
+/-- CSSD-ROUTE-01: without a split, the Start rule is the serial analysis's under PTT-BURST-01. -/
 private theorem startBindingsRouted_serial (program : Program) (bindings : List VariableBinding)
     (serial : concurrentProgram program = false) (unchosen : ScopeReentry.programReentry program = false) :
-    startBindingsRouted program bindings = NestedScopeData.startBindingsAdmitted program bindings := by
+    startBindingsRouted program bindings =
+      (NestedScopeData.startBindingsAdmitted program bindings && ScopeDataBurst.programSerialBurstAdmitted program) := by
   simp [startBindingsRouted, serial, unchosen]
 
-/-- SRE-ROUTE-01's preservation: a Program without a root Choice or Merge routes exactly as before this account
-existed, the concurrent and serial routes unchanged. -/
+/-- SRE-ROUTE-01's preservation: a Program without a root Choice or a Merge of two or more inputs routes as before
+this account existed, the concurrent route unchanged and the serial route gaining only PTT-BURST-01. -/
 private theorem programRouted_unchosen (program : Program) (unchosen : ScopeReentry.programReentry program = false) :
     programRouted program = if concurrentProgram program then
       programRestrictionsHold program && (NestedScopeControl.programAnalysis program).isSome
-    else (NestedScopeData.programAnalysis program).isSome := by
+    else (NestedScopeData.programAnalysis program).isSome && ScopeDataBurst.programSerialBurstAdmitted program := by
   simp [programRouted, unchosen]
 
 /-- Neither routed analysis admits a single scope. -/

@@ -73,6 +73,7 @@ def nodeArityValid (source : CheckedProcess) :
   | .payloadMessageCatchEvent .. => false
   | .correlatedPayloadMessageCatchEvent .. => false
   | .configuredTask .. => false
+  | .nonOperationalTask .. => false
   | .transactionSubProcess ..
   | .cancelEndEvent ..
   | .cancelBoundaryEvent ..

@@ -48,6 +48,14 @@ inductive InternalSchedulingMode where
   | requireChoiceSchedule
   deriving Repr, DecidableEq
 
+/-- The source kind of a Task that BPMN 2.0.2 Clause 13.1 calls non-operational: an Abstract Task (`bpmn:task`) or a
+Manual Task. The checked node keeps it so that neither erasure nor a reading as another Task kind passes; what the Task
+does is the profile's lowering (PTT-KIND-01). -/
+inductive TaskNotation where
+  | abstractTask
+  | manualTask
+  deriving Repr, DecidableEq
+
 inductive GatewayDirection where
   | diverging
   | converging
@@ -278,6 +286,7 @@ inductive CheckedNode where
       (processPropertySelector : CorrelationProcessPropertyPath)
   | receiveTask (id : NodeId) (channel : MessageChannel)
   | configuredTask (id : NodeId) (descriptor : EffectDescriptor)
+  | nonOperationalTask (id : NodeId) (taskNotation : TaskNotation)
   | serviceTask
       (id : NodeId)
       (descriptor : EffectDescriptor)
@@ -330,6 +339,7 @@ inductive CheckedNode where
   | .correlatedPayloadMessageCatchEvent id _ _ _ _ _
   | .receiveTask id _
   | .configuredTask id _
+  | .nonOperationalTask id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveMerge id

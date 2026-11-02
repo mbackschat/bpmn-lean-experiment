@@ -326,6 +326,13 @@ def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   | "exclusiveMerge" =>
       requireObjectShape json ["id", "kind"]
       pure (.exclusiveMerge ⟨← stringField json "id"⟩)
+  | "nonOperationalTask" =>
+      requireObjectShape json ["id", "kind", "notation"]
+      let taskNotation ← stringField json "notation"
+      match taskNotation with
+      | "abstractTask" => pure (.nonOperationalTask ⟨← decodeNonemptyStringField json "id"⟩ .abstractTask)
+      | "manualTask" => pure (.nonOperationalTask ⟨← decodeNonemptyStringField json "id"⟩ .manualTask)
+      | _ => throw s!"unsupported Task notation {taskNotation}"
   | "exclusiveGateway" =>
       requireObjectShape json
         ["candidateFlowIds", "defaultFlowId", "direction", "id", "kind"]

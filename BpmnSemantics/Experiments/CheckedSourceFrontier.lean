@@ -244,6 +244,7 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
       correlationPropertyId payloadSelector processPropertySelector => rfl
   | receiveTask id channel => rfl
   | configuredTask id descriptor => rfl
+  | nonOperationalTask id taskNotation => rfl
   | serviceTask id descriptor inputs outputs route => rfl
   | exclusiveMerge id =>
       simp [nodeArityValid] at candidateArity
