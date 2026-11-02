@@ -155,7 +155,7 @@ Existing witnesses that change: the refusal of one and three conditions in the [
 
 Lane shape: checked
 
-Evidence: the family adds no transition family and no runtime law. Selection is `selectConditionalOutput`, whose laws `choice_first_true` and `choice_default` in [`MixedTaskControlFlowDataProofs`](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean) hold for every candidate list with no profile premise. A new executable conformance module checks admission of the model at both levels, each refused edit and the profile control. The pipeline checks agreement with the core and Temporal on the journeys.
+Evidence: the family adds no transition family and no runtime law. Selection is `selectConditionalOutput`, whose laws `choice_first_true` and `choice_default` in [`MixedTaskControlFlowDataProofs`](../../BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean) hold for every candidate list with no profile premise. An executable conformance module, [`exclusiveChoiceArityConformanceChecks`](../../BpmnSemantics/ExclusiveChoiceArityConformance.lean#exclusiveChoiceArityConformanceChecks), checks admission of the model at both levels, each refused edit and the profile control. The pipeline checks agreement with the core and Temporal on the journeys.
 
 ## Temporal hosting and refinement preflight
 
