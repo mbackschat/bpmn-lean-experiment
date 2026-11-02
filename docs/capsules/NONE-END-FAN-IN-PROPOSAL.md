@@ -23,7 +23,7 @@ Each row keeps its other clauses open.
 Selection, 2026-11-02, a close call against default-less Choices (the `PC-CF-02` clause screened out by [Exclusive choice arity](EXCLUSIVE-CHOICE-ARITY-SPEC.md#question-and-delivery-boundary)). Counted over the 1,944 parsed BPMN files among the 1,947 in the pinned CIB engine test resources, with "clean" meaning no Parallel, Inclusive or Event-Based Gateway, boundary or intermediate catch Event, Multi-Instance, Script, Receive, Send, Rule, Call or Transaction:
 
 - a None End Event with two or more incoming flows: 131 files, 11 clean; of those that also hold a Sub-Process, as this profile requires, 55, none clean;
-- a divergent Exclusive Gateway without a default: 49 files, 27 clean; with a Sub-Process, 8, 1 clean (the proposal review counts 53 and 32 by a different definition).
+- a divergent Exclusive Gateway without a default: 49 files, 27 clean; with a Sub-Process, 8, 1 clean only because its event Sub-Process lies outside this family too (the proposal review counts 53 and 32 by a different definition).
 
 Within the profile's class this family reaches 55 files against 8, and it changes no kernel type, while a default-less Choice's no-match is a runtime exception that needs an optional default in the kernel `choose` constructor and a flag-free rollback channel through the closure result that the closure proofs unfold. Raw counts overstate what this profile can admit, because it requires a Sub-Process; no clean model is reached by either family alone.
 
@@ -112,8 +112,8 @@ Each separates wrong algorithms 3 and 4: the second and third journeys arrive on
 Admission witnesses at both levels, besides the model:
 
 - an edit redirecting the reject candidate from *Request closed* to *Book travel*, which only adds an incoming flow to an Activity, is refused (Activity fan-in);
-- an edit redirecting the phone candidate to *Request closed*, so that two flows of *Route request* enter the End, is admitted at both levels;
-- an edit adding a Parallel fork whose two branches both end at *Request closed* is refused at the checked level at both levels (fan-in under forks);
+- an edit redirecting the phone candidate to *Request closed* and removing *Call traveller*, so that two flows of *Route request* enter the End, which then has three incoming flows, is admitted at both levels;
+- an edit adding a Parallel fork whose two branches both end at *Request closed* is refused by the TypeScript and Lean checked analyses (fan-in under forks);
 - an edit giving *Book travel* its own second None End keeps today's refusal of two root End elements;
 - in a profile that keeps single-incoming Ends, the model is refused at the checked arity (profile control, wrong algorithm 2), for TypeScript in the per-profile loop of the [mixed-task control-flow source test](../../packages/bpmn-source/test/mixed-task-control-flow-source.test.ts) and for Lean in the new conformance module;
 - Programs whose `reachNoneEnd` shares an origin with an `awaitUserTask`, or whose two `reachNoneEnd` operations share an origin with one bound to the root and one to a Sub-Process body, are refused by the envelope at both levels (wrong algorithm 5).
