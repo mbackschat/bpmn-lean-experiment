@@ -148,6 +148,13 @@ Acceptance:
 - Every retained model stays admitted with its exact Program.
 - The hosted pipeline passes once at family closure.
 
+Closure gates:
+
+- **Green at `d5c9b537`:** `LEAN_FULL_GATE=nef-family-closure ./scripts/lake.sh build BpmnConformance`, 935 jobs, with the [conformance module](../../BpmnSemantics/NoneEndFanInConformance.lean); its six checks, the twelve of the re-entry module and the five of the Exclusive choice arity module evaluate true.
+- **Green at `8fe8b856`:** the complete `verify.sh`: the Lean library and executable checks, the runtime stage with the CIB oracle and probe, the complete Temporal gate and the pipeline over all 163 registered cases, warm in 120.3 s, 57% of its derived 211.9 s ceiling; then `test:model-corpus` over all 86 models. The research doctor failed only on an untracked `.locmetryrc` of 2026-10-23 in the pinned CIB checkout, outside this family and left in place.
+- **Calibration:** the three travel request tests of the [scope re-entry probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScopeReentryProbeTest.java) pass with its six other tests on pinned CIB Seven `2.2.0`.
+- **Fork refusal:** a fan-in End under a root fork is refused at three checked loci, the concurrent body End arity, its second-visit check and the root terminal-fork rule; relaxing the arity alone leaves the edit refused.
+
 Then `BPMN-MECH-FLOW-01` is evidenced for uncontrolled incoming flow at a None End in this profile's root graph, which is slice evidence toward `PC-BASIC-01`'s None End clause; both stay open, and no checklist clause closes.
 
 Nearest unsupported claims:

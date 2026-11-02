@@ -98,13 +98,13 @@ Current task: [None End fan-in](capsules/NONE-END-FAN-IN-PROPOSAL.md) for the ne
 
 Deliverable: a None End with several incoming flows in the root graph of the nested scope-data profile, each token ending on its own, landed on `main`; slice evidence toward `PC-BASIC-01`, which closes no checklist clause.
 
-Acceptance blockers: implementation, registration, closure gates and the closure review; landing.
+Acceptance blockers: the closure review; landing.
 
-Current result: the proposal is approved (review of `d93a7b2c`, audits `0bc5a8e2` and `86897969`); the CIB `2.2.0` probe calibrates the three journeys.
+Current result: implemented and registered (`3c160e98`, `71be0645`); `BpmnConformance` green at `d5c9b537` and the complete verification with the model corpus green at `8fe8b856`; control-flow families moved to their own detail map under the stated-split rule.
 
-Effort budget: 6 hours from 2026-11-02 20:35 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
+Effort budget: 6 hours from 2026-11-02 18:35 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: red source and runtime witnesses, then the TypeScript and Lean admission and lowering in one commit.
+Next action: cold closure review of the family, then the branch push flow.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
