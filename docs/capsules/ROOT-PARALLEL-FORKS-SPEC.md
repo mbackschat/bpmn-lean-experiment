@@ -109,7 +109,7 @@ The model carries a source overlay and a mapped Service Task, as the profile req
 
 Lane shape: checked
 
-Evidence: the family adds no transition family and no runtime law. Root branches run through `duplicate`, `synchronize` and the concurrent scope-data mechanisms, whose laws in [`NestedScopeDataLaws`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean) are quantified over every Program. An executable conformance module, a leaf beside [`ConcurrentStructuredScopeDataConformance`](../../BpmnSemantics/ConcurrentStructuredScopeDataConformance.lean), checks admission and routing over the model and every refused edit, and the pipeline checks agreement with the core and Temporal on the journeys.
+Evidence: the family adds no transition family and no runtime law. Root branches run through `duplicate`, `synchronize` and the concurrent scope-data mechanisms, whose laws in [`NestedScopeDataLaws`](../../BpmnSemantics/SemanticProcess/NestedScopeDataLaws.lean) are quantified over every Program. An executable conformance module, [`rootParallelForksConformanceChecks`](../../BpmnSemantics/RootParallelForksConformance.lean#rootParallelForksConformanceChecks), importing admission owners only as [`ConcurrentStructuredScopeDataConformance`](../../BpmnSemantics/ConcurrentStructuredScopeDataConformance.lean) does, checks admission and routing over the model and every refused edit, and the pipeline checks agreement with the core and Temporal on the journeys.
 
 Not proved, and recorded as such: that every actual closure of an admitted concurrent Program stays within the computed burst; the runtime closure bound rolls an over-limit closure back atomically.
 
