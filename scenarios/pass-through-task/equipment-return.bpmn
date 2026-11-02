@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             id="Definitions_EquipmentReturn" targetNamespace="urn:bpmn-lean:equipment-return">
+  <process id="Process_EquipmentReturn" name="Handle an equipment return" isExecutable="true">
+    <startEvent id="ReturnRequested" name="Return requested" />
+    <userTask id="SchedulePickup" name="Schedule pickup" />
+    <subProcess id="InspectReturnedEquipment" name="Inspect returned equipment">
+      <startEvent id="InspectionOpened" name="Inspection opened" />
+      <manualTask id="UnpackEquipment" name="Unpack equipment" />
+      <userTask id="RecordCondition" name="Record condition" />
+      <endEvent id="InspectionClosed" name="Inspection closed" />
+      <sequenceFlow id="Flow_InspectionOpened" sourceRef="InspectionOpened" targetRef="UnpackEquipment" />
+      <sequenceFlow id="Flow_Unpacked" sourceRef="UnpackEquipment" targetRef="RecordCondition" />
+      <sequenceFlow id="Flow_Recorded" sourceRef="RecordCondition" targetRef="InspectionClosed" />
+    </subProcess>
+    <task id="CloseReturnTicket" name="Close return ticket" />
+    <endEvent id="ReturnClosed" name="Return closed" />
+    <sequenceFlow id="Flow_Requested" sourceRef="ReturnRequested" targetRef="SchedulePickup" />
+    <sequenceFlow id="Flow_Scheduled" sourceRef="SchedulePickup" targetRef="InspectReturnedEquipment" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="InspectReturnedEquipment" targetRef="CloseReturnTicket" />
+    <sequenceFlow id="Flow_Ticketed" sourceRef="CloseReturnTicket" targetRef="ReturnClosed" />
+  </process>
+</definitions>
