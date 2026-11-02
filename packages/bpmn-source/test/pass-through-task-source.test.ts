@@ -226,11 +226,10 @@ async function compileRetained(family: string, model: string, xml: string) {
     semanticProfile, sourceOverlay, limits: semanticProcessTestLimits });
 }
 
-test("a Task in a called Process or in a forking Program is refused while the unedited model is admitted", async () => {
+// A Task in a forking Program is PTPB-ADMIT-01's, which its own source test admits on these flows.
+test("a Task in a called Process is refused while the unedited model is admitted", async () => {
   for (const [family, model, flow] of [
     ["scope-reentry", "contract-revision", "Flow_ClausesReviewed"],
-    ["concurrent-structured-scope-data", "order-fulfilment", "Flow_StockPicked"],
-    ["concurrent-structured-scope-data", "order-fulfilment", "Flow_PickingOpened"],
   ] as const) {
     const xml = await readFile(new URL(`../../../scenarios/${family}/${model}.bpmn`, import.meta.url), "utf8");
     assert.equal((await compileRetained(family, model, xml)).status, BpmnCompilationStatus.Accepted, model);

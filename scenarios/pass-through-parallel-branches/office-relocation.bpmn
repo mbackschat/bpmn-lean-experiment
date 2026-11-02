@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OfficeRelocation" targetNamespace="urn:bpmn-lean:office-relocation">
+  <process id="Process_OfficeRelocation" name="Relocate an employee's office" isExecutable="true">
+    <startEvent id="RelocationRequested" name="Relocation requested" />
+    <userTask id="ApproveRelocation" name="Approve relocation" />
+    <parallelGateway id="StartRelocation" name="Start relocation" />
+    <subProcess id="PackWorkplace" name="Pack workplace">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="boxes">${employee}</camunda:inputParameter>
+          <camunda:outputParameter name="packedBoxes">${boxes}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="PackingStarted" name="Packing started" />
+      <manualTask id="LabelBoxes" name="Label boxes" />
+      <userTask id="PackBoxes" name="Pack boxes" />
+      <endEvent id="WorkplacePacked" name="Workplace packed" />
+      <sequenceFlow id="Flow_PackingStarted" sourceRef="PackingStarted" targetRef="LabelBoxes" />
+      <sequenceFlow id="Flow_BoxesLabelled" sourceRef="LabelBoxes" targetRef="PackBoxes" />
+      <sequenceFlow id="Flow_BoxesPacked" sourceRef="PackBoxes" targetRef="WorkplacePacked" />
+    </subProcess>
+    <manualTask id="HandOverKeys" name="Hand over keys" />
+    <serviceTask id="BookMovers" name="Book movers"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${bookMovers}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="employee">${employee}</camunda:inputParameter>
+          <camunda:outputParameter name="moversBooking">${booking}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <task id="FileMoversConfirmation" name="File movers' confirmation" />
+    <task id="NotifyFacilities" name="Notify facilities" />
+    <parallelGateway id="RelocationReady" name="Relocation ready" />
+    <task id="CloseRelocationTicket" name="Close relocation ticket" />
+    <endEvent id="OfficeRelocated" name="Office relocated" />
+    <sequenceFlow id="Flow_Requested" sourceRef="RelocationRequested" targetRef="ApproveRelocation" />
+    <sequenceFlow id="Flow_Approved" sourceRef="ApproveRelocation" targetRef="StartRelocation" />
+    <sequenceFlow id="Flow_ToPacking" sourceRef="StartRelocation" targetRef="PackWorkplace" />
+    <sequenceFlow id="Flow_ToKeys" sourceRef="StartRelocation" targetRef="HandOverKeys" />
+    <sequenceFlow id="Flow_ToFacilities" sourceRef="StartRelocation" targetRef="NotifyFacilities" />
+    <sequenceFlow id="Flow_KeysHandedOver" sourceRef="HandOverKeys" targetRef="BookMovers" />
+    <sequenceFlow id="Flow_MoversBooked" sourceRef="BookMovers" targetRef="FileMoversConfirmation" />
+    <sequenceFlow id="Flow_ConfirmationFiled" sourceRef="FileMoversConfirmation" targetRef="RelocationReady" />
+    <sequenceFlow id="Flow_FacilitiesNotified" sourceRef="NotifyFacilities" targetRef="RelocationReady" />
+    <sequenceFlow id="Flow_Packed" sourceRef="PackWorkplace" targetRef="RelocationReady" />
+    <sequenceFlow id="Flow_Ready" sourceRef="RelocationReady" targetRef="CloseRelocationTicket" />
+    <sequenceFlow id="Flow_TicketClosed" sourceRef="CloseRelocationTicket" targetRef="OfficeRelocated" />
+  </process>
+</definitions>

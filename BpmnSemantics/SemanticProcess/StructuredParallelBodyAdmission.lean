@@ -11,6 +11,8 @@ namespace BpmnSemantics.SemanticProcess.StructuredParallelBody
 
 inductive Kind where
   | start | task | fork | join | finish
+  /-- PTPB-ADMIT-01: a pass-through Task, one input and one output, which never waits and costs one step. -/
+  | pass
   deriving Repr, DecidableEq
 
 structure Vertex where
@@ -42,6 +44,7 @@ def aritiesValid (vertices : List Vertex) : Bool :=
       | .fork => inputs == 1 && outputs ≥ 2
       | .join => inputs ≥ 2 && outputs == 1
       | .finish => inputs == 1 && outputs == 0
+      | .pass => inputs == 1 && outputs == 1
 
 def orderPending : Nat → List (Vertex × Nat) → Option (List Vertex)
   | 0, pending => if pending.isEmpty then some [] else none
@@ -208,7 +211,7 @@ def replaceTarget (vertices : List Vertex) (removed replacement : String) : List
 
 def contractAt (vertices : List Vertex) (vertex : Vertex) : Option (List Vertex) := do
   match vertex.kind with
-  | .task =>
+  | .task | .pass =>
       let [next] := vertex.outputs | none
       return replaceTarget (vertices.filter (·.id != vertex.id)) vertex.id next
   | .fork =>
@@ -453,7 +456,8 @@ def replaceWeighted (vertices : List WeightedVertex) (removed replacement : Stri
 /-- PMIS-ADMIT-01: task elimination takes serial maxima; paired branches add independent frontier capacities. -/
 def contractWeighted (vertices : List WeightedVertex) (vertex : WeightedVertex) : Option (List WeightedVertex) := do
   match vertex.kind with
-  | .task =>
+  -- A pass vertex carries no weight, so eliminating it keeps the serial maximum.
+  | .task | .pass =>
       let [(next, width)] := vertex.outputs | none
       return replaceWeighted (vertices.filter (·.id != vertex.id)) vertex.id next (serialCapacity vertex.weight width)
   | .fork =>

@@ -4,6 +4,8 @@ export enum ParallelBodyNodeKind {
   Fork = "fork",
   Join = "join",
   End = "end",
+  /** PTPB-ADMIT-01: a pass-through Task, one input and one output, which never waits. */
+  Pass = "pass",
 }
 
 export type ParallelBodyNode = Readonly<{
@@ -71,6 +73,11 @@ export function structuredParallelBodyFrontierCapacity(nodes: readonly ParallelB
         consumed.add(current.id);
         current = byId.get(current.outputs[0]!)!;
         continue;
+      case ParallelBodyNodeKind.Pass:
+        // A pass vertex adds no wait and no effect to the frontier, so the serial maximum is unchanged.
+        consumed.add(current.id);
+        current = byId.get(current.outputs[0]!)!;
+        continue;
       case ParallelBodyNodeKind.Fork:
         consumed.add(current.id);
         regions.push({ branches: current.outputs, nextBranch: 1, terminal: undefined, prefix: width, sum: { waits: 0, effects: 0 } });
@@ -114,7 +121,8 @@ export function structuredParallelBodyFrontierCapacity(nodes: readonly ParallelB
 function validArity(kind: ParallelBodyNodeKind, incoming: number, outgoing: number): boolean {
   switch (kind) {
     case ParallelBodyNodeKind.Start: return incoming === 0 && outgoing === 1;
-    case ParallelBodyNodeKind.Task: return incoming === 1 && outgoing === 1;
+    case ParallelBodyNodeKind.Task:
+    case ParallelBodyNodeKind.Pass: return incoming === 1 && outgoing === 1;
     case ParallelBodyNodeKind.Fork: return incoming === 1 && outgoing >= 2;
     case ParallelBodyNodeKind.Join: return incoming >= 2 && outgoing === 1;
     case ParallelBodyNodeKind.End: return incoming === 1 && outgoing === 0;

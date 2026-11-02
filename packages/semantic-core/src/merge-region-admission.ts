@@ -9,7 +9,8 @@ import type { ParallelBodyNode } from "./structured-parallel-body-analysis.js";
 
 /**
  * A body vertex before contraction, the transcription of Lean's `RawKind`. `Merge`, a converging identity-only
- * Exclusive merge, never reaches the structured-body analysis.
+ * Exclusive merge, never reaches the structured-body analysis; `Pass`, a pass-through Task of the nested scope-data
+ * profile (PTPB-ADMIT-01), reaches it as its own vertex kind.
  */
 export enum RawBodyNodeKind {
   Start = "start",
@@ -18,6 +19,7 @@ export enum RawBodyNodeKind {
   Join = "join",
   End = "end",
   Merge = "merge",
+  Pass = "pass",
 }
 
 export type RawBodyNode = Readonly<{ id: string; kind: RawBodyNodeKind; outputs: readonly string[] }>;
@@ -31,6 +33,7 @@ function contractedKind(kind: RawBodyNodeKind): Kind | null {
     case RawBodyNodeKind.Join: return Kind.Join;
     case RawBodyNodeKind.End: return Kind.End;
     case RawBodyNodeKind.Merge: return null;
+    case RawBodyNodeKind.Pass: return Kind.Pass;
   }
 }
 

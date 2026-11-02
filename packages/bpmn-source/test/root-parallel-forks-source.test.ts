@@ -93,12 +93,15 @@ test("RPF-ADMIT-01 refuses each one-fact edit of the onboarding model that leave
       `${mappedCall("CheckReferences")}${flow("Flow_HireRecorded", "HireRecorded", "CheckReferences")}${
         flow("Flow_ReferencesChecked", "CheckReferences", "StartOnboarding")}`],
     ["</definitions>", `${reviewProcess}</definitions>`]));
-  await refused("pass-through Manual Task on a root branch", edited(onboarding,
+  await refused("root Exclusive merge closing the root branches", edited(onboarding,
+    [`<parallelGateway id="OnboardingReady" name="Onboarding ready" />`, `<exclusiveGateway id="OnboardingReady" />`]));
+});
+
+test("PTPB-ADMIT-01 admits a pass-through Manual Task on a root branch of the onboarding model", async () => {
+  await admitted("pass-through Manual Task on a root branch", edited(onboarding,
     [flow("Flow_ToWorkstation", "StartOnboarding", "PrepareWorkstation"),
       `<manualTask id="HandOverBadge" />${flow("Flow_ToWorkstation", "StartOnboarding", "HandOverBadge")}${
         flow("Flow_BadgeHandedOver", "HandOverBadge", "PrepareWorkstation")}`]));
-  await refused("root Exclusive merge closing the root branches", edited(onboarding,
-    [`<parallelGateway id="OnboardingReady" name="Onboarding ready" />`, `<exclusiveGateway id="OnboardingReady" />`]));
 });
 
 const processOf = (id: string, body: string, called = true) => `<?xml version="1.0" encoding="UTF-8"?><definitions ` +

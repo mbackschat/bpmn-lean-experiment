@@ -44,6 +44,8 @@ export function parallelBodyScans(nodes: readonly ParallelBodyNode[]): ParallelB
         case Kind.Fork:
         case Kind.Join:
         case Kind.End:
+        // PTPB-BURST-01: a pass vertex costs one step and its scan continues to its successor.
+        case Kind.Pass:
           steps++;
           break;
       }

@@ -58,7 +58,8 @@ function programRestrictionsHold(program: SemanticProcessProgram): boolean {
   const inRoot = (kind: SemanticOperationKind): boolean =>
     program.operations.some(operation => operation.kind === kind && scopeOf.get(operation.id) === root);
   return program.identity.sourceOverlay !== null && root !== undefined &&
-    !program.operations.some(({ kind }) => kind === SemanticOperationKind.MergeExclusive) &&
+    // PTPB-ADMIT-01: a one-input merge is a lowered pass-through Task, not a merge region.
+    !program.operations.some(operation => operation.kind === SemanticOperationKind.MergeExclusive && operation.inputs.length >= 2) &&
     !(inRoot(SemanticOperationKind.Duplicate) && inRoot(SemanticOperationKind.InvokeProcess)) &&
     calledProcessesAdmitted(program.operations.flatMap(operation =>
       operation.kind === SemanticOperationKind.InvokeProcess ? [operation] : []));
@@ -122,5 +123,8 @@ export function structuredScopeDataProgramShape(operations: readonly SemanticOpe
 }
 
 export function structuredScopeDataCheckedShape(nodes: readonly CheckedNode[], scopeCount: number): boolean {
-  return forks(nodes) ? nestedScopeControlCheckedShape(nodes, scopeCount) : nestedScopeCheckedShape(nodes, scopeCount);
+  // PTPB-ADMIT-01: this profile alone admits a pass-through Task in the shared concurrent alphabet.
+  return forks(nodes)
+    ? nestedScopeControlCheckedShape(nodes.filter(({ kind }) => kind !== CheckedNodeKind.NonOperationalTask), scopeCount)
+    : nestedScopeCheckedShape(nodes, scopeCount);
 }

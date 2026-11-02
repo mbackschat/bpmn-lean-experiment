@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
 public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 public import BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability
+import BpmnSemantics.SemanticProcess.NestedScopeBranchWork
 import BpmnSemantics.SemanticProcess.ScopeReentryAdmission
 import BpmnSemantics.SemanticProcess.ScopeDataBurst
 import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
@@ -92,21 +93,6 @@ def serialTargetBody (body : Body) : Bool :=
     body.vertices.all (fun vertex => vertex.kind == .start || vertex.kind == .finish || vertex.kind == .task) &&
     (body.vertices.filter (·.kind == .task)).length == body.tasks.length
 
-/-- BPMN 13.4.1: every path from a fork output reaches a task vertex before a join or End consumes it. -/
-def reachesWork (vertices : List Vertex) : Nat → String → Bool
-  | 0, _ => false
-  | fuel + 1, id =>
-      match vertices.find? (·.id == id) with
-      | some vertex =>
-          match vertex.kind with
-          | .task => true
-          | .fork => vertex.outputs.all (reachesWork vertices fuel)
-          | _ => false
-      | none => false
-
-def branchesStartWithWork (vertices : List Vertex) : Bool :=
-  vertices.all fun vertex => vertex.kind != .fork || vertex.outputs.all (reachesWork vertices vertices.length)
-
 structure BodyScan where
   body : Body
   entry : Closure
@@ -194,10 +180,12 @@ depth one or two, never the body's first vertex. Its invocation therefore follow
 and is never co-enabled with sibling work, since the parentless caller is the only one the internal
 scope-creation selection prepares. -/
 private def embeddedCallsPlaced (dataBearing : Bool) (depth : Option Nat) (body : Body) : Bool :=
-  let first := (body.vertices.filter (·.kind == .start)).flatMap (·.outputs)
+  let first := afterPasses body.vertices body.vertices.length
+    ((body.vertices.filter (·.kind == .start)).flatMap (·.outputs))
   body.calls.isEmpty ||
     dataBearing && depth.any (· ≤ embeddedCallDepthLimit) && body.regions.isEmpty &&
-      body.vertices.all (fun vertex => vertex.kind == .start || vertex.kind == .finish || vertex.kind == .task) &&
+      body.vertices.all (fun vertex => vertex.kind == .start || vertex.kind == .finish || vertex.kind == .task ||
+        vertex.kind == .pass) &&
       body.calls.all fun (vertex, _) => body.mapped.contains vertex && !first.contains vertex
 
 /-- The expanded call tree below one body: its copies keyed by call site, their parents and the
@@ -506,6 +494,9 @@ def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : Checke
     | .parallelGateway _ .diverging => some (.vertex .fork)
     | .parallelGateway _ .converging => some (.vertex .join)
     | .exclusiveMerge _ => some .merge
+    -- PTPB-PROFILE-01: only the nested scope-data profile maps a pass-through Task to a pass vertex.
+    | .nonOperationalTask _ _ =>
+        if source.identity.semanticProfile == nestedScopeDataProfileId then some (.vertex .pass) else none
     | _ => none
   let child := match node with
     | .embeddedSubProcess _ child => some child.value
@@ -636,7 +627,11 @@ def operationVertex? (program : Program) (data : Option Data) (scope : String) (
       if admitted then return (⟨id, .vertex .task, ← follow [output]⟩, none) else none
   | .duplicate _ _ _ outputs => return (⟨id, .vertex .fork, ← follow outputs⟩, none)
   | .synchronize _ _ _ output => return (⟨id, .vertex .join, ← follow [output]⟩, none)
-  | .mergeExclusive _ _ _ output => return (⟨id, .merge, ← follow [output]⟩, none)
+  | .mergeExclusive _ _ inputs output =>
+      -- PTPB-PROFILE-01: a one-input merge is a lowered pass-through Task under the nested scope-data profile only.
+      let kind := if program.identity.semanticProfile == nestedScopeDataProfileId && inputs.length == 1
+        then MergeRegion.RawKind.vertex .pass else .merge
+      return (⟨id, kind, ← follow [output]⟩, none)
   | .reachNoneEnd .. => return (⟨id, .vertex .finish, []⟩, none)
   | .enterScope _ _ _ _ child =>
       return (⟨id, .vertex .task, ← follow [← controlParentOutput? program child]⟩, some child.value)
@@ -809,7 +804,8 @@ private def programRestrictionsHold (program : Program) : Bool :=
         (program.operationScopes.find? (·.operationId == id)).map (·.scopeId)
       let inRoot := fun (id : OperationId) => scopeOf id == some root
       program.identity.sourceOverlay.isSome &&
-        !(program.operations.any fun | .mergeExclusive .. => true | _ => false) &&
+        -- PTPB-ADMIT-01: a one-input merge is a lowered pass-through Task, not a merge region.
+        !(program.operations.any fun | .mergeExclusive _ _ inputs _ => inputs.length ≥ 2 | _ => false) &&
         !(program.operations.any (fun | .duplicate id .. => inRoot id | _ => false) &&
           program.operations.any (fun | .invokeProcess id .. => inRoot id | _ => false)) &&
         callsAdmitted (program.operations.filterMap fun

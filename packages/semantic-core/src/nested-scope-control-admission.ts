@@ -95,7 +95,22 @@ function serialTargetBody(body: Body | undefined): body is Body {
 
 type Tree = Readonly<{ root: string; bodies: ReadonlyMap<string, Body>; parent: ReadonlyMap<string, Readonly<{ scope: string; vertex: string }>> }>;
 
-/** BPMN 13.4.1: every path from a fork output reaches a task vertex before a join or End can consume it. */
+/** Where one fork output's closure scan stops: at a task it arms, at a join it cannot pass, or at an End. */
+enum BranchStop {
+  Work = "work",
+  Join = "join",
+  End = "end",
+}
+
+type BranchScan = Readonly<{ stop: BranchStop; join: string | null; passes: boolean }>;
+
+/**
+ * BPMN 13.4.1: every path from a fork output reaches a task vertex before a join or End can consume it. PTPB-WORK-01
+ * relaxes this only for a branch whose closure scan meets a pass vertex: such a branch may reach its fork's paired join
+ * without waiting, but never an End, so an End is never co-enabled with a sibling branch's entry (the singleton premise
+ * of the [pass-through branch proposal](../../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md#representation-and-runtime-ownership)).
+ * The scan passes a nested fork's join only when every branch of that fork reaches it wait-free.
+ */
 function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boolean {
   const byId = new Map(nodes.map(node => [node.id, node]));
   const reachesWork = (id: string): boolean => {
@@ -106,7 +121,32 @@ function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boolean {
       default: return false;
     }
   };
-  return nodes.every(node => node.kind !== Kind.Fork || node.outputs.every(reachesWork));
+  const scan = (id: string): BranchScan => {
+    const node = byId.get(id);
+    switch (node?.kind) {
+      case Kind.Task: return { stop: BranchStop.Work, join: null, passes: false };
+      case Kind.Pass: return { ...scan(node.outputs[0]!), passes: true };
+      case Kind.Join: return { stop: BranchStop.Join, join: node.id, passes: false };
+      case Kind.Fork: {
+        const branches = node.outputs.map(scan);
+        const passes = branches.some(branch => branch.passes);
+        if (branches.some(({ stop }) => stop === BranchStop.End)) return { stop: BranchStop.End, join: null, passes };
+        const join = branches[0]!.join;
+        if (join === null || !branches.every(branch => branch.stop === BranchStop.Join && branch.join === join)) {
+          return { stop: BranchStop.Work, join: null, passes };
+        }
+        const after = scan(byId.get(join)!.outputs[0]!);
+        return { ...after, passes: passes || after.passes };
+      }
+      default: return { stop: BranchStop.End, join: null, passes: false };
+    }
+  };
+  const admitted = (id: string): boolean => {
+    if (reachesWork(id)) return true;
+    const branch = scan(id);
+    return branch.passes && branch.stop !== BranchStop.End;
+  };
+  return nodes.every(node => node.kind !== Kind.Fork || node.outputs.every(admitted));
 }
 
 /**
@@ -116,9 +156,12 @@ function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boolean {
  */
 function embeddedCallsPlaced(body: Body, depth: number, dataBearing: boolean): boolean {
   if (body.calls.size === 0) return true;
-  const first = body.nodes.find(({ kind }) => kind === Kind.Start)?.outputs ?? [];
+  // PTPB-CALL-01: pass vertices never wait, so the first vertex is the first one after them.
+  let first = body.nodes.find(({ kind }) => kind === Kind.Start)?.outputs ?? [];
+  for (let pass = body.nodes.find(({ id }) => id === first[0]); pass?.kind === Kind.Pass;
+    pass = body.nodes.find(({ id }) => id === first[0])) first = pass.outputs;
   return dataBearing && depth <= embeddedCallDepthLimit && body.regions.length === 0 &&
-    body.nodes.every(({ kind }) => kind === Kind.Start || kind === Kind.End || kind === Kind.Task) &&
+    body.nodes.every(({ kind }) => kind === Kind.Start || kind === Kind.End || kind === Kind.Task || kind === Kind.Pass) &&
     [...body.calls.keys()].every(vertex => body.mapped.has(vertex) && !first.includes(vertex));
 }
 
@@ -458,6 +501,8 @@ export type NestedScopeControlCheckedGraph = Readonly<{
   nodes: readonly CheckedNode[];
   flows: readonly CheckedSequenceFlow[];
   scopeLocalData?: readonly ScopeLocalData[];
+  /** The admitting profile, which alone decides whether a pass-through Task maps to a pass vertex (PTPB-PROFILE-01). */
+  identity?: Readonly<{ semanticProfile: string }>;
 }>;
 
 /** CSE-ADMIT-01: no mapping, no Error route, and the serial business-task Activity descriptor. */
@@ -500,8 +545,9 @@ function callDataAdmitted(callData: CallDataInterface, data: ModelData | null): 
 }
 
 /** CSD-ADMIT-01's Service Task data and CMCALL-ADMIT-01's Call data. */
-function checkedKind(node: CheckedNode, data: ModelData | null): RawBodyNodeKind | null {
+function checkedKind(node: CheckedNode, data: ModelData | null, passThrough: boolean): RawBodyNodeKind | null {
   switch (node.kind) {
+    case CheckedNodeKind.NonOperationalTask: return passThrough ? RawBodyNodeKind.Pass : null;
     case CheckedNodeKind.NoneStartEvent: return RawBodyNodeKind.Start;
     case CheckedNodeKind.NoneEndEvent: return RawBodyNodeKind.End;
     case CheckedNodeKind.UserTask: return node.metadata === undefined ? RawBodyNodeKind.Task : null;
@@ -527,7 +573,7 @@ function checkedData(graph: NestedScopeControlCheckedGraph): ModelData | null {
     : { records, handlers: new Set(services.map(({ descriptor }) => descriptor.operation)) };
 }
 
-function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | null): Map<string, RawBody> | null {
+function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | null, passThrough: boolean): Map<string, RawBody> | null {
   const calledRoot = (processId: string): string | undefined => {
     const roots = graph.definitionScopes.filter(({ parentScopeId, originElementId }) =>
       parentScopeId === null && originElementId === processId);
@@ -546,7 +592,7 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | 
     const mapped = new Set<string>();
     const accesses = new Map<string, ScopeDataAccess>();
     for (const node of nodes) {
-      const kind = checkedKind(node, data);
+      const kind = checkedKind(node, data, passThrough);
       if (kind === null) return null;
       if (node.kind === CheckedNodeKind.ServiceTask) accesses.set(node.id, accessOf(node));
       if (node.kind === CheckedNodeKind.EmbeddedSubProcess) children.set(node.id, node.childScopeId);
@@ -570,7 +616,8 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | 
 
 function checkedModel(graph: NestedScopeControlCheckedGraph): Admitted | null {
   const data = checkedData(graph);
-  return admittedModel(graph.definitionScopes, checkedBodies(graph, data), data);
+  const passThrough = graph.identity?.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+  return admittedModel(graph.definitionScopes, checkedBodies(graph, data, passThrough), data);
 }
 
 /** NSC-ADMIT-01 and CSD-ADMIT-01 over the checked graph; `null` refuses it, otherwise the admitted largest closure. */
@@ -609,7 +656,7 @@ function inputsOf(operation: SemanticOperation): readonly string[] {
 /** The lowered child Start is elided; this synthetic vertex stands for the child's entry place. */
 const childStart = (scope: string): string => `start:${scope}`;
 
-function programBodies(program: SemanticProcessProgram, data: ModelData | null): Map<string, RawBody> | null {
+function programBodies(program: SemanticProcessProgram, data: ModelData | null, passThrough: boolean): Map<string, RawBody> | null {
   const scopeOf = new Map(program.operationScopes.map(({ operationId, scopeId }) => [operationId, scopeId]));
   const completions = program.operations.filter(({ kind }) => kind === SemanticOperationKind.CompleteScope);
   const returns = program.operations.filter((operation): operation is ReturnProcessOperation =>
@@ -658,7 +705,11 @@ function programBodies(program: SemanticProcessProgram, data: ModelData | null):
           break;
         case SemanticOperationKind.Duplicate: kind = RawBodyNodeKind.Fork; outputs = follow(operation.outputs); break;
         case SemanticOperationKind.Synchronize: kind = RawBodyNodeKind.Join; outputs = follow([operation.output]); break;
-        case SemanticOperationKind.MergeExclusive: kind = RawBodyNodeKind.Merge; outputs = follow([operation.output]); break;
+        case SemanticOperationKind.MergeExclusive:
+          // PTPB-ADMIT-01: under the nested scope-data profile a one-input merge is a lowered pass-through Task.
+          kind = passThrough && operation.inputs.length === 1 ? RawBodyNodeKind.Pass : RawBodyNodeKind.Merge;
+          outputs = follow([operation.output]);
+          break;
         case SemanticOperationKind.ReachNoneEnd: kind = RawBodyNodeKind.End; outputs = []; break;
         case SemanticOperationKind.EnterScope: {
           const output = parentOutput(operation.childScopeId);
@@ -758,7 +809,7 @@ function programModel(program: SemanticProcessProgram): Admitted | null {
     handlers: new Set(program.operations.flatMap(operation =>
       operation.kind === SemanticOperationKind.AwaitEffect ? [operation.effect.descriptor.operation] : [])),
   } : null;
-  return rootCompletion.length === 1 ? admittedModel(program.definitionScopes, programBodies(program, data), data) : null;
+  return rootCompletion.length === 1 ? admittedModel(program.definitionScopes, programBodies(program, data, structured), data) : null;
 }
 
 const programOperationKinds: ReadonlySet<SemanticOperationKind> = new Set([

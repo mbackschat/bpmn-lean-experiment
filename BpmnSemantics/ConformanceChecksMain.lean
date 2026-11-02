@@ -85,6 +85,7 @@ public import BpmnSemantics.ParallelScopeRuntimeConformance
 public import BpmnSemantics.ParallelUserTaskMetadataCompositionAdmissionConformance
 public import BpmnSemantics.ParallelUserTaskMetadataCompositionClosureConformance
 public import BpmnSemantics.ParallelUserTaskMetadataCompositionRuntimeConformance
+public import BpmnSemantics.PassThroughParallelBranchesConformance
 public import BpmnSemantics.PassThroughTaskConformance
 public import BpmnSemantics.PortableHandoffConformance
 public import BpmnSemantics.ProcessStartDataConformanceCheckFixtures
@@ -253,6 +254,7 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("ParallelUserTaskMetadataCompositionAdmissionConformance", BpmnSemantics.ParallelUserTaskMetadataCompositionConformance.parallelUserTaskMetadataCompositionAdmissionConformanceChecks),
   ("ParallelUserTaskMetadataCompositionClosureConformance", BpmnSemantics.ParallelUserTaskMetadataCompositionConformance.parallelUserTaskMetadataCompositionClosureConformanceChecks),
   ("ParallelUserTaskMetadataCompositionRuntimeConformance", BpmnSemantics.ParallelUserTaskMetadataCompositionConformance.parallelUserTaskMetadataCompositionRuntimeConformanceChecks),
+  ("PassThroughParallelBranchesConformance", BpmnSemantics.PassThroughParallelBranchesConformance.passThroughParallelBranchesConformanceChecks),
   ("PassThroughTaskConformance", BpmnSemantics.PassThroughTaskConformance.passThroughTaskConformanceChecks),
   ("PortableHandoffConformance", BpmnSemantics.PortableHandoffConformance.checks),
   ("ProcessStartDataConformance", BpmnSemantics.ProcessStartDataConformance.checks),

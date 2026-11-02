@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_InvoiceSettlement" targetNamespace="urn:bpmn-lean:invoice-settlement">
+  <process id="Process_InvoiceSettlement" name="Settle a supplier invoice" isExecutable="true">
+    <startEvent id="InvoiceReceived" name="Invoice received" />
+    <subProcess id="ReviewInvoice" name="Review invoice">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="verdict">pending</camunda:inputParameter>
+          <camunda:outputParameter name="reviewVerdict">${verdict}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="ReviewOpened" name="Review opened" />
+      <userTask id="CheckInvoice" name="Check invoice" />
+      <parallelGateway id="RecordInvoice" name="Record invoice" />
+      <task id="ArchiveReceipt" name="Archive receipt" />
+      <task id="NotifyAccounting" name="Notify accounting" />
+      <parallelGateway id="InvoiceRecorded" name="Invoice recorded" />
+      <endEvent id="ReviewClosed" name="Review closed" />
+      <sequenceFlow id="Flow_ReviewOpened" sourceRef="ReviewOpened" targetRef="CheckInvoice" />
+      <sequenceFlow id="Flow_Checked" sourceRef="CheckInvoice" targetRef="RecordInvoice" />
+      <sequenceFlow id="Flow_ToArchive" sourceRef="RecordInvoice" targetRef="ArchiveReceipt" />
+      <sequenceFlow id="Flow_ToAccounting" sourceRef="RecordInvoice" targetRef="NotifyAccounting" />
+      <sequenceFlow id="Flow_Archived" sourceRef="ArchiveReceipt" targetRef="InvoiceRecorded" />
+      <sequenceFlow id="Flow_AccountingNotified" sourceRef="NotifyAccounting" targetRef="InvoiceRecorded" />
+      <sequenceFlow id="Flow_Recorded" sourceRef="InvoiceRecorded" targetRef="ReviewClosed" />
+    </subProcess>
+    <serviceTask id="PayInvoice" name="Pay invoice"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${payInvoice}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="invoice">${invoice}</camunda:inputParameter>
+          <camunda:inputParameter name="verdict">${reviewVerdict}</camunda:inputParameter>
+          <camunda:outputParameter name="paymentReference">${reference}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="InvoiceSettled" name="Invoice settled" />
+    <sequenceFlow id="Flow_Received" sourceRef="InvoiceReceived" targetRef="ReviewInvoice" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewInvoice" targetRef="PayInvoice" />
+    <sequenceFlow id="Flow_Paid" sourceRef="PayInvoice" targetRef="InvoiceSettled" />
+  </process>
+</definitions>
