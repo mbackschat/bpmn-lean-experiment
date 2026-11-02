@@ -110,11 +110,11 @@ Both models carry one mapped Service Task bound by an exact source overlay and a
   - The Sub-Process holds Start → Manual Task *Unpack equipment* → User Task *Record condition* → End.
   - The longest burst is three.
 - **Document intake** (branched and cyclic, re-entry account):
-  - Path: *Document received* → Merge *Intake requested* → User Task *Classify document* → Choice *Document format*.
+  - Path: *Document received* → Merge *Intake requested* → Sub-Process *Classify document* → Choice *Document format*. The Sub-Process declares a local `format`, holds Start → User Task *Record document format* → End and copies `format` out to `documentFormat`, which the Choice reads. Implementation found that the approved root User Task could not set the format, because `NSD-TASK-01` admits a completion only over names a frame on its chain declares; the Sub-Process is the profile's way to let a User Task decide a Choice, as in the claim rework of [scope re-entry](SCOPE-REENTRY-SPEC.md).
   - The `paper` branch goes to Sub-Process *Archive paper original*, holding Start → Manual Task *File paper original* → Service Task *Index archive location* → End, and then to Merge *Filed*.
   - The `illegible` branch goes to Manual Task *Phone sender for a better copy* and back to *Intake requested*.
   - The default branch goes to plain Task *Register digital copy* and *Filed*.
-  - *Filed* goes to End. The longest burst is five.
+  - *Filed* goes to End. The longest burst is seven: after *Record document format*, the body End's two steps, the Choice, *Register digital copy*, *Filed* and the root End's two steps.
   - Journeys: illegible, illegible, then paper, which re-enters the Manual Task *Phone sender* and gives it two occurrences; and digital.
 - **Refused edits:** each excluded form above, applied to one of these models; a pass-through Task in a forking Sub-Process body; and a serial chain whose burst is nine. A chain whose burst is exactly eight is admitted.
 

@@ -196,6 +196,22 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: notApplicable,
   },
   {
+    id: "abstractTask",
+    family: "Activities",
+    element: "Abstract Task",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "Under the nested scope-data profile only: a plain Task with only an id and a name, one incoming flow and one unconditioned, non-default outgoing flow, on the serial path of the Process root or a Sub-Process body, or on a Choice branch or cycle of a re-entry root graph. It passes the token on at once and publishes one occurrence that starts and ends in that step, a fresh one on each re-entry. A model holding one is admitted only when every automatic burst stays within eight steps. No Parallel branches, called Processes, several flows, asynchronous continuations, mappings, listeners, Multi-Instance or boundary Events.",
+    cibEvidence: notSelected,
+  },
+  {
+    id: "manualTask",
+    family: "Activities",
+    element: "Manual Task",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "Exactly the Abstract Task account: the engine neither distributes nor waits for the manual work, and passes the token on at once with one instantaneous occurrence, as CIB Seven does. The source kind is kept; no assignment, form or completion command exists for it.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "callActivity",
     family: "Activities",
     element: "Call Activity",

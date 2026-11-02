@@ -1,0 +1,80 @@
+{
+  "kind": "scenario",
+  "id": "pass-through-task-equipment-return",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "equipment-return",
+    "relativePath": "scenarios/pass-through-task/equipment-return.bpmn",
+    "sha256": "b063d05b2bfa7cd20a2825dd1ba67ce56f88bcb7174f1f3eb1cf4b60d0e3496f",
+    "sourceOverlay": {
+      "id": "equipment-return-handlers",
+      "sha256": "0029df9555e48e562d7629831658030e5cef1ab1785986649272c3ef2b415bc6"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_EquipmentReturn",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-schedule-pickup",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "SchedulePickup",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-record-condition",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "RecordCondition",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:41cb5e331e3e9f5e5fbbcc31c8ba2d467c760370b4d10519fe60b75169953826",
+      "effectId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "RefundDeposit",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.4.1",
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.1",
+      "BPMN 2.0.2 Clause 13.3.3"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-EXT-0022"
+    ]
+  }
+}

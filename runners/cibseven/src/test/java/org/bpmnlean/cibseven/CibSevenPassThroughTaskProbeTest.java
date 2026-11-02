@@ -50,11 +50,11 @@ public final class CibSevenPassThroughTaskProbeTest {
     try (var session = new Session("document-intake", 2, "indexArchiveLocation")) {
       var instance = session.start("Process_DocumentIntake");
       for (var attempt = 0; attempt < 2; attempt++) {
-        session.complete(instance, "ClassifyDocument", Map.of("format", "illegible"));
+        session.complete(instance, "RecordDocumentFormat", Map.of("format", "illegible"));
         session.assertPassedThrough(instance, "PhoneSender", "manualTask", 1);
-        session.assertOnlyOpenTask(instance, "ClassifyDocument");
+        session.assertOnlyOpenTask(instance, "RecordDocumentFormat");
       }
-      session.complete(instance, "ClassifyDocument", Map.of("format", "paper"));
+      session.complete(instance, "RecordDocumentFormat", Map.of("format", "paper"));
       session.assertPassedThrough(instance, "PhoneSender", "manualTask", 0);
       session.assertPassedThrough(instance, "FilePaperOriginal", "manualTask", 1);
       session.runJob(instance);
@@ -67,7 +67,7 @@ public final class CibSevenPassThroughTaskProbeTest {
   public void aDigitalCopyTakesTheDefaultBranchThroughThePlainTask() throws Exception {
     try (var session = new Session("document-intake", 2, "indexArchiveLocation")) {
       var instance = session.start("Process_DocumentIntake");
-      session.complete(instance, "ClassifyDocument", Map.of("format", "digital"));
+      session.complete(instance, "RecordDocumentFormat", Map.of("format", "digital"));
       session.assertPassedThrough(instance, "RegisterDigitalCopy", "task", 1);
       session.assertPassedThrough(instance, "FilePaperOriginal", "manualTask", 0);
       session.assertEnded(instance);

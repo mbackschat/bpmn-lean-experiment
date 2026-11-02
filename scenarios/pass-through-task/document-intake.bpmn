@@ -7,7 +7,19 @@
   <process id="Process_DocumentIntake" name="Take in a received document" isExecutable="true">
     <startEvent id="DocumentReceived" name="Document received" />
     <exclusiveGateway id="IntakeRequested" name="Intake requested" gatewayDirection="Converging" />
-    <userTask id="ClassifyDocument" name="Classify document" />
+    <subProcess id="ClassifyDocument" name="Classify document">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="format">unclassified</camunda:inputParameter>
+          <camunda:outputParameter name="documentFormat">${format}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="ClassificationOpened" name="Classification opened" />
+      <userTask id="RecordDocumentFormat" name="Record document format" />
+      <endEvent id="ClassificationClosed" name="Classification closed" />
+      <sequenceFlow id="Flow_ClassificationOpened" sourceRef="ClassificationOpened" targetRef="RecordDocumentFormat" />
+      <sequenceFlow id="Flow_FormatRecorded" sourceRef="RecordDocumentFormat" targetRef="ClassificationClosed" />
+    </subProcess>
     <exclusiveGateway id="DocumentFormat" name="Document format" gatewayDirection="Diverging" default="Flow_Digital" />
     <subProcess id="ArchivePaperOriginal" name="Archive paper original">
       <startEvent id="ArchivingOpened" name="Archiving opened" />
@@ -28,10 +40,10 @@
     <sequenceFlow id="Flow_Intake" sourceRef="IntakeRequested" targetRef="ClassifyDocument" />
     <sequenceFlow id="Flow_Classified" sourceRef="ClassifyDocument" targetRef="DocumentFormat" />
     <sequenceFlow id="Flow_Paper" sourceRef="DocumentFormat" targetRef="ArchivePaperOriginal">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(format,"paper")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(documentFormat,"paper")</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Illegible" sourceRef="DocumentFormat" targetRef="PhoneSender">
-      <conditionExpression xsi:type="tFormalExpression">stringEquals(format,"illegible")</conditionExpression>
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(documentFormat,"illegible")</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Digital" sourceRef="DocumentFormat" targetRef="RegisterDigitalCopy" />
     <sequenceFlow id="Flow_PaperFiled" sourceRef="ArchivePaperOriginal" targetRef="Filed" />

@@ -1,0 +1,65 @@
+{
+  "kind": "scenario",
+  "id": "pass-through-task-intake-digital",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "document-intake",
+    "relativePath": "scenarios/pass-through-task/document-intake.bpmn",
+    "sha256": "09900df1dae11f1f2b9ba1ec3518460a21f42cce3cbd0411b79399c421d57c8e",
+    "sourceOverlay": {
+      "id": "document-intake-handlers",
+      "sha256": "5f385b54c23f5e37abfc0b70e5ccd528980e644e9091f6873b86f859117273b2"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_DocumentIntake",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-record-document-format",
+      "taskId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "RecordDocumentFormat",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "format",
+          "value": {
+            "kind": "string",
+            "value": "digital"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.1",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-EXT-0022"
+    ]
+  }
+}

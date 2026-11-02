@@ -1236,6 +1236,91 @@
       }
     },
     {
+      "id": "equipment-return-inspection",
+      "title": "Handle an equipment return",
+      "businessPurpose": "Schedule the pickup of returned rental equipment, unpack it by hand and record its condition in an inspection scope, refund the deposit through a payment service and close the return ticket without further work.",
+      "cloneFamily": "equipment-return-inspection",
+      "constructs": [
+        "endEvent",
+        "manualTask",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "task",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/pass-through-task/equipment-return.bpmn",
+        "sha256": "b063d05b2bfa7cd20a2825dd1ba67ce56f88bcb7174f1f3eb1cf4b60d0e3496f",
+        "scenarioRelativePath": "scenarios/pass-through-task/equipment-return.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "pass-through-task-equipment-return",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for pass-through Tasks; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "document-intake-triage",
+      "title": "Take in a received document",
+      "businessPurpose": "Classify a received document in its own classification scope, phone the sender for a better copy and classify again while it is illegible, then archive a paper original by hand and index its location through an archive service, or register a digital copy.",
+      "cloneFamily": "document-intake-triage",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "manualTask",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "task",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "conditionalRouting",
+        "cyclicControlFlow",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/pass-through-task/document-intake.bpmn",
+        "sha256": "09900df1dae11f1f2b9ba1ec3518460a21f42cce3cbd0411b79399c421d57c8e",
+        "scenarioRelativePath": "scenarios/pass-through-task/intake-illegible-twice-then-paper.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "pass-through-task-intake-illegible-twice-then-paper",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for pass-through Tasks; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

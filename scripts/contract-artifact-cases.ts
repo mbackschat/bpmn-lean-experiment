@@ -184,6 +184,9 @@ export const normativeArtifactCases = Object.freeze([
     "contract-revise-then-withdraw"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/scope-reentry/${name}.scenario.json`,
   })),
+  ...["equipment-return", "intake-illegible-twice-then-paper", "intake-digital"].map(name => Object.freeze({
+    scenarioRelativePath: `scenarios/pass-through-task/${name}.scenario.json`,
+  })),
   ...["natural-order", "reverse-order-stale-and-cross-addressed", "guarantor-verified", "guarantor-absent"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/repeated-nested-concurrent-calls/${name}.scenario.json`,
   })),

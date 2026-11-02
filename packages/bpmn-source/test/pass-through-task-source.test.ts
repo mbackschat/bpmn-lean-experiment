@@ -116,10 +116,12 @@ test("the checked-process schema admits each notation, refuses an unknown one an
   assert.equal(node({ kind: "nonOperationalTask", id: "Task" }), false);
 });
 
-test("the document intake stands on the re-entry route with a longest burst of five", async () => {
+test("the document intake stands on the re-entry route with a longest burst of seven", async () => {
   const { checkedProcess, semanticProcess } = await admitted("document-intake", await source("document-intake"));
   const analysis = scopeReentryProgramAnalysis(semanticProcess);
-  assert.deepEqual(analysis, { required: [], optional: null, burst: 5 });
+  // After Record document format: the body End's two steps, the Choice, then Register digital copy, Filed and the
+  // root End's two steps.
+  assert.deepEqual(analysis, { required: [], optional: null, burst: 7 });
   assert.deepEqual(scopeReentryCheckedAnalysis(checkedProcess), analysis);
 });
 
@@ -137,9 +139,9 @@ test("a serial burst of eight through chained Tasks is admitted and one of nine 
 
 test("a re-entry burst of eight through chained Tasks is admitted and one of nine is refused", async () => {
   const intake = await source("document-intake");
-  assert.equal(scopeReentryProgramAnalysis((await admitted("document-intake", chain(intake, "Flow_DigitalFiled", 3)))
+  assert.equal(scopeReentryProgramAnalysis((await admitted("document-intake", chain(intake, "Flow_DigitalFiled", 1)))
     .semanticProcess)?.burst, 8);
-  await refused("document-intake", chain(intake, "Flow_DigitalFiled", 4), "nine-step re-entry burst");
+  await refused("document-intake", chain(intake, "Flow_DigitalFiled", 2), "nine-step re-entry burst");
 });
 
 test("each excluded Task form is refused", async () => {
@@ -165,7 +167,7 @@ test("each excluded Task form is refused", async () => {
   await refused("document-intake", replaceOnce(intake,
     '<sequenceFlow id="Flow_DigitalFiled" sourceRef="RegisterDigitalCopy" targetRef="Filed" />',
     '<sequenceFlow id="Flow_DigitalFiled" sourceRef="RegisterDigitalCopy" targetRef="Filed">' +
-    '<conditionExpression xsi:type="tFormalExpression">stringEquals(format,"digital")</conditionExpression></sequenceFlow>'),
+    '<conditionExpression xsi:type="tFormalExpression">stringEquals(documentFormat,"digital")</conditionExpression></sequenceFlow>'),
     "conditional outgoing flow");
 });
 

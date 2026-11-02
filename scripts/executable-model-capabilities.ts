@@ -78,7 +78,12 @@ export function detectExecutableBpmnCapabilities(
         break;
       case "task":
         rejectLoopVariant(element);
-        capabilities.add("configuredTask");
+        // Only the configured-Task extension carries a task definition; a plain Task is the pass-through account.
+        capabilities.add(hasDirectChild(element, "extensionElements") ? "configuredTask" : "abstractTask");
+        break;
+      case "manualTask":
+        rejectLoopVariant(element);
+        capabilities.add("manualTask");
         break;
       case "callActivity":
         rejectLoopVariant(element);

@@ -49,10 +49,14 @@ private def equals (name value : String) : CheckedCondition :=
 private def overlay : SourceOverlayIdentity :=
   { id := ⟨"pass-through-task-handlers"⟩, sha256 := "0000000000000000000000000000000000000000000000000000000000000009" }
 
+private def literal (target value : String) : VariableMapping := { target, expression := .stringLiteral value }
+private def copied (target name : String) : VariableMapping := { target, expression := .localVariable name }
+
 /-- A checked graph of the nested scope-data profile over scopes, members and edges sorted into the canonical id
-order, with a source overlay and the conditions keyed by their edges. -/
-private def build (scopes : List (String × Option String)) (members : List (String × String × CheckedNode))
-    (edges : List (String × String)) (conditions : List ((String × String) × CheckedCondition)) : CheckedProcess :=
+order, with its scope locals, a source overlay and the conditions keyed by their edges. -/
+private def build (records : List ScopeLocalData) (scopes : List (String × Option String))
+    (members : List (String × String × CheckedNode)) (edges : List (String × String))
+    (conditions : List ((String × String) × CheckedCondition)) : CheckedProcess :=
   let id := fun (edge : String × String) => (flowId edge.1 edge.2).value
   let scopes := scopes.mergeSort fun left right => decide (left.1 ≤ right.1)
   let members := members.mergeSort fun left right => decide (left.2.1 ≤ right.2.1)
@@ -71,7 +75,7 @@ private def build (scopes : List (String × Option String)) (members : List (Str
     sequenceFlows := edges.map fun edge =>
       { id := flowId edge.1 edge.2, sourceId := ⟨edge.1⟩, targetId := ⟨edge.2⟩,
         condition := (conditions.find? (·.1 == edge)).map (·.2) }
-    scopeLocalData := [] }
+    scopeLocalData := records }
 
 /-- `count` plain Tasks of `owner` replacing the edge `from → to`: the members and the edges through them. -/
 private def chained (owner source target : String) (count : Nat) :
@@ -85,7 +89,7 @@ unpacks it by hand and records its condition, refunds the deposit and closes the
 many plain Tasks between the refund and the ticket; `forked` gives *Close return ticket* a second outgoing flow. -/
 private def equipmentWith (chain : Nat := 0) (forked : Bool := false) : CheckedProcess :=
   let (links, linkEdges) := chained "P" "RefundDeposit" "CloseReturnTicket" chain
-  build [("P", none), ("InspectReturnedEquipment", some "P")]
+  build [] [("P", none), ("InspectReturnedEquipment", some "P")]
     ([ start "P" "ReturnRequested", task "P" "SchedulePickup", sub "P" "InspectReturnedEquipment"
      , service "P" "RefundDeposit" "refundDeposit", pass "P" "CloseReturnTicket" .abstractTask, finish "P" "ReturnClosed"
      , start "InspectReturnedEquipment" "InspectionOpened", pass "InspectReturnedEquipment" "UnpackEquipment" .manualTask
@@ -98,17 +102,22 @@ private def equipmentWith (chain : Nat := 0) (forked : Bool := false) : CheckedP
       ++ linkEdges ++ (if forked then [("CloseReturnTicket", "TicketDuplicated")] else []))
     []
 
-/-- Document intake: root `P` merges into *Classify document* and chooses by format: paper is archived in a
-Sub-Process whose body files the original by hand and indexes its location, illegible phones the sender and re-enters
-the Merge, and the default registers the digital copy; both filings merge before the End. `chain` inserts that many
-plain Tasks between the registration and the filing Merge. -/
+/-- Document intake: root `P` merges into the *Classify document* Sub-Process, whose body records the format in its
+own `format`, copied out to `documentFormat`, and chooses by it: paper is archived in a Sub-Process whose body files
+the original by hand and indexes its location, illegible phones the sender and re-enters the Merge, and the default
+registers the digital copy; both filings merge before the End. `chain` inserts that many plain Tasks between the
+registration and the filing Merge. -/
 private def intakeWith (chain : Nat := 0) : CheckedProcess :=
   let (links, linkEdges) := chained "P" "RegisterDigitalCopy" "Filed" chain
-  build [("P", none), ("ArchivePaperOriginal", some "P")]
-    ([ start "P" "DocumentReceived", merge "P" "IntakeRequested", task "P" "ClassifyDocument"
+  build [{ scopeId := scope "ClassifyDocument", localInputs := [literal "format" "unclassified"],
+           localOutputs := [copied "documentFormat" "format"] }]
+    [("P", none), ("ClassifyDocument", some "P"), ("ArchivePaperOriginal", some "P")]
+    ([ start "P" "DocumentReceived", merge "P" "IntakeRequested", sub "P" "ClassifyDocument"
      , choice "P" "DocumentFormat" ["ArchivePaperOriginal", "PhoneSender"] "RegisterDigitalCopy"
      , sub "P" "ArchivePaperOriginal", pass "P" "PhoneSender" .manualTask, pass "P" "RegisterDigitalCopy" .abstractTask
      , merge "P" "Filed", finish "P" "DocumentFiled"
+     , start "ClassifyDocument" "ClassificationOpened", task "ClassifyDocument" "RecordDocumentFormat"
+     , finish "ClassifyDocument" "ClassificationClosed"
      , start "ArchivePaperOriginal" "ArchivingOpened", pass "ArchivePaperOriginal" "FilePaperOriginal" .manualTask
      , service "ArchivePaperOriginal" "IndexArchiveLocation" "indexArchiveLocation"
      , finish "ArchivePaperOriginal" "ArchivingClosed" ] ++ links)
@@ -117,10 +126,11 @@ private def intakeWith (chain : Nat := 0) : CheckedProcess :=
      , ("DocumentFormat", "PhoneSender"), ("DocumentFormat", "RegisterDigitalCopy")
      , ("ArchivePaperOriginal", "Filed"), ("PhoneSender", "IntakeRequested"), ("Filed", "DocumentFiled")
      , ("ArchivingOpened", "FilePaperOriginal"), ("FilePaperOriginal", "IndexArchiveLocation")
-     , ("IndexArchiveLocation", "ArchivingClosed") ]
+     , ("IndexArchiveLocation", "ArchivingClosed"), ("ClassificationOpened", "RecordDocumentFormat")
+     , ("RecordDocumentFormat", "ClassificationClosed") ]
       ++ (if chain = 0 then [("RegisterDigitalCopy", "Filed")] else linkEdges))
-    [(("DocumentFormat", "ArchivePaperOriginal"), equals "format" "paper"),
-     (("DocumentFormat", "PhoneSender"), equals "format" "illegible")]
+    [(("DocumentFormat", "ArchivePaperOriginal"), equals "documentFormat" "paper"),
+     (("DocumentFormat", "PhoneSender"), equals "documentFormat" "illegible")]
 
 private def equipment : CheckedProcess := equipmentWith
 private def intake : CheckedProcess := intakeWith
@@ -155,12 +165,12 @@ private def one_input_merges_keep_the_serial_route : Bool :=
     ScopeReentry.programReentry (lowerCheckedProcess intake) && ScopeReentry.checkedReentry intake
 
 /-- SRE-AVAILABLE-01 and PTT-BURST-01 on the re-entry route: the intake requires no Start name and its longest
-burst, a digital copy registered, filed and ended, is five steps at both levels. -/
-private def intake_requires_nothing_and_bursts_five : Bool := decide <|
+burst, the classification closed, a digital copy registered, filed and ended, is seven steps at both levels. -/
+private def intake_requires_nothing_and_bursts_seven : Bool := decide <|
   (ScopeReentry.checkedAnalysis intake).map (fun analysis => (analysis.required, analysis.optional)) = some ([], none) ∧
     (ScopeReentry.programAnalysis (lowerCheckedProcess intake)).map
       (fun analysis => (analysis.required, analysis.optional)) = some ([], none) ∧
-    ScopeReentry.checkedBurst? intake = some 5 ∧ ScopeReentry.programBurst? (lowerCheckedProcess intake) = some 5
+    ScopeReentry.checkedBurst? intake = some 7 ∧ ScopeReentry.programBurst? (lowerCheckedProcess intake) = some 7
 
 /-- PTT-BURST-01 on the serial route: five chained Tasks after the refund make a burst of exactly eight, admitted;
 six make nine, refused at both levels. -/
@@ -169,10 +179,10 @@ private def serial_burst_of_eight_is_admitted_and_nine_refused : Bool :=
   admitted (equipmentWith (chain := 5)) && !admitted nine &&
     !StructuredScopeData.checkedRouted nine && !StructuredScopeData.programRouted (lowerCheckedProcess nine)
 
-/-- PTT-BURST-01 on the re-entry route: three chained Tasks after the registration make eight, four make nine. -/
+/-- PTT-BURST-01 on the re-entry route: one chained Task after the registration makes eight, two make nine. -/
 private def reentry_burst_of_eight_is_admitted_and_nine_refused : Bool :=
-  ScopeReentry.checkedBurst? (intakeWith (chain := 3)) = some 8 && admitted (intakeWith (chain := 3)) &&
-    !admitted (intakeWith (chain := 4))
+  ScopeReentry.checkedBurst? (intakeWith (chain := 1)) = some 8 && admitted (intakeWith (chain := 1)) &&
+    !admitted (intakeWith (chain := 2))
 
 /-- PTT-ADMIT-01: a Task with a second outgoing flow is refused. -/
 private def second_outgoing_flow_is_refused : Bool := !admitted (equipmentWith (forked := true))
@@ -182,7 +192,7 @@ def passThroughTaskConformanceChecks : List (String × Bool) := [
   ("retained_models_are_admitted", retained_models_are_admitted),
   ("tasks_lower_to_one_input_merges", tasks_lower_to_one_input_merges),
   ("one_input_merges_keep_the_serial_route", one_input_merges_keep_the_serial_route),
-  ("intake_requires_nothing_and_bursts_five", intake_requires_nothing_and_bursts_five),
+  ("intake_requires_nothing_and_bursts_seven", intake_requires_nothing_and_bursts_seven),
   ("serial_burst_of_eight_is_admitted_and_nine_refused", serial_burst_of_eight_is_admitted_and_nine_refused),
   ("reentry_burst_of_eight_is_admitted_and_nine_refused", reentry_burst_of_eight_is_admitted_and_nine_refused),
   ("second_outgoing_flow_is_refused", second_outgoing_flow_is_refused)
