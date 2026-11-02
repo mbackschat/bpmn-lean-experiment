@@ -94,9 +94,9 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [None End fan-in](capsules/NONE-END-FAN-IN-PROPOSAL.md) for the nested scope-data profile, batch 4 (`BPMN-MECH-FLOW-01` uncontrolled incoming flow at a None End, `PC-BASIC-01` None End clause). Exclusive choice arity landed at `81f4934d`, the derived pipeline ceiling at `718ec63c`. The [implicit fan-in proposal](capsules/IMPLICIT-FAN-IN-PROPOSAL.md) was rejected at `db3c1f6a`: an Activity's entry merge needs a kernel extension. Close call against default-less Choices (27 clean CIB models against 11, 49 total against 131): their no-match needs a kernel default and a closure rollback channel. Batch 3 stays open behind the owner's holds.
+Current task: [None End fan-in](capsules/NONE-END-FAN-IN-PROPOSAL.md) for the nested scope-data profile, batch 4 (`BPMN-MECH-FLOW-01` uncontrolled incoming flow at a None End, `PC-BASIC-01` None End clause). Exclusive choice arity landed at `81f4934d`, the derived pipeline ceiling at `718ec63c`. The [implicit fan-in proposal](capsules/IMPLICIT-FAN-IN-PROPOSAL.md) was rejected at `db3c1f6a`: an Activity's entry merge needs a kernel extension. Close call against default-less Choices: within the profile's Sub-Process class 55 CIB files against 8, none and one clean, and their no-match needs a kernel default and a closure rollback channel. Batch 3 stays open behind the owner's holds.
 
-Deliverable: a None End with several incoming flows in the root graph of the nested scope-data profile, each token ending on its own, landed on `main`.
+Deliverable: a None End with several incoming flows in the root graph of the nested scope-data profile, each token ending on its own, landed on `main`; slice evidence toward `PC-BASIC-01`, which closes no checklist clause.
 
 Acceptance blockers: approving cold proposal review; implementation; closure gates and review; landing.
 
