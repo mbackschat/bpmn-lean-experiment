@@ -134,6 +134,19 @@ Nearest unsupported claims:
 - argument agreement with CIB when a sibling commits before a continuation job runs (`CIB-OP-0010`);
 - quantified bounded closure.
 
+Closure gates, 2026-11-02:
+
+- **Green at `211d34ec`:** `LEAN_FULL_GATE=root-parallel-forks ./scripts/lake.sh build BpmnConformance`, 933 jobs, with the [conformance module](../../BpmnSemantics/RootParallelForksConformance.lean); every check of it and of the concurrent structured scope data module evaluates true.
+- **Green at `cd357a5e`:** the complete `verify.sh`: the Lean library and executable checks, the runtime stage, the complete Temporal gate and the pipeline over all 157 registered cases, whose warm total of 117.4 s is 58% of its ceiling; then the research doctor and `test:model-corpus` over all 84 models.
+- **Calibration:** the [concurrent structured scope data probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConcurrentStructuredScopeDataProbeTest.java) passes all 3 tests on pinned CIB Seven `2.2.0`, journeys two and three of the onboarding model included.
+
+As implemented, where the account above left a choice or a witness changed:
+
+- **Root Call pair.** The pair built from the retained loan assessment, which the approved audit named, is no separating witness: forking its root exceeds the closure limit, so the shared analysis refuses it without the root-Call clause. The *Loan intake* pair in [Separating witnesses](#separating-witnesses) replaces it. Its Lean check states each analysis level on its own, because a mutation that dropped only the checked-level clause still passed a check through both levels together.
+- **Removed witness.** The concurrent structured scope data module's `root_body_fork_is_refused` is removed rather than flipped, as stated in [Separating witnesses](#separating-witnesses).
+- **Probe owner.** The root fork calibration is a test of the existing concurrent structured scope data probe, which gained a model directory parameter, instead of a new probe class with another copy of its session helper.
+- **Pipeline budget.** The three cases raised the warm pipeline budget from 200,200 to 204,100 ms and the hosted budget from 300,300 to 306,150 ms, at the unchanged 1,300 ms per-case rate the [verification entrypoint guard](../../scripts/verification-entrypoint.test.ts) requires; the owner approved the raise after a fresh direction review and a Rule 2 bound review. The hosted run at 154 cases used 191.8 s, 64% of its ceiling.
+
 ## Versioning consequences
 
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy): no wire shape, schema or value arm changes; admission accepts root forks under the profile; the profile artifact grows in place; no legacy reader or migration is added.
