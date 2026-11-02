@@ -7,8 +7,8 @@ public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 
 Finite admission witnesses of RPF-ADMIT-01 under the nested scope-data profile. The employee onboarding graph
 transcribes the retained `scenarios/root-parallel-forks` model, and the loan intake and loan review graphs the source
-test's root Call pair and its Call in a root-branch Sub-Process; their routes and Start names are the TypeScript analysis's values for the same graphs, and each refused graph
-differs from an admitted one in the fact its name states. The module runs no command: the journeys and the refused
+test's root Call pair and its Call in a root-branch Sub-Process; their routes and Start names are the TypeScript
+analysis's values for the same graphs, and each refused graph differs from an admitted one in the fact its name states. The module runs no command: the journeys and the refused
 completion are Lean executions of the registered scenarios in the pipeline. It imports admission owners only, as
 `ConcurrentStructuredScopeDataConformance` does, so it stays outside `CommandAdmission`'s hidden-edit cone
 (`lean-fanout`). See the [root Parallel forks proposal](../docs/capsules/ROOT-PARALLEL-FORKS-PROPOSAL.md#separating-witnesses).

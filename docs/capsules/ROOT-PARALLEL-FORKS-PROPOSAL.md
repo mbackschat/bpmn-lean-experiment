@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
-Review: approved
+Lifecycle: implemented
+Review: closure-approved
 
 ## Question and delivery boundary
 
@@ -182,4 +182,4 @@ Guards the implementation must change or satisfy:
 |---|---|---|---|---|
 | Proposal | `65cc260e` | `fork-turns-none` | `approve-with-required-edits` | `5b1a954f, 01f288d2` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `63e47821` | `fork-turns-none` | `approve-with-required-edits` | `e1c590f2` |
