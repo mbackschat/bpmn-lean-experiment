@@ -23,11 +23,15 @@ import org.junit.Test;
  * activation (`SRE-FRESH-01`, `SRE-INIT-01`, `SRE-RETAIN-01`, `SRE-STALE-01`, `SRE-OUTPUT-01`) on the two retained
  * models. CIB does not execute the project's Simple Boolean v1 conditions, so each root condition is rendered as JUEL
  * under `CIB-CFG-0005` before deployment; the probe compares re-entry, frames and identities, never condition truth.
- * Expected values are built here from the proposal's witness-model account, never read from a target result.
+ * The complaint handling tests calibrate the Exclusive choice arity proposal's widening of `CIB-AGR-0006`
+ * (`XCA-ORDER-01`, `XCA-DEFAULT-01`): a three-condition and a one-condition Choice, each with a default, over the four
+ * schedules of *Route complaint*, compared by the task or job each Choice selects in declaration order. Expected values
+ * are built here from the proposals' witness-model accounts, never read from a target result.
  */
 public final class CibSevenScopeReentryProbeTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
   private static final Path MODELS = PROJECT_ROOT.resolve("scenarios/scope-reentry");
+  private static final Path ARITY_MODELS = PROJECT_ROOT.resolve("scenarios/exclusive-choice-arity");
   private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
   private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
 
@@ -107,10 +111,60 @@ public final class CibSevenScopeReentryProbeTest {
     }
   }
 
-  /** The model with each Simple Boolean v1 `stringEquals(n,"v")` condition rendered as the JUEL `${n == "v"}`. */
-  private static String juelRendition(String model) throws Exception {
-    var source = Files.readString(MODELS.resolve(model + ".bpmn"));
-    assertEquals(2, STRING_EQUALS.matcher(source).results().count());
+  @Test
+  public void anUrgentBillingComplaintSelectsTheFirstOfTwoTrueCandidates() throws Exception {
+    complaintRoutesTo("billing", "urgent", "EscalateToSupervisor");
+  }
+
+  @Test
+  public void aBillingComplaintAloneSelectsTheMiddleCandidate() throws Exception {
+    complaintRoutesTo("billing", "normal", "CorrectInvoice");
+  }
+
+  @Test
+  public void aProductComplaintTakesBothDefaultsAfterEveryCandidateIsFalse() throws Exception {
+    complaintRoutesTo("product", "normal", "AnswerCustomer");
+  }
+
+  @Test
+  public void aDeliveryComplaintReshipsAfterTwoFalseCandidatesThenConfirmsDelivery() throws Exception {
+    var arguments = new HashMap<String, Object>();
+    JavaDelegate reshipOrder = execution -> {
+      arguments.putAll(execution.getVariablesLocal());
+      execution.setVariableLocal("tracking", "TRK-42");
+    };
+    try (var session = new Session(ARITY_MODELS, "complaint-handling", 4, Map.of("reshipOrder", reshipOrder))) {
+      var complaint = session.classifiedComplaint("delivery", "normal");
+      // Route complaint's third candidate arms Reship order's asynchronous continuation and opens no task.
+      assertEquals(0, session.engine.getTaskService().createTaskQuery().processInstanceId(complaint).count());
+      session.runJob(complaint);
+      assertEquals(Map.of("order", "ORD-7"), arguments);
+      // XCA-ORDER-01 for the one-condition Choice: its only candidate is true.
+      session.engine.getTaskService().complete(session.task(complaint, "ConfirmDelivery"));
+      session.assertEnded(complaint, Map.of("category", "delivery", "orderNumber", "ORD-7", "priority", "normal",
+          "trackingNumber", "TRK-42"));
+      session.assertRouted(complaint, List.of("ConfirmDelivery", "ReshipOrder"));
+    }
+  }
+
+  /** Classifies a complaint, completes the one task `routed` opens and expects the Process to end without a follow-up. */
+  private static void complaintRoutesTo(String category, String priority, String routed) throws Exception {
+    try (var session = new Session(ARITY_MODELS, "complaint-handling", 4, Map.of())) {
+      var complaint = session.classifiedComplaint(category, priority);
+      session.engine.getTaskService().complete(session.task(complaint, routed));
+      // XCA-DEFAULT-01 for the one-condition Choice: a complaint other than delivery takes its default.
+      session.assertEnded(complaint, Map.of("category", category, "orderNumber", "ORD-7", "priority", priority));
+      session.assertRouted(complaint, List.of(routed));
+    }
+  }
+
+  /**
+   * The model with each Simple Boolean v1 `stringEquals(n,"v")` condition rendered as the JUEL `${n == "v"}`, which must
+   * replace exactly `conditions` conditions.
+   */
+  private static String juelRendition(Path directory, String model, int conditions) throws Exception {
+    var source = Files.readString(directory.resolve(model + ".bpmn"));
+    assertEquals(conditions, STRING_EQUALS.matcher(source).results().count());
     return STRING_EQUALS.matcher(source.replace(SIMPLE_BOOLEAN, "")).replaceAll("\\${$1 == \"$2\"}");
   }
 
@@ -119,10 +173,14 @@ public final class CibSevenScopeReentryProbeTest {
     final String deployment;
 
     Session(String model, Map<Object, Object> beans) throws Exception {
+      this(MODELS, model, 2, beans);
+    }
+
+    Session(Path directory, String model, int conditions, Map<Object, Object> beans) throws Exception {
       engine = CibSevenTestEngine.create("scope-reentry-" + model, configuration -> configuration.setBeans(beans));
       try {
         deployment = engine.getRepositoryService().createDeployment()
-            .addString(model + ".bpmn", juelRendition(model)).deploy().getId();
+            .addString(model + ".bpmn", juelRendition(directory, model, conditions)).deploy().getId();
       } catch (Exception | Error failure) {
         engine.close();
         throw failure;
@@ -131,6 +189,19 @@ public final class CibSevenScopeReentryProbeTest {
 
     String start(String processId, Map<String, Object> variables) {
       return engine.getRuntimeService().startProcessInstanceByKey(processId, new HashMap<>(variables)).getId();
+    }
+
+    /** Starts a complaint for order ORD-7 and classifies it, so every name a Choice reads is written before it. */
+    String classifiedComplaint(String category, String priority) {
+      var complaint = start("Process_ComplaintHandling", Map.of("orderNumber", "ORD-7"));
+      engine.getTaskService().complete(task(complaint, "ClassifyComplaint"), Map.of("category", category, "priority", priority));
+      return complaint;
+    }
+
+    /** Of the four branch targets of *Route complaint* and *Confirm delivery*, exactly `reached` were activated. */
+    void assertRouted(String instance, List<String> reached) {
+      var targets = List.of("AnswerCustomer", "ConfirmDelivery", "CorrectInvoice", "EscalateToSupervisor", "ReshipOrder");
+      assertEquals(reached, targets.stream().filter(element -> !activations(instance, element).isEmpty()).toList());
     }
 
     /** The id of the one open task of `element`. */
