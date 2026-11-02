@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
              id="Definitions_EquipmentReturn" targetNamespace="urn:bpmn-lean:equipment-return">
   <process id="Process_EquipmentReturn" name="Handle an equipment return" isExecutable="true">
     <startEvent id="ReturnRequested" name="Return requested" />
@@ -13,11 +14,15 @@
       <sequenceFlow id="Flow_Unpacked" sourceRef="UnpackEquipment" targetRef="RecordCondition" />
       <sequenceFlow id="Flow_Recorded" sourceRef="RecordCondition" targetRef="InspectionClosed" />
     </subProcess>
+    <serviceTask id="RefundDeposit" name="Refund deposit"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${refundDeposit}" camunda:asyncBefore="true" />
     <task id="CloseReturnTicket" name="Close return ticket" />
     <endEvent id="ReturnClosed" name="Return closed" />
     <sequenceFlow id="Flow_Requested" sourceRef="ReturnRequested" targetRef="SchedulePickup" />
     <sequenceFlow id="Flow_Scheduled" sourceRef="SchedulePickup" targetRef="InspectReturnedEquipment" />
-    <sequenceFlow id="Flow_Inspected" sourceRef="InspectReturnedEquipment" targetRef="CloseReturnTicket" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="InspectReturnedEquipment" targetRef="RefundDeposit" />
+    <sequenceFlow id="Flow_Refunded" sourceRef="RefundDeposit" targetRef="CloseReturnTicket" />
     <sequenceFlow id="Flow_Ticketed" sourceRef="CloseReturnTicket" targetRef="ReturnClosed" />
   </process>
 </definitions>

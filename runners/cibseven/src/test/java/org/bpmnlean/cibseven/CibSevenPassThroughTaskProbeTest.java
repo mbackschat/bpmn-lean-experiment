@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.cibseven.bpm.engine.ProcessEngine;
+import org.cibseven.bpm.engine.delegate.JavaDelegate;
 import org.cibseven.bpm.engine.history.HistoricActivityInstance;
 import org.junit.Test;
 
@@ -30,13 +31,15 @@ public final class CibSevenPassThroughTaskProbeTest {
 
   @Test
   public void theManualTaskInsideTheInspectionAndTheClosingTaskPassThroughWithoutWaiting() throws Exception {
-    try (var session = new Session("equipment-return", 0)) {
+    try (var session = new Session("equipment-return", 0, "refundDeposit")) {
       var instance = session.start("Process_EquipmentReturn");
       session.complete(instance, "SchedulePickup");
       session.assertPassedThrough(instance, "UnpackEquipment", "manualTask", 1);
       session.assertOnlyOpenTask(instance, "RecordCondition");
 
       session.complete(instance, "RecordCondition");
+      session.assertPassedThrough(instance, "CloseReturnTicket", "task", 0);
+      session.runJob(instance);
       session.assertPassedThrough(instance, "CloseReturnTicket", "task", 1);
       session.assertEnded(instance);
     }
@@ -44,7 +47,7 @@ public final class CibSevenPassThroughTaskProbeTest {
 
   @Test
   public void twoIllegibleCopiesReenterTheManualTaskWithFreshActivationsBeforeThePaperIsFiled() throws Exception {
-    try (var session = new Session("document-intake", 2)) {
+    try (var session = new Session("document-intake", 2, "indexArchiveLocation")) {
       var instance = session.start("Process_DocumentIntake");
       for (var attempt = 0; attempt < 2; attempt++) {
         session.complete(instance, "ClassifyDocument", Map.of("format", "illegible"));
@@ -54,6 +57,7 @@ public final class CibSevenPassThroughTaskProbeTest {
       session.complete(instance, "ClassifyDocument", Map.of("format", "paper"));
       session.assertPassedThrough(instance, "PhoneSender", "manualTask", 0);
       session.assertPassedThrough(instance, "FilePaperOriginal", "manualTask", 1);
+      session.runJob(instance);
       session.assertEnded(instance);
       assertEquals(2, session.activations(instance, "PhoneSender").size());
     }
@@ -61,7 +65,7 @@ public final class CibSevenPassThroughTaskProbeTest {
 
   @Test
   public void aDigitalCopyTakesTheDefaultBranchThroughThePlainTask() throws Exception {
-    try (var session = new Session("document-intake", 2)) {
+    try (var session = new Session("document-intake", 2, "indexArchiveLocation")) {
       var instance = session.start("Process_DocumentIntake");
       session.complete(instance, "ClassifyDocument", Map.of("format", "digital"));
       session.assertPassedThrough(instance, "RegisterDigitalCopy", "task", 1);
@@ -74,8 +78,11 @@ public final class CibSevenPassThroughTaskProbeTest {
     final ProcessEngine engine;
     final String deployment;
 
-    Session(String model, int conditions) throws Exception {
-      engine = CibSevenTestEngine.create("pass-through-task-" + model);
+    /** `handler` names the model's one Service Task delegate, a no-op: the probe observes Tasks, not effects. */
+    Session(String model, int conditions, String handler) throws Exception {
+      JavaDelegate noOp = execution -> { };
+      engine = CibSevenTestEngine.create("pass-through-task-" + model,
+          configuration -> configuration.setBeans(Map.<Object, Object>of(handler, noOp)));
       try {
         var source = Files.readString(MODELS.resolve(model + ".bpmn"));
         assertEquals(conditions, STRING_EQUALS.matcher(source).results().count());
@@ -90,6 +97,13 @@ public final class CibSevenPassThroughTaskProbeTest {
 
     String start(String processId) {
       return engine.getRuntimeService().startProcessInstanceByKey(processId).getId();
+    }
+
+    /** Runs the one open asynchronous continuation before the next command. */
+    void runJob(String instance) {
+      var job = engine.getManagementService().createJobQuery().processInstanceId(instance).singleResult();
+      assertNotNull(job);
+      engine.getManagementService().executeJob(job.getId());
     }
 
     void complete(String instance, String element) {
@@ -125,7 +139,8 @@ public final class CibSevenPassThroughTaskProbeTest {
       }
       assertEquals(element, 0, engine.getTaskService().createTaskQuery().processInstanceId(instance)
           .taskDefinitionKey(element).count());
-      assertEquals(element, 0, engine.getManagementService().createJobQuery().processInstanceId(instance).count());
+      assertEquals(element, 0, engine.getManagementService().createJobQuery().processInstanceId(instance)
+          .activityId(element).count());
       return added;
     }
 

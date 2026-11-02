@@ -103,13 +103,15 @@ None. A pass-through Task never waits, so every resumption point and command of 
 
 ## Separating witnesses
 
+Both models carry one mapped Service Task bound by an exact source overlay and at least one Sub-Process, because the profile admits a serial or re-entry model only with a bound handler (`CSSD-ADMIT-01`) and at least one Sub-Process; the Tasks alone decide admission, which the source test locks by admitting each model with its Tasks removed.
+
 - **Equipment return** (serial and scoped):
-  - Path: *Return requested* → User Task *Schedule pickup* → Sub-Process *Inspect returned equipment* → plain Task *Close return ticket* → End.
+  - Path: *Return requested* → User Task *Schedule pickup* → Sub-Process *Inspect returned equipment* → Service Task *Refund deposit* → plain Task *Close return ticket* → End.
   - The Sub-Process holds Start → Manual Task *Unpack equipment* → User Task *Record condition* → End.
-  - The longest burst is five.
+  - The longest burst is three.
 - **Document intake** (branched and cyclic, re-entry account):
   - Path: *Document received* → Merge *Intake requested* → User Task *Classify document* → Choice *Document format*.
-  - The `paper` branch goes to Manual Task *File paper original* and Merge *Filed*.
+  - The `paper` branch goes to Sub-Process *Archive paper original*, holding Start → Manual Task *File paper original* → Service Task *Index archive location* → End, and then to Merge *Filed*.
   - The `illegible` branch goes to Manual Task *Phone sender for a better copy* and back to *Intake requested*.
   - The default branch goes to plain Task *Register digital copy* and *Filed*.
   - *Filed* goes to End. The longest burst is five.
@@ -131,11 +133,7 @@ None. A pass-through Task never waits, so every resumption point and command of 
 
 Lane shape: checked
 
-Evidence:
-
-- The family adds no transition family and no runtime law, because the Program it produces uses only `mergeExclusive`.
-- A `rfl` lowering lemma for the new arm states its exact operation.
-- An executable conformance module checks the admission, kind, lowering and burst over both models and every refused edit.
+Evidence: the family adds no transition family and no runtime law, because the Program it produces uses only `mergeExclusive`; a `rfl` lowering lemma for the new arm in [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean) states its exact operation, and an executable conformance module checks the admission, kind, lowering and burst over both models and every refused edit, reusing the burst analysis of [`ScopeReentryAdmission`](../../BpmnSemantics/SemanticProcess/ScopeReentryAdmission.lean).
 
 Not proved, and recorded as such: that every actual closure stays within the computed burst. The runtime closure bound rolls an over-limit closure back atomically.
 

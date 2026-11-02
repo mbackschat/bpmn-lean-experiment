@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
              id="Definitions_DocumentIntake" targetNamespace="urn:bpmn-lean:document-intake"
              expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
   <process id="Process_DocumentIntake" name="Take in a received document" isExecutable="true">
@@ -8,7 +9,17 @@
     <exclusiveGateway id="IntakeRequested" name="Intake requested" gatewayDirection="Converging" />
     <userTask id="ClassifyDocument" name="Classify document" />
     <exclusiveGateway id="DocumentFormat" name="Document format" gatewayDirection="Diverging" default="Flow_Digital" />
-    <manualTask id="FilePaperOriginal" name="File paper original" />
+    <subProcess id="ArchivePaperOriginal" name="Archive paper original">
+      <startEvent id="ArchivingOpened" name="Archiving opened" />
+      <manualTask id="FilePaperOriginal" name="File paper original" />
+      <serviceTask id="IndexArchiveLocation" name="Index archive location"
+                   implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${indexArchiveLocation}" camunda:asyncBefore="true" />
+      <endEvent id="ArchivingClosed" name="Archiving closed" />
+      <sequenceFlow id="Flow_ArchivingOpened" sourceRef="ArchivingOpened" targetRef="FilePaperOriginal" />
+      <sequenceFlow id="Flow_PaperFiledAway" sourceRef="FilePaperOriginal" targetRef="IndexArchiveLocation" />
+      <sequenceFlow id="Flow_Indexed" sourceRef="IndexArchiveLocation" targetRef="ArchivingClosed" />
+    </subProcess>
     <manualTask id="PhoneSender" name="Phone sender for a better copy" />
     <task id="RegisterDigitalCopy" name="Register digital copy" />
     <exclusiveGateway id="Filed" name="Filed" gatewayDirection="Converging" />
@@ -16,14 +27,14 @@
     <sequenceFlow id="Flow_Received" sourceRef="DocumentReceived" targetRef="IntakeRequested" />
     <sequenceFlow id="Flow_Intake" sourceRef="IntakeRequested" targetRef="ClassifyDocument" />
     <sequenceFlow id="Flow_Classified" sourceRef="ClassifyDocument" targetRef="DocumentFormat" />
-    <sequenceFlow id="Flow_Paper" sourceRef="DocumentFormat" targetRef="FilePaperOriginal">
+    <sequenceFlow id="Flow_Paper" sourceRef="DocumentFormat" targetRef="ArchivePaperOriginal">
       <conditionExpression xsi:type="tFormalExpression">stringEquals(format,"paper")</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Illegible" sourceRef="DocumentFormat" targetRef="PhoneSender">
       <conditionExpression xsi:type="tFormalExpression">stringEquals(format,"illegible")</conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="Flow_Digital" sourceRef="DocumentFormat" targetRef="RegisterDigitalCopy" />
-    <sequenceFlow id="Flow_PaperFiled" sourceRef="FilePaperOriginal" targetRef="Filed" />
+    <sequenceFlow id="Flow_PaperFiled" sourceRef="ArchivePaperOriginal" targetRef="Filed" />
     <sequenceFlow id="Flow_Recontacted" sourceRef="PhoneSender" targetRef="IntakeRequested" />
     <sequenceFlow id="Flow_DigitalFiled" sourceRef="RegisterDigitalCopy" targetRef="Filed" />
     <sequenceFlow id="Flow_Done" sourceRef="Filed" targetRef="DocumentFiled" />
