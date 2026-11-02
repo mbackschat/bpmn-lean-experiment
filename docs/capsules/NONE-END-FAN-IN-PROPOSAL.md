@@ -205,4 +205,4 @@ Guards the implementation must change or satisfy:
 |---|---|---|---|---|
 | Proposal | `d93a7b2c` | `fork-turns-none` | `approve-with-required-edits` | `0bc5a8e2, 86897969` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `8d48cbe1` | `fork-turns-none` | `approve-with-required-edits` | `6b0050d8` |
