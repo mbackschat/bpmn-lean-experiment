@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: land [root-body Parallel forks](capsules/ROOT-PARALLEL-FORKS-SPEC.md) for the nested scope-data profile, batch 4 (`PC-CF-03` primary; the root-fork clauses of `PC-DATA-03`, `PC-DATA-05` and `PC-DATA-06`). Pass-through Tasks landed at `c90ebc40`. Chosen over implicit Activity split and merge (`PC-CF-07`) on reach: of 1,947 BPMN models in the pinned CIB engine sources, 263 hold a Parallel Gateway, 17 and 13 an Activity with two incoming or outgoing flows. Batch 3 stays open behind the owner's holds.
+Current task: propose [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-PROPOSAL.md) for the nested scope-data profile, batch 4 (`PC-CF-02`, its candidate-count clause). Root Parallel forks are closure-approved and graduated ([specification](capsules/ROOT-PARALLEL-FORKS-SPEC.md)), landing through pull request 43. Chosen on reach: of the 90 CIB engine test models holding an Exclusive Gateway, 26 have one condition plus a default and only 1 the admitted two-plus-default shape; default-less Choices (40 models) need an exception outcome and are the next candidate. Batch 3 stays open behind the owner's holds.
 
-Deliverable: Parallel forks and joins in the Process root body of the nested scope-data profile, with User Tasks, mapped Service Tasks and Sub-Processes over structured values on their branches, landed on `main`.
+Deliverable: Exclusive Choices with one or more conditional flows and a default in the root graph of the nested scope-data profile, landed on `main`.
 
-Acceptance blockers: landing through the branch flow with green hosted checks.
+Acceptance blockers: the cold proposal review and its correction audit; then implementation, registration, closure gates and the closure review.
 
-Current result: the family is closure-approved (review of `63e47821`, audit `e1c590f2`) and graduated; after the audit's corrections `BpmnConformance` under batch `root-parallel-forks` and the fast guards are green.
+Current result: proposal drafted; root Parallel forks' hosted checks run on pull request 43.
 
-Effort budget: 8 hours for proposal, implementation and closure, from 2026-11-02 10:45 CET; Lean batch `root-parallel-forks`, one full `BpmnConformance` build at closure plus at most one after a correction, both used.
+Effort budget: 6 hours for proposal, implementation and closure, from 2026-11-02 13:45 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: push the branch, open the pull request and fast-forward `main` on green hosted checks; then propose Exclusive compositions in the nested scope-data profile (`PC-CF-02`, with the Exclusive-within-Parallel cell of `PC-CF-08`).
+Next action: commit the proposal and request its cold review.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and an approving closure review.
 
