@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: rejected
 
 ## Question and delivery boundary
 
@@ -201,6 +201,8 @@ Guards the implementation must change or satisfy:
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `db3c1f6a` | `fork-turns-none` | `reject` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+
+The proposal review of `db3c1f6a` (packet `84c90659ebd80db8ad3311a5e97661f1a4488c266e095d75c6df6a0fe595782d`) rejected the entry merge: its output needs a control place with no Sequence Flow behind it, which every place's required `BpmnSequenceFlowOrigin` forbids and which would publish a token position and a committed transition that CIB does not have, and the profile's Program envelope refuses two operations with one origin. Fan-in at Activities therefore needs a kernel extension, a typed entry place or multi-input target operations, and a new proposal. None End fan-in needs neither and is the [None End fan-in proposal](NONE-END-FAN-IN-PROPOSAL.md).

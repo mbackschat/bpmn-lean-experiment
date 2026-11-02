@@ -94,15 +94,15 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [Implicit fan-in](capsules/IMPLICIT-FAN-IN-PROPOSAL.md) for the nested scope-data profile, batch 4 (`PC-CF-07` merge clause, `PC-HUM-05` implicit merge clause, `BPMN-MECH-FLOW-01` uncontrolled incoming flow). Exclusive choice arity landed at `81f4934d`, the derived pipeline ceiling at `718ec63c`. Close call against default-less Choices (27 clean CIB models against 19): their no-match needs an optional kernel default and a closure rollback channel; recorded in the proposal's selection. Batch 3 stays open behind the owner's holds.
+Current task: [None End fan-in](capsules/NONE-END-FAN-IN-PROPOSAL.md) for the nested scope-data profile, batch 4 (`BPMN-MECH-FLOW-01` uncontrolled incoming flow at a None End, `PC-BASIC-01` None End clause). Exclusive choice arity landed at `81f4934d`, the derived pipeline ceiling at `718ec63c`. The [implicit fan-in proposal](capsules/IMPLICIT-FAN-IN-PROPOSAL.md) was rejected at `db3c1f6a`: an Activity's entry merge needs a kernel extension. Close call against default-less Choices (27 clean CIB models against 11, 49 total against 131): their no-match needs a kernel default and a closure rollback channel. Batch 3 stays open behind the owner's holds.
 
-Deliverable: Activities and None End Events with several incoming flows in the root graph of the nested scope-data profile, one occurrence per arriving token, landed on `main`.
+Deliverable: a None End with several incoming flows in the root graph of the nested scope-data profile, each token ending on its own, landed on `main`.
 
 Acceptance blockers: approving cold proposal review; implementation; closure gates and review; landing.
 
 Current result: proposal drafted.
 
-Effort budget: 10 hours from 2026-11-02 19:10 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
+Effort budget: 6 hours from 2026-11-02 20:35 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
 Next action: commit the proposal and run its cold review.
 
