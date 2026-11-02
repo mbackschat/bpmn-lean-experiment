@@ -94,18 +94,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the Plain and Manual Task pass-through proposal of batch 4 (`PC-HUM-04` primary, `PC-HUM-05`). Batch 3 stays open behind the owner's holds: its only unheld mechanism, User Task local data, is deferred because its [rejected proposal](capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md#independent-cold-review-receipt) needs a redesign plus a kernel type change for 22 of 2,628 pinned CIB User Tasks, all tests, a poor cost for that reach. Scope re-entry landed at `8eb93c88`.
+Current task: implement the [pass-through Task proposal](capsules/PASS-THROUGH-TASK-PROPOSAL.md), approved after one correction audit, for batch 4 (`PC-HUM-04` primary, `PC-HUM-05`). Batch 3 stays open behind the owner's holds; User Task local data is deferred on cost against reach.
 
-Deliverable: a cold-approved family proposal for source-admitted Plain and Manual Tasks that advance without a wait, effect or receipt command.
+Deliverable: source-admitted Plain and Manual Tasks that pass through without a wait in serial, Choice-branched and scoped graphs of the nested scope-data profile, landed on `main`; both rows stay open only on their Parallel-branch and implicit split and merge clauses.
 
-Acceptance blockers: the pinned CIB 2.2.0 pass-through and history account; a representation that keeps the source kind and publishes one occurrence; the implicit split and merge clause of `PC-HUM-05` against open `PC-CF-07`.
+Acceptance blockers: TypeScript admission, lowering and the amended re-entry route; the `nonOperationalTask` kernel arm and its Lean owners in one commit; registration and the heavy lanes once at closure; the cold closure review.
 
-Current result: proposal stage started.
+Current result: proposal approved; the CIB probe passes on both witness models.
 
-Effort budget: 2 hours for the proposal stage, from 2026-11-02 04:55 CET.
+Effort budget: 6 hours for implementation and closure, from 2026-11-02 05:25 CET.
 
-Next action: establish the CIB depth from pinned source, then write and cold-review the proposal.
+Next action: TypeScript checked arm, source projection, lowering and admission, red/green.
 
-Oracle: an approving cold proposal review.
+Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and an approving closure review.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.

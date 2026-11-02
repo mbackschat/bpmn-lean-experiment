@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and delivery boundary
 
@@ -82,7 +82,7 @@ This family makes one kernel type change, allowed once per family by [contract i
 The shared scope-data vertex model gains a `PassThrough` vertex with no reads or writes and one output. It is projected from the checked arm, and on the Program side from a one-input `mergeExclusive`.
 
 - **Serial walk.** Accepts the vertex on the root path and on Sub-Process paths. The called-path rule is unchanged, so a called Process refuses it.
-- **Re-entry route, amended.** Today the Program-level predicate of `SRE-ROUTE-01` counts every root `mergeExclusive` (`scope-reentry-admission.ts:32-38`; Lean `ScopeReentry.programReentry`, consumed at `NestedScopeControlAdmission.lean:834`). This family amends it to count only a `mergeExclusive` with at least two inputs, so a serial model with a root pass-through Task stays on the serial route at both levels and the [Start capacity envelope](../../packages/temporal-adapter/protocol/test/start-capacity-envelope.test.ts) keeps its routing. The amendment is additive: every model admitted today has no one-input `mergeExclusive`. The [scope re-entry specification](SCOPE-REENTRY-SPEC.md#admission) records it, and *Close return ticket* at the root of Equipment return is the witness that locks the route.
+- **Re-entry route, amended.** Today the Program-level predicate of `SRE-ROUTE-01` counts every root `mergeExclusive` (`scope-reentry-admission.ts:32-38`; Lean `ScopeReentry.programReentry`, consumed at `NestedScopeControlAdmission.lean:834`). This family amends it to count only a `mergeExclusive` with at least two inputs, so a serial model with a root pass-through Task stays on the serial route at both levels and the [Start capacity envelope](../../packages/temporal-adapter/protocol/test/start-capacity-envelope.test.ts) keeps its routing. The amendment is additive: every model admitted today has no one-input `mergeExclusive`. The [scope re-entry specification](SCOPE-REENTRY-SPEC.md#admission) will record it, and *Close return ticket* at the root of Equipment return is the witness that locks the route.
 - **Burst.** The re-entry burst (`SRE-BURST-01`) gives the vertex a cost of one, without stopping.
 - **Serial-route burst.** A serial-route model holding a pass-through Task is admitted only when the same burst computation stays within the closure limit of eight (`PTT-BURST-01`). The serial route's recorded lack of a burst rule stays as disclosed for models without one. Adding the rule to those models would narrow admitted behavior and needs a new profile identity.
 - **Concurrent account.** Refuses the checked arm and the one-input `mergeExclusive`, unchanged.
@@ -222,6 +222,6 @@ Guards the implementation must change or satisfy:
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `76fb189a` | `fork-turns-none` | `approve-with-required-edits` | `110afb5c` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
