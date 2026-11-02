@@ -1,0 +1,76 @@
+{
+  "kind": "scenario",
+  "id": "exclusive-choice-arity-complaint-delivery",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "complaint-handling",
+    "relativePath": "scenarios/exclusive-choice-arity/complaint-handling.bpmn",
+    "sha256": "50ed1d56e15df84b807324cebba195192f42405bdd2a3e581c85bbdbbb89bc74",
+    "sourceOverlay": {
+      "id": "complaint-handling-handlers",
+      "sha256": "a97a2e3531d35958d4f9174f818a052df8963e37b518ef003cf80808573bf333"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ComplaintHandling",
+      "instanceId": "Instance_1",
+      "initialVariables": [
+        { "name": "orderNumber", "value": { "kind": "string", "value": "ORD-7" } }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-classify-complaint",
+      "taskId": { "processInstanceId": "Instance_1", "elementId": "ClassifyComplaint", "activation": 1 },
+      "submittedValues": [
+        { "name": "category", "value": { "kind": "string", "value": "delivery" } },
+        { "name": "priority", "value": { "kind": "string", "value": "normal" } }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:5a3ea238f4adca3580db492e13b7cf2e09e721183ca6667a019bd900cd353d03",
+      "effectId": { "processInstanceId": "Instance_1", "elementId": "ReshipOrder", "activation": 1 },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          { "name": "tracking", "value": { "kind": "string", "value": "TRK-42" } }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-delivery",
+      "taskId": { "processInstanceId": "Instance_1", "elementId": "ConfirmDelivery", "activation": 1 },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "CIB-AGR-0006",
+      "CIB-EXT-0020",
+      "CIB-INT-0001"
+    ]
+  }
+}

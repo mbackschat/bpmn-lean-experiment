@@ -149,7 +149,8 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addConcurrentStructuredScopeDataCases(context, add);
   }
-  for (const id of ["scope-reentry-claim-rework-then-approve", "scope-reentry-contract-revise-then-sign"]) {
+  for (const id of ["scope-reentry-claim-rework-then-approve", "scope-reentry-contract-revise-then-sign",
+    "exclusive-choice-arity-complaint-delivery"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addScopeReentryCases(context, add);
@@ -431,17 +432,20 @@ function addConcurrentStructuredScopeDataCases(context: DomainContext, add: AddC
 }
 
 /**
- * The claim rework and contract revision re-enter a Sub-Process, the contract also a Call, under the nested scope-data
- * profile's SingletonBusinessItem domain, and SRE-AVAILABLE-01 derives their Start names by the barrier rule: each
- * requires only its retained text, and a present null satisfies it. The Call-free claim admits its own Process output
- * `assessment`; the contract, whose Call restricts Start to required and optional names (CMCALL-START-01), admits the
+ * The claim rework and contract revision re-enter a Sub-Process, the contract also a Call, and the complaint handling
+ * chooses among three conditions (XCA-ADMIT-01), all under the nested scope-data profile's SingletonBusinessItem domain;
+ * SRE-AVAILABLE-01 derives their Start names by the barrier rule: each requires only its retained value, and a present
+ * null satisfies it. The Call-free claim and complaint admit their own Process outputs `assessment` and `category`; the
+ * contract, whose Call restricts Start to required and optional names (CMCALL-START-01), admits the
  * returned `legalVerdict` and refuses the frame local `draft` and the called-only `verdict`. Each case changes one fact
  * of the retained answer-free Start or appends one late command.
  */
 function addScopeReentryCases(context: DomainContext, add: AddCase): void {
   const { start, startWith } = addRequiredStartNameCases(context, add);
-  const names = start.initialVariables[0]!.name === "claimSummary"
-    ? [["assessment", true]] as const : [["draft", false], ["legalVerdict", true], ["verdict", false]] as const;
+  const retained = start.initialVariables[0]!.name;
+  const names = retained === "claimSummary" ? [["assessment", true]] as const
+    : retained === "orderNumber" ? [["category", true]] as const
+    : [["draft", false], ["legalVerdict", true], ["verdict", false]] as const;
   for (const [name, supported] of names) {
     // Kept in the canonical name order the Start contract requires.
     const bindings = [...start.initialVariables, { name, value: values[0]! }].toSorted((left, right) =>

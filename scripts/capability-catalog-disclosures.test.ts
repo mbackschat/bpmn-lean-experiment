@@ -99,7 +99,7 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ]],
   ["exclusiveGateway", "restriction", [
     "which passes each arriving token on its own",
-    "two-condition Choices with a default and pass-through merges in the Process root body only",
+    "Choices with one or more conditions and a default, tested in declaration order, and pass-through merges in the Process root body only",
     "never in a model that also forks",
   ]],
 ];

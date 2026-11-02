@@ -1362,6 +1362,47 @@
       }
     },
     {
+      "id": "complaint-handling-routing",
+      "title": "Route a customer complaint",
+      "businessPurpose": "Classify a customer complaint in a review scope, then escalate an urgent one, correct the invoice for a billing one, reship the order for a delivery one or otherwise answer the customer, and confirm the delivery afterwards when the order was reshipped.",
+      "cloneFamily": "complaint-handling-routing",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "conditionalRouting",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/exclusive-choice-arity/complaint-handling.bpmn",
+        "sha256": "50ed1d56e15df84b807324cebba195192f42405bdd2a3e581c85bbdbbb89bc74",
+        "scenarioRelativePath": "scenarios/exclusive-choice-arity/complaint-delivery.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "exclusive-choice-arity-complaint-delivery",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for Exclusive choice arity; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",
