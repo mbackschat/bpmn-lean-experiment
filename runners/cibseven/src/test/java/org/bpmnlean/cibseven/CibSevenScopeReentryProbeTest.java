@@ -23,7 +23,7 @@ import org.junit.Test;
  * activation (`SRE-FRESH-01`, `SRE-INIT-01`, `SRE-RETAIN-01`, `SRE-STALE-01`, `SRE-OUTPUT-01`) on the two retained
  * models. CIB does not execute the project's Simple Boolean v1 conditions, so each root condition is rendered as JUEL
  * under `CIB-CFG-0005` before deployment; the probe compares re-entry, frames and identities, never condition truth.
- * The complaint handling tests calibrate the Exclusive choice arity proposal's widening of `CIB-AGR-0006`
+ * The complaint handling tests calibrate the Exclusive choice arity specification's widening of `CIB-AGR-0006`
  * (`XCA-ORDER-01`, `XCA-DEFAULT-01`): a three-condition and a one-condition Choice, each with a default, over the four
  * schedules of *Route complaint*, compared by the task or job each Choice selects in declaration order. Expected values
  * are built here from the proposals' witness-model accounts, never read from a target result.

@@ -1,6 +1,6 @@
 /**
  * XCA-ADMIT-01 and the source half of XCA-ORDER-01 over the retained complaint handling model, through the exact-bytes
- * source path and the core's checked-graph and Program analyses. The oracle is the Exclusive choice arity proposal's
+ * source path and the core's checked-graph and Program analyses. The oracle is the Exclusive choice arity specification's
  * "Separating witnesses": candidate order is XML declaration order, which only this lane can observe
  * (CIB-INT-0001), and every refused edit differs from the admitted model in the one fact its label names.
  */

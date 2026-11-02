@@ -46,7 +46,7 @@ type AdmittedCheckedProcessGraph = Readonly<{
 /**
  * Whether a profile admits checked Exclusive Choices with any positive number of conditional flows (MTCF-CHOICE-01,
  * XCA-ADMIT-01); every other profile keeps exactly two. The one decision both checked arity loci consult, so that a
- * profile control can enumerate it (Exclusive choice arity proposal, "Separating witnesses").
+ * profile control can enumerate it (Exclusive choice arity specification, "Separating witnesses").
  */
 export function variableExclusiveChoiceArity(semanticProfile: string): boolean {
   return semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID ||

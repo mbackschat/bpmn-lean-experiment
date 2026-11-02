@@ -13,7 +13,7 @@ profile control evaluates only the `choose` arm of `operationWellFormed`; the ch
 the proposal records. The module runs no command: candidate order and the default are Lean executions of the
 registered scenarios in the pipeline. It imports admission owners only, as `ScopeReentryConformance` does, so it stays
 outside `CommandAdmission`'s hidden-edit cone (`lean-fanout`). See the
-[Exclusive choice arity proposal](../docs/capsules/EXCLUSIVE-CHOICE-ARITY-PROPOSAL.md#separating-witnesses).
+[Exclusive choice arity specification](../docs/capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md#separating-witnesses).
 -/
 
 public section

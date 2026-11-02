@@ -126,4 +126,4 @@ The [root Parallel forks account](capsules/ROOT-PARALLEL-FORKS-SPEC.md) grows th
 
 ## Exclusive choice arity
 
-[Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-PROPOSAL.md) lifts every arity locus of the re-entry Choice to any positive condition count with a default (`XCA-ADMIT-01`) with a [conformance module](../BpmnSemantics/ExclusiveChoiceArityConformance.lean), pipeline cases and the CIB probe. Open: Lean checked-level profile control; default-less and body Choices.
+[Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md) lifts every arity locus of the re-entry Choice to any positive condition count with a default (`XCA-ADMIT-01`) with a [conformance module](../BpmnSemantics/ExclusiveChoiceArityConformance.lean), pipeline cases and the CIB probe. Open: Lean checked-level profile control; default-less and body Choices.

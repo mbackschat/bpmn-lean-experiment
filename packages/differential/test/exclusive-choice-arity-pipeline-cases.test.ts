@@ -1,5 +1,5 @@
 /**
- * Locks the registered complaint handling schedules against the Exclusive choice arity proposal's separating witnesses
+ * Locks the registered complaint handling schedules against the Exclusive choice arity specification's separating witnesses
  * without Lean or Temporal: the open work and Process variables after every command, the non-concurrent re-entry route,
  * and every named seeded mutation, each of which must move exactly the observation it names.
  *

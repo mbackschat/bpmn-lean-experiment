@@ -1,5 +1,5 @@
 /**
- * The core journeys of the Exclusive choice arity proposal over the complaint handling model: XCA-ORDER-01 and
+ * The core journeys of the Exclusive choice arity specification over the complaint handling model: XCA-ORDER-01 and
  * XCA-DEFAULT-01 for a three-condition and a one-condition Choice. The billing-only schedule, which selects the middle
  * candidate alone, runs only here and in the CIB probe, not as a pipeline case. Expected tasks are read off the
  * proposal's witness-model account, not off a run.

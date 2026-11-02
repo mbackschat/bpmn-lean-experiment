@@ -1,4 +1,4 @@
-# Exclusive choice arity proposal
+# Exclusive choice arity specification
 
 ## Status
 

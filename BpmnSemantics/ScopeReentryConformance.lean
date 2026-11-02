@@ -257,7 +257,7 @@ private def task_free_body_cycle_is_refused : Bool :=
 /-- SRE-CYCLE-01's cut excludes a cycle whose only resumption lies in the called Process. -/
 private def called_only_resumption_is_refused : Bool := !admitted (contractWith (edited := false))
 
-/-- XCA-ADMIT-01: a Choice with one or three conditions is admitted, as the Exclusive choice arity proposal widened
+/-- XCA-ADMIT-01: a Choice with one or three conditions is admitted, as the Exclusive choice arity specification widened
 SRE-ADMIT-01's two. -/
 private def choice_arity_is_any_positive_count : Bool :=
   admitted (claimWith (choiceTargets := []) (drop := ["NotifyClaimant", "ClaimClosing"])

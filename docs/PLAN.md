@@ -94,7 +94,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: close [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-PROPOSAL.md) for the nested scope-data profile, batch 4 (`PC-CF-02`, its candidate-count clause). Root Parallel forks landed at `7e4891d4`. Chosen on reach: of the 90 CIB engine test models holding an Exclusive Gateway, 26 have one condition plus a default and only 1 the admitted two-plus-default shape; default-less Choices (about 39 models) need an exception outcome and are the next candidate. Batch 3 stays open behind the owner's holds.
+Current task: close [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md) for the nested scope-data profile, batch 4 (`PC-CF-02`, its candidate-count clause). Root Parallel forks landed at `7e4891d4`. Chosen on reach: of the 90 CIB engine test models holding an Exclusive Gateway, 26 have one condition plus a default and only 1 the admitted two-plus-default shape; default-less Choices (about 39 models) need an exception outcome and are the next candidate. Batch 3 stays open behind the owner's holds.
 
 Deliverable: Exclusive Choices with one or more conditional flows and a default in the root graph of the nested scope-data profile, landed on `main`.
 
