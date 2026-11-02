@@ -7,9 +7,11 @@ import type { MutableScenarioResult, PipelineCase } from "./pipeline-types.ts";
 
 type RootParallelForksName = "onboarding-documents-while-laptop-open" | "onboarding-documents-first" | "onboarding-laptop-first";
 
+type Argument = Parameters<typeof replaceArgument>[5];
+
 const text = (value: string) => ({ kind: VariableValueKind.String, value }) as const;
-const employee = (department: string) => ({ kind: VariableValueKind.Map,
-  value: [{ name: "department", value: text(department) }, { name: "name", value: text("Grace") }] }) as const;
+const employee = (department: string): Argument["value"] => ({ kind: VariableValueKind.Map,
+  value: [{ name: "department", value: text(department) }, { name: "name", value: text("Grace") }] });
 
 /** RPF-VALUE-01: rewriting open snapshots on a Process write moves *Collect documents*' `employee` into *Order laptop*. */
 function rewriteOpenSnapshot(result: MutableScenarioResult): void {
