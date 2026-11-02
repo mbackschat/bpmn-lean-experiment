@@ -1,6 +1,6 @@
 /**
  * RPF-ADMIT-01 witnesses through the exact-bytes source path and the core's checked-graph and Program gates. The oracle
- * is the root Parallel forks proposal's "Separating witnesses": every refused edit differs from an admitted control in
+ * is the root Parallel forks specification's "Separating witnesses": every refused edit differs from an admitted control in
  * one fact, so a gate that refused everything, or kept refusing root forks, could not pass.
  */
 import assert from "node:assert/strict";

@@ -1,5 +1,5 @@
 /**
- * Locks the registered employee onboarding schedules against the root Parallel forks proposal's separating witnesses
+ * Locks the registered employee onboarding schedules against the root Parallel forks specification's separating witnesses
  * without Lean or Temporal: the open work and Process variables after every command, the concurrent route, and every
  * named seeded mutation, each of which must move exactly the observation it names.
  *

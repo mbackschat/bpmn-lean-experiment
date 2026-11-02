@@ -11,7 +11,7 @@ test's root Call pair and its Call in a root-branch Sub-Process; their routes an
 analysis's values for the same graphs, and each refused graph differs from an admitted one in the fact its name states. The module runs no command: the journeys and the refused
 completion are Lean executions of the registered scenarios in the pipeline. It imports admission owners only, as
 `ConcurrentStructuredScopeDataConformance` does, so it stays outside `CommandAdmission`'s hidden-edit cone
-(`lean-fanout`). See the [root Parallel forks proposal](../docs/capsules/ROOT-PARALLEL-FORKS-PROPOSAL.md#separating-witnesses).
+(`lean-fanout`). See the [root Parallel forks specification](../docs/capsules/ROOT-PARALLEL-FORKS-SPEC.md#separating-witnesses).
 -/
 
 public section

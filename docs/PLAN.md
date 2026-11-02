@@ -94,7 +94,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: propose [root-body Parallel forks](capsules/ROOT-PARALLEL-FORKS-PROPOSAL.md) for the nested scope-data profile, batch 4 (`PC-CF-03` primary; the root-fork clauses of `PC-DATA-03`, `PC-DATA-05` and `PC-DATA-06`). Pass-through Tasks landed at `c90ebc40`. Chosen over implicit Activity split and merge (`PC-CF-07`) on reach: of 1,947 BPMN models in the pinned CIB engine sources, 263 hold a Parallel Gateway, 17 and 13 an Activity with two incoming or outgoing flows. Batch 3 stays open behind the owner's holds.
+Current task: propose [root-body Parallel forks](capsules/ROOT-PARALLEL-FORKS-SPEC.md) for the nested scope-data profile, batch 4 (`PC-CF-03` primary; the root-fork clauses of `PC-DATA-03`, `PC-DATA-05` and `PC-DATA-06`). Pass-through Tasks landed at `c90ebc40`. Chosen over implicit Activity split and merge (`PC-CF-07`) on reach: of 1,947 BPMN models in the pinned CIB engine sources, 263 hold a Parallel Gateway, 17 and 13 an Activity with two incoming or outgoing flows. Batch 3 stays open behind the owner's holds.
 
 Deliverable: Parallel forks and joins in the Process root body of the nested scope-data profile, with User Tasks, mapped Service Tasks and Sub-Processes over structured values on their branches, landed on `main`.
 

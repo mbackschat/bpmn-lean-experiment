@@ -118,7 +118,7 @@ The [pass-through Task account](capsules/PASS-THROUGH-TASK-SPEC.md) grows `cibse
 
 ## Root Parallel forks
 
-The [root Parallel forks account](capsules/ROOT-PARALLEL-FORKS-PROPOSAL.md) grows the same profile with paired Parallel forks in the Process root body (`CIB-EXT-0020`); its receipt owns review state.
+The [root Parallel forks account](capsules/ROOT-PARALLEL-FORKS-SPEC.md) grows the same profile with paired Parallel forks in the Process root body (`CIB-EXT-0020`); its receipt owns review state.
 
 **Implemented.** No representation change: root branches run the concurrent structured scope data account, and the profile restriction in the core and Lean refuses a Call in a forking root body instead of the root fork (`RPF-ADMIT-01`). The employee onboarding witnesses commit-order writes, an open snapshot kept under a sibling write and one join (`RPF-ROOT-01`, `RPF-WRITE-01`, `RPF-VALUE-01`) through a [conformance module](../BpmnSemantics/RootParallelForksConformance.lean), three pipeline cases, a corpus row, About and the CIB probe.
 

@@ -1,4 +1,4 @@
-# Root Parallel forks proposal
+# Root Parallel forks specification
 
 ## Status
 

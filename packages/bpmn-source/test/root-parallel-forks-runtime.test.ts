@@ -1,5 +1,5 @@
 /**
- * The core journeys of the root Parallel forks proposal over the employee onboarding model: RPF-ROOT-01, RPF-WRITE-01 and
+ * The core journeys of the root Parallel forks specification over the employee onboarding model: RPF-ROOT-01, RPF-WRITE-01 and
  * RPF-VALUE-01. Frame contents are runtime-only, so this test reads committed state directly; every expected value is
  * read off the proposal's witness-model account, not off a run.
  */
