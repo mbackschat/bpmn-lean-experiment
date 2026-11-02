@@ -90,7 +90,7 @@ Instance 3, 2026-10-13: Lean-dependent integration tests interpret Lean source e
 
 The original 15,000ms warm target for roughly thirty cases became 500ms/case, without raising the rate to silence warnings. Initial 52-case timings lacked measured load, so they did not settle performance. Hosted hardware later measured 1,038ms/case and 53,975ms against 40,000ms, refuting the earlier unbreached-ceiling inference from an eight-core 512ms/case run.
 
-The cold phase retained inline 45,000ms after warm corrections: at 52 cases its 865ms/case ceiling was tighter than warm's 1,300 despite including a build. The later 60-case `defaultWarmBudgetMs` bump was the guard catching drift, not a new escape.
+The cold phase retained inline 45,000ms after warm corrections: at 52 cases its 865ms/case ceiling was tighter than warm's 1,300 despite including a build. The later 60-case `defaultWarmBudgetMs` bump was the guard catching drift, not a new escape. By 2026-11-02 every family registering cases hand-raised the total to the one value its count fixed (208,000 ms at 160 cases); the owner then derived the total and moved review of growth to the hosted job timeout.
 
 ## Finding 34
 

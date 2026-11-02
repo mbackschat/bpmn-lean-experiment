@@ -7,24 +7,13 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { defaultCibSevenMavenTimeoutMs } from "./cibseven-maven-budget.ts";
 import { leanHeader } from "./lean-source-analysis.ts";
-import { defaultWarmBudgetMs } from "./pipeline-budget.ts";
 
 const verifyScriptPath = fileURLToPath(
   new URL("./verify.sh", import.meta.url),
 );
 const lakeWrapperPath = fileURLToPath(
   new URL("./lake.sh", import.meta.url),
-);
-const pipelineRunnerPath = fileURLToPath(
-  new URL("./test-pipeline.ts", import.meta.url),
-);
-const pipelineTestPath = fileURLToPath(
-  new URL(
-    "../packages/differential/test/pipeline.test.ts",
-    import.meta.url,
-  ),
 );
 const verificationWorkflowPath = fileURLToPath(
   new URL("../.github/workflows/verify.yml", import.meta.url),
@@ -377,41 +366,6 @@ test("a verified run releases exactly its own staged handoffs", async () => {
   const prefixes = release.match(/for stage in ([a-z -]+); do/u)?.[1]?.split(" ");
   assert.deepEqual(prefixes?.sort(), [...new Set(staged)].sort());
   assert.match(release, /--key "\$stage-\$RUNNER_OS-\$\{\{ github\.run_id \}\}-"/u);
-});
-
-test("hosted warm-pipeline budget has real headroom and the runner derives its deadline", async () => {
-  const [pipelineTest, pipelineRunner, workflow] = await Promise.all([
-    readFile(pipelineTestPath, "utf8"),
-    readFile(pipelineRunnerPath, "utf8"),
-    readFile(verificationWorkflowPath, "utf8"),
-  ]);
-  const hostedBudgetMatch = workflow.match(
-    /BPMN_PIPELINE_WARM_BUDGET_MS: "(\d+)"/u,
-  );
-  assert.notEqual(hostedBudgetMatch, null);
-  if (hostedBudgetMatch === null) {
-    throw new Error("warm-pipeline budget owners are absent");
-  }
-  const hostedBudget = Number(hostedBudgetMatch[1]);
-
-  assert.ok(
-    hostedBudget >= defaultWarmBudgetMs * 1.5,
-    `hosted warm-pipeline budget ${hostedBudget}ms must retain at least 50% headroom above the portable default ${defaultWarmBudgetMs}ms`,
-  );
-  assert.ok(
-    hostedBudget >= defaultCibSevenMavenTimeoutMs + 10_000,
-    `hosted warm-pipeline budget ${hostedBudget}ms must exceed the longest nested CIB deadline ${defaultCibSevenMavenTimeoutMs}ms plus reporting headroom`,
-  );
-  assert.match(
-    pipelineRunner,
-    /timeoutMs: warmPipelineCommandTimeoutMs\(process\.env\)/u,
-    "the process deadline must be derived from the selected warm budget instead of becoming a second lower ceiling",
-  );
-  assert.match(
-    pipelineTest,
-    /timeout: warmPipelineTestTimeoutMs\(process\.env\)/u,
-    "the Node test deadline must be derived from the selected warm budget instead of becoming a second lower ceiling",
-  );
 });
 
 test("script tests dynamically load no project package build output", async () => {

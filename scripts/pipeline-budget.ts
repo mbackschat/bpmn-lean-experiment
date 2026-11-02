@@ -1,5 +1,8 @@
+import { pipelineCaseIdRegistry } from "../packages/differential/test/pipeline-case-id-registry.ts";
+
 // Each outer process gets one margin to report the inner budget failure before it is terminated.
 const warmPipelineTimeoutMarginMs = 5_000;
+const maximumTimerDelayMs = 2 ** 31 - 1;
 
 /**
  * Feedback target per registered pipeline case.
@@ -10,8 +13,8 @@ const warmPipelineTimeoutMarginMs = 5_000;
  * rate is that original total divided by the catalog it was written for, so the intent is preserved
  * exactly while the total now tracks the catalog.
  *
- * The hard ceiling follows the separate `warmBudgetPerCaseMs` rate below. Its aggregate and hosted
- * margin are bound to the registered catalog by the pipeline and verification-entrypoint guards.
+ * The hard ceiling follows the separate `warmBudgetPerCaseMs` rate below, and its aggregate derives
+ * from the registered catalog the same way.
  */
 export const warmSoftTargetPerCaseMs = 500;
 
@@ -59,15 +62,35 @@ export function leanDriverBatchTimeoutMsFor(caseCount: number): number {
 }
 
 /**
- * The portable ceiling for the current catalog.
+ * The portable ceiling for the current catalog: every registered case at `warmBudgetPerCaseMs`.
  *
- * Stated as a total because the process deadlines below and the hosted-budget guard both read it
- * before any case list exists. [The budget guard](pipeline-budget.test.ts) ties it back to
- * `warmBudgetPerCaseMs` and the registered case count, so catalog growth fails there rather than
- * silently outrunning this number. Raising it for a larger catalog keeps the declared per-case rate
- * intact and must keep the hosted CI budget at least 50% above it.
+ * It was a hand-written total, which every family registering cases had to raise to the one value
+ * the case count already fixed (Finding 32). The identifier registry imports no runtime code, so the
+ * process deadlines below and the hosted-budget guard still read this before any case list exists.
+ * The per-case rate, the hosted factor and the hosted job allowance stay the owner-set bounds.
  */
-export const defaultWarmBudgetMs = 208_000;
+export const defaultWarmBudgetMs = pipelineCaseIdRegistry.length * warmBudgetPerCaseMs;
+
+/**
+ * Smallest factor a hosted environment may declare over the portable ceiling.
+ *
+ * Hosted runners measure well above the development machine's per-case cost (`warmBudgetPerCaseMs`
+ * records the measurements), so a hosted ceiling needs real headroom above the portable one; the
+ * [verification policy](../docs/VERIFICATION-INFRASTRUCTURE-POLICY.md#feedback-budgets) sets it at 50%.
+ */
+export const minimumHostedWarmBudgetFactor = 1.5;
+
+/**
+ * Allowance for everything the hosted integration-pipeline job runs besides the warm catalog phase:
+ * runner setup, cache restores and the Lean-core integration suites before the catalog. Run
+ * 41473082509 (measured 2026-11-02, 160 cases) spent 178 s of the job's 355 s, counted from job
+ * start as `timeout-minutes` counts, outside its 177 s warm phase; the allowance carries about a
+ * fifth more. The pipeline budget guard keeps the job's `timeout-minutes` above this allowance plus
+ * the hosted command deadline, so the job timeout never becomes the pipeline's real ceiling. Those
+ * suites grow with families and this constant does not see them: the per-push job-duration reading
+ * owns that growth, and a measured overhead above the allowance splits the job.
+ */
+export const hostedPipelineJobOverheadMs = 210_000;
 
 /**
  * Load per core above which a timing figure is not a comparable measurement.
@@ -112,16 +135,27 @@ export function timingIsComparable(loadPerCore: number): boolean {
   return Number.isFinite(loadPerCore) && loadPerCore <= contendedLoadPerCore;
 }
 
-/** Resolves the selected pathology ceiling and rejects ambiguous duration syntax. */
+/**
+ * Resolves the selected pathology ceiling: the portable one, or the factor over it that a slower
+ * environment declares in `BPMN_PIPELINE_WARM_BUDGET_FACTOR`, rejecting ambiguous factor syntax.
+ */
 export function warmBudgetMs(environment: NodeJS.ProcessEnv): number {
-  const declared = environment.BPMN_PIPELINE_WARM_BUDGET_MS;
+  const declared = environment.BPMN_PIPELINE_WARM_BUDGET_FACTOR;
   if (declared === undefined) {
     return defaultWarmBudgetMs;
   }
-  const budget = Number(declared);
-  if (!Number.isSafeInteger(budget) || budget <= 0) {
+  const factor = Number(declared);
+  if (!/^\d+(\.\d+)?$/u.test(declared) || !(factor > 0)) {
     throw new TypeError(
-      `BPMN_PIPELINE_WARM_BUDGET_MS must be a positive safe integer of milliseconds, received ${JSON.stringify(declared)}`,
+      `BPMN_PIPELINE_WARM_BUDGET_FACTOR must be a positive decimal factor, received ${JSON.stringify(declared)}`,
+    );
+  }
+  const budget = Math.ceil(defaultWarmBudgetMs * factor);
+  // Node clamps a timer delay above 2^31 - 1 ms to 1 ms, which would turn the deadlines below into an
+  // immediate timeout (https://nodejs.org/api/timers.html#settimeoutcallback-delay-args).
+  if (budget + 2 * warmPipelineTimeoutMarginMs > maximumTimerDelayMs) {
+    throw new TypeError(
+      `BPMN_PIPELINE_WARM_BUDGET_FACTOR ${declared} puts the pipeline deadlines beyond Node's timer range`,
     );
   }
   return budget;

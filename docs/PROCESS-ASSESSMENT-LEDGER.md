@@ -658,11 +658,11 @@ Disposition
 : `executable guard`
 
 Evidence
-: [derived cold ceiling and load gate](../scripts/pipeline-budget.test.ts)
+: [derived ceilings, hosted factor, job-timeout ordering and load gate](../scripts/pipeline-budget.test.ts)
 
 **First observed:** [PLAN.md](PLAN.md) pipeline evidence
 
-Rate-based targets preserve intent as catalogs grow; absolute process ceilings may require earlier availability, but must be guarded against their declared rate. Both phase ceilings derive from the budget owner/catalog, and breaches count only under comparable recorded load, with both threshold branches tested. `defaultWarmBudgetMs` remains manual because process deadlines/hosted checks read it before a case list exists; a guard-caught budget bump is not a new escape.
+Rate-based targets preserve intent as catalogs grow; absolute process ceilings may require earlier availability, but must be guarded against their declared rate. Both phase ceilings derive from the budget owner/catalog, and breaches count only under comparable recorded load, with both threshold branches tested. `defaultWarmBudgetMs` derives from the case-identifier registry, which loads no runtime code, so process deadlines and hosted checks still read it first; the hosted ceiling is a declared factor, and the guarded hosted job timeout bounds the growth that derivation no longer reviews (owner decision, 2026-11-02).
 
 Retained recurrence evidence: [Finding 32](process-assessment/VERIFICATION-LEDGER.md#finding-32).
 
@@ -800,7 +800,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [hosted budget and derived-deadline policy](../scripts/verification-entrypoint.test.ts), [shared pipeline budget owner](../scripts/pipeline-budget.ts)
+: [hosted budget and derived-deadline policy](../scripts/pipeline-budget.test.ts), [shared pipeline budget owner](../scripts/pipeline-budget.ts)
 
 **First observed:** Hosted Ubuntu Verify run `31745835798` after M4 incident-root-cancellation graduation
 

@@ -63,7 +63,7 @@ import {
  * pathology detector for a hang or a runaway lane, deliberately set well above
  * the soft target so unrelated CPU load on the host cannot fail a correctness
  * gate. Neither is a semantic invariant, and a slower environment still
- * declares its own ceiling through `BPMN_PIPELINE_WARM_BUDGET_MS`.
+ * declares its own factor over it through `BPMN_PIPELINE_WARM_BUDGET_FACTOR`.
  *
  * Performance comparison uses the exact `phaseMs.warmTotal` figure the report
  * emits, compared against the last uncontended measurement recorded in
@@ -504,7 +504,7 @@ test(
     const warmBudget = warmBudgetMs(process.env);
     if (warmBudget !== defaultWarmBudgetMs) {
       console.log(
-        `BPMN_PIPELINE_WARM_BUDGET ${warmBudget.toFixed(0)}ms declared instead of the ${defaultWarmBudgetMs}ms default ceiling`,
+        `BPMN_PIPELINE_WARM_BUDGET_FACTOR sets a ${warmBudget.toFixed(0)}ms ceiling instead of the ${defaultWarmBudgetMs}ms default`,
       );
     }
     // Derived from the registered catalog so the target measures per-case speed rather than how
