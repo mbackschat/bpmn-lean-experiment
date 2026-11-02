@@ -14,7 +14,7 @@ import {
   CheckedNodeKind, isWellFormedSemanticProcessProgram, nestedScopeProgramModel, scopeDataStructureAdmitted, scopeReentryProgram, structuredScopeDataCheckedStartNames, scopeReentryCheckedAnalysis, scopeReentryProgramAnalysis,
   structuredScopeDataProgramStartNames,
 } from "@bpmn-lean/semantic-core";
-import type { ScopeReentryAnalysis } from "@bpmn-lean/semantic-core";
+import type { CheckedNode, ScopeReentryAnalysis } from "@bpmn-lean/semantic-core";
 import { edit, editDraft, inspectDamage, nest, passThroughOnBackEdge, reviseFlow, reworkFlow } from "./scope-reentry-fixture.ts";
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 
@@ -186,10 +186,10 @@ test("a cycle inside a Sub-Process body, with no root Choice or Merge, is refuse
     definitionScopes: [...checked.definitionScopes.map(scope => scope.parentScopeId === root
       ? { ...scope, parentScopeId: wrapper } : scope), { id: wrapper, parentScopeId: root, originElementId: "HandleClaim" }]
       .sort((a, b) => a.id < b.id ? -1 : 1),
-    nodes: [...checked.nodes.map(node => node.id === "ClaimReceived" ? { ...node, id: "HandleOpened" }
+    nodes: ([...checked.nodes.map((node): CheckedNode => node.id === "ClaimReceived" ? { ...node, id: "HandleOpened" }
       : node.id === "ClaimClosed" ? { ...node, id: "HandleClosed" } : node),
     { kind: CheckedNodeKind.NoneStartEvent, id: "ClaimReceived" }, { kind: CheckedNodeKind.NoneEndEvent, id: "ClaimClosed" },
-    { kind: CheckedNodeKind.EmbeddedSubProcess, id: "HandleClaim", childScopeId: wrapper }].sort((a, b) => a.id < b.id ? -1 : 1),
+    { kind: CheckedNodeKind.EmbeddedSubProcess, id: "HandleClaim", childScopeId: wrapper }] satisfies CheckedNode[]).sort((a, b) => a.id < b.id ? -1 : 1),
     nodeScopes: [...checked.nodeScopes.map(entry => entry.scopeId !== root ? entry
       : { ...entry, nodeId: entry.nodeId === "ClaimReceived" ? "HandleOpened" : entry.nodeId === "ClaimClosed" ? "HandleClosed"
         : entry.nodeId, scopeId: wrapper }),
