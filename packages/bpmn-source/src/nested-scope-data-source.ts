@@ -250,10 +250,13 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
 /**
  * PTT-ADMIT-01: an Abstract or Manual Task with only an identity and a name. Any CIB attribute, extension element, loop
  * or compensation marker is another key, so the Task is refused rather than passed through with that meaning dropped.
+ * `default` is checked by name because moddle defines reference-valued attributes as non-enumerable
+ * (moddle 8.2.0 `dist/index.js:1139`), so the key inventory never sees it.
  */
 function projectNonOperationalTask(element: ElementRecord): CheckedNode | undefined {
   const id = readId(element);
-  return id === undefined || !hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.PlainNode) ? undefined
+  return id === undefined || element["default"] !== undefined ||
+    !hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.PlainNode) ? undefined
     : { kind: CheckedNodeKind.NonOperationalTask, id,
       notation: element.$type === bpmnTypes.manualTaskType ? TaskNotation.ManualTask : TaskNotation.AbstractTask };
 }

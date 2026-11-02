@@ -3,11 +3,12 @@ module
 public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 import BpmnSemantics.SemanticProcess.ScopeReentryAdmission
+import BpmnSemantics.SemanticProcessJson.CheckedProcess
 
 /-! # Pass-through Task conformance
 
-Finite admission witnesses of PTT-ADMIT-01, PTT-PASS-01, PTT-BURST-01 and the amended SRE-ROUTE-01 under the nested
-scope-data profile. The equipment return and document intake graphs transcribe the retained `scenarios/pass-through-task`
+Finite admission witnesses of PTT-ADMIT-01, PTT-KIND-01, PTT-PASS-01, PTT-BURST-01 and the amended SRE-ROUTE-01
+under the nested scope-data profile. The equipment return and document intake graphs transcribe the retained `scenarios/pass-through-task`
 models; their routes, Start names and bursts are the TypeScript analysis's values for the same graphs, and each refused
 graph differs from an admitted one in the fact its name states. The module runs no command: the Tasks' instantaneous
 occurrences are Lean executions of the registered scenarios in the pipeline. It imports admission owners only, as
@@ -34,6 +35,7 @@ private def merge (owner id : String) := node owner (.exclusiveMerge ⟨id⟩)
 private def task (owner id : String) := node owner (.userTask ⟨id⟩ (some id))
 private def sub (owner id : String) := node owner (.embeddedSubProcess ⟨id⟩ (scope id))
 private def pass (owner id : String) (taskNotation : TaskNotation) := node owner (.nonOperationalTask ⟨id⟩ taskNotation)
+private def gateway (owner id : String) (direction : GatewayDirection) := node owner (.parallelGateway ⟨id⟩ direction)
 private def service (owner id operation : String) :=
   node owner (.serviceTask ⟨id⟩ { protocol := activityProtocol, operation } [] [] none)
 
@@ -86,28 +88,40 @@ private def chained (owner source target : String) (count : Nat) :
 
 /-- Equipment return: root `P` schedules the pickup, inspects the returned equipment in a Sub-Process whose body
 unpacks it by hand and records its condition, refunds the deposit and closes the return ticket. `chain` inserts that
-many plain Tasks between the refund and the ticket; `forked` gives *Close return ticket* a second outgoing flow. -/
-private def equipmentWith (chain : Nat := 0) (forked : Bool := false) : CheckedProcess :=
+many plain Tasks between the refund and the ticket; `forked` gives *Close return ticket* a second outgoing flow and
+`joined` a second incoming one from *Schedule pickup*, the edit the source test makes. `branched` puts *Unpack
+equipment* and *Record condition* on the two branches of a Parallel fork in the body; `asUserTasks` turns both Tasks
+into User Tasks, the control that leaves the Tasks as the only difference. -/
+private def equipmentWith (chain : Nat := 0) (forked joined branched asUserTasks : Bool := false) : CheckedProcess :=
   let (links, linkEdges) := chained "P" "RefundDeposit" "CloseReturnTicket" chain
+  let passOr := fun (owner id : String) (taskNotation : TaskNotation) =>
+    if asUserTasks then task owner id else pass owner id taskNotation
+  let body := if branched
+    then [ ("InspectionOpened", "Fork"), ("Fork", "UnpackEquipment"), ("Fork", "RecordCondition")
+         , ("UnpackEquipment", "Join"), ("RecordCondition", "Join"), ("Join", "InspectionClosed") ]
+    else [ ("InspectionOpened", "UnpackEquipment"), ("UnpackEquipment", "RecordCondition")
+         , ("RecordCondition", "InspectionClosed") ]
   build [] [("P", none), ("InspectReturnedEquipment", some "P")]
     ([ start "P" "ReturnRequested", task "P" "SchedulePickup", sub "P" "InspectReturnedEquipment"
-     , service "P" "RefundDeposit" "refundDeposit", pass "P" "CloseReturnTicket" .abstractTask, finish "P" "ReturnClosed"
-     , start "InspectReturnedEquipment" "InspectionOpened", pass "InspectReturnedEquipment" "UnpackEquipment" .manualTask
+     , service "P" "RefundDeposit" "refundDeposit", passOr "P" "CloseReturnTicket" .abstractTask
+     , finish "P" "ReturnClosed"
+     , start "InspectReturnedEquipment" "InspectionOpened", passOr "InspectReturnedEquipment" "UnpackEquipment" .manualTask
      , task "InspectReturnedEquipment" "RecordCondition", finish "InspectReturnedEquipment" "InspectionClosed" ]
+      ++ (if branched then [ gateway "InspectReturnedEquipment" "Fork" .diverging
+                           , gateway "InspectReturnedEquipment" "Join" .converging ] else [])
       ++ links ++ (if forked then [finish "P" "TicketDuplicated"] else []))
     ([ ("ReturnRequested", "SchedulePickup"), ("SchedulePickup", "InspectReturnedEquipment")
-     , ("InspectReturnedEquipment", "RefundDeposit"), ("CloseReturnTicket", "ReturnClosed")
-     , ("InspectionOpened", "UnpackEquipment"), ("UnpackEquipment", "RecordCondition")
-     , ("RecordCondition", "InspectionClosed") ]
-      ++ linkEdges ++ (if forked then [("CloseReturnTicket", "TicketDuplicated")] else []))
+     , ("InspectReturnedEquipment", "RefundDeposit"), ("CloseReturnTicket", "ReturnClosed") ]
+      ++ body ++ linkEdges ++ (if forked then [("CloseReturnTicket", "TicketDuplicated")] else [])
+      ++ (if joined then [("SchedulePickup", "CloseReturnTicket")] else []))
     []
 
 /-- Document intake: root `P` merges into the *Classify document* Sub-Process, whose body records the format in its
 own `format`, copied out to `documentFormat`, and chooses by it: paper is archived in a Sub-Process whose body files
 the original by hand and indexes its location, illegible phones the sender and re-enters the Merge, and the default
 registers the digital copy; both filings merge before the End. `chain` inserts that many plain Tasks between the
-registration and the filing Merge. -/
-private def intakeWith (chain : Nat := 0) : CheckedProcess :=
+registration and the filing Merge; `conditioned` puts a condition on *Register digital copy*'s outgoing flow. -/
+private def intakeWith (chain : Nat := 0) (conditioned : Bool := false) : CheckedProcess :=
   let (links, linkEdges) := chained "P" "RegisterDigitalCopy" "Filed" chain
   build [{ scopeId := scope "ClassifyDocument", localInputs := [literal "format" "unclassified"],
            localOutputs := [copied "documentFormat" "format"] }]
@@ -129,8 +143,9 @@ private def intakeWith (chain : Nat := 0) : CheckedProcess :=
      , ("IndexArchiveLocation", "ArchivingClosed"), ("ClassificationOpened", "RecordDocumentFormat")
      , ("RecordDocumentFormat", "ClassificationClosed") ]
       ++ (if chain = 0 then [("RegisterDigitalCopy", "Filed")] else linkEdges))
-    [(("DocumentFormat", "ArchivePaperOriginal"), equals "documentFormat" "paper"),
-     (("DocumentFormat", "PhoneSender"), equals "documentFormat" "illegible")]
+    ([(("DocumentFormat", "ArchivePaperOriginal"), equals "documentFormat" "paper"),
+      (("DocumentFormat", "PhoneSender"), equals "documentFormat" "illegible")]
+      ++ (if conditioned then [(("RegisterDigitalCopy", "Filed"), equals "documentFormat" "digital")] else []))
 
 private def equipment : CheckedProcess := equipmentWith
 private def intake : CheckedProcess := intakeWith
@@ -187,6 +202,32 @@ private def reentry_burst_of_eight_is_admitted_and_nine_refused : Bool :=
 /-- PTT-ADMIT-01: a Task with a second outgoing flow is refused. -/
 private def second_outgoing_flow_is_refused : Bool := !admitted (equipmentWith (forked := true))
 
+/-- PTT-ADMIT-01: a Task with a second incoming flow is refused. -/
+private def second_incoming_flow_is_refused : Bool := !admitted (equipmentWith (joined := true))
+
+/-- PTT-ADMIT-01: a Task whose outgoing flow carries a condition is refused. -/
+private def conditioned_outgoing_flow_is_refused : Bool := !admitted (intakeWith (conditioned := true))
+
+/-- PTT-ADMIT-01: a Program with a Parallel fork refuses its Tasks, while the same graph with User Tasks in their
+places is admitted. -/
+private def tasks_in_a_forking_program_are_refused : Bool :=
+  admitted (equipmentWith (branched := true) (asUserTasks := true)) && !admitted (equipmentWith (branched := true))
+
+/-- The strict decoder's reading of one checked Task node whose notation is `spelling`. -/
+private def decodedTask (spelling : String) : Except String CheckedNode :=
+  SemanticProcessJson.decodeCheckedNode (Lean.Json.mkObj
+    [("id", Lean.Json.str "T"), ("kind", Lean.Json.str "nonOperationalTask"), ("notation", Lean.Json.str spelling)])
+
+/-- PTT-KIND-01: each notation decodes to its own kind, and any other notation is refused. -/
+private def notations_decode_to_their_own_kind : Bool :=
+  let is := fun (spelling : String) (expected : TaskNotation) => match decodedTask spelling with
+    | .ok (.nonOperationalTask id taskNotation) => id.value == "T" && decide (taskNotation = expected)
+    | _ => false
+  let refused := fun (spelling : String) => match decodedTask spelling with
+    | .error _ => true
+    | .ok _ => false
+  is "abstractTask" .abstractTask && is "manualTask" .manualTask && refused "userTask" && refused "task"
+
 /-- Every executable check of this module, named for the driver's failure report. -/
 def passThroughTaskConformanceChecks : List (String × Bool) := [
   ("retained_models_are_admitted", retained_models_are_admitted),
@@ -195,7 +236,11 @@ def passThroughTaskConformanceChecks : List (String × Bool) := [
   ("intake_requires_nothing_and_bursts_seven", intake_requires_nothing_and_bursts_seven),
   ("serial_burst_of_eight_is_admitted_and_nine_refused", serial_burst_of_eight_is_admitted_and_nine_refused),
   ("reentry_burst_of_eight_is_admitted_and_nine_refused", reentry_burst_of_eight_is_admitted_and_nine_refused),
-  ("second_outgoing_flow_is_refused", second_outgoing_flow_is_refused)
+  ("second_outgoing_flow_is_refused", second_outgoing_flow_is_refused),
+  ("second_incoming_flow_is_refused", second_incoming_flow_is_refused),
+  ("conditioned_outgoing_flow_is_refused", conditioned_outgoing_flow_is_refused),
+  ("tasks_in_a_forking_program_are_refused", tasks_in_a_forking_program_are_refused),
+  ("notations_decode_to_their_own_kind", notations_decode_to_their_own_kind)
 ]
 
 end BpmnSemantics.PassThroughTaskConformance

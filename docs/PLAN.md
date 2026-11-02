@@ -96,7 +96,7 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: implement the [pass-through Task proposal](capsules/PASS-THROUGH-TASK-PROPOSAL.md), approved after one correction audit, for batch 4 (`PC-HUM-04` primary, `PC-HUM-05`). Batch 3 stays open behind the owner's holds; User Task local data is deferred on cost against reach.
 
-Deliverable: source-admitted Plain and Manual Tasks that pass through without a wait in serial, Choice-branched and scoped graphs of the nested scope-data profile, landed on `main`; both rows stay open only on their Parallel-branch and implicit split and merge clauses.
+Deliverable: source-admitted Plain and Manual Tasks that pass through without a wait in serial, Choice-branched and scoped graphs of the nested scope-data profile, landed on `main`; both rows stay open only on Parallel branches, and `PC-HUM-05` also on its implicit split and merge clause.
 
 Acceptance blockers: the cold closure review; then graduation and landing through the branch flow.
 

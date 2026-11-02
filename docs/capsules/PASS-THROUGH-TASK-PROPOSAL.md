@@ -12,7 +12,7 @@ Can the nested scope-data profile admit a plain BPMN Task and a Manual Task, so 
 This is the first family of batch 4 in [PLAN](../PLAN.md#scheduled-delivery-batches). It takes every open checklist row that shares the pass-through mechanism:
 
 - `PC-HUM-04`, except its Parallel-branch clause: Plain Task pass-through in serial, Choice-branched and scoped graphs. Parallel branches stay open with the concurrent account's widening, which `PC-CF-07` must make for every Activity kind.
-- `PC-HUM-05`, except its implicit split and merge clause: Manual Task pass-through with a distinct source kind. That clause stays open on `PC-CF-07`, which owns implicit Activity split and merge for every Activity kind.
+- `PC-HUM-05`, except Manual Tasks on Parallel branches and its implicit split and merge clause: Manual Task pass-through with a distinct source kind. The branch exclusion is the one that keeps `PC-HUM-04` open, and the split and merge clause stays open on `PC-CF-07`, which owns implicit Activity split and merge for every Activity kind.
 
 The research denominator, the 1,144 model files under the pinned engine's `test/resources/org/cibseven/bpm/engine/test/bpmn`, holds plain Tasks in 33 files (41 occurrences) and Manual Tasks in 19 files (36 occurrences).
 
@@ -122,18 +122,18 @@ Both models carry one mapped Service Task bound by an exact source overlay and a
 
 | Rule | Positive and negative witness | Lanes | Killing mutation |
 |---|---|---|---|
-| `PTT-ADMIT-01` | Both models admitted; each refused edit refused | Source, core, Lean conformance module | Accept an asynchronous or two-outgoing Task |
-| `PTT-KIND-01` | `manualTask` and `abstractTask` survive the checked JSON round trip | Core, Lean codec check | Erase the notation to `abstractTask` |
+| `PTT-ADMIT-01` | Both models admitted; each refused edit refused | Source and core for every edit; the Lean conformance module for the second outgoing flow, second incoming flow, conditioned outgoing flow and forking Program | Accept an asynchronous, defaulted or two-outgoing Task |
+| `PTT-KIND-01` | `manualTask` and `abstractTask` survive the checked JSON round trip | Core, Lean decoder check | Erase the notation to `abstractTask` |
 | `PTT-PASS-01` | The first publication after *Schedule pickup* shows *Unpack equipment* started and ended, with *Record condition* open | Pipeline, CIB probe | Lower the Task as `awaitUserTask` |
-| `PTT-BURST-01` | Burst-eight chain admitted, burst-nine refused; the core runtime closure agrees at the limit | Conformance module, core, runtime test | Cost zero for the vertex |
+| `PTT-BURST-01` | Burst-eight chain admitted, burst-nine refused; the core runtime closure agrees at the limit | Conformance module, core, source test committing every stimulus of each burst-eight model's scenario | Cost zero for the vertex |
 | `PTT-FRESH-01` | *Phone sender* has two occurrences with distinct identities | Pipeline, CIB probe | Reuse the first occurrence |
-| `SRE-ROUTE-01`, amended | Equipment return stays on the serial route at checked and Program level; a one-input `mergeExclusive` never routes to re-entry | Core, conformance module, Start capacity envelope test | Count a one-input merge as a Merge |
+| `SRE-ROUTE-01`, amended | Equipment return stays on the serial route at checked and Program level; a one-input `mergeExclusive` never routes to re-entry | Core, conformance module, pipeline-case route assertions | Count a one-input merge as a Merge |
 
 ## Lean assurance lane
 
 Lane shape: checked
 
-Evidence: the family adds no transition family and no runtime law, because the Program it produces uses only `mergeExclusive`; a `rfl` lowering lemma for the new arm in [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean) states its exact operation, and an executable conformance module checks the admission, kind, lowering and burst over both models and every refused edit, reusing the burst analysis that the family leaf [`ScopeDataBurst`](../../BpmnSemantics/SemanticProcess/ScopeDataBurst.lean) now shares with the re-entry account.
+Evidence: the family adds no transition family and no runtime law, because the Program it produces uses only `mergeExclusive`; a `rfl` lowering lemma for the new arm in [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean) states its exact operation, and an executable conformance module checks the admission, lowering and burst over both models, the decoding of each notation, and the refused second outgoing flow, second incoming flow, conditioned outgoing flow and forking Program; the other refused forms are source-level edits that only the source test checks, reusing the burst analysis that the family leaf [`ScopeDataBurst`](../../BpmnSemantics/SemanticProcess/ScopeDataBurst.lean) now shares with the re-entry account.
 
 Not proved, and recorded as such: that every actual closure stays within the computed burst. The runtime closure bound rolls an over-limit closure back atomically.
 
@@ -157,7 +157,7 @@ Acceptance:
 - Every retained model stays admitted.
 - The hosted pipeline passes once at family closure.
 
-Then `PC-HUM-04` is evidenced except its Parallel-branch clause, and `PC-HUM-05` except its implicit split and merge clause; both rows stay open on those clauses.
+Then `PC-HUM-04` is evidenced except its Parallel-branch clause, and `PC-HUM-05` except Parallel branches and its implicit split and merge clause; both rows stay open on those clauses.
 
 Nearest unsupported claims:
 
@@ -175,6 +175,7 @@ As implemented, where the account above left a choice or a witness changed:
 - **Witness models.** [Separating witnesses](#separating-witnesses) states two amendments to the approved models, which the probe, scenarios, source test and conformance module use. Both models gained a mapped Service Task and Document intake its Sub-Processes, because `CSSD-ADMIT-01` admits a serial or re-entry model only with a bound handler and a Sub-Process. *Classify document* became a Sub-Process with a local `format` copied out to `documentFormat`, because under `NSD-TASK-01` the approved root User Task could not decide the Choice. The longest bursts, stated as five for both models before implementation, are three and seven, within the eight-step bound.
 - **Lean owners.** The burst analysis moved from `ScopeReentryAdmission` into the family leaf [`ScopeDataBurst`](../../BpmnSemantics/SemanticProcess/ScopeDataBurst.lean), which both routes import in place of `ClosureLimit`; `ProfileShapeCatalog` needed no arm, because its matches over checked nodes are not exhaustive. The `TaskNotation` binder is `taskNotation`, since `notation` is a Lean keyword.
 - **Ride-along follow-ups.** PLAN's two follow-ups scheduled at the next kernel-type change were neither declared nor run before the kernel commit `e9429385`, so they did not share its rebuild; they stay scheduled in [PLAN](../PLAN.md#lean-build-follow-ups) for the next kernel-type change.
+- **Default flow.** moddle defines reference-valued attributes as non-enumerable (moddle 8.2.0 `dist/index.js:1139`), so the closed-key inventory missed `default`; the closure review found a Task with `default` admitted, and the source projector now refuses it by name. The gap is a class outside this family and stays open: a User Task with `default` is still admitted under this profile with the attribute dropped, harmless with its one outgoing flow, and closing it narrows admission across profiles, so it needs its own change.
 - **Pipeline budget.** The three cases raised the warm pipeline budget from 196,300 to 200,200 ms and the hosted budget from 294,450 to 300,300 ms, at the unchanged 1,300 ms per-case rate the [verification entrypoint guard](../../scripts/verification-entrypoint.test.ts) requires; the owner approved the raise after a fresh direction review and a Rule 2 bound review.
 
 ## Versioning consequences

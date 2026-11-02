@@ -12,11 +12,13 @@ import { test } from "node:test";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
-  CheckedNodeKind, SemanticOperationKind, TaskNotation, isWellFormedSemanticProcessProgram, nestedScopeCheckedModel,
+  CheckedNodeKind, CommandOutcome, SemanticOperationKind, TaskNotation, applyStimulus, initialState,
+  isWellFormedSemanticProcessProgram, nestedScopeCheckedModel,
   nestedScopeProgramModel, scopeDataMaximumBurst, scopeReentryChecked,
   scopeReentryCheckedAnalysis, scopeReentryProgram, scopeReentryProgramAnalysis, structuredScopeDataCheckedStartNames,
   structuredScopeDataProgramStartNames,
 } from "@bpmn-lean/semantic-core";
+import type { SemanticProcessProgram, Stimulus } from "@bpmn-lean/semantic-core";
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 
 const semanticProfile = "cibseven-2.2.0-nested-embedded-scope-data-draft";
@@ -55,6 +57,21 @@ function withoutTask(xml: string, element: string, id: string, incoming: string,
   assert.ok(flow !== null, outgoing);
   const removed = replaceOnce(replaceOnce(xml, flow[0], ""), new RegExp(`<${element} id="${id}"[^>]*/>`, "u").exec(xml)![0], "");
   return removed.replace(new RegExp(`(<sequenceFlow id="${incoming}" [^>]*targetRef=")${id}"`, "u"), `$1${flow[1]}"`);
+}
+
+/**
+ * Runs a retained scenario's stimuli over an admitted Program and requires each to commit: the runtime closure bound
+ * rolls back any closure longer than eight steps, so this ties the admission-time burst to the closure that executes.
+ */
+async function commitsEveryStimulus(program: SemanticProcessProgram, scenario: string): Promise<void> {
+  const { stimuli } = JSON.parse(await readFile(new URL(`${scenario}.scenario.json`, directory), "utf8")) as
+    { stimuli: Stimulus[] };
+  let state = initialState;
+  for (const stimulus of stimuli) {
+    const result = applyStimulus(program, state, stimulus);
+    assert.equal(result.outcome, CommandOutcome.Committed, JSON.stringify(stimulus));
+    state = result.state;
+  }
 }
 
 /** `count` plain Tasks inserted on `flow`, which keeps its source and now enters the first inserted Task. */
@@ -134,13 +151,15 @@ test("a serial burst of eight through chained Tasks is admitted and one of nine 
   assert.ok(programModel !== null && checkedModel !== null);
   assert.equal(scopeDataMaximumBurst(programModel), 8);
   assert.equal(scopeDataMaximumBurst(checkedModel), 8);
+  await commitsEveryStimulus(semanticProcess, "equipment-return");
   await refused("equipment-return", chain(equipment, "Flow_Refunded", 6), "nine-step serial burst");
 });
 
 test("a re-entry burst of eight through chained Tasks is admitted and one of nine is refused", async () => {
   const intake = await source("document-intake");
-  assert.equal(scopeReentryProgramAnalysis((await admitted("document-intake", chain(intake, "Flow_DigitalFiled", 1)))
-    .semanticProcess)?.burst, 8);
+  const { semanticProcess } = await admitted("document-intake", chain(intake, "Flow_DigitalFiled", 1));
+  assert.equal(scopeReentryProgramAnalysis(semanticProcess)?.burst, 8);
+  await commitsEveryStimulus(semanticProcess, "intake-digital");
   await refused("document-intake", chain(intake, "Flow_DigitalFiled", 2), "nine-step re-entry burst");
 });
 
@@ -163,6 +182,23 @@ test("each excluded Task form is refused", async () => {
   await refused("equipment-return", replaceOnce(equipment, '<endEvent id="ReturnClosed" name="Return closed" />',
     '<endEvent id="ReturnClosed" name="Return closed" /><sequenceFlow id="Flow_Join" sourceRef="SchedulePickup" ' +
     'targetRef="CloseReturnTicket" />'), "two incoming flows");
+  await refused("equipment-return", replaceOnce(equipment, close,
+    '<task id="CloseReturnTicket" name="Close return ticket" camunda:asyncAfter="true" />'), "asynchronous continuation after");
+  await refused("equipment-return", replaceOnce(equipment, '<manualTask id="UnpackEquipment" name="Unpack equipment" />',
+    '<manualTask id="UnpackEquipment" name="Unpack equipment" camunda:asyncBefore="true" />'), "asynchronous Manual Task");
+  await refused("equipment-return", replaceOnce(equipment, close, '<task id="CloseReturnTicket" name="Close return ticket">' +
+    '<extensionElements><camunda:executionListener event="start" class="org.example.Listener" /></extensionElements></task>'),
+    "execution listener");
+  await refused("equipment-return", replaceOnce(equipment, close, '<task id="CloseReturnTicket" name="Close return ticket">' +
+    '<standardLoopCharacteristics /></task>'), "standard loop");
+  await refused("equipment-return", replaceOnce(equipment, close, close + '<boundaryEvent id="TicketTimer" ' +
+    'attachedToRef="CloseReturnTicket"><timerEventDefinition><timeDuration>PT1S</timeDuration></timerEventDefinition>' +
+    '</boundaryEvent>'), "attached boundary Event");
+  // moddle defines reference-valued attributes as non-enumerable, so a closed-key inventory alone cannot see `default`.
+  await refused("equipment-return", replaceOnce(equipment, close,
+    '<task id="CloseReturnTicket" name="Close return ticket" default="Flow_Ticketed" />'), "default outgoing flow");
+  await refused("equipment-return", replaceOnce(equipment, close,
+    '<task id="CloseReturnTicket" name="Close return ticket" default="Flow_Requested" />'), "default naming another flow");
   const intake = await source("document-intake");
   await refused("document-intake", replaceOnce(intake,
     '<sequenceFlow id="Flow_DigitalFiled" sourceRef="RegisterDigitalCopy" targetRef="Filed" />',
