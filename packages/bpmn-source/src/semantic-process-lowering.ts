@@ -418,6 +418,15 @@ function lowerNode(
         inputs: requireMany(incoming, node.id, "incoming") as [string, ...string[]],
         output: requireOnly(outgoing, node.id, "outgoing"),
       });
+    case CheckedNodeKind.NonOperationalTask:
+      // PTT-PASS-01: the nonsynchronizing token move with the Task as origin, so its one activation is an
+      // instantaneous occurrence of the Task; the source kind stays in the checked graph, not in the Program.
+      return scoped({
+        ...base,
+        kind: SemanticOperationKind.MergeExclusive,
+        inputs: [requireOnly(incoming, node.id, "incoming")],
+        output: requireOnly(outgoing, node.id, "outgoing"),
+      });
     case CheckedNodeKind.InclusiveGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging: {

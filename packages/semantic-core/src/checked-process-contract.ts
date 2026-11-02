@@ -67,6 +67,7 @@ export enum CheckedNodeKind {
   ReceiveTask = "receiveTask",
   ServiceTask = "serviceTask",
   ConfiguredTask = "configuredTask",
+  NonOperationalTask = "nonOperationalTask",
   ParallelGateway = "parallelGateway",
   ExclusiveMerge = "exclusiveMerge",
   ExclusiveGateway = "exclusiveGateway",
@@ -77,6 +78,16 @@ export enum CheckedNodeKind {
   ErrorEndEvent = "errorEndEvent",
   TerminateEndEvent = "terminateEndEvent",
   NoneEndEvent = "noneEndEvent",
+}
+
+/**
+ * The source kind of a Task that BPMN 2.0.2 Clause 13.1 calls non-operational: an Abstract Task (`bpmn:task`) or a
+ * Manual Task. The checked node keeps it so that neither erasure nor a reading as another Task kind passes; what the
+ * Task does is the profile's lowering, not this kind.
+ */
+export enum TaskNotation {
+  AbstractTask = "abstractTask",
+  ManualTask = "manualTask",
 }
 
 export enum GatewayDirection {
@@ -357,6 +368,11 @@ export type CheckedNode =
     }>
   | CheckedServiceTask
   | CheckedConfiguredTask
+  | DeepReadonly<{
+      kind: CheckedNodeKind.NonOperationalTask;
+      id: string;
+      notation: TaskNotation;
+    }>
   | DeepReadonly<{
       kind: CheckedNodeKind.ParallelGateway;
       id: string;

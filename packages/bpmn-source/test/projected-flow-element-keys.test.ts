@@ -69,6 +69,7 @@ const consumers = [
   { source: "call-activity-source.ts", anchor: "hasScalarCallKeys", elementName: "call", shape: "CallActivityData" },
   { source: "call-activity-source.ts", anchor: "projectSequenceFlows", elementName: "flow", shape: "StandardSequenceFlow" },
   { source: "call-activity-source.ts", anchor: "isPlainNode", elementName: "element", shape: "PlainNode" },
+  { source: "nested-scope-data-source.ts", anchor: "projectNonOperationalTask", elementName: "element", shape: "PlainNode" },
 ] as const satisfies ReadonlyArray<ConsumerSite>;
 
 const inventoryCases = [

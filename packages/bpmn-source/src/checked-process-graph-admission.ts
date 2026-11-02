@@ -220,6 +220,7 @@ function hasSelectedArity(
     case CheckedNodeKind.ReceiveTask:
     case CheckedNodeKind.ServiceTask:
     case CheckedNodeKind.ConfiguredTask:
+    case CheckedNodeKind.NonOperationalTask:
     case CheckedNodeKind.GlobalSynchronousCompensationThrowEvent:
       return incoming === 1 && outgoing === 1;
     case CheckedNodeKind.CancelBoundaryEvent:

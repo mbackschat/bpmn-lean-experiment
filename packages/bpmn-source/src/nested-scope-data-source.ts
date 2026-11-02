@@ -1,10 +1,11 @@
+import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with { type: "json" };
 import { readBusinessTaskMappings } from "./business-task-mapping-source.js";
 import {
   classifyGateway, projectCheckedSequenceFlows, projectExclusiveMerge, projectUserTaskMetadata,
 } from "./checked-element-projection.js";
 import {
   CallDataKind, CheckedNodeKind, CheckedProcessKind, GatewayDirection, MappingExpressionKind, SemanticProfileId,
-  callDataInterfaceValid, compareCanonicalStrings, isWellFormedWireString, structuredScopeDataCheckedAnalysis,
+  TaskNotation, callDataInterfaceValid, compareCanonicalStrings, isWellFormedWireString, structuredScopeDataCheckedAnalysis,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode, CheckedProcess, CheckedSequenceFlow, DefinitionScope, ScopeLocalData, VariableMapping,
@@ -18,6 +19,7 @@ import type { ElementRecord } from "./moddle-graph.js";
 import { selectMappedServiceTaskSourcePolicy } from "./mapped-service-task-source-policy.js";
 import type { MappedServiceTaskSourcePolicy } from "./mapped-service-task-source-policy.js";
 import { projectMappedSuccessSequenceFlows, projectPlainNode } from "./mapped-service-task-source.js";
+import { ProjectedFlowElementShape, hasOnlyProjectedFlowElementKeys } from "./projected-flow-element-keys.js";
 import { exactForeignAttributeRejections } from "./preserved-element-classification.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 import { projectSerialBusinessServiceTask } from "./serial-business-task-source.js";
@@ -25,6 +27,8 @@ import { projectExclusiveGateway } from "./simple-boolean-exclusive-gateway-sour
 import type { AdmittedSourceOverlay } from "./source-overlay.js";
 
 const camunda = "http://camunda.org/schema/1.0/bpmn";
+const bpmnTypes = metamodelManifest.compilerProjection;
+
 /** One more level than NSD-ADMIT-01 admits, so the reader's recursion stays bounded while admission decides depth. */
 const readerDepthLimit = 4;
 
@@ -51,6 +55,8 @@ type ScopeDataReader = Readonly<{
   gateways: boolean;
   /** SRE-ADMIT-01: conditional flows and two-condition Exclusive Choices in a Process root body. */
   rootChoices: boolean;
+  /** PTT-ADMIT-01: Abstract and Manual Tasks, which the profile's lowering passes through. */
+  nonOperationalTasks: boolean;
   projectCall: (element: ElementRecord) => CheckedNode | undefined;
   /** The caller Process of the read roots, or `undefined` when the roots and Calls do not form one call forest. */
   caller: (roots: readonly ProcessRoot[], collected: Collected) => string | undefined;
@@ -62,7 +68,8 @@ type ScopeDataReader = Readonly<{
 }>;
 
 const nestedScopeDataReader: ScopeDataReader = {
-  semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, rootChoices: true, projectCall: projectMappedCall,
+  semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, rootChoices: true, nonOperationalTasks: true,
+  projectCall: projectMappedCall,
   caller: callerProcess, overlayRequired: true,
   // CSSD-ADMIT-01: the routed analysis refuses the merges and root-body forks the shared gateway grammar reads, and only
   // a model with a Parallel fork may bind no handler, so a serial model keeps NSD-ADMIT-01's overlay rule.
@@ -74,7 +81,8 @@ const nestedScopeDataReader: ScopeDataReader = {
 
 // Checked admission of the embedded completion profile already runs its nested scope-control and data analysis.
 const embeddedScopeDataReader: ScopeDataReader = {
-  semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, rootChoices: false, projectCall: projectEmbeddedCall,
+  semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, rootChoices: false, nonOperationalTasks: false,
+  projectCall: projectEmbeddedCall,
   caller: callForestCaller, overlayRequired: false,
   admitted: checkedProcess => (checkedProcess.identity.sourceOverlay !== null) ===
     checkedProcess.nodes.some(({ kind }) => kind === CheckedNodeKind.ServiceTask),
@@ -217,6 +225,11 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
         break;
       }
       case "bpmn:CallActivity": node = reader.projectCall(element); break;
+      case bpmnTypes.taskType:
+      case bpmnTypes.manualTaskType:
+        if (!reader.nonOperationalTasks) return "The flow element is outside the nested scope-data contract.";
+        node = projectNonOperationalTask(element);
+        break;
       case "bpmn:ParallelGateway":
       case "bpmn:ExclusiveGateway":
         if (!reader.gateways) return "The flow element is outside the nested scope-data contract.";
@@ -232,6 +245,17 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
     collected.nodeScopes.push({ nodeId: node.id, scopeId });
   }
   return null;
+}
+
+/**
+ * PTT-ADMIT-01: an Abstract or Manual Task with only an identity and a name. Any CIB attribute, extension element, loop
+ * or compensation marker is another key, so the Task is refused rather than passed through with that meaning dropped.
+ */
+function projectNonOperationalTask(element: ElementRecord): CheckedNode | undefined {
+  const id = readId(element);
+  return id === undefined || !hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.PlainNode) ? undefined
+    : { kind: CheckedNodeKind.NonOperationalTask, id,
+      notation: element.$type === bpmnTypes.manualTaskType ? TaskNotation.ManualTask : TaskNotation.AbstractTask };
 }
 
 /** CSD-ADMIT-01's gateways: a paired Parallel fork or join, or a converging Exclusive merge of any width. */

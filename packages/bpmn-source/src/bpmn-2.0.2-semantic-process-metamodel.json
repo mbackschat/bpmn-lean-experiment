@@ -63,6 +63,7 @@
     "errorType": "bpmn:Error",
     "formalExpressionType": "bpmn:FormalExpression",
     "taskType": "bpmn:Task",
+    "manualTaskType": "bpmn:ManualTask",
     "extensionElementsType": "bpmn:ExtensionElements",
     "userTaskType": "bpmn:UserTask",
     "renderingType": "bpmn:Rendering",
@@ -310,6 +311,12 @@
       "directSuperClasses": [
         "Activity",
         "InteractionNode"
+      ]
+    },
+    {
+      "name": "ManualTask",
+      "directSuperClasses": [
+        "Task"
       ]
     },
     {

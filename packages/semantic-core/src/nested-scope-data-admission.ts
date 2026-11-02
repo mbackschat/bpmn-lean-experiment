@@ -30,10 +30,13 @@ const depthLimit = 3;
 const declarationLimit = 8;
 const rules = serialChainRulesForProfile(SemanticProfileId.NestedEmbeddedScopeData);
 
-/** `Choice` and `Merge` occur only in a re-entry root graph (SRE-ADMIT-01); the serial walk refuses both. */
+/**
+ * `Choice` and `Merge` occur only in a re-entry root graph (SRE-ADMIT-01); the serial walk refuses both. `PassThrough`
+ * is an Abstract or Manual Task (PTT-ADMIT-01), on the Program side a one-input merge: it reads and writes nothing.
+ */
 export const ScopeDataVertexKind = {
   Start: "start", Human: "human", Service: "service", SubProcess: "subProcess", Call: "call", Finish: "finish",
-  Choice: "choice", Merge: "merge",
+  Choice: "choice", Merge: "merge", PassThrough: "passThrough",
 } as const;
 const VertexKind = ScopeDataVertexKind;
 /** CVM-ADMIT-01: the called Process is one serial path through one to three User Tasks. */
@@ -128,6 +131,7 @@ function walk(vertices: readonly Vertex[], records: readonly ScopeLocalData[], s
   if (next === undefined) return null;
   switch (vertex.kind) {
     case VertexKind.Start:
+    case VertexKind.PassThrough:
     case VertexKind.Human:
     case VertexKind.Service: {
       const rest = walk(vertices, records, scopes, fuel - 1, depth, frames, scope, next);
@@ -350,6 +354,7 @@ function checkedVertex(source: CheckedProcess, node: CheckedProcess["nodes"][num
         ? { ...base, kind: VertexKind.Choice, outputs: targets as string[] } : null;
     }
     case CheckedNodeKind.ExclusiveMerge: return { ...base, kind: VertexKind.Merge };
+    case CheckedNodeKind.NonOperationalTask: return { ...base, kind: VertexKind.PassThrough };
     case CheckedNodeKind.CallActivity: {
       const calledRoot = unique(source.definitionScopes.filter(({ parentScopeId, originElementId }) =>
         parentScopeId === null && originElementId === node.calledProcessId));
@@ -472,7 +477,9 @@ function operationVertex(program: SemanticProcessProgram, operation: SemanticOpe
     }
     case SemanticOperationKind.MergeExclusive: {
       const outputs = following(operation.output);
-      return outputs === null ? null : { ...base, kind: VertexKind.Merge, outputs };
+      // Every checked Exclusive merge has at least two inputs, so one input is an Abstract or Manual Task (PTT-ADMIT-01).
+      return outputs === null ? null
+        : { ...base, kind: operation.inputs.length === 1 ? VertexKind.PassThrough : VertexKind.Merge, outputs };
     }
     case SemanticOperationKind.InvokeProcess: {
       const returns = program.operations.filter(candidate => candidate.id === operation.returnOperationId);
@@ -605,7 +612,7 @@ const programOperationKinds: ReadonlySet<SemanticOperationKind> = new Set([
 const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
   CheckedNodeKind.NoneStartEvent, CheckedNodeKind.EmbeddedSubProcess, CheckedNodeKind.UserTask,
   CheckedNodeKind.ServiceTask, CheckedNodeKind.NoneEndEvent, CheckedNodeKind.CallActivity,
-  CheckedNodeKind.ExclusiveGateway, CheckedNodeKind.ExclusiveMerge,
+  CheckedNodeKind.ExclusiveGateway, CheckedNodeKind.ExclusiveMerge, CheckedNodeKind.NonOperationalTask,
 ]);
 
 /**

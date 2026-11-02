@@ -1131,6 +1131,29 @@
           "required": [
             "kind",
             "id",
+            "notation"
+          ],
+          "properties": {
+            "kind": {
+              "const": "nonOperationalTask"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "notation": {
+              "enum": [
+                "abstractTask",
+                "manualTask"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "childScopeId"
           ],
           "properties": {

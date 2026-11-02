@@ -12,14 +12,15 @@ import {
   nestedScopeControlProgramStartNameRule,
 } from "./nested-scope-control-admission.js";
 import {
-  nestedScopeCallLimit, nestedScopeCheckedShape, nestedScopeCheckedStartNames, nestedScopeProgramShape,
-  nestedScopeProgramStartNames,
+  ScopeDataVertexKind, nestedScopeCallLimit, nestedScopeCheckedModel, nestedScopeCheckedShape, nestedScopeCheckedStartNames,
+  nestedScopeProgramModel, nestedScopeProgramShape, nestedScopeProgramStartNames,
 } from "./nested-scope-data-admission.js";
-import type { NestedScopeStartNames } from "./nested-scope-data-admission.js";
+import type { NestedScopeStartNames, ScopeDataModel } from "./nested-scope-data-admission.js";
 import {
-  scopeReentryChecked, scopeReentryCheckedAnalysis, scopeReentryProgram, scopeReentryProgramAnalysis,
+  scopeDataMaximumBurst, scopeReentryChecked, scopeReentryCheckedAnalysis, scopeReentryProgram, scopeReentryProgramAnalysis,
 } from "./scope-reentry-admission.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import { semanticProcessClosureLimit } from "./semantic-process-limits.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 
@@ -70,20 +71,34 @@ function checkedRestrictionsHold(source: CheckedProcess): boolean {
     calledProcessesAdmitted(source.nodes.flatMap(node => node.kind === CheckedNodeKind.CallActivity ? [node] : []));
 }
 
+/**
+ * PTT-BURST-01: a serial model holding a pass-through Task is admitted only within the closure limit. Serial models
+ * without one keep their admission unchanged, so the serial route's recorded lack of a burst rule is not narrowed.
+ */
+function serialBurstAdmitted(model: ScopeDataModel | null): boolean {
+  if (model === null || !model.vertices.some(({ kind }) => kind === ScopeDataVertexKind.PassThrough)) return true;
+  const burst = scopeDataMaximumBurst(model);
+  return burst !== null && burst <= semanticProcessClosureLimit;
+}
+
 /** NSD-AVAILABLE-01 for a serial Program; CSD-AVAILABLE-01 and CMCALL-START-01 for a concurrent one; `null` refuses. */
 export function structuredScopeDataProgramStartNames(program: SemanticProcessProgram): NestedScopeStartNames | null {
   // SRE-ROUTE-01: a root Choice or Merge selects the re-entry account; a model that also splits is refused.
   if (scopeReentryProgram(program)) {
     return concurrentStructuredScopeDataProgram(program) ? null : scopeReentryProgramAnalysis(program);
   }
-  if (!concurrentStructuredScopeDataProgram(program)) return nestedScopeProgramStartNames(program);
+  if (!concurrentStructuredScopeDataProgram(program)) {
+    return serialBurstAdmitted(nestedScopeProgramModel(program)) ? nestedScopeProgramStartNames(program) : null;
+  }
   return programRestrictionsHold(program) ? nestedScopeControlProgramStartNameRule(program) : null;
 }
 
 /** The checked-graph counterpart of `structuredScopeDataProgramStartNames`. */
 export function structuredScopeDataCheckedStartNames(source: CheckedProcess): NestedScopeStartNames | null {
   if (scopeReentryChecked(source)) return forks(source.nodes) ? null : scopeReentryCheckedAnalysis(source);
-  if (!forks(source.nodes)) return nestedScopeCheckedStartNames(source);
+  if (!forks(source.nodes)) {
+    return serialBurstAdmitted(nestedScopeCheckedModel(source)) ? nestedScopeCheckedStartNames(source) : null;
+  }
   return checkedRestrictionsHold(source)
     ? nestedScopeControlCheckedStartNameRule({ ...source, flows: source.sequenceFlows }) : null;
 }

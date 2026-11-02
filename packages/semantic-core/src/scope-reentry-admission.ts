@@ -28,11 +28,15 @@ function scopeReentryModel(model: ScopeDataModel): boolean {
     (kind === ScopeDataVertexKind.Choice || kind === ScopeDataVertexKind.Merge));
 }
 
-/** SRE-ROUTE-01 over a Program of the nested scope-data profile, whatever else its analysis decides. */
+/**
+ * SRE-ROUTE-01 over a Program of the nested scope-data profile, whatever else its analysis decides. A one-input merge is
+ * an Abstract or Manual Task (PTT-ADMIT-01), which keeps a serial model serial, so only a merge of two or more counts.
+ */
 export function scopeReentryProgram(program: SemanticProcessProgram): boolean {
-  return program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData && program.operations.some(({ id, kind }) =>
-    (kind === SemanticOperationKind.Choose || kind === SemanticOperationKind.MergeExclusive) &&
-    program.operationScopes.some(({ operationId, scopeId }) => operationId === id &&
+  return program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData && program.operations.some(operation =>
+    (operation.kind === SemanticOperationKind.Choose ||
+      (operation.kind === SemanticOperationKind.MergeExclusive && operation.inputs.length >= 2)) &&
+    program.operationScopes.some(({ operationId, scopeId }) => operationId === operation.id &&
       program.definitionScopes.some(scope => scope.id === scopeId && scope.parentScopeId === null &&
         scope.originElementId === program.processId)));
 }
@@ -81,7 +85,7 @@ function analyzeRootGraph(model: ScopeDataModel): ScopeReentryAnalysis | null {
   }
   if (new Set(visited).size !== visited.length || visited.some(id => called.has(id)) ||
       visited.length + called.size !== vertices.length) return null;
-  const burst = maximumBurst(model, byId);
+  const burst = scopeDataMaximumBurst(model);
   if (burst === null || burst > semanticProcessClosureLimit) return null;
   const hasCall = vertices.some(({ kind }) => kind === ScopeDataVertexKind.Call);
   return {
@@ -142,11 +146,13 @@ function reachableAvoiding(rootVertices: readonly ScopeDataVertex[], from: strin
 /**
  * SRE-BURST-01: the longest automatic step sequence from Start or from any resumption, counting each operation the
  * scheduler fires. Arming a wait costs one and stops; a None End costs two, its own step and its scope's completion
- * or the called Process's return; a body's or called Process's Start is no Program operation and costs nothing.
- * `null` means an automatic cycle, which the graph policy's cut already refuses.
+ * or the called Process's return; a body's or called Process's Start is no Program operation and costs nothing; a
+ * pass-through Task costs one and continues (PTT-BURST-01). `null` means an automatic cycle, which the graph policy's
+ * cut already refuses. The serial route applies it to models holding a pass-through Task.
  */
-function maximumBurst(model: ScopeDataModel, byId: ReadonlyMap<string, ScopeDataVertex>): number | null {
+export function scopeDataMaximumBurst(model: ScopeDataModel): number | null {
   const { vertices, root, entry } = model;
+  const byId = new Map(vertices.map(vertex => [vertex.id, vertex]));
   const path = (scope: string, first: string): readonly ScopeDataVertex[] => {
     const result: ScopeDataVertex[] = [];
     for (let id: string | undefined = first; id !== undefined && result.length <= vertices.length;) {
@@ -173,7 +179,8 @@ function maximumBurst(model: ScopeDataModel, byId: ReadonlyMap<string, ScopeData
       case ScopeDataVertexKind.Start: return { cost: vertex.scope === root ? 1 : 0, stops: false };
       case ScopeDataVertexKind.Finish: return { cost: 2, stops: vertex.scope === root };
       case ScopeDataVertexKind.Choice:
-      case ScopeDataVertexKind.Merge: return { cost: 1, stops: false };
+      case ScopeDataVertexKind.Merge:
+      case ScopeDataVertexKind.PassThrough: return { cost: 1, stops: false };
       case ScopeDataVertexKind.SubProcess: {
         const inner = along(path(vertex.child!.scope, vertex.child!.entry));
         return { cost: 1 + inner.cost, stops: inner.stops };
