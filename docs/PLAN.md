@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: implement [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-PROPOSAL.md) for the nested scope-data profile, batch 4 (`PC-CF-02`, its candidate-count clause). Root Parallel forks landed at `7e4891d4`. Chosen on reach: of the 90 CIB engine test models holding an Exclusive Gateway, 26 have one condition plus a default and only 1 the admitted two-plus-default shape; default-less Choices (40 models) need an exception outcome and are the next candidate. Batch 3 stays open behind the owner's holds.
+Current task: close [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-PROPOSAL.md) for the nested scope-data profile, batch 4 (`PC-CF-02`, its candidate-count clause). Root Parallel forks landed at `7e4891d4`. Chosen on reach: of the 90 CIB engine test models holding an Exclusive Gateway, 26 have one condition plus a default and only 1 the admitted two-plus-default shape; default-less Choices (40 models) need an exception outcome and are the next candidate. Batch 3 stays open behind the owner's holds.
 
 Deliverable: Exclusive Choices with one or more conditional flows and a default in the root graph of the nested scope-data profile, landed on `main`.
 
-Acceptance blockers: implementation, registration, closure gates and the closure review.
+Acceptance blockers: the closure review, graduation and landing.
 
-Current result: the proposal is approved (review of `736861f6`, audits `4ffdef0f` and `99960eb9`).
+Current result: implemented and registered; `BpmnConformance` green at `e6ead9a9`, `verify.sh` (160 pipeline cases, warm 119.6 s) and the 85-model corpus lane green at `5a1148ac`, the CIB probe green.
 
 Effort budget: 6 hours for proposal, implementation and closure, from 2026-11-02 13:45 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: red source and runtime witnesses, then the TypeScript and Lean admission widening in one commit.
+Next action: the cold closure review of the committed closure target.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and an approving closure review.
 

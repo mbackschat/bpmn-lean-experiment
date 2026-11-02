@@ -183,6 +183,21 @@ Nearest unsupported claims:
 - Choices in Sub-Process bodies or the called Process;
 - Choices in models that fork.
 
+Closure gates, 2026-11-02:
+
+- **Green at `e6ead9a9`:** `LEAN_FULL_GATE=xca-family-closure ./scripts/lake.sh build BpmnConformance`, 934 jobs, with the [conformance module](../../BpmnSemantics/ExclusiveChoiceArityConformance.lean); its five checks and the twelve of the [re-entry module](../../BpmnSemantics/ScopeReentryConformance.lean) evaluate true.
+- **Green at `5a1148ac`:** the complete `verify.sh`: the Lean library and executable checks, the runtime stage, the complete Temporal gate and the pipeline over all 160 registered cases, whose warm total of 119.6 s is 58% of its ceiling; then the research doctor and `test:model-corpus` over all 85 models.
+- **Calibration:** the four complaint tests of the [scope re-entry probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScopeReentryProbeTest.java) pass with its two re-entry tests on pinned CIB Seven `2.2.0`.
+
+As implemented, where the account above left a choice or a witness changed:
+
+- **Default-less edit.** A checked `exclusiveGateway` always carries a default, so *Route complaint* without its default has no checked-level transcription; that refused edit is witnessed by the source test only, while the Lean module carries the other three.
+- **Seeded mutations.** Urgent billing opens *Correct invoice* (last true candidate), delivery arms nothing (evaluation stops after two candidates) and product opens no task (a no-match skips the default). Taking the default while the one-condition Choice's candidate is true is killed by the delivery journey's locked *Confirm delivery* step rather than by a seeded mutation.
+- **Probe owner.** The complaint calibration is four tests of the scope re-entry probe, whose session gained a model directory and condition count, instead of a new probe class with a copy of that session.
+- **Value domain.** The delivery schedule is the matrix row; it requires `orderNumber` alone and admits the appended Process output `category`.
+- **Pipeline budget.** The three cases raise the warm pipeline budget from 204,100 to 208,000 ms and the hosted one from 306,150 to 312,000 ms. Root cause: the [budget guard](../../scripts/pipeline-budget.test.ts) floors the warm budget at registered cases times the unchanged 1,300 ms rate, so no added case fits under the old value. A Rule 2 bound review, a fresh direction review and a post-check passed; the hosted run at 157 cases used 160.4 s, 52% of its ceiling.
+- **Module cost rows.** The new conformance module gains its measured [cost row](../../scripts/lean-module-cost.ts), and the re-entry module's row is re-measured because its flipped check changed its code.
+
 ## Versioning consequences
 
 Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy): no wire shape, schema or value arm changes; admission widens under the profile, the profile artifact grows in place, and no legacy reader or migration is added.
