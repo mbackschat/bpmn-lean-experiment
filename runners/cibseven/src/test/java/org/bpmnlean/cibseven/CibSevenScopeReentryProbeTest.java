@@ -1,0 +1,202 @@
+package org.bpmnlean.cibseven;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+import org.cibseven.bpm.engine.ProcessEngine;
+import org.cibseven.bpm.engine.ProcessEngineException;
+import org.cibseven.bpm.engine.delegate.JavaDelegate;
+import org.cibseven.bpm.engine.history.HistoricActivityInstance;
+import org.junit.Test;
+
+/**
+ * Calibrates the scope re-entry proposal's widening of `CIB-EXT-0020` and `CIB-EXT-0021` from one activation to each
+ * activation (`SRE-FRESH-01`, `SRE-INIT-01`, `SRE-RETAIN-01`, `SRE-STALE-01`, `SRE-OUTPUT-01`) on the two retained
+ * models. CIB does not execute the project's Simple Boolean v1 conditions, so each root condition is rendered as JUEL
+ * under `CIB-CFG-0005` before deployment; the probe compares re-entry, frames and identities, never condition truth.
+ * Expected values are built here from the proposal's witness-model account, never read from a target result.
+ */
+public final class CibSevenScopeReentryProbeTest {
+  private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
+  private static final Path MODELS = PROJECT_ROOT.resolve("scenarios/scope-reentry");
+  private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
+  private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
+
+  @Test
+  public void eachAssessmentStartsFromTheClaimSummaryAndTheStaleInspectionIsRefused() throws Exception {
+    var arguments = new LinkedHashMap<String, Map<String, Object>>();
+    var quotes = List.of("1200", "800").iterator();
+    JavaDelegate priceRepair = execution -> {
+      arguments.put("PriceRepair#" + (arguments.size() + 1), new HashMap<>(execution.getVariablesLocal()));
+      execution.setVariableLocal("quote", quotes.next());
+    };
+    try (var session = new Session("claim-rework", Map.of("priceRepair", priceRepair))) {
+      var claim = session.start("Process_ClaimRework", Map.of("claimSummary", "hail damage"));
+      var first = session.task(claim, "InspectDamage");
+      assertEquals(Map.of("decision", "pending", "notes", "hail damage"), session.locals(first));
+      session.engine.getTaskService().complete(first, Map.of("decision", "rework", "notes", "photos missing"));
+      session.runJob(claim);
+      assertEquals(Map.of("damage", "photos missing"), arguments.get("PriceRepair#1"));
+
+      var second = session.task(claim, "InspectDamage");
+      assertNotEquals(first, second);
+      assertEquals(Map.of("decision", "pending", "notes", "hail damage"), session.locals(second));
+      assertEquals(Map.of("assessment", "rework", "claimSummary", "hail damage", "repairQuote", "1200"),
+          session.processVariables(claim));
+      assertThrows(ProcessEngineException.class,
+          () -> session.engine.getTaskService().complete(first, Map.of("decision", "approve")));
+      assertEquals(Map.of("decision", "pending", "notes", "hail damage"), session.locals(second));
+
+      session.engine.getTaskService().complete(second, Map.of("decision", "approve"));
+      session.runJob(claim);
+      assertEquals(Map.of("damage", "hail damage"), arguments.get("PriceRepair#2"));
+      assertEquals(Map.of("assessment", "approve", "claimSummary", "hail damage", "repairQuote", "800"),
+          session.processVariables(claim));
+      session.engine.getTaskService().complete(session.task(claim, "ApproveSettlement"));
+      session.assertEnded(claim, Map.of("assessment", "approve", "claimSummary", "hail damage", "repairQuote", "800"));
+      for (var element : List.of("AssessClaim", "InspectDamage", "PriceRepair")) {
+        session.assertActivatedTwiceDistinctly(claim, element);
+      }
+    }
+  }
+
+  @Test
+  public void eachRevisionInvokesAFreshLegalReviewAndTheStaleVerdictIsRefused() throws Exception {
+    var filed = new LinkedHashMap<String, Map<String, Object>>();
+    JavaDelegate fileContract = execution -> filed.put("FileContract", new HashMap<>(execution.getVariablesLocal()));
+    try (var session = new Session("contract-revision", Map.of("fileContract", fileContract))) {
+      var contract = session.start("Process_ContractRevision", Map.of("contractText", "v1"));
+      var firstEdit = session.task(contract, "EditDraft");
+      assertEquals(Map.of("draft", "v1"), session.locals(firstEdit));
+      session.engine.getTaskService().complete(firstEdit, Map.of("draft", "v2"));
+      var firstReview = session.called(contract, 1);
+      assertEquals(Map.of("text", "v2"), session.engine.getRuntimeService().getVariablesLocal(firstReview));
+      var firstClauses = session.task(firstReview, "ReviewClauses");
+      session.engine.getTaskService().complete(firstClauses, Map.of("verdict", "revise"));
+      assertEquals(Map.of("contractText", "v2", "legalVerdict", "revise"), session.processVariables(contract));
+
+      var secondEdit = session.task(contract, "EditDraft");
+      assertNotEquals(firstEdit, secondEdit);
+      assertEquals(Map.of("draft", "v2"), session.locals(secondEdit));
+      session.engine.getTaskService().complete(secondEdit, Map.of("draft", "v3"));
+      var secondReview = session.called(contract, 2);
+      assertNotEquals(firstReview, secondReview);
+      assertEquals(Map.of("text", "v3"), session.engine.getRuntimeService().getVariablesLocal(secondReview));
+      assertThrows(ProcessEngineException.class,
+          () -> session.engine.getTaskService().complete(firstClauses, Map.of("verdict", "sign")));
+      assertEquals(Map.of("contractText", "v3", "legalVerdict", "revise"), session.processVariables(contract));
+
+      session.engine.getTaskService().complete(session.task(secondReview, "ReviewClauses"), Map.of("verdict", "sign"));
+      assertEquals(Map.of("contractText", "v3", "legalVerdict", "sign"), session.processVariables(contract));
+      session.engine.getTaskService().complete(session.task(contract, "SignContract"));
+      session.runJob(contract);
+      assertEquals(Map.of("document", "v3"), filed.get("FileContract"));
+      session.assertEnded(contract, Map.of("contractText", "v3", "legalVerdict", "sign"));
+      for (var element : List.of("PrepareDraft", "EditDraft", "LegalReview")) {
+        session.assertActivatedTwiceDistinctly(contract, element);
+      }
+    }
+  }
+
+  /** The model with each Simple Boolean v1 `stringEquals(n,"v")` condition rendered as the JUEL `${n == "v"}`. */
+  private static String juelRendition(String model) throws Exception {
+    var source = Files.readString(MODELS.resolve(model + ".bpmn"));
+    assertEquals(2, STRING_EQUALS.matcher(source).results().count());
+    return STRING_EQUALS.matcher(source.replace(SIMPLE_BOOLEAN, "")).replaceAll("\\${$1 == \"$2\"}");
+  }
+
+  private static final class Session implements AutoCloseable {
+    final ProcessEngine engine;
+    final String deployment;
+
+    Session(String model, Map<Object, Object> beans) throws Exception {
+      engine = CibSevenTestEngine.create("scope-reentry-" + model, configuration -> configuration.setBeans(beans));
+      try {
+        deployment = engine.getRepositoryService().createDeployment()
+            .addString(model + ".bpmn", juelRendition(model)).deploy().getId();
+      } catch (Exception | Error failure) {
+        engine.close();
+        throw failure;
+      }
+    }
+
+    String start(String processId, Map<String, Object> variables) {
+      return engine.getRuntimeService().startProcessInstanceByKey(processId, new HashMap<>(variables)).getId();
+    }
+
+    /** The id of the one open task of `element`. */
+    String task(String instance, String element) {
+      var task = engine.getTaskService().createTaskQuery().processInstanceId(instance).taskDefinitionKey(element)
+          .singleResult();
+      assertNotNull(task);
+      return task.getId();
+    }
+
+    /** The variables of the execution the task waits in, which is the enclosing Sub-Process scope's own execution. */
+    Map<String, Object> locals(String task) {
+      var execution = engine.getTaskService().createTaskQuery().taskId(task).singleResult().getExecutionId();
+      return engine.getRuntimeService().getVariablesLocal(execution);
+    }
+
+    /** Runs the one open asynchronous continuation before the next command. */
+    void runJob(String instance) {
+      var job = engine.getManagementService().createJobQuery().processInstanceId(instance).singleResult();
+      assertNotNull(job);
+      engine.getManagementService().executeJob(job.getId());
+    }
+
+    /** The child instance that the `ordinal`-th activation of the caller's `LegalReview` Call started. */
+    String called(String caller, int ordinal) {
+      var calls = activations(caller, "LegalReview");
+      assertEquals(ordinal, calls.size());
+      var child = calls.get(ordinal - 1).getCalledProcessInstanceId();
+      assertNotNull(child);
+      return child;
+    }
+
+    List<HistoricActivityInstance> activations(String instance, String element) {
+      return engine.getHistoryService().createHistoricActivityInstanceQuery().processInstanceId(instance)
+          .activityId(element).orderPartiallyByOccurrence().asc().list();
+    }
+
+    void assertActivatedTwiceDistinctly(String instance, String element) {
+      var activations = activations(instance, element);
+      assertEquals(element, 2, activations.size());
+      assertNotEquals(element, activations.get(0).getId(), activations.get(1).getId());
+    }
+
+    Map<String, Object> processVariables(String instance) {
+      return engine.getRuntimeService().getVariablesLocal(instance);
+    }
+
+    /** The Process-scope variables at completion; Sub-Process locals have their own executions and are skipped. */
+    void assertEnded(String instance, Map<String, Object> expected) {
+      assertEquals(0, engine.getRuntimeService().createProcessInstanceQuery().processInstanceId(instance).count());
+      var actual = new HashMap<String, Object>();
+      for (var variable : engine.getHistoryService().createHistoricVariableInstanceQuery().processInstanceId(instance).list()) {
+        if (variable.getExecutionId().equals(instance)) {
+          actual.put(variable.getName(), variable.getValue());
+        }
+      }
+      assertEquals(expected, actual);
+    }
+
+    @Override
+    public void close() {
+      try {
+        engine.getRepositoryService().deleteDeployment(deployment, true, true, true);
+      } finally {
+        engine.close();
+      }
+    }
+  }
+}
