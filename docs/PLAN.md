@@ -85,7 +85,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Concurrent structured scope data closure. Command: `./scripts/verify.sh`. Status: `exit 0`. Date: `2026-11-01`. Commit: `eaa46d8a`, after the closure review's corrections; the pipeline's 147 cases ran warm in 114.4 seconds within the 191.1-second budget.
+- Scope re-entry closure. Command: `./scripts/verify.sh`. Status: `exit 0`. Date: `2026-11-02`. Commit: `deeced6c`; the pipeline's 151 cases ran warm in 115.7 seconds within the 196.3-second budget.
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -93,17 +93,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: implement the approved [scope re-entry proposal](capsules/SCOPE-REENTRY-PROPOSAL.md) of [delivery batch](#scheduled-delivery-batches) 3: `PC-CF-06` primary, with the repeated-lifetime clause of `PC-DATA-04`, the re-entry clause of `PC-SCOPE-02` and the scoped-rework clause of `PC-HUM-01`. Pull requests #38 and #39 are the owner's to land.
+Current task: the closure review of the [scope re-entry proposal](capsules/SCOPE-REENTRY-PROPOSAL.md) of [delivery batch](#scheduled-delivery-batches) 3: `PC-CF-06` primary, with the repeated-lifetime clause of `PC-DATA-04`, the re-entry clause of `PC-SCOPE-02` and the scoped-rework clause of `PC-HUM-01`. Pull requests #38 and #39 are the owner's to land.
 
 Deliverable: the family closed by its cold closure review: both retained models agree across Lean, core, pipeline, CIB probe and the hosted pipeline under the grown nested scope-data profile.
 
 Acceptance blockers: none recorded.
 
-Current result: the proposal was approved on 2026-11-02 (review `c4d87c3c`, audit `6da46da8`) in about 50 minutes of its 2-hour budget.
+Current result: implemented, and every closure gate is green ([closure gates](capsules/SCOPE-REENTRY-PROPOSAL.md#evidence-and-acceptance)); about 2.4 of the 10 budgeted hours spent by 2026-11-02 03:10 CET. The four schedules raised the warm pipeline budget to 196.3 seconds at the unchanged per-case rate, after a direction review, a Rule 2 bound review and a post-check.
 
 Effort budget: 10 hours for implementation through the closure review, from 2026-11-02 00:45 CET.
 
-Next action: TypeScript first: checked cut, Merge arity, conditions and expression language in source admission, then the re-entry admission and routing in the core with the claim model red/green; Lean follows with the four body edits priced by the fan-out model. Expressions (`PC-DATA-07`) stay held.
+Next action: the cold closure review of the [scope re-entry proposal](capsules/SCOPE-REENTRY-PROPOSAL.md) and its correction audit, then graduation to a specification and a push for hosted CI. Expressions (`PC-DATA-07`) stay held.
 
 Oracle: the cold closure review of the family.
 
