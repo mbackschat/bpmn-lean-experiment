@@ -153,6 +153,11 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addScopeReentryCases(context, add);
   }
+  for (const id of ["pass-through-task-equipment-return", "pass-through-task-intake-illegible-twice-then-paper"]) {
+    const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
+    assert.ok(context !== undefined, `the ${id} schedule is registered`);
+    addPassThroughTaskCases(context, add);
+  }
   const travel = (await loadAndCompileCases(pipelineCases.filter(({ id }) => id === "concurrent-mapped-calls-travel-request")))[0];
   assert.ok(travel !== undefined, "the travel request schedule is registered");
   addConcurrentMappedCallsCases(travel, add);
@@ -442,6 +447,19 @@ function addScopeReentryCases(context: DomainContext, add: AddCase): void {
       left.name < right.name ? -1 : 1);
     startWith(`${supported ? "valid" : "invalid"}-start-data-${name}-name`, bindings, supported);
   }
+}
+
+/**
+ * The equipment return and document intake hold pass-through Tasks under the nested scope-data profile, which add no value
+ * surface: neither model requires a Start name, so every value kind is probed on an appended Start binding and on one late
+ * command per write surface, and the profile's SingletonBusinessItem domain alone decides each expectation.
+ */
+function addPassThroughTaskCases(context: DomainContext, add: AddCase): void {
+  const start = context.scenario.stimuli[0]!;
+  assert.ok(start.kind === StimulusKind.StartProcess && start.initialVariables.length === 0);
+  const domains = expectedDomainsOf(context.scenario.profile);
+  addLateValueCases(context, start, domains, add);
+  addStartKindCases(context, start, domains.start, add);
 }
 
 /**
