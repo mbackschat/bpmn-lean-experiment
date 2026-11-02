@@ -23,7 +23,7 @@ function leaveRunning(index: number) {
 
 const ended = (index: number) => ({
   inject: leaveRunning(index),
-  expected: { kind: DisagreementKind.ObservationValue, path: `trace[${index}].status`,
+  expected: { kind: DisagreementKind.ObservationValue as const, path: `trace[${index}].status`,
     expected: ProcessStatus.Completed, actual: ProcessStatus.Running },
 });
 
