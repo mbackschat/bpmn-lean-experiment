@@ -26,11 +26,11 @@ Each row keeps its other clauses open.
 Selection, 2026-11-02: chosen on reach over the other Exclusive exclusions of the nested scope-data profile. Of the 1,944 BPMN models that parse among the 1,947 in the pinned CIB engine test resources, 90 hold an Exclusive Gateway. Their divergent shapes are:
 
 - one conditional flow plus a default: 26 models;
-- two conditional flows without a default: 31 models;
+- two conditional flows without a default: about 30 models (29 to 31 by counting method);
 - three conditional flows without a default: 8 models;
 - two conditional flows plus a default, the only shape the profile admits today: 1 model.
 
-By contrast, 10 models hold an Exclusive Gateway inside a Sub-Process, and 26 both fork and choose. Close call against also admitting Choices without a default, the largest shape. It was left to a later family because it needs an absent default in the IL and a runtime-exception outcome that the exception rows own, while this family needs neither.
+No model has three or more conditional flows plus a default, so the corpus reach this family buys is the 26 one-condition models; its three-condition witness is standards evidence. By contrast, 10 models hold an Exclusive Gateway inside a Sub-Process, and 26 both fork and choose. Close call against also admitting Choices without a default, the largest shape. It was left to a later family because it needs an absent default in the IL and a runtime-exception outcome that the exception rows own, while this family needs neither.
 
 ## Normative basis and CIB classification
 
@@ -38,7 +38,12 @@ By contrast, 10 models hold an Exclusive Gateway inside a Sub-Process, and 26 bo
 
 **CIB Seven.** At pinned `5a45b47`, `bpmn/behavior/ExclusiveGatewayActivityBehavior.java#doLeave` iterates every outgoing transition in declaration order with no fixed count. It takes the first whose condition is true; failing that, it takes the default, or throws when there is none. It also takes a non-default transition without a condition, which this profile keeps refusing.
 
-Register change: the boundary of [`CIB-AGR-0006`](../CIB-BPMN-RELATION-REGISTER.md#cib-agr-0006--divergent-exclusive-gateway-first-true-and-default-routing) stops excluding Choices with one or with more than two conditions, for this profile. The family calibrates on the CIB oracle (below). `CIB-INT-0001` and `CIB-CFG-0005` apply unchanged.
+Register changes:
+
+- the boundary of [`CIB-AGR-0006`](../CIB-BPMN-RELATION-REGISTER.md#cib-agr-0006--divergent-exclusive-gateway-first-true-and-default-routing) stops excluding Choices with one or with more than two conditions, for this profile;
+- the admitted source of [`CIB-CFG-0005`](../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0005--pinned-read-only-juel-condition-environment) widens from exactly two non-default conditions to any positive number with one conditionless default, for probe calibration only.
+
+`CIB-INT-0001` applies unchanged. The family calibrates on the CIB oracle (below): the probe calibrates CIB's declaration-order and default routing over string equality, never Simple Boolean truth, which CIB does not execute.
 
 ## Required, optional and excluded scope
 
@@ -62,7 +67,7 @@ These bound admission only: a later default-less Choice or body Choice broadens 
 
 The profile `cibseven-2.2.0-nested-embedded-scope-data-draft` grows in place under the [cumulative profile rule](../../contracts/README.md). Every model it admits today keeps its route, admission, Start rule, commands and observations. Today every Choice of the profile has exactly two conditions, and the widened rule selects among them exactly as before.
 
-The [profile artifact](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) grows in place: the feature list gains `exclusive-gateway-any-positive-conditional-flow-count`, and the exclusion `choices-with-other-than-two-conditions` becomes `choices-without-a-default`. The [profile README](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/README.md) states the class. Observation adds nothing.
+The [profile artifact](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) grows in place: the feature list gains `exclusive-gateway-any-positive-conditional-flow-count`, and the exclusion `choices-with-other-than-two-conditions` becomes `choices-without-a-default`. The [profile README](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/README.md) states the class, including that no admission rule bounds the candidate count: a very wide Choice is bounded only by the Start capacity envelope's Program-byte budget, which ends in the existing typed capacity failure. Observation adds nothing.
 
 ## Representation and runtime ownership
 
@@ -73,8 +78,8 @@ The [profile artifact](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-
 Admission stays [profile-parameterized](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md). The two-condition bound for this profile sits at these loci, and each widens to a nonempty candidate list for this profile only:
 
 - the Program-level `choose` arm of the closed-world [`ProgramStructuralValidation`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) and its TypeScript counterpart in the [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts);
-- the checked `exclusiveGateway` arity in [`CheckedProcessAdmission`](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) and in the source [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts);
-- the re-entry account's Choice vertex at both levels, in [`ScopeReentryAdmission`](../../BpmnSemantics/SemanticProcess/ScopeReentryAdmission.lean) and in the [nested scope-data admission](../../packages/semantic-core/src/nested-scope-data-admission.ts);
+- the checked `exclusiveGateway` arity in [`CheckedProcessAdmission`](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean), in the source [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts), and in the outgoing-flow count of `hasSelectedArity` in the source [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts), whose Lean twin counts candidates generically;
+- the re-entry account's Choice vertex at both levels, in [`ScopeReentryAdmission`](../../BpmnSemantics/SemanticProcess/ScopeReentryAdmission.lean), in the [nested scope-data admission](../../packages/semantic-core/src/nested-scope-data-admission.ts), and in the output count of `rootArityValid` in the TypeScript [re-entry admission](../../packages/semantic-core/src/scope-reentry-admission.ts), which has no Lean twin;
 - the source projection of a divergent Exclusive Gateway in the [nested scope-data source](../../packages/bpmn-source/src/nested-scope-data-source.ts), through the existing `variableArity` parameter of the [Exclusive Gateway source](../../packages/bpmn-source/src/simple-boolean-exclusive-gateway-source.ts).
 
 The nearest wrong algorithms each have a separating witness below:
@@ -114,14 +119,25 @@ Journeys:
 - **Delivery complaint.** *Reship order* is armed after two false candidates (`XCA-ORDER-01`); the one-condition Choice takes its candidate to *Confirm delivery*. This separates evaluation that stops after two candidates.
 - **Product complaint.** *Answer customer* opens after three false candidates (`XCA-DEFAULT-01`), and the one-condition Choice takes its default. This separates a default taken too early or too late.
 
+A fourth schedule, a billing complaint that is not urgent, selects the middle candidate *Correct invoice* alone. It runs in the core runtime test and the CIB probe, not as a pipeline case, and separates evaluation that skips a middle candidate.
+
+Source-order witnesses on *Route complaint* (`XCA-ORDER-01`, [`CIB-INT-0001`](../CIB-BPMN-RELATION-REGISTER.md#cib-int-0001--exclusive-gateway-candidate-order-is-xml-sequence-flow-declaration-order)), which only the source lane can carry:
+
+- reversing the declarations of the three conditional `sequenceFlow` elements, keeping their ids and the gateway's `<outgoing>` references, reverses the checked and IL candidate order, and the urgent billing schedule then opens *Correct invoice*;
+- renaming the flow ids so that their sort order opposes declaration order, and reordering the gateway's `<outgoing>` references, changes neither order nor the selected task.
+
 Refused edits of this model:
 
-- *Route complaint* without its default;
+- *Route complaint* without its default: the default flow and its Merge input are removed, so the gateway keeps three conditional flows and no default;
 - a fourth outgoing flow without a condition;
 - a condition on the default;
 - *Route complaint* moved into the body of *Review complaint*.
 
-Profile control: a three-condition Choice under the [Exclusive Gateway condition profile](EXCLUSIVE-GATEWAY-CONDITION-SPEC.md), at both levels, stays refused (wrong algorithm 2).
+Profile control (wrong algorithm 2), per locus rather than per model, because a profile with exact shapes refuses a three-condition model elsewhere whether or not the arity bound is lifted:
+
+- the existing per-profile loop of the [mixed-task control-flow source test](../../packages/bpmn-source/test/mixed-task-control-flow-source.test.ts) gains the nested profile, admitting any positive count, while every other profile except the mixed ones keeps exactly two;
+- the same enumeration covers the two TypeScript checked predicates, in the checked-process admission and `hasSelectedArity`;
+- the new Lean conformance module evaluates the Program-level operation well-formedness and `checkedNodeArityValid` on a three-candidate Choice under a profile id that keeps two, where no other locus is consulted.
 
 Existing witnesses that change: the refusal of one and three conditions in the [scope re-entry source test](../../packages/bpmn-source/test/scope-reentry-source.test.ts) and `choice_arity_is_two_conditions` in the [re-entry conformance module](../../BpmnSemantics/ScopeReentryConformance.lean) become admitted witnesses of those edits.
 
@@ -129,8 +145,8 @@ Existing witnesses that change: the refusal of one and three conditions in the [
 
 | Rule | Positive and negative witness | Lanes | Killing mutation |
 |---|---|---|---|
-| `XCA-ADMIT-01` | The model admitted at both levels; each refused edit refused; the profile control refused; every retained model of every profile keeps its admission | Source, core, Lean conformance module, corpus | Keep the two-condition bound at any one locus, or lift it for every profile |
-| `XCA-ORDER-01` | Urgent billing selects the first of two true candidates; delivery selects the third after two false | Pipeline, CIB probe | Select the last true candidate, or evaluate only the first two candidates |
+| `XCA-ADMIT-01` | The model admitted at both levels; each refused edit refused; the per-locus profile control; every retained model of every profile keeps its admission | Source, core, Lean conformance module, corpus | Keep the two-condition bound at any one locus, or lift it for every profile at any one locus |
+| `XCA-ORDER-01` | Urgent billing selects the first of two true candidates; billing alone selects the middle one; delivery selects the third after two false; reversed declarations flip the selection and renamed ids change nothing | Pipeline, core runtime test, source test, CIB probe | Select the last true candidate, skip a middle candidate, evaluate only the first two, or order candidates by flow id or `<outgoing>` reference |
 | `XCA-DEFAULT-01` | Product complaint takes both defaults; the delivery complaint's one-condition Choice takes its candidate | Pipeline, CIB probe | Take the default while a candidate is true |
 
 ## Lean assurance lane
@@ -145,7 +161,7 @@ No new hosting mechanism. Re-entry Programs of this profile are already hosted, 
 
 ## Evidence and acceptance
 
-The model runs as three answer-free scenarios with registered pipeline cases, each with a seeded mutation, plus value-domain matrix rows, a corpus row and the About disclosure. The CIB lane is a test beside the [scope re-entry probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScopeReentryProbeTest.java). It uses JUEL renditions of the conditions under `CIB-CFG-0005` and asserts, for each journey, the task or job each Choice selects. Every name a Choice reads is written before the first Choice, as the re-entry probe requires.
+The model runs as three answer-free scenarios with registered pipeline cases, each with a seeded mutation, plus value-domain matrix rows, a corpus row and the About disclosure. The CIB lane is a test beside the [scope re-entry probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScopeReentryProbeTest.java). It uses JUEL renditions of the conditions under `CIB-CFG-0005` and asserts, for each of the four schedules, the task or job each Choice selects. Every name a Choice reads is written before the first Choice, as the re-entry probe requires.
 
 The three pipeline cases raise the warm pipeline budget by three cases at the unchanged per-case rate. That raise is a [Rule 2](../../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change) bound change, with its own direction review.
 
@@ -183,14 +199,14 @@ Lean owners:
 - the flipped witness in `ScopeReentryConformance`;
 - a new executable conformance module, a family-owned module that imports admission owners only.
 
-TypeScript owners: the [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts), the [nested scope-data admission](../../packages/semantic-core/src/nested-scope-data-admission.ts), the [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts) and the [nested scope-data source](../../packages/bpmn-source/src/nested-scope-data-source.ts).
+TypeScript owners: the [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts), the [nested scope-data admission](../../packages/semantic-core/src/nested-scope-data-admission.ts), the [re-entry admission](../../packages/semantic-core/src/scope-reentry-admission.ts), the [checked-process admission](../../packages/bpmn-source/src/checked-process-admission.ts), the [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) and the [nested scope-data source](../../packages/bpmn-source/src/nested-scope-data-source.ts). The checked-process admission and the operation admission sit closest to the module-size target that `node scripts/what-binds.ts` reports, so each edit there stays line-neutral, and an owner is extracted before growth would exceed that target.
 
 Registration:
 
-- the `CIB-AGR-0006` boundary in the [register](../CIB-BPMN-RELATION-REGISTER.md);
+- the `CIB-AGR-0006` and `CIB-CFG-0005` boundaries in the [register](../CIB-BPMN-RELATION-REGISTER.md);
 - the [profile artifact](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) entries above and the README;
 - the [scope re-entry specification](SCOPE-REENTRY-SPEC.md#required-optional-and-excluded-scope), whose arity exclusion this family narrows;
-- the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) row `BPMN-EXCLUSIVE-GATEWAY-01`;
+- the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) rows `BPMN-EXCLUSIVE-GATEWAY-01` and `BPMN-MECH-GATEWAY-01`;
 - scenarios, pipeline cases, the value-domain matrix, the corpus, About and the CIB probe.
 
 Guards the implementation must change or satisfy:
