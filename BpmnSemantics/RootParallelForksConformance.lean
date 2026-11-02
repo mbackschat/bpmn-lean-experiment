@@ -6,8 +6,8 @@ public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 /-! # Root Parallel forks conformance
 
 Finite admission witnesses of RPF-ADMIT-01 under the nested scope-data profile. The employee onboarding graph
-transcribes the retained `scenarios/root-parallel-forks` model and the loan intake graphs the source test's root Call
-pair; their routes and Start names are the TypeScript analysis's values for the same graphs, and each refused graph
+transcribes the retained `scenarios/root-parallel-forks` model, and the loan intake and loan review graphs the source
+test's root Call pair and its Call in a root-branch Sub-Process; their routes and Start names are the TypeScript analysis's values for the same graphs, and each refused graph
 differs from an admitted one in the fact its name states. The module runs no command: the journeys and the refused
 completion are Lean executions of the registered scenarios in the pipeline. It imports admission owners only, as
 `ConcurrentStructuredScopeDataConformance` does, so it stays outside `CommandAdmission`'s hidden-edit cone
@@ -132,6 +132,21 @@ private def loanIntake (rootFork : Bool) : CheckedProcess :=
      , ("CheckCredit", "JoinAssessment"), ("ValueCollateral", "JoinAssessment"), ("JoinAssessment", "AssessmentClosed") ]
       ++ review.2 ++ root.2)
 
+/-- Loan review: root `P` forks into the Sub-Process *Review application*, whose body runs *Prepare file* and then the
+mapped Call *Request opinion*, beside the User Task *Check identity*; *Decide loan* follows the join. -/
+private def loanReview : CheckedProcess :=
+  build [] [("P", none), ("ReviewApplication", some "P"), ("ExpertReview", none)]
+    ([ start "P" "ApplicationReceived", fork "P" "RootSplit", sub "P" "ReviewApplication", task "P" "CheckIdentity"
+     , join "P" "RootJoin", task "P" "DecideLoan", finish "P" "LoanDecided"
+     , start "ReviewApplication" "ReviewOpened", task "ReviewApplication" "PrepareFile"
+     , mappedCall "ReviewApplication" "RequestOpinion" "ExpertReview" [enclosing "case" "application"]
+         [copied "opinion" "opinion"]
+     , finish "ReviewApplication" "ReviewClosed" ] ++ review.1)
+    ([ ("ApplicationReceived", "RootSplit"), ("RootSplit", "ReviewApplication"), ("RootSplit", "CheckIdentity")
+     , ("ReviewApplication", "RootJoin"), ("CheckIdentity", "RootJoin"), ("RootJoin", "DecideLoan")
+     , ("DecideLoan", "LoanDecided"), ("ReviewOpened", "PrepareFile"), ("PrepareFile", "RequestOpinion")
+     , ("RequestOpinion", "ReviewClosed") ] ++ review.2)
+
 private def onboarding : CheckedProcess := onboardingWith
 
 /-- Both checks, the lowered Program's capability catalog and the binding between the two. -/
@@ -156,7 +171,8 @@ private def sequenced_branches_stay_serial : Bool :=
 private def terminal_root_fork_is_refused : Bool :=
   admitted onboarding && !admitted (onboardingWith (terminal := true))
 
-/-- A mapped Call on the root path before the root fork is refused. -/
+/-- A mapped Call on the root path before the root fork is refused. CSE-ADMIT-01 also refuses it, a Service Task
+beside a Call, so the root Call pair below separates the root-Call clause. -/
 private def call_in_a_forking_root_is_refused : Bool :=
   admitted onboarding && !admitted (onboardingWith (called := true)
     (extra := [mappedCall "P" "CheckReferences" "ExpertReview" [enclosing "case" "employee"] [copied "references" "opinion"]])
@@ -185,6 +201,12 @@ private def root_call_pair_separates_the_restriction : Bool :=
     (NestedScopeControl.checkedAnalysis forked).isSome &&
     (NestedScopeControl.programAnalysis (lowerCheckedProcess forked)).isSome
 
+/-- A mapped Call in a Sub-Process body on a root branch stays admitted at each level, so a root-Call clause widened
+to every Call of a forking model fails here. -/
+private def call_in_a_root_branch_sub_process_is_admitted : Bool :=
+  admitted loanReview && StructuredScopeData.concurrentProgram (lowerCheckedProcess loanReview) &&
+    StructuredScopeData.checkedRouted loanReview && StructuredScopeData.programRouted (lowerCheckedProcess loanReview)
+
 /-- Every executable check of this module, named for the driver's failure report. -/
 def rootParallelForksConformanceChecks : List (String × Bool) := [
   ("root_fork_is_admitted_and_routed_concurrent", root_fork_is_admitted_and_routed_concurrent),
@@ -193,7 +215,8 @@ def rootParallelForksConformanceChecks : List (String × Bool) := [
   ("call_in_a_forking_root_is_refused", call_in_a_forking_root_is_refused),
   ("pass_through_on_a_root_branch_is_refused", pass_through_on_a_root_branch_is_refused),
   ("root_merge_is_refused", root_merge_is_refused),
-  ("root_call_pair_separates_the_restriction", root_call_pair_separates_the_restriction)
+  ("root_call_pair_separates_the_restriction", root_call_pair_separates_the_restriction),
+  ("call_in_a_root_branch_sub_process_is_admitted", call_in_a_root_branch_sub_process_is_admitted)
 ]
 
 end BpmnSemantics.RootParallelForksConformance

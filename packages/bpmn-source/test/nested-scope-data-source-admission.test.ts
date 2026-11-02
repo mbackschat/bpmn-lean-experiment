@@ -81,7 +81,7 @@ test("NSD-ADMIT-01 runs the five-scope sibling Process as a supported scenario t
   assert.equal(last.status, ProcessStatus.Completed);
 });
 
-// CSSD-ADMIT-01 superseded NSD-ADMIT-01's refusal of a token split; the concurrent witnesses own the root-body refusal.
+// CSSD-ADMIT-01 superseded NSD-ADMIT-01's refusal of a token split; the root Parallel forks witnesses own root-body forks.
 test("CSSD-ADMIT-01 admits a Parallel fork inside an embedded scope beside the serial body of the same Sub-Process", async () => {
   await assertAdmitted("serial body", literalModel("x"));
   await assertAdmitted("forking body", processOf([forkingSubProcess("S1")]));
