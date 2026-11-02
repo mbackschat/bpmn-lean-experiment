@@ -97,7 +97,7 @@ The model carries a source overlay and a mapped Service Task, as the profile req
 | Rule | Positive and negative witness | Lanes | Killing mutation |
 |---|---|---|---|
 | `RPF-ADMIT-01` | The model admitted; each refused edit refused; every retained model of the profile keeps its admission | Source, core, Lean conformance module, corpus | Keep refusing a root fork, or admit a terminal root fork |
-| `RPF-ROOT-01` | Each journey reaches *Hold welcome meeting* once, after both branches | Pipeline, CIB probe | Continue the join on its first token |
+| `RPF-ROOT-01` | Each journey reaches *Hold welcome meeting* once, after both branches | Pipeline, CIB probe on journeys two and three | Continue the join on its first token |
 | `RPF-WRITE-01` | `onboardingStage` differs between journeys two and three | Pipeline, CIB probe | Apply branch writes in Program order |
 | `RPF-VALUE-01` | The open *Order laptop* argument holds the first `employee` after the sibling write in journey one, and the second in journey two | Pipeline, value-domain matrix | Re-read the argument when the result arrives |
 
@@ -115,7 +115,7 @@ No new hosting mechanism. Concurrent Programs of this profile are already hosted
 
 ## Evidence and acceptance
 
-The model runs as answer-free scenarios with registered pipeline cases, seeded mutations, value-domain matrix rows, a corpus row and the About disclosure. The CIB lane is a calibration probe beside the [concurrent structured scope data probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConcurrentStructuredScopeDataProbeTest.java), asserting for each journey the final `onboardingStage` and `employee` and one *Hold welcome meeting* task after both branches.
+The model runs as answer-free scenarios with registered pipeline cases, seeded mutations, value-domain matrix rows, a corpus row and the About disclosure. The CIB lane is a calibration probe beside the [concurrent structured scope data probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConcurrentStructuredScopeDataProbeTest.java), asserting for journeys two and three the *Order laptop* argument, the final `onboardingStage` and `employee`, and one *Hold welcome meeting* task after both branches. CIB runs the async-before delegate and its completion in one continuation job, so it realizes only schedules in which that job runs before the next command; journey one's open snapshot is the operational realization that `CIB-EXT-0015` and `CIB-OP-0010` already classify for this profile, and the probe claims no argument agreement for it.
 
 Acceptance:
 
