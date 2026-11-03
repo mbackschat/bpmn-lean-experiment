@@ -11,8 +11,8 @@ Can the nested scope-data profile admit plain Tasks and Manual Tasks on the bran
 
 This is the next family of batch 4 in [PLAN](../PLAN.md#scheduled-delivery-batches). Its shared mechanism is the pass-through Task of the [pass-through Task specification](PASS-THROUGH-TASK-SPEC.md), a one-input `mergeExclusive`, run inside the concurrent account that the [root Parallel forks specification](ROOT-PARALLEL-FORKS-SPEC.md#question-and-delivery-boundary) found blocked by the commutation relation. It takes every open row of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) whose remaining clause is that branch exclusion:
 
-- `PC-HUM-04`, primary, its last open clause: Plain Task pass-through on Parallel branches, for every branch that ends at its fork's paired join and every terminal branch that reaches a wait. The row stays open on one residual form, a wait-free terminal branch in a Sub-Process body, recorded under [Evidence and acceptance](#evidence-and-acceptance).
-- `PC-HUM-05`, its Parallel-branch clause: Manual Task pass-through on Parallel branches. The row stays open on its implicit split and merge clause, which `PC-CF-07` owns for every Activity kind.
+- `PC-HUM-04`, primary, its last open clause: Plain Task pass-through on Parallel branches, for every branch that ends at its fork's paired join and every terminal branch that reaches a wait. The row stays open on two residual forms, a wait-free terminal branch in a Sub-Process body and a branch of a forking model without an embedded Sub-Process (`PC-CF-03`), recorded under [Evidence and acceptance](#evidence-and-acceptance).
+- `PC-HUM-05`, its Parallel-branch clause: Manual Task pass-through on Parallel branches. The row stays open on the same two residual forms and on its implicit split and merge clause, which `PC-CF-07` owns for every Activity kind.
 
 Screened out, each with its reason:
 
