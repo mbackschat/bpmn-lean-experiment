@@ -31,7 +31,7 @@ BPMN 2.0.2 Clause 13.4.2, Table 13.2 (Exclusive Gateway Execution Semantics): co
 CIB Seven `2.2.0`, pinned `5a45b47e`:
 
 - **`ExclusiveGatewayActivityBehavior#doLeave`.** It iterates the outgoing transitions in declaration order. With no transition taken and no default, it raises `ProcessEngineException` `ENGINE-02004` (“No outgoing sequence flow for the element with id '…' could be selected for continuing the process”, `BpmnBehaviorLogger#stuckExecutionException`). The exception aborts the engine command and rolls its transaction back. `ExclusiveGatewayTest#testNoSequenceFlowSelected` starts such a Process and expects the start call to throw.
-- **The parser.** It refuses an Exclusive Gateway whose only outgoing flow carries a condition (“has only one outgoing sequence flow … This is not allowed to have a condition”, observed by this family's probe).
+- **The parser.** `BpmnParse#validateExclusiveGateway` (`BpmnParse.java:1465-1470`) refuses an Exclusive Gateway whose only outgoing flow carries a condition (“has only one outgoing sequence flow … This is not allowed to have a condition”). The probe deploys that edit and expects the error.
 - **The register.** [`CIB-OP-0004`](../CIB-BPMN-RELATION-REGISTER.md#cib-op-0004--synchronous-juel-command-rollback-mapped-to-speculative-semantic-commitment) records the same command-rollback consequence for a failing condition: a failed completion leaves its User Task available, and a failed start leaves no runtime or historic Process instance.
 
 The [calibration probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveChoiceWithoutDefaultProbeTest.java) confirms every behavior this account relies on, on both witness models.
@@ -90,12 +90,12 @@ The checked `exclusiveGateway` node takes an optional `defaultFlowId`, and the I
 
 The exception proofs then only take the `some` premise at their `choose` match, and no lemma about the existing functions changes.
 
-**Closure.** The frontier gains a no-flow channel beside `preparationFailed`, set when an enabled Choice's selection yields the no-flow result. The loop checks, identically in Lean and TypeScript, in this order:
+**Closure.** The frontier gains a no-flow channel beside `preparationFailed`, set when an enabled Choice's selection yields the no-flow result. A no-flow Choice yields no successor and so contributes no offer. The loop must therefore test it before the stable frontier, or the command would commit with the token parked at the Choice. It checks, identically in Lean and TypeScript, in this order:
 
 1. refusal;
-2. the empty frontier (commit);
-3. the step bound;
-4. no-flow, which rolls the command back flag-free;
+2. no-flow, which rolls the command back flag-free;
+3. the stable frontier, which commits: no offers, no `preparationFailed` and no no-flow;
+4. the step bound;
 5. `preparationFailed`, which keeps its `ambiguousInternalChoice` rollback.
 
 Admission refuses order-dependent internal choice today, so a no-flow Choice is decided before any concurrent write could change its reads. The command result reuses the restoration of the pre-admission state. No outcome, flag or field is added to the public command result; the internal frontier and closure-result types gain the channel.
@@ -103,12 +103,13 @@ Admission refuses order-dependent internal choice today, so a no-flow Choice is 
 **Lean build account.** These interface edits land as one batch, so the fixtures rebuild once:
 
 - the field types in `SemanticProcessContract` and `CheckedProcessContract`, whose import cones reach about 1,000 of 1,045 modules each;
-- their JSON readers, `SemanticProcessJson/Program` and `SemanticProcessJson/CheckedProcess`.
+- their JSON readers, `SemanticProcessJson/Program` and `SemanticProcessJson/CheckedProcess`;
+- the `InternalExecutionFrontier` structure, which gains the no-flow field, and its fold laws, which restate the stable-frontier predicate. Its import cone is about 334 modules.
 
 The modules beyond that batch:
 
 - **Hubs, body edits only.** `ProgramStructuralValidation` (closed world): its `choose` arm requires both default fields or neither, admits neither only under this profile, and checks the origin when present. `OperationControlPlaces` (kernel, fan-out 501) lists the outputs with `defaultOutput.toList`. The closed-world `CheckedGraphValidation` stays untouched, because its `exclusiveGateway` arms bind the default to a wildcard.
-- **Selection and closure call sites.** `TransitionStates`, `Transition`, the `InternalLocalControl*` modules, `InternalScheduledClosure` (22 lines of headroom: the no-flow case is a body edit of at most that size, or its law moves to the leaf) and `TransitionTrace` (the result mapping).
+- **Selection and closure call sites.** `TransitionStates`, `Transition`, the `InternalLocalControl*` modules, `InternalScheduledClosure`. Its stable-frontier theorems, among them `closeScheduledTraced_hitBound_cursor` and the `InternalScheduleExecution` and `ScheduledClosurePrefix` premises, gain the no-flow conjunct. With 22 lines of headroom, the adapted statements that do not fit move to the leaf and `TransitionTrace` (the result mapping).
 - **Admission.** `CheckedProcessAdmission`, `Lowering`, `ScopeReentryAdmission`, and the admissions of the profiles whose Choices keep a default (`StructuredCompositionAdmission`, `MixedTaskControlFlowAdmission`, `StructuredHumanWorkAdmission`). Those profiles require the default present, so their models and proofs keep today's meaning.
 - **Proofs.** The proofs that destructure the default take it from that `some` premise: `StructuredComposition*Proofs`, `MixedTaskControlFlow*Proofs` and the cyclic conformance. `StructuredCompositionControlProofs`, `StructuredCompositionClosureProofs`, `StructuredCompositionDataProofs` and `MixedTaskControlFlowDataProofs` carry size exceptions and must not grow, so any lemma their adaptation needs goes into the leaf.
 
@@ -199,6 +200,8 @@ Refused edits, each refused by the source reader:
 
 Admitted twin: *Pay out* given a default to the final Merge, while *Route expense* keeps none. This witnesses a model holding Choices with and without a default.
 
+The source test asserts each effect-closure refused edit beside its control: the same edit with every Choice given a default, which today's reader admits. Each refusal can then come only from the new rule.
+
 Hosted witness, one real-service Temporal test, which also gains a rolled-back Start inside the Workflow in the [closure failure classification test](../../packages/temporal-adapter/workflow/test/closure-failure-classification.test.ts):
 
 - **Catering Start.** It returns `rejected` `startRolledBack`, and describing the Workflow ID finds none.
@@ -256,7 +259,7 @@ Lanes:
 - the source test;
 - the Lean conformance and proof modules;
 - the hosted witness;
-- the CIB probe, which asserts the first-true route, both `ENGINE-02004` rollbacks with their state, the completion after a failed attempt, and the armed effects;
+- the CIB probe, which asserts the first-true route, both `ENGINE-02004` rollbacks with their state, the completion after a failed attempt, the armed effects, and the parse refusal of a one-flow Choice;
 - two corpus rows and the About disclosure.
 
 Acceptance:
@@ -268,7 +271,7 @@ Acceptance:
 
 Then `PC-CF-02`'s first-true, reverse-order and no-match clauses are evidenced for default-less root Choices of this profile, and the row stays open on its other clauses.
 
-Assurance assessment, recorded in PLAN: `AA-11` and `AA-23` stay `not-met`. The no-flow outcome is a BPMN-defined semantic outcome on its own channel. It leaves `preparationFailed`, the refusal channel and the outcome type unchanged, so it neither resolves nor prejudges the held `AA-11` and `AA-20` decision. If the implementation needs to touch `preparationFailed`, `AA-23` becomes `met-review`.
+Assurance assessment, recorded in PLAN: `AA-11` and `AA-23` stay `not-met`, although the family edits `InternalScheduledClosure` and `internal-choice-schedule.ts`, which `AA-23` owns. The no-flow outcome is a BPMN-defined semantic outcome on its own channel. It leaves `preparationFailed`, the refusal channel and the outcome type unchanged, so it neither resolves nor prejudges the held `AA-11` and `AA-20` decision. If the implementation needs to touch `preparationFailed`, `AA-23` becomes `met-review`.
 
 ## Versioning consequences
 

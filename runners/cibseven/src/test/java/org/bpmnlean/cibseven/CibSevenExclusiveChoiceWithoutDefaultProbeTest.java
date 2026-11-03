@@ -77,6 +77,24 @@ public final class CibSevenExclusiveChoiceWithoutDefaultProbeTest {
   }
 
   @Test
+  public void aPayoutWithOnlyItsBankFlowIsRefusedAtParse() throws Exception {
+    var source = Session.juelRendition("expense-routing", 5)
+        .replace("      <outgoing>Flow_Payroll</outgoing>\n", "")
+        .replaceAll("(?s)    <sequenceFlow id=\"Flow_Payroll\".*?</sequenceFlow>\n", "")
+        .replace("    <sequenceFlow id=\"Flow_Payrolled\" sourceRef=\"AddToPayroll\" targetRef=\"ExpensePaid\" />\n", "")
+        .replace("    <userTask id=\"AddToPayroll\" name=\"Add to payroll\" />\n", "");
+    var engine = CibSevenTestEngine.create("exclusive-choice-without-default-one-flow", configuration -> { });
+    try {
+      var failure = assertThrows(ProcessEngineException.class, () -> engine.getRepositoryService().createDeployment()
+          .addString("expense-routing.bpmn", source).deploy());
+      assertTrue(failure.getMessage(), failure.getMessage().contains(
+          "Exclusive Gateway 'PayOut' has only one outgoing sequence flow ('Flow_Bank'). This is not allowed to have a condition."));
+    } finally {
+      engine.close();
+    }
+  }
+
+  @Test
   public void aMediumSeverityMatchesNoRouteAndLeavesTheTriageOpenUntilItIsHigh() throws Exception {
     try (var session = new Session("ticket-triage", "autoCloseTicket", 2)) {
       var ticket = session.start("Process_TicketTriage", Map.of("ticket", "T-9"));
@@ -138,7 +156,7 @@ public final class CibSevenExclusiveChoiceWithoutDefaultProbeTest {
     }
 
     /** The model with each `stringEquals(n,"v")` condition rendered as the JUEL `${n == "v"}`, exactly `conditions` of them. */
-    private static String juelRendition(String model, int conditions) throws Exception {
+    static String juelRendition(String model, int conditions) throws Exception {
       var source = Files.readString(MODELS.resolve(model + ".bpmn"));
       assertEquals(conditions, STRING_EQUALS.matcher(source).results().count());
       return STRING_EQUALS.matcher(source.replace(SIMPLE_BOOLEAN, "")).replaceAll("\\${$1 == \"$2\"}");
