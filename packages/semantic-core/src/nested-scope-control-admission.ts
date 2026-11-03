@@ -108,7 +108,7 @@ type BranchScan = Readonly<{ stop: BranchStop; join: string | null; passes: bool
  * BPMN 13.4.1: every path from a fork output reaches a task vertex before a join or End can consume it. PTPB-WORK-01
  * relaxes this only for a branch whose closure scan meets a pass vertex: such a branch may reach its fork's paired join
  * without waiting, but never an End, so an End is never co-enabled with a sibling branch's entry (the singleton premise
- * of the [pass-through branch proposal](../../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md#representation-and-runtime-ownership)).
+ * of the [pass-through branch specification](../../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#representation-and-runtime-ownership)).
  * The scan passes a nested fork's join only when every branch of that fork reaches it wait-free.
  */
 function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boolean {

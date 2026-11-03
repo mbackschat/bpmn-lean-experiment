@@ -69,7 +69,7 @@ private theorem merge_apply_scope_data (state : RuntimeState) (selected : Intern
   exact localControl_apply_variables state selected.localControlPatch variables
 
 /-- A declared entry beside a one-input Merge on another Parallel branch (PTPB-COMMUTE-01 of the
-[pass-through branch proposal](../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md#stable-rules)) composes the
+[pass-through branch specification](../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#stable-rules)) composes the
 Merge's scope-creation law above with the frame insertion: the Merge moves only tokens, so it never reads or writes
 the variables the insertion changes. -/
 theorem prepared_declared_entry_merge_pair (program : Program) (state : RuntimeState)

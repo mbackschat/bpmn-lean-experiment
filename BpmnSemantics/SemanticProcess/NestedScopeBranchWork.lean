@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 
 /-! The fork-branch cut of NSC-ADMIT-01 and the Call placement scan of CMCALL-ADMIT-01, as PTPB-WORK-01 and
-PTPB-CALL-01 of the [pass-through branch proposal](../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md#admission)
+PTPB-CALL-01 of the [pass-through branch specification](../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#admission)
 relax them for pass vertices. `NestedScopeControl` consumes them in hidden bodies only, through a private import. -/
 
 public section
@@ -59,7 +59,7 @@ private def branchScan (vertices : List Vertex) : Nat → String → BranchStop 
 
 /-- BPMN 13.4.1's cut, relaxed by PTPB-WORK-01 only for a branch whose closure scan meets a pass vertex: it
 may reach its fork's paired join without waiting, never an End, so no End is co-enabled with a sibling
-branch's entry (the singleton premise of the pass-through branch proposal). -/
+branch's entry (the singleton premise of the pass-through branch specification). -/
 def branchesStartWithWork (vertices : List Vertex) : Bool :=
   vertices.all fun vertex => vertex.kind != .fork || vertex.outputs.all fun id =>
     reachesWork vertices vertices.length id ||

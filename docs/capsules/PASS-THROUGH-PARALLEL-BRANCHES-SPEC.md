@@ -1,4 +1,4 @@
-# Pass-through Tasks on Parallel branches proposal
+# Pass-through Tasks on Parallel branches specification
 
 ## Status
 

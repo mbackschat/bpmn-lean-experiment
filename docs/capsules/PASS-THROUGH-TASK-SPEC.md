@@ -50,10 +50,10 @@ Optional: several pass-through Tasks in one model, and one re-entered by a cycle
 
 Excluded, each refused at admission:
 
-- a pass-through Task in a Program that forks, which this account leaves to the concurrent account; the [pass-through branch proposal](PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md) admits it there;
+- a pass-through Task in a Program that forks, which this account leaves to the concurrent account; the [pass-through branch specification](PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md) admits it there;
 - in a called Process, whose body stays one to three User Tasks;
 - several incoming or outgoing flows, or a conditional or default outgoing flow (`PC-CF-07`);
-- a pass-through Task on a Parallel branch, which the [pass-through branch proposal](PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md) admits;
+- a pass-through Task on a Parallel branch, which the [pass-through branch specification](PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md) admits;
 - `camunda:asyncBefore` or `asyncAfter`, execution listeners, `camunda:inputOutput` or other extension elements;
 - loop or Multi-Instance characteristics;
 - attached boundary events, and `isForCompensation`.

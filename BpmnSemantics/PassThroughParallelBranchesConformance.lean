@@ -12,7 +12,7 @@ TypeScript analysis's values for the same graphs, and each refused graph differs
 name states. The module runs no command: the batched closures are Lean executions of the registered scenarios in the
 pipeline, and `PTPB-COMMUTE-01` is the proved pair law of `InternalMergeScopeCreationCommutation`. It imports admission
 owners only, so it stays outside `CommandAdmission`'s hidden-edit cone (`lean-fanout`). See the
-[pass-through branch proposal](../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-PROPOSAL.md#separating-witnesses).
+[pass-through branch specification](../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#separating-witnesses).
 -/
 
 public section
