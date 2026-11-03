@@ -86,7 +86,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Single-scope models closure. Command: `./scripts/verify.sh`. Status: `exit 1`, one read of `business-task-composition-recovery` recorded under [TD-001](TEMPORAL-DEFECTS-LEDGER.md#td-001-query-loss-during-run-eviction), attribution not demonstrated, which passed 7 of 7 alone; `./scripts/pnpm.sh run test:pipeline` `exit 0` over 174 cases; hosted [Verify 41636648134](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/41636648134) green at `103fa0f8`, `verify-complete` included. Date: `2026-11-03`. Commit: `5581dcef`.
+- Send Task closure. Command: `./scripts/verify.sh`. Status: `exit 0`, the pipeline over 177 cases; `./scripts/doctor.sh research && ./scripts/pnpm.sh run test:model-corpus` `exit 0`, 30 tests. Date: `2026-11-03`. Commit: `e9f0753d`.
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -98,13 +98,13 @@ Current task: [Send Task](capsules/SEND-TASK-PROPOSAL.md) of the nested scope-da
 
 Deliverable: a Send Task with a configured handler admitted and executed as the profile's mapped effect, landed on `main`; `PC-AUTO-04` stays open on prescribed failure.
 
-Acceptance blockers: the cold design review, implementation, closure review and landing.
+Acceptance blockers: the cold closure review, graduation and landing.
 
-Current result: proposal written; the source reader and the capability inventory still refuse the Send Task.
+Current result: proposal approved at `00f1c705`; implemented and registered through `e9f0753d` with every closure gate green; no Lean change and no guard bound change.
 
 Effort budget: 4 hours from 2026-11-03 14:45 CET; no Lean change, so no full `BpmnConformance` build beyond the hosted gate.
 
-Next action: the cold design review of the proposal, then the source projection, witnesses and registration.
+Next action: the cold closure review of the Send Task family, then graduation to a specification and landing through the branch flow.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

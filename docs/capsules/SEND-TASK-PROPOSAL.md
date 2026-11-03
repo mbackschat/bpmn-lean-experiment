@@ -31,7 +31,7 @@ Classification: a new bounded extension, `CIB-EXT-0023` (Send Task performed by 
 
 ## Required, optional and excluded scope
 
-Required: a `bpmn:SendTask` in every position the profile admits a mapped Service Task (the serial, re-entry, concurrent and Sub-Process body accounts of the profile, single-scope models included), with exactly the Service Task's source form: `id`, an optional `name`, `implementation` absent or the Activity effect protocol, `camunda:delegateExpression` bound by the source overlay, `camunda:asyncBefore="true"`, and `camunda:inputOutput` input parameters of the admitted grammar.
+Required: a `bpmn:SendTask` in every position the profile admits a mapped Service Task (the serial, re-entry, concurrent and Sub-Process body accounts of the profile, single-scope models included), with exactly the Service Task's source form: `id`, an optional `name`, `implementation` the Activity effect protocol, `camunda:delegateExpression` bound by the source overlay, `camunda:asyncBefore="true"`, and `camunda:inputOutput` input parameters of the admitted grammar.
 
 Optional: none.
 
@@ -143,6 +143,25 @@ Guards the implementation must change or satisfy: the [projected flow-element ke
 Detail maps that record the implemented and absent scope: [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](../ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [`implementation-status-owner:ENGINE-DATA-FAMILY`](../ENGINE-DATA-FAMILY-IMPLEMENTATION-MAP.md) and [`implementation-status-owner:ASSURANCE-ADOPTION`](../ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md).
 
 Registration: the profile artifact's `features`, relationship list and normative references, which gain Clause 10.3.3, and its README; `CIB-EXT-0023` in the [register](../CIB-BPMN-RELATION-REGISTER.md); scenarios, pipeline cases, the value-domain matrix, the corpus, About and the CIB probe; the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) row `BPMN-MECH-TASK-01`, whose Send entry gains this bounded evidence.
+
+## Implementation notes
+
+Implemented as proposed, with these deviations:
+
+- **Key shape.** The projection delegates to the mapped Service Task's projection after refusing `messageRef`, `operationRef` and any output, so it shares that projection's key shape; the projected-key inventory gains no entry, since a second entry would repeat the same five keys.
+- **`implementation`.** The overlay binding matches the attribute exactly, so a Send Task, like its Service Task twin, needs the Activity effect protocol; the proposal's "absent or" was wrong and is corrected above.
+- **Embedded completion control.** That profile shares the reader, so the [source test](../../packages/bpmn-source/test/send-task-source.test.ts) also refuses the claim acknowledgement under it beside its admitted data-bearing Service Task twin; setting the reader flag for it fails exactly that test.
+- **Correlation key.** The registered shipping-notice mutation moves the recipient; a further [pipeline-case test](../../packages/differential/test/send-task-pipeline-cases.test.ts) shows a correlation key read from the wrong variable is named by the comparison.
+- **Maps.** The [`implementation-status-owner:ASSURANCE-ADOPTION`](../ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) map, at its word backstop, gains no line: its case relations across every implemented family, its CIB-backed family probes and the executable corpus already cover these schedules, the probe and the `sendTask` capability. The source map makes room by dropping two review-state restatements that their receipts own.
+- **Value domain.** The claim acknowledgement joins the concurrent one-name Start cases; the shipping notice requires two Start names, which that builder does not cover, so it has no matrix row.
+
+Every refusal clause of the projection, the output restriction and the reader flag has a mutation the source test kills. The [CIB probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSendTaskProbeTest.java) passes three of three in CIB `2.2.0`.
+
+Closure gates, green at `e9f0753d` (2026-11-03):
+
+- `./scripts/verify.sh`: the Lean library and `BpmnConformance`, 939 and 920 jobs; the CIB runtime stage, 173 tests with the Send Task probe; the complete Temporal gate; the pipeline over all 177 registered cases, warm in 132.4 s against the 88.5 s soft target at a start load of 0.61 per core;
+- the research doctor and `test:model-corpus`, 30 tests;
+- the platform guards that bind the capability inventory: the process showcase catalog, showcase diagrams, showcase preparation and capabilities panel, 21 tests.
 
 ## Independent cold-review receipt
 
