@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and delivery boundary
 
@@ -22,7 +22,7 @@ Screened out, each with its reason:
 - The Send Task (`PC-AUTO-04`): 13 of the pinned CIB models hold one; a later family.
 - The wait-free terminal branch: co-enables a body End with a sibling entry in one closure, a different mechanism.
 
-Selection, 2026-11-03: chosen on reach. Of the pinned CIB engine test resources, 1,718 single-Process models hold no Sub-Process and no Call; 698 of them use only element kinds this profile reads (Start, End, User, Service, plain and Manual Task, None Throw, Parallel and Exclusive Gateways), 95 of those fork. None is admitted as it stands, because the profile requires a source overlay and refuses CIB attributes. Structurally, of the same 698: 50 hold several Ends and 23 an implicit flow, forms this family keeps refusing; of the 95 forking models, 42 are paired-fork candidates, before the source details. Selector (pinned checkout `5a45b47`, 2026-11-03): every `*.bpmn` and `*.bpmn20.xml` file of the whole checkout outside `target/` directories that parses as XML and holds exactly one `process` element whose descendant element local names all lie in {`startEvent`, `endEvent`, `userTask`, `serviceTask`, `task`, `manualTask`, `intermediateThrowEvent`, `parallelGateway`, `exclusiveGateway`, `sequenceFlow`, `conditionExpression`, `incoming`, `outgoing`, `documentation`, `extensionElements`}, which excludes Sub-Processes, Calls, EventDefinitions and CIB extension children; an implicit flow is a Start, Task, None Throw or End with more than one incoming or outgoing `sequenceFlow`; a paired-fork candidate forks, has as many Parallel Gateways with several outgoing flows as with several incoming flows, exactly one End and no implicit flow. Narrower roots give smaller counts (the engine module's test resources alone: 82 forking, 23 candidates, by the design review's own probe). Close call against the Send Task: lower reach and a new kernel arm, against a widening that reuses every approved account unchanged and changes no guard bound.
+Selection, 2026-11-03: chosen on reach. Of the pinned checkout's BPMN files, about 1,700 single-Process models hold no Sub-Process and no Call; 698 of them use only element kinds this profile reads (Start, End, User, Service, plain and Manual Task, None Throw, Parallel and Exclusive Gateways), 95 of those fork. None is admitted as it stands, because the profile requires a source overlay and refuses CIB attributes. Structurally, of the same 698: 50 hold several Ends and 23 an implicit flow, forms this family keeps refusing; of the 95 forking models, 42 are paired-fork candidates, before the source details. Selector (pinned checkout `5a45b47`, 2026-11-03): every `*.bpmn` and `*.bpmn20.xml` file of the whole checkout outside `target/` directories that parses as XML and holds exactly one `process` element whose descendant element local names all lie in {`startEvent`, `endEvent`, `userTask`, `serviceTask`, `task`, `manualTask`, `intermediateThrowEvent`, `parallelGateway`, `exclusiveGateway`, `sequenceFlow`, `conditionExpression`, `incoming`, `outgoing`, `documentation`, `extensionElements`}, which excludes Sub-Processes, Calls, EventDefinitions and CIB extension children; an implicit flow is a Start, Task, None Throw or End with more than one incoming or outgoing `sequenceFlow`; a paired-fork candidate forks, has as many Parallel Gateways with several outgoing flows as with several incoming flows, exactly one End and no implicit flow. Narrower roots give smaller counts (the engine module's test resources alone: 82 forking, 23 candidates, by the design review's own probe). Close call against the Send Task: lower reach and a new kernel arm, against a widening that reuses every approved account unchanged and changes no guard bound.
 
 ## Normative basis and CIB classification
 
@@ -167,6 +167,6 @@ Registration: the profile artifact's `features` and its README; the new conforma
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `4698de15` | `fork-turns-none` | `approve-with-required-edits` | `e19d2537, c204a58d` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

@@ -98,13 +98,13 @@ Current task: [single-scope models](capsules/SINGLE-SCOPE-MODELS-PROPOSAL.md) of
 
 Deliverable: models without an embedded Sub-Process admitted and executed under the nested scope-data profile, landed on `main`; the four rows stay open on their other clauses.
 
-Acceptance blockers: the cold design review, implementation, registration, the closure review and landing.
+Acceptance blockers: implementation, registration, the closure review and landing.
 
-Current result: proposal revised after the bound-direction review to a completion premise with no bound change (the owner-approved `ScopeDataBearing` raise is unused); a scratch probe on `a37e56ef` admitted single-scope fork and re-entry models at both levels once the bound was relaxed and ran the fork to completion in the core.
+Current result: proposal approved with required edits (review of `4698de15`, audits `e19d2537` and `c204a58d`); no guard bound changes, the owner-approved `ScopeDataBearing` raise is unused.
 
 Effort budget: 6 hours from 2026-11-03 11:11 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: commit the proposal and run its cold design review.
+Next action: red TypeScript source tests, the TypeScript admission change, then the Lean interface edits and the declared premise pass in one commit.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
