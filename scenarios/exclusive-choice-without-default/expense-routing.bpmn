@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ExpenseRouting" targetNamespace="urn:bpmn-lean:expense-routing"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_ExpenseRouting" name="Route an expense claim to its reviewer" isExecutable="true">
+    <startEvent id="ExpenseSubmitted" name="Expense submitted" />
+    <exclusiveGateway id="RouteByCategory" name="Route by category" gatewayDirection="Diverging">
+      <incoming>Flow_Submitted</incoming>
+      <outgoing>Flow_Travel</outgoing>
+      <outgoing>Flow_Equipment</outgoing>
+    </exclusiveGateway>
+    <userTask id="ReviewTravel" name="Review travel" />
+    <userTask id="ReviewEquipment" name="Review equipment" />
+    <exclusiveGateway id="ExpenseReviewed" name="Expense reviewed" gatewayDirection="Converging" />
+    <serviceTask id="ReimburseClaimant" name="Reimburse claimant"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${reimburseClaimant}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="claimant">${claimant}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <endEvent id="ExpenseSettled" name="Expense settled" />
+    <sequenceFlow id="Flow_Submitted" sourceRef="ExpenseSubmitted" targetRef="RouteByCategory" />
+    <sequenceFlow id="Flow_Travel" sourceRef="RouteByCategory" targetRef="ReviewTravel">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(category,"travel")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Equipment" sourceRef="RouteByCategory" targetRef="ReviewEquipment">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(category,"equipment")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_TravelReviewed" sourceRef="ReviewTravel" targetRef="ExpenseReviewed" />
+    <sequenceFlow id="Flow_EquipmentReviewed" sourceRef="ReviewEquipment" targetRef="ExpenseReviewed" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ExpenseReviewed" targetRef="ReimburseClaimant" />
+    <sequenceFlow id="Flow_Settled" sourceRef="ReimburseClaimant" targetRef="ExpenseSettled" />
+  </process>
+</definitions>

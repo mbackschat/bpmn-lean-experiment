@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TicketTriage" targetNamespace="urn:bpmn-lean:ticket-triage"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_TicketTriage" name="Triage a support ticket by severity" isExecutable="true">
+    <startEvent id="TicketOpened" name="Ticket opened" />
+    <subProcess id="Triage" name="Triage">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="severity">unassessed</camunda:inputParameter>
+          <camunda:outputParameter name="severity">${severity}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="TriageOpened" name="Triage opened" />
+      <userTask id="TriageTicket" name="Triage ticket" />
+      <endEvent id="TriageClosed" name="Triage closed" />
+      <sequenceFlow id="Flow_TriageOpened" sourceRef="TriageOpened" targetRef="TriageTicket" />
+      <sequenceFlow id="Flow_Triaged" sourceRef="TriageTicket" targetRef="TriageClosed" />
+    </subProcess>
+    <exclusiveGateway id="RouteBySeverity" name="Route by severity" gatewayDirection="Diverging">
+      <incoming>Flow_TriageDone</incoming>
+      <outgoing>Flow_High</outgoing>
+      <outgoing>Flow_Low</outgoing>
+    </exclusiveGateway>
+    <userTask id="Escalate" name="Escalate" />
+    <serviceTask id="AutoClose" name="Auto-close"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${autoCloseTicket}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="ticket">${ticket}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <exclusiveGateway id="TicketHandled" name="Ticket handled" gatewayDirection="Converging" />
+    <endEvent id="TicketClosed" name="Ticket closed" />
+    <sequenceFlow id="Flow_Opened" sourceRef="TicketOpened" targetRef="Triage" />
+    <sequenceFlow id="Flow_TriageDone" sourceRef="Triage" targetRef="RouteBySeverity" />
+    <sequenceFlow id="Flow_High" sourceRef="RouteBySeverity" targetRef="Escalate">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(severity,"high")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Low" sourceRef="RouteBySeverity" targetRef="AutoClose">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(severity,"low")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Escalated" sourceRef="Escalate" targetRef="TicketHandled" />
+    <sequenceFlow id="Flow_AutoClosed" sourceRef="AutoClose" targetRef="TicketHandled" />
+    <sequenceFlow id="Flow_Handled" sourceRef="TicketHandled" targetRef="TicketClosed" />
+  </process>
+</definitions>
