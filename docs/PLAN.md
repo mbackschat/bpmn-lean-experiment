@@ -98,13 +98,13 @@ Current task: [None Intermediate Throw Event](capsules/NONE-INTERMEDIATE-THROW-P
 
 Deliverable: None Intermediate Throw Events as pass-through wherever the profile admits a pass-through Task, landed on `main`; `PC-BASIC-01` stays open on its other clauses.
 
-Acceptance blockers: the cold proposal review, implementation, registration and closure.
+Acceptance blockers: implementation, registration and closure.
 
-Current result: proposal `1cdfae2b` approved with required edits; corrections drafted for the same reviewer's audit.
+Current result: proposal `1cdfae2b` approved with required edits, audited at `398ecf59` and `7c5abba5`.
 
 Effort budget: 6 hours from 2026-11-03 02:20 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: cold proposal review, then implement the kernel arm in one commit.
+Next action: implement the kernel arm and its consumers in one Lean commit, red/green.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

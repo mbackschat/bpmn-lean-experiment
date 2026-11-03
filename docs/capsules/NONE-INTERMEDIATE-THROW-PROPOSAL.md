@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and delivery boundary
 
@@ -111,7 +111,7 @@ Each model carries a source overlay and a mapped Service Task.
   - Path: *Repair requested* → User Task *Diagnose fault* → None Throw *Fault diagnosed* → Merge *Repair round* → Sub-Process *Repair device* → Choice *Device passes?*.
   - *Repair device* declares a local `result` and copies it out to `testResult`; it holds Start → None Throw *Repair started* → User Task *Replace part* → mapped Service Task *Order spare part* → User Task *Test device*, which records `result` → End. The Choice therefore reads a Sub-Process output, as `NSD-TASK-01` requires.
   - On `testResult` = `passed`, None Throw *Device released* → End; by default, None Throw *Rework requested* → the Merge, re-entering *Repair device*.
-  - Journey one: diagnose, replace, test passes. Journey two: diagnose, replace, test fails, replace again, test passes; *Rework requested* fires once, and *Repair started* gets a fresh occurrence in each iteration.
+  - Journey one: diagnose, replace, test passes. Journey two: diagnose, replace, test fails, replace again, test passes; *Rework requested* fires once, and *Repair started* gets a fresh occurrence in each iteration. The rework closure after *Test device*, body End and scope completion, Choice, *Rework requested*, Merge, scope entry, *Repair started* and the arming of *Replace part*, is eight steps, exactly the closure limit, which the implementation confirms by the computed burst.
 - **Employee onboarding milestones** (root fork):
   - Start binds `employee`; User Task *Confirm start date* → fork → two branches → join → None Throw *Onboarding complete* → End.
   - Branch one: Sub-Process *Set up account*, which declares a local `account`, holds Start → User Task *Create account* → None Throw *Account ready* → End and copies `account` out.
@@ -175,6 +175,6 @@ Registration: `CIB-AGR-0016` in the [register](../CIB-BPMN-RELATION-REGISTER.md)
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `1cdfae2b` | `fork-turns-none` | `approve-with-required-edits` | `398ecf59, 7c5abba5` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
