@@ -266,7 +266,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0016 — a None Intermediate Throw Event passes its token on at once and records one activity instance
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [None Throw account](capsules/NONE-INTERMEDIATE-THROW-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [None Throw account](capsules/NONE-INTERMEDIATE-THROW-SPEC.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
 
 **BPMN basis:** Clause 10.5.4 and its Table 10.89 make the None Intermediate Event a normal-flow throw Event without an EventDefinition, whose token moves down the outgoing Sequence Flow as soon as it arrives, with a separate instance of the Event per arriving token.
 

@@ -14,7 +14,7 @@ graph the retained `scenarios/concurrent-structured-scope-data` model and the em
 graphs, and each refused graph differs from an admitted one in the fact its name states. The module runs no command:
 the Events' instantaneous occurrences are Lean executions of the registered scenarios in the pipeline. It imports
 admission owners only, as `PassThroughTaskConformance` does, so it stays outside `CommandAdmission`'s hidden-edit cone
-(`lean-fanout`). See the [None Throw proposal](../docs/capsules/NONE-INTERMEDIATE-THROW-PROPOSAL.md#separating-witnesses).
+(`lean-fanout`). See the [None Throw specification](../docs/capsules/NONE-INTERMEDIATE-THROW-SPEC.md#separating-witnesses).
 -/
 
 public section

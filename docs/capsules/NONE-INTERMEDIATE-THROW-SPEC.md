@@ -1,4 +1,4 @@
-# None Intermediate Throw Event proposal
+# None Intermediate Throw Event specification
 
 ## Status
 

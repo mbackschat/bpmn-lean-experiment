@@ -94,7 +94,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [None Intermediate Throw Event](capsules/NONE-INTERMEDIATE-THROW-PROPOSAL.md) of the nested scope-data profile, batch 4 (`PC-BASIC-01`'s Intermediate Throw None clause). Pass-through Tasks on Parallel branches landed at `7cda3873`. Close call against the Inclusive Gateway recorded in the proposal. Batch 3 stays open behind the owner's holds.
+Current task: [None Intermediate Throw Event](capsules/NONE-INTERMEDIATE-THROW-SPEC.md) of the nested scope-data profile, batch 4 (`PC-BASIC-01`'s Intermediate Throw None clause). Pass-through Tasks on Parallel branches landed at `7cda3873`. Close call against the Inclusive Gateway recorded in the proposal. Batch 3 stays open behind the owner's holds.
 
 Deliverable: None Intermediate Throw Events as pass-through wherever the profile admits a pass-through Task, landed on `main`; `PC-BASIC-01` stays open on its other clauses.
 
