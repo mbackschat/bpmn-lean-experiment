@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and delivery boundary
 
@@ -53,7 +53,7 @@ The profile `cibseven-2.2.0-nested-embedded-scope-data-draft` grows in place und
 
 No kernel type, IL, runtime or Lean change. The source reader projects an admitted Send Task to the checked `serviceTask` node with an empty output list, through the same projection and overlay binding as a Service Task; lowering, admission, execution and publication are the Service Task's.
 
-- The checked graph does not keep the Send Task's source kind. Unlike the pass-through kinds (`PTT-KIND-01`), whose checked notation the pass-through account consumes, no consumer reads it: the Program drops task kinds, no observation publishes one for any effect, CIB's historic activity type lies outside the observation boundary, and the exact source bytes keep it. Adding it would change the checked-process wire contract and the Lean checked-process hub for no consumer. A later account that needs it, such as a Message-addressed send, adds it with that consumer.
+- The checked graph does not keep the Send Task's source kind. Unlike the pass-through kinds (`PTT-KIND-01`), whose checked notation the pass-through account consumes, no consumer reads it: the Program drops task kinds, no observation publishes one for any effect, CIB's historic activity type lies outside the observation boundary, and the exact source bytes keep it. Adding it would change the checked-process wire contract and the Lean checked-process hub for no consumer. A later account that needs it adds it with that consumer.
 - Rejected alternative: a separate checked `sendTask` node. It duplicates every Service Task admission and lowering arm at both levels, which the profile's accounts would each have to name.
 - Rejected alternative: admitting output parameters as CIB's generic activity mapping permits. Clause 13.3.3 assigns none, no pinned model uses them, and a later account can admit them without reinterpreting an admitted model.
 
@@ -148,6 +148,6 @@ Registration: the profile artifact's `features`, relationship list and normative
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `8044864b` | `fork-turns-none` | `approve-with-required-edits` | `bca60629` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
