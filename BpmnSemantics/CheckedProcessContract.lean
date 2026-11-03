@@ -287,6 +287,9 @@ inductive CheckedNode where
   | receiveTask (id : NodeId) (channel : MessageChannel)
   | configuredTask (id : NodeId) (descriptor : EffectDescriptor)
   | nonOperationalTask (id : NodeId) (taskNotation : TaskNotation)
+  /-- NIT-KIND-01: an Intermediate Throw Event without an EventDefinition. Its own arm rather than a Task notation,
+  because it is an Event in the source and a later event family must find it as one. -/
+  | noneIntermediateThrowEvent (id : NodeId)
   | serviceTask
       (id : NodeId)
       (descriptor : EffectDescriptor)
@@ -340,6 +343,7 @@ inductive CheckedNode where
   | .receiveTask id _
   | .configuredTask id _
   | .nonOperationalTask id _
+  | .noneIntermediateThrowEvent id
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveMerge id

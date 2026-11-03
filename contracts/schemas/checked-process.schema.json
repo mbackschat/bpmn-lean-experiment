@@ -1153,6 +1153,22 @@
           "additionalProperties": false,
           "required": [
             "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "noneIntermediateThrowEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
             "id",
             "childScopeId"
           ],

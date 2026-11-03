@@ -43,6 +43,9 @@ structure ShapeCardinalities where
   configuredTasks : Nat := 0
   /-- Checked Abstract and Manual Tasks; no exact profile shape names one, so each such profile refuses them. -/
   nonOperationalTasks : Nat := 0
+  /-- NIT-PROFILE-01: checked None Intermediate Throw Events, counted apart from Tasks so that no profile that names a
+  pass-through Task count admits an Event in its place. -/
+  noneIntermediateThrowEvents : Nat := 0
   effects : Nat := 0
   duplicates : Nat := 0
   synchronizes : Nat := 0
@@ -125,6 +128,8 @@ def nodeCardinalities (nodes : List CheckedNode) : ShapeCardinalities :=
         { counts with configuredTasks := counts.configuredTasks + 1 }
     | .nonOperationalTask .. =>
         { counts with nonOperationalTasks := counts.nonOperationalTasks + 1 }
+    | .noneIntermediateThrowEvent .. =>
+        { counts with noneIntermediateThrowEvents := counts.noneIntermediateThrowEvents + 1 }
     | .serviceTask .. => { counts with effects := counts.effects + 1 }
     | .parallelGateway _ .diverging =>
         { counts with duplicates := counts.duplicates + 1 }

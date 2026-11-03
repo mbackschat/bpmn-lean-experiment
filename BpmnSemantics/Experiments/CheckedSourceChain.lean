@@ -226,6 +226,8 @@ theorem parseFrom_sound (source : CheckedProcess) (fuel : Nat)
             simp [parseFrom, nodeResult] at result
         | nonOperationalTask id taskNotation =>
             simp [parseFrom, nodeResult] at result
+        | noneIntermediateThrowEvent id =>
+            simp [parseFrom, nodeResult] at result
         | serviceTask id descriptor inputs outputs route =>
             grind [parseFrom, mappedWait_sound, isWaitNode]
         | exclusiveMerge id =>

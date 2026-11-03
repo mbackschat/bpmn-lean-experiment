@@ -123,8 +123,10 @@ export function structuredScopeDataProgramShape(operations: readonly SemanticOpe
 }
 
 export function structuredScopeDataCheckedShape(nodes: readonly CheckedNode[], scopeCount: number): boolean {
-  // PTPB-ADMIT-01: this profile alone admits a pass-through Task in the shared concurrent alphabet.
+  // PTPB-ADMIT-01 and NIT-ADMIT-01: this profile alone admits a pass-through Task or None Throw in the shared
+  // concurrent alphabet.
   return forks(nodes)
-    ? nestedScopeControlCheckedShape(nodes.filter(({ kind }) => kind !== CheckedNodeKind.NonOperationalTask), scopeCount)
+    ? nestedScopeControlCheckedShape(nodes.filter(({ kind }) => kind !== CheckedNodeKind.NonOperationalTask &&
+      kind !== CheckedNodeKind.NoneIntermediateThrowEvent), scopeCount)
     : nestedScopeCheckedShape(nodes, scopeCount);
 }

@@ -387,9 +387,9 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
       incomingCount flows id = 1 && outgoingCount flows id ≥ 2
   | .parallelGateway id .converging =>
       incomingCount flows id ≥ 2 && outgoingCount flows id = 1
-  | .nonOperationalTask id _ =>
-      -- PTT-ADMIT-01: one incoming flow of any admitted kind and one outgoing flow, whose condition placement the
-      -- candidate rule refuses.
+  | .nonOperationalTask id _ | .noneIntermediateThrowEvent id =>
+      -- PTT-ADMIT-01, NIT-ADMIT-01: one incoming flow of any admitted kind and one outgoing flow, whose condition
+      -- placement the candidate rule refuses.
       incomingCount flows id = 1 && outgoingCount flows id = 1
   | .exclusiveMerge id =>
       -- CEA-ADMIT-01 merges any fork width; profiles without a variable merge keep exact-three arity.

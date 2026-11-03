@@ -494,8 +494,8 @@ def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : Checke
     | .parallelGateway _ .diverging => some (.vertex .fork)
     | .parallelGateway _ .converging => some (.vertex .join)
     | .exclusiveMerge _ => some .merge
-    -- PTPB-PROFILE-01: only the nested scope-data profile maps a pass-through Task to a pass vertex.
-    | .nonOperationalTask _ _ =>
+    -- PTPB-PROFILE-01, NIT-PROFILE-01: only the nested scope-data profile maps a pass-through step to a pass vertex.
+    | .nonOperationalTask _ _ | .noneIntermediateThrowEvent _ =>
         if source.identity.semanticProfile == nestedScopeDataProfileId then some (.vertex .pass) else none
     | _ => none
   let child := match node with

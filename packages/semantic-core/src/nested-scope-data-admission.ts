@@ -354,7 +354,8 @@ function checkedVertex(source: CheckedProcess, node: CheckedProcess["nodes"][num
         ? { ...base, kind: VertexKind.Choice, outputs: targets as string[] } : null;
     }
     case CheckedNodeKind.ExclusiveMerge: return { ...base, kind: VertexKind.Merge };
-    case CheckedNodeKind.NonOperationalTask: return { ...base, kind: VertexKind.PassThrough };
+    case CheckedNodeKind.NonOperationalTask:
+    case CheckedNodeKind.NoneIntermediateThrowEvent: return { ...base, kind: VertexKind.PassThrough };
     case CheckedNodeKind.CallActivity: {
       const calledRoot = unique(source.definitionScopes.filter(({ parentScopeId, originElementId }) =>
         parentScopeId === null && originElementId === node.calledProcessId));
@@ -626,6 +627,7 @@ const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
   CheckedNodeKind.NoneStartEvent, CheckedNodeKind.EmbeddedSubProcess, CheckedNodeKind.UserTask,
   CheckedNodeKind.ServiceTask, CheckedNodeKind.NoneEndEvent, CheckedNodeKind.CallActivity,
   CheckedNodeKind.ExclusiveGateway, CheckedNodeKind.ExclusiveMerge, CheckedNodeKind.NonOperationalTask,
+  CheckedNodeKind.NoneIntermediateThrowEvent,
 ]);
 
 /**

@@ -549,6 +549,14 @@ def lowerNode (source : CheckedProcess) :
         { elementId := id }
         [firstPlace (incomingPlaces source id)]
         (lowerExclusiveMergeOutput source id), scopeId)
+  | .noneIntermediateThrowEvent id =>
+      -- NIT-PASS-01: the same nonsynchronizing token move as a pass-through Task, with the Event as origin.
+      checkedNodeScopeId? source id |>.map fun scopeId =>
+      (.mergeExclusive
+        (nodeOperationId id)
+        { elementId := id }
+        [firstPlace (incomingPlaces source id)]
+        (lowerExclusiveMergeOutput source id), scopeId)
   | .exclusiveGateway id candidateFlowIds defaultFlowId =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.choose
@@ -627,6 +635,18 @@ wait, effect or data operation is introduced. -/
 private theorem lower_non_operational_task_is_one_input_merge
     (source : CheckedProcess) (id : NodeId) (taskNotation : TaskNotation) :
     lowerNode source (.nonOperationalTask id taskNotation) =
+      (checkedNodeScopeId? source id).map fun scopeId =>
+        (.mergeExclusive
+          (nodeOperationId id)
+          { elementId := id }
+          [firstPlace (incomingPlaces source id)]
+          (lowerExclusiveMergeOutput source id), scopeId) := by
+  rfl
+
+/-- NIT-PASS-01: a None Intermediate Throw Event lowers to the one-input nonsynchronizing merge whose origin is the
+Event, so its one activation is an instantaneous occurrence and no wait, effect or data operation is introduced. -/
+private theorem lower_none_intermediate_throw_event_is_one_input_merge (source : CheckedProcess) (id : NodeId) :
+    lowerNode source (.noneIntermediateThrowEvent id) =
       (checkedNodeScopeId? source id).map fun scopeId =>
         (.mergeExclusive
           (nodeOperationId id)

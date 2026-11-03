@@ -279,7 +279,8 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
   match node with
   | .noneStartEvent _ => return { id, scope := scope.value, kind := .start, outputs }
   | .noneEndEvent _ => return { id, scope := scope.value, kind := .finish, outputs }
-  | .nonOperationalTask _ _ => return { id, scope := scope.value, kind := .passThrough, outputs }
+  | .nonOperationalTask _ _ | .noneIntermediateThrowEvent _ =>
+      return { id, scope := scope.value, kind := .passThrough, outputs }
   | .userTask _ _ metadata =>
       if !metadataValid handlers metadata then none
       else return { id, scope := scope.value, kind := .human, outputs }

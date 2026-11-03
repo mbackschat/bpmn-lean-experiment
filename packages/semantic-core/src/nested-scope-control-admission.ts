@@ -551,7 +551,8 @@ function callDataAdmitted(callData: CallDataInterface, data: ModelData | null): 
 /** CSD-ADMIT-01's Service Task data and CMCALL-ADMIT-01's Call data. */
 function checkedKind(node: CheckedNode, data: ModelData | null, passThrough: boolean): RawBodyNodeKind | null {
   switch (node.kind) {
-    case CheckedNodeKind.NonOperationalTask: return passThrough ? RawBodyNodeKind.Pass : null;
+    case CheckedNodeKind.NonOperationalTask:
+    case CheckedNodeKind.NoneIntermediateThrowEvent: return passThrough ? RawBodyNodeKind.Pass : null;
     case CheckedNodeKind.NoneStartEvent: return RawBodyNodeKind.Start;
     case CheckedNodeKind.NoneEndEvent: return RawBodyNodeKind.End;
     case CheckedNodeKind.UserTask: return node.metadata === undefined ? RawBodyNodeKind.Task : null;

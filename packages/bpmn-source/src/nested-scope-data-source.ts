@@ -231,6 +231,10 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
         if (!reader.nonOperationalTasks) return "The flow element is outside the nested scope-data contract.";
         node = projectNonOperationalTask(element);
         break;
+      case bpmnTypes.intermediateThrowEventType:
+        if (!reader.nonOperationalTasks) return "The flow element is outside the nested scope-data contract.";
+        node = projectNoneThrow(element);
+        break;
       case "bpmn:ParallelGateway":
       case "bpmn:ExclusiveGateway":
         if (!reader.gateways) return "The flow element is outside the nested scope-data contract.";
@@ -260,6 +264,17 @@ function projectNonOperationalTask(element: ElementRecord): CheckedNode | undefi
     !hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.PlainNode) ? undefined
     : { kind: CheckedNodeKind.NonOperationalTask, id,
       notation: element.$type === bpmnTypes.manualTaskType ? TaskNotation.ManualTask : TaskNotation.AbstractTask };
+}
+
+/**
+ * NIT-ADMIT-01: only the None form passes. An `eventDefinitions` entry is an enumerable key the plain-node inventory
+ * refuses, but a reference such as `eventDefinitionRef` is not, so it is refused by name exactly as `default` is.
+ */
+function projectNoneThrow(element: ElementRecord): CheckedNode | undefined {
+  const id = readId(element);
+  return id === undefined || element["eventDefinitionRef"] !== undefined ||
+    !hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.PlainNode) ? undefined
+    : { kind: CheckedNodeKind.NoneIntermediateThrowEvent, id };
 }
 
 /** CSD-ADMIT-01's gateways: a paired Parallel fork or join, or a converging Exclusive merge of any width. */

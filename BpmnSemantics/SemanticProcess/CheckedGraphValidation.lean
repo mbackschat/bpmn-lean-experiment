@@ -42,6 +42,7 @@ def checkedNodeId : CheckedNode → NodeId
   | .receiveTask id _
   | .configuredTask id _
   | .nonOperationalTask id _
+  | .noneIntermediateThrowEvent id
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveMerge id
@@ -114,7 +115,7 @@ def attachedBoundaryHost? : CheckedNode → Option (GraphEdge NodeId)
   | .parallelMultiInstanceUserTask ..
   | .intermediateCatchMessageEvent .. | .payloadMessageCatchEvent ..
   | .correlatedPayloadMessageCatchEvent ..
-  | .receiveTask .. | .configuredTask .. | .nonOperationalTask ..
+  | .receiveTask .. | .configuredTask .. | .nonOperationalTask .. | .noneIntermediateThrowEvent ..
   | .serviceTask ..
   | .parallelGateway .. | .exclusiveGateway ..
   | .exclusiveMerge ..
@@ -157,7 +158,8 @@ def checkedNodeIsResumptionCut : CheckedNode → Bool
   | .intermediateCatchTimerEvent .. | .intermediateCatchMessageEvent ..
   | .payloadMessageCatchEvent ..
   | .correlatedPayloadMessageCatchEvent ..
-  | .receiveTask .. | .configuredTask .. | .nonOperationalTask .. | .serviceTask .. | .parallelGateway ..
+  | .receiveTask .. | .configuredTask .. | .nonOperationalTask .. | .noneIntermediateThrowEvent .. | .serviceTask ..
+  | .parallelGateway ..
   | .exclusiveMerge .. | .exclusiveGateway ..
   | .inclusiveGatewayDiverging .. | .inclusiveGatewayConverging ..
   | .eventBasedGateway .. | .globalSynchronousCompensationThrowEvent ..

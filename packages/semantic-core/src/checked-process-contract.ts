@@ -68,6 +68,8 @@ export enum CheckedNodeKind {
   ServiceTask = "serviceTask",
   ConfiguredTask = "configuredTask",
   NonOperationalTask = "nonOperationalTask",
+  /** NIT-KIND-01: an Intermediate Throw Event without an EventDefinition, kept apart from every Task kind. */
+  NoneIntermediateThrowEvent = "noneIntermediateThrowEvent",
   ParallelGateway = "parallelGateway",
   ExclusiveMerge = "exclusiveMerge",
   ExclusiveGateway = "exclusiveGateway",
@@ -372,6 +374,10 @@ export type CheckedNode =
       kind: CheckedNodeKind.NonOperationalTask;
       id: string;
       notation: TaskNotation;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.NoneIntermediateThrowEvent;
+      id: string;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.ParallelGateway;

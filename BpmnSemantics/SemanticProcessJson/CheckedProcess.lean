@@ -326,6 +326,9 @@ def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   | "exclusiveMerge" =>
       requireObjectShape json ["id", "kind"]
       pure (.exclusiveMerge ⟨← stringField json "id"⟩)
+  | "noneIntermediateThrowEvent" =>
+      requireObjectShape json ["id", "kind"]
+      pure (.noneIntermediateThrowEvent ⟨← decodeNonemptyStringField json "id"⟩)
   | "nonOperationalTask" =>
       requireObjectShape json ["id", "kind", "notation"]
       let taskNotation ← stringField json "notation"
