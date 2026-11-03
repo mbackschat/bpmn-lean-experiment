@@ -219,7 +219,7 @@ theorem reached_task_has_admitted_completion
   have startBound := committed_start_task_execution_has_at_most_one_control_unit program analysis startCommandId processId
     instanceId bindings _ profile analyzed committed .initial
   have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed
-    (nestedScopeDataProgram_eq_false_of_structured_profile profile) startOwned startBound reachable
+    (nestedScopeDataProgram_of_profile_value (by rw [profile])) startOwned startBound reachable
   apply exact_task_lifetime_has_admitted_completion program analysis reached completionCommandId
     wellFormed profile analyzed frame.1.1
     (exact_lifecycle_collection_storage program reached frame shape

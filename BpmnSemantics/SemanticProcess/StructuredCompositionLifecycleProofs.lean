@@ -375,9 +375,8 @@ theorem completion_admission_preserves_task_lifetime_shape
     (analyzed : programAnalysis program = some analysis)
     (bounded : ControlUnitBound before) (shape : TaskLifetimeShape program before) :
     TaskLifetimeShape program (admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state := by
-  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
-    refused | ⟨after, completed, _, result⟩ | ⟨after, completed, ordinary, _, result⟩ | ⟨after, _, call, _, _⟩ |
-    ⟨_, nested, _, _⟩
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed (nestedScopeDataProgram_of_profile_value (by rw [profile])) with
+    refused | ⟨after, completed, _, result⟩ | ⟨after, completed, ordinary, _, result⟩ | ⟨after, _, call, _, _⟩
   · simpa [refused] using shape
   · rw [result]
     exact data_completion_clears_task_lifetime program before after taskId.processInstanceId
@@ -387,7 +386,6 @@ theorem completion_admission_preserves_task_lifetime_shape
       wellFormed profile ordinary bounded shape completed
     exact task_lifetime_shape_frame program after _ cleared rfl rfl rfl rfl
   · simp [isCallActivityProgram, profile, structuredCompositionCheckpointProfileId] at call
-  · simp [nestedScopeDataProgram_eq_false_of_structured_profile profile] at nested
 
 theorem task_execution_preserves_task_lifetime_shape
     (program : Program) (analysis : Analysis) (initial reached : RuntimeState) (owner : ScopeOccurrenceId)
@@ -401,11 +399,11 @@ theorem task_execution_preserves_task_lifetime_shape
   | initial => exact shape
   | step choice reachable executed ih =>
     have currentBound := task_execution_reachable_preserves_control_unit_bound program analysis _ _ analyzed
-      (nestedScopeDataProgram_eq_false_of_structured_profile profile) bounded reachable
+      (nestedScopeDataProgram_of_profile_value (by rw [profile])) bounded reachable
     have currentFrame := task_execution_preserves_lifecycle_frame program analysis _ _ analyzed
-      (nestedScopeDataProgram_eq_false_of_structured_profile profile) frame reachable
+      (nestedScopeDataProgram_of_profile_value (by rw [profile])) frame reachable
     have currentOwner := task_execution_preserves_root_ownership program analysis _ _ owner analyzed
-      (nestedScopeDataProgram_eq_false_of_structured_profile profile) owned bounded reachable
+      (nestedScopeDataProgram_of_profile_value (by rw [profile])) owned bounded reachable
     unfold SemanticProcess.step at executed
     split at executed
     · contradiction
@@ -414,7 +412,7 @@ theorem task_execution_preserves_task_lifetime_shape
         (programPropertyPathValuePolicy_eq_scalar (by simp [profile])) currentFrame currentOwner currentBound ih executed
   | completion commandId taskId bindings reachable ih =>
     have currentBound := task_execution_reachable_preserves_control_unit_bound program analysis _ _ analyzed
-      (nestedScopeDataProgram_eq_false_of_structured_profile profile) bounded reachable
+      (nestedScopeDataProgram_of_profile_value (by rw [profile])) bounded reachable
     exact completion_admission_preserves_task_lifetime_shape program analysis _ commandId taskId bindings
       wellFormed profile analyzed currentBound ih
 
@@ -439,7 +437,7 @@ theorem reached_state_has_exact_lifecycle
   have bounded := committed_start_task_execution_has_at_most_one_control_unit program analysis commandId processId
     instanceId bindings _ profile analyzed committed .initial
   exact ⟨task_execution_preserves_lifecycle_frame program analysis _ _ analyzed
-      (nestedScopeDataProgram_eq_false_of_structured_profile profile) frame reachable,
+      (nestedScopeDataProgram_of_profile_value (by rw [profile])) frame reachable,
     task_execution_preserves_task_lifetime_shape program analysis _ _ owner wellFormed profile analyzed
       frame owned bounded shape reachable⟩
 

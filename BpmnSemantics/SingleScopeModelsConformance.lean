@@ -92,9 +92,7 @@ private def build (records : List ScopeLocalData) (scopes : List (String × Opti
 /-- How a purchase request graph departs from the retained model. -/
 private inductive PurchaseEdit where
   | retained
-  /-- *Log budget check* ends at a second None End, *Signature filed*, instead of entering the join. -/
-  | secondEnd
-  /-- *Log budget check* becomes a Call of a *Budget log* Process, so the forking root calls. -/
+  /-- *Log budget check* becomes a Call of a *Budget log* Process passing `request`, so the forking root calls. -/
   | rootCall
 
 /-- Purchase request: root `P` alone reviews the request and forks into the mapped *Check budget*, reading `request`
@@ -104,9 +102,8 @@ private def purchaseWith (edit : PurchaseEdit := .retained) : CheckedProcess :=
   let (log, scopes, members, edges) : String × List (String × Option String) × List (String × String × CheckedNode) ×
       List (String × String) := match edit with
     | .retained => ("ChecksDone", [], [pass "P" "LogBudgetCheck" .abstractTask], [])
-    | .secondEnd => ("SignatureFiled", [], [pass "P" "LogBudgetCheck" .abstractTask, finish "P" "SignatureFiled"], [])
     | .rootCall => ("ChecksDone", [("BudgetLog", none)],
-        [ mappedCall "P" "LogBudgetCheck" "BudgetLog" [] [], start "BudgetLog" "LogOpened"
+        [ mappedCall "P" "LogBudgetCheck" "BudgetLog" [enclosing "request" "request"] [], start "BudgetLog" "LogOpened"
         , task "BudgetLog" "WriteLog", finish "BudgetLog" "LogClosed" ],
         [("LogOpened", "WriteLog"), ("WriteLog", "LogClosed")])
   build [] ([("P", none)] ++ scopes)
@@ -184,6 +181,24 @@ private def record (profile : ProfileId) (wrapped : Bool) : CheckedProcess :=
     (fun owner => [service owner "Record" "record" [enclosing "entry" "entry"] [copied "receipt" "receipt"]])
     fun opened closed => [(opened, "Record"), ("Record", closed)]
 
+/-- A fork into *Review* and *Approve* whose branches end at their own None Ends, at the root, where it is the root's
+second None End, or inside a *Work* Sub-Process. -/
+private def terminalFork (wrapped : Bool) : CheckedProcess :=
+  around nestedScopeDataProfileId true wrapped
+    (fun owner => [fork owner "Split", task owner "Review", task owner "Approve", finish owner "Approved"])
+    fun opened closed => [(opened, "Split"), ("Split", "Review"), ("Split", "Approve"), ("Review", closed),
+      ("Approve", "Approved")]
+
+/-- The Call of *Budget log* from the forking-root edit, after *Check budget* on a serial root path. -/
+private def serialCall : CheckedProcess :=
+  build [] [("P", none), ("BudgetLog", none)]
+    [ start "P" "RequestSubmitted"
+    , service "P" "CheckBudget" "checkBudget" [enclosing "request" "request"] [copied "budgetCode" "code"]
+    , mappedCall "P" "LogBudgetCheck" "BudgetLog" [enclosing "request" "request"] [], finish "P" "OrderPlaced"
+    , start "BudgetLog" "LogOpened", task "BudgetLog" "WriteLog", finish "BudgetLog" "LogClosed" ]
+    [ ("RequestSubmitted", "CheckBudget"), ("CheckBudget", "LogBudgetCheck"), ("LogBudgetCheck", "OrderPlaced")
+    , ("LogOpened", "WriteLog"), ("WriteLog", "LogClosed") ]
+
 /-- Start, one User Task and End at the only scope under the nested scope-data profile. -/
 private def approval : CheckedProcess :=
   build [] [("P", none)] [start "P" "Started", task "P" "Approve", finish "P" "Approved"]
@@ -221,12 +236,13 @@ private def call_without_sub_process_is_admitted : Bool :=
     admitted source && routed source && (NestedScopeData.checkedAnalysis source).isSome &&
       (NestedScopeData.programAnalysis (lowerCheckedProcess source)).isSome
 
-/-- SSM-ADMIT-01: a second None End and a Call in the forking root stay refused. -/
+/-- SSM-ADMIT-01: a Call in the forking root and a terminal fork, the root's second None End, stay refused at both
+levels, while the same Call on a serial root path and the same fork inside a Sub-Process are routed, so neither refusal
+comes from another rule. -/
 private def excluded_forms_are_refused : Bool :=
-  [PurchaseEdit.secondEnd, .rootCall].all fun edit =>
-    let source := purchaseWith edit
-    !StructuredScopeData.checkedRouted source &&
-      !StructuredScopeData.programRouted (lowerCheckedProcess source)
+  [purchaseWith .rootCall, terminalFork false].all (fun source =>
+    !StructuredScopeData.checkedRouted source && !StructuredScopeData.programRouted (lowerCheckedProcess source)) &&
+    [serialCall, terminalFork true].all fun source => admitted source && routed source
 
 /-- SSM-PROFILE-01: under the embedded completion profile the data-free fork and the data-bearing serial model are
 refused with one scope at both levels and admitted inside a Sub-Process, while the same one-scope graphs under the

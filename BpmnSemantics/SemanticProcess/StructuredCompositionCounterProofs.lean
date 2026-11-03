@@ -187,9 +187,8 @@ theorem task_execution_preserves_counter_storage
         (List.mem_of_find?_eq_some selected) ih executed
   | completion commandId taskId bindings reachable ih =>
     rename_i before
-    rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with refused |
-      ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩ |
-      ⟨_, nested, _, _⟩
+    rcases completion_admission_cases program analysis before commandId taskId bindings analyzed notNested with refused |
+      ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩
     · simpa [refused] using ih
     · rw [result]
       exact data_completion_preserves_counter_storage program _ after taskId.processInstanceId
@@ -200,7 +199,6 @@ theorem task_execution_preserves_counter_storage
     · rw [result]
       exact ordinary_completion_preserves_counter_storage _ after taskId.processInstanceId
         ⟨taskId.elementId.value⟩ taskId.activation ih completed
-    · simp [notNested] at nested
 
 
 theorem committed_start_has_counter_storage
@@ -245,7 +243,7 @@ theorem reached_state_has_counter_storage
       (admitStimulus program initialState (.startProcess commandId processId instanceId bindings)).state reached) :
     CounterStorageFrame reached :=
   task_execution_preserves_counter_storage program analysis _ reached analyzed
-    (nestedScopeDataProgram_eq_false_of_structured_profile profile)
+    (nestedScopeDataProgram_of_profile_value (by rw [profile]))
     (committed_start_has_counter_storage program analysis commandId processId instanceId bindings profile analyzed committed) reachable
 
 theorem exact_lifecycle_collection_storage

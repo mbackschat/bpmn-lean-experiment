@@ -47,8 +47,8 @@ test("NSD-ADMIT-01 admits four sibling Sub-Processes, five definition scopes at 
   assert.deepEqual(nestedScopeProgramAnalysis(semanticProcess), []);
   assert.equal(nestedScopeProgramShape(semanticProcess.operations, SemanticProfileId.NestedEmbeddedScopeData, 5), true);
   assert.equal(isWellFormedSemanticProcessProgram(semanticProcess), true);
-  // SSM-ADMIT-01 and SSM-PROFILE-01: one scope suffices under this profile alone; the embedded completion profile, the
-  // only other caller of these shapes, keeps needing a second scope.
+  // SSM-ADMIT-01 and SSM-PROFILE-01: one scope suffices under this profile alone; under the embedded completion
+  // profile's identity the same shapes keep needing a second scope.
   assert.equal(nestedScopeCheckedShape(checkedProcess.nodes, SemanticProfileId.NestedEmbeddedScopeData, 1), true);
   assert.equal(nestedScopeProgramShape(semanticProcess.operations, SemanticProfileId.NestedEmbeddedScopeData, 1), true);
   assert.equal(nestedScopeCheckedShape(checkedProcess.nodes, SemanticProfileId.EmbeddedSubProcessCompletion, 1), false);

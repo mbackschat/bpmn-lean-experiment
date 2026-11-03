@@ -108,8 +108,7 @@ theorem committed_start_requirements_remain_present
   have initialBindings := committed_start_process_bindings program analysis commandId processId
     instanceId bindings profile analyzed committed
   intro name required
-  apply task_execution_preserves_binding_presence program analysis _ reached name analyzed
-    (nestedScopeDataProgram_eq_false_of_structured_profile profile) _ reachable
+  apply task_execution_preserves_binding_presence program analysis _ reached name analyzed (nestedScopeDataProgram_of_profile_value (by rw [profile])) _ reachable
   rw [initialBindings]
   exact committed_start_supplies_required_bindings program initialState commandId processId
     instanceId bindings analysis profile analyzed committed name required
@@ -270,9 +269,9 @@ theorem completion_admission_preserves_input_positions
     (positions : RuntimeInputPositions program vertices analysis before) (bounded : ControlUnitBound before) :
     RuntimeInputPositions program vertices analysis
       (admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state := by
-  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed (nestedScopeDataProgram_of_profile_value (by rw [profile])) with
     refused | ⟨after, completed, _, result⟩ | ⟨after, completed, ordinary, _, result⟩ |
-      ⟨after, completed, call, _, result⟩ | ⟨_, nested, _, _⟩
+      ⟨after, completed, call, _, result⟩
   · simpa [refused] using positions
   · rw [result]
     exact data_completion_preserves_input_positions program vertices analysis before after taskId.processInstanceId
@@ -282,7 +281,6 @@ theorem completion_admission_preserves_input_positions
     exact ordinary_completion_preserves_input_positions program vertices analysis before after taskId bindings
       wellFormed profile analyzed graph positions bounded ordinary completed
   · simp [isCallActivityProgram, profile, structuredCompositionCheckpointProfileId] at call
-  · simp [nestedScopeDataProgram_eq_false_of_structured_profile profile] at nested
 
 theorem task_execution_preserves_input_positions
     (program : Program) (vertices : List Vertex) (analysis : Analysis) (initial reached : RuntimeState)
@@ -295,8 +293,7 @@ theorem task_execution_preserves_input_positions
   induction reachable with
   | initial => exact positions
   | step choice reachable executed ih =>
-      have bound := task_execution_reachable_preserves_control_unit_bound program analysis _ _ analyzed
-        (nestedScopeDataProgram_eq_false_of_structured_profile profile) bounded reachable
+      have bound := task_execution_reachable_preserves_control_unit_bound program analysis _ _ analyzed (nestedScopeDataProgram_of_profile_value (by rw [profile])) bounded reachable
       unfold SemanticProcess.step at executed
       split at executed
       · contradiction
@@ -304,8 +301,7 @@ theorem task_execution_preserves_input_positions
         exact admitted_fire_preserves_input_positions program vertices analysis _ _ operation analyzed graph
           (List.mem_of_find?_eq_some selected) ih bound executed
   | completion commandId taskId bindings reachable ih =>
-      have bound := task_execution_reachable_preserves_control_unit_bound program analysis _ _ analyzed
-        (nestedScopeDataProgram_eq_false_of_structured_profile profile) bounded reachable
+      have bound := task_execution_reachable_preserves_control_unit_bound program analysis _ _ analyzed (nestedScopeDataProgram_of_profile_value (by rw [profile])) bounded reachable
       exact completion_admission_preserves_input_positions program vertices analysis _ commandId taskId bindings
         wellFormed profile analyzed graph ih bound
 
@@ -584,15 +580,13 @@ theorem noncompletion_fire_decreases_runtime_burst_rank
 
 theorem task_execution_preserves_root_ownership
     (program : Program) (analysis : Analysis) (initial reached : RuntimeState) (owner : ScopeOccurrenceId)
-    (analyzed : programAnalysis program = some analysis) (notNested : nestedScopeDataProgram program = false)
-    (owned : RootOwnedControl owner initial)
+    (analyzed : programAnalysis program = some analysis) (notNested : nestedScopeDataProgram program = false) (owned : RootOwnedControl owner initial)
     (bounded : ControlUnitBound initial) (reachable : TaskExecutionReachable program initial reached) :
     RootOwnedControl owner reached := by
   induction reachable with
   | initial => exact owned
   | step choice reachable executed ih =>
-    have bound := task_execution_reachable_preserves_control_unit_bound program analysis _ _ analyzed notNested
-      bounded reachable
+    have bound := task_execution_reachable_preserves_control_unit_bound program analysis _ _ analyzed notNested bounded reachable
     unfold SemanticProcess.step at executed
     split at executed
     · contradiction
@@ -600,8 +594,7 @@ theorem task_execution_preserves_root_ownership
       exact admitted_fire_preserves_root_ownership program analysis _ _ operation owner analyzed
         (List.mem_of_find?_eq_some selected) ih bound executed
   | completion commandId taskId bindings reachable ih =>
-    exact completion_admission_preserves_root_ownership program analysis _ commandId taskId bindings owner analyzed
-      notNested ih
+    exact completion_admission_preserves_root_ownership program analysis _ commandId taskId bindings owner analyzed notNested ih
 
 theorem root_completion_decreases_runtime_burst_rank
     (program : Program) (analysis : Analysis) (before after : RuntimeState) (owner : ScopeOccurrenceId)
@@ -670,14 +663,12 @@ theorem reached_fire_decreases_burst_rank
     instanceId bindings _ profile analyzed committed .initial
   have positions := task_execution_preserves_input_positions program vertices analysis _ reached wellFormed profile
     analyzed graph startPositions startBound reachable
-  have bounded := task_execution_reachable_preserves_control_unit_bound program analysis _ reached analyzed
-    (nestedScopeDataProgram_eq_false_of_structured_profile profile) startBound reachable
+  have bounded := task_execution_reachable_preserves_control_unit_bound program analysis _ reached analyzed (nestedScopeDataProgram_of_profile_value (by rw [profile])) startBound reachable
   by_cases notCompletion : isScopeCompletion operation = false
   · exact noncompletion_fire_decreases_runtime_burst_rank program vertices analysis reached after operation
       analyzed graph member notCompletion positions bounded fired
   · obtain ⟨owner, startOwned⟩ := committed_start_has_root_owner program commandId processId instanceId bindings profile committed
-    have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed
-      (nestedScopeDataProgram_eq_false_of_structured_profile profile) startOwned startBound reachable
+    have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed (nestedScopeDataProgram_of_profile_value (by rw [profile])) startOwned startBound reachable
     have allowed := program_analysis_operations_allowed program analysis analyzed operation member
     cases operation <;> simp only [isScopeCompletion] at notCompletion
     all_goals try contradiction
@@ -764,11 +755,9 @@ theorem accepted_completion_within_burst_bound
     instanceId initialBindings _ profile analyzed started .initial
   have positions := task_execution_preserves_input_positions program vertices analysis _ reached wellFormed profile
     analyzed graph startPositions startBound reachable
-  have bounded := task_execution_reachable_preserves_control_unit_bound program analysis _ reached analyzed
-    (nestedScopeDataProgram_eq_false_of_structured_profile profile) startBound reachable
-  rcases completion_admission_cases program analysis reached commandId taskId bindings analyzed with refused |
-    ⟨after, completed, _, result⟩ | ⟨after, completed, ordinary, _, result⟩ | ⟨after, _, call, _, _⟩ |
-    ⟨_, nested, _, _⟩
+  have bounded := task_execution_reachable_preserves_control_unit_bound program analysis _ reached analyzed (nestedScopeDataProgram_of_profile_value (by rw [profile])) startBound reachable
+  rcases completion_admission_cases program analysis reached commandId taskId bindings analyzed (nestedScopeDataProgram_of_profile_value (by rw [profile])) with refused |
+    ⟨after, completed, _, result⟩ | ⟨after, completed, ordinary, _, result⟩ | ⟨after, _, call, _, _⟩
   · simp [refused] at accepted
   · rw [result]
     exact data_completion_within_burst_bound program vertices analysis reached after taskId.processInstanceId
@@ -777,7 +766,6 @@ theorem accepted_completion_within_burst_bound
     exact ordinary_completion_within_burst_bound program vertices analysis reached after taskId bindings
       wellFormed profile analyzed graph positions bounded ordinary completed
   · simp [isCallActivityProgram, profile, structuredCompositionCheckpointProfileId] at call
-  · simp [nestedScopeDataProgram_eq_false_of_structured_profile profile] at nested
 
 /-- A finite sequence of actual operation selections spends one rank unit per successful step. -/
 theorem internal_sequence_spends_burst_rank

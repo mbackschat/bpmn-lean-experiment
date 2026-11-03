@@ -103,7 +103,7 @@ None. A pass-through Task never waits, so every resumption point and command of 
 
 ## Separating witnesses
 
-Both models carry one mapped Service Task bound by an exact source overlay and at least one Sub-Process, because the profile admits a serial or re-entry model only with a bound handler (`CSSD-ADMIT-01`) and at least one Sub-Process; the Tasks alone decide admission, which the source test locks by admitting each model with its Tasks removed.
+Both models carry one mapped Service Task bound by an exact source overlay and at least one Sub-Process, because the profile admitted a serial or re-entry model only with a bound handler (`CSSD-ADMIT-01`) and at least one Sub-Process when this account closed; the Tasks alone decide admission, which the source test locks by admitting each model with its Tasks removed. The [single-scope models account](SINGLE-SCOPE-MODELS-PROPOSAL.md#admission) has since dropped the Sub-Process requirement for this profile.
 
 - **Equipment return** (serial and scoped):
   - Path: *Return requested* → User Task *Schedule pickup* → Sub-Process *Inspect returned equipment* → Service Task *Refund deposit* → plain Task *Close return ticket* → End.

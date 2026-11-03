@@ -156,9 +156,8 @@ theorem completion_admission_preserves_lifecycle_frame
     (analyzed : programAnalysis program = some analysis) (notNested : nestedScopeDataProgram program = false)
     (empty : LifecycleFrame before) :
     LifecycleFrame (admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state := by
-  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with refused |
-    ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩ |
-    ⟨_, nested, _, _⟩
+  rcases completion_admission_cases program analysis before commandId taskId bindings analyzed notNested with refused |
+    ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩
   · simpa [refused] using empty
   · rw [result]
     exact data_completion_preserves_lifecycle_frame program before after taskId.processInstanceId
@@ -169,7 +168,6 @@ theorem completion_admission_preserves_lifecycle_frame
   · rw [result]
     exact ordinary_completion_preserves_lifecycle_frame before after taskId.processInstanceId
       ⟨taskId.elementId.value⟩ taskId.activation empty completed
-  · simp [notNested] at nested
 
 theorem task_execution_preserves_lifecycle_frame
     (program : Program) (analysis : Analysis) (initial reached : RuntimeState)
@@ -230,7 +228,7 @@ theorem reached_state_has_lifecycle_frame
       (admitStimulus program initialState (.startProcess commandId processId instanceId bindings)).state reached) :
     LifecycleFrame reached :=
   task_execution_preserves_lifecycle_frame program analysis _ reached analyzed
-    (nestedScopeDataProgram_eq_false_of_structured_profile profile)
+    (nestedScopeDataProgram_of_profile_value (by rw [profile]))
     (committed_start_has_lifecycle_frame program analysis commandId processId instanceId bindings profile analyzed committed) reachable
 
 end BpmnSemantics.SemanticProcess.StructuredComposition

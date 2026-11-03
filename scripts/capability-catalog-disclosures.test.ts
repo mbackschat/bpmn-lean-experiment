@@ -103,7 +103,7 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ]],
   ["process", "restriction", [
     "The nested scope-data profile also admits a Process without an embedded Sub-Process",
-    "every other profile still requires a Sub-Process or a Call",
+    "the embedded completion profile, the only other profile reaching these analyses, still requires a Sub-Process or a Call",
   ]],
   ["noneIntermediateThrowEvent", "element", ["None Intermediate Throw Event"]],
   ["noneIntermediateThrowEvent", "restriction", [

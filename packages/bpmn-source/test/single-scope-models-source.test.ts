@@ -11,11 +11,13 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
-  CheckedNodeKind, SemanticProfileId, isWellFormedSemanticProcessProgram, nestedScopeControlCheckedAnalysis,
-  nestedScopeControlProgramAnalysis, nestedScopeCheckedAnalysis, nestedScopeProgramAnalysis, scopeReentryCheckedAnalysis,
+  CanonicalObservationKind, CheckedNodeKind, CommandOutcome, ProcessStatus, SemanticProfileId,
+  isWellFormedSemanticProcessProgram, nestedScopeControlCheckedAnalysis, nestedScopeControlProgramAnalysis,
+  nestedScopeCheckedAnalysis, nestedScopeProgramAnalysis, runScenario, scopeReentryCheckedAnalysis,
   scopeReentryProgramAnalysis, structuredScopeDataCheckedStartNames, structuredScopeDataProgramStartNames,
+  supportsSemanticProcessScenario,
 } from "@bpmn-lean/semantic-core";
-import type { CheckedProcess } from "@bpmn-lean/semantic-core";
+import type { CheckedProcess, Scenario, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 
 const scenarios = new URL("../../../scenarios/", import.meta.url);
@@ -89,7 +91,33 @@ test("a serial model whose only other scope is a called Process is admitted on t
   assert.equal(semanticProcess.definitionScopes.length, 2);
   assert.notEqual(nestedScopeCheckedAnalysis(checkedProcess), null);
   assert.notEqual(nestedScopeProgramAnalysis(semanticProcess), null);
+  // The retained approval journey, its last step retargeted from the Sub-Process's task to the flattened Review
+  // application, runs to completion in the core, and NSD-TASK-01 still refuses a non-empty patch on that task.
+  const journey = JSON.parse(await readFile(new URL("call-variable-mapping/loan-approved.scenario.json", scenarios), "utf8"));
+  const run = (submittedValues: unknown[]) => runFlattened(journey, semanticProcess, submittedValues);
+  const completed = run([]);
+  assert.equal(completed.last, CommandOutcome.Committed);
+  assert.equal(completed.status, ProcessStatus.Completed);
+  const patched = run([{ name: "decision", value: { kind: "string", value: "referred" } }]);
+  assert.equal(patched.last, CommandOutcome.Rejected);
+  assert.equal(patched.status, ProcessStatus.Running);
 });
+
+function runFlattened(journey: Scenario, program: SemanticProcessProgram, submittedValues: unknown[]) {
+  const last = journey.stimuli.at(-1);
+  assert.ok(last?.kind === "completeUserTaskInstance");
+  const scenario = { ...journey,
+    bpmn: { ...journey.bpmn, id: program.identity.sourceId, sha256: program.identity.sourceSha256,
+      sourceOverlay: program.identity.sourceOverlay },
+    stimuli: [...journey.stimuli.slice(0, -1), { ...last, commandId: "complete-review",
+      taskId: { ...last.taskId, elementId: "ReviewApplication" }, submittedValues }] } as Scenario;
+  assert.equal(supportsSemanticProcessScenario(scenario, program), true);
+  const trace = runScenario(scenario, program).trace;
+  const command = trace.findLast(entry => entry.kind === CanonicalObservationKind.Command);
+  const state = trace.at(-1);
+  assert.ok(command?.kind === CanonicalObservationKind.Command && state?.kind === CanonicalObservationKind.State);
+  return { last: command.outcome, status: state.status };
+}
 
 const serial = (body: string, flows: string) => `<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
@@ -119,20 +147,43 @@ test("a degenerate single scope keeps the serial overlay rule while its one-Serv
   assert.equal(semanticProcess.definitionScopes.length, 1);
 });
 
+const budgetLog = `
+  <process id="Process_BudgetLog" isExecutable="true">
+    <startEvent id="LogOpened" /><userTask id="WriteLog" /><endEvent id="LogClosed" />
+    <sequenceFlow id="Flow_LogOpened" sourceRef="LogOpened" targetRef="WriteLog" />
+    <sequenceFlow id="Flow_LogWritten" sourceRef="WriteLog" targetRef="LogClosed" />
+  </process>
+</definitions>`;
+const loggedCall = `<callActivity id="LogBudgetCheck" name="Log budget check" calledElement="Process_BudgetLog">
+      <extensionElements><camunda:in source="request" target="request" /></extensionElements>
+    </callActivity>`;
+const terminalFork = `
+    <parallelGateway id="Split" />
+    <userTask id="Review" />
+    <userTask id="Approve" />
+    <endEvent id="Approved" />`;
+const terminalFlows = (from: string, to: string) => `
+    <sequenceFlow id="Flow_Split" sourceRef="${from}" targetRef="Split" />
+    <sequenceFlow id="Flow_Review" sourceRef="Split" targetRef="Review" />
+    <sequenceFlow id="Flow_Approve" sourceRef="Split" targetRef="Approve" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Review" targetRef="${to}" />
+    <sequenceFlow id="Flow_Approved" sourceRef="Approve" targetRef="Approved" />`;
+const checkedRefusal = "The checked graph does not satisfy nested scope-data admission.";
+
 test("each excluded single-scope form is refused", async () => {
   const purchase = await retained("single-scope-models", "purchase-request");
   const refusals: ReadonlyArray<readonly [string, string]> = [
-    ["a second None End", replaceOnce(replaceOnce(purchase,
-      '<sequenceFlow id="Flow_OrderPlaced" sourceRef="PlaceOrder" targetRef="OrderPlaced" />',
-      '<sequenceFlow id="Flow_OrderPlaced" sourceRef="PlaceOrder" targetRef="OrderPlaced" />' +
-        '<endEvent id="SignatureFiled" /><sequenceFlow id="Flow_SignatureFiled" sourceRef="LogBudgetCheck" targetRef="SignatureFiled" />'),
-      '<sequenceFlow id="Flow_BudgetLogged" sourceRef="LogBudgetCheck" targetRef="ChecksDone" />', "")],
-    ["a Call in the forking root", replaceOnce(purchase, '<task id="LogBudgetCheck" name="Log budget check" />',
-      '<callActivity id="LogBudgetCheck" name="Log budget check" calledElement="Process_PurchaseRequest" />')],
+    ["a Call in the forking root", replaceOnce(replaceOnce(purchase, '<task id="LogBudgetCheck" name="Log budget check" />',
+      loggedCall), /\n  <\/process>\n<\/definitions>\n?$/, `\n  </process>${budgetLog}`)],
+    // A forking root reaches a second None End only through a terminal branch; a fork that also joins is refused in
+    // a body too, so the separating form is the terminal fork.
+    ["a terminal fork, the root's second None End", serial(terminalFork, terminalFlows("Opened", "Closed"))],
   ];
+  // Each refusal is the graph rule's: the reader admits every element, so a mapping or overlay refusal cannot stand in.
   for (const [label, xml] of refusals) {
-    assert.equal((await compile(xml, SemanticProfileId.NestedEmbeddedScopeData, ["checkBudget"])).status,
-      BpmnCompilationStatus.Rejected, label);
+    const result = await compile(xml, SemanticProfileId.NestedEmbeddedScopeData, ["checkBudget"]);
+    assert.equal(result.status, BpmnCompilationStatus.Rejected, label);
+    assert.deepEqual(result.diagnostics.map(({ evidence }) => evidence), [checkedRefusal], label);
   }
 });
 
@@ -186,4 +237,16 @@ test("the embedded completion profile refuses each single-scope control and admi
     assert.equal(nestedScopeControlCheckedAnalysis(controlGraph(graph)), null, `${label} checked`);
     assert.equal(nestedScopeControlProgramAnalysis(program), null, `${label} Program`);
   }
+});
+
+test("the refused Call and terminal fork are admitted where the account admits them", async () => {
+  const purchase = await retained("single-scope-models", "purchase-request");
+  const checkBudget = purchase.slice(purchase.indexOf("    <serviceTask"), purchase.indexOf('    <task id="LogBudgetCheck"'));
+  const serialCall = serial(`\n${checkBudget}    ${loggedCall}`, `
+    <sequenceFlow id="Flow_ToBudget" sourceRef="Opened" targetRef="CheckBudget" />
+    <sequenceFlow id="Flow_BudgetChecked" sourceRef="CheckBudget" targetRef="LogBudgetCheck" />
+    <sequenceFlow id="Flow_BudgetLogged" sourceRef="LogBudgetCheck" targetRef="Closed" />`)
+    .replace(/\n  <\/process>\n<\/definitions>$/, `\n  </process>${budgetLog}`);
+  await admitted(serialCall, ["checkBudget"], "the same Call in a serial root");
+  await admitted(wrapped("", terminalFork, terminalFlows("WorkOpened", "WorkClosed")), [], "the terminal fork in a body");
 });
