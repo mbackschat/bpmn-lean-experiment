@@ -2,7 +2,7 @@
  * NIT-PASS-01 in committed core state over the retained None Throw scenarios. Every stimulus commits without reaching
  * `ambiguousInternalChoice`; every None Throw publishes exactly one occurrence per arriving token, started and ended in
  * the command delivering it, with a fresh occurrence on each re-entry; and the onboarding's two completion orders
- * reach one final state. Expected commands and Events are read off the proposal's witness account.
+ * reach one final state. Expected commands and Events are read off the specification's witness account.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";

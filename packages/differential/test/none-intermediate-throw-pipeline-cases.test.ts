@@ -1,9 +1,9 @@
 /**
- * Locks the registered None Throw schedules against the proposal's separating witnesses without Lean or Temporal: the
+ * Locks the registered None Throw schedules against the specification's separating witnesses without Lean or Temporal: the
  * open work and Process variables after every command, each model's route, and every named seeded mutation, each of
  * which must move exactly the observation it names.
  *
- * Expected values are written here from the proposal's witness-model account, never read from a produced trace.
+ * Expected values are written here from the specification's witness-model account, never read from a produced trace.
  */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -77,7 +77,7 @@ test("registers exactly the four schedules, standards-only, on each model's rout
   }
 });
 
-test("each journey exposes the open work and the Process variables the proposal derives", async () => {
+test("each journey exposes the open work and the Process variables the specification derives", async () => {
   for (const { scenario, semanticProcess: program } of await loadAndCompileCases(noneIntermediateThrowPipelineCases)) {
     const steps = journeys.get(scenario.id.slice(prefix.length))!;
     const result = runScenario(scenario, program);

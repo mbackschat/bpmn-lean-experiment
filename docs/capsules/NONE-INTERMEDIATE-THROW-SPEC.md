@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implemented-awaiting-closure
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -135,7 +135,7 @@ Each model carries a source overlay and a mapped Service Task.
 
 Lane shape: checked
 
-Evidence: the family adds no transition family and no runtime law; the Event lowers to the existing one-input `mergeExclusive`, whose pass-through behavior and commutation are already proved or checked under the pass-through accounts. A new executable conformance module, beside the [pass-through Task conformance module](../../BpmnSemantics/PassThroughTaskConformance.lean) whose admission owners it shares, checks admission of both models at both levels, the refused edits, the profile control and the lowering to one-input merges with the Event as origin.
+Evidence: the family adds no transition family and no runtime law; the Event lowers to the existing one-input `mergeExclusive`, whose pass-through behavior and commutation are already proved or checked under the pass-through accounts; the private `rfl` law `lower_none_intermediate_throw_event_is_one_input_merge` of [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean) states that operation. A new executable conformance module, [`noneIntermediateThrowConformanceChecks`](../../BpmnSemantics/NoneIntermediateThrowConformance.lean#noneIntermediateThrowConformanceChecks), beside the [pass-through Task conformance module](../../BpmnSemantics/PassThroughTaskConformance.lean) whose admission owners it shares, checks admission of both models at both levels, the refused edits, the profile control and the lowering to one-input merges with the Event as origin.
 
 ## Temporal hosting and refinement preflight
 

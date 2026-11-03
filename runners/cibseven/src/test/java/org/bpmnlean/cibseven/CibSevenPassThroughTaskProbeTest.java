@@ -21,10 +21,10 @@ import org.junit.Test;
  * CIB Seven `2.2.0` runs a plain Task and a Manual Task through `TaskActivityBehavior.leave` (BpmnParse.java:2711-2739),
  * so each activation is a historic activity instance of type `task` or `manualTask` that ends inside the command that
  * reached it, with no task entity and no job. It also calibrates `CIB-AGR-0016` (`NIT-PASS-01`) on the None Throw
- * proposal's two witness models: `IntermediateThrowNoneEventActivityBehavior` leaves at once (BpmnParse.java:1669-1672),
+ * specification's two witness models: `IntermediateThrowNoneEventActivityBehavior` leaves at once (BpmnParse.java:1669-1672),
  * so each None Throw activation is an ended `intermediateNoneThrowEvent` instance of the same kind. CIB does not execute the project's Simple Boolean v1 conditions, so each
  * condition is rendered as JUEL under `CIB-CFG-0005` before deployment; the probe compares activations, never condition
- * truth. Expected values are built here from the proposal's witness-model account, never read from a target result.
+ * truth. Expected values are built here from the specification's witness-model account, never read from a target result.
  */
 public final class CibSevenPassThroughTaskProbeTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();

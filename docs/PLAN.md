@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [None Intermediate Throw Event](capsules/NONE-INTERMEDIATE-THROW-SPEC.md) of the nested scope-data profile, batch 4 (`PC-BASIC-01`'s Intermediate Throw None clause). Pass-through Tasks on Parallel branches landed at `7cda3873`. Close call against the Inclusive Gateway recorded in the proposal. Batch 3 stays open behind the owner's holds.
+Current task: [None Intermediate Throw Event](capsules/NONE-INTERMEDIATE-THROW-SPEC.md) of the nested scope-data profile, batch 4 (`PC-BASIC-01`'s Intermediate Throw None clause). Pass-through Tasks on Parallel branches landed at `7cda3873`. Close call against the Inclusive Gateway recorded in the specification. Batch 3 stays open behind the owner's holds.
 
 Deliverable: None Intermediate Throw Events as pass-through wherever the profile admits a pass-through Task, landed on `main`; `PC-BASIC-01` stays open on its other clauses.
 
-Acceptance blockers: the closure review, graduation and landing.
+Acceptance blockers: landing through the branch flow with green hosted checks.
 
-Current result: implemented and registered through `3c3a12e1`; `verify.sh`, the model corpus and the fast guards are green there.
+Current result: implemented and registered through `3c3a12e1`, where `verify.sh`, the model corpus and the fast guards are green; the cold closure review of `70a05174` approved with required edits, applied in `a8109f14` and approved on audit; graduated to a specification.
 
 Effort budget: 6 hours from 2026-11-03 02:20 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: the cold closure review, then graduation to a specification and the branch flow.
+Next action: push the branch, open the pull request and fast-forward `main` on green hosted checks, then select the next batch-4 family.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
