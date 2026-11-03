@@ -90,26 +90,32 @@ The checked `exclusiveGateway` node takes an optional `defaultFlowId`, and the I
 
 The exception proofs then only take the `some` premise at their `choose` match, and no lemma about the existing functions changes.
 
-**Closure.** The frontier gains a no-flow channel beside `preparationFailed`, set when an enabled Choice's selection yields the no-flow result. A no-flow Choice yields no successor and so contributes no offer. The loop must therefore test it before the stable frontier, or the command would commit with the token parked at the Choice. It checks, identically in Lean and TypeScript, in this order:
+**Closure.** The execution frontier, its interface and its stable predicate stay unchanged.
 
-1. refusal;
-2. no-flow, which rolls the command back flag-free;
-3. the stable frontier, which commits: no offers, no `preparationFailed` and no no-flow;
-4. the step bound;
-5. `preparationFailed`, which keeps its `ambiguousInternalChoice` rollback.
+- The leaf's selector distinguishes three results: a selected flow, no flow, and evaluation failure.
+- In the frontier's Choice arm, a body edit, evaluation failure still sets `preparationFailed`, as today. A no-flow Choice is disabled: it contributes neither an offer nor a preparation failure.
+- The closure therefore stabilizes with that Choice's token parked at its input. The stable exit, which is the closure's commit point, then asks the leaf predicate `stuckChoice`: does the stable state hold a token at the input of a default-less Choice whose every candidate evaluates to `some false`?
+- If so, the closure result gains the defaulted field `noFlowChoice := true`, `ScheduledClosureResult.failed` includes it, and the result mapping returns `rolledBack` with both flags false and the pre-admission state.
+- TypeScript does the same at its stable exit in the [internal choice schedule](../../packages/semantic-core/src/internal-choice-schedule.ts).
 
-Admission refuses order-dependent internal choice today, so a no-flow Choice is decided before any concurrent write could change its reads. The command result reuses the restoration of the pre-admission state. No outcome, flag or field is added to the public command result; the internal frontier and closure-result types gain the channel.
+The loop's checks keep today's order: refusal; the stable frontier, which is now committed only when `stuckChoice` is false; the step bound; `preparationFailed`. A no-flow Choice reached at exactly the step limit therefore rolls back flag-free, because the stable exit precedes the bound. Admission refuses order-dependent internal choice, so a parked no-flow Choice's reads cannot change before the closure stabilizes.
+
+`preparationFailed`, the refusal channel and the public command result gain nothing.
 
 **Lean build account.** These interface edits land as one batch, so the fixtures rebuild once:
 
 - the field types in `SemanticProcessContract` and `CheckedProcessContract`, whose import cones reach about 1,000 of 1,045 modules each;
-- their JSON readers, `SemanticProcessJson/Program` and `SemanticProcessJson/CheckedProcess`;
-- the `InternalExecutionFrontier` structure, which gains the no-flow field, and its fold laws, which restate the stable-frontier predicate. Its import cone is about 334 modules.
+- their JSON readers, `SemanticProcessJson/Program` and `SemanticProcessJson/CheckedProcess`.
 
 The modules beyond that batch:
 
 - **Hubs, body edits only.** `ProgramStructuralValidation` (closed world): its `choose` arm requires both default fields or neither, admits neither only under this profile, and checks the origin when present. `OperationControlPlaces` (kernel, fan-out 501) lists the outputs with `defaultOutput.toList`. The closed-world `CheckedGraphValidation` stays untouched, because its `exclusiveGateway` arms bind the default to a wildcard.
-- **Selection and closure call sites.** `TransitionStates`, `Transition`, the `InternalLocalControl*` modules, `InternalScheduledClosure`. Its stable-frontier theorems, among them `closeScheduledTraced_hitBound_cursor` and the `InternalScheduleExecution` and `ScheduledClosurePrefix` premises, gain the no-flow conjunct. With 22 lines of headroom, the adapted statements that do not fit move to the leaf and `TransitionTrace` (the result mapping).
+- **Selection and closure call sites.** `TransitionStates`, `Transition` and the `InternalLocalControl*` modules (the Choice arm's body); `InternalScheduledClosure`, whose stable exit and `ScheduledClosureResult` gain the defaulted `noFlowChoice`; `TransitionTrace` (the result mapping).
+- **Consumers of the closure result.** These theorems conclude a committed result, or a closure that is not failed, from a stable run, and so gain the premise `stuckChoice = false`:
+  - in `InternalScheduledClosure` itself;
+  - in `Execution`, `ParallelScopeReachableInvariantTransport`, `ParallelScopeSchedulerReadinessProofs`, `ParallelScopeResumptionProofs`, `ParallelScopeCommandClosureProofs`, `ParallelScopeFinalRetirement`, `ParallelScopeFrontierTotalityProofs`, `ParallelScopeRetirementProgress`, `ParallelScopeCommandFuelProofs`, `SequentialScopeHistoryTransportProofs`, `CompensationEventSubProcessSnapshotTransitionTrace` and `UserTaskMetadataConformance`.
+
+  Each site discharges the premise with one leaf lemma: `stuckChoice` is false for every Program without a default-less Choice, a decidable Program property that every other profile's `ProgramStructuralValidation` arm implies. `ParallelScopeRetirementProgress` carries a size exception and must not grow; a site that needs a line moves its adapted statement into the leaf. `ParallelScopeCommandFuelProofs` is an `AA-01` owner, and `AA-01`'s trigger stays unmet, because no residual execution or fuel guarantee is consumed or changed.
 - **Admission.** `CheckedProcessAdmission`, `Lowering`, `ScopeReentryAdmission`, and the admissions of the profiles whose Choices keep a default (`StructuredCompositionAdmission`, `MixedTaskControlFlowAdmission`, `StructuredHumanWorkAdmission`). Those profiles require the default present, so their models and proofs keep today's meaning.
 - **Proofs.** The proofs that destructure the default take it from that `some` premise: `StructuredComposition*Proofs`, `MixedTaskControlFlow*Proofs` and the cyclic conformance. `StructuredCompositionControlProofs`, `StructuredCompositionClosureProofs`, `StructuredCompositionDataProofs` and `MixedTaskControlFlowDataProofs` carry size exceptions and must not grow, so any lemma their adaptation needs goes into the leaf.
 
@@ -227,7 +233,8 @@ Lane shape: proved for the no-match outcome, checked for admission.
 Proved, in the new family-owned leaf module:
 
 - the dispatch returns the no-flow result exactly when the default is absent and every candidate evaluates to `some false`, and agrees with `selectConditionalOutput` when the default is present;
-- end to end over the scheduled closure function: when the closure from an admitted state reaches a frontier holding a no-flow Choice within the step bound, the command result is `rolledBack` with both flags false and `state = before`.
+- end to end over the scheduled closure function: when the closure from an admitted state stabilizes in a state where `stuckChoice` holds, the command result is `rolledBack` with both flags false and `state = before`; and a no-flow Choice adds neither an offer nor `preparationFailed` to the frontier;
+- `stuckChoice` is false for every Program without a default-less Choice, the lemma each consumer applies.
 
 Checked: an executable conformance module checks:
 
