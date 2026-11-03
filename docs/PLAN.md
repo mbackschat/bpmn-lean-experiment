@@ -98,13 +98,13 @@ Current task: Exclusive Choices without a default under the nested scope-data pr
 
 Deliverable: a Choice without a default admitted wherever the profile admits a Choice, routing as before when a condition holds and rolling the command back atomically when none does, landed on `main`.
 
-Acceptance blockers: the approved proposal, implementation across source, IL, Lean, core and Temporal, and landing.
+Acceptance blockers: implementation across source, IL, Lean, core and Temporal, the closure gates, and landing.
 
-Current result: the [proposal](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md) is written; the source reader and both analyses still refuse a Choice without a default.
+Current result: the [proposal](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md) is approved after correction audits; the CIB probe calibrates both witness models (7/7); the source reader and both analyses still refuse a Choice without a default.
 
 Effort budget: 8 hours from 2026-11-03 17:05 CET, including one full Lean library and `BpmnConformance` build at closure.
 
-Next action: settle the proposal's [independent cold-review receipt](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md#independent-cold-review-receipt), then implement red/green.
+Next action: implement red/green, TypeScript first (source, contracts, selection and stable exit, host), then the Lean batch.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
