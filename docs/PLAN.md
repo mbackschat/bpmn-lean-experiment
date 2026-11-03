@@ -96,11 +96,11 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: [Send Task](capsules/SEND-TASK-PROPOSAL.md) of the nested scope-data profile, batch 4 (`PC-AUTO-04` primary). Single-scope models landed at `80bb4088`. Close call against the wait-free terminal branch recorded in the proposal. Batch 3 stays open behind the owner's holds.
 
-Deliverable: a Send Task with a configured handler admitted and executed as the profile's mapped effect, landed on `main`; `PC-AUTO-04` stays open on prescribed failure, recipient and correlation.
+Deliverable: a Send Task with a configured handler admitted and executed as the profile's mapped effect, landed on `main`; `PC-AUTO-04` stays open on prescribed failure.
 
 Acceptance blockers: the cold design review, implementation, closure review and landing.
 
-Current result: proposal written; the source reader, capability inventory and CIB projector still refuse the Send Task.
+Current result: proposal written; the source reader and the capability inventory still refuse the Send Task.
 
 Effort budget: 4 hours from 2026-11-03 14:45 CET; no Lean change, so no full `BpmnConformance` build beyond the hosted gate.
 
