@@ -222,4 +222,4 @@ Registration: the `CIB-EXT-0022` scope in the [register](../CIB-BPMN-RELATION-RE
 |---|---|---|---|---|
 | Proposal | `4d79c06e` | `fork-turns-none` | `approve-with-required-edits` | `754dcef8` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `49274572` | `fork-turns-none` | `approve-with-required-edits` | `c1ecfd72, a4cbd5a4` |
