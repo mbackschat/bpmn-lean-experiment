@@ -60,6 +60,8 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "send-task-shipping-notice",
   "send-task-claim-assessed-first",
   "send-task-claim-acknowledged-first",
+  "exclusive-choice-without-default-urgent-travel",
+  "exclusive-choice-without-default-medium-triage",
   "repeated-nested-calls-natural-order",
   "repeated-nested-calls-reverse-order-stale-and-cross-addressed",
   "repeated-nested-calls-guarantor-verified",

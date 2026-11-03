@@ -5,6 +5,13 @@ The [Exclusive Choice without a default proposal](../../docs/capsules/EXCLUSIVE-
 - The [expense routing](expense-routing.bpmn), with its [handler](expense-routing-overlay.json), routes a claim by its Start-supplied `priority` and `category` through the Choice *Route expense* (urgent first, then travel or equipment), which has no default, and pays it out through the Choice *Pay out*, also without a default, by the Service Task *Reimburse claimant* or the User Task *Add to payroll*.
 - The [ticket triage](ticket-triage.bpmn), with its [handler](ticket-triage-overlay.json), assesses `severity` in the User Task *Triage ticket* inside the Sub-Process *Triage*, then routes through the Choice *Route by severity*, which has no default, to the User Task *Escalate* or to the Service Task *Auto-close*.
 
+Two answer-free schedules run as pipeline cases:
+
+- the [urgent travel expense](urgent-travel.scenario.json) takes the first true route to *Review urgently*, then pays out by bank through *Reimburse claimant*;
+- the [medium ticket](medium-triage.scenario.json) matches no route, so its triage completion rolls back and the task stays open.
+
+A catering expense, whose Start rolls back, creates no Workflow to observe, so it runs on Lean and the semantic core only, from a [differential test fixture](../../packages/differential/test/fixtures/exclusive-choice-without-default-catering.scenario.json).
+
 The [CIB calibration probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveChoiceWithoutDefaultProbeTest.java) drives six journeys and one parse refusal in CIB Seven `2.2.0` with JUEL renditions of the conditions:
 
 - an urgent travel expense takes the first true route to *Review urgently*;

@@ -23,8 +23,9 @@ import { loadAndCompileCases } from "./pipeline-targets.ts";
  * Finite executable preservation evidence over every registered single-instance pipeline program.
  *
  * Every committed transition prefix is replayed so the invariant is checked at microsteps hidden by
- * stable scenario observations. Rejected commands must preserve the exact received state and emit no
- * committed transition. This finite registry lane cannot substitute for the general quantified Lean
+ * stable scenario observations. Rejected commands, and the flag-free rollback of a Choice without a default that
+ * matches no route (XND-ROLLBACK-01), must preserve the exact received state and emit no committed transition; a
+ * rollback carrying a closure flag is a harness failure, never a supported outcome. This finite registry lane cannot substitute for the general quantified Lean
  * obligation: an unregistered program or schedule can still reach a state this corpus never visits.
  */
 
@@ -76,10 +77,11 @@ function committedStatesFor(
 ): ReadonlyArray<RuntimeState> {
   const traced = applyStimulusWithTrace(program, from, stimulus);
   if (traced.result.outcome !== CommandOutcome.Committed) {
-    assert.equal(
-      traced.result.outcome,
-      CommandOutcome.Rejected,
-      `${caseId} produced an unsupported non-commit outcome`,
+    assert.ok(
+      traced.result.outcome === CommandOutcome.Rejected ||
+        (traced.result.outcome === CommandOutcome.RolledBack &&
+          !traced.result.internalStepBoundExceeded && !traced.result.ambiguousInternalChoice),
+      `${caseId} produced an unsupported non-commit outcome ${traced.result.outcome}`,
     );
     assert.deepEqual(
       traced.committedTransitions,

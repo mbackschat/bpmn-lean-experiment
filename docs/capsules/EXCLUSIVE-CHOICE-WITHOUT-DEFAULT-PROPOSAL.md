@@ -228,7 +228,9 @@ This separates a Workflow failure, a created Workflow, a lost or reinterpreted r
 
 ## Lean assurance lane
 
-Lane shape: proved for the no-match outcome, checked for admission.
+Lane shape: proved
+
+Evidence: the no-match outcome is proved over the scheduled closure of [`InternalScheduledClosure`](../../BpmnSemantics/SemanticProcess/InternalScheduledClosure.lean); admission and the journeys are checked.
 
 Proved, in the new family-owned leaf module:
 

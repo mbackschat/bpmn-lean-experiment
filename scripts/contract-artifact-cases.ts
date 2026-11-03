@@ -208,6 +208,9 @@ export const normativeArtifactCases = Object.freeze([
   ...["shipping-notice", "claim-assessed-first", "claim-acknowledged-first"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/send-task/${name}.scenario.json`,
   })),
+  ...["urgent-travel", "medium-triage"].map(name => Object.freeze({
+    scenarioRelativePath: `scenarios/exclusive-choice-without-default/${name}.scenario.json`,
+  })),
   ...["natural-order", "reverse-order-stale-and-cross-addressed", "guarantor-verified", "guarantor-absent"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/repeated-nested-concurrent-calls/${name}.scenario.json`,
   })),

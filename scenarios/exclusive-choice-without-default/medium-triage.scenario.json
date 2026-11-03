@@ -1,0 +1,74 @@
+{
+  "kind": "scenario",
+  "id": "exclusive-choice-without-default-medium-triage",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "ticket-triage",
+    "relativePath": "scenarios/exclusive-choice-without-default/ticket-triage.bpmn",
+    "sha256": "875311920a4f8be261e4e244c07bf006f6b6ca9b7d3667e62a1b81eff810ebd5",
+    "sourceOverlay": {
+      "id": "ticket-triage-handlers",
+      "sha256": "7e66c3b066b040dcadb26f0adf8980ec5effa0c672a81080050a8c1e5a8fddf8"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_TicketTriage",
+      "instanceId": "Ticket_1",
+      "initialVariables": [
+        {
+          "name": "ticket",
+          "value": {
+            "kind": "string",
+            "value": "T-9"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-triage-ticket",
+      "taskId": {
+        "processInstanceId": "Ticket_1",
+        "elementId": "TriageTicket",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "severity",
+          "value": {
+            "kind": "string",
+            "value": "medium"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0006",
+      "CIB-INT-0001",
+      "CIB-INT-0003"
+    ]
+  }
+}

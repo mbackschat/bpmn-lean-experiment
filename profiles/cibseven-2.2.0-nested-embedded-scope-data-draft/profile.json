@@ -76,6 +76,7 @@
       "finite-serial-scope-chain",
       "single-scope-models",
       "send-tasks",
+      "exclusive-gateway-without-default",
       "successful-effect-result"
     ],
     "extensions": [
@@ -103,6 +104,7 @@
       "CIB-EXT-0022",
       "CIB-EXT-0023",
       "CIB-INT-0001",
+      "CIB-INT-0003",
       "CIB-OP-0001",
       "CIB-OP-0010"
     ]
@@ -162,7 +164,7 @@
     "cib-transaction-timing-equivalence",
     "exactly-once-external-effects",
     "exclusive-gateways-inside-sub-process-or-called-bodies",
-    "choices-without-a-default",
+    "choices-without-a-default-after-an-effect-result",
     "inclusive-and-event-based-gateways",
     "cycles-without-a-user-or-service-task",
     "cycles-resuming-only-inside-a-called-process",

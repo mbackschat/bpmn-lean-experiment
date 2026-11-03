@@ -19,6 +19,7 @@ import { passThroughParallelBranchesPipelineCases } from "./pass-through-paralle
 import { noneIntermediateThrowPipelineCases } from "./none-intermediate-throw-pipeline-cases.ts";
 import { singleScopeModelsPipelineCases } from "./single-scope-models-pipeline-cases.ts";
 import { sendTaskPipelineCases } from "./send-task-pipeline-cases.ts";
+import { exclusiveChoiceWithoutDefaultPipelineCases } from "./exclusive-choice-without-default-pipeline-cases.ts";
 import { repeatedNestedConcurrentCallsPipelineCases } from "./repeated-nested-concurrent-calls-pipeline-cases.ts";
 import { embeddedMappedCallsPipelineCases } from "./embedded-mapped-calls-pipeline-cases.ts";
 import { portableMessagePayloadPipelineCases } from "./portable-message-payload-pipeline-cases.ts";
@@ -603,6 +604,7 @@ export const pipelineCases = Object.freeze([
   ...noneIntermediateThrowPipelineCases,
   ...singleScopeModelsPipelineCases,
   ...sendTaskPipelineCases,
+  ...exclusiveChoiceWithoutDefaultPipelineCases,
   ...repeatedNestedConcurrentCallsPipelineCases,
   ...embeddedMappedCallsPipelineCases,
   ...subprocessErrorPipelineCases,
