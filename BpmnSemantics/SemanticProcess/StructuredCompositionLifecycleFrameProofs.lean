@@ -153,10 +153,12 @@ theorem data_completion_preserves_lifecycle_frame
 theorem completion_admission_preserves_lifecycle_frame
     (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
-    (analyzed : programAnalysis program = some analysis) (empty : LifecycleFrame before) :
+    (analyzed : programAnalysis program = some analysis) (notNested : nestedScopeDataProgram program = false)
+    (empty : LifecycleFrame before) :
     LifecycleFrame (admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state := by
   rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with refused |
-    ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩
+    ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩ |
+    ⟨_, nested, _, _⟩
   · simpa [refused] using empty
   · rw [result]
     exact data_completion_preserves_lifecycle_frame program before after taskId.processInstanceId
@@ -167,10 +169,12 @@ theorem completion_admission_preserves_lifecycle_frame
   · rw [result]
     exact ordinary_completion_preserves_lifecycle_frame before after taskId.processInstanceId
       ⟨taskId.elementId.value⟩ taskId.activation empty completed
+  · simp [notNested] at nested
 
 theorem task_execution_preserves_lifecycle_frame
     (program : Program) (analysis : Analysis) (initial reached : RuntimeState)
-    (analyzed : programAnalysis program = some analysis) (empty : LifecycleFrame initial)
+    (analyzed : programAnalysis program = some analysis) (notNested : nestedScopeDataProgram program = false)
+    (empty : LifecycleFrame initial)
     (reachable : TaskExecutionReachable program initial reached) : LifecycleFrame reached := by
   induction reachable with
   | initial => exact empty
@@ -182,7 +186,8 @@ theorem task_execution_preserves_lifecycle_frame
       exact admitted_fire_preserves_lifecycle_frame program analysis _ _ operation analyzed
         (List.mem_of_find?_eq_some selected) ih executed
   | completion commandId taskId bindings reachable ih =>
-    exact completion_admission_preserves_lifecycle_frame program analysis _ commandId taskId bindings analyzed ih
+    exact completion_admission_preserves_lifecycle_frame program analysis _ commandId taskId bindings analyzed
+      notNested ih
 
 theorem committed_start_has_lifecycle_frame
     (program : Program) (analysis : Analysis) (commandId processId instanceId : SemanticId)
@@ -225,6 +230,7 @@ theorem reached_state_has_lifecycle_frame
       (admitStimulus program initialState (.startProcess commandId processId instanceId bindings)).state reached) :
     LifecycleFrame reached :=
   task_execution_preserves_lifecycle_frame program analysis _ reached analyzed
+    (nestedScopeDataProgram_eq_false_of_structured_profile profile)
     (committed_start_has_lifecycle_frame program analysis commandId processId instanceId bindings profile analyzed committed) reachable
 
 end BpmnSemantics.SemanticProcess.StructuredComposition

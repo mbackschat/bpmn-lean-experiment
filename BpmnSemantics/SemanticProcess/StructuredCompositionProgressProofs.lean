@@ -94,7 +94,8 @@ theorem reached_token_has_enabled_consumer
   obtain ⟨frame, shape⟩ := reached_state_has_exact_lifecycle program analysis commandId processId instanceId bindings reached
     wellFormed profile analyzed committed reachable
   obtain ⟨owner, startOwned⟩ := committed_start_has_root_owner program commandId processId instanceId bindings profile committed
-  have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed startOwned startBound reachable
+  have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed
+    (nestedScopeDataProgram_eq_false_of_structured_profile profile) startOwned startBound reachable
   have tokenRunning : reached.control = .running token.owner.processInstanceId := by
     rw [owned.2.1 token live, root_owner_matches_running_instance reached owner runningId frame owned running]
     exact running
@@ -227,7 +228,8 @@ theorem reached_raw_stable_running_has_task
       commandId processId instanceId bindings profile analyzed committed
     have startBound := committed_start_task_execution_has_at_most_one_control_unit program analysis commandId processId
       instanceId bindings _ profile analyzed committed .initial
-    have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed startOwned startBound reachable
+    have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed
+      (nestedScopeDataProgram_eq_false_of_structured_profile profile) startOwned startBound reachable
     exact notEnabled (running_empty_root_enables_completion program analysis reached runningId root owner
       wellFormed analyzed definitions rootKey owned frame running pending noTokens noWaits)
   rcases shape with ⟨noWaits, _⟩ | ⟨wait, operation, singleton, details⟩
@@ -687,8 +689,10 @@ theorem reached_scheduled_closure_is_bounded
   | ind fuel ih =>
     have frame := (reached_state_has_exact_lifecycle program analysis startCommandId processId instanceId bindings reached
       wellFormed profile analyzed committed reachable).1
-    have bounded := task_execution_reachable_preserves_control_unit_bound program analysis _ reached analyzed startBound reachable
-    have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed startOwned startBound reachable
+    have bounded := task_execution_reachable_preserves_control_unit_bound program analysis _ reached analyzed
+      (nestedScopeDataProgram_eq_false_of_structured_profile profile) startBound reachable
+    have owned := task_execution_preserves_root_ownership program analysis _ reached owner analyzed
+      (nestedScopeDataProgram_eq_false_of_structured_profile profile) startOwned startBound reachable
     have reachedPositions := task_execution_preserves_input_positions program vertices analysis _ reached wellFormed profile
       analyzed graph positions startBound reachable
     rcases admitted_frontier_is_complete program analysis reached root owner profile wellFormed analyzed origins definitions rootKey

@@ -209,7 +209,7 @@ def structureAdmitted (vertices : List Vertex) (records : List ScopeLocalData) (
     | _ => none
   let calledScopes := (calls.map (·.1)).eraseDups
   let roots := (scopes.filter (·.parentScopeId.isNone)).map (·.id.value)
-  scopes.length == children.length + calledScopes.length + 1 && !children.isEmpty &&
+  scopes.length == children.length + calledScopes.length + 1 &&
     calls.length ≤ callLimit && calledScopes.length ≤ 1 &&
     roots.length == calledScopes.length + 1 && roots.contains root &&
     calls.all (fun (calledScope, inputs, outputs) =>
@@ -218,19 +218,6 @@ def structureAdmitted (vertices : List Vertex) (records : List ScopeLocalData) (
     records.all (fun record => children.contains record.scopeId.value && recordValid handlers record)
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`structureAdmitted]
-
-private theorem one_scope_guard (scopes : List DefinitionScope) (children : List String) (calls : Nat)
-    (one : scopes.length = 1) :
-    (scopes.length == children.length + calls + 1 && !children.isEmpty) = false := by
-  cases children <;> simp [one]
-
-theorem structureAdmitted_one_scope (vertices : List Vertex) (records : List ScopeLocalData)
-    (scopes : List DefinitionScope) (root : String) (handlers : List String) (one : scopes.length = 1) :
-    structureAdmitted vertices records scopes root handlers = false := by
-  unfold structureAdmitted
-  dsimp only
-  rw [one_scope_guard scopes _ _ one]
-  rfl
 
 /-- Every caller vertex is visited exactly once from the root's entry and every called vertex is
 walked from some Call, the two disjoint, under `structureAdmitted`. -/
@@ -245,13 +232,6 @@ def analyze (vertices : List Vertex) (records : List ScopeLocalData) (scopes : L
     else some { accesses, required := (requiredReads accesses []).eraseDups,
                 optional := if vertices.any (fun v => match v.kind with | .call .. => true | _ => false)
                   then some (optionalCallNames accesses []).eraseDups else none }
-
-theorem analyze_one_scope (vertices : List Vertex) (records : List ScopeLocalData)
-    (scopes : List DefinitionScope) (root entry : String) (handlers : List String) (one : scopes.length = 1) :
-    analyze vertices records scopes root entry handlers = none := by
-  unfold analyze
-  rw [structureAdmitted_one_scope vertices records scopes root handlers one]
-  rfl
 
 def metadataValid (handlers : List String) (metadata : Option UserTaskMetadata) : Bool :=
   metadata.all (·.form.isNone) && SerialBusinessTask.metadataValid handlers metadata
@@ -301,13 +281,19 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`checkedVertex?]
 
+/-- SSM-ADMIT-01 and SSM-PROFILE-01: the nested scope-data profile admits a Process whose only scope is its root,
+while every other profile reaching these analyses keeps needing a Sub-Process or a Call, a second scope. -/
+def scopeCountAdmitted (profile : ProfileId) (scopeCount : Nat) : Bool :=
+  if profile == nestedScopeDataProfileId then 1 ≤ scopeCount else 2 ≤ scopeCount
+
 /-- The profile's checked envelope, which the re-entry account shares: the root scope and its Start. -/
 def checkedEnvelope? (source : CheckedProcess) : Option (DefinitionScopeId × NodeId) := do
   let identities := source.processId.value :: source.nodes.map (·.id.value) ++
     source.sequenceFlows.map (·.id.value)
   if !(source.identity.sourceOverlay.isSome && source.compensation.isNone &&
       source.transactionCancellation.isNone && source.interruptingMessageEventSubProcesses.isEmpty &&
-      identities.eraseDups.length == identities.length)
+      identities.eraseDups.length == identities.length &&
+      scopeCountAdmitted source.identity.semanticProfile source.definitionScopes.length)
   then none
   else do
     let root ← StructuredComposition.unique? (source.definitionScopes.filter fun scope =>
@@ -387,7 +373,8 @@ def programEnvelope? (program : Program) : Option (DefinitionScopeId × Operatio
   if !(program.identity.sourceOverlay.isSome &&
       program.internalSchedulingMode == .rejectObservableChoice &&
       program.compensationActivityRetention.isNone && program.compensationEventSubProcessSnapshots.isNone &&
-      program.compensationExecution.isNone && program.interruptingMessageEventSubProcesses.isEmpty) then none
+      program.compensationExecution.isNone && program.interruptingMessageEventSubProcesses.isEmpty &&
+      scopeCountAdmitted program.identity.semanticProfile program.definitionScopes.length) then none
   else do
     let root ← StructuredComposition.unique? (program.definitionScopes.filter fun scope =>
       scope.parentScopeId.isNone && scope.originElementId.value == program.processId.value)
@@ -431,12 +418,6 @@ def programAnalysis (program : Program) : Option Analysis := do
     (SerialBusinessTask.programHandlers program)
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`programAnalysis]
-
-/-- A one-scope Program is never admitted: the profile requires at least one Sub-Process. -/
-theorem programAnalysis_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
-    programAnalysis program = none := by
-  unfold programAnalysis
-  cases programEnvelope? program <;> simp [analyze_one_scope _ _ _ _ _ _ one]
 
 /-- NSD-AVAILABLE-01 and the profile's Start domain: admitted names, each a `SingletonBusinessItem`,
 covering every required name; a present null counts as present. CVM-START-01 restricts the names to

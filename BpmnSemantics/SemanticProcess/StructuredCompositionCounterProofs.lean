@@ -173,7 +173,8 @@ theorem data_completion_preserves_counter_storage
 
 theorem task_execution_preserves_counter_storage
     (program : Program) (analysis : Analysis) (initial reached : RuntimeState)
-    (analyzed : programAnalysis program = some analysis) (storage : CounterStorageFrame initial)
+    (analyzed : programAnalysis program = some analysis) (notNested : nestedScopeDataProgram program = false)
+    (storage : CounterStorageFrame initial)
     (reachable : TaskExecutionReachable program initial reached) : CounterStorageFrame reached := by
   induction reachable with
   | initial => exact storage
@@ -187,7 +188,8 @@ theorem task_execution_preserves_counter_storage
   | completion commandId taskId bindings reachable ih =>
     rename_i before
     rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with refused |
-      ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩
+      ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩ |
+      ⟨_, nested, _, _⟩
     · simpa [refused] using ih
     · rw [result]
       exact data_completion_preserves_counter_storage program _ after taskId.processInstanceId
@@ -198,6 +200,7 @@ theorem task_execution_preserves_counter_storage
     · rw [result]
       exact ordinary_completion_preserves_counter_storage _ after taskId.processInstanceId
         ⟨taskId.elementId.value⟩ taskId.activation ih completed
+    · simp [notNested] at nested
 
 
 theorem committed_start_has_counter_storage
@@ -242,6 +245,7 @@ theorem reached_state_has_counter_storage
       (admitStimulus program initialState (.startProcess commandId processId instanceId bindings)).state reached) :
     CounterStorageFrame reached :=
   task_execution_preserves_counter_storage program analysis _ reached analyzed
+    (nestedScopeDataProgram_eq_false_of_structured_profile profile)
     (committed_start_has_counter_storage program analysis commandId processId instanceId bindings profile analyzed committed) reachable
 
 theorem exact_lifecycle_collection_storage

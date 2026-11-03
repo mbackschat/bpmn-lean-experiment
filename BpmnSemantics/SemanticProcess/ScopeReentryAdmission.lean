@@ -100,15 +100,6 @@ private def rootGraphAnalysis (vertices : List Vertex) (joints : List (String ×
               optional := if vertices.any (fun v => match v.kind with | .call .. => true | _ => false)
                 then some (barrierNames outputs entry walked optionalCallNames) else none }, burst)
 
-private theorem rootGraphAnalysis_one_scope (vertices : List Vertex) (joints : List (String × List String))
-    (records : List ScopeLocalData) (scopes : List DefinitionScope) (root entry : String) (handlers : List String)
-    (rootEnds : Nat) (one : scopes.length = 1) :
-    rootGraphAnalysis vertices joints records scopes root entry handlers rootEnds = none := by
-  -- `delta` unfolds without realizing equation lemmas, which Lean would export; this module stays off the
-  -- `meta import` of the equation helper, whose hidden-edit fan-out is at its recorded bound.
-  delta rootGraphAnalysis
-  simp [structureAdmitted_one_scope vertices records scopes root handlers one]
-
 private def checkedJoint : CheckedNode → Bool
   | .exclusiveGateway .. | .exclusiveMerge .. => true
   | _ => false
@@ -194,12 +185,6 @@ def checkedBurst? (source : CheckedProcess) : Option Nat := (checkedAdmission so
 
 /-- SRE-BURST-01's admitted burst of a Program. -/
 def programBurst? (program : Program) : Option Nat := (programAdmission program).map (·.2)
-
-/-- A one-scope Program is never admitted: the profile requires at least one Sub-Process. -/
-theorem programAnalysis_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
-    programAnalysis program = none := by
-  delta programAnalysis programAdmission
-  cases programEnvelope? program <;> simp [rootGraphAnalysis_one_scope _ _ _ _ _ _ _ _ one]
 
 /-- SRE-AVAILABLE-01 and the profile's Start domain over the re-entry analysis. -/
 def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) : Bool :=

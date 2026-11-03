@@ -366,12 +366,12 @@ theorem completion_admission_preserves_binding_presence
     (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
     (name : String) (present : BindingPresent before.variables.process.bindings name)
-    (analyzed : programAnalysis program = some analysis) :
+    (analyzed : programAnalysis program = some analysis) (notNested : nestedScopeDataProgram program = false) :
     BindingPresent (admitStimulus program before
       (.completeUserTaskInstance commandId taskId bindings)).state.variables.process.bindings name := by
   rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
     refused | ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ |
-      ⟨after, completed, _, _, result⟩
+      ⟨after, completed, _, _, result⟩ | ⟨_, nested, _, _⟩
   · simpa [refused] using present
   · rw [result]
     exact composed_completion_preserves_binding_presence program before after taskId.processInstanceId
@@ -386,6 +386,7 @@ theorem completion_admission_preserves_binding_presence
     rw [ordinary_completion_preserves_process_bindings before after taskId.processInstanceId
       ⟨taskId.elementId.value⟩ taskId.activation completed]
     exact present
+  · simp [notNested] at nested
 
 /-- The existing runtime lookup requires one binding per name and the scalar input domain. -/
 def ProcessBindingsValid (bindings : List VariableBinding) : Prop :=
@@ -441,7 +442,7 @@ theorem completion_admission_preserves_valid_bindings
       (.completeUserTaskInstance commandId taskId bindings)).state.variables.process.bindings := by
   rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
     refused | ⟨after, completed, accepted, result⟩ | ⟨after, completed, ordinary, _, result⟩ |
-      ⟨after, completed, call, _, result⟩
+      ⟨after, completed, call, _, result⟩ | ⟨_, nested, _, _⟩
   · simpa [refused] using valid
   · rw [result]
     exact composed_completion_preserves_valid_bindings program before after taskId.processInstanceId
@@ -459,6 +460,7 @@ theorem completion_admission_preserves_valid_bindings
     exact ⟨(permutation.map (·.name)).nodup_iff.mpr valid.1,
       fun binding member => valid.2 binding (permutation.mem_iff.mp member)⟩
   · simp [isCallActivityProgram, profile, structuredCompositionCheckpointProfileId] at call
+  · simp [nestedScopeDataProgram_eq_false_of_structured_profile profile] at nested
 
 theorem composed_completion_supplies_successor_inputs
     (program : Program) (analysis : Analysis) (vertices : List Vertex)

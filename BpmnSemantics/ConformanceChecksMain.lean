@@ -118,6 +118,7 @@ public import BpmnSemantics.SequentialMultiInstanceCanonicalJsonConformanceCheck
 public import BpmnSemantics.SequentialMultiInstanceProgramBindingConformanceCheckFixtures
 public import BpmnSemantics.SequentialScopeGraphConformanceCheckFixtures
 public import BpmnSemantics.SerialBusinessTaskConformance
+public import BpmnSemantics.SingleScopeModelsConformance
 public import BpmnSemantics.SnapshotInternalArmingConformanceCheckFixtures
 public import BpmnSemantics.SnapshotInternalArmingSourceConformance
 public import BpmnSemantics.StructuredCompositionAdmissionConformance
@@ -287,6 +288,7 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("SequentialMultiInstanceRuntimeConformance", BpmnSemantics.SequentialMultiInstanceConformance.sequentialMultiInstanceRuntimeConformanceChecks),
   ("SequentialScopeGraphConformance", BpmnSemantics.SequentialScopeGraphConformance.checks),
   ("SerialBusinessTaskConformance", BpmnSemantics.SerialBusinessTaskConformance.checks),
+  ("SingleScopeModelsConformance", BpmnSemantics.SingleScopeModelsConformance.singleScopeModelsConformanceChecks),
   ("SnapshotInternalArmingConformance", BpmnSemantics.SnapshotInternalArmingConformance.checks),
   ("SnapshotInternalArmingSourceConformance", BpmnSemantics.SnapshotInternalArmingSourceConformance.checks),
   ("StructuredCompositionAdmissionConformance", BpmnSemantics.StructuredCompositionAdmissionConformance.checks),

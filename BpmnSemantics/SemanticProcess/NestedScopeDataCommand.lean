@@ -85,12 +85,6 @@ def programAdmitted (program : Program) : Bool :=
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`programAdmitted]
 
-/-- Neither analysis admits a single scope, so a one-scope Program completes no task through this path. -/
-theorem programAdmitted_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
-    programAdmitted program = false := by
-  simp [programAdmitted, StructuredScopeData.programRouted_one_scope program one,
-    NestedScopeControl.programAnalysis_one_scope program one]
-
 /-- Both completions re-check Program admission, as the parallel Multi-Instance stimulus gate does, so
 a Program that admission refuses completes no task. -/
 def completeUserTask? (program : Program) (state : RuntimeState) (taskId : UserTaskInstanceId)

@@ -319,8 +319,6 @@ def analyze (allScopes : List DefinitionScope) (allBodies : List Body) (dataBear
       bodies.all (fun body => scopes.any (·.id.value == body.scope)) &&
       parents.all (fun (child, (parent, _)) => declared child parent) &&
       (parents.map (·.1)).eraseDups.length == parents.length && parents.length + 1 == scopes.length &&
-      -- A caller without Sub-Process needs a Call to leave the exact-multiset class.
-      (!parents.isEmpty || !called.isEmpty) &&
       scopes.all (fun scope => scope.id == root.id || (List.lookup scope.id.value parents).isSome) &&
       scopes.all (fun scope => match depthOf parents fuel scope.id.value with
         | some depth => depth ≤ depthLimit
@@ -423,52 +421,6 @@ private def admittedModel (scopes : List DefinitionScope) (raw : List RawBody) (
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`admittedModel]
 
-/-- A single scope admits nothing: the class needs a Sub-Process or a Call, and a called root is a second
-scope. -/
-theorem analyze_one_scope (allScopes : List DefinitionScope) (allBodies : List Body) (dataBearing : Bool)
-    (one : allScopes.length = 1) : analyze allScopes allBodies dataBearing = none := by
-  cases analyzed : analyze allScopes allBodies dataBearing with
-  | none => rfl
-  | some burst =>
-      exfalso
-      obtain ⟨only, rfl⟩ := List.length_eq_one_iff.mp one
-      unfold analyze at analyzed
-      simp only [bind, Option.bind_eq_some_iff] at analyzed
-      obtain ⟨root, rootFound, called, calledFound, analyzed⟩ := analyzed
-      generalize (allBodies.flatMap fun body => body.calls.map (·.2)).eraseDups = calledRoots
-        at rootFound calledFound analyzed
-      have notCalled : calledRoots.contains only.id.value = false := by
-        clear analyzed calledFound
-        cases parentless : only.parentScopeId.isNone <;>
-          cases contained : calledRoots.contains only.id.value <;>
-          simp_all [StructuredComposition.unique?, List.filter]
-      cases calledRoots with
-      | cons first rest =>
-          clear analyzed
-          rw [List.mapM_cons] at calledFound
-          obtain ⟨_, headFound, _⟩ := Option.bind_eq_some_iff.mp calledFound
-          obtain ⟨_, _, headFound⟩ := Option.bind_eq_some_iff.mp headFound
-          clear rootFound calledFound
-          split at headFound
-          · cases parentless : only.parentScopeId.isNone <;> simp_all [List.filter]
-          · contradiction
-      | nil =>
-          rw [List.mapM_nil] at calledFound
-          obtain rfl : called = [] := (Option.some.inj calledFound).symm
-          obtain ⟨_, _, analyzed⟩ := analyzed
-          clear rootFound
-          split at analyzed
-          · contradiction
-          · rename_i admitted
-            clear analyzed
-            simp only [Bool.not_eq_true', Bool.not_eq_false, Bool.and_eq_true, beq_iff_eq] at admitted
-            simp at admitted
-            -- Admission requires a parent link (no Call was admitted), but one scope has no child.
-            obtain ⟨⟨⟨⟨⟨⟨⟨⟨_, noChildren⟩, body, member, child⟩, _⟩, _⟩, _⟩, _⟩, _⟩, _⟩ := admitted
-            have zero := List.sum_eq_zero_iff_forall_eq_nat.mp noChildren body.children.length
-              (List.mem_map.mpr ⟨body, by simpa using member, rfl⟩)
-            exact child (List.eq_nil_of_length_eq_zero zero)
-
 def controlCheckedScope? (source : CheckedProcess) (nodeId : NodeId) : Option String := do
   let owner ← StructuredComposition.unique? (source.nodeScopes.filter (·.nodeId == nodeId))
   return owner.scopeId.value
@@ -550,7 +502,8 @@ def checkedBodies (source : CheckedProcess) (data : Option Data) : Option (List 
                | _ => none }
 
 private def checkedModel (source : CheckedProcess) : Option (Nat × List String × Option (List String)) := do
-  if !(source.nodes.all fun node => (controlCheckedScope? source node.id).isSome) then none
+  if !((source.nodes.all fun node => (controlCheckedScope? source node.id).isSome) &&
+      NestedScopeData.scopeCountAdmitted source.identity.semanticProfile source.definitionScopes.length) then none
   else
     let data := checkedData source
     admittedModel source.definitionScopes (← checkedBodies source data) data
@@ -719,7 +672,8 @@ private def programModel (program : Program) : Option (Nat × List String × Opt
         (invocations.filter fun op => match op with
           | .invokeProcess _ _ _ _ _ _ returnOperationId _ => returnOperationId == returned.id
           | _ => false).length == 1) &&
-      program.operations.all fun op => (controlOperationScope? program op).isSome) then none
+      program.operations.all (fun op => (controlOperationScope? program op).isSome) &&
+      NestedScopeData.scopeCountAdmitted program.identity.semanticProfile program.definitionScopes.length) then none
   else
     let data := programData program
     admittedModel program.definitionScopes (← programBodies program data) data
@@ -729,11 +683,6 @@ def programAnalysis (program : Program) : Option Nat :=
   (programModel program).map (·.1)
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`programAnalysis, `programModel]
-
-theorem programAnalysis_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
-    programAnalysis program = none := by
-  simp only [programAnalysis, programModel, admittedModel, bind, Option.bind, analyze_one_scope _ _ _ one]
-  repeat' first | rfl | split | simp
 
 /-- CSD-AVAILABLE-01's required Start names over the Program, empty for a data-free Program. -/
 def programStartNames (program : Program) : Option (List String) :=
@@ -881,13 +830,5 @@ private theorem programRouted_unchosen (program : Program) (unchosen : ScopeReen
       programRestrictionsHold program && (NestedScopeControl.programAnalysis program).isSome
     else (NestedScopeData.programAnalysis program).isSome && ScopeDataBurst.programSerialBurstAdmitted program := by
   simp [programRouted, unchosen]
-
-/-- Neither routed analysis admits a single scope. -/
-theorem programRouted_one_scope (program : Program) (one : program.definitionScopes.length = 1) :
-    programRouted program = false := by
-  unfold programRouted
-  repeat' split
-  all_goals simp [NestedScopeControl.programAnalysis_one_scope program one,
-    NestedScopeData.programAnalysis_one_scope program one, ScopeReentry.programAnalysis_one_scope program one]
 
 end BpmnSemantics.SemanticProcess.StructuredScopeData

@@ -441,8 +441,16 @@ private theorem completion_admission_dispatch_or_refusal
       simp [admitStimulus, dispatchStimulus, snapshots]
       grind
 
+/-- The structured-composition profile never takes the nested scope-data completion route. -/
+theorem nestedScopeDataProgram_eq_false_of_structured_profile {program : Program}
+    (profile : program.identity.semanticProfile = structuredCompositionCheckpointProfileId) :
+    nestedScopeDataProgram program = false :=
+  nestedScopeDataProgram_of_profile_value (by rw [profile])
+
 /-- SPC-COMMAND-01 shares exact completion provenance at actual admission. Graph analysis alone
-cannot exclude PMIS profile dispatch; its two-scope admission rejects this one-scope structure. -/
+cannot exclude PMIS profile dispatch; its two-scope admission rejects this one-scope structure. Nor
+can it exclude the nested scope-data dispatch, which admits one-scope Programs (SSM-ROUTE-01), so
+that route is the last case. -/
 theorem completion_admission_cases
     (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
@@ -464,6 +472,10 @@ theorem completion_admission_cases
     (∃ after,
       completeUserTask before taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation = some after ∧
       isCallActivityProgram program = true ∧ bindings = [] ∧
+      result = { outcome := .committed, state := after }) ∨
+    (∃ after,
+      nestedScopeDataProgram program = true ∧
+      NestedScopeData.completeUserTask? program before taskId bindings = some after ∧
       result = { outcome := .committed, state := after }) := by
   dsimp only
   obtain ⟨oneScope, _, noRetention, noSnapshots, _⟩ :=
@@ -507,10 +519,18 @@ theorem completion_admission_cases
                     exact Or.inr (Or.inl ⟨after, rfl, accepted.2, rfl⟩)
                   · exact Or.inl rfl
           | false =>
-              have nestedRefused := NestedScopeData.completeUserTask?_unadmitted program before taskId bindings
-                (NestedScopeData.programAdmitted_one_scope program oneScope)
               cases nested : nestedScopeDataProgram program
-              case true => simp [nestedRefused]
+              case true =>
+                -- SSM-ROUTE-01: a one-scope Program of the nested scope-data profile may satisfy this analysis,
+                -- and the dispatcher completes it through the nested route.
+                cases nestedCompleted : NestedScopeData.completeUserTask? program before taskId bindings with
+                | none => simp
+                | some after =>
+                    by_cases host : taskId.processInstanceId = instanceId ∨
+                        NestedScopeData.calledTaskOfHost before instanceId taskId = true
+                    · exact Or.inr (Or.inr (Or.inr (Or.inr
+                        ⟨rfl, after, rfl, by simp [host]⟩)))
+                    · exact Or.inl (by simp [host])
               cases completed : completeUserTask before taskId.processInstanceId
                   ⟨taskId.elementId.value⟩ taskId.activation with
               | none => simp
@@ -521,7 +541,7 @@ theorem completion_admission_cases
                     exact Or.inr (Or.inr (Or.inl ⟨after, rfl, accepted.1.2, accepted.2, rfl⟩))
                   · split
                     · rename_i accepted
-                      exact Or.inr (Or.inr (Or.inr ⟨after, rfl, accepted.1, accepted.2, rfl⟩))
+                      exact Or.inr (Or.inr (Or.inr (Or.inl ⟨after, rfl, accepted.1, accepted.2, rfl⟩)))
                     · exact Or.inl rfl
       · exact Or.inl refused
 
@@ -580,20 +600,20 @@ theorem rejected_completion_preserves_state
     (admitStimulus program before
       (.completeUserTaskInstance commandId taskId bindings)).state = before := by
   rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
-    result | ⟨after, _, _, result⟩ | ⟨after, _, _, _, result⟩ | ⟨after, _, _, _, result⟩
+    result | ⟨after, _, _, result⟩ | ⟨after, _, _, _, result⟩ | ⟨after, _, _, _, result⟩ | ⟨after, _, _, result⟩
   · rw [result]
   all_goals simp [result] at refused
 
 theorem completion_admission_preserves_control_unit_bound
     (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
-    (analyzed : programAnalysis program = some analysis)
+    (analyzed : programAnalysis program = some analysis) (notNested : nestedScopeDataProgram program = false)
     (bounded : ControlUnitBound before) :
     ControlUnitBound (admitStimulus program before
       (.completeUserTaskInstance commandId taskId bindings)).state := by
   rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with
     refused | ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ |
-      ⟨after, completed, _, _, result⟩
+      ⟨after, completed, _, _, result⟩ | ⟨_, nested, _, _⟩
   · simpa [refused] using bounded
   · rw [result]
     exact data_completion_preserves_control_unit_bound program before after taskId.processInstanceId
@@ -604,6 +624,7 @@ theorem completion_admission_preserves_control_unit_bound
   · rw [result]
     exact ordinary_completion_preserves_control_unit_bound before after taskId.processInstanceId
       ⟨taskId.elementId.value⟩ taskId.activation bounded completed
+  · simp [notNested] at nested
 
 inductive TaskExecutionReachable (program : Program) (initial : RuntimeState) : RuntimeState → Prop where
   | initial : TaskExecutionReachable program initial initial
@@ -619,7 +640,7 @@ inductive TaskExecutionReachable (program : Program) (initial : RuntimeState) : 
 
 theorem task_execution_reachable_preserves_control_unit_bound
     (program : Program) (analysis : Analysis) (initial reached : RuntimeState)
-    (analyzed : programAnalysis program = some analysis)
+    (analyzed : programAnalysis program = some analysis) (notNested : nestedScopeDataProgram program = false)
     (initialBound : ControlUnitBound initial)
     (reachable : TaskExecutionReachable program initial reached) : ControlUnitBound reached := by
   induction reachable with
@@ -633,7 +654,7 @@ theorem task_execution_reachable_preserves_control_unit_bound
           (List.mem_of_find?_eq_some selected) ih executed
   | completion commandId taskId bindings reachable ih =>
       exact completion_admission_preserves_control_unit_bound program analysis _
-        commandId taskId bindings analyzed ih
+        commandId taskId bindings analyzed notNested ih
 
 theorem committed_start_task_execution_has_at_most_one_control_unit
     (program : Program) (analysis : Analysis)
@@ -648,7 +669,8 @@ theorem committed_start_task_execution_has_at_most_one_control_unit
       reached) : ControlUnitBound reached := by
   have fields := committed_initial_start_control_fields program commandId processId instanceId
     bindings profile committed
-  apply task_execution_reachable_preserves_control_unit_bound program analysis _ reached analyzed _ reachable
+  apply task_execution_reachable_preserves_control_unit_bound program analysis _ reached analyzed
+    (nestedScopeDataProgram_eq_false_of_structured_profile profile) _ reachable
   simp [ControlUnitBound, fields.1, fields.2.1, fields.2.2]
 
 def RootOwnedControl (owner : ScopeOccurrenceId) (state : RuntimeState) : Prop :=
@@ -808,10 +830,12 @@ theorem completion_admission_preserves_root_ownership
     (program : Program) (analysis : Analysis) (before : RuntimeState)
     (commandId : SemanticId) (taskId : UserTaskInstanceId) (bindings : List VariableBinding)
     (owner : ScopeOccurrenceId) (analyzed : programAnalysis program = some analysis)
+    (notNested : nestedScopeDataProgram program = false)
     (owned : RootOwnedControl owner before) : RootOwnedControl owner
       (admitStimulus program before (.completeUserTaskInstance commandId taskId bindings)).state := by
   rcases completion_admission_cases program analysis before commandId taskId bindings analyzed with refused |
-    ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩
+    ⟨after, completed, _, result⟩ | ⟨after, completed, _, _, result⟩ | ⟨after, completed, _, _, result⟩ |
+    ⟨_, nested, _, _⟩
   · simpa [refused] using owned
   · rw [result]
     exact data_completion_preserves_root_ownership program before after taskId.processInstanceId
@@ -822,6 +846,7 @@ theorem completion_admission_preserves_root_ownership
   · rw [result]
     exact ordinary_completion_preserves_root_ownership before after taskId.processInstanceId
       ⟨taskId.elementId.value⟩ taskId.activation owner owned completed
+  · simp [notNested] at nested
 
 theorem committed_start_has_root_owner
     (program : Program) (commandId processId instanceId : SemanticId) (bindings : List VariableBinding)
