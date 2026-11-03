@@ -502,11 +502,12 @@ def checkedBodies (source : CheckedProcess) (data : Option Data) : Option (List 
                | _ => none }
 
 private def checkedModel (source : CheckedProcess) : Option (Nat × List String × Option (List String)) := do
-  if !((source.nodes.all fun node => (controlCheckedScope? source node.id).isSome) &&
-      NestedScopeData.scopeCountAdmitted source.identity.semanticProfile source.definitionScopes.length) then none
+  if !(source.nodes.all fun node => (controlCheckedScope? source node.id).isSome) then none
   else
     let data := checkedData source
-    admittedModel source.definitionScopes (← checkedBodies source data) data
+    let bodies ← checkedBodies source data
+    if !NestedScopeData.scopeCountAdmitted source.identity.semanticProfile source.definitionScopes.length then none
+    else admittedModel source.definitionScopes bodies data
 
 /-- NSC-ADMIT-01 and CSD-ADMIT-01 over the checked graph; `none` refuses it, otherwise the admitted
 largest closure. -/
@@ -672,11 +673,15 @@ private def programModel (program : Program) : Option (Nat × List String × Opt
         (invocations.filter fun op => match op with
           | .invokeProcess _ _ _ _ _ _ returnOperationId _ => returnOperationId == returned.id
           | _ => false).length == 1) &&
-      program.operations.all (fun op => (controlOperationScope? program op).isSome) &&
-      NestedScopeData.scopeCountAdmitted program.identity.semanticProfile program.definitionScopes.length) then none
+      program.operations.all fun op => (controlOperationScope? program op).isSome) then none
   else
     let data := programData program
-    admittedModel program.definitionScopes (← programBodies program data) data
+    let bodies ← programBodies program data
+    -- SSM-PROFILE-01 follows the structural reading, where the one-scope refusal stood inside `analyze`: kernel-decided
+    -- fixtures that open only this module, such as the sequential Multi-Instance binding refusals, reach their
+    -- structural refusal without unfolding the hidden `scopeCountAdmitted`.
+    if !NestedScopeData.scopeCountAdmitted program.identity.semanticProfile program.definitionScopes.length then none
+    else admittedModel program.definitionScopes bodies data
 
 /-- NSC-ADMIT-01 and CSD-ADMIT-01 over the Program, independent of the checked graph; `none` refuses it. -/
 def programAnalysis (program : Program) : Option Nat :=
