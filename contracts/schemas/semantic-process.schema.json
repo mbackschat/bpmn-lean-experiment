@@ -2298,10 +2298,16 @@
         "kind",
         "origin",
         "input",
-        "candidates",
-        "defaultOutput",
-        "defaultOrigin"
+        "candidates"
       ],
+      "dependentRequired": {
+        "defaultOutput": [
+          "defaultOrigin"
+        ],
+        "defaultOrigin": [
+          "defaultOutput"
+        ]
+      },
       "properties": {
         "id": {
           "$ref": "#/$defs/nonemptyString"

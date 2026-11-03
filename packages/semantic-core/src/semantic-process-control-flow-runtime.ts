@@ -119,11 +119,12 @@ export function choose(
   >,
   state: RuntimeState,
   owner: ScopeOccurrenceId,
-): RuntimeState {
+): RuntimeState | null {
   const selected = selectConditionalBranch(
     operation,
     state.variables.process.bindings,
   );
+  if (selected === null) return null;
   return {
     ...state,
     controlTokens: addToken(
@@ -140,14 +141,18 @@ export type SelectedConditionalBranch = Readonly<{
   readVariables: ReadonlyArray<string>;
 }>;
 
-/** Selects the first true branch and retains only the evaluated condition prefix. */
+/**
+ * Selects the first true branch and retains only the evaluated condition prefix. Without a default, a Choice for which
+ * no candidate holds selects no flow: it returns null, so the Choice cannot fire and its token stays parked until the
+ * closure's stable exit rolls the command back (XND-ROLLBACK-01, `hasStuckChoice`).
+ */
 export function selectConditionalBranch(
   operation: Extract<
     SemanticOperation,
     { kind: SemanticOperationKind.Choose }
   >,
   bindings: ReadonlyArray<VariableBinding>,
-): SelectedConditionalBranch {
+): SelectedConditionalBranch | null {
   const readVariables: string[] = [];
   for (const candidate of operation.candidates) {
     const evaluated = evaluateSimpleBooleanExpressionWithRead(
@@ -163,11 +168,27 @@ export function selectConditionalBranch(
       };
     }
   }
-  return {
+  return operation.defaultOutput === undefined ? null : {
     output: operation.defaultOutput,
     origin: operation.defaultOrigin,
     readVariables,
   };
+}
+
+/**
+ * XND-ROLLBACK-01: whether a stable state parks a token at a default-less Choice for which no candidate holds. Such a
+ * Choice selects no flow, so the command that reached it rolls back; CIB raises `ENGINE-02004` there (`CIB-INT-0003`).
+ */
+export function hasStuckChoice(
+  operations: ReadonlyArray<SemanticOperation>,
+  state: RuntimeState,
+): boolean {
+  return operations.some((operation) =>
+    operation.kind === SemanticOperationKind.Choose &&
+    operation.defaultOutput === undefined &&
+    state.controlTokens.some(({ placeId }) => placeId === operation.input) &&
+    selectConditionalBranch(operation, state.variables.process.bindings) === null
+  );
 }
 
 function addReadVariable(

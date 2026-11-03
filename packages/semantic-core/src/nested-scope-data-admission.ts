@@ -347,9 +347,9 @@ function checkedVertex(source: CheckedProcess, node: CheckedProcess["nodes"][num
         : { ...base, kind: VertexKind.SubProcess, child: { scope: node.childScopeId, entry, origin: node.id } };
     }
     case CheckedNodeKind.ExclusiveGateway: {
-      // SRE-ADMIT-01: two ordered conditional candidates, then the default.
+      // SRE-ADMIT-01: the ordered conditional candidates, then the default when the source declares one (XND-ADMIT-01).
       const target = (flowId: string) => source.sequenceFlows.find(({ id }) => id === flowId)?.targetId;
-      const targets = [...node.candidateFlowIds, node.defaultFlowId].map(target);
+      const targets = [...node.candidateFlowIds, ...(node.defaultFlowId === undefined ? [] : [node.defaultFlowId])].map(target);
       return node.candidateFlowIds.length > 0 && targets.every(id => id !== undefined)
         ? { ...base, kind: VertexKind.Choice, outputs: targets as string[] } : null;
     }
@@ -473,7 +473,8 @@ function operationVertex(program: SemanticProcessProgram, operation: SemanticOpe
           writes: operation.effect.outputMappings.map(({ target }) => target) };
     }
     case SemanticOperationKind.Choose: {
-      const targets = [...operation.candidates.map(({ output }) => output), operation.defaultOutput].map(following);
+      const targets = [...operation.candidates.map(({ output }) => output),
+        ...(operation.defaultOutput === undefined ? [] : [operation.defaultOutput])].map(following);
       return operation.candidates.length > 0 && targets.every(target => target !== null)
         ? { ...base, kind: VertexKind.Choice, outputs: targets.flatMap(target => target ?? []) } : null;
     }

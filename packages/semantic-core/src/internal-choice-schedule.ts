@@ -6,6 +6,7 @@ import { applyPreparedInternalTransition } from "./internal-transition-batch.js"
 import { classifyPreparedInternalFrontier, InternalFrontierDisposition, InternalBatchPreparationKind } from "./internal-transition-preparation.js";
 import type { InternalExecutionFrontier, InternalExecutionOffer, InternalBatchPreparation } from "./internal-transition-preparation.js";
 import type { CommandAdmission } from "./semantic-command-admission.js";
+import { hasStuckChoice } from "./semantic-process-control-flow-runtime.js";
 import { InternalSchedulingMode } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import type { AppliedInternalOperationStep, CommandResult, StimulusEvaluationResult } from "./semantic-process-runtime.js";
@@ -75,6 +76,8 @@ export function evaluateScheduledClosure<Refusal>(
       ? { offers: [], refusal: null, preparationFailed: false } : frontierAt(state);
     if (frontier.refusal !== null) return refused();
     if (frontier.offers.length === 0 && !frontier.preparationFailed) {
+      // XND-ROLLBACK-01: a parked default-less Choice selected no flow, so the command rolls back without a flag.
+      if (hasStuckChoice(program.operations, state)) return rollback(null);
       if (ordinal !== schedule.length) return rollback(InternalChoiceScheduleFailure.UnusedDirective);
       return {
         result: { outcome: CommandOutcome.Committed, state, internalStepBoundExceeded: false,

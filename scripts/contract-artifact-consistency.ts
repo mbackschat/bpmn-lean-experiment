@@ -111,7 +111,7 @@ function referencedControlPlaces(
       return [
         operation.input,
         ...operation.candidates.map(({ output }) => output),
-        operation.defaultOutput,
+        ...(operation.defaultOutput === undefined ? [] : [operation.defaultOutput]),
       ];
     case "selectMany":
       return [
@@ -289,7 +289,7 @@ export function verifyDefinitionReferences(
       case "exclusiveGateway":
       case "inclusiveGateway":
         if (node.direction === "diverging") {
-          for (const flowId of [...node.candidateFlowIds, node.defaultFlowId]) {
+          for (const flowId of [...node.candidateFlowIds, ...(node.defaultFlowId === undefined ? [] : [node.defaultFlowId])]) {
             if (!flowIds.has(flowId)) {
               throw new Error(
                 `checked ${node.kind} ${node.id} references unknown Sequence Flow ${flowId}`,
@@ -511,10 +511,10 @@ export function verifyDefinitionReferences(
           output,
           origin,
         })),
-        {
+        ...(operation.defaultOutput === undefined ? [] : [{
           output: operation.defaultOutput,
           origin: operation.defaultOrigin,
-        },
+        }]),
       ];
       for (const { output, origin } of origins) {
         const place = semanticProcess.controlPlaces.find(

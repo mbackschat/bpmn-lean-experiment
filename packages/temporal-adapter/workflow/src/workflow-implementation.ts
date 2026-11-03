@@ -481,9 +481,9 @@ export async function runBpmnProcessWithHostEffects(
         }
       }
       const step = advanceScenario(semanticProcess, state, stimulus);
-      // CLOSURE-ATOMIC-01: recovery-admitted failures have no semantic command outcome.
-      // Classify them before recovery can interpret the absent outcome as corruption.
-      const closureFailure = step.kind === ScenarioStepKind.HarnessFailure ? step.diagnostic : rolledBackClosureDiagnostic(step);
+      // CLOSURE-ATOMIC-01: classify failures before recovery reads the absent outcome as corruption; XND-HOST-02: only a
+      // completion Update returns its flag-free rollback to the caller, every other stimulus keeps the closure failure.
+      const closureFailure = step.kind === ScenarioStepKind.HarnessFailure ? step.diagnostic : stimulus.kind === StimulusKind.CompleteUserTaskInstance ? null : rolledBackClosureDiagnostic(step);
       if (step.kind === ScenarioStepKind.HarnessFailure || closureFailure !== null) {
         throw ApplicationFailure.nonRetryable(
           "Semantic core exceeded its checked closure boundary",

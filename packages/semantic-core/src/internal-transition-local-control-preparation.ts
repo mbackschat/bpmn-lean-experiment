@@ -194,6 +194,9 @@ export function deriveInternalChoosePreparation(
     operation,
     state.variables.process.bindings,
   );
+  if (selected === null) {
+    return null;
+  }
   return prepareTokenTransformation(
     program,
     state,

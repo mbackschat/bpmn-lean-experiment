@@ -33,7 +33,7 @@ import {
   hasSelectedCallActivityDefinitions,
 } from "./call-activity-checked-admission.js";
 import {
-  resolveAdmittedCheckedProcessGraph, variableExclusiveChoiceArity,
+  exclusiveChoiceWithoutDefault, resolveAdmittedCheckedProcessGraph, variableExclusiveChoiceArity,
 } from "./checked-process-graph-admission.js";
 import type {
   CheckedProcessGraph,
@@ -67,6 +67,7 @@ export function isAdmittedCheckedProcess(
     checkedNodeIdentitiesAreValid(graph.nodes) &&
     conditionsStandOnGatewayCandidates(graph.nodes, graph.flows) &&
     (variableExclusiveChoiceArity(semanticProfile) || graph.nodes.every(node => node.kind !== CheckedNodeKind.ExclusiveGateway || node.candidateFlowIds.length === 2)) &&
+    (exclusiveChoiceWithoutDefault(semanticProfile) || graph.nodes.every(node => node.kind !== CheckedNodeKind.ExclusiveGateway || node.defaultFlowId !== undefined)) &&
     ((semanticProfile !== MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID && semanticProfile !== MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID) || mixedTaskControlCheckedGraph(graph, semanticProfile)) &&
     embeddedNodesOwnChildScopes(graph, admittedGraph.nodeScopes, semanticProfile) &&
     hasSelectedCallActivityDefinitions(

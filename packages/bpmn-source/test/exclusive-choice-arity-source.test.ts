@@ -106,7 +106,8 @@ test("XCA-ORDER-01 takes candidate order from flow declarations, never from flow
 });
 
 test("XCA-ADMIT-01 refuses each one-fact edit of the complaint model that leaves the class", async () => {
-  await refused("Route complaint without its default", edited(complaint,
+  // XND-ADMIT-01 has since admitted a root Choice without a default, so this edit stays in the class.
+  await admitted("Route complaint without its default", edited(complaint,
     [` default="Flow_Answer">`, ">"], ["      <outgoing>Flow_Answer</outgoing>\n", ""],
     [`    <userTask id="AnswerCustomer" name="Answer customer" />\n`, ""],
     [flowElement(complaint, "Flow_Answer"), ""], [flowElement(complaint, "Flow_Answered"), ""]));

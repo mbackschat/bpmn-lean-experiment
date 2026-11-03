@@ -11,9 +11,16 @@ import type {
   ProcessStartStimulus,
 } from "@bpmn-lean/semantic-core";
 import {
+  CommandOutcome,
+  ScenarioOutcomeKind,
+  ScenarioStepKind,
+  SemanticOperationKind,
   StimulusKind,
   admitsHostedProcessStart,
+  advanceScenario,
+  initialState,
   isWellFormedStimulus,
+  supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import type {
   WorkflowClient,
@@ -133,13 +140,19 @@ export enum BpmnProcessAdmissionFailureCode {
    * from the host-capability codes: the Program is hostable, but this Start's values and identifiers are not.
    */
   StartCapacityEnvelopeExceeded = "startCapacityEnvelopeExceeded",
+  /**
+   * XND-HOST-01: the Start's semantic command rolls back, because a Choice without a default matches no condition, so
+   * no Workflow is created, as CIB creates no instance (`ENGINE-02004`, `CIB-INT-0003`).
+   */
+  StartRolledBack = "startRolledBack",
 }
 
 export type BpmnProcessAdmissionFailure =
   | Readonly<{
       code:
         | BpmnProcessAdmissionFailureCode.SemanticProcessUnsupported
-        | BpmnProcessAdmissionFailureCode.StartCapacityEnvelopeExceeded;
+        | BpmnProcessAdmissionFailureCode.StartCapacityEnvelopeExceeded
+        | BpmnProcessAdmissionFailureCode.StartRolledBack;
       evidence: string;
     }>
   | TemporalHostAdmissionFailure;
@@ -178,15 +191,23 @@ export function assessBpmnProcessAdmission(
   semanticProcess: SemanticProcessProgram,
 ): BpmnProcessAdmissionResult {
   if (!admitsHostedProcessStart(start, semanticProcess)) {
-    return {
-      kind: BpmnProcessAdmissionResultKind.Rejected,
-      failure: {
-        code:
-          BpmnProcessAdmissionFailureCode.SemanticProcessUnsupported,
-        evidence:
-          "Workflow start requires one admitted Semantic Process execution.",
-      },
-    };
+    return startRollsBack(start, semanticProcess)
+      ? {
+        kind: BpmnProcessAdmissionResultKind.Rejected,
+        failure: {
+          code: BpmnProcessAdmissionFailureCode.StartRolledBack,
+          evidence: "The Start's command rolls back: a Choice without a default matches no condition.",
+        },
+      }
+      : {
+        kind: BpmnProcessAdmissionResultKind.Rejected,
+        failure: {
+          code:
+            BpmnProcessAdmissionFailureCode.SemanticProcessUnsupported,
+          evidence:
+            "Workflow start requires one admitted Semantic Process execution.",
+        },
+      };
   }
   const hostCapability = assessTemporalHostCapability(semanticProcess);
   switch (hostCapability.kind) {
@@ -198,6 +219,18 @@ export function assessBpmnProcessAdmission(
         failure: hostCapability.failure,
       };
   }
+}
+
+/**
+ * XND-HOST-01: names why a Start the host refuses before creating a Workflow did not commit, for a Program with a Choice
+ * without a default only; `admitsHostedProcessStart` already evaluates the time-free Start in the semantic core.
+ */
+function startRollsBack(start: ProcessStartStimulus, semanticProcess: SemanticProcessProgram): boolean {
+  if (!supportsSemanticProcessExecution(start, semanticProcess) || !semanticProcess.operations.some(operation =>
+    operation.kind === SemanticOperationKind.Choose && operation.defaultOutput === undefined)) return false;
+  const step = advanceScenario(semanticProcess, initialState, start);
+  return step.kind === ScenarioStepKind.Terminal && step.outcome.kind === ScenarioOutcomeKind.Semantic &&
+    step.outcome.outcome === CommandOutcome.RolledBack;
 }
 
 /** Runs after host capability so a Program the host cannot run is never reported as a capacity refusal. */

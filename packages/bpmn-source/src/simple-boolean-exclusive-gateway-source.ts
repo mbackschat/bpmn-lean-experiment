@@ -34,11 +34,16 @@ import {
 
 const bpmnTypes = metamodelManifest.compilerProjection;
 
+/**
+ * `withoutDefault` also admits a gateway that declares no default when every outgoing flow carries a condition and there
+ * are at least two (XND-ADMIT-01): CIB's parser refuses a lone conditional flow (`BpmnParse#validateExclusiveGateway`).
+ */
 export function projectExclusiveGateway(
   element: ElementRecord,
   id: string,
   flows: ReadonlyArray<CheckedSequenceFlow>,
   variableArity = false,
+  withoutDefault = false,
 ): Extract<
   CheckedNode,
   { kind: CheckedNodeKind.ExclusiveGateway }
@@ -67,6 +72,19 @@ export function projectExclusiveGateway(
   const defaultCandidate = outgoing.find(({ id: flowId }) =>
     flowId === defaultFlowId
   );
+  if (
+    withoutDefault && defaultFlowId === undefined && element.default === undefined &&
+    flows.filter(({ targetId }) => targetId === id).length === 1 &&
+    outgoing.length === candidates.length && candidates.length >= 2
+  ) {
+    const [first, ...rest] = candidates;
+    return first === undefined ? undefined : {
+      kind: CheckedNodeKind.ExclusiveGateway,
+      id,
+      direction: GatewayDirection.Diverging,
+      candidateFlowIds: [first.id, ...rest.map(candidate => candidate.id)],
+    };
+  }
   if (
     flows.filter(({ targetId }) => targetId === id).length !== 1 ||
     outgoing.length !== candidates.length + 1 ||

@@ -350,7 +350,7 @@ function hasExactStructuredHumanWorkProgram(
     ) &&
     endInputs.size === 3 &&
     choose.candidates.every(({ output }) => endInputs.has(output)) &&
-    endInputs.has(choose.defaultOutput);
+    choose.defaultOutput !== undefined && endInputs.has(choose.defaultOutput);
 }
 
 function hasProbeEffectDescriptor(

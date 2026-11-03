@@ -393,7 +393,8 @@ export type CheckedNode =
       id: string;
       direction: GatewayDirection.Diverging;
       candidateFlowIds: [string, ...string[]];
-      defaultFlowId: string;
+      /** Absent when the source declares no default (XND-ADMIT-01); lowering never invents one. */
+      defaultFlowId?: string;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.InclusiveGateway;

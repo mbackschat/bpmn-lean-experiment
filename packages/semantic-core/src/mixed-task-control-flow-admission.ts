@@ -106,6 +106,7 @@ export function mixedTaskControlCheckedGraph(graph: CheckedGraph,
       case CheckedNodeKind.ExclusiveMerge: kind = MixedTaskControlKind.Merge; break;
       case CheckedNodeKind.ExclusiveGateway: {
         kind = MixedTaskControlKind.Choice;
+        if (node.defaultFlowId === undefined) return false;
         const selected = [...node.candidateFlowIds, node.defaultFlowId];
         if (!distinct(selected) || selected.length !== outgoing.length ||
             !node.candidateFlowIds.every(id => outgoing.some(flow => flow.id === id && flow.condition !== null)) ||
@@ -173,6 +174,7 @@ function programAnalysis(program: SemanticProcessProgram) {
         places = operation.bpmnErrorRoute === null ? [operation.output] : [operation.output, operation.bpmnErrorRoute.output];
         bindings = data(operation.effect.inputMappings, operation.effect.outputMappings); break;
       case SemanticOperationKind.Choose:
+        if (operation.defaultOutput === undefined) return undefined;
         kind = MixedTaskControlKind.Choice; places = [...operation.candidates.map(candidate => candidate.output), operation.defaultOutput]; break;
       case SemanticOperationKind.MergeExclusive: kind = MixedTaskControlKind.Merge; places = [operation.output]; break;
       default: return undefined;

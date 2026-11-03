@@ -10,11 +10,23 @@ import {
   utf8ByteLength,
 } from "./wire.js";
 
+/**
+ * `withoutDefault` admits a Choice whose default output and origin are both absent (XND-ADMIT-01); such a Choice needs
+ * two or more candidates, since CIB's parser refuses an Exclusive Gateway whose only outgoing flow is conditional.
+ */
 export function isWellFormedChooseOperation(
   value: Record<string, unknown>,
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,
+  withoutDefault = false,
 ): boolean {
+  const defaultAbsent = !("defaultOutput" in value) && !("defaultOrigin" in value);
+  if (
+    defaultAbsent &&
+    !(withoutDefault && Array.isArray(value.candidates) && value.candidates.length >= 2)
+  ) {
+    return false;
+  }
   if (
     !hasOnlyKeys(value, [
       "id",
@@ -22,16 +34,16 @@ export function isWellFormedChooseOperation(
       "origin",
       "input",
       "candidates",
-      "defaultOutput",
-      "defaultOrigin",
+      ...(defaultAbsent ? [] : ["defaultOutput", "defaultOrigin"]),
     ]) ||
     !isPlaceReference(value.input, placeIds) ||
     !Array.isArray(value.candidates) ||
     value.candidates.length === 0 ||
-    !isPlaceReference(value.defaultOutput, placeIds) ||
-    !isSequenceFlowOrigin(value.defaultOrigin) ||
-    placeOrigins.get(value.defaultOutput) !==
-      value.defaultOrigin.elementId
+    (!defaultAbsent && (
+      !isPlaceReference(value.defaultOutput, placeIds) ||
+      !isSequenceFlowOrigin(value.defaultOrigin) ||
+      placeOrigins.get(value.defaultOutput) !== value.defaultOrigin.elementId
+    ))
   ) {
     return false;
   }

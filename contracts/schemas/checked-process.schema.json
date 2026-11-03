@@ -1712,8 +1712,7 @@
             "kind",
             "id",
             "direction",
-            "candidateFlowIds",
-            "defaultFlowId"
+            "candidateFlowIds"
           ],
           "properties": {
             "kind": {

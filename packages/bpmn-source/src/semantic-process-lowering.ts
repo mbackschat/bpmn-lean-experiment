@@ -406,11 +406,14 @@ function lowerNode(
           ReturnType<typeof lowerConditionalCandidate>,
           ...ReturnType<typeof lowerConditionalCandidate>[],
         ],
-        defaultOutput: controlPlaceId(node.defaultFlowId),
-        defaultOrigin: {
-          kind: SemanticOriginKind.BpmnSequenceFlow,
-          elementId: node.defaultFlowId,
-        },
+        // XND-ADMIT-01: a Choice without a default lowers without one; no place or origin is invented.
+        ...(node.defaultFlowId === undefined ? {} : {
+          defaultOutput: controlPlaceId(node.defaultFlowId),
+          defaultOrigin: {
+            kind: SemanticOriginKind.BpmnSequenceFlow,
+            elementId: node.defaultFlowId,
+          },
+        }),
       });
     case CheckedNodeKind.ExclusiveMerge:
       return scoped({

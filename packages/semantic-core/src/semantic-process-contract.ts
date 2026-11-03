@@ -171,6 +171,15 @@ export type ConditionalCandidate = DeepReadonly<{
   origin: BpmnSequenceFlowOrigin;
 }>;
 
+/**
+ * A Choice's default flow, present or absent as a pair. Absence means the source declares none, so a token for which no
+ * candidate holds selects no flow and its command rolls back (XND-ROLLBACK-01).
+ */
+export type ChooseDefault = DeepReadonly<
+  | { defaultOutput: string; defaultOrigin: BpmnSequenceFlowOrigin }
+  | { defaultOutput?: never; defaultOrigin?: never }
+>;
+
 export type InclusiveCandidate = DeepReadonly<{
   condition: SimpleBooleanExpression;
   output: string;
@@ -704,9 +713,7 @@ export type SemanticOperation =
         kind: SemanticOperationKind.Choose;
         input: string;
         candidates: [ConditionalCandidate, ...ConditionalCandidate[]];
-        defaultOutput: string;
-        defaultOrigin: BpmnSequenceFlowOrigin;
-      }>)
+      }> & ChooseDefault)
   | SelectManyOperation
   | SynchronizeSelectedOperation
   | AwaitEventRaceOperation

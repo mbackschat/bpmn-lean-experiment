@@ -96,7 +96,7 @@ export function structuredCompositionCheckedGraph(graph: Readonly<{
       case CheckedNodeKind.ExclusiveMerge: kind = VertexKind.Merge; break;
       case CheckedNodeKind.ExclusiveGateway:
         kind = VertexKind.Choice;
-        if (new Set([...node.candidateFlowIds, node.defaultFlowId]).size !== 3 ||
+        if (node.defaultFlowId === undefined || new Set([...node.candidateFlowIds, node.defaultFlowId]).size !== 3 ||
             !node.candidateFlowIds.every((id) => outgoing.some((flow) => flow.id === id && flow.condition !== null)) ||
             !outgoing.some((flow) => flow.id === node.defaultFlowId && flow.condition === null)) return false;
         break;
@@ -136,6 +136,7 @@ function programVertices(program: SemanticProcessProgram): readonly Vertex[] | u
       case SemanticOperationKind.Initiate: kind = VertexKind.Start; places = [operation.output]; break;
       case SemanticOperationKind.ReachNoneEnd: kind = VertexKind.End; places = []; break;
       case SemanticOperationKind.Choose:
+        if (operation.defaultOutput === undefined) return undefined;
         kind = VertexKind.Choice; places = [...operation.candidates.map(({ output }) => output), operation.defaultOutput]; break;
       case SemanticOperationKind.MergeExclusive: kind = VertexKind.Merge; places = [operation.output]; break;
       case SemanticOperationKind.AwaitUserTask: kind = VertexKind.Task; places = [operation.output]; break;

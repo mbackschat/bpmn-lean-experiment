@@ -21,6 +21,7 @@ import type { MappedServiceTaskSourcePolicy } from "./mapped-service-task-source
 import { projectMappedSuccessSequenceFlows, projectPlainNode } from "./mapped-service-task-source.js";
 import { ProjectedFlowElementShape, hasOnlyProjectedFlowElementKeys } from "./projected-flow-element-keys.js";
 import { exactForeignAttributeRejections } from "./preserved-element-classification.js";
+import { effectResultReachesDefaultlessChoice } from "./defaultless-choice-effect-closure.js";
 import { definitionScopeId } from "./scoped-flow-elements.js";
 import { projectSerialBusinessServiceTask } from "./serial-business-task-source.js";
 import { projectExclusiveGateway } from "./simple-boolean-exclusive-gateway-source.js";
@@ -59,6 +60,8 @@ type ScopeDataReader = Readonly<{
   nonOperationalTasks: boolean;
   /** SEND-ADMIT-01: Send Tasks performed by an overlay-bound handler, read as the mapped Service Task. */
   sendTasks: boolean;
+  /** XND-ADMIT-01: root Choices without a default, refused where an effect result's closure can reach them. */
+  defaultlessChoices: boolean;
   projectCall: (element: ElementRecord) => CheckedNode | undefined;
   /** The caller Process of the read roots, or `undefined` when the roots and Calls do not form one call forest. */
   caller: (roots: readonly ProcessRoot[], collected: Collected) => string | undefined;
@@ -71,13 +74,14 @@ type ScopeDataReader = Readonly<{
 
 const nestedScopeDataReader: ScopeDataReader = {
   semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, rootChoices: true, nonOperationalTasks: true,
-  sendTasks: true,
+  sendTasks: true, defaultlessChoices: true,
   projectCall: projectMappedCall,
   caller: callerProcess, overlayRequired: true,
   // CSSD-ADMIT-01: the routed analysis refuses the merges and forking-root Calls (RPF-ADMIT-01) the shared gateway
   // grammar reads, and only a model with a Parallel fork may bind no handler, so a serial model keeps NSD-ADMIT-01's
   // overlay rule.
   admitted: (checkedProcess, policy) => structuredScopeDataCheckedAnalysis(checkedProcess) !== null &&
+    !effectResultReachesDefaultlessChoice(checkedProcess) &&
     (policy.effectBindings.length > 0 || checkedProcess.nodes.some(node =>
       node.kind === CheckedNodeKind.ParallelGateway && node.direction === GatewayDirection.Diverging)),
   refusal: "The checked graph does not satisfy nested scope-data admission.",
@@ -86,7 +90,7 @@ const nestedScopeDataReader: ScopeDataReader = {
 // Checked admission of the embedded completion profile already runs its nested scope-control and data analysis.
 const embeddedScopeDataReader: ScopeDataReader = {
   semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, rootChoices: false, nonOperationalTasks: false,
-  sendTasks: false,
+  sendTasks: false, defaultlessChoices: false,
   projectCall: projectEmbeddedCall,
   caller: callForestCaller, overlayRequired: false,
   admitted: checkedProcess => (checkedProcess.identity.sourceOverlay !== null) ===
@@ -249,7 +253,7 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
         if (!reader.gateways) return "The flow element is outside the nested scope-data contract.";
         node = reader.rootChoices && depth === 0 && element.$type === "bpmn:ExclusiveGateway"
           ? projectExclusiveMerge(element, readId(element) ?? "", flows, true) ??
-            projectExclusiveGateway(element, readId(element) ?? "", flows, true)
+            projectExclusiveGateway(element, readId(element) ?? "", flows, true, reader.defaultlessChoices)
           : projectGateway(element, flows, reader.semanticProfile);
         break;
       default: return "The flow element is outside the nested scope-data contract.";

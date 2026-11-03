@@ -54,6 +54,14 @@ export function variableExclusiveChoiceArity(semanticProfile: string): boolean {
 }
 
 /**
+ * XND-ADMIT-01: the profiles whose checked Exclusive Choices may declare no default. The one decision the checked level
+ * consults, so a profile control can enumerate it as it does `variableExclusiveChoiceArity`.
+ */
+export function exclusiveChoiceWithoutDefault(semanticProfile: string): boolean {
+  return semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+}
+
+/**
  * NEF-ADMIT-01: the profiles whose None Ends may take several incoming flows. Placement (the re-entry root graph only) is
  * the profile's own admission; the Lean twin is the `mixed && variableMerge` conjunction of `checkedNodeArityValid`.
  */

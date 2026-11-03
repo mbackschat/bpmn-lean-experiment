@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { mock, test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
@@ -37,6 +38,7 @@ const TimerFailureMode = {
 } as const;
 type TimerFailureMode = typeof TimerFailureMode[keyof typeof TimerFailureMode];
 let timerFailure: TimerFailureMode | undefined;
+let startRollsBack = false;
 let timerEvaluations = 0;
 let timerInstallations = 0;
 let firing: core.FireTimerStimulus;
@@ -85,7 +87,7 @@ const ingressMockOptions = {
         admissions.push(core.stimulusCommandId(stimulus));
         return result;
       });
-      if (timerFailure !== undefined) return;
+      if (timerFailure !== undefined || startRollsBack) return;
       for (const stimulus of [completionA, completionB]) {
         assert.equal(options.reserveStimulus(stimulus), true);
         options.acceptedStimuli.push(stimulus);
@@ -360,6 +362,45 @@ for (const failure of Object.values(TimerFailureMode)) {
     }
   });
 }
+
+const expenseDirectory = new URL("../../../../scenarios/exclusive-choice-without-default/", import.meta.url);
+const expenseOverlay = new Uint8Array(await readFile(new URL("expense-routing-overlay.json", expenseDirectory)));
+const compiledExpense = await compileBpmnToSemanticProcess({
+  bytes: new Uint8Array(await readFile(new URL("expense-routing.bpmn", expenseDirectory))), sourceId: "expense-routing",
+  expectedSha256: undefined, semanticProfile: core.SemanticProfileId.NestedEmbeddedScopeData,
+  sourceOverlay: { id: "expense-routing-handlers", sha256: createHash("sha256").update(expenseOverlay).digest("hex"),
+    bytes: expenseOverlay },
+  limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
+});
+assert.equal(compiledExpense.status, BpmnCompilationStatus.Accepted);
+if (compiledExpense.status !== BpmnCompilationStatus.Accepted) throw new Error("Expense routing source refused");
+const expenseProgram = compiledExpense.semanticProcess;
+
+// XND-HOST-02: only a completion Update returns its rollback. A Start that bypassed the client's XND-HOST-01 refusal
+// and matches no route is refused by the Workflow's own deployment before any command, so no Workflow ever holds an
+// instance that CIB would not have created.
+test("a Start whose Choice without a default matches no route fails the Workflow at deployment, never as a receipt", async () => {
+  reset("success");
+  startRollsBack = true;
+  const catering: core.StartProcessStimulus = {
+    kind: core.StimulusKind.StartProcess, commandId: "start-catering", processId: expenseProgram.processId,
+    instanceId: "Expense_1", initialVariables: [["category", "catering"], ["claimant", "Ada"], ["payout", "bank"],
+      ["priority", "normal"]].map(([name, value]) => ({ name: name!, value: { kind: core.VariableValueKind.String, value: value! } })),
+  };
+  try {
+    await assert.rejects(runBpmnProcessWithHostEffects(catering, expenseProgram,
+      async () => assert.fail("expense routing has no timer"), async () => assert.fail("a rolled-back Start arms no effect"),
+      ActivationDrain.Required, productionBpmnWorkflowInitialHostInput(),
+    ), (error: unknown) => {
+      assert.ok(error instanceof sdk.ApplicationFailure);
+      assert.equal(error.type, "BpmnProcessAdmissionFailure");
+      assert.equal(error.nonRetryable, true);
+      return true;
+    });
+  } finally {
+    startRollsBack = false;
+  }
+});
 
 function run() {
   return runBpmnProcessWithHostEffects(

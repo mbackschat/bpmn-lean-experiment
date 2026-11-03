@@ -158,11 +158,13 @@ test("mixed and nested scope-data profiles admit nonempty Exclusive choices whil
   const { semanticProcess: program } = await accepted();
   const choice = program.operations.find(operation => operation.kind === SemanticOperationKind.Choose)!;
   assert.ok(choice.kind === SemanticOperationKind.Choose);
+  const defaultOutput: string = choice.defaultOutput ?? assert.fail("this profile's Choice keeps its default");
+  const defaultOrigin: { elementId: string } = choice.defaultOrigin ?? assert.fail("this profile's Choice keeps its default");
   for (const count of [0, 1, 2, 3]) {
     const candidates = Array.from({ length: count }, (_, index) => ({ ...choice.candidates[0], output: `branch${index}`, origin: { ...choice.candidates[0].origin, elementId: `flow${index}` } }));
     const operation = { ...choice, candidates };
-    const ids = new Set([choice.input, choice.defaultOutput, ...candidates.map(candidate => candidate.output)]);
-    const origins = new Map([[choice.defaultOutput, choice.defaultOrigin.elementId], ...candidates.map(candidate => [candidate.output, candidate.origin.elementId] as const)]);
+    const ids = new Set([choice.input, defaultOutput, ...candidates.map(candidate => candidate.output)]);
+    const origins = new Map([[defaultOutput, defaultOrigin.elementId], ...candidates.map(candidate => [candidate.output, candidate.origin.elementId] as const)]);
     assert.equal(isWellFormedSemanticOperation(operation, ids, origins, new Map(), profile), count > 0);
     for (const registeredProfile of Object.values(SemanticProfileId)) {
       const admitted = isWellFormedSemanticOperation(operation, ids, origins, new Map(), registeredProfile);

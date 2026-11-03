@@ -445,6 +445,7 @@ export function isWellFormedSemanticOperation(
         value,
         placeIds,
         placeOrigins,
+        semanticProfile === SemanticProfileId.NestedEmbeddedScopeData,
       );
     case SemanticOperationKind.SelectMany:
       return isWellFormedSelectManyOperation(value, placeIds, placeOrigins);

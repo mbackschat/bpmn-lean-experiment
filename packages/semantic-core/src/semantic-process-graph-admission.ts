@@ -690,7 +690,7 @@ function operationOutputs(
     case SemanticOperationKind.Choose:
       return [
         ...operation.candidates.map(({ output }) => output),
-        operation.defaultOutput,
+        ...(operation.defaultOutput === undefined ? [] : [operation.defaultOutput]),
       ];
     case SemanticOperationKind.SelectMany:
       return [
