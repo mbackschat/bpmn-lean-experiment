@@ -7,6 +7,7 @@
     "name": "OMG Business Process Model and Notation",
     "version": "2.0.2",
     "references": [
+      "Clause 10.3.3",
       "Clause 10.3.4.1",
       "Clause 10.3.5",
       "Clause 10.3.6",
@@ -74,6 +75,7 @@
       "process-completion",
       "finite-serial-scope-chain",
       "single-scope-models",
+      "send-tasks",
       "successful-effect-result"
     ],
     "extensions": [
@@ -99,6 +101,7 @@
       "CIB-EXT-0020",
       "CIB-EXT-0021",
       "CIB-EXT-0022",
+      "CIB-EXT-0023",
       "CIB-INT-0001",
       "CIB-OP-0001",
       "CIB-OP-0010"

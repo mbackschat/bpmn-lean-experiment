@@ -180,6 +180,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: exactCib("service-task-effect-success"),
   },
   {
+    id: "sendTask",
+    family: "Activities",
+    element: "Send Task",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "Under the nested scope-data profile only: a Send Task performed by a handler the source overlay binds through camunda:delegateExpression, with camunda:asyncBefore and input parameters, wherever that profile admits a mapped Service Task. It executes as that Service Task's effect, whose published arguments carry the send data, such as the recipient and the correlation key, and its handler result must be empty, since no output is admitted on a Send Task. No Message is constructed and no Message Flow, messageRef or operationRef is read; mail, external, class and expression implementations and every other profile are refused.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "receiveTask",
     family: "Activities",
     element: "Receive Task",

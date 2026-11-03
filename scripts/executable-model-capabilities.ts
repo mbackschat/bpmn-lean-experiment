@@ -76,6 +76,10 @@ export function detectExecutableBpmnCapabilities(
         rejectLoopVariant(element);
         capabilities.add("receiveTask");
         break;
+      case "sendTask":
+        rejectLoopVariant(element);
+        capabilities.add("sendTask");
+        break;
       case "task":
         rejectLoopVariant(element);
         // Only the configured-Task extension carries a task definition; a plain Task is the pass-through account.

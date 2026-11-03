@@ -1702,6 +1702,82 @@
       }
     },
     {
+      "id": "shipping-notice-send-task",
+      "title": "Pack an order and send its shipping notice",
+      "businessPurpose": "Pack a customer order, then send the shipping notice through a notification service that receives the customer's address as recipient, the order as correlation key and the email channel.",
+      "cloneFamily": "shipping-notice-send-task",
+      "constructs": [
+        "endEvent",
+        "process",
+        "sendTask",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/send-task/shipping-notice.bpmn",
+        "sha256": "ce50fc42cc585fb76c6488d24ac3d35a4ba34b37687fe4cca135a00d49bbb515",
+        "scenarioRelativePath": "scenarios/send-task/shipping-notice.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "send-task-shipping-notice",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for Send Tasks; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "claim-acknowledgement-send-task",
+      "title": "Acknowledge, assess and settle a claim",
+      "businessPurpose": "Open a claim intake that, in parallel, sends the claimant an acknowledgement through a notification service and has an adjuster assess the claim, then settle the claim once both are done.",
+      "cloneFamily": "claim-acknowledgement-send-task",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sendTask",
+        "sequenceFlow",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/send-task/claim-acknowledgement.bpmn",
+        "sha256": "1d338b6e941126d2858b33d213d772dffece09029d28df06a4d547902ba308fb",
+        "scenarioRelativePath": "scenarios/send-task/claim-assessed-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "send-task-claim-assessed-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for Send Tasks; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

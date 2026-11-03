@@ -101,6 +101,12 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "or on a Parallel branch of the Process root or a Sub-Process body",
     "a branch that ends at its own None End must reach a User or Service Task before it",
   ]],
+  ["sendTask", "element", ["Send Task"]],
+  ["sendTask", "restriction", [
+    "Under the nested scope-data profile only",
+    "its handler result must be empty",
+    "no Message Flow, messageRef or operationRef is read",
+  ]],
   ["process", "restriction", [
     "The nested scope-data profile also admits a Process without an embedded Sub-Process",
     "the embedded completion profile, the only other profile reaching these analyses, still requires a Sub-Process or a Call",

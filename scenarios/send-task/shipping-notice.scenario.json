@@ -1,0 +1,84 @@
+{
+  "kind": "scenario",
+  "id": "send-task-shipping-notice",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "shipping-notice",
+    "relativePath": "scenarios/send-task/shipping-notice.bpmn",
+    "sha256": "ce50fc42cc585fb76c6488d24ac3d35a4ba34b37687fe4cca135a00d49bbb515",
+    "sourceOverlay": {
+      "id": "shipping-notice-handlers",
+      "sha256": "0711fc6a663e435ba69be514e555cfb6ae39d5143a5d543934668e0355053567"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ShippingNotice",
+      "instanceId": "Order_1",
+      "initialVariables": [
+        {
+          "name": "customerEmail",
+          "value": {
+            "kind": "string",
+            "value": "ada@example.org"
+          }
+        },
+        {
+          "name": "order",
+          "value": {
+            "kind": "string",
+            "value": "A-17"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-pack-order",
+      "taskId": {
+        "processInstanceId": "Order_1",
+        "elementId": "PackOrder",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:81de6026b8c80fa81b6ad75a176918c25594125c54960babade6bb28ae6d4b3a",
+      "effectId": {
+        "processInstanceId": "Order_1",
+        "elementId": "SendShippingNotice",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.3",
+      "BPMN 2.0.2 Clause 13.3.3"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-EXT-0015",
+      "CIB-EXT-0023"
+    ]
+  }
+}

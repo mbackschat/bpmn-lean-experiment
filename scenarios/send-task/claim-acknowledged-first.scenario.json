@@ -1,0 +1,89 @@
+{
+  "kind": "scenario",
+  "id": "send-task-claim-acknowledged-first",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "claim-acknowledgement",
+    "relativePath": "scenarios/send-task/claim-acknowledgement.bpmn",
+    "sha256": "1d338b6e941126d2858b33d213d772dffece09029d28df06a4d547902ba308fb",
+    "sourceOverlay": {
+      "id": "claim-acknowledgement-handlers",
+      "sha256": "21d71426b30eb928daebc85df57b3d0c162b183346ffc7fe7f1d611a1b718878"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ClaimAcknowledgement",
+      "instanceId": "Claim_1",
+      "initialVariables": [
+        {
+          "name": "claim",
+          "value": {
+            "kind": "string",
+            "value": "CL-31"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:620b0a8a4c893941315dd4c599b91cb5d17d9e834e0efef024dab7369de5f7c9",
+      "effectId": {
+        "processInstanceId": "Claim_1",
+        "elementId": "AcknowledgeClaim",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-assess-claim",
+      "taskId": {
+        "processInstanceId": "Claim_1",
+        "elementId": "AssessClaim",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-settle-claim",
+      "taskId": {
+        "processInstanceId": "Claim_1",
+        "elementId": "SettleClaim",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.3",
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.1"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-EXT-0015",
+      "CIB-EXT-0023"
+    ]
+  }
+}
