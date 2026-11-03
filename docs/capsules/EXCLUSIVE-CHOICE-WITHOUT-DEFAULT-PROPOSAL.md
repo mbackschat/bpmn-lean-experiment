@@ -93,10 +93,10 @@ The exception proofs then only take the `some` premise at their `choose` match, 
 **Closure.** The execution frontier, its interface and its stable predicate stay unchanged.
 
 - The leaf's selector distinguishes three results: a selected flow, no flow, and evaluation failure.
-- In the frontier's Choice arm, a body edit, evaluation failure still sets `preparationFailed`, as today. A no-flow Choice is disabled: it contributes neither an offer nor a preparation failure.
+- The dispatch sits in `chooseState?` and in the TypeScript Choose preparation and attempt path. No frontier arm is added. A no-flow Choice is disabled: `fire?` yields `none`, so it contributes neither an offer nor a preparation failure. Evaluation failure keeps today's behavior: in Lean `fire?` yields `none` and the Choice is disabled, and the TypeScript evaluator is total. `stuckChoice` requires every candidate to evaluate to `some false`, so a Choice parked by an evaluation failure is not stuck.
 - The closure therefore stabilizes with that Choice's token parked at its input. The stable exit, which is the closure's commit point, then asks the leaf predicate `stuckChoice`: does the stable state hold a token at the input of a default-less Choice whose every candidate evaluates to `some false`?
 - If so, the closure result gains the defaulted field `noFlowChoice := true`, `ScheduledClosureResult.failed` includes it, and the result mapping returns `rolledBack` with both flags false and the pre-admission state.
-- TypeScript does the same at its stable exit in the [internal choice schedule](../../packages/semantic-core/src/internal-choice-schedule.ts).
+- TypeScript does the same at its stable exit in the [internal choice schedule](../../packages/semantic-core/src/internal-choice-schedule.ts), checking `stuckChoice` before its unused-directive and commit returns.
 
 The loop's checks keep today's order: refusal; the stable frontier, which is now committed only when `stuckChoice` is false; the step bound; `preparationFailed`. A no-flow Choice reached at exactly the step limit therefore rolls back flag-free, because the stable exit precedes the bound. Admission refuses order-dependent internal choice, so a parked no-flow Choice's reads cannot change before the closure stabilizes.
 
@@ -110,7 +110,7 @@ The loop's checks keep today's order: refusal; the stable frontier, which is now
 The modules beyond that batch:
 
 - **Hubs, body edits only.** `ProgramStructuralValidation` (closed world): its `choose` arm requires both default fields or neither, admits neither only under this profile, and checks the origin when present. `OperationControlPlaces` (kernel, fan-out 501) lists the outputs with `defaultOutput.toList`. The closed-world `CheckedGraphValidation` stays untouched, because its `exclusiveGateway` arms bind the default to a wildcard.
-- **Selection and closure call sites.** `TransitionStates`, `Transition` and the `InternalLocalControl*` modules (the Choice arm's body); `InternalScheduledClosure`, whose stable exit and `ScheduledClosureResult` gain the defaulted `noFlowChoice`; `TransitionTrace` (the result mapping).
+- **Selection and closure call sites.** `TransitionStates` (`chooseState?` dispatches through the leaf), `Transition` and the `InternalLocalControl*` modules; `InternalScheduledClosure`, whose stable exit and `ScheduledClosureResult` gain the defaulted `noFlowChoice`; `TransitionTrace` (the result mapping).
 - **Consumers of the closure result.** These theorems conclude a committed result, or a closure that is not failed, from a stable run, and so gain the premise `stuckChoice = false`:
   - in `InternalScheduledClosure` itself;
   - in `Execution`, `ParallelScopeReachableInvariantTransport`, `ParallelScopeSchedulerReadinessProofs`, `ParallelScopeResumptionProofs`, `ParallelScopeCommandClosureProofs`, `ParallelScopeFinalRetirement`, `ParallelScopeFrontierTotalityProofs`, `ParallelScopeRetirementProgress`, `ParallelScopeCommandFuelProofs`, `SequentialScopeHistoryTransportProofs`, `CompensationEventSubProcessSnapshotTransitionTrace` and `UserTaskMetadataConformance`.
