@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [single-scope models](capsules/SINGLE-SCOPE-MODELS-SPEC.md) of the nested scope-data profile, batch 4 (`PC-HUM-04` primary; `PC-HUM-05`, `PC-CF-03` and `PC-BASIC-01` for single-scope forks). None Intermediate Throw Events landed at `a37e56ef`. Close call against the Send Task recorded in the proposal. Batch 3 stays open behind the owner's holds.
+Current task: [single-scope models](capsules/SINGLE-SCOPE-MODELS-SPEC.md) of the nested scope-data profile, batch 4 (`PC-HUM-04` primary; `PC-HUM-05`, `PC-CF-03` and `PC-BASIC-01` for single-scope forks). None Intermediate Throw Events landed at `a37e56ef`. Close call against the Send Task recorded in the specification. Batch 3 stays open behind the owner's holds.
 
 Deliverable: models without an embedded Sub-Process admitted and executed under the nested scope-data profile, landed on `main`; the four rows stay open on their other clauses.
 
-Acceptance blockers: the closure correction audit and landing.
+Acceptance blockers: landing through the branch flow with green hosted checks.
 
-Current result: implemented and registered through `5581dcef`; locally the closure gates passed except one read of another profile's journey recorded under TD-001 (attribution not demonstrated), which passed alone, and hosted Verify passed every stage at `103fa0f8`. The cold closure review required F1 to F6, corrected without guard bound changes; the owner-approved `ScopeDataBearing` raise is unused.
+Current result: implemented and registered through `5581dcef`; locally the closure gates passed except one read of another profile's journey recorded under TD-001 (attribution not demonstrated), which passed alone, and hosted Verify passed every stage at `103fa0f8`. The cold closure review of `103fa0f8` approved with required edits F1 to F6, applied in `572de1a7` without guard bound changes and approved on audit; graduated to a specification in `d1d65977`. The owner-approved `ScopeDataBearing` raise is unused.
 
 Effort budget: 6 hours from 2026-11-03 11:11 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: the closure correction audit, graduation and the branch push flow.
+Next action: fast-forward `main` to the branch head on green hosted checks, then select the next batch-4 family.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

@@ -13,7 +13,7 @@ graphs transcribe the retained `scenarios/single-scope-models` models and the lo
 states. The degenerate Start-to-End model is absent: the serial overlay rule that refuses it is a source-reader rule,
 witnessed by the source test. The module runs no command and imports admission owners only, as
 `NoneIntermediateThrowConformance` does. See the
-[single-scope models proposal](../docs/capsules/SINGLE-SCOPE-MODELS-SPEC.md#separating-witnesses).
+[single-scope models specification](../docs/capsules/SINGLE-SCOPE-MODELS-SPEC.md#separating-witnesses).
 -/
 
 public section

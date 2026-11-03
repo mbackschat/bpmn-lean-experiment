@@ -1,6 +1,6 @@
 /**
  * SSM-ADMIT-01 and SSM-PROFILE-01 through the exact-bytes source path, at the Program and checked levels. The oracle is
- * the approved proposal's witness account: each retained model holds no embedded Sub-Process and compiles under the
+ * the specification's witness account: each retained model holds no embedded Sub-Process and compiles under the
  * nested scope-data profile on the route its shape selects, while each embedded completion control stays refused with
  * one scope and admitted once its Tasks sit in a Sub-Process, so a lower bound dropped for every profile, or kept at one
  * level only, cannot pass.

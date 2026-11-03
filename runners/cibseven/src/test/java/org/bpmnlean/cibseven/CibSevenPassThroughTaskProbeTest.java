@@ -23,7 +23,7 @@ import org.junit.Test;
  * reached it, with no task entity and no job. It also calibrates `CIB-AGR-0016` (`NIT-PASS-01`) on the None Throw
  * specification's two witness models: `IntermediateThrowNoneEventActivityBehavior` leaves at once (BpmnParse.java:1669-1672),
  * so each None Throw activation is an ended `intermediateNoneThrowEvent` instance of the same kind. On the single-scope
- * models proposal's two witness models (`SSM-ADMIT-01`) it calibrates the same activations with the Process root as the
+ * models specification's two witness models (`SSM-ADMIT-01`) it calibrates the same activations with the Process root as the
  * only scope, where no Sub-Process instance exists. CIB does not execute the project's Simple Boolean v1 conditions, so each
  * condition is rendered as JUEL under `CIB-CFG-0005` before deployment; the probe compares activations, never condition
  * truth. Expected values are built here from the specification's witness-model account, never read from a target result.
