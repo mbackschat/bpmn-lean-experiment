@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [Send Task](capsules/SEND-TASK-SPEC.md) of the nested scope-data profile, batch 4 (`PC-AUTO-04` primary). Single-scope models landed at `80bb4088`. Close call against the wait-free terminal branch recorded in the proposal. Batch 3 stays open behind the owner's holds.
+Current task: Exclusive Choices without a default under the nested scope-data profile, batch 4 (`PC-CF-02` primary). The Send Task landed at `b9e52f19`. Close call, decided on reach: of the pinned CIB checkout's models, 46 clean root models choose without a default, while every model that both forks and chooses with defaults also throws an Escalation, Error or Signal End, so neither that shape nor an Exclusive Gateway in a Sub-Process reaches an admissible model. Batch 3 stays open behind the owner's holds.
 
-Deliverable: a Send Task with a configured handler admitted and executed as the profile's mapped effect, landed on `main`; `PC-AUTO-04` stays open on prescribed failure.
+Deliverable: a Choice without a default admitted wherever the profile admits a Choice, routing as before when a condition holds and rolling the command back atomically when none does, landed on `main`.
 
-Acceptance blockers: landing through the branch flow with green hosted checks.
+Acceptance blockers: the approved proposal, implementation across source, IL, Lean, core and Temporal, and landing.
 
-Current result: proposal approved at `00f1c705`; implemented and registered through `e9f0753d` with every closure gate green; no Lean change and no guard bound change.
+Current result: the [proposal](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md) is written; the source reader and both analyses still refuse a Choice without a default.
 
-Effort budget: 4 hours from 2026-11-03 14:45 CET; no Lean change, so no full `BpmnConformance` build beyond the hosted gate.
+Effort budget: 8 hours from 2026-11-03 17:05 CET, including one full Lean library and `BpmnConformance` build at closure.
 
-Next action: fast-forward `main` to the branch head on green hosted checks, then select the next batch-4 family.
+Next action: settle the proposal's [independent cold-review receipt](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md#independent-cold-review-receipt), then implement red/green.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
