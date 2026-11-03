@@ -78,7 +78,7 @@ The [None Throw account](capsules/NONE-INTERMEDIATE-THROW-SPEC.md) grows the sam
 
 ## Single-scope models
 
-The [single-scope models account](capsules/SINGLE-SCOPE-MODELS-PROPOSAL.md) grows the same profile with Processes that hold no embedded Sub-Process; its receipt owns review state.
+The [single-scope models account](capsules/SINGLE-SCOPE-MODELS-SPEC.md) grows the same profile with Processes that hold no embedded Sub-Process; its receipt owns review state.
 
 **Implemented.** No kernel, IL or runtime change. The lower scope bound leaves the profile-less structure checks for `scopeCountAdmitted`, one scope for the nested scope-data profile and two for every other, tested at the checked and Program entry points of the serial, re-entry and concurrent analyses in Lean and TypeScript alike, after the control analysis's structural reading (`SSM-ADMIT-01`, `SSM-PROFILE-01`); the one-scope refusal theorems that became false are gone. `completion_admission_cases`, `rejected_completion_preserves_state` and the nine profile-less structured-composition theorems that reach them take `nestedScopeDataProgram program = false`, which every structured-profile consumer discharges from its profile premise with `nestedScopeDataProgram_of_profile_value` (`SSM-ROUTE-01`). The purchase request and invoice clearing witness it through a [conformance module](../BpmnSemantics/SingleScopeModelsConformance.lean) of five checks, a source test that also runs the Call-only loan to completion in the core, four pipeline cases, two corpus rows, About and the CIB probe.
 

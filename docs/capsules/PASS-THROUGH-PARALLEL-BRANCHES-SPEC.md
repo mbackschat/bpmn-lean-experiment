@@ -182,13 +182,13 @@ Closure gates:
 - **Green at `d13862c5`:** the complete `verify.sh`: the Lean library and `BpmnConformance`, 916 jobs, whose driver holds all 1,287 checks, the five of the [conformance module](../../BpmnSemantics/PassThroughParallelBranchesConformance.lean) among them; the runtime stage with the CIB oracle and the [pass-through Task probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPassThroughTaskProbeTest.java), six tests; the complete Temporal gate; and the pipeline over all 166 registered cases, warm in 132.1 s at a start load of 0.52 per core. Then the research doctor and `test:model-corpus`, 30 tests.
 - **Correction:** the first `verify.sh` run at `c92a48b7` failed two checks of the serial pass-through and root fork conformance modules that still asserted the refusals this family lifts; `d13862c5` flips them to admitted, as their TypeScript twins already were.
 
-Then `PC-HUM-04` is evidenced except two residual forms, a wait-free branch of a terminal fork in a Sub-Process body and a branch of a forking model without an embedded Sub-Process, which the [root Parallel forks](ROOT-PARALLEL-FORKS-SPEC.md#required-optional-and-excluded-scope) exclusion refuses for every branch kind and `PC-CF-03` owns, and stays open on them; `PC-HUM-05` is evidenced except those forms and its implicit split and merge clause. The [single-scope models account](SINGLE-SCOPE-MODELS-PROPOSAL.md#evidence-and-acceptance) has since admitted the second form for both rows.
+Then `PC-HUM-04` is evidenced except two residual forms, a wait-free branch of a terminal fork in a Sub-Process body and a branch of a forking model without an embedded Sub-Process, which the [root Parallel forks](ROOT-PARALLEL-FORKS-SPEC.md#required-optional-and-excluded-scope) exclusion refuses for every branch kind and `PC-CF-03` owns, and stays open on them; `PC-HUM-05` is evidenced except those forms and its implicit split and merge clause. The [single-scope models account](SINGLE-SCOPE-MODELS-SPEC.md#evidence-and-acceptance) has since admitted the second form for both rows.
 
 Nearest unsupported claims:
 
 - pass-through Tasks with several incoming or outgoing flows (`PC-CF-07`);
 - a wait-free branch of a terminal fork in a Sub-Process body, which needs `ordinaryEnd` and `regional` pair laws beside declared entries;
-- a forking model without an embedded Sub-Process, such as CIB's `threeTasksProcess`, until the [single-scope models account](SINGLE-SCOPE-MODELS-PROPOSAL.md) admitted it;
+- a forking model without an embedded Sub-Process, such as CIB's `threeTasksProcess`, until the [single-scope models account](SINGLE-SCOPE-MODELS-SPEC.md) admitted it;
 - forks whose pass-through Tasks exceed the closure limit of eight: a body fork of four pass-only branches is refused, and the office relocation's fork closure has one step of margin;
 - in called Processes or Multi-Instance bodies;
 - that no admitted closure co-enables an End or regional completion with a frame-inserting entry, which is argued above and checked on the registered scenarios, not proved;

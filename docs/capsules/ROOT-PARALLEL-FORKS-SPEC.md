@@ -39,7 +39,7 @@ The other restrictions hold unchanged: a source overlay on every model, no Exclu
 
 Optional: several forks in the root body, in sequence or nested in branches.
 
-Excluded: a terminal fork or a second None End in the Process root body; a Call in a forking root; every Exclusive merge of two or more inputs in a forking model; every other exclusion of the concurrent structured scope data account. A forking model without an embedded Sub-Process, refused when this account closed by the profile's two-scope shape check, is admitted since by the [single-scope models account](SINGLE-SCOPE-MODELS-PROPOSAL.md#admission). These bound admission only: a later root Call, merge region or pass-through Task on a branch broadens the class without reinterpreting an admitted model.
+Excluded: a terminal fork or a second None End in the Process root body; a Call in a forking root; every Exclusive merge of two or more inputs in a forking model; every other exclusion of the concurrent structured scope data account. A forking model without an embedded Sub-Process, refused when this account closed by the profile's two-scope shape check, is admitted since by the [single-scope models account](SINGLE-SCOPE-MODELS-SPEC.md#admission). These bound admission only: a later root Call, merge region or pass-through Task on a branch broadens the class without reinterpreting an admitted model.
 
 ## Profile and public contract
 

@@ -94,7 +94,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [single-scope models](capsules/SINGLE-SCOPE-MODELS-PROPOSAL.md) of the nested scope-data profile, batch 4 (`PC-HUM-04` primary; `PC-HUM-05`, `PC-CF-03` and `PC-BASIC-01` for single-scope forks). None Intermediate Throw Events landed at `a37e56ef`. Close call against the Send Task recorded in the proposal. Batch 3 stays open behind the owner's holds.
+Current task: [single-scope models](capsules/SINGLE-SCOPE-MODELS-SPEC.md) of the nested scope-data profile, batch 4 (`PC-HUM-04` primary; `PC-HUM-05`, `PC-CF-03` and `PC-BASIC-01` for single-scope forks). None Intermediate Throw Events landed at `a37e56ef`. Close call against the Send Task recorded in the proposal. Batch 3 stays open behind the owner's holds.
 
 Deliverable: models without an embedded Sub-Process admitted and executed under the nested scope-data profile, landed on `main`; the four rows stay open on their other clauses.
 
