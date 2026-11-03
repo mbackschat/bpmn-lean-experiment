@@ -172,4 +172,4 @@ Closure gates, green at `e9f0753d` (2026-11-03):
 |---|---|---|---|---|
 | Proposal | `8044864b` | `fork-turns-none` | `approve-with-required-edits` | `bca60629` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `396ba2d3` | `fork-turns-none` | `approve-with-required-edits` | `fb592e39` |

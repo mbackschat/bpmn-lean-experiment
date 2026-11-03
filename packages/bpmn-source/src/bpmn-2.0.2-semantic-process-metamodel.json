@@ -16,7 +16,7 @@
     "consumer": "bpmn-source-semantic-process",
     "included": [
       "Definitions and executable Process identity",
-      "StartEvent, IntermediateCatchEvent, IntermediateThrowEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, TerminateEventDefinition, CompensateEventDefinition, Error, Task, UserTask, Rendering, ReceiveTask, ServiceTask, CallActivity, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, Association, ExtensionElements, and SequenceFlow type identity",
+      "StartEvent, IntermediateCatchEvent, IntermediateThrowEvent, TimerEventDefinition, BoundaryEvent, ErrorEventDefinition, TerminateEventDefinition, CompensateEventDefinition, Error, Task, UserTask, Rendering, ReceiveTask, SendTask, ServiceTask, CallActivity, SubProcess, ParallelGateway, ExclusiveGateway, InclusiveGateway, EventBasedGateway, EndEvent, Association, ExtensionElements, and SequenceFlow type identity",
       "MessageEventDefinition, Message, Interface, Operation, and ReceiveTask type identity plus messageRef, operationRef, inMessageRef, payload, implementation, instantiate, and collection bounds used by Message admission",
       "direct generalizations needed by the first compiler",
       "FlowElementsContainer.flowElements containment",
