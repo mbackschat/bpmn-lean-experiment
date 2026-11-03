@@ -163,6 +163,33 @@ Owner passages that state the lower bound and are amended at closure: the forkin
 
 Registration: the profile artifact's `features` and its README; the new conformance module in `ConformanceChecksMain`; scenarios, pipeline cases, the value-domain matrix, the corpus, About and the CIB probe; the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) needs no new row.
 
+## Implementation notes
+
+Implemented as proposed, with two deviations in the Lean realization.
+
+- **Proof shape of `SSM-ROUTE-01`,** declared in the Rule 2 premise pass and approved there. `completion_admission_cases` takes no premise: it gains the nested completion route as a fifth case and so stays true for every Program the analysis accepts, and the premise `nestedScopeDataProgram program = false` moves to the nine profile-less declarations that destructure it: `completion_admission_preserves_control_unit_bound`, `_root_ownership`, `_binding_presence` and `_lifecycle_frame`; `task_execution_preserves_counter_storage`; `task_execution_reachable_preserves_control_unit_bound`; and `task_execution_preserves_root_ownership`, `_binding_presence` and `_lifecycle_frame`. Each structured-profile consumer discharges it through the one new lemma `nestedScopeDataProgram_eq_false_of_structured_profile`, and `rejected_completion_preserves_state` needs no premise. The matrix's killing mutation for `SSM-ROUTE-01` therefore reads: drop the fifth case or the premise, and the proofs no longer close. The one-scope theorems named under owners were deleted rather than qualified, since nothing consumes them once the bound is profile-aware.
+- **Position of the bound in the control analysis.** `checkedModel` and `programModel` test `scopeCountAdmitted` after reading the bodies, where the one-scope refusal stood inside `analyze`, not in their leading guard (correction below).
+
+The [conformance module](../../BpmnSemantics/SingleScopeModelsConformance.lean) holds five checks:
+
+- both models at both levels on their routes;
+- the Call-only loan application and its retained twin;
+- the second None End and the root Call refused;
+- the embedded completion controls: both single-scope graphs are refused at both levels, their Sub-Process twins admitted, and the same graphs routed under the nested profile; replacing `scopeCountAdmitted` by one scope for every profile fails exactly this check;
+- the route overlap that makes the premise necessary.
+
+The degenerate Start-to-End refusal is a source-reader rule and stays with the [source test](../../packages/bpmn-source/test/single-scope-models-source.test.ts). The four pipeline mutations each move the one observation they name. The value-domain matrix runs the purchase with the concurrent Start-name cases and the invoice with the re-entry cases, where `verdict` is its own Process output.
+
+Closure gates:
+
+- **Correction:** the first `verify.sh` at `8daef829` failed one Lean module. The sequential Multi-Instance binding fixture kernel-decides the embedded completion profile's refusal through the control analysis while opening only that module, and the bound's position ahead of the structural reading made it unfold the hidden `scopeCountAdmitted`. Opening the data module instead would raise that module's hidden-edit fan-out from 18 to 19, past its recorded bound, so `5581dcef` moves the bound behind the structural reading with unchanged meaning.
+- **Green at `5581dcef`:**
+  - the Lean library and `BpmnConformance`, 939 and 920 jobs, whose driver holds all 1,299 checks;
+  - the CIB runtime stage with the [pass-through Task probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPassThroughTaskProbeTest.java), fourteen tests;
+  - the pipeline over all 174 registered cases, warm in 154.9 s on a host contended at the start;
+  - the research doctor and `test:model-corpus`, 30 tests.
+- **Temporal:** the complete Temporal gate in that `verify.sh` failed one read of `business-task-composition-recovery` for a journey of another profile, recorded under [TD-001](../TEMPORAL-DEFECTS-LEDGER.md#td-001-query-loss-during-run-eviction). The file alone then passed 7 of 7.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |

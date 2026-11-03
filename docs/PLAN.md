@@ -86,7 +86,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- None Intermediate Throw Event closure. Command: `./scripts/verify.sh`. Status: `exit 0`. Date: `2026-11-03`. Commit: `3c3a12e1`; the pipeline's 170 cases ran warm in 124.2 seconds.
+- Single-scope models closure. Command: `./scripts/verify.sh`. Status: `exit 1`, one [TD-001](TEMPORAL-DEFECTS-LEDGER.md#td-001-query-loss-during-run-eviction) read of `business-task-composition-recovery`, which passed 7 of 7 alone; `./scripts/pnpm.sh run test:pipeline` `exit 0` over 174 cases. Date: `2026-11-03`. Commit: `5581dcef`.
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -98,13 +98,13 @@ Current task: [single-scope models](capsules/SINGLE-SCOPE-MODELS-PROPOSAL.md) of
 
 Deliverable: models without an embedded Sub-Process admitted and executed under the nested scope-data profile, landed on `main`; the four rows stay open on their other clauses.
 
-Acceptance blockers: implementation, registration, the closure review and landing.
+Acceptance blockers: the closure review and landing.
 
-Current result: proposal approved with required edits (review of `4698de15`, audits `e19d2537` and `c204a58d`); no guard bound changes, the owner-approved `ScopeDataBearing` raise is unused.
+Current result: implemented and registered through `5581dcef`; closure gates green except one TD-001 read of another profile's journey, which passed alone; no guard bound changes, the owner-approved `ScopeDataBearing` raise is unused.
 
 Effort budget: 6 hours from 2026-11-03 11:11 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: red TypeScript source tests, the TypeScript admission change, then the Lean interface edits and the declared premise pass in one commit.
+Next action: the cold closure review of the family, its correction audit, graduation and the branch push flow.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
