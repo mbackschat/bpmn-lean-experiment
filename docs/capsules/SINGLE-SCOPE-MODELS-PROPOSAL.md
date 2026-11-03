@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved
 
 ## Question and delivery boundary
@@ -124,7 +124,7 @@ Each model carries a source overlay and a mapped Service Task.
 
 Lane shape: checked
 
-Evidence: the family adds no transition family and no runtime law. A new executable conformance module, beside the [None Throw conformance module](../../BpmnSemantics/NoneIntermediateThrowConformance.lean) whose admission owners it shares, checks admission of both models at both levels, the refused edits, the profile control and the route control. `SSM-ROUTE-01` is the premise `completion_admission_cases` of [`StructuredCompositionControlProofs`](../../BpmnSemantics/SemanticProcess/StructuredCompositionControlProofs.lean) gains and its top-level consumers discharge, which re-establishes the structured-composition completion proofs.
+Evidence: the family adds no transition family and no runtime law. A new executable conformance module, [`singleScopeModelsConformanceChecks`](../../BpmnSemantics/SingleScopeModelsConformance.lean#singleScopeModelsConformanceChecks), beside the [None Throw conformance module](../../BpmnSemantics/NoneIntermediateThrowConformance.lean) whose admission owners it shares, checks admission of both models at both levels, the refused edits, the profile control and the route control. `SSM-ROUTE-01` is the premise `completion_admission_cases` of [`StructuredCompositionControlProofs`](../../BpmnSemantics/SemanticProcess/StructuredCompositionControlProofs.lean) gains and its top-level consumers discharge, which re-establishes the structured-composition completion proofs.
 
 ## Temporal hosting and refinement preflight
 
@@ -197,4 +197,4 @@ Closure gates:
 |---|---|---|---|---|
 | Proposal | `4698de15` | `fork-turns-none` | `approve-with-required-edits` | `e19d2537, c204a58d` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `103fa0f8` | `fork-turns-none` | `approve-with-required-edits` | `572de1a7` |
