@@ -1,8 +1,8 @@
-# Send Task proposal
+# Send Task specification
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -104,7 +104,7 @@ Each model carries a source overlay binding its handler.
 
 Lane shape: checked
 
-Evidence: the family adds no transition family, no runtime law and no Lean code. Lean receives only the projected node, so it neither sees nor refuses a Send-specific projection: `SEND-ADMIT-01` and `SEND-REFUSE-01` are single-implementation TypeScript source decisions. A Send Task's checked node and Program operation are a Service Task's, so the effect accounts of the profile apply as they stand: [`NestedScopeDataAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean) admits the node and [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean) lowers it to `awaitEffect`. The pipeline cases execute both journeys through the Lean evaluator and compare it with the core.
+Evidence: the family adds no transition family, no runtime law and no Lean code. Lean receives only the projected node, so it neither sees nor refuses a Send-specific projection: `SEND-ADMIT-01` and `SEND-REFUSE-01` are single-implementation TypeScript source decisions. A Send Task's checked node and Program operation are a Service Task's, so the effect accounts of the profile apply as they stand: [`serviceValid`](../../BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean#serviceValid) admits the node's descriptor and mappings and [`lowerNode`](../../BpmnSemantics/SemanticProcess/Lowering.lean#lowerNode) lowers it to `awaitEffect`. The pipeline cases execute both journeys through the Lean evaluator and compare it with the core.
 
 ## Temporal hosting and refinement preflight
 

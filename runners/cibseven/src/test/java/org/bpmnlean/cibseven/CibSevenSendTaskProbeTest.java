@@ -15,13 +15,13 @@ import org.cibseven.bpm.engine.delegate.JavaDelegate;
 import org.junit.Test;
 
 /**
- * Calibrates the Send Task proposal's `CIB-EXT-0023` (`SEND-ADMIT-01`, `SEND-EFFECT-01`, `SEND-DATA-01`) on its two witness
+ * Calibrates the Send Task specification's `CIB-EXT-0023` (`SEND-ADMIT-01`, `SEND-EFFECT-01`, `SEND-DATA-01`) on its two witness
  * models: CIB Seven `2.2.0` reads a Send Task carrying `camunda:delegateExpression` as a Service Task
  * (`BpmnParse.parseSendTask` delegating to `parseServiceTaskLike`, BpmnParse.java:2505-2541), so with
  * `camunda:asyncBefore` each activation is one job, then one delegate invocation that sees exactly the evaluated input
  * parameters as locals, and one historic activity instance of type `sendTask`. The probe runs every continuation job
  * before the next command, the schedule within `CIB-EXT-0015`'s boundary. Expected values are built here from the
- * proposal's witness-model account, never read from a target result.
+ * specification's witness-model account, never read from a target result.
  */
 public final class CibSevenSendTaskProbeTest {
   private static final Path MODELS = Path.of("../..").toAbsolutePath().normalize().resolve("scenarios/send-task");

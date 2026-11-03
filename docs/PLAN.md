@@ -98,13 +98,13 @@ Current task: [Send Task](capsules/SEND-TASK-SPEC.md) of the nested scope-data p
 
 Deliverable: a Send Task with a configured handler admitted and executed as the profile's mapped effect, landed on `main`; `PC-AUTO-04` stays open on prescribed failure.
 
-Acceptance blockers: graduation and landing.
+Acceptance blockers: landing through the branch flow with green hosted checks.
 
 Current result: proposal approved at `00f1c705`; implemented and registered through `e9f0753d` with every closure gate green; no Lean change and no guard bound change.
 
 Effort budget: 4 hours from 2026-11-03 14:45 CET; no Lean change, so no full `BpmnConformance` build beyond the hosted gate.
 
-Next action: graduate the Send Task capsule to a specification and land through the branch flow on green hosted checks.
+Next action: fast-forward `main` to the branch head on green hosted checks, then select the next batch-4 family.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

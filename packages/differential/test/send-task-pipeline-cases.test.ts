@@ -1,9 +1,9 @@
 /**
- * Locks the registered Send Task schedules against the proposal's separating witnesses without Lean or Temporal: the open
+ * Locks the registered Send Task schedules against the specification's separating witnesses without Lean or Temporal: the open
  * work, the open effect's published arguments and the Process variables after every command, each model's route, and
  * every named seeded mutation, each of which must move exactly the observation it names.
  *
- * Expected values are written here from the proposal's witness-model account, never read from a produced trace.
+ * Expected values are written here from the specification's witness-model account, never read from a produced trace.
  */
 import assert from "node:assert/strict";
 import test from "node:test";

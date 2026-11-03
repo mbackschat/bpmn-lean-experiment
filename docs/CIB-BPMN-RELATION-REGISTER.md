@@ -601,7 +601,7 @@ BPMN 2.0.2 Clause 13.1 makes the Manual Task and the Abstract Task non-operation
 
 ### CIB-EXT-0023 — Send Task performed by a configured handler
 
-**Status:** Selected bounded extension under the [Send Task proposal](capsules/SEND-TASK-SPEC.md#normative-basis-and-cib-classification) for the nested scope-data profile, calibrated against CIB Seven `2.2.0` on its two retained models.
+**Status:** Selected bounded extension under the [Send Task specification](capsules/SEND-TASK-SPEC.md#normative-basis-and-cib-classification) for the nested scope-data profile, calibrated against CIB Seven `2.2.0` on its two retained models.
 
 BPMN 2.0.2 Clause 10.3.3 defines the Send Task as a Task that sends a Message to an external Participant, through `messageRef`, `operationRef` and `implementation` (default `##WebService`), the Participant identified by a Message Flow, and Clause 13.3.3 has it send the Message built from its Data Input on activation and complete, assigning no output; the sending technology is left to `implementation`. CIB Seven `2.2.0` never reads `messageRef`, `operationRef` or `implementation` (`BpmnParse.parseSendTask`, BpmnParse.java:2505-2541): with `camunda:class`, `delegateExpression`, `expression` or `type` it parses the Send Task as a Service Task (`parseServiceTaskLike`, CAM-942), otherwise it reports a parse error, and it records each activation as a historic activity instance of type `sendTask` (BpmnParse.java:1912). The send is therefore the configured handler's effect and the Message data its inputs, which are CIB extension locals (`CIB-EXT-0015`), not BPMN Data Inputs.
 

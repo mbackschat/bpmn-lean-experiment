@@ -1,6 +1,6 @@
 /**
  * SEND-ADMIT-01, SEND-REFUSE-01 and SEND-DATA-01 over the retained Send Task models through the exact-bytes source path.
- * The oracle is the approved proposal's witness account: each model compiles under the nested scope-data profile with
+ * The oracle is the specification's witness account: each model compiles under the nested scope-data profile with
  * its Send Task projected to the mapped Service Task's checked node, and each refusal is a one-fact edit of an admitted
  * model. The control renames each Send Task to a Service Task, so a red result before the mechanism exists can come
  * only from the element kind, and the serial business-task control shows that profile admits the Service Task twin.
