@@ -38,14 +38,14 @@ Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
 | AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
 | AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
 | AA-09 | not-met | No proof relocation is selected for the portable handoff; the pending two-consumer SMIS relocation retains its acceptance obligation. | Preserve pending work without claiming acceptance. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
-| AA-11 | not-met | No issuing or command outcome contract changes. | — | — |
+| AA-11 | not-met | No issuing or command outcome contract changes; the default-less Choice rollback reuses `rolledBack` on its own closure channel. | — | — |
 | AA-13 | met | Raw-wire admission is independently accepted for the existing arms; the recursive-value batch extends the same readers. | Extend each independent reader to the new arms under the accepted lexical admission; listed residuals stay unselected. | [Accepted admission and residuals](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-13). |
 | AA-15 | met | The design must name the value-domain assurance lane without implying runtime evidence. | Separate design acceptance from checked/proved implementation obligations within the design budget. | [Named guarantee obligation](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-15). |
 | AA-18 | not-met | No ordering/uniqueness or identity-family contract extension is selected. | — | — |
 | AA-19 | not-met | No encoder or helper consolidation is selected. | — | — |
 | AA-20 | not-met | Committed publication outcome/type contract is unchanged. | — | — |
 | AA-22 | not-met | No declarative-independence claim correction is selected. | — | — |
-| AA-23 | not-met | Refusal/ambiguity contract changes remain held. | — | — |
+| AA-23 | not-met | Refusal/ambiguity contract changes remain held; the default-less Choice no-flow channel leaves `preparationFailed` and refusal unchanged. | — | — |
 | AA-24 | not-met | No progress-law change is selected; the deferred actual-Start guarantee and satisfiability witness remain open. | Preserve the delayed-Join/turnover discriminator. | [Exact progress claim and limits](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
 
 ### Lean build follow-ups

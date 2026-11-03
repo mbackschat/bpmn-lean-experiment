@@ -4,16 +4,23 @@
              xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
              id="Definitions_ExpenseRouting" targetNamespace="urn:bpmn-lean:expense-routing"
              expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
-  <process id="Process_ExpenseRouting" name="Route an expense claim to its reviewer" isExecutable="true">
+  <process id="Process_ExpenseRouting" name="Route an expense claim to its reviewer and pay it out" isExecutable="true">
     <startEvent id="ExpenseSubmitted" name="Expense submitted" />
-    <exclusiveGateway id="RouteByCategory" name="Route by category" gatewayDirection="Diverging">
+    <exclusiveGateway id="RouteExpense" name="Route expense" gatewayDirection="Diverging">
       <incoming>Flow_Submitted</incoming>
+      <outgoing>Flow_Urgent</outgoing>
       <outgoing>Flow_Travel</outgoing>
       <outgoing>Flow_Equipment</outgoing>
     </exclusiveGateway>
+    <userTask id="ReviewUrgently" name="Review urgently" />
     <userTask id="ReviewTravel" name="Review travel" />
     <userTask id="ReviewEquipment" name="Review equipment" />
     <exclusiveGateway id="ExpenseReviewed" name="Expense reviewed" gatewayDirection="Converging" />
+    <exclusiveGateway id="PayOut" name="Pay out" gatewayDirection="Diverging">
+      <incoming>Flow_Reviewed</incoming>
+      <outgoing>Flow_Bank</outgoing>
+      <outgoing>Flow_Payroll</outgoing>
+    </exclusiveGateway>
     <serviceTask id="ReimburseClaimant" name="Reimburse claimant"
                  implementation="urn:bpmn-lean:effect-protocol:activity-v1"
                  camunda:delegateExpression="${reimburseClaimant}" camunda:asyncBefore="true">
@@ -23,17 +30,31 @@
         </camunda:inputOutput>
       </extensionElements>
     </serviceTask>
+    <userTask id="AddToPayroll" name="Add to payroll" />
+    <exclusiveGateway id="ExpensePaid" name="Expense paid" gatewayDirection="Converging" />
     <endEvent id="ExpenseSettled" name="Expense settled" />
-    <sequenceFlow id="Flow_Submitted" sourceRef="ExpenseSubmitted" targetRef="RouteByCategory" />
-    <sequenceFlow id="Flow_Travel" sourceRef="RouteByCategory" targetRef="ReviewTravel">
+    <sequenceFlow id="Flow_Submitted" sourceRef="ExpenseSubmitted" targetRef="RouteExpense" />
+    <sequenceFlow id="Flow_Urgent" sourceRef="RouteExpense" targetRef="ReviewUrgently">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(priority,"urgent")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Travel" sourceRef="RouteExpense" targetRef="ReviewTravel">
       <conditionExpression xsi:type="tFormalExpression">stringEquals(category,"travel")</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Flow_Equipment" sourceRef="RouteByCategory" targetRef="ReviewEquipment">
+    <sequenceFlow id="Flow_Equipment" sourceRef="RouteExpense" targetRef="ReviewEquipment">
       <conditionExpression xsi:type="tFormalExpression">stringEquals(category,"equipment")</conditionExpression>
     </sequenceFlow>
+    <sequenceFlow id="Flow_UrgentReviewed" sourceRef="ReviewUrgently" targetRef="ExpenseReviewed" />
     <sequenceFlow id="Flow_TravelReviewed" sourceRef="ReviewTravel" targetRef="ExpenseReviewed" />
     <sequenceFlow id="Flow_EquipmentReviewed" sourceRef="ReviewEquipment" targetRef="ExpenseReviewed" />
-    <sequenceFlow id="Flow_Reviewed" sourceRef="ExpenseReviewed" targetRef="ReimburseClaimant" />
-    <sequenceFlow id="Flow_Settled" sourceRef="ReimburseClaimant" targetRef="ExpenseSettled" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ExpenseReviewed" targetRef="PayOut" />
+    <sequenceFlow id="Flow_Bank" sourceRef="PayOut" targetRef="ReimburseClaimant">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(payout,"bank")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Payroll" sourceRef="PayOut" targetRef="AddToPayroll">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(payout,"payroll")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Reimbursed" sourceRef="ReimburseClaimant" targetRef="ExpensePaid" />
+    <sequenceFlow id="Flow_Payrolled" sourceRef="AddToPayroll" targetRef="ExpensePaid" />
+    <sequenceFlow id="Flow_Settled" sourceRef="ExpensePaid" targetRef="ExpenseSettled" />
   </process>
 </definitions>
