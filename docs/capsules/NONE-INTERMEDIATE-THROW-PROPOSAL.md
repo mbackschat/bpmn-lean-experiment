@@ -2,7 +2,7 @@
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented-awaiting-closure
 Review: approved
 
 ## Question and delivery boundary
@@ -145,7 +145,7 @@ No new hosting mechanism. A None Throw is an internal step inside one command cl
 
 The models run as answer-free scenarios with registered pipeline cases, each with a seeded mutation, plus value-domain matrix rows, corpus rows and the About disclosure. The CIB lane extends the [pass-through Task probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPassThroughTaskProbeTest.java) with both models' journeys, calibrating one ended `intermediateNoneThrowEvent` activity instance per None Throw activation without a task or job.
 
-Implemented as proposed. The [conformance module](../../BpmnSemantics/NoneIntermediateThrowConformance.lean) holds seven checks: both models at both levels with the warranty's re-entry burst of eight and the onboarding's concurrent burst of seven, lowering to one-input merges with the Event as origin, both several-flow forms, the wait-free terminal branch against its waiting twin, the Call behind only a None Throw, the profile control (the spliced employee onboarding at both levels and an exact-shape graph refused by its cardinalities, a mutation that stops counting the arm failing it), and the decoder. The four pipeline mutations each move the one observation they name; the value-domain matrix runs the onboarding with the concurrent Start-name cases and the warranty with the pass-through Task cases, whose assertion now admits the warranty's unrequired `device`.
+Implemented as proposed. The [conformance module](../../BpmnSemantics/NoneIntermediateThrowConformance.lean) holds seven checks: both models at both levels with the warranty's re-entry burst of eight and the onboarding's concurrent burst of seven, lowering to one-input merges with the Event as origin, both several-flow forms, the wait-free terminal branch against its waiting twin, the Call behind only a None Throw, the profile control (the spliced employee onboarding at both levels and an exact-shape graph refused by its cardinalities, a mutation that stops counting the arm failing it), and the decoder. The four pipeline mutations each move the one observation they name; the warranty rework's mutation moves *Replace part*'s activation, so a None Throw's fresh occurrence per re-entry is witnessed by the core runtime test's distinct anchors, the Lean/core publication parity of `verify.sh` and the CIB probe's two historic instances. The `eventDefinitionRef` refusal is decided today by reference typing and the definitions reader, which refuses a root EventDefinition; the reader's by-name clause is defence in depth for a later family that admits root EventDefinitions; the value-domain matrix runs the onboarding with the concurrent Start-name cases and the warranty with the pass-through Task cases, whose assertion now admits the warranty's unrequired `device`.
 
 Closure gates:
 

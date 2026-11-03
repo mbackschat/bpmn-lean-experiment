@@ -114,9 +114,10 @@ test("each excluded None Throw form is refused", async () => {
   const close = "</intermediateThrowEvent>";
   await refused(warranty, edit(`${open}<messageEventDefinition />${close}`), "Message trigger");
   await refused(warranty, edit(`${open}<signalEventDefinition />${close}`), "Signal trigger");
-  // moddle declares the reference non-enumerable, so only a refusal by name sees it.
-  await refused(warranty, edit(`${open}<eventDefinitionRef>Flow_Requested</eventDefinitionRef>${close}`),
-    "referenced EventDefinition");
+  // A reference to a root EventDefinition: today the definitions reader refuses the root definition before the Event
+  // is projected, so the reader's by-name refusal of `eventDefinitionRef` is not what decides this edit.
+  await refused(warranty, replaceOnce(edit(`${open}<eventDefinitionRef>Ref_Message</eventDefinitionRef>${close}`),
+    "  </process>", '  </process>\n  <messageEventDefinition id="Ref_Message" />'), "referenced EventDefinition");
   await refused(warranty, edit(
     '<intermediateThrowEvent id="FaultDiagnosed" name="Fault diagnosed" camunda:asyncBefore="true" />'),
     "asynchronous continuation");

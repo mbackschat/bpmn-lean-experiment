@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { CallDataKind, EffectExecutionResultKind, MessageChannelKind, SemanticOperationKind, SemanticProfileId, StimulusKind, VariableValueKind } from "@bpmn-lean/semantic-core";
+import { CallDataKind, EffectExecutionResultKind, MessageChannelKind, SemanticOperationKind, SemanticProfileId, StimulusKind, VariableValueKind,
+  structuredScopeDataProgramStartNames } from "@bpmn-lean/semantic-core";
 import type { Scenario, StartProcessStimulus, Stimulus, VariableBinding, VariableValue } from "@bpmn-lean/semantic-core";
 import { pipelineCases } from "./pipeline-cases.ts";
 import { loadAndCompileCases } from "./pipeline-case-loading.ts";
@@ -468,7 +469,8 @@ function addScopeReentryCases(context: DomainContext, add: AddCase): void {
  */
 function addPassThroughTaskCases(context: DomainContext, add: AddCase): void {
   const start = context.scenario.stimuli[0]!;
-  assert.ok(start.kind === StimulusKind.StartProcess);
+  assert.ok(start.kind === StimulusKind.StartProcess &&
+    structuredScopeDataProgramStartNames(context.semanticProcess)?.required.length === 0);
   const domains = expectedDomainsOf(context.scenario.profile);
   addLateValueCases(context, start, domains, add);
   addStartKindCases(context, start, domains.start, add);

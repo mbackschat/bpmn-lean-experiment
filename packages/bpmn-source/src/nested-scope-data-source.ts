@@ -55,7 +55,7 @@ type ScopeDataReader = Readonly<{
   gateways: boolean;
   /** SRE-ADMIT-01: conditional flows and two-condition Exclusive Choices in a Process root body. */
   rootChoices: boolean;
-  /** PTT-ADMIT-01: Abstract and Manual Tasks, which the profile's lowering passes through. */
+  /** PTT-ADMIT-01, NIT-ADMIT-01: Abstract and Manual Tasks and None Throws, which the profile's lowering passes through. */
   nonOperationalTasks: boolean;
   projectCall: (element: ElementRecord) => CheckedNode | undefined;
   /** The caller Process of the read roots, or `undefined` when the roots and Calls do not form one call forest. */
@@ -268,7 +268,9 @@ function projectNonOperationalTask(element: ElementRecord): CheckedNode | undefi
 
 /**
  * NIT-ADMIT-01: only the None form passes. An `eventDefinitions` entry is an enumerable key the plain-node inventory
- * refuses, but a reference such as `eventDefinitionRef` is not, so it is refused by name exactly as `default` is.
+ * refuses, but moddle keeps the `eventDefinitionRef` reference out of that inventory, so it is refused by name as
+ * `default` is. Not decisive today: reference typing refuses a non-EventDefinition target and the definitions reader a
+ * root EventDefinition; the clause keeps the None form exact once a later family admits root EventDefinitions.
  */
 function projectNoneThrow(element: ElementRecord): CheckedNode | undefined {
   const id = readId(element);
