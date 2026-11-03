@@ -108,8 +108,8 @@ Each model carries a source overlay and a mapped Service Task.
 
 - **Warranty repair** (re-entry root graph):
   - Start binds `device`.
-  - Path: *Repair requested* → User Task *Diagnose fault* → None Throw *Fault diagnosed* → Merge *Repair round* → Sub-Process *Repair device* → User Task *Test device*, which records `testResult` → Choice *Device passes?*.
-  - *Repair device* holds Start → None Throw *Repair started* → User Task *Replace part* → mapped Service Task *Order spare part* → End.
+  - Path: *Repair requested* → User Task *Diagnose fault* → None Throw *Fault diagnosed* → Merge *Repair round* → Sub-Process *Repair device* → Choice *Device passes?*.
+  - *Repair device* declares a local `result` and copies it out to `testResult`; it holds Start → None Throw *Repair started* → User Task *Replace part* → mapped Service Task *Order spare part* → User Task *Test device*, which records `result` → End. The Choice therefore reads a Sub-Process output, as `NSD-TASK-01` requires.
   - On `testResult` = `passed`, None Throw *Device released* → End; by default, None Throw *Rework requested* → the Merge, re-entering *Repair device*.
   - Journey one: diagnose, replace, test passes. Journey two: diagnose, replace, test fails, replace again, test passes; *Rework requested* fires once, and *Repair started* gets a fresh occurrence in each iteration.
 - **Employee onboarding milestones** (root fork):
@@ -119,7 +119,7 @@ Each model carries a source overlay and a mapped Service Task.
   - The closure after *Confirm start date* batches the declared entry of *Set up account* beside *Welcome sent*, a merge input on another branch (`PTPB-COMMUTE-01`).
   - Two journeys, in both completion orders of *Create account* and the *Order laptop* result.
 - **Refused edits:** a None Throw with a `messageEventDefinition` (wrong algorithm 2), with an `eventDefinitionRef` naming a definition (wrong algorithm 2), with a `signalEventDefinition`, with `camunda:asyncBefore` (wrong algorithm 5), with an execution listener, with a second outgoing flow and with a second incoming flow; a None Throw on a wait-free terminal branch; a None Throw as the only vertex before a Call in a body.
-- **Profile control (minimal pair):** the employee onboarding model the embedded completion profile admits today is refused with one None Throw inserted on its root path before *Welcome meeting*, and admitted without it, at the source level; separately, the warranty repair's checked graph with the embedded completion profile's identity is fed straight to the core and Lean checked analyses and refused, so the checked-level profile test is killed rather than masked by the source reader; and a checked graph of an exact-shape profile plus one None Throw is refused at Lean's checked level (wrong algorithm 3).
+- **Profile control (minimal pair):** the employee onboarding model the embedded completion profile admits today is refused with one None Throw inserted on its root path before *Welcome meeting*, and admitted without it, at the source level; separately, the unedited onboarding checked graph with one None Throw node spliced in before *Welcome meeting* is fed straight to the core and Lean checked analyses under the embedded completion profile's identity and refused, while the unedited graph is admitted, so the checked-level profile test is killed rather than masked by the source reader; and a checked graph of an exact-shape profile plus one None Throw is refused at Lean's checked level (wrong algorithm 3).
 - **Kind control:** the checked graph of each model holds the arm, never a `nonOperationalTask`, and the decoder refuses a `noneIntermediateThrowEvent` node that carries a `notation` (wrong algorithm 1).
 
 ## Rule-to-evidence matrix
@@ -129,7 +129,7 @@ Each model carries a source overlay and a mapped Service Task.
 | `NIT-KIND-01` | Both models hold the arm; the node with a `notation` is refused | Source, decoder, Lean conformance module | Project the Event as `nonOperationalTask` |
 | `NIT-PASS-01` | Each None Throw publishes one started-and-ended occurrence in the closure that delivers its token, fresh per re-entry | Pipeline, CIB probe | Lower the Event as `awaitUserTask` |
 | `NIT-ADMIT-01` | Both models admitted at both levels; each refused edit refused | Source and core at both levels, conformance module | Refuse the arm at one level (wrong algorithm 4); drop the attribute refusal |
-| `NIT-PROFILE-01` | The embedded completion minimal pair; the warranty repair's checked graph under that profile's identity; an exact-shape profile's graph plus a None Throw | Source, core and Lean checked levels, conformance module | Produce the arm without the profile test; count the arm with the unchanged group in `ProfileCardinalities` |
+| `NIT-PROFILE-01` | The embedded completion minimal pair at the source level and as spliced checked graphs; an exact-shape profile's graph plus a None Throw | Source, core and Lean checked levels, conformance module | Produce the arm without the profile test; count the arm with the unchanged group in `ProfileCardinalities` |
 
 ## Lean assurance lane
 
