@@ -22,7 +22,9 @@ import org.junit.Test;
  * so each activation is a historic activity instance of type `task` or `manualTask` that ends inside the command that
  * reached it, with no task entity and no job. It also calibrates `CIB-AGR-0016` (`NIT-PASS-01`) on the None Throw
  * specification's two witness models: `IntermediateThrowNoneEventActivityBehavior` leaves at once (BpmnParse.java:1669-1672),
- * so each None Throw activation is an ended `intermediateNoneThrowEvent` instance of the same kind. CIB does not execute the project's Simple Boolean v1 conditions, so each
+ * so each None Throw activation is an ended `intermediateNoneThrowEvent` instance of the same kind. On the single-scope
+ * models proposal's two witness models (`SSM-ADMIT-01`) it calibrates the same activations with the Process root as the
+ * only scope, where no Sub-Process instance exists. CIB does not execute the project's Simple Boolean v1 conditions, so each
  * condition is rendered as JUEL under `CIB-CFG-0005` before deployment; the probe compares activations, never condition
  * truth. Expected values are built here from the specification's witness-model account, never read from a target result.
  */
@@ -31,6 +33,7 @@ public final class CibSevenPassThroughTaskProbeTest {
   private static final Path MODELS = PROJECT_ROOT.resolve("scenarios/pass-through-task");
   private static final Path BRANCH_MODELS = PROJECT_ROOT.resolve("scenarios/pass-through-parallel-branches");
   private static final Path THROW_MODELS = PROJECT_ROOT.resolve("scenarios/none-intermediate-throw");
+  private static final Path SINGLE_SCOPE_MODELS = PROJECT_ROOT.resolve("scenarios/single-scope-models");
   private static final String NONE_THROW = "intermediateNoneThrowEvent";
   private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
   private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
@@ -202,6 +205,88 @@ public final class CibSevenPassThroughTaskProbeTest {
     }
   }
 
+  @Test
+  public void theApprovalFirstLeavesTheBudgetLogJoinAndMilestoneToTheBudgetResultAtTheRoot() throws Exception {
+    try (var session = new Session(SINGLE_SCOPE_MODELS, "purchase-request", 0, "checkBudget", "code", "BC-9")) {
+      var instance = session.start("Process_PurchaseRequest", Map.of("request", "PR-17"));
+      session.complete(instance, "ReviewRequest");
+      session.assertPassedThrough(instance, "CollectSignature", "manualTask", 1);
+      session.assertOnlyOpenTask(instance, "ApprovePurchase");
+
+      session.complete(instance, "ApprovePurchase");
+      session.assertPassedThrough(instance, "PurchaseApproved", NONE_THROW, 0);
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "LogBudgetCheck", "task", 1);
+      session.assertPassedThrough(instance, "PurchaseApproved", NONE_THROW, 1);
+      session.assertOnlyOpenTask(instance, "PlaceOrder");
+      assertEquals("BC-9", session.engine.getRuntimeService().getVariable(instance, "budgetCode"));
+
+      session.complete(instance, "PlaceOrder");
+      session.assertEnded(instance);
+      session.assertNoSubProcess(instance);
+    }
+  }
+
+  @Test
+  public void theBudgetResultFirstLeavesTheJoinAndMilestoneToTheApproval() throws Exception {
+    try (var session = new Session(SINGLE_SCOPE_MODELS, "purchase-request", 0, "checkBudget", "code", "BC-9")) {
+      var instance = session.start("Process_PurchaseRequest", Map.of("request", "PR-17"));
+      session.complete(instance, "ReviewRequest");
+      session.assertPassedThrough(instance, "CollectSignature", "manualTask", 1);
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "LogBudgetCheck", "task", 1);
+      session.assertPassedThrough(instance, "PurchaseApproved", NONE_THROW, 0);
+      session.assertOnlyOpenTask(instance, "ApprovePurchase");
+
+      session.complete(instance, "ApprovePurchase");
+      session.assertPassedThrough(instance, "PurchaseApproved", NONE_THROW, 1);
+      session.assertOnlyOpenTask(instance, "PlaceOrder");
+      session.complete(instance, "PlaceOrder");
+      session.assertEnded(instance);
+      session.assertNoSubProcess(instance);
+    }
+  }
+
+  @Test
+  public void aValidInvoiceIsClearedAndPaidAtTheRoot() throws Exception {
+    try (var session = new Session(SINGLE_SCOPE_MODELS, "invoice-clearing", 1, "validateInvoice", "result",
+        List.of("valid"))) {
+      var instance = session.start("Process_InvoiceClearing", Map.of("invoice", "INV-204"));
+      session.complete(instance, "ReviewInvoice");
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "InvoiceCleared", NONE_THROW, 1);
+      session.assertPassedThrough(instance, "ContactSupplier", "manualTask", 0);
+      session.assertOnlyOpenTask(instance, "PayInvoice");
+      session.complete(instance, "PayInvoice");
+      session.assertEnded(instance);
+      session.assertNoSubProcess(instance);
+    }
+  }
+
+  @Test
+  public void anInvalidInvoiceReentersTheReviewWithFreshActivationsBeforeItIsCleared() throws Exception {
+    try (var session = new Session(SINGLE_SCOPE_MODELS, "invoice-clearing", 1, "validateInvoice", "result",
+        List.of("invalid", "valid"))) {
+      var instance = session.start("Process_InvoiceClearing", Map.of("invoice", "INV-204"));
+      session.complete(instance, "ReviewInvoice");
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "ContactSupplier", "manualTask", 1);
+      session.assertPassedThrough(instance, "InvoiceCleared", NONE_THROW, 0);
+      session.assertOnlyOpenTask(instance, "ReviewInvoice");
+
+      session.complete(instance, "ReviewInvoice");
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "ContactSupplier", "manualTask", 0);
+      session.assertPassedThrough(instance, "InvoiceCleared", NONE_THROW, 1);
+      session.assertOnlyOpenTask(instance, "PayInvoice");
+      session.complete(instance, "PayInvoice");
+      session.assertEnded(instance);
+      assertEquals(2, session.activations(instance, "ReviewInvoice").size());
+      assertEquals(2, session.activations(instance, "ValidateInvoice").size());
+      session.assertNoSubProcess(instance);
+    }
+  }
+
   private static final class Session implements AutoCloseable {
     final ProcessEngine engine;
     final String deployment;
@@ -216,8 +301,14 @@ public final class CibSevenPassThroughTaskProbeTest {
      * output mapping reads.
      */
     Session(Path models, String model, int conditions, String handler, String result, Object value) throws Exception {
+      this(models, model, conditions, handler, result, result == null ? List.of() : List.of(value));
+    }
+
+    /** As above, with the delegate's `n`-th invocation writing `values.get(n)`. */
+    Session(Path models, String model, int conditions, String handler, String result, List<?> values) throws Exception {
+      var invocations = new int[1];
       JavaDelegate delegate = execution -> {
-        if (result != null) execution.setVariableLocal(result, value);
+        if (result != null) execution.setVariableLocal(result, values.get(invocations[0]++));
       };
       engine = CibSevenTestEngine.create("pass-through-task-" + model,
           configuration -> configuration.setBeans(Map.<Object, Object>of(handler, delegate)));
@@ -297,6 +388,12 @@ public final class CibSevenPassThroughTaskProbeTest {
     List<HistoricActivityInstance> activations(String instance, String element) {
       return engine.getHistoryService().createHistoricActivityInstanceQuery().processInstanceId(instance)
           .activityId(element).orderPartiallyByOccurrence().asc().list();
+    }
+
+    /** The instance ran with the Process root as its only scope. */
+    void assertNoSubProcess(String instance) {
+      assertEquals(0, engine.getHistoryService().createHistoricActivityInstanceQuery().processInstanceId(instance)
+          .activityType("subProcess").count());
     }
 
     void assertEnded(String instance) {

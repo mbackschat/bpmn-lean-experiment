@@ -101,6 +101,10 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "or on a Parallel branch of the Process root or a Sub-Process body",
     "a branch that ends at its own None End must reach a User or Service Task before it",
   ]],
+  ["process", "restriction", [
+    "The nested scope-data profile also admits a Process without an embedded Sub-Process",
+    "every other profile still requires a Sub-Process or a Call",
+  ]],
   ["noneIntermediateThrowEvent", "element", ["None Intermediate Throw Event"]],
   ["noneIntermediateThrowEvent", "restriction", [
     "an Intermediate Throw Event without an EventDefinition",

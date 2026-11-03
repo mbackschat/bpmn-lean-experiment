@@ -1616,6 +1616,92 @@
       }
     },
     {
+      "id": "purchase-request-single-scope",
+      "title": "Approve and place a purchase request",
+      "businessPurpose": "Review a purchase request, then check the budget through a budget service and log the check while, in parallel, collecting a signature and approving the purchase, and mark the purchase approved before placing the order, all in the Process itself without a Sub-Process.",
+      "cloneFamily": "purchase-request-single-scope",
+      "constructs": [
+        "endEvent",
+        "intermediateThrowEvent",
+        "manualTask",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "task",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelSplit",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/single-scope-models/purchase-request.bpmn",
+        "sha256": "4aea07ac4d518fa964c5465c451961f39360c23cc6eeb20dc46090054d58ac54",
+        "scenarioRelativePath": "scenarios/single-scope-models/purchase-approval-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "single-scope-models-purchase-approval-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for single-scope models; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "invoice-clearing-single-scope",
+      "title": "Clear a supplier invoice",
+      "businessPurpose": "Review a supplier invoice and validate it through an invoice service; an invalid invoice sends the clerk to contact the supplier and review it again, and a valid one is marked cleared and paid, all in the Process itself without a Sub-Process.",
+      "cloneFamily": "invoice-clearing-single-scope",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "intermediateThrowEvent",
+        "manualTask",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "conditionalRouting",
+        "cyclicControlFlow",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/single-scope-models/invoice-clearing.bpmn",
+        "sha256": "108edfa52846cc38a957fe498e17ec6f4059aad53daa7a6dc7f079542b3d1744",
+        "scenarioRelativePath": "scenarios/single-scope-models/invoice-valid.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "single-scope-models-invoice-valid",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for single-scope models; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

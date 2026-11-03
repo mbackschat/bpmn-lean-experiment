@@ -56,7 +56,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Process structure",
     element: "Process",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Executable finite graphs only in registered profiles; this is not general BPMN graph admission.",
+    restriction: "Executable finite graphs only in registered profiles; this is not general BPMN graph admission. The nested scope-data profile also admits a Process without an embedded Sub-Process, at its root alone or beside a called Process, in every form it admits with one; every other profile still requires a Sub-Process or a Call.",
     cibEvidence: exactCib("user-task-assignment-form-metadata"),
   },
   {

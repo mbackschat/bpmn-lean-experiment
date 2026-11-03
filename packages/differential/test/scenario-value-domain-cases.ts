@@ -146,13 +146,14 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   addConcurrentScopeDataCases(claim, add);
   for (const id of ["concurrent-structured-scope-data-order-review-first", "concurrent-structured-scope-data-loan-credit-first",
     "root-parallel-forks-onboarding-documents-while-laptop-open", "pass-through-parallel-branches-relocation-packing-first",
-    "pass-through-parallel-branches-invoice-settled", "none-intermediate-throw-onboarding-account-first"]) {
+    "pass-through-parallel-branches-invoice-settled", "none-intermediate-throw-onboarding-account-first",
+    "single-scope-models-purchase-approval-first"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addConcurrentStructuredScopeDataCases(context, add);
   }
   for (const id of ["scope-reentry-claim-rework-then-approve", "scope-reentry-contract-revise-then-sign",
-    "exclusive-choice-arity-complaint-delivery", "none-end-fan-in-travel-booked"]) {
+    "exclusive-choice-arity-complaint-delivery", "none-end-fan-in-travel-booked", "single-scope-models-invoice-valid"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addScopeReentryCases(context, add);
@@ -419,8 +420,9 @@ function addRequiredStartNameCases(context: DomainContext, add: AddCase) {
 
 /**
  * The order fulfilment, loan assessment, root-forking employee onboarding (RPF-VALUE-01), the office relocation and
- * invoice settlement whose branches hold pass-through Tasks (PTPB-ADMIT-01), and the onboarding milestones whose branch
- * holds a None Throw (NIT-ADMIT-01) are concurrent Programs of
+ * invoice settlement whose branches hold pass-through Tasks (PTPB-ADMIT-01), the onboarding milestones whose branch
+ * holds a None Throw (NIT-ADMIT-01) and the purchase request forking at its only scope (SSM-ADMIT-01) are concurrent
+ * Programs of
  * the nested scope-data profile, which keep its SingletonBusinessItem domain on every surface (CSSD-VALUE-01) and derive
  * their required Start names from the occurrence chain (CSD-AVAILABLE-01, CMCALL-START-01): each requires only its
  * business object, a present null satisfies it, and the loan refuses a Start naming a declared local or a name only the called Process knows. Each case changes one fact of the
@@ -438,10 +440,11 @@ function addConcurrentStructuredScopeDataCases(context: DomainContext, add: AddC
 
 /**
  * The claim rework and contract revision re-enter a Sub-Process, the contract also a Call, the complaint handling
- * chooses among three conditions (XCA-ADMIT-01) and the travel request ends three flows at one End (NEF-ADMIT-01), all
- * under the nested scope-data profile's SingletonBusinessItem domain; SRE-AVAILABLE-01 derives their Start names by the
- * barrier rule: each requires only its retained value, and a present null satisfies it. The Call-free claim, complaint
- * and travel request admit their own Process outputs `assessment`, `category` and `decision`; the
+ * chooses among three conditions (XCA-ADMIT-01), the travel request ends three flows at one End (NEF-ADMIT-01) and the
+ * invoice clearing re-enters its only scope (SSM-ADMIT-01), all under the nested scope-data profile's SingletonBusinessItem
+ * domain; SRE-AVAILABLE-01 derives their Start names by the barrier rule: each requires only its retained value, and a
+ * present null satisfies it. The Call-free claim, complaint, travel request and invoice admit their own Process outputs
+ * `assessment`, `category`, `decision` and `verdict`; the
  * contract, whose Call restricts Start to required and optional names (CMCALL-START-01), admits the
  * returned `legalVerdict` and refuses the frame local `draft` and the called-only `verdict`. Each case changes one fact
  * of the retained answer-free Start or appends one late command.
@@ -452,6 +455,7 @@ function addScopeReentryCases(context: DomainContext, add: AddCase): void {
   const names = retained === "claimSummary" ? [["assessment", true]] as const
     : retained === "orderNumber" ? [["category", true]] as const
     : retained === "traveller" ? [["decision", true]] as const
+    : retained === "invoice" ? [["verdict", true]] as const
     : [["draft", false], ["legalVerdict", true], ["verdict", false]] as const;
   for (const [name, supported] of names) {
     // Kept in the canonical name order the Start contract requires.

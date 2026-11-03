@@ -73,6 +73,7 @@
       "sequence-flow",
       "process-completion",
       "finite-serial-scope-chain",
+      "single-scope-models",
       "successful-effect-result"
     ],
     "extensions": [
