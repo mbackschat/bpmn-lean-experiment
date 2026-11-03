@@ -183,4 +183,4 @@ Registration: `CIB-AGR-0016` in the [register](../CIB-BPMN-RELATION-REGISTER.md)
 |---|---|---|---|---|
 | Proposal | `1cdfae2b` | `fork-turns-none` | `approve-with-required-edits` | `398ecf59, 7c5abba5` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `70a05174` | `fork-turns-none` | `approve-with-required-edits` | `a8109f14` |
