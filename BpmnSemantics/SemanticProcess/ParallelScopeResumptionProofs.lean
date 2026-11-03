@@ -59,6 +59,7 @@ complete command progress and publication acceptance remain separate obligations
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalOccurrencePatch.apply,
+  `SequentialScopeProgram.operationAllowed,
   `InternalCommutation.applyInternalArmingPatch, `InternalCommutation.applyInternalOperationOccurrence?,
   `InternalCommutation.internalArmInput?, `InternalCommutation.internalOperationOccurrences?,
   `InternalCommutation.resolveInternalOperationOccurrence?, `ParallelScopeCommand.completeEffect?,
@@ -661,6 +662,15 @@ theorem closeScheduledTraced_owner_frame_or_exit (program : Program) (stable cur
 end BpmnSemantics.SemanticProcess.InternalCommutation
 
 namespace BpmnSemantics.SemanticProcess
+
+/-- The parallel scope analysis admits no Choice, so its stable closures park no stuck one (`XND-ROLLBACK-01`). -/
+theorem ParallelScopeStart.stuckChoice_eq_false_of_analyzed {program : Program}
+    {analysis : ParallelScopeStart.ProgramAnalysis} {state : RuntimeState}
+    (analyzed : ParallelScopeStart.analyzeProgram program = some analysis) :
+    InternalCommutation.stuckChoice program state = false :=
+  InternalCommutation.stuckChoice_eq_false_of_defaults fun _ _ _ _ _ member => by
+    simpa [SequentialScopeProgram.operationAllowed] using
+      ParallelScopeStart.analyzeProgram_operation_allowed program analysis analyzed _ member
 
 open BpmnSemantics InternalCommutation ParallelScopeReplay
 

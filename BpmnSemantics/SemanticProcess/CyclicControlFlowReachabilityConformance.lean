@@ -130,7 +130,7 @@ theorem arbitrary_route_choice_is_exact
         cyclicWaitingWithBindings, cyclicScopedVariables,
         CyclicRouteValue.output, CyclicRouteValue.bindings,
         singletonWaitingState, chooseToken, onlyTokenOwner?, tokenOwners,
-        selectConditionalOutput, evaluateSimpleBooleanExpression,
+        selectChoiceOutput_some, selectConditionalOutput, evaluateSimpleBooleanExpression,
         removeToken, addToken, canonicalInsertBy, initialState]
   | nullValue =>
       simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
@@ -138,7 +138,7 @@ theorem arbitrary_route_choice_is_exact
         cyclicWaitingWithBindings, cyclicScopedVariables,
         CyclicRouteValue.output, CyclicRouteValue.bindings,
         singletonWaitingState, chooseToken, onlyTokenOwner?, tokenOwners,
-        selectConditionalOutput, evaluateSimpleBooleanExpression,
+        selectChoiceOutput_some, selectConditionalOutput, evaluateSimpleBooleanExpression,
         removeToken, addToken, canonicalInsertBy, initialState]
   | stringValue value =>
       by_cases isRepeat : value = "repeat"
@@ -148,7 +148,7 @@ theorem arbitrary_route_choice_is_exact
           cyclicWaitingWithBindings, cyclicScopedVariables,
           CyclicRouteValue.output, CyclicRouteValue.bindings,
           singletonWaitingState, chooseToken, onlyTokenOwner?, tokenOwners,
-          selectConditionalOutput, evaluateSimpleBooleanExpression,
+          selectChoiceOutput_some, selectConditionalOutput, evaluateSimpleBooleanExpression,
           removeToken, addToken, canonicalInsertBy, initialState]
       · by_cases rework : value = "rework"
         · subst value
@@ -157,14 +157,14 @@ theorem arbitrary_route_choice_is_exact
             cyclicWaitingWithBindings, cyclicScopedVariables,
             CyclicRouteValue.output, CyclicRouteValue.bindings,
             singletonWaitingState, chooseToken, onlyTokenOwner?, tokenOwners,
-            selectConditionalOutput, evaluateSimpleBooleanExpression,
+            selectChoiceOutput_some, selectConditionalOutput, evaluateSimpleBooleanExpression,
             removeToken, addToken, canonicalInsertBy, initialState]
         · simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
             cyclicPostCompletionWithBindings, cyclicPostChooseWithBindings,
             cyclicWaitingWithBindings, cyclicScopedVariables,
             CyclicRouteValue.output, CyclicRouteValue.bindings,
             singletonWaitingState, chooseToken, onlyTokenOwner?, tokenOwners,
-            selectConditionalOutput, evaluateSimpleBooleanExpression,
+            selectChoiceOutput_some, selectConditionalOutput, evaluateSimpleBooleanExpression,
             removeToken, addToken, canonicalInsertBy, initialState, isRepeat, rework]
 
 theorem arbitrary_route_review_is_exact

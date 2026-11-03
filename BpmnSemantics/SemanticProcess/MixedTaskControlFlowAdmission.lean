@@ -233,7 +233,7 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
           flow.id == route.outputFlowId && flow.sourceId == route.boundaryEventId)
         return { id, kind := .service, outputs := outputs ++ [exceptional.targetId.value],
                  reads := SerialBusinessTask.readNames inputs, writes := mappings.map (·.target) }
-  | .exclusiveGateway nodeId candidates default =>
+  | .exclusiveGateway nodeId candidates (some default) =>
       if !checkedChoiceValid source nodeId candidates default then none
       else do
         let ordered ← (candidates ++ [default]).mapM fun flowId => do
@@ -279,7 +279,7 @@ def operationOutputs : SemanticOperation → List ControlPlaceId
   | .initiate _ _ output | .awaitUserTask _ _ _ output _
   | .awaitEffect _ _ _ output _ none | .mergeExclusive _ _ _ output => [output]
   | .awaitEffect _ _ _ output _ (some route) => [output, route.output]
-  | .choose _ _ _ candidates default _ => candidates.map (·.output) ++ [default]
+  | .choose _ _ _ candidates default _ => candidates.map (·.output) ++ default.toList
   | _ => []
 
 def operationOrigin? : SemanticOperation → Option BpmnElementOrigin
@@ -342,7 +342,7 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
                     outputs := [← consumer? program output, ← consumer? program route.output],
                     reads := SerialBusinessTask.readNames effect.inputMappings,
                     writes := effect.outputMappings.map (·.target) }
-  | .choose _ _ _ candidates default origin =>
+  | .choose _ _ _ candidates (some default) (some origin) =>
       if !choiceOriginsValid program candidates default origin then none
       else return { id, kind := .choice,
                     outputs := ← (candidates.map (·.output) ++ [default]).mapM (consumer? program) }

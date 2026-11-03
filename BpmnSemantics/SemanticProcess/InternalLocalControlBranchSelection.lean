@@ -11,7 +11,8 @@ This owner retains the evaluated condition reads required by the complete-prepar
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`evaluateInclusiveBranches,
-  `evaluateSimpleBooleanExpression, `evaluateTrueInclusiveCandidates, `selectConditionalOutput]
+  `evaluateSimpleBooleanExpression, `evaluateTrueInclusiveCandidates, `selectConditionalOutput, `selectFirstTrueOutput,
+  `selectChoiceOutput]
 
 public section
 
@@ -73,6 +74,32 @@ def prepareInternalConditional?
               selected.readVariables }
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareInternalConditional?]
+
+/-- The first true candidate with its evaluated-prefix reads; `none` when none holds or evaluation fails. -/
+private def prepareInternalFirstTrue? (candidates : List ConditionalCandidate) (bindings : List VariableBinding) :
+    Option InternalConditionalSelection :=
+  match candidates with
+  | [] => none
+  | candidate :: rest =>
+      match evaluateSimpleBooleanExpression candidate.condition bindings with
+      | none => none
+      | some true => some ⟨candidate.output, candidate.origin, internalExpressionReadVariables candidate.condition⟩
+      | some false => do
+          let selected ← prepareInternalFirstTrue? rest bindings
+          pure { selected with readVariables :=
+            internalExpressionReadVariables candidate.condition ++ selected.readVariables }
+
+/-- The Choice preparation, dispatching on the optional default pair: a present default keeps `prepareInternalConditional?`, an absent one retains the same evaluated-prefix reads for the first true candidate (`XND-ROUTE-01`). A Program carrying one default field without the other is refused by structural validation; its preparation fails rather than inventing the missing half. -/
+def prepareInternalChoice? (candidates : List ConditionalCandidate) (defaultOutput : Option ControlPlaceId)
+    (defaultOrigin : Option BpmnSequenceFlowOrigin) (bindings : List VariableBinding) :
+    Option InternalConditionalSelection :=
+  match defaultOutput, defaultOrigin with
+  | some output, some origin => prepareInternalConditional? candidates output origin bindings
+  | none, none => prepareInternalFirstTrue? candidates bindings
+  | _, _ => none
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`prepareInternalFirstTrue?,
+  `prepareInternalChoice?]
 
 /-- Retained provenance and dependency reads do not change the existing conditional selector's output or failure. -/
 theorem prepare_internal_conditional_output
@@ -200,6 +227,80 @@ structure InternalInclusiveSelection where
   selected : List (ControlPlaceId × ControlPlaceId)
   readVariables : List String
   deriving Repr, DecidableEq
+
+private theorem prepare_internal_first_true_output (candidates : List ConditionalCandidate)
+    (bindings : List VariableBinding) :
+    (prepareInternalFirstTrue? candidates bindings).map InternalConditionalSelection.output =
+      selectFirstTrueOutput candidates bindings := by
+  induction candidates with
+  | nil => simp [prepareInternalFirstTrue?, selectFirstTrueOutput]
+  | cons candidate rest ih =>
+      cases evaluated : evaluateSimpleBooleanExpression candidate.condition bindings with
+      | none => simp [prepareInternalFirstTrue?, selectFirstTrueOutput, evaluated]
+      | some value =>
+          cases value with
+          | true => simp [prepareInternalFirstTrue?, selectFirstTrueOutput, evaluated]
+          | false =>
+              simp only [prepareInternalFirstTrue?, selectFirstTrueOutput, evaluated]
+              cases remaining : prepareInternalFirstTrue? rest bindings <;> simpa [remaining] using ih
+
+/-- A prepared Choice selects exactly the output the step evaluator `chooseState?` selects. -/
+theorem prepare_internal_choice_output (candidates : List ConditionalCandidate)
+    (defaultOutput : Option ControlPlaceId) (defaultOrigin : Option BpmnSequenceFlowOrigin)
+    (bindings : List VariableBinding) (selected : InternalConditionalSelection)
+    (prepared : prepareInternalChoice? candidates defaultOutput defaultOrigin bindings = some selected) :
+    selectChoiceOutput candidates defaultOutput bindings = some selected.output := by
+  cases defaultOutput <;> cases defaultOrigin <;> simp only [prepareInternalChoice?] at prepared
+  · rw [selectChoiceOutput, ← prepare_internal_first_true_output, prepared]; rfl
+  · contradiction
+  · contradiction
+  · rw [selectChoiceOutput, ← prepare_internal_conditional_output, prepared]; rfl
+
+/-- Only the successful predecessor's evaluated prefix must agree, as for a Choice with a default. -/
+private theorem prepare_internal_first_true_frame (candidates : List ConditionalCandidate)
+    (before after : List VariableBinding) (selected : InternalConditionalSelection)
+    (prepared : prepareInternalFirstTrue? candidates before = some selected)
+    (agree : ∀ name ∈ selected.readVariables,
+      before.filter (fun binding => decide (binding.name = name)) =
+        after.filter (fun binding => decide (binding.name = name))) :
+    prepareInternalFirstTrue? candidates after = some selected := by
+  induction candidates generalizing selected with
+  | nil => simp [prepareInternalFirstTrue?] at prepared
+  | cons candidate rest ih =>
+      cases evaluated : evaluateSimpleBooleanExpression candidate.condition before with
+      | none => simp [prepareInternalFirstTrue?, evaluated] at prepared
+      | some value =>
+          cases value with
+          | true =>
+              simp [prepareInternalFirstTrue?, evaluated] at prepared
+              subst selected
+              have unchanged := internal_expression_evaluation_frame candidate.condition before after agree
+              simp [prepareInternalFirstTrue?, ← unchanged, evaluated]
+          | false =>
+              cases remaining : prepareInternalFirstTrue? rest before with
+              | none => simp [prepareInternalFirstTrue?, evaluated, remaining] at prepared
+              | some tailSelection =>
+                  simp [prepareInternalFirstTrue?, evaluated, remaining] at prepared
+                  subst selected
+                  have unchanged := internal_expression_evaluation_frame candidate.condition before after
+                    fun name member => agree name (List.mem_append_left _ member)
+                  have tailUnchanged := ih tailSelection remaining
+                    fun name member => agree name (List.mem_append_right _ member)
+                  simp [prepareInternalFirstTrue?, ← unchanged, evaluated, tailUnchanged]
+
+theorem prepare_internal_choice_frame (candidates : List ConditionalCandidate)
+    (defaultOutput : Option ControlPlaceId) (defaultOrigin : Option BpmnSequenceFlowOrigin)
+    (before after : List VariableBinding) (selected : InternalConditionalSelection)
+    (prepared : prepareInternalChoice? candidates defaultOutput defaultOrigin before = some selected)
+    (agree : ∀ name ∈ selected.readVariables,
+      before.filter (fun binding => decide (binding.name = name)) =
+        after.filter (fun binding => decide (binding.name = name))) :
+    prepareInternalChoice? candidates defaultOutput defaultOrigin after = some selected := by
+  cases defaultOutput <;> cases defaultOrigin <;> simp only [prepareInternalChoice?] at prepared ⊢
+  · exact prepare_internal_first_true_frame candidates before after selected prepared agree
+  · contradiction
+  · contradiction
+  · exact prepare_internal_conditional_frame candidates _ _ before after selected prepared agree
 
 def internalInclusiveReadVariables (candidates : List InclusiveCandidate) :
     List String :=

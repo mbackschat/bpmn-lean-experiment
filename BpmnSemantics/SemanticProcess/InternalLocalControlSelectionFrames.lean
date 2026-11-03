@@ -151,7 +151,7 @@ theorem selectInternalLocalControl_read_frame (before after : RuntimeState)
       cases found
       have same := onlyTokenOwner_read_frame before after input
         (census input (by simp [InternalLocalControlSelection.censusReads]))
-      have branchSame := prepare_internal_conditional_frame candidates defaultOutput defaultOrigin
+      have branchSame := prepare_internal_choice_frame candidates defaultOutput defaultOrigin
         before.variables.process.bindings after.variables.process.bindings branch branchFound
         (fun name member => (variables name member).symm)
       simp [selectInternalLocalControl?, same, owned, branchSame]

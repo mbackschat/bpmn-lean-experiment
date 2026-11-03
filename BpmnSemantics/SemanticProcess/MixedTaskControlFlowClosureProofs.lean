@@ -25,13 +25,22 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! MTCF-PROGRESS-01 bounds whole scheduled runs: from the per-firing position progress in [`MixedTaskControlFlowProgressProofs`](MixedTaskControlFlowProgressProofs.lean), every scheduled closure from an admitted start is finite and its counters only grow. -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`step]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`step, `MixedTaskControlFlow.operationVertex?]
 
 public section
 
 namespace BpmnSemantics.SemanticProcess.MixedTaskControlFlow
 
 open SerialBusinessTask (RootFrame RootLifecycle ForeignRuntimeEmpty IssuanceFrame frontierFields)
+
+/-- The analysis projects a Choice to a vertex only when it declares a default, so an analyzed Program's stable closures
+park no stuck Choice (`XND-ROLLBACK-01`). -/
+private theorem stuckChoice_eq_false_of_analyzed {program : Program} {analysis : Analysis} {state : RuntimeState}
+    (analyzed : programAnalysis program = some analysis) : InternalCommutation.stuckChoice program state = false :=
+  InternalCommutation.stuckChoice_eq_false_of_defaults fun _ _ _ _ _ member => by
+    obtain ⟨vertices, mapped, _⟩ := program_analysis_projection program analysis analyzed
+    obtain ⟨_, _, projected⟩ := mapM_member_some _ _ vertices mapped _ (List.mem_filter.mpr ⟨member, rfl⟩)
+    simp [MixedTaskControlFlow.operationVertex?] at projected
 open InternalCommutation in
 open InternalCommutation in
 open InternalCommutation in
@@ -61,7 +70,8 @@ theorem scheduled_closure (program : Program) (analysis : Analysis) (baseline st
     have indexed : AtPosition program analysis state := ⟨frontier, position, by cases frontier <;> exact available, canonical⟩
     by_cases settled : state.waits ≠ [] ∨ state.effectWaits ≠ [] ∨ state.control = .completed owner.processInstanceId
     · rw [closeScheduledTraced_stable fuel program commandId index ordinal state
-        (settled_frontier program analysis state ordinaryProfile owner wellFormed analyzed scalar declared framed indexed settled)]
+        (settled_frontier program analysis state ordinaryProfile owner wellFormed analyzed scalar declared framed indexed settled)
+        (stuckChoice_eq_false_of_analyzed analyzed)]
       exact ⟨rfl, reachable, framed, indexed, settled⟩
     · have progress := position_progress program analysis state owner wellFormed analyzed scalar declared framed indexed
       have enabled : ∃ operation ∈ program.operations, ∃ after, fire? program operation state = some after := by

@@ -397,8 +397,18 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
         outgoingCount flows id = 1
   | .exclusiveGateway id candidateFlowIds defaultFlowId =>
       incomingCount flows id = 1 &&
-        outgoingCount flows id = candidateFlowIds.length + 1 &&
-        checkedExclusiveGatewayValid flows id candidateFlowIds defaultFlowId mixed
+        outgoingCount flows id = candidateFlowIds.length + defaultFlowId.toList.length &&
+        match defaultFlowId with
+        | some defaultFlowId => checkedExclusiveGatewayValid flows id candidateFlowIds defaultFlowId mixed
+        -- XND-ADMIT-01: the nested scope-data profile alone (`mixed && variableMerge`, as for the None End below) admits
+        -- a Choice without a default, with two or more conditional flows because CIB's parser refuses one.
+        | none =>
+            mixed && variableMerge && 2 ≤ candidateFlowIds.length &&
+              (candidateFlowIds.eraseDups).length = candidateFlowIds.length &&
+              candidateFlowIds.all fun candidateId =>
+                match flows.find? fun flow => decide (flow.id = candidateId) with
+                | some flow => flow.sourceId = id && sourceConditionValid flow.condition
+                | none => false
   | .inclusiveGatewayDiverging id candidateFlowIds defaultFlowId =>
       incomingCount flows id = 1 &&
         outgoingCount flows id = 3 &&

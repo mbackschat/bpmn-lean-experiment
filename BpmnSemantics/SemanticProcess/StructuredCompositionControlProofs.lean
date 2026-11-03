@@ -218,21 +218,21 @@ theorem selected_conditional_output_is_declared
 
 theorem choice_preserves_single_control_token
     (program : Program) (before after : RuntimeState) (token : ControlToken)
-    (id : OperationId) (origin : BpmnElementOrigin) (input defaultOutput : ControlPlaceId)
-    (candidates : List ConditionalCandidate) (defaultOrigin : BpmnSequenceFlowOrigin)
+    (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId) (defaultOutput : Option ControlPlaceId)
+    (candidates : List ConditionalCandidate) (defaultOrigin : Option BpmnSequenceFlowOrigin)
     (single : before.tokens = [token])
     (fired : fire? program (.choose id origin input candidates defaultOutput defaultOrigin)
       before = some after) :
     after.tokens.length = 1 ∧ after.waits = before.waits ∧
       after.initiationPending = before.initiationPending ∧ token.placeId = input ∧
       ∃ next, after.tokens = [next] ∧
-        next.placeId ∈ candidates.map (·.output) ++ [defaultOutput] := by
+        next.placeId ∈ candidates.map (·.output) ++ defaultOutput.toList := by
   have absent := fire_isSome_snapshotDeclaration_is_absent program _ before (congrArg Option.isSome fired)
   rw [fire_choose_withoutSnapshotDeclaration _ _ _ _ _ _ _ _ absent] at fired
   simp only [chooseState?, bind, pure, Option.bind_eq_some_iff] at fired
   obtain ⟨owner, owned, output, selected, fired⟩ := fired
   obtain ⟨inputEq, ownerEq⟩ := singleton_token_owner before token input owner single owned
-  have declared := selected_conditional_output_is_declared candidates defaultOutput output _ selected
+  have declared := selectChoiceOutput_declared candidates defaultOutput _ output selected
   cases Option.some.inj fired
   simpa [chooseToken, single, inputEq, ownerEq, removeToken, addToken, canonicalInsertBy] using declared
 

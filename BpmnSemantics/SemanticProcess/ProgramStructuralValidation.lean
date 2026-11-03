@@ -453,11 +453,15 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
         placeExists places input &&
         (if program.identity.semanticProfile == mixedTaskControlFlowProfileId || program.identity.semanticProfile == mixedTaskBusinessErrorProfileId || program.identity.semanticProfile == nestedScopeDataProfileId then !candidates.isEmpty else candidates.length = 2) &&
         (candidates.map (·.output)).eraseDups.length = candidates.length &&
-        !((candidates.map (·.output)).contains defaultOutput) &&
+        (match defaultOutput, defaultOrigin with
+          | some output, some flowOrigin =>
+              !((candidates.map (·.output)).contains output) && placeHasOrigin places output flowOrigin
+          -- XND-ADMIT-01: only the nested scope-data profile admits a Choice without a default, of two or more conditions.
+          | none, none => program.identity.semanticProfile == nestedScopeDataProfileId && 2 ≤ candidates.length
+          | _, _ => false) &&
         candidates.all fun candidate =>
           simpleBooleanExpressionValid candidate.condition &&
-            placeHasOrigin places candidate.output candidate.origin &&
-        placeHasOrigin places defaultOutput defaultOrigin
+            placeHasOrigin places candidate.output candidate.origin
   | .selectMany id origin input candidates defaultBranch selectionKey =>
       let outputs := candidates.map (·.output) ++ [defaultBranch.output]
       let expected :=

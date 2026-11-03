@@ -30,8 +30,9 @@ import all BpmnSemantics.SemanticProcess.SerialBusinessTaskLifecycleProofs
 import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmissionProofs
 meta import BpmnSemantics.PrivateEquationLemmas
 
-/-! The exact serial suffix and root frame discharge the runtime ingress validator.
-This derived guard is separate from command progress and its scheduled closure assembly. -/
+/-! The exact serial suffix and root frame discharge the runtime ingress validator, and the analysis discharges the
+stuck-Choice premise of a stable closure. These derived guards are separate from command progress and its scheduled
+closure assembly. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.ForeignRuntimeEmpty,
   `SerialBusinessTask.IssuanceFrame, `SerialBusinessTask.OperationAllowed, `SerialBusinessTask.frontierFields,
@@ -104,5 +105,11 @@ theorem ordered_suffix_runtime_guard (program : Program) (analysis : Analysis) (
       compensationActivityRetentionStateValid, compensationActivityRetentionDeclarationValid,
       compensationEventSubProcessSnapshotStateValid, compensationEventSubProcessSnapshotDeclarationValid,
       compensationExecutionStateValid]
+
+/-- The serial analysis admits no Choice, so its stable closures park no stuck one (`XND-ROLLBACK-01`). -/
+theorem stuckChoice_eq_false_of_analyzed {program : Program} {analysis : Analysis} {state : RuntimeState}
+    (analyzed : programAnalysis program = some analysis) : InternalCommutation.stuckChoice program state = false :=
+  InternalCommutation.stuckChoice_eq_false_of_defaults fun _ _ _ _ _ member => by
+    simpa [OperationAllowed] using program_analysis_operations_allowed program analysis analyzed _ member
 
 end BpmnSemantics.SemanticProcess.SerialBusinessTask

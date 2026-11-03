@@ -357,7 +357,7 @@ private theorem completionTailSucceeded (bindings : List VariableBinding) (comma
   rw [rootStep.2]
   change (InternalCommutation.closeScheduledTraced 6 (programFor exactMetadata)
     commandId 3 0 [] (completionFinished bindings)).failed = false
-  rw [stable]
+  rw [stable (by unfold InternalCommutation.stuckChoice; rw [completionOperations]; rfl)]
   rfl
 
 private theorem completionTailCommitted (before : RuntimeState) (bindings : List VariableBinding)

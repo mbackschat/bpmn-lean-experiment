@@ -337,15 +337,17 @@ def decodeCheckedNode (json : Json) : Except String CheckedNode := do
       | "manualTask" => pure (.nonOperationalTask ⟨← decodeNonemptyStringField json "id"⟩ .manualTask)
       | _ => throw s!"unsupported Task notation {taskNotation}"
   | "exclusiveGateway" =>
+      let defaulted := (json.getObjVal? "defaultFlowId").isOk
       requireObjectShape json
-        ["candidateFlowIds", "defaultFlowId", "direction", "id", "kind"]
+        ((if defaulted then ["candidateFlowIds", "defaultFlowId"] else ["candidateFlowIds"]) ++
+          ["direction", "id", "kind"])
       expectStringField json "direction" "diverging"
       pure
         (.exclusiveGateway
           ⟨← stringField json "id"⟩
           ((← decodeStringArray (← field json "candidateFlowIds")).map
             SequenceFlowId.mk)
-          ⟨← stringField json "defaultFlowId"⟩)
+          (← if defaulted then some <$> (SequenceFlowId.mk <$> stringField json "defaultFlowId") else pure none))
   | "inclusiveGateway" =>
       let direction ← stringField json "direction"
       match direction with

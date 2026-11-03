@@ -564,8 +564,8 @@ def lowerNode (source : CheckedProcess) :
         { elementId := id }
         (firstPlace (incomingPlaces source id))
         (candidateFlowIds.map (lowerConditionalCandidate source))
-        (flowControlPlaceId defaultFlowId)
-        { elementId := defaultFlowId }, scopeId)
+        (defaultFlowId.map flowControlPlaceId)
+        (defaultFlowId.map fun flowId => { elementId := flowId }), scopeId)
   | .inclusiveGatewayDiverging id candidateFlowIds defaultFlowId =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.selectMany

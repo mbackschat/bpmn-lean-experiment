@@ -354,7 +354,7 @@ theorem representative_choice_selects_repeat_for_every_activation
   simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
     cyclicPostCompletionState, cyclicPostChooseState, cyclicWaitingState,
     cyclicVariables, singletonWaitingState, chooseToken, onlyTokenOwner?,
-    tokenOwners, selectConditionalOutput, evaluateSimpleBooleanExpression,
+    tokenOwners, selectChoiceOutput_some, selectConditionalOutput, evaluateSimpleBooleanExpression,
     removeToken, addToken, canonicalInsertBy]
 
 theorem representative_choice_selects_rework_for_every_activation
@@ -368,7 +368,7 @@ theorem representative_choice_selects_rework_for_every_activation
   simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
     cyclicPostCompletionState, cyclicPostChooseState, cyclicWaitingState,
     cyclicVariables, singletonWaitingState, chooseToken, onlyTokenOwner?,
-    tokenOwners, selectConditionalOutput, evaluateSimpleBooleanExpression,
+    tokenOwners, selectChoiceOutput_some, selectConditionalOutput, evaluateSimpleBooleanExpression,
     removeToken, addToken, canonicalInsertBy]
 
 theorem representative_merge_passes_selected_branch_for_every_activation
@@ -423,7 +423,7 @@ theorem representative_choice_selects_exit_for_every_activation
   simp [cyclicChoiceOperation, cyclic_program_has_no_snapshot_declaration, chooseState?,
     cyclicPostCompletionState, cyclicPostChooseState, cyclicWaitingState,
     cyclicVariables, singletonWaitingState, chooseToken, onlyTokenOwner?,
-    tokenOwners, selectConditionalOutput, evaluateSimpleBooleanExpression,
+    tokenOwners, selectChoiceOutput_some, selectConditionalOutput, evaluateSimpleBooleanExpression,
     removeToken, addToken, canonicalInsertBy]
 
 theorem representative_none_end_consumes_the_only_token

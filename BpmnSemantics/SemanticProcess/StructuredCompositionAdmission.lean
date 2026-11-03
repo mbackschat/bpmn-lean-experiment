@@ -190,9 +190,9 @@ def operationVertex? (program : Program) (operation : SemanticOperation) : Optio
                    reads := some source, writes := some target }
       | _, _ => none
   | .choose _ _ _ candidates defaultOutput _ =>
-      if candidates.length != 2 then none
+      if candidates.length != 2 || defaultOutput.isNone then none
       else return { id, kind := .choice
-                    outputs := ← ((candidates.map (·.output)) ++ [defaultOutput]).mapM
+                    outputs := ← ((candidates.map (·.output)) ++ defaultOutput.toList).mapM
                       (consumer? program) }
   | .mergeExclusive _ _ inputs output =>
       if inputs.length != 3 then none

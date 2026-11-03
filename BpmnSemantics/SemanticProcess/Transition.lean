@@ -586,7 +586,7 @@ theorem fire_withSnapshotDeclaration_is_disabled (program : Program)
 @[simp] theorem fire_choose_withoutSnapshotDeclaration (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
     (input : ControlPlaceId) (candidates : List ConditionalCandidate)
-    (defaultOutput : ControlPlaceId) (defaultOrigin : BpmnSequenceFlowOrigin)
+    (defaultOutput : Option ControlPlaceId) (defaultOrigin : Option BpmnSequenceFlowOrigin)
     (absent : program.compensationEventSubProcessSnapshots = none) :
     fire? program (.choose id origin input candidates defaultOutput defaultOrigin) state =
       chooseState? state input candidates defaultOutput := by

@@ -172,7 +172,7 @@ theorem ParallelScopeCommandBoundaryReachable.scoped_completion_selection_total
     · rcases completeParallelScope_survivor_or_final_return analysis.entry entryRecord.owner actor cut.before cut.step.state binding
         (frame.population entryRecord.owner entryStructural) bound completed with ⟨iteration, member, other, survives⟩ | returned
       · have empty := (siblings iteration member other survives).2.2
-        rw [closed, (cut.stable_success empty).1, empty] at nonempty
+        rw [closed, (cut.stable_success empty (ParallelScopeStart.stuckChoice_eq_false_of_analyzed admitted)).1, empty] at nonempty
         exact False.elim (nonempty rfl)
       · have snapshots : program.compensationEventSubProcessSnapshots = none := by
           cases snapshot : program.compensationEventSubProcessSnapshots with

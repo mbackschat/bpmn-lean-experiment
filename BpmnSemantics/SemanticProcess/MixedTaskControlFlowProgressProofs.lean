@@ -174,19 +174,24 @@ theorem routing_fire_preserves_position (program : Program) (analysis : Analysis
         position_with_token program analysis before frontier input owner position found
       have projected := token_consumer_projects_current_vertex program analysis
         (.choose id origin input candidates default defaultOrigin) vertex input analyzed member included (by simp [operationInputs]) consumer
+      obtain ⟨fallback, rfl⟩ : ∃ fallback, default = some fallback := by
+        cases default with | none => simp [MixedTaskControlFlow.operationVertex?] at projected | some fallback => exact ⟨fallback, rfl⟩
+      obtain ⟨fallbackOrigin, rfl⟩ : ∃ fallbackOrigin, defaultOrigin = some fallbackOrigin := by
+        cases defaultOrigin with | none => simp [MixedTaskControlFlow.operationVertex?] at projected | some origin => exact ⟨origin, rfl⟩
       have internal : isWait vertex.kind = false := by
         simp [operationVertex?, Option.bind_eq_some_iff] at projected
         obtain ⟨_, _, _, equal⟩ := projected
         simp [← equal, isWait]
-      have offered := StructuredComposition.selected_conditional_output_is_declared candidates default output _ selected
+      have offered := StructuredComposition.selected_conditional_output_is_declared candidates fallback output _
+        (by simpa [selectChoiceOutput_some] using selected)
       cases Option.some.inj active
       have parts := fields
       simp only [frontierFields, Prod.mk.injEq] at parts
       have result := routed_token_preserves_position program analysis
-        (.choose id origin input candidates default defaultOrigin) vertex before token output rootOwner
+        (.choose id origin input candidates (some fallback) (some fallbackOrigin)) vertex before token output rootOwner
         wellFormed analyzed member included projected internal rfl
-        (by change token.placeId ∈ [input] ++ (candidates.map (·.output) ++ [default]); simp [inputEq])
-        (by change output ∈ [input] ++ (candidates.map (·.output) ++ [default]); exact List.mem_append_right _ offered)
+        (by change token.placeId ∈ [input] ++ (candidates.map (·.output) ++ [fallback]); simp [inputEq])
+        (by change output ∈ [input] ++ (candidates.map (·.output) ++ [fallback]); exact List.mem_append_right _ offered)
         offered declared fields framed available canonical
       simpa [chooseToken, parts.2.1, inputEq, ownerEq, removeToken, addToken, canonicalInsertBy] using result
   case mergeExclusive id origin inputs output =>
@@ -472,10 +477,12 @@ theorem position_progress (program : Program) (analysis : Analysis) (state : Run
           simp [awaitEffectState?, program_analysis_effect_inputs program analysis analyzed scalar, onlyTokenOwner?, tokenOwners,
             fields.2.1, consumes', runningInstance?, running, evaluated, fields.2.2.2.2]
         case choose id origin input candidates output defaultOrigin =>
+          obtain ⟨output, rfl⟩ : ∃ fallback, output = some fallback := by
+            cases output with | none => simp [MixedTaskControlFlow.operationVertex?] at projected | some fallback => exact ⟨fallback, rfl⟩
           obtain ⟨selected, selection⟩ := StructuredComposition.unique_bindings_make_choice_total state.variables.process.bindings
             (strictlySortedStrings_nodup _ (Bool.and_eq_true_iff.mp canonical).1) candidates output
           simp [fire_choose_withoutSnapshotDeclaration _ _ _ _ _ _ _ _ absent,
-            chooseState?, onlyTokenOwner?, tokenOwners, fields.2.1, consumes', selection]
+            chooseState?, selectChoiceOutput_some, onlyTokenOwner?, tokenOwners, fields.2.1, consumes', selection]
         case mergeExclusive id origin inputs output =>
           rw [fire_mergeExclusive_withoutSnapshotDeclaration _ _ _ _ _ _ absent,
             mergeExclusiveState_singleton_offer state inputs output token fields.2.1 consumes']

@@ -72,7 +72,7 @@ def selectInternalLocalControl? (state : RuntimeState) (operation : SemanticOper
       pure { operation, tokens := { owner, consumed := inputs, produced := [output] } }
   | .choose _ _ input candidates defaultOutput defaultOrigin => do
       let owner ← onlyTokenOwner? state input
-      let selected ← prepareInternalConditional? candidates defaultOutput defaultOrigin
+      let selected ← prepareInternalChoice? candidates defaultOutput defaultOrigin
         state.variables.process.bindings
       pure
         { operation
@@ -178,11 +178,8 @@ theorem selectInternalLocalControl_refines (program : Program) (state : RuntimeS
       obtain ⟨owner, owned, found⟩ := Option.bind_eq_some_iff.mp found
       obtain ⟨branch, branchFound, found⟩ := Option.bind_eq_some_iff.mp found
       cases found
-      have outputFound : selectConditionalOutput candidates defaultOutput
-          state.variables.process.bindings = some branch.output := by
-        rw [← prepare_internal_conditional_output candidates defaultOutput defaultOrigin,
-          branchFound]
-        rfl
+      have outputFound := prepare_internal_choice_output candidates defaultOutput defaultOrigin
+        state.variables.process.bindings branch branchFound
       change chooseState? state input candidates defaultOutput = _
       simp [chooseState?, owned, outputFound, chooseToken,
         InternalLocalControlSelection.apply, TokenPatch.apply, removeTokens, addTokens,

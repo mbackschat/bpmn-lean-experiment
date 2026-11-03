@@ -125,7 +125,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Semantic Process external execution
 
-This module owns reusable full-occurrence-identity refusal laws over `ExecutionRuntime` states. Bounded closure and the pure `applyStimulus` boundary are owned by `TransitionTrace`; external command admission, wait completion, scenario projection, and capsule fixtures remain separate.
+This module owns reusable full-occurrence-identity refusal laws over `ExecutionRuntime` states and the command-boundary laws of committed and rolled-back closures. Bounded closure and the pure `applyStimulus` boundary are owned by `TransitionTrace`; external command admission, wait completion, scenario projection, and capsule fixtures remain separate.
 -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.ScheduledClosureResult.failed,
@@ -142,7 +142,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.
   `matchingOrdinaryUserTaskWait?, `messageBoundedPairForTask?, `sequentialScopeBindingForEntry?,
   `sequentialScopeProgramSelected, `sequentialScopeTaskWaits, `singletonEffectWaitingState,
   `singletonTimerWaitingState, `singletonWaitingState, `taskIdNamesWait, `timerIdNamesWait,
-  `writeSequentialScopeValues?]
+  `writeSequentialScopeValues?, `evaluateStimulusScheduled, `StimulusResult.ofScheduledClosure]
 
 public section
 
@@ -209,6 +209,26 @@ theorem applyStimulus_committed_frontier_stable
   rw [stateEq]
   exact InternalCommutation.closeScheduledTraced_success_stable closureLimit program
     (stimulusCommandId stimulus) 1 0 [] (admitStimulus program before stimulus).state succeeded
+
+/-- XND-ROLLBACK-01 at the command: whenever the closure from a committed admission reports a no-flow Choice, after
+any number of steps, the command rolls back flag-free to exactly the state it was given and publishes no transition or
+lifecycle. `prependClosureStep` passes a failed result through, so the flag raised at the stable exit reaches here. -/
+private theorem evaluateStimulusScheduled_noFlowChoice (closureLimit : Nat) (program : Program) (state : RuntimeState)
+    (stimulus : Stimulus) (schedule : InternalCommutation.InternalChoiceSchedule)
+    (admitted : (admitStimulus program state stimulus).outcome = .committed)
+    (allowed : ¬ (program.internalSchedulingMode = .rejectObservableChoice ∧ schedule ≠ []))
+    (noFlow : (InternalCommutation.closeScheduledTraced closureLimit program (stimulusCommandId stimulus) 1 0 schedule
+      (admitStimulus program state stimulus).state).noFlowChoice = true) :
+    (evaluateStimulusScheduled closureLimit program state stimulus schedule).result =
+        { outcome := .rolledBack, state, internalStepBoundExceeded := false, ambiguousInternalChoice := false } ∧
+      (evaluateStimulusScheduled closureLimit program state stimulus schedule).candidateTransitions = none ∧
+      (evaluateStimulusScheduled closureLimit program state stimulus schedule).candidateLifecycles = none := by
+  unfold evaluateStimulusScheduled
+  simp only [admitted, allowed, ↓reduceIte]
+  generalize InternalCommutation.closeScheduledTraced closureLimit program (stimulusCommandId stimulus) 1 0 schedule
+    (admitStimulus program state stimulus).state = closure at noFlow ⊢
+  cases failure : closure.scheduleFailure <;>
+    simp [failure, noFlow, StimulusResult.ofScheduledClosure]
 
 private theorem empty_activities_refuse_scope_binding (program : Program) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (empty : state.activityOccurrences = []) :

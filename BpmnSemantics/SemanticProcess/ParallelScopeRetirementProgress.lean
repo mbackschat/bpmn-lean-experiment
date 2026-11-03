@@ -54,7 +54,7 @@ issues the parent continuation. These laws connect cancellation to the actual
 retirement cut rather than assuming a later successful scheduler step.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.applyInternalOperationOccurrence?, `InternalCommutation.ScheduledClosureResult.failed,
   `InternalCommutation.internalOperationOccurrenceOffers?, `InternalCommutation.internalOperationOccurrences?,
   `InternalCommutation.mergeExecutionFrontier, `InternalCommutation.ordinaryExecutionFrontier,
   `InternalCommutation.resolveInternalOperationOccurrence?, `ParallelScopeStart.programSelected,
@@ -739,12 +739,11 @@ The empty choice schedule is inherited from its execution prefix, not assumed fo
 theorem InternalCommutation.ParallelScopeSingletonCut.stable_success {program : Program} {commandId : SemanticId}
     {fuel index ordinal : Nat} {state : RuntimeState}
     (cut : ParallelScopeSingletonCut program commandId fuel index ordinal [] state)
-    (stable : deriveInternalExecutionFrontier program cut.step.state = {}) :
+    (stable : deriveInternalExecutionFrontier program cut.step.state = {})
+    (unstuck : stuckChoice program cut.step.state = false) :
     (closeScheduledTraced fuel program commandId index ordinal [] state).state = cut.step.state ∧
       (closeScheduledTraced fuel program commandId index ordinal [] state).failed = false := by
-  have continuation := cut.continuation
-  rw [prefix_empty_schedule cut.after_prefix, closeScheduledTraced_stable _ _ _ _ _ _ stable] at continuation
-  exact continuation
+  simpa [prefix_empty_schedule cut.after_prefix, closeScheduledTraced_stable _ _ _ _ _ _ stable unstuck, ScheduledClosureResult.failed] using cut.continuation
 
 /-- A surviving sibling at the actual scoped-command retirement cut establishes a successful
 empty frontier, excluding every body and structural operation. Admission and the actual prefix

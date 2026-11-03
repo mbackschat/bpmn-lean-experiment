@@ -707,8 +707,8 @@ theorem nonwriting_step_moves_input_positions
 
 theorem choice_preserves_input_positions
     (program : Program) (vertices : List Vertex) (analysis : Analysis) (before after : RuntimeState)
-    (id : OperationId) (origin : BpmnElementOrigin) (input defaultOutput : ControlPlaceId)
-    (candidates : List ConditionalCandidate) (defaultOrigin : BpmnSequenceFlowOrigin)
+    (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId) (defaultOutput : Option ControlPlaceId)
+    (candidates : List ConditionalCandidate) (defaultOrigin : Option BpmnSequenceFlowOrigin)
     (analyzed : programAnalysis program = some analysis) (graph : analyze vertices = some analysis)
     (member : SemanticOperation.choose id origin input candidates defaultOutput defaultOrigin ∈ program.operations)
     (positions : RuntimeInputPositions program vertices analysis before) (bounded : ControlUnitBound before)

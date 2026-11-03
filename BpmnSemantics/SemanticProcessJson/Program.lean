@@ -633,9 +633,11 @@ def decodeOperation (json : Json) :
           inputs
           ⟨← stringField json "output"⟩)
   | "choose" =>
+      -- The default pair is present or absent as a whole, as the wire schema's `dependentRequired` states.
+      let defaulted := (json.getObjVal? "defaultOutput").isOk || (json.getObjVal? "defaultOrigin").isOk
       requireObjectShape json
-        ["candidates", "defaultOrigin", "defaultOutput", "id", "input",
-          "kind", "origin"]
+        ((if defaulted then ["candidates", "defaultOrigin", "defaultOutput"] else ["candidates"]) ++
+          ["id", "input", "kind", "origin"])
       pure
         (.choose
           id
@@ -643,8 +645,8 @@ def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           (← decodeArray decodeConditionalCandidate
             (← field json "candidates"))
-          ⟨← stringField json "defaultOutput"⟩
-          (← decodeSequenceFlowOrigin (← field json "defaultOrigin")))
+          (← if defaulted then some <$> (ControlPlaceId.mk <$> stringField json "defaultOutput") else pure none)
+          (← if defaulted then some <$> decodeSequenceFlowOrigin (← field json "defaultOrigin") else pure none))
   | "selectMany" =>
       requireObjectShape json
         ["candidates", "defaultBranch", "id", "input", "kind", "origin",

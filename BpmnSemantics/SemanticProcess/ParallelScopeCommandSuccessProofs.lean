@@ -200,7 +200,8 @@ private theorem closeScheduledTraced_parallelScope_nonfuel_success
     unfold closeScheduledTraced at closedEq
     dsimp only at closedEq
     split at closedEq
-    · simp only [List.isEmpty_nil, ↓reduceIte] at closedEq
+    · simp only [List.isEmpty_nil, ↓reduceIte, ParallelScopeStart.stuckChoice_eq_false_of_analyzed admitted,
+        Bool.false_eq_true] at closedEq
       cases closedEq
       rfl
     · rename_i unstable

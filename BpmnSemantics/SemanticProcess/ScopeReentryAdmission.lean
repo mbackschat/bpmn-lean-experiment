@@ -104,13 +104,13 @@ private def checkedJoint : CheckedNode → Bool
   | .exclusiveGateway .. | .exclusiveMerge .. => true
   | _ => false
 
-/-- SRE-ADMIT-01, XCA-ADMIT-01: a Choice with one or more conditions or a single-output Merge of the root scope; one in a
-body refuses. -/
+/-- SRE-ADMIT-01, XCA-ADMIT-01, XND-ADMIT-01: a Choice with one or more conditions and a default, or two or more without
+one, or a single-output Merge of the root scope; one in a body refuses. -/
 private def checkedJoint? (source : CheckedProcess) (root : DefinitionScopeId) :
     CheckedNode → Option (String × List String)
   | .exclusiveGateway id candidates default => do
-      if dataCheckedNodeScope? source id != some root || candidates.isEmpty then none else do
-      let outputs ← (candidates ++ [default]).mapM fun flowId =>
+      if dataCheckedNodeScope? source id != some root || candidates.length + default.toList.length < 2 then none else do
+      let outputs ← (candidates ++ default.toList).mapM fun flowId =>
         (source.sequenceFlows.find? (·.id == flowId)).map (·.targetId.value)
       some (id.value, outputs)
   | .exclusiveMerge id =>
@@ -126,14 +126,15 @@ private def operationJoint : SemanticOperation → Bool
   | .mergeExclusive _ _ inputs _ => 2 ≤ inputs.length
   | _ => false
 
-/-- SRE-ADMIT-01, XCA-ADMIT-01: a Choice with one or more conditions or a Merge of the root scope; one in a body refuses. -/
+/-- SRE-ADMIT-01, XCA-ADMIT-01, XND-ADMIT-01: a Choice of two or more outputs or a Merge of the root scope; one in a body
+refuses. -/
 private def operationJoint? (program : Program) (root : String) (operation : SemanticOperation) :
     Option (String × List String) := do
   if dataOperationScope? program operation != some root then none else
   match operation with
   | .choose id _ _ candidates defaultOutput _ =>
-      if candidates.isEmpty then none
-      else return (id.value, ← (candidates.map (·.output) ++ [defaultOutput]).mapM (consumer? program))
+      if candidates.length + defaultOutput.toList.length < 2 then none
+      else return (id.value, ← (candidates.map (·.output) ++ defaultOutput.toList).mapM (consumer? program))
   | .mergeExclusive id _ _ output => return (id.value, [← consumer? program output])
   | _ => none
 

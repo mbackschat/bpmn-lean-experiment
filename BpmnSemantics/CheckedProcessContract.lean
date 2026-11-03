@@ -301,7 +301,8 @@ inductive CheckedNode where
   | exclusiveGateway
       (id : NodeId)
       (candidateFlowIds : List SequenceFlowId)
-      (defaultFlowId : SequenceFlowId)
+      -- Absent only when the source declares no default (XND-ADMIT-01); lowering never invents one.
+      (defaultFlowId : Option SequenceFlowId)
   | inclusiveGatewayDiverging
       (id : NodeId)
       (candidateFlowIds : List SequenceFlowId)

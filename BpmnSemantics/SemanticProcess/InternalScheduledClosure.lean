@@ -340,10 +340,12 @@ structure ScheduledClosureResult where
   scheduleFailure : Option InternalChoiceScheduleFailure := none
   records : Option (List InternalTransitionRecord) := none
   lifecycles : Option (List UnnumberedFlowNodeOccurrenceDelta) := none
+  /-- XND-ROLLBACK-01: the stable closure parks a token at a Choice without a default that matches no route. -/
+  noFlowChoice : Bool := false
   deriving Repr
 
 def ScheduledClosureResult.failed (result : ScheduledClosureResult) : Bool :=
-  result.hitBound || result.ambiguousChoice || result.scheduleFailure.isSome
+  result.hitBound || result.ambiguousChoice || result.scheduleFailure.isSome || result.noFlowChoice
 
 def prependClosureStep (step : InternalClosureStep) (closed : ScheduledClosureResult) :
     ScheduledClosureResult :=
@@ -361,6 +363,25 @@ private theorem prependClosureStep_projections (step : InternalClosureStep) (clo
   unfold prependClosureStep
   split <;> simp [ScheduledClosureResult.failed]
 
+/-- XND-ROLLBACK-01: a token waits at the input of a Choice without a default whose every candidate evaluates to
+`false`. It lives beside the closure that reads it, so a fixture deciding the closure opens one owner, not two. -/
+def stuckChoice (program : Program) (state : RuntimeState) : Bool :=
+  program.operations.any fun
+    | .choose _ _ input candidates none _ =>
+        state.tokens.any (fun token => decide (token.placeId = input)) &&
+          choiceCandidatesAllFalse candidates state.variables.process.bindings
+    | _ => false
+
+/-- The premise every stable-success consumer discharges from its analysis: no default-less Choice, nothing stuck. -/
+theorem stuckChoice_eq_false_of_defaults {program : Program} {state : RuntimeState}
+    (defaults : ∀ id origin input candidates defaultOrigin,
+      SemanticOperation.choose id origin input candidates none defaultOrigin ∉ program.operations) :
+    stuckChoice program state = false := by
+  unfold stuckChoice
+  rw [List.any_eq_false]
+  intro operation member
+  split <;> simp_all
+
 /-- Fuel counts operations, including every member of an independent batch. Stable closure is
 checked before fuel; fuel is checked before preparation ambiguity or directive inspection.
 -/
@@ -369,7 +390,8 @@ def closeScheduledTraced (fuel : Nat) (program : Program) (commandId : SemanticI
     (state : RuntimeState) : ScheduledClosureResult :=
   let frontier := deriveInternalExecutionFrontier program state
   if frontier.offers.isEmpty && !frontier.preparationFailed then
-    if schedule.isEmpty then { state, records := some [], lifecycles := some [] }
+    if stuckChoice program state then { state, noFlowChoice := true }
+    else if schedule.isEmpty then { state, records := some [], lifecycles := some [] }
     else { state, scheduleFailure := some .unusedDirective }
   else match fuel with
     | 0 => { state, hitBound := true }
@@ -389,16 +411,16 @@ def closeScheduledTraced (fuel : Nat) (program : Program) (commandId : SemanticI
 termination_by fuel
 decreasing_by exact Nat.lt_succ_of_le (Nat.sub_le _ _)
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`closeScheduledTraced]
+run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`stuckChoice, `closeScheduledTraced]
 
 /-- Stability is accepted before fuel is inspected, including at the exact zero-fuel boundary. -/
 theorem closeScheduledTraced_stable (fuel : Nat) (program : Program) (commandId : SemanticId)
     (index ordinal : Nat) (state : RuntimeState)
-    (frontier : deriveInternalExecutionFrontier program state = {}) :
+    (frontier : deriveInternalExecutionFrontier program state = {}) (unstuck : stuckChoice program state = false) :
     closeScheduledTraced fuel program commandId index ordinal [] state =
       { state, records := some [], lifecycles := some [] } := by
   unfold closeScheduledTraced
-  simp [frontier]
+  simp [frontier, unstuck]
 
 /-- An executed nonempty selection consumes one fuel unit per member; optional publication cannot change the recursive state or failure verdict. -/
 theorem closeScheduledTraced_selected_step (fuel : Nat) (program : Program) (commandId : SemanticId)
@@ -479,6 +501,8 @@ theorem closeScheduledTraced_exact_consumption (fuel : Nat) (program : Program) 
       dsimp only at closedEq
       split at closedEq
       · rename_i stable
+        split at closedEq
+        · cases closedEq; simp [ScheduledClosureResult.failed] at succeeded
         split at closedEq
         · rename_i empty
           have nil : schedule = [] := by simpa using empty
@@ -647,7 +671,7 @@ theorem closeScheduledTraced_cursor_induction (program : Program) (commandId : S
       unfold closeScheduledTraced at closedEq
       dsimp only at closedEq
       split at closedEq
-      · split at closedEq <;> cases closedEq <;> exact ⟨_, _, _, _, .initial, initial⟩
+      · split at closedEq <;> (try split at closedEq) <;> cases closedEq <;> exact ⟨_, _, _, _, .initial, initial⟩
       · rename_i unstable
         cases fuel with
         | zero => cases closedEq; exact ⟨_, _, _, _, .initial, initial⟩
@@ -698,7 +722,7 @@ theorem closeScheduledTraced_hitBound_cursor (program : Program) (commandId : Se
       unfold closeScheduledTraced at closedEq
       dsimp only at closedEq
       split at closedEq
-      · split at closedEq <;> cases closedEq <;> contradiction
+      · split at closedEq <;> (try split at closedEq) <;> cases closedEq <;> contradiction
       · rename_i unstable
         cases fuel with
         | zero => cases closedEq; exact ⟨0, index, ordinal, schedule, .initial, unstable, Or.inl rfl⟩

@@ -355,8 +355,9 @@ inductive SemanticOperation where
       (origin : BpmnElementOrigin)
       (input : ControlPlaceId)
       (candidates : List ConditionalCandidate)
-      (defaultOutput : ControlPlaceId)
-      (defaultOrigin : BpmnSequenceFlowOrigin)
+      -- Both present or both absent; absent only when the source declares no default (XND-ADMIT-01).
+      (defaultOutput : Option ControlPlaceId)
+      (defaultOrigin : Option BpmnSequenceFlowOrigin)
   | selectMany
       (id : OperationId)
       (origin : BpmnElementOrigin)

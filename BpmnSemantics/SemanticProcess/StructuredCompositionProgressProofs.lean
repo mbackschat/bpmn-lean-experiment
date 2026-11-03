@@ -65,7 +65,22 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CheckedSequenceFlow.
 
 public section
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`operationVertex?]
+
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
+
+/-- Every Choice of an analyzed Program declares its default: the analysis projects a Choice to a vertex only then. -/
+private theorem choice_default_of_analyzed {program : Program} {analysis : Analysis}
+    (analyzed : programAnalysis program = some analysis) {id : OperationId} {origin : BpmnElementOrigin}
+    {input : ControlPlaceId} {candidates : List ConditionalCandidate} {defaultOrigin : Option BpmnSequenceFlowOrigin}
+    (member : SemanticOperation.choose id origin input candidates none defaultOrigin ∈ program.operations) : False := by
+  obtain ⟨_, _, projected⟩ := program_analysis_projects_each_executable_operation program analysis _ analyzed member rfl
+  simp [operationVertex?] at projected
+
+/-- An analyzed Program's stable closures park no stuck Choice (`XND-ROLLBACK-01`). -/
+private theorem stuckChoice_eq_false_of_analyzed {program : Program} {analysis : Analysis} {state : RuntimeState}
+    (analyzed : programAnalysis program = some analysis) : InternalCommutation.stuckChoice program state = false :=
+  InternalCommutation.stuckChoice_eq_false_of_defaults fun _ _ _ _ _ member => choice_default_of_analyzed analyzed member
 
 /-- A token's analyzed consumer is enabled by the actual reachable runtime, including data arming and merge passage. -/
 theorem reached_token_has_enabled_consumer
@@ -126,9 +141,12 @@ theorem reached_token_has_enabled_consumer
     simp [activateDataInputOutputUserTask?, onlyTokenOwner?, tokenOwners, single, consumes,
       dataInputOutputRunningInstance_of_running running, available, noScopes]
   case choose id origin input candidates output defaultOrigin =>
+    cases output with
+    | none => exact (choice_default_of_analyzed analyzed member).elim
+    | some output =>
     obtain ⟨selected, selection⟩ := unique_bindings_make_choice_total reached.variables.process.bindings valid.1 candidates output
     simp [fire_choose_withoutSnapshotDeclaration _ _ _ _ _ _ _ _ noSnapshots,
-      chooseState?, onlyTokenOwner?, tokenOwners, single, consumes, selection]
+      chooseState?, selectChoiceOutput_some, onlyTokenOwner?, tokenOwners, single, consumes, selection]
   case mergeExclusive id origin inputs output =>
     rw [fire_mergeExclusive_withoutSnapshotDeclaration _ _ _ _ _ _ noSnapshots,
       mergeExclusiveState_singleton_offer reached inputs output token single consumes]
@@ -698,7 +716,8 @@ theorem reached_scheduled_closure_is_bounded
     rcases admitted_frontier_is_complete program analysis reached root owner profile wellFormed analyzed origins definitions rootKey
       frame bounded owned (fun token live => let ⟨target, found, _⟩ := reachedPositions.1 token live; ⟨target, found⟩) with
       ⟨frontier, stable⟩ | ⟨offer, member, fired, aligned, frontier⟩
-    · simp only [closeScheduledTraced_stable fuel program commandId index ordinal reached frontier]
+    · simp only [closeScheduledTraced_stable fuel program commandId index ordinal reached frontier
+        (stuckChoice_eq_false_of_analyzed analyzed)]
       rcases frame.2 with ⟨liveOwner, running, _⟩ | ⟨completedId, completed, _⟩
       · obtain ⟨⟨wait, waits⟩, _⟩ := reached_raw_stable_running_has_task program analysis startCommandId processId instanceId
           liveOwner.processInstanceId bindings reached wellFormed profile analyzed committed reachable running stable

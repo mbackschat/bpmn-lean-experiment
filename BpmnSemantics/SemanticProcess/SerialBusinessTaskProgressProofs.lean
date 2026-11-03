@@ -716,7 +716,7 @@ theorem serial_scheduled_closure (program : Program) (analysis : Analysis) (base
     obtain ⟨earlier, ordered, position, available, canonical⟩ := indexed
     have atSuffix : AtOrderedSuffix program analysis state := ⟨earlier, remaining, ordered, position, available, canonical⟩
     by_cases settled : state.waits ≠ [] ∨ state.effectWaits ≠ [] ∨ state.control = .completed owner.processInstanceId
-    · rw [closeScheduledTraced_stable fuel program commandId index ordinal state
+    · rw [closeScheduledTraced_stable fuel program commandId index ordinal state (unstuck := stuckChoice_eq_false_of_analyzed analyzed)
         (serial_settled_frontier program analysis state profile owner wellFormed analyzed declared framed atSuffix settled)]
       exact ⟨rfl, reachable, settled⟩
     · have progress := serial_position_progress program analysis state owner wellFormed analyzed scalar declared framed atSuffix

@@ -94,7 +94,7 @@ def operationOutputs : SemanticOperation → List ControlPlaceId
       output :: route.toList.map (·.output)
   | .duplicate _ _ _ outputs => outputs
   | .choose _ _ _ candidates defaultOutput _ =>
-      candidates.map (·.output) ++ [defaultOutput]
+      candidates.map (·.output) ++ defaultOutput.toList
   | .selectMany _ _ _ candidates defaultBranch _ =>
       candidates.map (·.output) ++ [defaultBranch.output]
   | .throwError _ _ _ _ handler => [handler.output]

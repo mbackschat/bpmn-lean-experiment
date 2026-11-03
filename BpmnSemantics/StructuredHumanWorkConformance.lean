@@ -56,7 +56,7 @@ def checkedProcess : CheckedProcess :=
       , .noneEndEvent ⟨"End_Approved"⟩
       , .noneEndEvent ⟨"End_ChangesRequested"⟩
       , .exclusiveGateway ⟨"Resolution"⟩
-          [⟨"Flow_Approved"⟩, ⟨"Flow_ChangesRequested"⟩] ⟨"Flow_Aborted"⟩
+          [⟨"Flow_Approved"⟩, ⟨"Flow_ChangesRequested"⟩] (some ⟨"Flow_Aborted"⟩)
       , .userTask ⟨"ReviewException"⟩ (some "Review exception")
           (some assignmentOnlyMetadata)
       , .noneStartEvent ⟨"Start_ExpenseException"⟩ ]
@@ -93,7 +93,7 @@ def executionOperations : List SemanticOperation :=
       , { condition := .stringEquals "resolution" "changes-requested"
           output := ⟨"place:Flow_ChangesRequested"⟩
           origin := { elementId := ⟨"Flow_ChangesRequested"⟩ } } ]
-      ⟨"place:Flow_Aborted"⟩ { elementId := ⟨"Flow_Aborted"⟩ }
+      (some ⟨"place:Flow_Aborted"⟩) (some { elementId := ⟨"Flow_Aborted"⟩ })
   , .awaitUserTask ⟨"operation:ReviewException"⟩
       { elementId := ⟨"ReviewException"⟩ }
       ⟨"place:Flow_StartToReview"⟩ ⟨"place:Flow_ReviewToResolution"⟩

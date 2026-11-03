@@ -38,7 +38,7 @@ private def sub (owner id : String) := node owner (.embeddedSubProcess ⟨id⟩ 
 /-- A Choice whose conditional candidates go to `conditioned`, in declaration order, and whose default goes to
 `fallback`. -/
 private def choice (owner id : String) (conditioned : List String) (fallback : String) :=
-  node owner (.exclusiveGateway ⟨id⟩ (conditioned.map (flowId id ·)) (flowId id fallback))
+  node owner (.exclusiveGateway ⟨id⟩ (conditioned.map (flowId id ·)) (some (flowId id fallback)))
 
 private def literal (target value : String) : VariableMapping := { target, expression := .stringLiteral value }
 private def enclosing (target name : String) : VariableMapping := { target, expression := .enclosingVariable name }

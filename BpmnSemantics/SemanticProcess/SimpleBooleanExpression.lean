@@ -163,4 +163,87 @@ def selectConditionalOutput
       | some false => selectConditionalOutput rest defaultOutput bindings
       | none => none
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`selectConditionalOutput]
+
+/-- XND-ROUTE-01: the first true candidate of a Choice without a default, in declaration order; `none` when none holds
+or evaluation fails (Exclusive Choice without a default proposal). -/
+def selectFirstTrueOutput (candidates : List ConditionalCandidate) (bindings : List VariableBinding) :
+    Option ControlPlaceId :=
+  match candidates with
+  | [] => none
+  | candidate :: rest =>
+      match evaluateSimpleBooleanExpression candidate.condition bindings with
+      | some true => some candidate.output
+      | some false => selectFirstTrueOutput rest bindings
+      | none => none
+
+/-- The output a Choice selects, dispatching on whether its source declares a default; a present default keeps
+`selectConditionalOutput` and every law about it. -/
+def selectChoiceOutput (candidates : List ConditionalCandidate) (defaultOutput : Option ControlPlaceId)
+    (bindings : List VariableBinding) : Option ControlPlaceId :=
+  match defaultOutput with
+  | some output => selectConditionalOutput candidates output bindings
+  | none => selectFirstTrueOutput candidates bindings
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`selectFirstTrueOutput]
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`selectChoiceOutput]
+
+theorem selectChoiceOutput_some (candidates : List ConditionalCandidate) (output : ControlPlaceId)
+    (bindings : List VariableBinding) :
+    selectChoiceOutput candidates (some output) bindings = selectConditionalOutput candidates output bindings := by
+  simp [selectChoiceOutput]
+
+/-- A selected Choice output is one of its declared outputs, with or without a default. -/
+theorem selectChoiceOutput_declared (candidates : List ConditionalCandidate) (defaultOutput : Option ControlPlaceId)
+    (bindings : List VariableBinding) (output : ControlPlaceId)
+    (selected : selectChoiceOutput candidates defaultOutput bindings = some output) :
+    output ∈ candidates.map (·.output) ++ defaultOutput.toList := by
+  cases defaultOutput with
+  | none =>
+      simp only [selectChoiceOutput] at selected
+      induction candidates with
+      | nil => simp [selectFirstTrueOutput] at selected
+      | cons candidate rest ih =>
+          simp only [selectFirstTrueOutput] at selected
+          split at selected <;> simp_all
+  | some fallback =>
+      simp only [selectChoiceOutput] at selected
+      induction candidates with
+      | nil => simp_all [selectConditionalOutput]
+      | cons candidate rest ih =>
+          simp only [selectConditionalOutput] at selected
+          split at selected <;> simp_all
+
+/-- XND-ROLLBACK-01: every candidate evaluates to `false`, not merely fails to hold, because CIB raises a different
+failure for an evaluation error than for a no-match. -/
+def choiceCandidatesAllFalse (candidates : List ConditionalCandidate) (bindings : List VariableBinding) : Bool :=
+  candidates.all fun candidate => evaluateSimpleBooleanExpression candidate.condition bindings == some false
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`choiceCandidatesAllFalse]
+
+/-- XND-ROLLBACK-01: when every candidate evaluates to `false`, a Choice without a default selects no flow. -/
+theorem selectChoiceOutput_none_of_allFalse (candidates : List ConditionalCandidate)
+    (bindings : List VariableBinding) (allFalse : choiceCandidatesAllFalse candidates bindings = true) :
+    selectChoiceOutput candidates none bindings = none := by
+  simp only [selectChoiceOutput]
+  induction candidates with
+  | nil => rfl
+  | cons candidate rest ih =>
+      simp only [choiceCandidatesAllFalse, List.all_cons, Bool.and_eq_true, beq_iff_eq] at allFalse
+      simp [selectFirstTrueOutput, allFalse.1, ih (by simpa [choiceCandidatesAllFalse] using allFalse.2)]
+
+/-- XND-ROUTE-01: a true candidate after only false ones is selected, whatever follows it. -/
+private theorem selectChoiceOutput_none_first_true (before : List ConditionalCandidate) (candidate : ConditionalCandidate)
+    (after : List ConditionalCandidate) (bindings : List VariableBinding)
+    (falseBefore : choiceCandidatesAllFalse before bindings = true)
+    (holds : evaluateSimpleBooleanExpression candidate.condition bindings = some true) :
+    selectChoiceOutput (before ++ candidate :: after) none bindings = some candidate.output := by
+  simp only [selectChoiceOutput]
+  induction before with
+  | nil => simp [selectFirstTrueOutput, holds]
+  | cons first rest ih =>
+      simp only [choiceCandidatesAllFalse, List.all_cons, Bool.and_eq_true, beq_iff_eq] at falseBefore
+      simp [selectFirstTrueOutput, falseBefore.1,
+        ih (by simpa [choiceCandidatesAllFalse] using falseBefore.2)]
+
 end BpmnSemantics.SemanticProcess

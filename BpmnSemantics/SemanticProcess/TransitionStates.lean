@@ -78,12 +78,21 @@ def synchronizeState? (state : RuntimeState) (inputs : List ControlPlaceId)
   pure (synchronizeTokens state owner inputs output)
 
 def chooseState? (state : RuntimeState) (input : ControlPlaceId)
-    (candidates : List ConditionalCandidate) (defaultOutput : ControlPlaceId) :
+    (candidates : List ConditionalCandidate) (defaultOutput : Option ControlPlaceId) :
     Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
-  let output ← selectConditionalOutput candidates defaultOutput
+  let output ← selectChoiceOutput candidates defaultOutput
     state.variables.process.bindings
   pure (chooseToken state owner input output)
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`chooseState?]
+
+/-- XND-ROLLBACK-01: the step of a no-flow Choice is disabled, so it contributes no successor to the closure. -/
+private theorem chooseState_none_of_allFalse (state : RuntimeState) (input : ControlPlaceId)
+    (candidates : List ConditionalCandidate)
+    (allFalse : choiceCandidatesAllFalse candidates state.variables.process.bindings = true) :
+    chooseState? state input candidates none = none := by
+  simp [chooseState?, selectChoiceOutput_none_of_allFalse candidates _ allFalse]
 
 def reachNoneEndState? (state : RuntimeState) (input : ControlPlaceId) :
     Option RuntimeState := do

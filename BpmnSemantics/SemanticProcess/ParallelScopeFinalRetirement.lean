@@ -603,7 +603,8 @@ theorem ParallelScopeCommandBoundaryReachable.scoped_retirement_outcome (program
     rcases completeParallelScope_survivor_or_final_return analysis.entry record.owner actor cut.before cut.step.state binding
       (frame.population record.owner structural) bound completed with survivor | returned
     · obtain ⟨iteration, present, different, survives⟩ := survivor
-      exact Or.inl (cut.stable_success (siblings iteration present different survives).2.2)
+      exact Or.inl (cut.stable_success (siblings iteration present different survives).2.2
+        (ParallelScopeStart.stuckChoice_eq_false_of_analyzed analyzed))
     · have profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft" := by
         simpa only [ParallelScopeStart.programSelected, beq_iff_eq] using selected
       have cutReachable := reachable_at_scheduled_prefix cut.path profile (.admitted current stimulus reachable committed)

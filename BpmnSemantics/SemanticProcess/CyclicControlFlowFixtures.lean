@@ -38,7 +38,7 @@ def cyclicCheckedProcess : CheckedProcess :=
       , ⟨"Flow_Review_Choice"⟩, ⟨"Flow_Rework"⟩, ⟨"Flow_Start"⟩ ]
     nodes :=
       [ .exclusiveGateway ⟨"Choice"⟩
-          [⟨"Flow_Repeat"⟩, ⟨"Flow_Rework"⟩] ⟨"Flow_Exit"⟩
+          [⟨"Flow_Repeat"⟩, ⟨"Flow_Rework"⟩] (some ⟨"Flow_Exit"⟩)
       , .noneEndEvent ⟨"End"⟩
       , .exclusiveMerge ⟨"Merge"⟩
       , .userTask ⟨"Review"⟩ (some "Review request")
@@ -79,7 +79,7 @@ def cyclicChoiceOperation : SemanticOperation :=
     , { condition := .stringEquals "route" "rework"
         output := ⟨"place:Flow_Rework"⟩
         origin := ⟨⟨"Flow_Rework"⟩⟩ } ]
-    ⟨"place:Flow_Exit"⟩ ⟨⟨"Flow_Exit"⟩⟩
+    (some ⟨"place:Flow_Exit"⟩) (some ⟨⟨"Flow_Exit"⟩⟩)
 
 def cyclicEndOperation : SemanticOperation :=
   .reachNoneEnd ⟨"operation:End"⟩ ⟨⟨"End"⟩⟩ ⟨"place:Flow_Exit"⟩

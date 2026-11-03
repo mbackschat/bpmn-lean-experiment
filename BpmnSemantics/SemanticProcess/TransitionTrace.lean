@@ -170,10 +170,11 @@ theorem StimulusResult.ofClosure_failure_rolls_back
       (StimulusResult.ofClosure before successor hitBound ambiguous).state = before := by
   simp [StimulusResult.ofClosure, failed]
 
-/-- Schedule refusal has the same atomic boundary as closure refusal, with its own failure channel. -/
+/-- Schedule refusal has the same atomic boundary as closure refusal, with its own failure channel; a no-flow Choice
+(`XND-ROLLBACK-01`) shares it and, being a semantic outcome rather than a closure failure, raises neither flag. -/
 def StimulusResult.ofScheduledClosure (before : RuntimeState)
     (closure : InternalCommutation.ScheduledClosureResult) : StimulusResult :=
-  if closure.scheduleFailure.isSome then
+  if closure.scheduleFailure.isSome || closure.noFlowChoice then
     { outcome := .rolledBack, state := before
       internalStepBoundExceeded := false, ambiguousInternalChoice := false }
   else
@@ -226,7 +227,7 @@ def evaluateStimulusScheduled (closureLimit : Nat) (program : Program)
           scheduleFailure := closure.scheduleFailure
           candidateTransitions := none, candidateLifecycles := none }
       else
-      if closure.hitBound || closure.ambiguousChoice then
+      if closure.hitBound || closure.ambiguousChoice || closure.noFlowChoice then
         { result, candidateTransitions := none, candidateLifecycles := none }
       else
         { result
@@ -273,8 +274,8 @@ private theorem evaluateStimulusScheduled_failure_is_atomic
       generalize closureEq : InternalCommutation.closeScheduledTraced closureLimit program
         (stimulusCommandId stimulus) 1 0 schedule admission.state = closure at failed ⊢
       cases closure with
-      | mk successor hitBound ambiguous failure records lifecycles =>
-          cases hitBound <;> cases ambiguous <;> cases failure <;>
+      | mk successor hitBound ambiguous failure records lifecycles noFlow =>
+          cases hitBound <;> cases ambiguous <;> cases failure <;> cases noFlow <;>
             simp_all [StimulusResult.ofScheduledClosure]
   all_goals simp [outcomeEq] at failed
 
@@ -399,8 +400,8 @@ theorem applyStimulus_closure_failure_rolls_back
     generalize closureEq : InternalCommutation.closeScheduledTraced closureLimit program
       (stimulusCommandId stimulus) 1 0 [] admission.state = closure at failed ⊢
     cases closure with
-    | mk successor hitBound ambiguous failure records lifecycles =>
-        cases hitBound <;> cases ambiguous <;> cases failure <;>
+    | mk successor hitBound ambiguous failure records lifecycles noFlow =>
+        cases hitBound <;> cases ambiguous <;> cases failure <;> cases noFlow <;>
           simp [StimulusResult.ofScheduledClosure, StimulusResult.ofClosure] at *
   all_goals simp [outcomeEq] at failed
 

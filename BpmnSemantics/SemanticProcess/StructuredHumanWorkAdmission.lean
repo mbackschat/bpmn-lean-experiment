@@ -42,7 +42,7 @@ def checkedStructuredHumanWorkTopology (source : CheckedProcess) : Bool :=
       | .userTask id _ _ => some id
       | _ => none,
     source.nodes.filterMap fun
-      | .exclusiveGateway id candidates fallback => some (id, candidates, fallback)
+      | .exclusiveGateway id candidates (some fallback) => some (id, candidates, fallback)
       | _ => none,
     source.nodes.filterMap fun
       | .noneEndEvent id => some id
@@ -77,7 +77,7 @@ def programStructuredHumanWorkTopology (program : Program) : Bool :=
       | .awaitUserTask _ _ input output _ => some (input, output)
       | _ => none,
     program.operations.filterMap fun
-      | .choose _ _ input candidates fallback _ => some (input, candidates, fallback)
+      | .choose _ _ input candidates (some fallback) _ => some (input, candidates, fallback)
       | _ => none,
     program.operations.filterMap fun
       | .reachNoneEnd _ _ input => some input

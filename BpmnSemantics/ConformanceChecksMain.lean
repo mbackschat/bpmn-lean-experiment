@@ -45,6 +45,7 @@ public import BpmnSemantics.EffectDataConformance
 public import BpmnSemantics.EmbeddedSubProcessCompletionConformance
 public import BpmnSemantics.EventBasedGatewayConformance
 public import BpmnSemantics.ExclusiveChoiceArityConformance
+public import BpmnSemantics.ExclusiveChoiceWithoutDefaultConformance
 public import BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance
 public import BpmnSemantics.FiniteInternalArmingConformanceCheckFixtures
 public import BpmnSemantics.FiniteInternalTransitionConformanceCheckFixtures
@@ -215,6 +216,7 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("EmbeddedSubProcessCompletionConformance", BpmnSemantics.EmbeddedSubProcessCompletionConformance.checks),
   ("EventBasedGatewayConformance", BpmnSemantics.EventBasedGatewayConformance.checks),
   ("ExclusiveChoiceArityConformance", BpmnSemantics.ExclusiveChoiceArityConformance.exclusiveChoiceArityConformanceChecks),
+  ("ExclusiveChoiceWithoutDefaultConformance", BpmnSemantics.ExclusiveChoiceWithoutDefaultConformance.exclusiveChoiceWithoutDefaultConformanceChecks),
   ("ExclusiveGatewaySimpleBooleanConformance", BpmnSemantics.ExclusiveGatewaySimpleBooleanConformance.checks),
   ("FiniteInternalArmingConformance", BpmnSemantics.FiniteInternalArmingConformance.checks),
   ("FiniteInternalTransitionConformance", BpmnSemantics.FiniteInternalTransitionConformance.checks),
