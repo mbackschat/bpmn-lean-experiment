@@ -1,0 +1,109 @@
+{
+  "kind": "scenario",
+  "id": "single-scope-models-purchase-approval-first",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "purchase-request",
+    "relativePath": "scenarios/single-scope-models/purchase-request.bpmn",
+    "sha256": "4aea07ac4d518fa964c5465c451961f39360c23cc6eeb20dc46090054d58ac54",
+    "sourceOverlay": {
+      "id": "purchase-request-handlers",
+      "sha256": "67165ef8f6c5158d0f4eec2aed5c1eca99ba581abca43213af08ed980ada1f24"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.6.4",
+      "BPMN 2.0.2 Clause 13.3.1",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.1"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0016",
+      "CIB-EXT-0020",
+      "CIB-EXT-0022"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_PurchaseRequest",
+      "instanceId": "Purchase_1",
+      "initialVariables": [
+        {
+          "name": "request",
+          "value": {
+            "kind": "string",
+            "value": "PR-17"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-request",
+      "taskId": {
+        "processInstanceId": "Purchase_1",
+        "elementId": "ReviewRequest",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-approve-purchase",
+      "taskId": {
+        "processInstanceId": "Purchase_1",
+        "elementId": "ApprovePurchase",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:f4f81a065d1907b948099d0c2b4f257320487bda740a6bfa1da3cdc8a0be1b60",
+      "effectId": {
+        "processInstanceId": "Purchase_1",
+        "elementId": "CheckBudget",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "code",
+            "value": {
+              "kind": "string",
+              "value": "BC-9"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-place-order",
+      "taskId": {
+        "processInstanceId": "Purchase_1",
+        "elementId": "PlaceOrder",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

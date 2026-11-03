@@ -256,7 +256,7 @@ export function scopeDataStructureAdmitted({ vertices, records, scopes, root, ha
   const calls = vertices.flatMap(vertex => vertex.call === undefined ? [] : [vertex.call]);
   const calledScopes = new Set(calls.map(({ scope }) => scope));
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
-  return scopes.length === children.length + calledScopes.size + 1 && children.length > 0 &&
+  return scopes.length === children.length + calledScopes.size + 1 &&
     calls.length <= nestedScopeCallLimit && calledScopes.size <= 1 && roots.length === calledScopes.size + 1 &&
     roots.some(({ id }) => id === root) && calls.every(call => call.scope !== root && callMappingsAdmitted(call.data, handlers)) &&
     strictlySorted(records.map(({ scopeId }) => scopeId)) &&
@@ -403,7 +403,8 @@ export function nestedScopeCheckedModel(source: CheckedProcess): ScopeDataModel 
   const identities = [source.processId, ...source.nodes.map(({ id }) => id), ...source.sequenceFlows.map(({ id }) => id)];
   if (source.identity.sourceOverlay === null || source.compensation !== undefined ||
       source.transactionCancellation !== undefined || source.interruptingMessageEventSubProcesses !== undefined ||
-      new Set(identities).size !== identities.length) {
+      new Set(identities).size !== identities.length || !scopeCountAdmitted(source.identity.semanticProfile,
+        source.definitionScopes.length)) {
     return null;
   }
   const root = unique(source.definitionScopes.filter(({ parentScopeId, originElementId }) =>
@@ -529,7 +530,8 @@ export function nestedScopeProgramModel(program: SemanticProcessProgram): ScopeD
   if (program.identity.sourceOverlay === null ||
       program.internalSchedulingMode !== InternalSchedulingMode.RejectObservableChoice ||
       program.compensationActivityRetention !== undefined || program.compensationEventSubProcessSnapshots !== undefined ||
-      program.compensationExecution !== undefined || program.interruptingMessageEventSubProcesses !== undefined) return null;
+      program.compensationExecution !== undefined || program.interruptingMessageEventSubProcesses !== undefined ||
+      !scopeCountAdmitted(program.identity.semanticProfile, program.definitionScopes.length)) return null;
   const root = unique(program.definitionScopes.filter(({ parentScopeId, originElementId }) =>
     parentScopeId === null && originElementId === program.processId));
   if (root === undefined) return null;
@@ -631,14 +633,24 @@ const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
 ]);
 
 /**
- * The operation alphabet and the lower scope bound: a Process needs at least one Sub-Process. The number of scopes has
- * no upper bound here, matching the Lean admission, which bounds only depth (`depthLimit`, enforced by the tree walk)
- * and declarations; a serial chain of sibling Sub-Processes adds scopes without adding depth.
+ * SSM-ADMIT-01 and SSM-PROFILE-01: the nested scope-data profile admits a Process whose only scope is its root, while
+ * every other profile reaching these analyses keeps needing a Sub-Process or a Call, a second scope.
  */
-export function nestedScopeProgramShape(operations: readonly SemanticOperation[], scopeCount: number): boolean {
-  return scopeCount >= 2 && operations.every(({ kind }) => programOperationKinds.has(kind));
+export function scopeCountAdmitted(semanticProfile: string, scopeCount: number): boolean {
+  return scopeCount >= (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData ? 1 : 2);
 }
 
-export function nestedScopeCheckedShape(nodes: readonly CheckedProcess["nodes"][number][], scopeCount: number): boolean {
-  return scopeCount >= 2 && nodes.every(({ kind }) => checkedNodeKinds.has(kind));
+/**
+ * The operation alphabet and the profile's lower scope bound. The number of scopes has no upper bound here, matching
+ * the Lean admission, which bounds only depth (`depthLimit`, enforced by the tree walk) and declarations; a serial
+ * chain of sibling Sub-Processes adds scopes without adding depth.
+ */
+export function nestedScopeProgramShape(operations: readonly SemanticOperation[], semanticProfile: string,
+  scopeCount: number): boolean {
+  return scopeCountAdmitted(semanticProfile, scopeCount) && operations.every(({ kind }) => programOperationKinds.has(kind));
+}
+
+export function nestedScopeCheckedShape(nodes: readonly CheckedProcess["nodes"][number][], semanticProfile: string,
+  scopeCount: number): boolean {
+  return scopeCountAdmitted(semanticProfile, scopeCount) && nodes.every(({ kind }) => checkedNodeKinds.has(kind));
 }

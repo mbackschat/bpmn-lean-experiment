@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_PurchaseRequest" targetNamespace="urn:bpmn-lean:purchase-request">
+  <process id="Process_PurchaseRequest" name="Approve and place a purchase request" isExecutable="true">
+    <startEvent id="RequestSubmitted" name="Request submitted" />
+    <userTask id="ReviewRequest" name="Review request" />
+    <parallelGateway id="StartChecks" name="Start checks" />
+    <serviceTask id="CheckBudget" name="Check budget"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${checkBudget}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="request">${request}</camunda:inputParameter>
+          <camunda:outputParameter name="budgetCode">${code}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <task id="LogBudgetCheck" name="Log budget check" />
+    <manualTask id="CollectSignature" name="Collect signature" />
+    <userTask id="ApprovePurchase" name="Approve purchase" />
+    <parallelGateway id="ChecksDone" name="Checks done" />
+    <intermediateThrowEvent id="PurchaseApproved" name="Purchase approved" />
+    <userTask id="PlaceOrder" name="Place order" />
+    <endEvent id="OrderPlaced" name="Order placed" />
+    <sequenceFlow id="Flow_Submitted" sourceRef="RequestSubmitted" targetRef="ReviewRequest" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewRequest" targetRef="StartChecks" />
+    <sequenceFlow id="Flow_ToBudget" sourceRef="StartChecks" targetRef="CheckBudget" />
+    <sequenceFlow id="Flow_BudgetChecked" sourceRef="CheckBudget" targetRef="LogBudgetCheck" />
+    <sequenceFlow id="Flow_BudgetLogged" sourceRef="LogBudgetCheck" targetRef="ChecksDone" />
+    <sequenceFlow id="Flow_ToSignature" sourceRef="StartChecks" targetRef="CollectSignature" />
+    <sequenceFlow id="Flow_SignatureCollected" sourceRef="CollectSignature" targetRef="ApprovePurchase" />
+    <sequenceFlow id="Flow_Approved" sourceRef="ApprovePurchase" targetRef="ChecksDone" />
+    <sequenceFlow id="Flow_ChecksDone" sourceRef="ChecksDone" targetRef="PurchaseApproved" />
+    <sequenceFlow id="Flow_PurchaseApproved" sourceRef="PurchaseApproved" targetRef="PlaceOrder" />
+    <sequenceFlow id="Flow_OrderPlaced" sourceRef="PlaceOrder" targetRef="OrderPlaced" />
+  </process>
+</definitions>

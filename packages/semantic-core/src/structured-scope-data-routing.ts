@@ -119,7 +119,9 @@ export function structuredScopeDataCheckedAnalysis(source: CheckedProcess): read
 
 /** The operation alphabet: the serial one for a serial Program, the shared concurrent one for a split. */
 export function structuredScopeDataProgramShape(operations: readonly SemanticOperation[], scopeCount: number): boolean {
-  return splits(operations) ? nestedScopeControlProgramShape(operations, scopeCount) : nestedScopeProgramShape(operations, scopeCount);
+  const profile = SemanticProfileId.NestedEmbeddedScopeData;
+  return splits(operations) ? nestedScopeControlProgramShape(operations, profile, scopeCount)
+    : nestedScopeProgramShape(operations, profile, scopeCount);
 }
 
 export function structuredScopeDataCheckedShape(nodes: readonly CheckedNode[], scopeCount: number): boolean {
@@ -127,6 +129,6 @@ export function structuredScopeDataCheckedShape(nodes: readonly CheckedNode[], s
   // concurrent alphabet.
   return forks(nodes)
     ? nestedScopeControlCheckedShape(nodes.filter(({ kind }) => kind !== CheckedNodeKind.NonOperationalTask &&
-      kind !== CheckedNodeKind.NoneIntermediateThrowEvent), scopeCount)
-    : nestedScopeCheckedShape(nodes, scopeCount);
+      kind !== CheckedNodeKind.NoneIntermediateThrowEvent), SemanticProfileId.NestedEmbeddedScopeData, scopeCount)
+    : nestedScopeCheckedShape(nodes, SemanticProfileId.NestedEmbeddedScopeData, scopeCount);
 }

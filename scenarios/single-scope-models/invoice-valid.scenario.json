@@ -1,0 +1,99 @@
+{
+  "kind": "scenario",
+  "id": "single-scope-models-invoice-valid",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "invoice-clearing",
+    "relativePath": "scenarios/single-scope-models/invoice-clearing.bpmn",
+    "sha256": "108edfa52846cc38a957fe498e17ec6f4059aad53daa7a6dc7f079542b3d1744",
+    "sourceOverlay": {
+      "id": "invoice-clearing-handlers",
+      "sha256": "820bff563c6ed1edca4fcc37ac9f0b81e1d9f2b253d96af7201599d7638ee688"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.3.1",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0016",
+      "CIB-EXT-0020",
+      "CIB-EXT-0022"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_InvoiceClearing",
+      "instanceId": "Invoice_1",
+      "initialVariables": [
+        {
+          "name": "invoice",
+          "value": {
+            "kind": "string",
+            "value": "INV-204"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-invoice",
+      "taskId": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "ReviewInvoice",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:556b56742ffdbc4b24d3a082c9482e5399d0b2bca602d3c83cef888e605d0826",
+      "effectId": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "ValidateInvoice",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-pay-invoice",
+      "taskId": {
+        "processInstanceId": "Invoice_1",
+        "elementId": "PayInvoice",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

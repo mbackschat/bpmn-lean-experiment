@@ -4,7 +4,7 @@ import type { CallDataInterface, VariableMappingCallData } from "./call-data-con
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
 import { concurrentScopeStartNames, enclosingReads } from "./concurrent-scope-data-availability.js";
 import type { ScopeDataAccess } from "./concurrent-scope-data-availability.js";
-import { callMappingsAdmitted, scopeLocalRecordAdmitted } from "./nested-scope-data-admission.js";
+import { callMappingsAdmitted, scopeCountAdmitted, scopeLocalRecordAdmitted } from "./nested-scope-data-admission.js";
 import type { NestedScopeStartNames } from "./nested-scope-data-admission.js";
 import { embeddedScopeDataBearing } from "./scope-data-bearing.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
@@ -170,8 +170,7 @@ function embeddedCallsPlaced(body: Body, depth: number, dataBearing: boolean): b
 }
 
 /** Validates the scope tree and every body, returning the tree with its per-body scans. */
-function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>, callsRoot: boolean,
-  dataBearing: boolean):
+function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>, dataBearing: boolean):
   Readonly<{ tree: Tree; scans: ReadonlyMap<string, ParallelBodyScans>; weightedTasks: number; weightedServiceTasks: number }> | null {
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
   // Equal sizes alone admit a body in an undeclared scope beside a declared scope without one.
@@ -185,8 +184,7 @@ function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<str
       parent.set(child, { scope: body.scope, vertex });
     }
   }
-  // A caller without Sub-Process needs a Call to leave the exact-multiset class.
-  if (parent.size !== scopes.length - 1 || (parent.size === 0 && !callsRoot)) return null;
+  if (parent.size !== scopes.length - 1) return null;
   // Climbs at most `depthLimit` levels, so a parent cycle that never reaches the root is refused rather than recursed.
   const depthOf = (scope: string): number | undefined => {
     let current = scope;
@@ -478,7 +476,7 @@ function admittedBurst(scopes: readonly DefinitionScope[], raw: ReadonlyMap<stri
   if (bodies === null) return null;
   const forest = splitForest(scopes, bodies, dataBearing);
   if (forest === null) return null;
-  const analyzed = analyzeTree(forest.scopes, forest.bodies, forest.called.size > 0, dataBearing);
+  const analyzed = analyzeTree(forest.scopes, forest.bodies, dataBearing);
   // CSE-ADMIT-01 refuses a Service Task beside a Call; called bodies refuse them in `serialCalledBody`.
   if (analyzed === null || analyzed.weightedServiceTasks > nestedScopeControlServiceTaskLimit ||
       (forest.called.size > 0 && analyzed.weightedServiceTasks > 0)) return null;
@@ -622,6 +620,7 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | 
 function checkedModel(graph: NestedScopeControlCheckedGraph): Admitted | null {
   const data = checkedData(graph);
   const passThrough = graph.identity?.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+  if (!scopeCountAdmitted(graph.identity?.semanticProfile ?? "", graph.definitionScopes.length)) return null;
   return admittedModel(graph.definitionScopes, checkedBodies(graph, data, passThrough), data);
 }
 
@@ -802,7 +801,8 @@ function programModel(program: SemanticProcessProgram): Admitted | null {
       program.compensationActivityRetention !== undefined || program.compensationEventSubProcessSnapshots !== undefined ||
       program.compensationExecution !== undefined || program.interruptingMessageEventSubProcesses !== undefined ||
       (program.scopeLocalData !== undefined && !structured &&
-        program.identity.semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion)) {
+        program.identity.semanticProfile !== SemanticProfileId.EmbeddedSubProcessCompletion) ||
+      !scopeCountAdmitted(program.identity.semanticProfile, program.definitionScopes.length)) {
     return null;
   }
   const root = program.definitionScopes.find(({ parentScopeId, originElementId }) =>
@@ -830,11 +830,13 @@ const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
   CheckedNodeKind.CallActivity, CheckedNodeKind.ServiceTask,
 ]);
 
-/** The operation alphabet and the lower scope bound; the analyses above bound depth, tasks and bursts. */
-export function nestedScopeControlProgramShape(operations: readonly SemanticOperation[], scopeCount: number): boolean {
-  return scopeCount >= 2 && operations.every(({ kind }) => programOperationKinds.has(kind));
+/** The operation alphabet and the profile's lower scope bound; the analyses above bound depth, tasks and bursts. */
+export function nestedScopeControlProgramShape(operations: readonly SemanticOperation[], semanticProfile: string,
+  scopeCount: number): boolean {
+  return scopeCountAdmitted(semanticProfile, scopeCount) && operations.every(({ kind }) => programOperationKinds.has(kind));
 }
 
-export function nestedScopeControlCheckedShape(nodes: readonly CheckedNode[], scopeCount: number): boolean {
-  return scopeCount >= 2 && nodes.every(({ kind }) => checkedNodeKinds.has(kind));
+export function nestedScopeControlCheckedShape(nodes: readonly CheckedNode[], semanticProfile: string,
+  scopeCount: number): boolean {
+  return scopeCountAdmitted(semanticProfile, scopeCount) && nodes.every(({ kind }) => checkedNodeKinds.has(kind));
 }

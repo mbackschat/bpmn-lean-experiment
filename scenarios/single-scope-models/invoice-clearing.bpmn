@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_InvoiceClearing" targetNamespace="urn:bpmn-lean:invoice-clearing"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_InvoiceClearing" name="Clear a supplier invoice" isExecutable="true">
+    <startEvent id="InvoiceReceived" name="Invoice received" />
+    <exclusiveGateway id="ReviewRound" name="Review round" gatewayDirection="Converging" />
+    <userTask id="ReviewInvoice" name="Review invoice" />
+    <serviceTask id="ValidateInvoice" name="Validate invoice"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${validateInvoice}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="invoice">${invoice}</camunda:inputParameter>
+          <camunda:outputParameter name="verdict">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <exclusiveGateway id="InvoiceValid" name="Invoice valid?" gatewayDirection="Diverging" default="Flow_Valid" />
+    <manualTask id="ContactSupplier" name="Contact supplier" />
+    <intermediateThrowEvent id="InvoiceCleared" name="Invoice cleared" />
+    <userTask id="PayInvoice" name="Pay invoice" />
+    <endEvent id="InvoicePaid" name="Invoice paid" />
+    <sequenceFlow id="Flow_Received" sourceRef="InvoiceReceived" targetRef="ReviewRound" />
+    <sequenceFlow id="Flow_Review" sourceRef="ReviewRound" targetRef="ReviewInvoice" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewInvoice" targetRef="ValidateInvoice" />
+    <sequenceFlow id="Flow_Validated" sourceRef="ValidateInvoice" targetRef="InvoiceValid" />
+    <sequenceFlow id="Flow_Invalid" sourceRef="InvoiceValid" targetRef="ContactSupplier">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(verdict,"invalid")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_SupplierContacted" sourceRef="ContactSupplier" targetRef="ReviewRound" />
+    <sequenceFlow id="Flow_Valid" sourceRef="InvoiceValid" targetRef="InvoiceCleared" />
+    <sequenceFlow id="Flow_Cleared" sourceRef="InvoiceCleared" targetRef="PayInvoice" />
+    <sequenceFlow id="Flow_Paid" sourceRef="PayInvoice" targetRef="InvoicePaid" />
+  </process>
+</definitions>

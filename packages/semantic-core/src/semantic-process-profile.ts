@@ -65,7 +65,7 @@ export function profileAllowsProgramShape(
   // The cumulative profile keeps its exact-multiset class and adds the nested scope-control class (NSC-ADMIT-01).
   if (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion) {
     return requiredProgramShapeAllows(semanticProfile, actualOperations, definitionScopeCount) ||
-      nestedScopeControlProgramShape(actualOperations, definitionScopeCount);
+      nestedScopeControlProgramShape(actualOperations, semanticProfile, definitionScopeCount);
   }
   if (isSerialChainProfile(semanticProfile)) return serialBusinessProgramShape(actualOperations, definitionScopeCount, serialChainRulesForProfile(semanticProfile));
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {
@@ -205,7 +205,7 @@ export function profileAllowsCheckedProcessShape(
   if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return structuredScopeDataCheckedShape(nodes, definitionScopeCount);
   if (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion) {
     return requiredCheckedShapeAllows(semanticProfile, nodes, definitionScopeCount) ||
-      nestedScopeControlCheckedShape(nodes, definitionScopeCount);
+      nestedScopeControlCheckedShape(nodes, semanticProfile, definitionScopeCount);
   }
   if (isSerialChainProfile(semanticProfile)) return serialBusinessCheckedShape(nodes, definitionScopeCount, serialChainRulesForProfile(semanticProfile));
   if (semanticProfile === STRUCTURED_PROCESS_COMPOSITION_CHECKPOINT_PROFILE_ID) {

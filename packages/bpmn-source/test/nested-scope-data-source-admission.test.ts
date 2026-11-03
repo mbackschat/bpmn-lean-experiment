@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { BpmnCompilationStatus, BpmnSourceDiagnosticCode, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
-  CanonicalObservationKind, EffectExecutionResultKind, ObservationRequestKind, ProcessStatus, ScenarioDocumentKind,
+  CanonicalObservationKind, EffectExecutionResultKind, ObservationRequestKind, ProcessStatus, ScenarioDocumentKind, SemanticProfileId,
   StimulusKind, isWellFormedSemanticProcessProgram, nestedScopeCheckedAnalysis, nestedScopeCheckedShape,
   nestedScopeProgramAnalysis, nestedScopeProgramShape, runScenario, supportsSemanticProcessScenario,
 } from "@bpmn-lean/semantic-core";
@@ -43,13 +43,16 @@ test("NSD-ADMIT-01 admits four sibling Sub-Processes, five definition scopes at 
   assert.equal(checkedProcess.definitionScopes.length, 5);
   assert.equal(semanticProcess.definitionScopes.length, 5);
   assert.deepEqual(nestedScopeCheckedAnalysis(checkedProcess), []);
-  assert.equal(nestedScopeCheckedShape(checkedProcess.nodes, 5), true);
+  assert.equal(nestedScopeCheckedShape(checkedProcess.nodes, SemanticProfileId.NestedEmbeddedScopeData, 5), true);
   assert.deepEqual(nestedScopeProgramAnalysis(semanticProcess), []);
-  assert.equal(nestedScopeProgramShape(semanticProcess.operations, 5), true);
+  assert.equal(nestedScopeProgramShape(semanticProcess.operations, SemanticProfileId.NestedEmbeddedScopeData, 5), true);
   assert.equal(isWellFormedSemanticProcessProgram(semanticProcess), true);
-  // The lower bound stays: a Process with no Sub-Process has a single scope and is outside the profile.
-  assert.equal(nestedScopeCheckedShape(checkedProcess.nodes, 1), false);
-  assert.equal(nestedScopeProgramShape(semanticProcess.operations, 1), false);
+  // SSM-ADMIT-01 and SSM-PROFILE-01: one scope suffices under this profile alone; the embedded completion profile, the
+  // only other caller of these shapes, keeps needing a second scope.
+  assert.equal(nestedScopeCheckedShape(checkedProcess.nodes, SemanticProfileId.NestedEmbeddedScopeData, 1), true);
+  assert.equal(nestedScopeProgramShape(semanticProcess.operations, SemanticProfileId.NestedEmbeddedScopeData, 1), true);
+  assert.equal(nestedScopeCheckedShape(checkedProcess.nodes, SemanticProfileId.EmbeddedSubProcessCompletion, 1), false);
+  assert.equal(nestedScopeProgramShape(semanticProcess.operations, SemanticProfileId.EmbeddedSubProcessCompletion, 1), false);
 });
 
 test("NSD-ADMIT-01 runs the five-scope sibling Process as a supported scenario through every Sub-Process to Completed", async () => {
