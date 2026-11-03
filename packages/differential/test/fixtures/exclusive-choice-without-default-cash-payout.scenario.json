@@ -1,0 +1,87 @@
+{
+  "kind": "scenario",
+  "id": "exclusive-choice-without-default-cash-payout",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "expense-routing",
+    "relativePath": "scenarios/exclusive-choice-without-default/expense-routing.bpmn",
+    "sha256": "fde03a51258d78099967227a79be4dcb2894285e7f4dd1687e5c0bf87d03161f",
+    "sourceOverlay": {
+      "id": "expense-routing-handlers",
+      "sha256": "0220d8cfc3f7eea66881e496ed2d7cf85fcd723f77d42fb4e68c817cbc40da95"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ExpenseRouting",
+      "instanceId": "Expense_1",
+      "initialVariables": [
+        {
+          "name": "category",
+          "value": {
+            "kind": "string",
+            "value": "travel"
+          }
+        },
+        {
+          "name": "claimant",
+          "value": {
+            "kind": "string",
+            "value": "Ada"
+          }
+        },
+        {
+          "name": "payout",
+          "value": {
+            "kind": "string",
+            "value": "cash"
+          }
+        },
+        {
+          "name": "priority",
+          "value": {
+            "kind": "string",
+            "value": "normal"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-travel",
+      "taskId": {
+        "processInstanceId": "Expense_1",
+        "elementId": "ReviewTravel",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0006",
+      "CIB-INT-0001",
+      "CIB-INT-0003"
+    ]
+  }
+}

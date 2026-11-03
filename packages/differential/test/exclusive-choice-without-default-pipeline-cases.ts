@@ -62,17 +62,23 @@ export const exclusiveChoiceWithoutDefaultPipelineCases: ReadonlyArray<PipelineC
     expectedInjectedDisagreement: rolledBackAt(3) },
 ]);
 
-/**
- * The catering Start rolls back, so no Workflow exists for a hosted run to observe: the client refuses it with
- * `startRolledBack` before creating one (XND-HOST-01). This case therefore runs on Lean and the semantic core only,
- * and the client's refusal is locked by its own test.
- */
-export const exclusiveChoiceWithoutDefaultStartCases: ReadonlyArray<SemanticDifferentialCase> = Object.freeze([{
-  id: "exclusive-choice-without-default-catering",
-  scenarioRelativePath: "packages/differential/test/fixtures/exclusive-choice-without-default-catering.scenario.json",
+const leanCore = (name: "catering" | "cash-payout", rolledBackIndex: number): SemanticDifferentialCase => ({
+  id: `exclusive-choice-without-default-${name}`,
+  scenarioRelativePath: `packages/differential/test/fixtures/exclusive-choice-without-default-${name}.scenario.json`,
   bpmnRelativePath: `${directory}/expense-routing.bpmn`,
   sourceOverlayRelativePath: `${directory}/expense-routing-overlay.json`,
   cib: null,
-  injectMutation: commitsNoMatch(1),
-  expectedInjectedDisagreement: rolledBackAt(1),
-}]);
+  injectMutation: commitsNoMatch(rolledBackIndex),
+  expectedInjectedDisagreement: rolledBackAt(rolledBackIndex),
+});
+
+/**
+ * Journeys that run on Lean and the semantic core only. The catering Start rolls back, so no Workflow exists for a
+ * hosted run to observe: the client refuses it with `startRolledBack` before creating one (XND-HOST-01), a refusal its
+ * own test locks. The cash payout's rolled-back completion is the medium triage's hosted mechanism on the other model,
+ * so it adds Lean execution of the third rolled-back journey without a second hosted run.
+ */
+export const exclusiveChoiceWithoutDefaultLeanCoreCases: ReadonlyArray<SemanticDifferentialCase> = Object.freeze([
+  leanCore("catering", 1),
+  leanCore("cash-payout", 3),
+]);

@@ -10,7 +10,7 @@ Two answer-free schedules run as pipeline cases:
 - the [urgent travel expense](urgent-travel.scenario.json) takes the first true route to *Review urgently*, then pays out by bank through *Reimburse claimant*;
 - the [medium ticket](medium-triage.scenario.json) matches no route, so its triage completion rolls back and the task stays open.
 
-A catering expense, whose Start rolls back, creates no Workflow to observe, so it runs on Lean and the semantic core only, from a [differential test fixture](../../packages/differential/test/fixtures/exclusive-choice-without-default-catering.scenario.json).
+Two schedules run on Lean and the semantic core only, from differential test fixtures: a [catering expense](../../packages/differential/test/fixtures/exclusive-choice-without-default-catering.scenario.json), whose Start rolls back and so creates no Workflow to observe, and a [cash payout](../../packages/differential/test/fixtures/exclusive-choice-without-default-cash-payout.scenario.json), whose review completion rolls back.
 
 The [CIB calibration probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveChoiceWithoutDefaultProbeTest.java) drives six journeys and one parse refusal in CIB Seven `2.2.0` with JUEL renditions of the conditions:
 

@@ -50,7 +50,15 @@ The [root Parallel forks account](capsules/ROOT-PARALLEL-FORKS-SPEC.md) grows th
 
 ## Exclusive choice arity
 
-[Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md) lifts every arity locus of the re-entry Choice to any positive condition count with a default (`XCA-ADMIT-01`) with a [conformance module](../BpmnSemantics/ExclusiveChoiceArityConformance.lean), pipeline cases and the CIB probe. Open: Lean checked-level profile control; default-less and body Choices.
+[Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md) lifts every arity locus of the re-entry Choice to any positive condition count with a default (`XCA-ADMIT-01`) with a [conformance module](../BpmnSemantics/ExclusiveChoiceArityConformance.lean), pipeline cases and the CIB probe. Open: Lean checked-level profile control; body Choices.
+
+## Exclusive Choice without a default
+
+The [Exclusive Choice without a default account](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md) grows the same profile with root Choices of two or more conditions and no default (`CIB-INT-0003`); its receipt owns review state.
+
+**Implemented.** The default becomes optional in the checked node and the IL `choose`; a default-less Choice takes its first true condition (`XND-ROUTE-01`), and when every condition is false the closure stabilizes with it parked and reports `noFlowChoice`, so the Start or User Task completion rolls back flag-free to its exact prior state (`XND-ROLLBACK-01`, [laws](../BpmnSemantics/SemanticProcess/Execution.lean)). Admission refuses one conditional flow, an unconditioned flow and a Choice that an effect result can reach (`XND-ADMIT-01`, [conformance module](../BpmnSemantics/ExclusiveChoiceWithoutDefaultConformance.lean)). Two pipeline cases, a Lean-core differential test for the catering Start and cash payout, the [hosted witness](../packages/temporal-adapter/testkit/test/exclusive-choice-without-default-recovery.temporal-test.ts) of a rolled-back completion across Worker replacement and retry, the client's `startRolledBack` refusal before any Workflow (`XND-HOST-01`), two corpus rows, About and the CIB probe witness it.
+
+**Open.** `PC-CF-02` keeps its body-Choice and other-profile clauses; a default-less Choice reachable from an effect result waits for incidents (`PC-AUTO-03`).
 
 ## None End fan-in
 

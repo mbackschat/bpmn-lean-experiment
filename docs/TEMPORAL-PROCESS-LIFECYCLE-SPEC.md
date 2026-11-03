@@ -81,7 +81,7 @@ type ProcessCommandResult =
     }>;
 ```
 
-`started` means semantic execution admission and the separate Temporal host-capability predicate both passed and Temporal created the Workflow. It exposes only the validated semantic Process-instance ID. SDK handles, clients, Run IDs, result polling, history, and description capabilities remain adapter-private. `rejected` means either the Semantic Process/start pair is unsupported or the host cannot schedule its potential wait-set shape. The adapter returns this result before `client.start`; Workflow execution does not classify admission.
+`started` means semantic execution admission and the separate Temporal host-capability predicate both passed and Temporal created the Workflow. It exposes only the validated semantic Process-instance ID. SDK handles, clients, Run IDs, result polling, history, and description capabilities remain adapter-private. `rejected` means either the Semantic Process/start pair is unsupported, the host cannot schedule its potential wait-set shape, or the Start's semantic command rolls back because a Choice without a default matches no condition (`startRolledBack`, [`XND-HOST-01`](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md#stable-rules)). The adapter returns this result before `client.start`; Workflow execution does not classify admission.
 
 `semantic` means the command was accepted by the Workflow or its previously completed exact Update was recovered. Live execution and retry recovery return the same public shape.
 

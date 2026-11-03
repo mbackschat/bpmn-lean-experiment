@@ -12,14 +12,14 @@ import { CanonicalObservationKind, CommandOutcome, ProcessStatus, ScenarioOutcom
   runScenario, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
 import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
 import { assessBpmnProcessAdmission, BpmnProcessAdmissionFailureCode, BpmnProcessAdmissionResultKind } from "@bpmn-lean/temporal-testkit";
-import { exclusiveChoiceWithoutDefaultPipelineCases, exclusiveChoiceWithoutDefaultStartCases } from
+import { exclusiveChoiceWithoutDefaultLeanCoreCases, exclusiveChoiceWithoutDefaultPipelineCases } from
   "./exclusive-choice-without-default-pipeline-cases.ts";
 import { openWork } from "./concurrent-scope-service-tasks-pipeline-cases.ts";
 import { loadAndCompileCases } from "./pipeline-case-loading.ts";
 import { mutableClone } from "./pipeline-target-support.ts";
 
 const prefix = "exclusive-choice-without-default-";
-const cases = [...exclusiveChoiceWithoutDefaultPipelineCases, ...exclusiveChoiceWithoutDefaultStartCases];
+const cases = [...exclusiveChoiceWithoutDefaultPipelineCases, ...exclusiveChoiceWithoutDefaultLeanCoreCases];
 
 /** The open work after each committed command, and the outcome of the command that ends the journey. */
 const journeys = new Map<string, Readonly<{ committed: readonly (readonly string[])[]; final: CommandOutcome }>>([
@@ -27,12 +27,14 @@ const journeys = new Map<string, Readonly<{ committed: readonly (readonly string
   ["urgent-travel", { committed: [["ReviewUrgently#1"], ["ReimburseClaimant#1"], []], final: CommandOutcome.Committed }],
   // XND-ROLLBACK-01: no route holds for catering, so the Start itself rolls back.
   ["catering", { committed: [], final: CommandOutcome.RolledBack }],
+  // XND-ROLLBACK-01: no payout route holds for cash, so the travel review's completion rolls back.
+  ["cash-payout", { committed: [["ReviewTravel#1"]], final: CommandOutcome.RolledBack }],
   // XND-ROLLBACK-01: no route holds for a medium ticket, so the triage's completion rolls back.
   ["medium-triage", { committed: [["TriageTicket#1"]], final: CommandOutcome.RolledBack }],
 ]);
 
-test("registers the two hosted schedules and the core-only Start, standards-only, with the host admission each needs", async () => {
-  assert.deepEqual(cases.map(({ id }) => id), ["urgent-travel", "medium-triage", "catering"].map(name => `${prefix}${name}`));
+test("registers the two hosted schedules and the two Lean-core journeys, standards-only, with the host admission each needs", async () => {
+  assert.deepEqual(cases.map(({ id }) => id), ["urgent-travel", "medium-triage", "catering", "cash-payout"].map(name => `${prefix}${name}`));
   for (const context of await loadAndCompileCases(cases)) {
     assert.equal(context.scenario.profile, SemanticProfileId.NestedEmbeddedScopeData);
     assert.equal(context.pipelineCase.cib, null);

@@ -232,11 +232,11 @@ Lane shape: proved
 
 Evidence: the no-match outcome is proved over the scheduled closure of [`InternalScheduledClosure`](../../BpmnSemantics/SemanticProcess/InternalScheduledClosure.lean); admission and the journeys are checked.
 
-Proved, in the new family-owned leaf module:
+Proved beside the definitions they govern, since the build fan-out guard refused a family leaf (see [Implementation notes](#implementation-notes)):
 
-- the dispatch returns the no-flow result exactly when the default is absent and every candidate evaluates to `some false`, and agrees with `selectConditionalOutput` when the default is present;
-- end to end over the scheduled closure function: when the closure from an admitted state stabilizes in a state where `stuckChoice` holds, the command result is `rolledBack` with both flags false and `state = before`; and a no-flow Choice adds neither an offer nor `preparationFailed` to the frontier;
-- `stuckChoice` is false for every Program without a default-less Choice, the lemma each consumer applies.
+- in [`SimpleBooleanExpression`](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean), the dispatch selects nothing when the default is absent and every candidate evaluates to `some false`, selects the first true candidate after only false ones, and agrees with `selectConditionalOutput` when the default is present; in [`TransitionStates`](../../BpmnSemantics/SemanticProcess/TransitionStates.lean), the step of such a Choice is disabled, so it contributes no successor;
+- in [`Execution`](../../BpmnSemantics/SemanticProcess/Execution.lean), over the scheduled closure function: whenever the closure from an admitted state reports a no-flow Choice, after any number of steps, the command result is `rolledBack` with both flags false and `state = before`, and it publishes no transition or lifecycle; the closure raises that report at its stable exit when `stuckChoice` holds, and `prependClosureStep` passes it through every earlier step;
+- in [`InternalScheduledClosure`](../../BpmnSemantics/SemanticProcess/InternalScheduledClosure.lean), `stuckChoice` is false for every Program without a default-less Choice, the lemma each analysis's discharge applies.
 
 Checked: an executable conformance module checks:
 
@@ -315,6 +315,31 @@ Registration:
 - the [lifecycle specification's public result contract](../TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#public-result-contract);
 - the exclusive gateway mechanism row of the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md), and `PC-CF-02`'s evidence cell;
 - scenarios, pipeline cases, the corpus, About and the CIB probe.
+
+## Implementation notes
+
+Implemented as proposed, with these deviations:
+
+- **Rolled-back Start and cash payout off the pipeline.** A registered normative scenario must run through every pipeline target, and no hosted run can observe a Start that the client refuses before any Workflow exists (`XND-HOST-01`). The catering Start and the cash payout therefore run as [Lean-core differential fixtures](../../packages/differential/test/exclusive-choice-without-default-lean-core.integration-test.ts), and the client's refusal has its [own test](../../packages/temporal-adapter/client/test/start-rolled-back-client.test.ts). Two scenarios, urgent travel and medium triage, are pipeline cases.
+- **A Start that bypasses the client.** Started directly in the Workflow, the catering Start is refused at deployment with the non-retryable `BpmnProcessAdmissionFailure`, before any closure runs; the [closure failure classification test](../../packages/temporal-adapter/workflow/test/closure-failure-classification.test.ts) asserts that refusal instead of a closure failure.
+- **Conformance module.** It checks admission at both levels, the refused edits and the profile control; the no-match outcome is proved in [`Execution`](../../BpmnSemantics/SemanticProcess/Execution.lean), and Lean executes the journeys through the pipeline and the Lean-core test.
+- **No family leaf module.** The proposal put the dispatch and the laws in a new family-owned leaf. The [fan-out guard](../../scripts/lean-fanout.test.ts) refused that shape: each new module opening a hub with `import all` joined that hub's recorded rebuild set, and those bounds had no headroom left. Raising them would be a bound change, so the definitions and laws sit in the modules that already hold the needed edges, and the family adds no library module:
+  - `selectFirstTrueOutput`, `selectChoiceOutput`, `choiceCandidatesAllFalse` and their laws live in `SimpleBooleanExpression`, beside `selectConditionalOutput`;
+  - `prepareInternalChoice?` and its laws live in `InternalLocalControlBranchSelection`, beside `prepareInternalConditional?` and its laws;
+  - `chooseState_none_of_allFalse` lives in `TransitionStates`;
+  - `stuckChoice` and `stuckChoice_eq_false_of_defaults` live in `InternalScheduledClosure`;
+  - the command-level rollback law `evaluateStimulusScheduled_noFlowChoice` lives in `Execution`, beside the other command-boundary laws.
+
+  The kernel-decided fixtures already open these owners, so none of them needed a new `import all`. Each analysis discharges the stuck-Choice premise where the analysis is consumed:
+  - the structured composition one in its progress proofs;
+  - the serial one in its runtime-guard proofs;
+  - the parallel scope one in its resumption proofs;
+  - the mixed task one in its closure proofs.
+
+  The proposal's consumer list missed `StructuredCompositionProgressProofs`, `MixedTaskControlFlowProgressProofs`, `MixedTaskControlFlowClosureProofs` and `ParallelScopeCommandSuccessProofs`. Every size-excepted module keeps its line count.
+- **Frontier exclusion checked, not proved.** The proofs stop at the step and at the command: `chooseState_none_of_allFalse` disables a no-flow Choice, and the command law covers every closure that reports one. The claim that the derived frontier then holds neither an offer nor a preparation failure for the parked Choice, so the closure reaches its stable exit, is checked by the journeys, not proved. Proving it would add a law to `InternalExecutionFrontier`, which this family leaves unchanged.
+- **Product 2.** No Product 2 surface switches over the start failure code, so `startRolledBack` reaches its generic start-failure presentation unchanged.
+- **Maps.** The [`implementation-status-owner:TEMPORAL-HOSTING`](../TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) map, at its word backstop, gains no line; the control-flow family entry links the hosted witness and the client refusal instead.
 
 ## Independent cold-review receipt
 

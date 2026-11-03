@@ -1778,6 +1778,86 @@
       }
     },
     {
+      "id": "expense-routing-without-default",
+      "title": "Route and pay out an expense claim",
+      "businessPurpose": "Route an expense claim by its priority and category to an urgent or a standard review, then pay it out by bank transfer through a reimbursement service or by payroll; a claim that fits no route is refused rather than routed by default.",
+      "cloneFamily": "expense-routing-without-default",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "conditionalRouting",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/exclusive-choice-without-default/expense-routing.bpmn",
+        "sha256": "fde03a51258d78099967227a79be4dcb2894285e7f4dd1687e5c0bf87d03161f",
+        "scenarioRelativePath": "scenarios/exclusive-choice-without-default/urgent-travel.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "exclusive-choice-without-default-urgent-travel",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for Choices without a default; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "ticket-triage-without-default",
+      "title": "Triage a support ticket and route it by severity",
+      "businessPurpose": "Have an agent assess a support ticket's severity, then escalate a high-severity ticket to a specialist or close a low-severity one automatically; a triage that names neither severity is refused until it does.",
+      "cloneFamily": "ticket-triage-without-default",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "conditionalRouting",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/exclusive-choice-without-default/ticket-triage.bpmn",
+        "sha256": "875311920a4f8be261e4e244c07bf006f6b6ca9b7d3667e62a1b81eff810ebd5",
+        "scenarioRelativePath": "scenarios/exclusive-choice-without-default/medium-triage.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "exclusive-choice-without-default-medium-triage",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for Choices without a default; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

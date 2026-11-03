@@ -125,6 +125,9 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "which passes each arriving token on its own",
     "Choices with one or more conditions and a default, tested in declaration order, and pass-through merges in the Process root body only",
     "never in a model that also forks",
+    "a Choice may also omit its default when it has two or more conditional flows",
+    "the Start or User Task completion whose closure reached it rolls back",
+    "a Choice that a Service or Send Task's result could reach in the same command is refused",
   ]],
 ];
 
