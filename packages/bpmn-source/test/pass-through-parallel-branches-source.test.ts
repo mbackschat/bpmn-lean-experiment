@@ -198,3 +198,48 @@ test("the embedded completion profile refuses a one-input merge its unedited Pro
   } as SemanticProcessProgram;
   assert.equal(nestedScopeControlProgramAnalysis(edited), null);
 });
+
+/**
+ * PTPB-CALL-01's pass-vertex skip runs before the body's structure check, so a cycle of Tasks or one-input merges in a
+ * Call-bearing body must be refused rather than followed forever; Lean bounds the same walk by the vertex count.
+ */
+test("a cycle of pass-through Tasks or one-input merges in a Call-bearing body is refused", async () => {
+  const xml = await source(loan);
+  await refused(loan, replaceOnce(xml,
+    '<sequenceFlow id="Flow_CreditCheckOpened" sourceRef="CreditCheckOpened" targetRef="PrepareCreditFile" />',
+    '<task id="T1" /><task id="T2" /><sequenceFlow id="Flow_CreditCheckOpened" sourceRef="CreditCheckOpened" ' +
+      'targetRef="T1" /><sequenceFlow id="Flow_T1" sourceRef="T1" targetRef="T2" /><sequenceFlow id="Flow_T2" ' +
+      'sourceRef="T2" targetRef="T1" />'), "Start, then a two-Task cycle");
+  const result = await admitted(loan, xml);
+  const program = result.semanticProcess;
+  const task = program.operations.find(({ origin }) => origin.elementId === "PrepareCreditFile");
+  assert.ok(task?.kind === SemanticOperationKind.AwaitUserTask);
+  const place = program.controlPlaces.find(({ id }) => id === task.input);
+  const scope = program.operationScopes.find(({ operationId }) => operationId === task.id);
+  assert.ok(place !== undefined && scope !== undefined);
+  const entry = task.input;
+  const cycled = {
+    ...program,
+    controlPlaces: [...program.controlPlaces, { ...place, id: "orphaned" }, { ...place, id: "between" }],
+    operations: [...program.operations.map(operation => operation.id === task.id ? { ...task, input: "orphaned" } : operation),
+      { id: "pass:first", origin: task.origin, kind: SemanticOperationKind.MergeExclusive, inputs: [entry], output: "between" },
+      { id: "pass:second", origin: task.origin, kind: SemanticOperationKind.MergeExclusive, inputs: ["between"], output: entry }],
+    operationScopes: [...program.operationScopes, { operationId: "pass:first", scopeId: scope.scopeId },
+      { operationId: "pass:second", scopeId: scope.scopeId }],
+  } as SemanticProcessProgram;
+  assert.equal(nestedScopeControlProgramAnalysis(cycled), null);
+});
+
+/**
+ * PTPB-PROFILE-01 at the checked level: the embedded completion source reader never emits a `nonOperationalTask`, so
+ * only a direct call with that profile's identity can catch a checked-level gate that produces a pass vertex for every
+ * profile.
+ */
+test("the checked analysis produces a pass vertex under the nested scope-data profile only", async () => {
+  const { checkedProcess } = await admitted(relocation, await source(relocation));
+  const graph = { ...checkedProcess, flows: checkedProcess.sequenceFlows };
+  assert.ok(checkedProcess.nodes.some(({ kind }) => kind === CheckedNodeKind.NonOperationalTask));
+  assert.notEqual(nestedScopeControlCheckedAnalysis(graph), null);
+  assert.equal(nestedScopeControlCheckedAnalysis({ ...graph, identity: { ...graph.identity,
+    semanticProfile: "cibseven-2.2.0-embedded-subprocess-completion-draft" } }), null);
+});

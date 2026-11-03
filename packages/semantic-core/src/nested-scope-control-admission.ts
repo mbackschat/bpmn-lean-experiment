@@ -156,10 +156,14 @@ function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boolean {
  */
 function embeddedCallsPlaced(body: Body, depth: number, dataBearing: boolean): boolean {
   if (body.calls.size === 0) return true;
-  // PTPB-CALL-01: pass vertices never wait, so the first vertex is the first one after them.
+  // PTPB-CALL-01: pass vertices never wait, so the first vertex is the first one after them. The walk runs before the
+  // structure check refuses cycles, so it is bounded by the vertex count, as Lean's `afterPasses` fuel is.
   let first = body.nodes.find(({ kind }) => kind === Kind.Start)?.outputs ?? [];
-  for (let pass = body.nodes.find(({ id }) => id === first[0]); pass?.kind === Kind.Pass;
-    pass = body.nodes.find(({ id }) => id === first[0])) first = pass.outputs;
+  for (let fuel = body.nodes.length; fuel > 0 && first.length === 1; fuel--) {
+    const pass = body.nodes.find(({ id }) => id === first[0]);
+    if (pass?.kind !== Kind.Pass) break;
+    first = pass.outputs;
+  }
   return dataBearing && depth <= embeddedCallDepthLimit && body.regions.length === 0 &&
     body.nodes.every(({ kind }) => kind === Kind.Start || kind === Kind.End || kind === Kind.Task || kind === Kind.Pass) &&
     [...body.calls.keys()].every(vertex => body.mapped.has(vertex) && !first.includes(vertex));
