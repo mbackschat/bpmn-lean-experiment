@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [single-scope models](capsules/SINGLE-SCOPE-MODELS-SPEC.md) of the nested scope-data profile, batch 4 (`PC-HUM-04` primary; `PC-HUM-05`, `PC-CF-03` and `PC-BASIC-01` for single-scope forks). None Intermediate Throw Events landed at `a37e56ef`. Close call against the Send Task recorded in the specification. Batch 3 stays open behind the owner's holds.
+Current task: [Send Task](capsules/SEND-TASK-PROPOSAL.md) of the nested scope-data profile, batch 4 (`PC-AUTO-04` primary). Single-scope models landed at `80bb4088`. Close call against the wait-free terminal branch recorded in the proposal. Batch 3 stays open behind the owner's holds.
 
-Deliverable: models without an embedded Sub-Process admitted and executed under the nested scope-data profile, landed on `main`; the four rows stay open on their other clauses.
+Deliverable: a Send Task with a configured handler admitted and executed as the profile's mapped effect, landed on `main`; `PC-AUTO-04` stays open on prescribed failure, recipient and correlation.
 
-Acceptance blockers: landing through the branch flow with green hosted checks.
+Acceptance blockers: the cold design review, implementation, closure review and landing.
 
-Current result: implemented and registered through `5581dcef`; locally the closure gates passed except one read of another profile's journey recorded under TD-001 (attribution not demonstrated), which passed alone, and hosted Verify passed every stage at `103fa0f8`. The cold closure review of `103fa0f8` approved with required edits F1 to F6, applied in `572de1a7` without guard bound changes and approved on audit; graduated to a specification in `d1d65977`. The owner-approved `ScopeDataBearing` raise is unused.
+Current result: proposal written; the source reader, capability inventory and CIB projector still refuse the Send Task.
 
-Effort budget: 6 hours from 2026-11-03 11:11 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
+Effort budget: 4 hours from 2026-11-03 14:45 CET; no Lean change, so no full `BpmnConformance` build beyond the hosted gate.
 
-Next action: fast-forward `main` to the branch head on green hosted checks, then select the next batch-4 family.
+Next action: the cold design review of the proposal, then the source projection, witnesses and registration.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
