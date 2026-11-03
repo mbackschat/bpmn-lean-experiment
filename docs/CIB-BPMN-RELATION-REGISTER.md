@@ -264,6 +264,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** A None End of the profile's re-entry root graph only, with JUEL renditions of the conditions under `CIB-CFG-0005`; public task, job, variable and history APIs. It does not cover fan-in at Activities, at Ends in Sub-Process bodies or called Processes, or under forks, and claims no Temporal refinement beyond the registered pipeline cases.
 
+### CIB-AGR-0016 — a None Intermediate Throw Event passes its token on at once and records one activity instance
+
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [None Throw account](capsules/NONE-INTERMEDIATE-THROW-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
+
+**BPMN basis:** Clause 10.5.4 and its Table 10.89 make the None Intermediate Event a normal-flow throw Event without an EventDefinition, whose token moves down the outgoing Sequence Flow as soon as it arrives, with a separate instance of the Event per arriving token.
+
+**Evidence:** At pinned `5a45b47`, `BpmnParse#parseIntermediateThrowEvent` gives an Intermediate Throw Event without an EventDefinition the type `intermediateNoneThrowEvent` and `IntermediateThrowNoneEventActivityBehavior` (`BpmnParse.java:1669-1672`), whose inherited `FlowNodeActivityBehavior.execute` leaves at once. The None Throw tests of the [pass-through Task probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPassThroughTaskProbeTest.java) drive the [retained warranty repair and onboarding milestones](../scenarios/none-intermediate-throw/README.md) through their four journeys in CIB Seven `2.2.0` (2026-11-03): each None Throw activation is one historic activity instance of that type, ended in the command that reached it, with no task and no job, and a re-entered Sub-Process gets a fresh one.
+
+**Boundary:** A None Throw with one incoming and one outgoing flow where the profile admits a pass-through Task, with JUEL renditions of the conditions under `CIB-CFG-0005`; public task, job, variable and history APIs. It does not cover several flows, asynchronous continuations, listeners, called Processes or any throw trigger, and claims no Temporal refinement beyond the registered pipeline cases.
+
 ## Interpretation register
 
 An interpretation belongs here when BPMN is ambiguous, inconsistent, non-operational, or leaves several permitted behaviors and the pinned CIB engine supplies one concrete meaning. It is not labeled a deviation.

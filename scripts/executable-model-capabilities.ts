@@ -116,6 +116,10 @@ export function detectExecutableBpmnCapabilities(
         addIntermediateCatchCapability(element, capabilities);
         break;
       case "intermediateThrowEvent": {
+        if (eventDefinition(element) === null) {
+          capabilities.add("noneIntermediateThrowEvent");
+          break;
+        }
         const definition = element.children.find(({ name }) => name === "compensateEventDefinition");
         if (eventDefinition(element) !== "compensateEventDefinition" || definition === undefined ||
             definition.attributes.activityRef !== undefined ||

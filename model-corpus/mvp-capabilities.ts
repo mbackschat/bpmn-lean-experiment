@@ -356,6 +356,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: exactCib("intermediate-catch-timer-pt1s"),
   },
   {
+    id: "noneIntermediateThrowEvent",
+    family: "Intermediate Throw Events",
+    element: "None Intermediate Throw Event",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "Under the nested scope-data profile only: an Intermediate Throw Event without an EventDefinition, with only an id and a name, one incoming and one outgoing flow, wherever that profile admits a pass-through Abstract Task. It passes the token on at once and publishes one occurrence that starts and ends in that step, a fresh one on each re-entry. No several flows, asynchronous continuations, listeners, called Processes, Multi-Instance bodies or throw triggers.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "interruptingUserTaskBoundaryTimerEvent",
     family: "Boundary Events",
     element: "Interrupting Timer Boundary Event on User Task",

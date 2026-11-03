@@ -1,0 +1,99 @@
+{
+  "kind": "scenario",
+  "id": "none-intermediate-throw-onboarding-laptop-first",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "onboarding-milestones",
+    "relativePath": "scenarios/none-intermediate-throw/onboarding-milestones.bpmn",
+    "sha256": "578970db30a2bd71ab5ed20040c17abfff5650da8b138f2bf4410bc5e3a7c4f0",
+    "sourceOverlay": {
+      "id": "onboarding-milestones-handlers",
+      "sha256": "84aec2bd8b74dacad46644d7f8f2e8705e856b443d36c9e24217ec14905eaeba"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_OnboardingMilestones",
+      "instanceId": "Onboarding_1",
+      "initialVariables": [
+        {
+          "name": "employee",
+          "value": {
+            "kind": "string",
+            "value": "EMP-4"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-start-date",
+      "taskId": {
+        "processInstanceId": "Onboarding_1",
+        "elementId": "ConfirmStartDate",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:5b2d8b323bedfe327356bb8bc471dfef8d271ae5662c40375026b65641252865",
+      "effectId": {
+        "processInstanceId": "Onboarding_1",
+        "elementId": "OrderLaptop",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "order",
+            "value": {
+              "kind": "string",
+              "value": "LAP-1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-create-account",
+      "taskId": {
+        "processInstanceId": "Onboarding_1",
+        "elementId": "CreateAccount",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.6.4",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Clause 13.4.1"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0016",
+      "CIB-EXT-0020"
+    ]
+  }
+}

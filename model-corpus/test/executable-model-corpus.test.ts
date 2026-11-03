@@ -41,15 +41,15 @@ test("binds every retained and external model to exact local evidence", async ()
     compileModel: compileCorpusModel,
   });
 
-  assert.equal(report.models.length, 88);
-  assert.equal(report.retainedModels, 81);
+  assert.equal(report.models.length, 90);
+  assert.equal(report.retainedModels, 83);
   assert.equal(report.externalModels, 7);
-  assert.equal(report.acceptedModels, 81);
+  assert.equal(report.acceptedModels, 83);
   assert.equal(report.rejectedModels, 7);
   assert.equal(report.catalogReadyModels, 12);
   assert.equal(report.models.filter(({ product2 }) => product2 === "journeyBacked").length, 3);
   assert.equal(report.models.filter(({ product2 }) => product2 === "guidedJourneyBacked").length, 9);
-  assert.equal(report.mvpCapabilities.length, 50);
+  assert.equal(report.mvpCapabilities.length, 51);
   assert.deepEqual(report.uncoveredMvpCapabilities, []);
   assert.equal(report.models[0]?.product2, "journeyBacked");
   assert.deepEqual(
@@ -94,6 +94,8 @@ test("binds every retained and external model to exact local evidence", async ()
       "none-end-fan-in-travel-booked",
       "pass-through-parallel-branches-relocation-packing-first",
       "pass-through-parallel-branches-invoice-settled",
+      "none-intermediate-throw-warranty-passed",
+      "none-intermediate-throw-onboarding-account-first",
       "repeated-nested-calls-natural-order",
       "repeated-nested-calls-guarantor-verified",
       "subprocess-error-propagation-trigger-first",
@@ -559,7 +561,7 @@ test("corpus compilation preserves exact scenario overlays and rejects incomplet
       await t.test(`${caseId}: exact identity and bytes reach the production compiler`, async () => {
         await writeFile(scenarioPath, JSON.stringify(scenario));
         const report = await inspect(selectedCases, true);
-        assert.equal(report.acceptedModels, 81);
+        assert.equal(report.acceptedModels, 83);
       });
       await t.test(`${caseId}: declared identity requires its selected path`, async () => {
         await assert.rejects(inspect(pipelineCases), /source overlay.*path/i);

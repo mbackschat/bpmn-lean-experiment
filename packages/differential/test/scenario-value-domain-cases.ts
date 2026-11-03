@@ -145,7 +145,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   addConcurrentScopeDataCases(claim, add);
   for (const id of ["concurrent-structured-scope-data-order-review-first", "concurrent-structured-scope-data-loan-credit-first",
     "root-parallel-forks-onboarding-documents-while-laptop-open", "pass-through-parallel-branches-relocation-packing-first",
-    "pass-through-parallel-branches-invoice-settled"]) {
+    "pass-through-parallel-branches-invoice-settled", "none-intermediate-throw-onboarding-account-first"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addConcurrentStructuredScopeDataCases(context, add);
@@ -156,7 +156,8 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addScopeReentryCases(context, add);
   }
-  for (const id of ["pass-through-task-equipment-return", "pass-through-task-intake-illegible-twice-then-paper"]) {
+  for (const id of ["pass-through-task-equipment-return", "pass-through-task-intake-illegible-twice-then-paper",
+    "none-intermediate-throw-warranty-passed"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addPassThroughTaskCases(context, add);
@@ -416,8 +417,9 @@ function addRequiredStartNameCases(context: DomainContext, add: AddCase) {
 }
 
 /**
- * The order fulfilment, loan assessment, root-forking employee onboarding (RPF-VALUE-01), and the office relocation and
- * invoice settlement whose branches hold pass-through Tasks (PTPB-ADMIT-01) are concurrent Programs of
+ * The order fulfilment, loan assessment, root-forking employee onboarding (RPF-VALUE-01), the office relocation and
+ * invoice settlement whose branches hold pass-through Tasks (PTPB-ADMIT-01), and the onboarding milestones whose branch
+ * holds a None Throw (NIT-ADMIT-01) are concurrent Programs of
  * the nested scope-data profile, which keep its SingletonBusinessItem domain on every surface (CSSD-VALUE-01) and derive
  * their required Start names from the occurrence chain (CSD-AVAILABLE-01, CMCALL-START-01): each requires only its
  * business object, a present null satisfies it, and the loan refuses a Start naming a declared local or a name only the called Process knows. Each case changes one fact of the
@@ -459,13 +461,14 @@ function addScopeReentryCases(context: DomainContext, add: AddCase): void {
 }
 
 /**
- * The equipment return and document intake hold pass-through Tasks under the nested scope-data profile, which add no value
- * surface: neither model requires a Start name, so every value kind is probed on an appended Start binding and on one late
- * command per write surface, and the profile's SingletonBusinessItem domain alone decides each expectation.
+ * The equipment return and document intake hold pass-through Tasks, and the warranty repair None Throws, under the nested
+ * scope-data profile, which add no value surface: no model requires a Start name, so every value kind is probed on an
+ * appended Start binding, after the warranty's unrequired `device`, and on one late command per write surface, and the
+ * profile's SingletonBusinessItem domain alone decides each expectation.
  */
 function addPassThroughTaskCases(context: DomainContext, add: AddCase): void {
   const start = context.scenario.stimuli[0]!;
-  assert.ok(start.kind === StimulusKind.StartProcess && start.initialVariables.length === 0);
+  assert.ok(start.kind === StimulusKind.StartProcess);
   const domains = expectedDomainsOf(context.scenario.profile);
   addLateValueCases(context, start, domains, add);
   addStartKindCases(context, start, domains.start, add);

@@ -1531,6 +1531,91 @@
       }
     },
     {
+      "id": "warranty-repair-milestones",
+      "title": "Repair a device under warranty",
+      "businessPurpose": "Diagnose a faulty device and mark the diagnosis, repair it in its own scope that marks the start of each round, replaces the part, orders a spare part through a parts service and tests the device, then release the device once it passes or mark a rework request and repair it again.",
+      "cloneFamily": "warranty-repair-milestones",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "intermediateThrowEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "conditionalRouting",
+        "cyclicControlFlow",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/none-intermediate-throw/warranty-repair.bpmn",
+        "sha256": "3217004955a13104fc95098f9f5e39a0decc7bb8f61ee8595949804aef386b97",
+        "scenarioRelativePath": "scenarios/none-intermediate-throw/warranty-passed.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "none-intermediate-throw-warranty-passed",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for None Intermediate Throw Events; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "employee-onboarding-milestones",
+      "title": "Onboard a new employee with milestones",
+      "businessPurpose": "Confirm a new employee's start date, then set up the account in its own scope and mark it ready while, in parallel, marking the welcome as sent and ordering a laptop through an equipment service, and mark the onboarding complete once both are done.",
+      "cloneFamily": "employee-onboarding-milestones",
+      "constructs": [
+        "endEvent",
+        "intermediateThrowEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/none-intermediate-throw/onboarding-milestones.bpmn",
+        "sha256": "578970db30a2bd71ab5ed20040c17abfff5650da8b138f2bf4410bc5e3a7c4f0",
+        "scenarioRelativePath": "scenarios/none-intermediate-throw/onboarding-account-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "none-intermediate-throw-onboarding-account-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for None Intermediate Throw Events; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "supplier-onboarding-repeated-nested-calls",
       "title": "Onboard a supplier through shared approvals",
       "businessPurpose": "Register a supplier, collect tax documents and bank details in parallel, approve each through the same four-eyes approval Process in either order, review risk through a nested compliance check, and finish with a third four-eyes final approval.",

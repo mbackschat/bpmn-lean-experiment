@@ -20,7 +20,9 @@ import org.junit.Test;
  * and the pass-through branch specification's `PTPB-PASS-01` on its two, where the Tasks sit on Parallel branches:
  * CIB Seven `2.2.0` runs a plain Task and a Manual Task through `TaskActivityBehavior.leave` (BpmnParse.java:2711-2739),
  * so each activation is a historic activity instance of type `task` or `manualTask` that ends inside the command that
- * reached it, with no task entity and no job. CIB does not execute the project's Simple Boolean v1 conditions, so each
+ * reached it, with no task entity and no job. It also calibrates `CIB-AGR-0016` (`NIT-PASS-01`) on the None Throw
+ * proposal's two witness models: `IntermediateThrowNoneEventActivityBehavior` leaves at once (BpmnParse.java:1669-1672),
+ * so each None Throw activation is an ended `intermediateNoneThrowEvent` instance of the same kind. CIB does not execute the project's Simple Boolean v1 conditions, so each
  * condition is rendered as JUEL under `CIB-CFG-0005` before deployment; the probe compares activations, never condition
  * truth. Expected values are built here from the proposal's witness-model account, never read from a target result.
  */
@@ -28,6 +30,8 @@ public final class CibSevenPassThroughTaskProbeTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
   private static final Path MODELS = PROJECT_ROOT.resolve("scenarios/pass-through-task");
   private static final Path BRANCH_MODELS = PROJECT_ROOT.resolve("scenarios/pass-through-parallel-branches");
+  private static final Path THROW_MODELS = PROJECT_ROOT.resolve("scenarios/none-intermediate-throw");
+  private static final String NONE_THROW = "intermediateNoneThrowEvent";
   private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
   private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
 
@@ -119,6 +123,81 @@ public final class CibSevenPassThroughTaskProbeTest {
       session.assertPassedThrough(instance, "ArchiveReceipt", "task", 1);
       session.assertPassedThrough(instance, "NotifyAccounting", "task", 1);
       session.runJob(instance);
+      session.assertEnded(instance);
+    }
+  }
+
+  @Test
+  public void aPassingRepairThrowsEachMilestoneOnceInTheCommandThatReachesIt() throws Exception {
+    try (var session = new Session(THROW_MODELS, "warranty-repair", 1, "orderSparePart", null, null)) {
+      var instance = session.start("Process_WarrantyRepair", Map.of("device", "DEV-7"));
+      session.complete(instance, "DiagnoseFault");
+      session.assertPassedThrough(instance, "FaultDiagnosed", NONE_THROW, 1);
+      session.assertPassedThrough(instance, "RepairStarted", NONE_THROW, 1);
+      session.assertOnlyOpenTask(instance, "ReplacePart");
+
+      session.complete(instance, "ReplacePart");
+      session.runJob(instance);
+      session.complete(instance, "TestDevice", Map.of("result", "passed"));
+      session.assertPassedThrough(instance, "DeviceReleased", NONE_THROW, 1);
+      session.assertPassedThrough(instance, "ReworkRequested", NONE_THROW, 0);
+      session.assertEnded(instance);
+    }
+  }
+
+  @Test
+  public void aFailedTestThrowsReworkAndAFreshRepairStartedInTheReenteredSubProcess() throws Exception {
+    try (var session = new Session(THROW_MODELS, "warranty-repair", 1, "orderSparePart", null, null)) {
+      var instance = session.start("Process_WarrantyRepair", Map.of("device", "DEV-7"));
+      session.complete(instance, "DiagnoseFault");
+      session.assertPassedThrough(instance, "RepairStarted", NONE_THROW, 1);
+      session.complete(instance, "ReplacePart");
+      session.runJob(instance);
+      session.complete(instance, "TestDevice", Map.of("result", "failed"));
+      session.assertPassedThrough(instance, "ReworkRequested", NONE_THROW, 1);
+      session.assertPassedThrough(instance, "RepairStarted", NONE_THROW, 1);
+      session.assertPassedThrough(instance, "DeviceReleased", NONE_THROW, 0);
+      session.assertOnlyOpenTask(instance, "ReplacePart");
+
+      session.complete(instance, "ReplacePart");
+      session.runJob(instance);
+      session.complete(instance, "TestDevice", Map.of("result", "passed"));
+      session.assertPassedThrough(instance, "DeviceReleased", NONE_THROW, 1);
+      session.assertEnded(instance);
+      assertEquals(2, session.activations(instance, "RepairStarted").size());
+    }
+  }
+
+  @Test
+  public void theAccountMilestoneFiresWithTheAccountAndTheJoinMilestoneWithTheLaptopResult() throws Exception {
+    try (var session = new Session(THROW_MODELS, "onboarding-milestones", 0, "orderLaptop", "order", "LAP-1")) {
+      var instance = session.start("Process_OnboardingMilestones", Map.of("employee", "EMP-4"));
+      session.complete(instance, "ConfirmStartDate");
+      session.assertPassedThrough(instance, "WelcomeSent", NONE_THROW, 1);
+      session.assertOnlyOpenTask(instance, "CreateAccount");
+
+      session.complete(instance, "CreateAccount");
+      session.assertPassedThrough(instance, "AccountReady", NONE_THROW, 1);
+      session.assertPassedThrough(instance, "OnboardingComplete", NONE_THROW, 0);
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "OnboardingComplete", NONE_THROW, 1);
+      session.assertEnded(instance);
+    }
+  }
+
+  @Test
+  public void theLaptopResultFirstLeavesBothLaterMilestonesToTheAccountCommand() throws Exception {
+    try (var session = new Session(THROW_MODELS, "onboarding-milestones", 0, "orderLaptop", "order", "LAP-1")) {
+      var instance = session.start("Process_OnboardingMilestones", Map.of("employee", "EMP-4"));
+      session.complete(instance, "ConfirmStartDate");
+      session.assertPassedThrough(instance, "WelcomeSent", NONE_THROW, 1);
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "OnboardingComplete", NONE_THROW, 0);
+      session.assertOnlyOpenTask(instance, "CreateAccount");
+
+      session.complete(instance, "CreateAccount");
+      session.assertPassedThrough(instance, "AccountReady", NONE_THROW, 1);
+      session.assertPassedThrough(instance, "OnboardingComplete", NONE_THROW, 1);
       session.assertEnded(instance);
     }
   }

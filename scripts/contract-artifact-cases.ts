@@ -199,6 +199,9 @@ export const normativeArtifactCases = Object.freeze([
   ...["relocation-packing-first", "relocation-movers-first", "invoice-settled"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/pass-through-parallel-branches/${name}.scenario.json`,
   })),
+  ...["warranty-passed", "warranty-rework", "onboarding-account-first", "onboarding-laptop-first"].map(name => Object.freeze({
+    scenarioRelativePath: `scenarios/none-intermediate-throw/${name}.scenario.json`,
+  })),
   ...["natural-order", "reverse-order-stale-and-cross-addressed", "guarantor-verified", "guarantor-absent"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/repeated-nested-concurrent-calls/${name}.scenario.json`,
   })),

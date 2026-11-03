@@ -101,6 +101,12 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "or on a Parallel branch of the Process root or a Sub-Process body",
     "a branch that ends at its own None End must reach a User or Service Task before it",
   ]],
+  ["noneIntermediateThrowEvent", "element", ["None Intermediate Throw Event"]],
+  ["noneIntermediateThrowEvent", "restriction", [
+    "an Intermediate Throw Event without an EventDefinition",
+    "wherever that profile admits a pass-through Abstract Task",
+    "No several flows, asynchronous continuations, listeners, called Processes, Multi-Instance bodies or throw triggers",
+  ]],
   ["noneEndEvent", "restriction", [
     "each arriving token ends there on its own, never waiting for another flow",
     "Ends inside Sub-Process bodies or the called Process keep one incoming flow",
