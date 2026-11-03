@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [None Intermediate Throw Event](capsules/NONE-INTERMEDIATE-THROW-SPEC.md) of the nested scope-data profile, batch 4 (`PC-BASIC-01`'s Intermediate Throw None clause). Pass-through Tasks on Parallel branches landed at `7cda3873`. Close call against the Inclusive Gateway recorded in the specification. Batch 3 stays open behind the owner's holds.
+Current task: [single-scope models](capsules/SINGLE-SCOPE-MODELS-PROPOSAL.md) of the nested scope-data profile, batch 4 (`PC-HUM-04` primary; `PC-HUM-05`, `PC-CF-03` and `PC-BASIC-01` for single-scope forks). None Intermediate Throw Events landed at `a37e56ef`. Close call against the Send Task recorded in the proposal. Batch 3 stays open behind the owner's holds.
 
-Deliverable: None Intermediate Throw Events as pass-through wherever the profile admits a pass-through Task, landed on `main`; `PC-BASIC-01` stays open on its other clauses.
+Deliverable: models without an embedded Sub-Process admitted and executed under the nested scope-data profile, landed on `main`; the four rows stay open on their other clauses.
 
-Acceptance blockers: landing through the branch flow with green hosted checks.
+Acceptance blockers: the cold design review, implementation with the owner-approved `ScopeDataBearing` fan-out raise (2026-11-03), registration, the closure review and landing.
 
-Current result: implemented and registered through `3c3a12e1`, where `verify.sh`, the model corpus and the fast guards are green; the cold closure review of `70a05174` approved with required edits, applied in `a8109f14` and approved on audit; graduated to a specification.
+Current result: proposal drafted; a scratch probe on `a37e56ef` admitted single-scope fork and re-entry models at both levels once the bound was relaxed and ran the fork to completion in the core.
 
-Effort budget: 6 hours from 2026-11-03 02:20 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
+Effort budget: 6 hours from 2026-11-03 11:11 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: push the branch, open the pull request and fast-forward `main` on green hosted checks, then select the next batch-4 family.
+Next action: commit the proposal and run its cold design review.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
