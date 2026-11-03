@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ShippingNotice" targetNamespace="urn:bpmn-lean:shipping-notice">
+  <process id="Process_ShippingNotice" name="Pack an order and send its shipping notice" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <userTask id="PackOrder" name="Pack order" />
+    <sendTask id="SendShippingNotice" name="Send shipping notice"
+              implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+              camunda:delegateExpression="${sendShippingNotice}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="recipient">${customerEmail}</camunda:inputParameter>
+          <camunda:inputParameter name="correlationId">${order}</camunda:inputParameter>
+          <camunda:inputParameter name="channel">email</camunda:inputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </sendTask>
+    <endEvent id="NoticeSent" name="Notice sent" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="PackOrder" />
+    <sequenceFlow id="Flow_Packed" sourceRef="PackOrder" targetRef="SendShippingNotice" />
+    <sequenceFlow id="Flow_Sent" sourceRef="SendShippingNotice" targetRef="NoticeSent" />
+  </process>
+</definitions>

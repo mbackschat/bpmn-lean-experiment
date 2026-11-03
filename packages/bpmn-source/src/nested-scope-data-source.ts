@@ -57,6 +57,8 @@ type ScopeDataReader = Readonly<{
   rootChoices: boolean;
   /** PTT-ADMIT-01, NIT-ADMIT-01: Abstract and Manual Tasks and None Throws, which the profile's lowering passes through. */
   nonOperationalTasks: boolean;
+  /** SEND-ADMIT-01: Send Tasks performed by an overlay-bound handler, read as the mapped Service Task. */
+  sendTasks: boolean;
   projectCall: (element: ElementRecord) => CheckedNode | undefined;
   /** The caller Process of the read roots, or `undefined` when the roots and Calls do not form one call forest. */
   caller: (roots: readonly ProcessRoot[], collected: Collected) => string | undefined;
@@ -69,6 +71,7 @@ type ScopeDataReader = Readonly<{
 
 const nestedScopeDataReader: ScopeDataReader = {
   semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, rootChoices: true, nonOperationalTasks: true,
+  sendTasks: true,
   projectCall: projectMappedCall,
   caller: callerProcess, overlayRequired: true,
   // CSSD-ADMIT-01: the routed analysis refuses the merges and forking-root Calls (RPF-ADMIT-01) the shared gateway
@@ -83,6 +86,7 @@ const nestedScopeDataReader: ScopeDataReader = {
 // Checked admission of the embedded completion profile already runs its nested scope-control and data analysis.
 const embeddedScopeDataReader: ScopeDataReader = {
   semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, rootChoices: false, nonOperationalTasks: false,
+  sendTasks: false,
   projectCall: projectEmbeddedCall,
   caller: callForestCaller, overlayRequired: false,
   admitted: checkedProcess => (checkedProcess.identity.sourceOverlay !== null) ===
@@ -126,7 +130,8 @@ function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overl
   }
   const foreign = exactForeignAttributeRejections(definitions, locateContainedElements(definitions),
     (type, namespace, name) =>
-      type === "bpmn:ServiceTask" && namespace === camunda && (name === "delegateExpression" || name === "asyncBefore"));
+      (type === "bpmn:ServiceTask" || (reader.sendTasks && type === "bpmn:SendTask")) && namespace === camunda &&
+      (name === "delegateExpression" || name === "asyncBefore"));
   if (foreign.length > 0) return { checkedProcess: undefined, diagnostics: orderedElementDiagnostics(foreign) };
   const processes = asElementArray(definitions.rootElements);
   if (processes === undefined || processes.length < 1 || !processes.every(process =>
@@ -204,6 +209,10 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
         break;
       }
       case "bpmn:ServiceTask": node = projectSerialBusinessServiceTask(element, definitions, policy); break;
+      case "bpmn:SendTask":
+        if (!reader.sendTasks) return "The flow element is outside the nested scope-data contract.";
+        node = projectSendTask(element, definitions, policy);
+        break;
       case "bpmn:SubProcess": {
         const id = readId(element);
         const children = asElementArray(element.flowElements);
@@ -264,6 +273,21 @@ function projectNonOperationalTask(element: ElementRecord): CheckedNode | undefi
     !hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.PlainNode) ? undefined
     : { kind: CheckedNodeKind.NonOperationalTask, id,
       notation: element.$type === bpmnTypes.manualTaskType ? TaskNotation.ManualTask : TaskNotation.AbstractTask };
+}
+
+/**
+ * SEND-ADMIT-01 and SEND-DATA-01: a Send Task whose bound handler performs the send (CIB `BpmnParse.parseSendTask`,
+ * tag v2.2.0, reads it as a Service Task) projects to the mapped Service Task's node, with no output because Clause
+ * 13.3.3 assigns none on completion. moddle keeps the `messageRef` and `operationRef` references out of the key
+ * inventory, so they are refused by name as `default` is: CIB never reads either, and a send they address is
+ * `PC-MESSAGE-09`'s, not this one. Not decisive through the reader today, whose root check refuses the Message and
+ * Interface they need; the clause keeps the projection exact once a later family admits them.
+ */
+export function projectSendTask(element: ElementRecord, definitions: ElementRecord,
+  policy: MappedServiceTaskSourcePolicy): CheckedNode | undefined {
+  if (element["messageRef"] !== undefined || element["operationRef"] !== undefined) return undefined;
+  const node = projectSerialBusinessServiceTask(element, definitions, policy);
+  return node?.kind === CheckedNodeKind.ServiceTask && node.outputMappings.length === 0 ? node : undefined;
 }
 
 /**

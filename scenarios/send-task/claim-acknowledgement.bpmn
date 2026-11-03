@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ClaimAcknowledgement" targetNamespace="urn:bpmn-lean:claim-acknowledgement">
+  <process id="Process_ClaimAcknowledgement" name="Acknowledge, assess and settle a claim" isExecutable="true">
+    <startEvent id="ClaimReceived" name="Claim received" />
+    <subProcess id="Intake" name="Intake">
+      <startEvent id="IntakeOpened" />
+      <parallelGateway id="StartIntake" name="Start intake" />
+      <sendTask id="AcknowledgeClaim" name="Acknowledge claim"
+                implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                camunda:delegateExpression="${acknowledgeClaim}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="claim">${claim}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </sendTask>
+      <userTask id="AssessClaim" name="Assess claim" />
+      <parallelGateway id="IntakeDone" name="Intake done" />
+      <endEvent id="IntakeClosed" />
+      <sequenceFlow id="Flow_IntakeOpened" sourceRef="IntakeOpened" targetRef="StartIntake" />
+      <sequenceFlow id="Flow_ToAcknowledge" sourceRef="StartIntake" targetRef="AcknowledgeClaim" />
+      <sequenceFlow id="Flow_Acknowledged" sourceRef="AcknowledgeClaim" targetRef="IntakeDone" />
+      <sequenceFlow id="Flow_ToAssess" sourceRef="StartIntake" targetRef="AssessClaim" />
+      <sequenceFlow id="Flow_Assessed" sourceRef="AssessClaim" targetRef="IntakeDone" />
+      <sequenceFlow id="Flow_IntakeDone" sourceRef="IntakeDone" targetRef="IntakeClosed" />
+    </subProcess>
+    <userTask id="SettleClaim" name="Settle claim" />
+    <endEvent id="ClaimSettled" name="Claim settled" />
+    <sequenceFlow id="Flow_Received" sourceRef="ClaimReceived" targetRef="Intake" />
+    <sequenceFlow id="Flow_IntakeFinished" sourceRef="Intake" targetRef="SettleClaim" />
+    <sequenceFlow id="Flow_Settled" sourceRef="SettleClaim" targetRef="ClaimSettled" />
+  </process>
+</definitions>
