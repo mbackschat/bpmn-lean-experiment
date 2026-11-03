@@ -22,7 +22,7 @@ The counts below cover only entries recorded by this project, including the sepa
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Normative agreement records | 15 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
+| Normative agreement records | 16 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 2 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |

@@ -145,6 +145,12 @@ No new hosting mechanism. A None Throw is an internal step inside one command cl
 
 The models run as answer-free scenarios with registered pipeline cases, each with a seeded mutation, plus value-domain matrix rows, corpus rows and the About disclosure. The CIB lane extends the [pass-through Task probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPassThroughTaskProbeTest.java) with both models' journeys, calibrating one ended `intermediateNoneThrowEvent` activity instance per None Throw activation without a task or job.
 
+Implemented as proposed. The [conformance module](../../BpmnSemantics/NoneIntermediateThrowConformance.lean) holds seven checks: both models at both levels with the warranty's re-entry burst of eight and the onboarding's concurrent burst of seven, lowering to one-input merges with the Event as origin, both several-flow forms, the wait-free terminal branch against its waiting twin, the Call behind only a None Throw, the profile control (the spliced employee onboarding at both levels and an exact-shape graph refused by its cardinalities, a mutation that stops counting the arm failing it), and the decoder. The four pipeline mutations each move the one observation they name; the value-domain matrix runs the onboarding with the concurrent Start-name cases and the warranty with the pass-through Task cases, whose assertion now admits the warranty's unrequired `device`.
+
+Closure gates:
+
+- **Green at `3c3a12e1`:** the complete `verify.sh`: the Lean library and `BpmnConformance`, 918 jobs, whose driver holds all 1,294 checks; the runtime stage with the CIB oracle and the [pass-through Task probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPassThroughTaskProbeTest.java), ten tests; the complete Temporal gate; and the pipeline over all 170 registered cases, warm in 124.2 s. Then the research doctor and `test:model-corpus`, 30 tests, and the fast guards, 911 tests.
+
 Then `PC-BASIC-01`'s Intermediate Throw None clause is accepted for this profile's single-flow form; the row stays open on its other clauses and on None Throws with several incoming or outgoing flows.
 
 Nearest unsupported claims:

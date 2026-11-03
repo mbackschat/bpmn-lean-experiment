@@ -86,7 +86,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Pass-through Tasks on Parallel branches closure. Command: `./scripts/verify.sh`. Status: `exit 0`. Date: `2026-11-03`. Commit: `d13862c5`; the pipeline's 166 cases ran warm in 132.1 seconds at a start load of 0.52 per core.
+- None Intermediate Throw Event closure. Command: `./scripts/verify.sh`. Status: `exit 0`. Date: `2026-11-03`. Commit: `3c3a12e1`; the pipeline's 170 cases ran warm in 124.2 seconds.
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -98,13 +98,13 @@ Current task: [None Intermediate Throw Event](capsules/NONE-INTERMEDIATE-THROW-P
 
 Deliverable: None Intermediate Throw Events as pass-through wherever the profile admits a pass-through Task, landed on `main`; `PC-BASIC-01` stays open on its other clauses.
 
-Acceptance blockers: implementation, registration and closure.
+Acceptance blockers: the closure review, graduation and landing.
 
-Current result: proposal `1cdfae2b` approved with required edits, audited at `398ecf59` and `7c5abba5`.
+Current result: implemented and registered through `3c3a12e1`; `verify.sh`, the model corpus and the fast guards are green there.
 
 Effort budget: 6 hours from 2026-11-03 02:20 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
-Next action: implement the kernel arm and its consumers in one Lean commit, red/green.
+Next action: the cold closure review, then graduation to a specification and the branch flow.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
