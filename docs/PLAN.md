@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: [pass-through Tasks on Parallel branches](capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md) of the nested scope-data profile, batch 4 (`PC-HUM-04`'s last clause, `PC-HUM-05`'s branch clause). None End fan-in landed at `20933b89`. Close call against the None Throw and Link Events recorded in the proposal. Batch 3 stays open behind the owner's holds.
+Current task: land [pass-through Tasks on Parallel branches](capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md) of the nested scope-data profile, batch 4 (`PC-HUM-04`'s last clause, `PC-HUM-05`'s branch clause). None End fan-in landed at `20933b89`. Close call against the None Throw and Link Events recorded in the specification. Batch 3 stays open behind the owner's holds.
 
 Deliverable: plain and Manual Tasks as pass-through on Parallel branches of the root and Sub-Process bodies, landed on `main`; `PC-HUM-04` stays open only on wait-free terminal branches in bodies and on forking models without an embedded Sub-Process.
 
-Acceptance blockers: the closure review, graduation and landing.
+Acceptance blockers: landing through the branch flow with green hosted checks.
 
-Current result: implemented and registered through `d13862c5`; `verify.sh` and the model corpus are green there, after one correction that flipped two stale Lean refusal locks.
+Current result: closure-approved (review of `49274572`, audits `c1ecfd72` and `a4cbd5a4`) and graduated; `verify.sh` and the model corpus green at `d13862c5`, after one correction that flipped two stale Lean refusal locks; the review's bounded Call-placement walk fix (`9d727c61`) is TypeScript-only.
 
-Effort budget: 6 hours from 2026-11-02 21:45 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
+Effort budget: 6 hours from 2026-11-02 21:45 CET; one full `BpmnConformance` build at closure plus at most one after a correction; both used.
 
-Next action: the cold closure review, then graduation to a specification and the branch flow.
+Next action: push the branch, open the pull request and fast-forward `main` on green hosted checks; then the next family, the None Intermediate Throw Event (`PC-BASIC-01`'s None Throw clause), the candidate this family's selection screened next.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

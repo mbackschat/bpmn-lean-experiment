@@ -1,9 +1,9 @@
 /**
  * PTPB-PASS-01 and PTPB-COMMUTE-01 in committed core state over the retained pass-through branch scenarios. Every
- * stimulus commits without reaching `ambiguousInternalChoice`, which stands in for the singleton premise the proposal
- * argues rather than proves; every pass-through Task publishes exactly one occurrence that starts and ends in the
- * command delivering its token; and the office relocation's two completion orders reach one final state. Expected
- * commands and Tasks are read off the proposal's witness account.
+ * stimulus commits without reaching `ambiguousInternalChoice`, which stands in for the singleton premise the
+ * specification argues rather than proves; every pass-through Task publishes exactly one occurrence that starts and
+ * ends in the command delivering its token; and the office relocation's two completion orders reach one final state.
+ * Expected commands and Tasks are read off the specification's witness account.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";

@@ -1,9 +1,9 @@
 /**
  * PTPB-ADMIT-01, PTPB-WORK-01, PTPB-CALL-01 and PTPB-BURST-01 over the retained pass-through branch models through the
- * exact-bytes source path, at the Program and checked levels. The oracle is the approved proposal's witness account:
- * each model compiles under the nested scope-data profile with its Tasks lowered to one-input merges, and each refusal
- * is a one-fact edit of an admitted model or of a twin the test admits beside it, so a gate refusing every Task on a
- * branch, or admitting every one, cannot pass.
+ * exact-bytes source path, at the Program and checked levels. The oracle is the approved specification's witness
+ * account: each model compiles under the nested scope-data profile with its Tasks lowered to one-input merges, and each
+ * refusal is a one-fact edit of an admitted model or of a twin the test admits beside it, so a gate refusing every Task
+ * on a branch, or admitting every one, cannot pass.
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
