@@ -98,9 +98,9 @@ Current task: [single-scope models](capsules/SINGLE-SCOPE-MODELS-PROPOSAL.md) of
 
 Deliverable: models without an embedded Sub-Process admitted and executed under the nested scope-data profile, landed on `main`; the four rows stay open on their other clauses.
 
-Acceptance blockers: the cold design review, implementation with the owner-approved `ScopeDataBearing` fan-out raise (2026-11-03), registration, the closure review and landing.
+Acceptance blockers: the cold design review, implementation, registration, the closure review and landing.
 
-Current result: proposal drafted; a scratch probe on `a37e56ef` admitted single-scope fork and re-entry models at both levels once the bound was relaxed and ran the fork to completion in the core.
+Current result: proposal revised after the bound-direction review to a completion premise with no bound change (the owner-approved `ScopeDataBearing` raise is unused); a scratch probe on `a37e56ef` admitted single-scope fork and re-entry models at both levels once the bound was relaxed and ran the fork to completion in the core.
 
 Effort budget: 6 hours from 2026-11-03 11:11 CET; one full `BpmnConformance` build at closure plus at most one after a correction.
 
