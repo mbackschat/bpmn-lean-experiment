@@ -422,7 +422,8 @@ function addRequiredStartNameCases(context: DomainContext, add: AddCase) {
  * The order fulfilment, loan assessment, root-forking employee onboarding (RPF-VALUE-01), the office relocation and
  * invoice settlement whose branches hold pass-through Tasks (PTPB-ADMIT-01), the onboarding milestones whose branch
  * holds a None Throw (NIT-ADMIT-01), the purchase request forking at its only scope (SSM-ADMIT-01) and the claim
- * acknowledgement whose Sub-Process forks into a Send Task (SEND-ADMIT-01) are concurrent Programs of the nested scope-data profile, which keep its SingletonBusinessItem domain on every surface (CSSD-VALUE-01) and derive
+ * acknowledgement whose Sub-Process forks into a Send Task (SEND-ADMIT-01) are concurrent Programs of the nested
+ * scope-data profile, which keep its SingletonBusinessItem domain on every surface (CSSD-VALUE-01) and derive
  * their required Start names from the occurrence chain (CSD-AVAILABLE-01, CMCALL-START-01): each requires only its
  * business object, a present null satisfies it, and the loan refuses a Start naming a declared local or a name only the called Process knows. Each case changes one fact of the
  * retained answer-free Start or appends one late command.

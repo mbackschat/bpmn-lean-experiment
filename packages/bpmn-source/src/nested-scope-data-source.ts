@@ -130,7 +130,7 @@ function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overl
   }
   const foreign = exactForeignAttributeRejections(definitions, locateContainedElements(definitions),
     (type, namespace, name) =>
-      (type === "bpmn:ServiceTask" || (reader.sendTasks && type === "bpmn:SendTask")) && namespace === camunda &&
+      (type === "bpmn:ServiceTask" || (reader.sendTasks && type === bpmnTypes.sendTaskType)) && namespace === camunda &&
       (name === "delegateExpression" || name === "asyncBefore"));
   if (foreign.length > 0) return { checkedProcess: undefined, diagnostics: orderedElementDiagnostics(foreign) };
   const processes = asElementArray(definitions.rootElements);
@@ -209,7 +209,7 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
         break;
       }
       case "bpmn:ServiceTask": node = projectSerialBusinessServiceTask(element, definitions, policy); break;
-      case "bpmn:SendTask":
+      case bpmnTypes.sendTaskType:
         if (!reader.sendTasks) return "The flow element is outside the nested scope-data contract.";
         node = projectSendTask(element, definitions, policy);
         break;

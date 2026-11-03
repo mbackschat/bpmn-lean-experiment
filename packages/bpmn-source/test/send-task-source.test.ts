@@ -76,6 +76,15 @@ test("each Send Task projects to the mapped Service Task's checked node and effe
   assert.deepEqual(claim.semanticProcess.operations, claimTwin.semanticProcess.operations);
 });
 
+test("a written metamodel default leaves the Send Task admitted, as on its Service Task twin", async () => {
+  // Admission must not depend on whether a source spells out a value already in force; the default guard reaches a
+  // type only through the metamodel manifest, so this locks the Send Task's entry there.
+  const written = replaceOnce(await source("shipping-notice"), '<sendTask id="SendShippingNotice"',
+    '<sendTask id="SendShippingNotice" isForCompensation="false"');
+  await admitted("shipping-notice", asServiceTask(written));
+  await admitted("shipping-notice", written);
+});
+
 test("SEND-REFUSE-01: each one-fact edit of the shipping notice is refused", async () => {
   const shipping = await source("shipping-notice");
   const delegate = ' camunda:delegateExpression="${sendShippingNotice}"';

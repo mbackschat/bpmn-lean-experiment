@@ -68,6 +68,7 @@
     "userTaskType": "bpmn:UserTask",
     "renderingType": "bpmn:Rendering",
     "receiveTaskType": "bpmn:ReceiveTask",
+    "sendTaskType": "bpmn:SendTask",
     "serviceTaskType": "bpmn:ServiceTask",
     "subProcessType": "bpmn:SubProcess",
     "parallelGatewayType": "bpmn:ParallelGateway",
@@ -216,6 +217,12 @@
     },
     {
       "name": "ReceiveTask",
+      "directSuperClasses": [
+        "Task"
+      ]
+    },
+    {
+      "name": "SendTask",
       "directSuperClasses": [
         "Task"
       ]
