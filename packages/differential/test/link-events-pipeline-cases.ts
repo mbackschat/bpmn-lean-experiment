@@ -74,14 +74,14 @@ const cases = {
 
 /**
  * Standards-only schedules over the two Link models, with no CIB target and no retained answer. Each model binds its
- * explicit-flow twin's overlay, whose one handler it shares; stimulus order realizes each schedule as for the twins.
+ * explicit-flow twin's overlay, copied byte for byte into the Link directory; stimulus order realizes each schedule as for the twins.
  */
 export const linkEventsPipelineCases = Object.freeze(
   (Object.keys(cases) as LinkEventsName[]).map((name): PipelineCase => ({
     id: `link-events-${name}`,
     scenarioRelativePath: `scenarios/link-events/${name}.scenario.json`,
     bpmnRelativePath: `scenarios/link-events/${cases[name].model}-links.bpmn`,
-    sourceOverlayRelativePath: `scenarios/none-intermediate-throw/${cases[name].model}-overlay.json`,
+    sourceOverlayRelativePath: `scenarios/link-events/${cases[name].model}-overlay.json`,
     workflowIdPrefix: `link-events-${name}`,
     cib: null,
     expectedWaitTraceLength: 3,
