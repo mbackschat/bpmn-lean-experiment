@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Link Events in the nested scope-data profile, batch 4 (`PC-BASIC-02`). Inclusive regions landed at `77a8d8f2`. Close call against nested and sibling Inclusive regions: reach is small on both sides (one valid single-source CIB model), and Link Events win on risk and cost, a pure flow continuation adding no operation.
+Current task: data-declaring terminal branches in the nested scope-data profile, batch 4 (`PC-HUM-04` primary; `PC-HUM-05`). Link Events landing at `5b9806ec` ([PR #56](https://github.com/mbackschat/bpmn-lean-experiment/pull/56)). Close call against implicit split and merge, which has the larger reach but needs the kernel extension its [proposal](capsules/IMPLICIT-FAN-IN-PROPOSAL.md#independent-cold-review-receipt) was rejected on: this family closes a row with one pair law, so it goes first.
 
-Deliverable: single-source Link pairs admitted in the nested scope-data profile, each behaving as its explicit-flow twin, landed on `main`.
+Deliverable: wait-free terminal branches admitted beside scope-local data in the nested scope-data profile, an End committing beside a declared Sub-Process entry through a proved pair law, landed on `main`.
 
-Acceptance blockers: hosted `verify-complete` on [PR #56](https://github.com/mbackschat/bpmn-lean-experiment/pull/56), the condition of the approving correction audit in the [Link Events receipt](capsules/LINK-EVENTS-SPEC.md#independent-cold-review-receipt).
+Acceptance blockers: the cold review of the [proposal](capsules/DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md), implementation, closure review and hosted `verify-complete`.
 
-Current result: Link Events graduated to an implemented [specification](capsules/LINK-EVENTS-SPEC.md); `34878019` re-applies the corrected change from `7fcb74d0` under a reviewed Rule 2 declaration whose LOW post-check passed ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84), fifth instance), and the closure reviewer's correction audit approved it. `PC-BASIC-02` is accepted for single-source pairs and stays open on multiple sources.
+Current result: proposal drafted.
 
-Effort budget: 8 hours from 2026-11-04 19:00 CET, ending 2026-11-05 03:00.
+Effort budget: 6 hours from 2026-11-05 00:00 CET, ending 06:00.
 
-Next action: land through the branch push flow on green `verify-complete`, then select the next batch 4 family.
+Next action: the proposal's cold review.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
