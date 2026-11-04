@@ -294,7 +294,7 @@ The selected profile orders candidates by XML `sequenceFlow` declaration order. 
 
 ### CIB-INT-0003 — an Exclusive Gateway whose conditions all fail rolls its command back
 
-**Status:** Selected bounded interpretation; standards capsule in implementation
+**Status:** Selected bounded interpretation; implemented and evidence-closed
 
 BPMN Table 13.2 requires an exception when no condition of a diverging Exclusive Gateway without a default holds, and Clause 10.6.2 does not say what that exception does to the instance. CIB Seven `2.2.0` `ExclusiveGatewayActivityBehavior#doLeave` raises `ENGINE-02004` through `stuckExecutionException`, which aborts the whole command: a Start creates no instance and a User Task completion leaves its task open with none of the completion's writes.
 
