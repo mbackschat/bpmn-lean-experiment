@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_ParcelHandover"
+  targetNamespace="https://bpmn-lean.local/addressless-receive-task">
+  <bpmn:process
+    id="Process_ParcelHandover"
+    isExecutable="true">
+    <bpmn:startEvent id="StartEvent_HandoverRequested" name="Handover requested">
+      <bpmn:outgoing>SequenceFlow_RequestedToPickup</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow
+      id="SequenceFlow_RequestedToPickup"
+      sourceRef="StartEvent_HandoverRequested"
+      targetRef="ReceiveTask_AwaitCourierPickup" />
+    <bpmn:receiveTask
+      id="ReceiveTask_AwaitCourierPickup"
+      name="Await courier pickup">
+      <bpmn:incoming>SequenceFlow_RequestedToPickup</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_PickupToHandedOver</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:sequenceFlow
+      id="SequenceFlow_PickupToHandedOver"
+      sourceRef="ReceiveTask_AwaitCourierPickup"
+      targetRef="EndEvent_ParcelHandedOver" />
+    <bpmn:endEvent id="EndEvent_ParcelHandedOver" name="Parcel handed over">
+      <bpmn:incoming>SequenceFlow_PickupToHandedOver</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

@@ -9,11 +9,13 @@ Review: pending
 
 Can the Receive Task profile admit a Receive Task that names no Message, so that it waits until one explicit command naming its published occurrence resumes it, while a named, correlated or payload Message delivery, a User Task completion and every other command leave it waiting? CIB realizes this wait as an execution signal; the project exposes its own occurrence-addressed ingress instead of cloning that API.
 
-This is the next family of batch 4 in [PLAN](../PLAN.md#scheduled-delivery-batches) (task breadth). It serves `PC-HUM-06` of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), primary, for its clauses on the root witness, the classified CIB execution-signal realization, the project-owned ingress, the wrong or stale occurrence refusing unchanged, and the Message or Signal broadcast that cannot resume the wait. Its repeated, embedded and both Multi-Instance witnesses stay open: they need the wait inside the nested scope-data profile's analyses, whose Lean proofs case on the User Task wait in about 25 modules, many at their size ceilings.
+This is the next family of batch 4 in [PLAN](../PLAN.md#scheduled-delivery-batches) (task breadth). It serves `PC-HUM-06` of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), primary, for its root clauses: the root witness resuming exactly once, the classified CIB execution-signal realization, the project-owned ingress, the wrong or stale occurrence refusing unchanged, and the Message or Signal broadcast that cannot resume the wait. The family establishes the channel arm, the CIB mapping, the Temporal path and the Product 2 decoding that the remaining clauses reuse.
 
-Selection, 2026-11-04. Over the pinned CIB checkout, outside `target/` and `model-api`, 167 model files hold a Receive Task without `messageRef`; 60 of them carry no boundary, timer, message, signal, error, escalation, compensation, conditional, link, terminate or Multi-Instance definition, no Inclusive, Event-Based or Complex Gateway, no Script or Rule Task, no Collaboration and no Java class, expression, asynchronous continuation or listener. Of those 60, 29 are exactly Start, one Receive Task and End; 24 of them are CIB's input/output-mapping fixtures, which carry `camunda:inputOutput` and stay refused. Activity fan-in (`PC-CF-07`) reaches 3 such models and Link Events (`PC-BASIC-02`) none, both executable Link models needing this wait first.
+The repeated, embedded and both Multi-Instance clauses stay open, with this blocker: the Receive Task profile excludes loops, Sub-Processes, Multi-Instance and repeated Message activation, and the nested scope-data profile, which admits those compositions, excludes Messages; its Lean analyses case on the User Task wait in about 46 modules, many at their size ceilings. They need a follow-up family that admits the Message wait in the nested scope-data profile, scheduled in PLAN directly after this one lands.
 
-Close call, decided on reach: the wait is task breadth in the checklist's Human, Receive and pass-through section, so it belongs to batch 4 rather than to batch 5's event breadth.
+Selection, 2026-11-04. Over the pinned CIB checkout, outside `target/` and `model-api`, 167 model files hold a Receive Task without `messageRef`; 60 of them carry no boundary, timer, message, signal, error, escalation, compensation, conditional, link, terminate or Multi-Instance definition, no Inclusive, Event-Based or Complex Gateway, no Script or Rule Task, no Collaboration and no Java class, expression, asynchronous continuation or listener. Of those 60, 29 are exactly Start, one Receive Task and End, and 24 of those carry `camunda:inputOutput`, which stays refused, so this family admits 5 pinned models; the other 31 compose the wait with chains, User or Service Tasks or Parallel forms and wait for the follow-up family. Activity fan-in (`PC-CF-07`) admits 3 such models and needs a kernel extension; Link Events (`PC-BASIC-02`) admit none, both executable Link models needing this wait first.
+
+Close call, decided on reach and reuse: 5 admitted models against 3 for Activity fan-in, with the channel, CIB, Temporal and Product 2 foundations carried into the 31 composed models; the wait is task breadth, so it belongs to batch 4 rather than to batch 5's event breadth.
 
 ## Normative basis and CIB classification
 
@@ -22,9 +24,12 @@ Close call, decided on reach: the wait is task breadth in the checklist's Human,
 
 With `messageRef` absent the associated Message is unspecified: BPMN states that the Task waits for and completes on a Message, but not how an unspecified Message is addressed. That is a gap, not a choice CIB contradicts.
 
-CIB Seven `2.2.0`, pinned: `BpmnParse.parseReceiveTask` (`BpmnParse.java:2745-2757`) gives every Receive Task a `ReceiveTaskActivityBehavior` and declares a Message event subscription only when `messageRef` is present. The behavior's `performExecution` does nothing, a wait state, and `signal` calls `leave` (`ReceiveTaskActivityBehavior.java:31-41`; its doc names "the external trigger, given by calling the `RuntimeService#signal(String)` operation" as the only Message supported). `SignalCmd` (`SignalCmd.java:50-68`) finds the execution by ID, sets optional process variables and signals it. `ReceiveTaskTest#testReceiveTaskWithoutMessageReference` exercises this path.
+CIB Seven `2.2.0`, pinned: `BpmnParse.parseReceiveTask` (`BpmnParse.java:2745-2766`) gives every Receive Task a `ReceiveTaskActivityBehavior` and declares a Message event subscription only when `messageRef` is present. The behavior's `performExecution` does nothing, a wait state, and `signal` calls `leave` (`ReceiveTaskActivityBehavior.java:31-41`; its doc names "the external trigger, given by calling the `RuntimeService#signal(String)` operation" as the only Message supported). `SignalCmd` (`SignalCmd.java:50-68`) finds the execution by ID, sets optional process variables and signals it. `ReceiveTaskTest#testReceiveTaskWithoutMessageReference` exercises this path.
 
-Classification: a new interpretation, `CIB-INT-0004` (a Receive Task without a Message waits for an occurrence-addressed external trigger): the profile resolves the gap as CIB does, with one restriction. The trigger names the published Receive Task occurrence, never a CIB execution, and carries no variables; CIB's variable-setting signal and signals to other activities stay outside the profile.
+Two register entries classify the realization, added with the implementation:
+
+- `CIB-INT-0004`, interpretation: a Receive Task without a Message waits for an occurrence-addressed external trigger, resolving the gap as CIB's execution signal does. An unspecified delivery addresses only an addressless wait. CIB's signal also completes a Message-addressed Receive Task (`ReceiveTaskTest#testSupportsLegacySignalingOnSingleReceiveTask`); the profile refuses an unspecified delivery to a direct wait, a project restriction for which no CIB agreement is claimed. The trigger carries no variables, and CIB's variable-setting signal stays outside the profile.
+- `CIB-OP-0011`, operational mapping: the oracle adapter projects the one CIB execution waiting at an addressless Receive Task, found by an execution query on its activity ID, to the open wait `(stable instance, element, activation 1)` with channel `unspecifiedMessage`, and maps its delivery to `RuntimeService#signal(executionId)`, keeping the execution ID local to the call. Missing, multiple or consumed executions are refused before the call. Its boundary mirrors `CIB-OP-0005`'s: one live activation-`1` wait in one Process instance.
 
 ## Required, optional and excluded scope
 
@@ -39,37 +44,40 @@ Excluded, each refused at admission:
 - a root Message definition beside an addressless Receive Task, and a model holding both kinds of Receive Task;
 - variables carried by the trigger, CIB's signal-to-any-activity and signal names.
 
-These bound admission only: the repeated, embedded and Multi-Instance witnesses (`PC-HUM-06`'s other clauses) broaden the class into the nested scope-data profile without reinterpreting an admitted model.
+These bound admission only: the repeated, embedded and Multi-Instance clauses broaden the class into the nested scope-data profile without reinterpreting an admitted model.
 
 ## Profile and public contract
 
-The profile `cibseven-2.2.0-message-addressed-receive-task-draft` grows in place, under the [owner direction of 2026-10-14](../../contracts/README.md): the widening is additive, and every model, command and observation it admits today keeps its exact meaning. It gains the feature `addressless-receive-task`, loses that entry from `excluded`, and names `CIB-INT-0004`; its claim string widens to name both Receive Task variants, and its id keeps its name because the identity rule ties the id to unchanged meaning of what is already admitted, which holds.
+The profile `cibseven-2.2.0-message-addressed-receive-task-draft` grows in place, under the [owner direction of 2026-10-14](../../contracts/README.md): the widening is additive, and every model, command and observation it admits today keeps its exact meaning. It gains the feature `addressless-receive-task`, loses that entry from `excluded`, and names `CIB-INT-0004` and `CIB-OP-0011`; its claim string widens to name both Receive Task variants, and its id keeps its name because the identity rule ties the id to unchanged meaning of what is already admitted, which holds. The profile's digest changes, so the retained CIB evidence of the Message-addressed scenario is replaced through the explicit evidence-replacement operation and the model-corpus progress baseline is rebound in the same change.
 
-The public contract gains one arm of the closed Message channel, `unspecifiedMessage`, with no fields. It appears wherever a channel appears: the checked Receive Task node, the `awaitMessage` operation, the runtime Message wait, the public open subscription, the enabled interaction and the `DeliverMessage` stimulus. No `StimulusKind`, `WaitKind`, `CommandOutcome`, runtime-state collection, IL operation kind, Temporal Signal, Update or client function is added. The existing [`submitMessageDelivery`](../../packages/temporal-adapter/client/src/process-client.ts) is the project-owned ingress: a caller resumes the wait by delivering `{ kind: "deliverMessage", subscriptionId, channel: { kind: "unspecifiedMessage" } }` for the published occurrence.
+The public contract gains one arm of the closed Message channel, `unspecifiedMessage`, with no fields. It is admitted in exactly four positions: the checked Receive Task node, its `awaitMessage` operation, the runtime Message wait with its open wait and enabled `deliverMessage` interaction, and the `DeliverMessage` stimulus. Every other position the channel types refuses it (`ARECV-ADDRESS-02`): the Message Start trigger, the correlated Message address of publication and delivery, the payload Message wait, delivery and interaction, the Intermediate Catch and boundary Message arms, the event-race arms, the Message initiation and the Event Sub-Process Message subscription.
+
+No `StimulusKind`, `WaitKind`, `CommandOutcome`, runtime-state collection, IL operation kind, Temporal Signal, Update or client function is added. The existing [`submitMessageDelivery`](../../packages/temporal-adapter/client/src/process-client.ts) is the project-owned ingress: a caller resumes the wait by delivering `{ kind: "deliverMessage", subscriptionId, channel: { kind: "unspecifiedMessage" } }` for the published occurrence. The project has no Signal ingress, so no Signal broadcast exists to reach the wait.
 
 ## Representation and runtime ownership
 
 - **Source.** `projectReceiveTask` (`receive-task-source.ts`) projects a Receive Task without `messageRef` to the checked node with channel `unspecifiedMessage`, under this profile only. The profile's root-definition selection admits the Process alone when its Receive Task names no Message.
-- **Checked node and IL.** The checked `receiveTask` channel widens from the direct arm to direct or unspecified; lowering is unchanged and copies the channel into `awaitMessage`.
+- **Checked node and IL.** The checked `receiveTask` channel widens from the direct arm to direct or unspecified; lowering copies the channel into `awaitMessage` and is unchanged.
 - **Runtime.** The existing Message wait records the channel. `sameMessageChannel` gains the arm: two unspecified channels are equal, and no unspecified channel equals a direct or operation channel.
 - **Delivery.** The existing `deliverMessage` evaluator and Lean `MessageDeliveryStep` already require the delivered channel to equal the wait's channel and the subscription to name the waiting occurrence; they gain no case of their own.
 
-The checklist's "without a Message subscription" is met in the sense that decides it: no named, correlatable subscription exists, so no Message name, correlation or broadcast can reach the wait. What the profile publishes is the occurrence address the checklist requires ("naming its published occurrence"); it reuses the existing open-subscription record because that record already is the project's occurrence-addressed passive wait, and a parallel record kind would duplicate it.
+The wait is published in `openMessageSubscriptions` because that record is already the project's occurrence-addressed passive wait; a parallel record kind would duplicate it. The checklist's "without a Message subscription" excludes a named, correlatable or broadcast-reachable subscription, which neither CIB nor the profile creates; this proposal amends the `PC-HUM-06` row visibly to say so, under the checklist's amendment rule and this review, and the [CIB observation policy](../CIB-OBSERVATION-POLICY.md) states that an `unspecifiedMessage` entry is no BPMN or CIB Message subscription.
 
 No runtime-only or synthetic construct is introduced: the channel arm is source-derived, owned by the wait it addresses, published with it and removed when the delivery consumes it.
 
 ## Admission
 
-- **TypeScript.** The source reader projects the addressless node only under this profile; the profile shape `Start → ReceiveTask → End` already admits one Receive Task; the operation admission accepts `awaitMessage` with either channel arm of a Receive Task.
-- **Lean.** The checked-process profile control and the Program-level profile shape accept the unspecified arm exactly where they accept the direct one.
-- **Host.** Host admission already classifies `awaitMessage` as passive external ingress; the new arm changes no host-admission predicate.
+- **TypeScript.** The source reader projects the addressless node only under this profile; the profile shape `Start → ReceiveTask → End` already admits one Receive Task; the operation admission accepts `awaitMessage` with either channel arm of a Receive Task, and every other channel position keeps its positive kind check.
+- **Lean.** The checked-process profile control and the Program-level profile shape accept the unspecified arm exactly where they accept the direct one, and every other channel match refuses it.
+- **Host.** Host admission already classifies `awaitMessage` as passive external ingress without a channel predicate; the new arm changes no host-admission predicate.
 
 ## Stable rules
 
 - `ARECV-ADDRESS-01`: a Receive Task without `messageRef` under this profile is admitted with channel `unspecifiedMessage`; a Message root beside it, any excluded attribute, and the same model under another profile are refused.
-- `ARECV-WAIT-01`: activation creates exactly one Message wait for the Receive Task occurrence with channel `unspecifiedMessage`, published as an open subscription and an enabled `deliverMessage` interaction.
+- `ARECV-ADDRESS-02`: the `unspecifiedMessage` arm is refused in every channel position other than the Receive Task node, its `awaitMessage` operation, its wait and the `DeliverMessage` stimulus.
+- `ARECV-WAIT-01`: activation creates exactly one Message wait for the Receive Task occurrence with channel `unspecifiedMessage`, published as an open wait and an enabled `deliverMessage` interaction.
 - `ARECV-RESUME-01`: a `DeliverMessage` naming that subscription with channel `unspecifiedMessage` consumes the wait and completes the Receive Task occurrence once; the Process then completes at its None End.
-- `ARECV-REFUSE-01`: a delivery naming another occurrence, the consumed occurrence or another instance, a delivery with a direct, operation, payload or correlated channel, and every other stimulus kind are refused and leave the state unchanged.
+- `ARECV-REFUSE-01`: a delivery naming another occurrence, the consumed occurrence or another instance, a delivery with a direct, operation, payload or correlated channel, a correlated publication addressed to the definition, and every other stimulus kind are refused and leave the state unchanged.
 
 ## Newly reachable waits and resumption
 
@@ -82,25 +90,34 @@ The retained whole model is a parcel handover: *Handover requested* starts, *Awa
 - **Resume.** Start, observe one wait with channel `unspecifiedMessage`, deliver it, observe completion.
 - **Named delivery first.** Deliver a direct Message naming the same occurrence: refused, state unchanged; then resume.
 - **Stale.** Resume, then deliver again: refused; another occurrence ID: refused.
+- **Broadcast.** A correlated publication or delivery whose address names the definition's Process with any channel arm is refused by address admission in the core and Lean; the CIB probe shows that Message correlation and Signal broadcast do not reach CIB's wait.
 - **Admission.** Adding a root Message, `instantiate="true"`, `camunda:inputOutput`, or the same model under the nested scope-data profile: refused.
-- **Separation from the direct slice.** The existing Message-addressed scenarios keep their exact results; the direct channel still refuses an unspecified delivery.
+- **Separation from the direct slice.** The existing Message-addressed scenarios keep their exact results; the direct channel still refuses an unspecified delivery, a project restriction where CIB's legacy signal would complete the task.
 
 ## Rule-to-evidence matrix
 
 | Rule | Witness | Evidence | Mutation that must fail |
 |---|---|---|---|
 | `ARECV-ADDRESS-01` | Admission edits | Source test, Lean conformance module, CIB probe | Admit the model with a root Message; project a direct channel for an addressless task |
+| `ARECV-ADDRESS-02` | Arm in other positions | Core admission tests, Lean structural-validation and correlation-address checks | Accept the arm in a Message Start trigger, a correlated address or a payload wait |
 | `ARECV-WAIT-01` | Resume | Pipeline, core runtime test, hosted witness, CIB probe | Auto-complete at activation; publish no wait |
 | `ARECV-RESUME-01` | Resume | Pipeline, Lean `MessageDeliveryStep` soundness, hosted witness with Worker replacement and replay, CIB probe | Leave the wait after delivery; complete twice |
-| `ARECV-REFUSE-01` | Named delivery first, stale | Pipeline, core runtime test, Lean conformance, CIB probe | Match channels by kind only on the direct side; let a direct delivery resume an unspecified wait |
+| `ARECV-REFUSE-01` | Named delivery first, stale, broadcast | Pipeline, core runtime test, Lean conformance, CIB probe | Match channels by kind only on the direct side; let a direct delivery resume an unspecified wait |
 
 ## Lean assurance lane
 
 Lane shape: proved
 
-Evidence: the delivery law [`deliverMessage_sound`](../../BpmnSemantics/SemanticProcess/Message.lean#deliverMessage_sound) relates every committed delivery to `MessageDeliveryStep`, whose premise `wait.channel = channel` is quantified over the whole channel union, so the new arm is covered by the existing proof; the [Receive Task conformance module](../../BpmnSemantics/ReceiveTaskConformance.lean) adds proved admission, wait and refusal laws for the unspecified arm in the shape of its direct-Message laws, including every mismatched address preserving state. Guaranteeing declarations: [`deliverMessage_sound`](../../BpmnSemantics/SemanticProcess/Message.lean#deliverMessage_sound).
+Evidence: the delivery law [`deliverMessage_sound`](../../BpmnSemantics/SemanticProcess/Message.lean#deliverMessage_sound) relates every committed delivery to `MessageDeliveryStep`, whose premise `wait.channel = channel` is quantified over the whole channel union, so soundness of the new arm is covered by the existing proof; refusal completeness is not, and rests on the finite proved laws the [Receive Task conformance module](../../BpmnSemantics/ReceiveTaskConformance.lean) adds for the unspecified arm in the shape of its direct-Message laws, including every mismatched address preserving state. Guaranteeing declarations: [`deliverMessage_sound`](../../BpmnSemantics/SemanticProcess/Message.lean#deliverMessage_sound).
 
-The family adds no transition family. It touches the `MessageChannel` inductive in `BpmnSemantics/Scenario.lean`, a hub, because the channel is part of the public wait and stimulus; the alternative, a synthetic Message ID, would fabricate an identity the source does not have. The edit is one arm; exhaustive matches over the channel gain one case, and every fixture that merely constructs a channel is untouched.
+The family adds no transition family. It edits the `MessageChannel` inductive in `BpmnSemantics/Scenario.lean`, the kernel hub, because the channel is part of the public wait and stimulus; a synthetic Message ID instead would fabricate an identity the source does not have. The repository's fan-out model puts the interface edit at 1,022 of 1,046 modules, so every global fixture rebuilds. Each exhaustive channel match decides the new arm, refusing it everywhere except the Receive Task positions:
+
+- admission and validation: `CheckedProcessAdmission`, `ProgramStructuralValidation` (a closed-world function) and its laws, `ProfileShapeCatalog`, `RepeatableSubscriptionAdmission`, `MessageStart`, `MessageKeyCorrelation` and `MessageKeyCorrelationProfileAdmission`;
+- runtime order and proofs: `InternalCommutationCore` (channel order), `MessageBoundedTask` and `InternalMessageTaskPreparation` (proofs by cases on the channel);
+- wire: `JsonSupport` and `SemanticProcessJson/Observation`;
+- the arm and `identifiersNonempty`: `Scenario`.
+
+`MessageMonitoredTask` and both Interrupting Message Event Sub-Process admissions match the operation arm positively and already refuse the new one. These edits land in one commit, so the fixtures rebuild once.
 
 ## Temporal hosting and refinement preflight
 
@@ -115,30 +132,36 @@ Smallest refinement witness: start the parcel handover, observe the unspecified 
 
 ## Evidence and acceptance
 
-- Pipeline cases for the resume and named-delivery-first scenarios, agreeing across Lean, core, Temporal and CIB.
-- A CIB probe: deploying the model creates no Message event subscription, the execution waits at the Receive Task, `RuntimeService.signal(executionId)` completes the Process, and `correlateMessage` for any name finds no target.
+- Pipeline cases for the resume and named-delivery-first scenarios, agreeing across Lean, core, Temporal and CIB; the CIB side's open wait is adapter-derived under `CIB-OP-0011`, not engine-observed.
+- A CIB probe: deploying the model creates no event subscription, the execution waits at the Receive Task, `RuntimeService.signal(executionId)` completes the Process and a second signal is refused, and neither `correlateMessage` nor `signalEventReceived` reaches the wait.
 - The hosted witness above.
+- Product 2 decodes a publication of the parcel handover, its open wait and its delivery; its history shows the delivery by occurrence, as it does today.
 - A corpus row for the parcel handover under the [model-corpus guard](../../model-corpus/README.md).
 
 ## Versioning consequences
 
-One current representation: the channel union gains its arm in every producer and consumer atomically, with no compatibility reader. The [Message-addressed Receive Task specification](RECEIVE-TASK-MESSAGE-SPEC.md#closed-message-address-representation) states the closed union, says the Receive Task source always produces `directMessage`, and excludes a Receive Task without `messageRef`; the change amends those three statements, and its other rules keep their meaning. The new arm carries no field, so the caller's channel assertion degenerates to naming the variant; the occurrence stays selected by `subscriptionId` alone, as it is for the direct arm.
+One current representation: the channel union gains its arm in every producer and consumer atomically, with no compatibility reader. The new arm carries no field, so the caller's channel assertion degenerates to naming the variant; the occurrence stays selected by `subscriptionId` alone, as it is for the direct arm.
+
+These owners state the closed two-arm union or exclude the addressless task, and are amended in the same change: the [Message-addressed Receive Task specification](RECEIVE-TASK-MESSAGE-SPEC.md#closed-message-address-representation) (closed union, "always produces `directMessage`", first exclusion), [contracts/README.md](../../contracts/README.md), the [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md), the [CIB observation policy](../CIB-OBSERVATION-POLICY.md) rows for `openMessageSubscriptions` and `enabledInteractions`, and the Receive Task conformance module's documentation.
 
 ### Owners this implementation grows
 
 - Source: [`receive-task-source.ts`](../../packages/bpmn-source/src/receive-task-source.ts), [`root-definition-selection.ts`](../../packages/bpmn-source/src/root-definition-selection.ts).
 - Core: [`semantic-value-contract.ts`](../../packages/semantic-core/src/semantic-value-contract.ts), [`message-channel.ts`](../../packages/semantic-core/src/message-channel.ts), [`checked-process-contract.ts`](../../packages/semantic-core/src/checked-process-contract.ts).
-- Lean: [`Scenario.lean`](../../BpmnSemantics/Scenario.lean) (420/800 nonblank lines), [`Lowering.lean`](../../BpmnSemantics/SemanticProcess/Lowering.lean) (777/800, 23 lines of headroom), [`ReceiveTaskConformance.lean`](../../BpmnSemantics/ReceiveTaskConformance.lean).
+- Lean: [`Scenario.lean`](../../BpmnSemantics/Scenario.lean) (420/800 nonblank lines), the modules listed in the Lean lane, [`ReceiveTaskConformance.lean`](../../BpmnSemantics/ReceiveTaskConformance.lean).
 - Contracts: [`scenario.schema.json`](../../contracts/schemas/scenario.schema.json), [`checked-process.schema.json`](../../contracts/schemas/checked-process.schema.json), [`semantic-process.schema.json`](../../contracts/schemas/semantic-process.schema.json), the [profile](../../profiles/cibseven-2.2.0-message-addressed-receive-task-draft/profile.json).
-- Host: [`command-identity.ts`](../../packages/temporal-adapter/protocol/src/command-identity.ts), [`host-admission.ts`](../../packages/temporal-adapter/protocol/src/host-admission.ts).
+- Host: [`command-identity.ts`](../../packages/temporal-adapter/protocol/src/command-identity.ts).
+- CIB runner: [`ScenarioMessageProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioMessageProtocol.java), [`CibSevenMessageSubscriptionGateway.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenMessageSubscriptionGateway.java), [`CibSevenMessageProjector.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenMessageProjector.java), [`CibSevenScenarioCommandExecutor.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioCommandExecutor.java).
+- Product 2: [`execution-publications.ts`](../../platform/contracts/src/execution-publications.ts), [`execution-publication-semantic-value-decoders.ts`](../../platform/contracts/src/execution-publication-semantic-value-decoders.ts).
+- Register: [`CIB-BPMN-RELATION-REGISTER.md`](../CIB-BPMN-RELATION-REGISTER.md) for `CIB-INT-0004` and `CIB-OP-0011`.
 
 Guards it must satisfy: [`lean-fanout.test.ts`](../../scripts/lean-fanout.test.ts), [`lean-module-cost.test.ts`](../../scripts/lean-module-cost.test.ts), [`source-hygiene.test.ts`](../../scripts/source-hygiene.test.ts), [`semantic-operation-consumer-census.test.ts`](../../scripts/semantic-operation-consumer-census.test.ts), [`lean-source-contracts.test.ts`](../../scripts/lean-source-contracts.test.ts).
 
 ## Epistemic closure
 
-- **Established after implementation:** the root addressless wait, its occurrence-addressed resumption and refusals, across Lean, core, Temporal and CIB.
-- **Nearest unsupported claim:** the wait inside a Sub-Process, a loop or a Multi-Instance body (`PC-HUM-06`'s other clauses).
-- **Common-mode risk:** Lean and the core consume the same TypeScript-produced checked source, so the source projection is checked by the admission edits and the CIB probe, not by target agreement.
+- **Established after implementation:** the root addressless wait, its occurrence-addressed resumption and refusals, across Lean, core, Temporal, Product 2 decoding and CIB.
+- **Nearest unsupported claim:** that `PC-HUM-06` is near closure; its repeated, embedded and Multi-Instance clauses need the follow-up family in the nested scope-data profile, which reuses only the channel arm, the CIB classification, the Temporal path and the Product 2 decoding.
+- **Common-mode risks:** Lean and the core consume the same TypeScript-produced checked source, so the exclusions of a root Message beside the task and of both Receive Task kinds in one model rest on the TypeScript source reader alone, checked by the admission edits and the CIB probe; the CIB side's open wait is projected by the adapter, so its agreement on `openMessageSubscriptions` is adapter-decided.
 - **Nearest realistic counterexample:** a client that delivers a direct Message to an addressless wait; it is refused, not silently accepted.
 
 ## Independent cold-review receipt
