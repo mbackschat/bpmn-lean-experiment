@@ -195,3 +195,33 @@ export const pipelineCaseIdRegistry = Object.freeze([
 ] as const);
 
 export type PipelineCaseId = typeof pipelineCaseIdRegistry[number];
+
+/**
+ * The two contiguous runs of the registry that the hosted integration job runs as separate legs. One job's deadline,
+ * derived from the whole catalog, outgrew its timeout once the Link Event cases registered, and the budget guard
+ * (`scripts/pipeline-budget.test.ts`) requires a split by owned contract rather than a longer timeout. The control-flow
+ * and scope families come first in the registry; the event, data and effect families begin at the Sub-Process Error
+ * propagation cases.
+ */
+export const PipelineCasePartition = Object.freeze({
+  ControlFlow: "control-flow",
+  EventsDataEffects: "events-data-effects",
+} as const);
+export type PipelineCasePartition = typeof PipelineCasePartition[keyof typeof PipelineCasePartition];
+
+const eventsDataEffectsStart = pipelineCaseIdRegistry.indexOf("subprocess-error-propagation-trigger-first");
+
+/** The registered ids a selected partition runs; an absent selection runs the whole catalog. */
+export function pipelineCaseIdsFor(partition: string | undefined): readonly PipelineCaseId[] {
+  switch (partition) {
+    case undefined:
+    case "":
+      return pipelineCaseIdRegistry;
+    case PipelineCasePartition.ControlFlow:
+      return pipelineCaseIdRegistry.slice(0, eventsDataEffectsStart);
+    case PipelineCasePartition.EventsDataEffects:
+      return pipelineCaseIdRegistry.slice(eventsDataEffectsStart);
+    default:
+      throw new TypeError(`BPMN_PIPELINE_PARTITION must name a pipeline case partition, received ${JSON.stringify(partition)}`);
+  }
+}

@@ -59,7 +59,14 @@ verify_temporal_serial() {
   ./scripts/pnpm.sh run test:temporal:built:hosted-serial
 }
 
+# The hosted job runs one leg per case partition (`pipelineCaseIdsFor`); the Lean-core integration suites run once,
+# outside the events-data-effects leg, and a local run without a partition runs everything.
+pipeline_leg_runs_lean_core_suites() {
+  [ "${BPMN_PIPELINE_PARTITION:-}" != "events-data-effects" ]
+}
+
 verify_pipeline() {
+  if pipeline_leg_runs_lean_core_suites; then
   ./scripts/pnpm.sh run test:lean-fixture-bindings:built
   ./scripts/pnpm.sh run test:committed-execution-publication-parity:built
   ./scripts/pnpm.sh run test:message-key-correlation-population-lean-core:built
@@ -72,6 +79,7 @@ verify_pipeline() {
   node --test --test-concurrency=1 packages/differential/test/scenario-value-domain-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/pipeline-publication-lean-core.integration-test.ts
   node --test --test-concurrency=1 packages/differential/test/exclusive-choice-without-default-lean-core.integration-test.ts
+  fi
   env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
   git diff --check
 }

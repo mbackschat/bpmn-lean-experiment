@@ -1,4 +1,4 @@
-import { pipelineCaseIdRegistry } from "../packages/differential/test/pipeline-case-id-registry.ts";
+import { pipelineCaseIdRegistry, pipelineCaseIdsFor } from "../packages/differential/test/pipeline-case-id-registry.ts";
 
 // Each outer process gets one margin to report the inner budget failure before it is terminated.
 const warmPipelineTimeoutMarginMs = 5_000;
@@ -136,13 +136,15 @@ export function timingIsComparable(loadPerCore: number): boolean {
 }
 
 /**
- * Resolves the selected pathology ceiling: the portable one, or the factor over it that a slower
- * environment declares in `BPMN_PIPELINE_WARM_BUDGET_FACTOR`, rejecting ambiguous factor syntax.
+ * Resolves the selected pathology ceiling: the portable one for the cases `BPMN_PIPELINE_PARTITION` selects (the
+ * whole catalog when absent), or the factor over it that a slower environment declares in
+ * `BPMN_PIPELINE_WARM_BUDGET_FACTOR`, rejecting ambiguous factor syntax.
  */
 export function warmBudgetMs(environment: NodeJS.ProcessEnv): number {
+  const portable = pipelineCaseIdsFor(environment.BPMN_PIPELINE_PARTITION).length * warmBudgetPerCaseMs;
   const declared = environment.BPMN_PIPELINE_WARM_BUDGET_FACTOR;
   if (declared === undefined) {
-    return defaultWarmBudgetMs;
+    return portable;
   }
   const factor = Number(declared);
   if (!/^\d+(\.\d+)?$/u.test(declared) || !(factor > 0)) {
@@ -150,7 +152,7 @@ export function warmBudgetMs(environment: NodeJS.ProcessEnv): number {
       `BPMN_PIPELINE_WARM_BUDGET_FACTOR must be a positive decimal factor, received ${JSON.stringify(declared)}`,
     );
   }
-  const budget = Math.ceil(defaultWarmBudgetMs * factor);
+  const budget = Math.ceil(portable * factor);
   // Node clamps a timer delay above 2^31 - 1 ms to 1 ms, which would turn the deadlines below into an
   // immediate timeout (https://nodejs.org/api/timers.html#settimeoutcallback-delay-args).
   if (budget + 2 * warmPipelineTimeoutMarginMs > maximumTimerDelayMs) {

@@ -3,6 +3,11 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 import { defaultCibSevenMavenTimeoutMs } from "./cibseven-maven-budget.ts";
+import {
+  PipelineCasePartition,
+  pipelineCaseIdRegistry,
+  pipelineCaseIdsFor,
+} from "../packages/differential/test/pipeline-case-id-registry.ts";
 
 import {
   defaultWarmBudgetMs,
@@ -29,6 +34,20 @@ test("keeps the portable budget and both process deadlines ordered", () => {
   assert.equal(
     warmPipelineCommandTimeoutMs({}),
     defaultWarmBudgetMs + 10_000,
+  );
+});
+
+test("the case partitions split the registry into disjoint covering runs", () => {
+  const partitions = Object.values(PipelineCasePartition).map((partition) => pipelineCaseIdsFor(partition));
+  for (const ids of partitions) {
+    assert.ok(ids.length > 0, "an empty partition would be a hosted leg that verifies nothing");
+  }
+  assert.deepEqual(partitions.flat(), [...pipelineCaseIdRegistry]);
+  assert.deepEqual(pipelineCaseIdsFor(undefined), pipelineCaseIdRegistry);
+  assert.throws(() => pipelineCaseIdsFor("control"), TypeError);
+  assert.equal(
+    warmBudgetMs({ BPMN_PIPELINE_PARTITION: PipelineCasePartition.ControlFlow }),
+    pipelineCaseIdsFor(PipelineCasePartition.ControlFlow).length * warmBudgetPerCaseMs,
   );
 });
 
@@ -154,8 +173,15 @@ test("hosted warm-pipeline budget has real headroom and the runner derives its d
   if (hostedFactorMatch === null || pipelineJobMatch === null) {
     throw new Error("warm-pipeline budget owners are absent");
   }
-  const hostedEnvironment = { BPMN_PIPELINE_WARM_BUDGET_FACTOR: hostedFactorMatch[1] };
-  const hostedBudget = warmBudgetMs(hostedEnvironment);
+  // The job runs one matrix leg per registered partition, so each leg's deadline derives from its own cases.
+  const matrixPartitions = [...(pipelineJob?.match(/^ {6}matrix:\n {8}partition:\n((?: {10}- .*\n)+)/mu)?.[1] ?? "")
+    .matchAll(/^ {10}- (\S+)$/gmu)].map((match) => match[1]);
+  assert.deepEqual(matrixPartitions, Object.values(PipelineCasePartition));
+  assert.match(pipelineJob ?? "", /^ {10}BPMN_PIPELINE_PARTITION: \$\{\{ matrix\.partition \}\}$/mu);
+  const hostedEnvironments = Object.values(PipelineCasePartition).map((partition) => ({
+    BPMN_PIPELINE_WARM_BUDGET_FACTOR: hostedFactorMatch[1],
+    BPMN_PIPELINE_PARTITION: partition,
+  }));
 
   assert.ok(
     Number(hostedFactorMatch[1]) >= minimumHostedWarmBudgetFactor,
@@ -164,14 +190,18 @@ test("hosted warm-pipeline budget has real headroom and the runner derives its d
   // Parent over child: a job timeout below the pipeline's own deadline would end a pathological run
   // as an anonymous cancellation instead of the budget failure that names it.
   const pipelineJobMs = Number(pipelineJobMatch[1]) * 60_000;
-  assert.ok(
-    pipelineJobMs >= warmPipelineCommandTimeoutMs(hostedEnvironment) + hostedPipelineJobOverheadMs,
-    `the verify_pipeline job's ${pipelineJobMs}ms timeout must exceed the hosted command deadline ${warmPipelineCommandTimeoutMs(hostedEnvironment)}ms plus the ${hostedPipelineJobOverheadMs}ms job overhead allowance; split the job by owned contract rather than raising the timeout`,
-  );
-  assert.ok(
-    hostedBudget >= defaultCibSevenMavenTimeoutMs + 10_000,
-    `hosted warm-pipeline budget ${hostedBudget}ms must exceed the longest nested CIB deadline ${defaultCibSevenMavenTimeoutMs}ms plus reporting headroom`,
-  );
+  for (const hostedEnvironment of hostedEnvironments) {
+    const leg = hostedEnvironment.BPMN_PIPELINE_PARTITION;
+    const hostedBudget = warmBudgetMs(hostedEnvironment);
+    assert.ok(
+      pipelineJobMs >= warmPipelineCommandTimeoutMs(hostedEnvironment) + hostedPipelineJobOverheadMs,
+      `the verify_pipeline ${leg} leg's ${pipelineJobMs}ms timeout must exceed the hosted command deadline ${warmPipelineCommandTimeoutMs(hostedEnvironment)}ms plus the ${hostedPipelineJobOverheadMs}ms job overhead allowance; split the job by owned contract rather than raising the timeout`,
+    );
+    assert.ok(
+      hostedBudget >= defaultCibSevenMavenTimeoutMs + 10_000,
+      `hosted warm-pipeline budget ${hostedBudget}ms for the ${leg} leg must exceed the longest nested CIB deadline ${defaultCibSevenMavenTimeoutMs}ms plus reporting headroom`,
+    );
+  }
   assert.match(
     pipelineRunner,
     /timeoutMs: warmPipelineCommandTimeoutMs\(process\.env\)/u,

@@ -440,6 +440,14 @@ jobs:
     if: needs.changes.outputs.product1 == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # One leg per registered case partition (`pipelineCaseIdsFor`); each leg's deadline derives from its own cases, and
+    # the pipeline budget guard requires these legs to equal the registry's partitions.
+    strategy:
+      fail-fast: false
+      matrix:
+        partition:
+          - control-flow
+          - events-data-effects
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -513,6 +521,7 @@ jobs:
         env:
           CI: "true"
           BPMN_PIPELINE_WARM_BUDGET_FACTOR: "1.5"
+          BPMN_PIPELINE_PARTITION: ${{ matrix.partition }}
         run: ./scripts/verify.sh pipeline
 
   verify_composition_parity:

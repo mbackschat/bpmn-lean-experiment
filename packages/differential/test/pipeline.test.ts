@@ -52,6 +52,7 @@ import {
   warmPipelineTestTimeoutMs,
   warmSoftTargetMsFor,
 } from "../../../scripts/pipeline-budget.ts";
+import { pipelineCaseIdsFor } from "./pipeline-case-id-registry.ts";
 
 /**
  * Warm-pipeline feedback measures in milliseconds.
@@ -221,14 +222,18 @@ test(
   "runs the admitted semantic capsules through release-bound target batches",
   { timeout: warmPipelineTestTimeoutMs(process.env) },
   async () => {
-    const { report, evidence } = await runPipelineCases(pipelineCases);
+    // The hosted job runs one partition per leg (`pipelineCaseIdsFor`); a local run selects the whole catalog.
+    const selectedIds = new Set<string>(pipelineCaseIdsFor(process.env["BPMN_PIPELINE_PARTITION"]));
+    const selectedCases = pipelineCases.filter(({ id }) => selectedIds.has(id));
+    assert.equal(selectedCases.length, selectedIds.size, "every selected identifier names a registered case");
+    const { report, evidence } = await runPipelineCases(selectedCases);
 
     assert.equal(report.kind, "bpmnPipelineReport");
-    assert.equal(report.cases.length, pipelineCases.length);
-    assert.equal(evidence.length, pipelineCases.length);
+    assert.equal(report.cases.length, selectedCases.length);
+    assert.equal(evidence.length, selectedCases.length);
     for (const [index, caseReport] of report.cases.entries()) {
       const pipelineCase = requiredAt(
-        pipelineCases,
+        selectedCases,
         index,
         "pipeline cases",
       );
@@ -471,7 +476,7 @@ test(
       }
     }
     assert.deepEqual(report.replay, {
-      liveHistories: pipelineCases.reduce(
+      liveHistories: selectedCases.reduce(
         (count, pipelineCase) =>
           count +
           (pipelineCase.replaySelection ===
@@ -495,7 +500,7 @@ test(
     });
     assert.equal(
       report.isolation.temporalWorkflowIds.length,
-      pipelineCases.length * 2,
+      selectedCases.length * 2,
     );
     assert.equal(
       new Set(report.isolation.temporalWorkflowIds).size,
@@ -535,10 +540,10 @@ test(
       report.host.loadAverage1mAtStart / report.host.cores,
       "start load per core must be derived from the same sample it reports",
     );
-    const warmSoftTarget = warmSoftTargetMsFor(pipelineCases.length);
+    const warmSoftTarget = warmSoftTargetMsFor(selectedCases.length);
     if (report.phaseMs.warmTotal >= warmSoftTarget) {
       console.log(
-        `BPMN_PIPELINE_WARM_SOFT_TARGET exceeded: ${report.phaseMs.warmTotal.toFixed(3)}ms against the ${warmSoftTarget}ms feedback target for ${pipelineCases.length} cases at loadPerCoreAtStart ${report.host.loadPerCoreAtStart.toFixed(2)} rising to ${report.host.loadPerCore.toFixed(2)} during the run; a start figure above roughly 1 is a contended host and not a comparable measurement, while the rise is this gate's own parallelism`,
+        `BPMN_PIPELINE_WARM_SOFT_TARGET exceeded: ${report.phaseMs.warmTotal.toFixed(3)}ms against the ${warmSoftTarget}ms feedback target for ${selectedCases.length} cases at loadPerCoreAtStart ${report.host.loadPerCoreAtStart.toFixed(2)} rising to ${report.host.loadPerCore.toFixed(2)} during the run; a start figure above roughly 1 is a contended host and not a comparable measurement, while the rise is this gate's own parallelism`,
       );
     }
     assert.ok(
@@ -551,18 +556,18 @@ test(
       if (coldTotal === null) {
         throw new Error("measured pipeline omitted cold timing");
       }
-      const coldBudget = coldBudgetMsFor(pipelineCases.length);
+      const coldBudget = coldBudgetMsFor(selectedCases.length);
       if (!timingIsComparable(report.host.loadPerCoreAtStart)) {
         // Reported and left uncounted rather than asserted. The cold phase builds before it measures,
         // so contention lands here first, and a red gate whose only content is a duration taken on a
         // busy host teaches a contributor to re-run rather than to look.
         console.log(
-          `BPMN_PIPELINE_COLD uncounted: ${coldTotal.toFixed(3)}ms against the ${coldBudget}ms ceiling for ${pipelineCases.length} cases at loadPerCoreAtStart ${report.host.loadPerCoreAtStart.toFixed(2)}`,
+          `BPMN_PIPELINE_COLD uncounted: ${coldTotal.toFixed(3)}ms against the ${coldBudget}ms ceiling for ${selectedCases.length} cases at loadPerCoreAtStart ${report.host.loadPerCoreAtStart.toFixed(2)}`,
         );
       } else {
         assert.ok(
           coldTotal < coldBudget,
-          `cold pipeline took ${coldTotal.toFixed(3)}ms against a ${coldBudget}ms ceiling for ${pipelineCases.length} cases at loadPerCoreAtStart ${report.host.loadPerCoreAtStart.toFixed(2)}`,
+          `cold pipeline took ${coldTotal.toFixed(3)}ms against a ${coldBudget}ms ceiling for ${selectedCases.length} cases at loadPerCoreAtStart ${report.host.loadPerCoreAtStart.toFixed(2)}`,
         );
       }
     } else {
