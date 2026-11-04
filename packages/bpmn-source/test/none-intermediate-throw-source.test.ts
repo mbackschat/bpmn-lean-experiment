@@ -91,7 +91,8 @@ test("the onboarding milestones run on the concurrent route with agreeing bursts
   assert.equal(nestedScopeControlCheckedAnalysis({ ...checkedProcess, flows: checkedProcess.sequenceFlows }), 7);
 });
 
-test("a None Throw alone on a terminal branch is refused while its waiting twin is admitted", async () => {
+// TFK-DATA-01 keeps this refusal: the onboarding model's Set up account Sub-Process declares scope-local data.
+test("a None Throw alone on a terminal branch is refused in a declaring model while its waiting twin is admitted", async () => {
   const xml = await source(onboarding);
   // Set up account forks after its Start: Create account as before, beside a terminal branch of `branch` alone.
   const terminal = (branch: string): string => replaceOnce(xml,

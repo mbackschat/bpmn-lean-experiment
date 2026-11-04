@@ -130,7 +130,8 @@ function terminalFork(xml: string, first: string): string {
   return edited;
 }
 
-test("a terminal-fork branch that reaches its End without arming a task is refused beside its waiting twin", async () => {
+// TFK-DATA-01 keeps these refusals: the invoice model's Review invoice Sub-Process declares scope-local data.
+test("a terminal-fork branch that reaches its End without arming a task is refused beside its waiting twin in a declaring model", async () => {
   const xml = await source(settlement);
   await admitted(settlement, terminalFork(xml, '<userTask id="ArchiveReceipt" name="Archive receipt" />'),
     "terminal fork whose branches both wait");

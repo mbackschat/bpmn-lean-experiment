@@ -18,6 +18,20 @@ type BranchScan = Readonly<{ stop: BranchStop; join: string | null; passes: bool
  * The scan passes a nested fork's join only when every branch of that fork reaches it wait-free.
  */
 export function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boolean {
+  return branchCut(nodes, false);
+}
+
+/**
+ * TFK-ADMIT-01 also admits a terminal-fork branch whose closure scan stops at its End without arming a task, so its End
+ * may share a closure with sibling work; a branch that reaches its paired join keeps PTPB-WORK-01. Admission applies
+ * this cut only where TFK-DATA-01 rules out a declared entry, the one co-enabled member with no commutation law beside an
+ * End (the [terminal forks specification](../../../docs/capsules/TERMINAL-FORKS-PROPOSAL.md#representation-and-runtime-ownership)).
+ */
+export function branchesReachWorkOrEnd(nodes: readonly ParallelBodyNode[]): boolean {
+  return branchCut(nodes, true);
+}
+
+function branchCut(nodes: readonly ParallelBodyNode[], waitFreeEnds: boolean): boolean {
   const byId = new Map(nodes.map(node => [node.id, node]));
   const reachesWork = (id: string): boolean => {
     const node = byId.get(id);
@@ -50,7 +64,7 @@ export function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boole
   const admitted = (id: string): boolean => {
     if (reachesWork(id)) return true;
     const branch = scan(id);
-    return branch.passes && branch.stop !== BranchStop.End;
+    return branch.stop === BranchStop.End ? waitFreeEnds : branch.passes;
   };
   return nodes.every(node => node.kind !== Kind.Fork || node.outputs.every(admitted));
 }

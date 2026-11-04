@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_EmployeeOffboarding" targetNamespace="urn:bpmn-lean:employee-offboarding">
+  <process id="Process_EmployeeOffboarding" name="Offboard a departing employee" isExecutable="true">
+    <startEvent id="DepartureAnnounced" name="Departure announced" />
+    <serviceTask id="LookUpEmployee" name="Look up employee"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${lookUpEmployee}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="employee">${employee}</camunda:inputParameter>
+          <camunda:outputParameter name="employeeNumber">${number}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <parallelGateway id="StartOffboarding" name="Start offboarding" />
+    <userTask id="CollectEquipment" name="Collect equipment" />
+    <endEvent id="EquipmentCollected" name="Equipment collected" />
+    <userTask id="RevokeSystemAccess" name="Revoke system access" />
+    <endEvent id="AccessRevoked" name="Access revoked" />
+    <task id="NotifyPayroll" name="Notify payroll" />
+    <endEvent id="PayrollNotified" name="Payroll notified" />
+    <endEvent id="DepartureRecorded" name="Departure recorded" />
+    <sequenceFlow id="Flow_Announced" sourceRef="DepartureAnnounced" targetRef="LookUpEmployee" />
+    <sequenceFlow id="Flow_LookedUp" sourceRef="LookUpEmployee" targetRef="StartOffboarding" />
+    <sequenceFlow id="Flow_ToEquipment" sourceRef="StartOffboarding" targetRef="CollectEquipment" />
+    <sequenceFlow id="Flow_EquipmentDone" sourceRef="CollectEquipment" targetRef="EquipmentCollected" />
+    <sequenceFlow id="Flow_ToAccess" sourceRef="StartOffboarding" targetRef="RevokeSystemAccess" />
+    <sequenceFlow id="Flow_AccessDone" sourceRef="RevokeSystemAccess" targetRef="AccessRevoked" />
+    <sequenceFlow id="Flow_ToPayroll" sourceRef="StartOffboarding" targetRef="NotifyPayroll" />
+    <sequenceFlow id="Flow_PayrollDone" sourceRef="NotifyPayroll" targetRef="PayrollNotified" />
+    <sequenceFlow id="Flow_ToRecord" sourceRef="StartOffboarding" targetRef="DepartureRecorded" />
+  </process>
+</definitions>

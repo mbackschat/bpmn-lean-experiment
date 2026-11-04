@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OfficeMove" targetNamespace="urn:bpmn-lean:office-move">
+  <process id="Process_OfficeMove" name="Move a team to a new office" isExecutable="true">
+    <startEvent id="MoveRequested" name="Move requested" />
+    <serviceTask id="BookMovers" name="Book movers"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${bookMovers}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="office">${office}</camunda:inputParameter>
+          <camunda:outputParameter name="bookingCode">${code}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <subProcess id="ClearOldOffice" name="Clear old office">
+      <startEvent id="ClearingStarted" name="Clearing started" />
+      <parallelGateway id="SplitClearing" name="Split clearing" />
+      <userTask id="PackDesk" name="Pack desk" />
+      <endEvent id="DeskPacked" name="Desk packed" />
+      <manualTask id="ReturnKeys" name="Return keys" />
+      <endEvent id="KeysReturned" name="Keys returned" />
+      <task id="CancelParkingPermit" name="Cancel parking permit" />
+      <endEvent id="ParkingCancelled" name="Parking cancelled" />
+      <sequenceFlow id="Flow_ClearingStarted" sourceRef="ClearingStarted" targetRef="SplitClearing" />
+      <sequenceFlow id="Flow_ToPack" sourceRef="SplitClearing" targetRef="PackDesk" />
+      <sequenceFlow id="Flow_Packed" sourceRef="PackDesk" targetRef="DeskPacked" />
+      <sequenceFlow id="Flow_ToKeys" sourceRef="SplitClearing" targetRef="ReturnKeys" />
+      <sequenceFlow id="Flow_KeysDone" sourceRef="ReturnKeys" targetRef="KeysReturned" />
+      <sequenceFlow id="Flow_ToParking" sourceRef="SplitClearing" targetRef="CancelParkingPermit" />
+      <sequenceFlow id="Flow_ParkingDone" sourceRef="CancelParkingPermit" targetRef="ParkingCancelled" />
+    </subProcess>
+    <userTask id="ConfirmNewOffice" name="Confirm new office" />
+    <endEvent id="MoveCompleted" name="Move completed" />
+    <sequenceFlow id="Flow_Requested" sourceRef="MoveRequested" targetRef="BookMovers" />
+    <sequenceFlow id="Flow_Booked" sourceRef="BookMovers" targetRef="ClearOldOffice" />
+    <sequenceFlow id="Flow_Cleared" sourceRef="ClearOldOffice" targetRef="ConfirmNewOffice" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmNewOffice" targetRef="MoveCompleted" />
+  </process>
+</definitions>

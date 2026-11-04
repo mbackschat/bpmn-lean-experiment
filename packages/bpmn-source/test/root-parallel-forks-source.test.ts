@@ -80,13 +80,17 @@ test("the onboarding branches run in sequence stay on the serial route", async (
   assert.equal(concurrentStructuredScopeDataProgram(semanticProcess), false);
 });
 
-test("RPF-ADMIT-01 refuses each one-fact edit of the onboarding model that leaves the class", async () => {
-  await refused("terminal root fork with a second root End", edited(onboarding,
+// TFK-ADMIT-01 admits the edit RPF-ADMIT-01 refused: both root branches still wait before their Ends.
+test("TFK-ADMIT-01 admits the onboarding's terminal root fork with a second root End", async () => {
+  await admitted("terminal root fork with a second root End", edited(onboarding,
     [flow("Flow_LaptopOrdered", "OrderLaptop", "OnboardingReady"), flow("Flow_LaptopOrdered", "OrderLaptop", "LaptopOrdered")],
     [flow("Flow_DocumentsCollected", "CollectDocuments", "OnboardingReady"),
       flow("Flow_DocumentsCollected", "CollectDocuments", "HoldWelcomeMeeting")],
     [flow("Flow_Ready", "OnboardingReady", "HoldWelcomeMeeting"), ""],
     [`<parallelGateway id="OnboardingReady" name="Onboarding ready" />`, `<endEvent id="LaptopOrdered" />`]));
+});
+
+test("RPF-ADMIT-01 refuses each one-fact edit of the onboarding model that leaves the class", async () => {
   // CSE-ADMIT-01 also refuses this edit, a Service Task beside a Call; the loan intake pair separates the root-Call clause.
   await refused("mapped Call at the forking root", edited(onboarding,
     [flow("Flow_HireRecorded", "HireRecorded", "StartOnboarding"),

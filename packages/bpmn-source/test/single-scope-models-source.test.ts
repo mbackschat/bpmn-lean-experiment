@@ -175,9 +175,6 @@ test("each excluded single-scope form is refused", async () => {
   const refusals: ReadonlyArray<readonly [string, string]> = [
     ["a Call in the forking root", replaceOnce(replaceOnce(purchase, '<task id="LogBudgetCheck" name="Log budget check" />',
       loggedCall), /\n  <\/process>\n<\/definitions>\n?$/, `\n  </process>${budgetLog}`)],
-    // A forking root reaches a second None End only through a terminal branch; a fork that also joins is refused in
-    // a body too, so the separating form is the terminal fork.
-    ["a terminal fork, the root's second None End", serial(terminalFork, terminalFlows("Opened", "Closed"))],
   ];
   // Each refusal is the graph rule's: the reader admits every element, so a mapping or overlay refusal cannot stand in.
   for (const [label, xml] of refusals) {
@@ -239,7 +236,7 @@ test("the embedded completion profile refuses each single-scope control and admi
   }
 });
 
-test("the refused Call and terminal fork are admitted where the account admits them", async () => {
+test("the refused Call is admitted where the account admits it, and the terminal fork in a body and the root", async () => {
   const purchase = await retained("single-scope-models", "purchase-request");
   const checkBudget = purchase.slice(purchase.indexOf("    <serviceTask"), purchase.indexOf('    <task id="LogBudgetCheck"'));
   const serialCall = serial(`\n${checkBudget}    ${loggedCall}`, `
@@ -249,4 +246,6 @@ test("the refused Call and terminal fork are admitted where the account admits t
     .replace(/\n  <\/process>\n<\/definitions>$/, `\n  </process>${budgetLog}`);
   await admitted(serialCall, ["checkBudget"], "the same Call in a serial root");
   await admitted(wrapped("", terminalFork, terminalFlows("WorkOpened", "WorkClosed")), [], "the terminal fork in a body");
+  // TFK-ADMIT-01 admits the root's second None End too: both branches of the terminal fork wait.
+  await admitted(serial(terminalFork, terminalFlows("Opened", "Closed")), [], "the terminal fork, the root's second None End");
 });

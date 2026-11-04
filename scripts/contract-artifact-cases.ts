@@ -217,6 +217,9 @@ export const normativeArtifactCases = Object.freeze([
   ...["purchase-approval-first", "purchase-budget-first", "invoice-valid", "invoice-corrected"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/single-scope-models/${name}.scenario.json`,
   })),
+  ...["offboarding-equipment-first", "offboarding-access-first", "office-move"].map(name => Object.freeze({
+    scenarioRelativePath: `scenarios/terminal-forks/${name}.scenario.json`,
+  })),
   ...["shipping-notice", "claim-assessed-first", "claim-acknowledged-first"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/send-task/${name}.scenario.json`,
   })),

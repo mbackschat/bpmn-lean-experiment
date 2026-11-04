@@ -1,0 +1,98 @@
+{
+  "kind": "scenario",
+  "id": "terminal-forks-offboarding-access-first",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "employee-offboarding",
+    "relativePath": "scenarios/terminal-forks/employee-offboarding.bpmn",
+    "sha256": "a14daa897c726bf34b18a9e43b5e6260c74ba687e3cbf149bf86457e269dd086",
+    "sourceOverlay": {
+      "id": "employee-offboarding-handlers",
+      "sha256": "6e27440caf0944df9e7c00e32c5382432f6c70bbe55a1e41f8c2fe65c721f71d"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.3",
+      "BPMN 2.0.2 Clause 10.6.4",
+      "BPMN 2.0.2 Clause 13.4.1",
+      "BPMN 2.0.2 Clause 13.5.6"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0016",
+      "CIB-EXT-0020",
+      "CIB-EXT-0022"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_EmployeeOffboarding",
+      "instanceId": "Offboarding_1",
+      "initialVariables": [
+        {
+          "name": "employee",
+          "value": {
+            "kind": "string",
+            "value": "Ada Example"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:0a15c66898b067a3f680c5c87112043ddf277baf4a84b65f714f9dd4757909f9",
+      "effectId": {
+        "processInstanceId": "Offboarding_1",
+        "elementId": "LookUpEmployee",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "number",
+            "value": {
+              "kind": "string",
+              "value": "E-4711"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-revoke-system-access",
+      "taskId": {
+        "processInstanceId": "Offboarding_1",
+        "elementId": "RevokeSystemAccess",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-collect-equipment",
+      "taskId": {
+        "processInstanceId": "Offboarding_1",
+        "elementId": "CollectEquipment",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

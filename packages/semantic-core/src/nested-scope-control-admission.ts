@@ -9,7 +9,7 @@ import type { NestedScopeStartNames } from "./nested-scope-data-admission.js";
 import { embeddedScopeDataBearing } from "./scope-data-bearing.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import type { CheckedNode, CheckedSequenceFlow } from "./checked-process-contract.js";
-import { branchesStartWithWork } from "./nested-scope-branch-work.js";
+import { branchesReachWorkOrEnd, branchesStartWithWork } from "./nested-scope-branch-work.js";
 import { parallelBodyScans } from "./parallel-body-burst-analysis.js";
 import type { ParallelBodyScans } from "./parallel-body-burst-analysis.js";
 import { InternalSchedulingMode, SemanticOperationKind } from "./semantic-process-contract.js";
@@ -117,7 +117,20 @@ function embeddedCallsPlaced(body: Body, depth: number, dataBearing: boolean): b
 }
 
 /** Validates the scope tree and every body, returning the tree with its per-body scans. */
-function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>, dataBearing: boolean):
+/**
+ * TFK-ADMIT-01: the nested scope-data profile admits several root Ends and wait-free terminal branches; every other
+ * profile keeps one root End and the strict cut. TFK-DATA-01 keeps the strict cut for a definition that declares
+ * scope-local data, whose declared entry has no commutation law beside an End.
+ */
+type TerminalForks = Readonly<{ rootEnds: boolean; waitFreeEnds: boolean }>;
+
+function terminalForks(semanticProfile: string | undefined, records: readonly ScopeLocalData[] | undefined): TerminalForks {
+  const relaxed = semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+  return { rootEnds: relaxed, waitFreeEnds: relaxed && (records?.length ?? 0) === 0 };
+}
+
+function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>, dataBearing: boolean,
+  forks: TerminalForks):
   Readonly<{ tree: Tree; scans: ReadonlyMap<string, ParallelBodyScans>; weightedTasks: number; weightedServiceTasks: number }> | null {
   const roots = scopes.filter(({ parentScopeId }) => parentScopeId === null);
   // Equal sizes alone admit a body in an undeclared scope beside a declared scope without one.
@@ -145,8 +158,8 @@ function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<str
   };
   if (scopes.some(({ id }) => id !== root && depthOf(id) === undefined)) return null;
   const rootBody = bodies.get(root);
-  // A terminal fork is admitted only in a child body; the root keeps its single End.
-  if (rootBody === undefined || rootBody.nodes.filter(({ kind }) => kind === Kind.End).length !== 1 ||
+  // Outside TFK-ADMIT-01, a terminal fork is admitted only in a child body, so the root keeps its single End.
+  if (rootBody === undefined || (!forks.rootEnds && rootBody.nodes.filter(({ kind }) => kind === Kind.End).length !== 1) ||
       rootBody.regions.length > 0 || [...bodies.values()].some(body => body.scope !== root &&
         !embeddedCallsPlaced(body, depthOf(body.scope)!, dataBearing))) return null;
   const regions = [...bodies.values()].flatMap(({ regions }) => regions);
@@ -160,7 +173,7 @@ function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<str
   const scans = new Map<string, ParallelBodyScans>();
   for (const body of bodies.values()) {
     const scan = parallelBodyScans(body.nodes);
-    if (scan === undefined || !branchesStartWithWork(body.nodes)) return null;
+    if (scan === undefined || !(forks.waitFreeEnds ? branchesReachWorkOrEnd : branchesStartWithWork)(body.nodes)) return null;
     scans.set(body.scope, scan);
   }
   return { tree: { root, bodies, parent }, scans, weightedTasks: weight(({ tasks }) => tasks),
@@ -409,8 +422,8 @@ function admittedData(scopes: readonly DefinitionScope[], raw: ReadonlyMap<strin
 }
 
 function admittedModel(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody> | null,
-  data: ModelData | null): Admitted | null {
-  const burst = admittedBurst(scopes, raw, data !== null);
+  data: ModelData | null, forks: TerminalForks): Admitted | null {
+  const burst = admittedBurst(scopes, raw, data !== null, forks);
   if (burst === null || raw === null) return null;
   if (data === null) return { burst, required: [], optional: null };
   const names = admittedData(scopes, raw, data);
@@ -418,12 +431,12 @@ function admittedModel(scopes: readonly DefinitionScope[], raw: ReadonlyMap<stri
 }
 
 function admittedBurst(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody> | null,
-  dataBearing: boolean): number | null {
+  dataBearing: boolean, forks: TerminalForks): number | null {
   const bodies = contractBodies(raw);
   if (bodies === null) return null;
   const forest = splitForest(scopes, bodies, dataBearing);
   if (forest === null) return null;
-  const analyzed = analyzeTree(forest.scopes, forest.bodies, dataBearing);
+  const analyzed = analyzeTree(forest.scopes, forest.bodies, dataBearing, forks);
   // CSE-ADMIT-01 refuses a Service Task beside a Call; called bodies refuse them in `serialCalledBody`.
   if (analyzed === null || analyzed.weightedServiceTasks > nestedScopeControlServiceTaskLimit ||
       (forest.called.size > 0 && analyzed.weightedServiceTasks > 0)) return null;
@@ -568,7 +581,8 @@ function checkedModel(graph: NestedScopeControlCheckedGraph): Admitted | null {
   const data = checkedData(graph);
   const passThrough = graph.identity?.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
   if (!scopeCountAdmitted(graph.identity?.semanticProfile ?? "", graph.definitionScopes.length)) return null;
-  return admittedModel(graph.definitionScopes, checkedBodies(graph, data, passThrough), data);
+  return admittedModel(graph.definitionScopes, checkedBodies(graph, data, passThrough), data,
+    terminalForks(graph.identity?.semanticProfile, graph.scopeLocalData));
 }
 
 /** NSC-ADMIT-01 and CSD-ADMIT-01 over the checked graph; `null` refuses it, otherwise the admitted largest closure. */
@@ -761,7 +775,8 @@ function programModel(program: SemanticProcessProgram): Admitted | null {
     handlers: new Set(program.operations.flatMap(operation =>
       operation.kind === SemanticOperationKind.AwaitEffect ? [operation.effect.descriptor.operation] : [])),
   } : null;
-  return rootCompletion.length === 1 ? admittedModel(program.definitionScopes, programBodies(program, data, structured), data) : null;
+  return rootCompletion.length === 1 ? admittedModel(program.definitionScopes, programBodies(program, data, structured), data,
+    terminalForks(program.identity.semanticProfile, program.scopeLocalData)) : null;
 }
 
 const programOperationKinds: ReadonlySet<SemanticOperationKind> = new Set([
