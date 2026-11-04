@@ -1362,6 +1362,91 @@
       }
     },
     {
+      "id": "employee-offboarding-terminal-fork",
+      "title": "Offboard a departing employee",
+      "businessPurpose": "Look up a departing employee through a directory service, then in parallel collect the equipment, revoke system access, notify payroll and record the departure, each branch closing on its own.",
+      "cloneFamily": "employee-offboarding-terminal-fork",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "task",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelSplit",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/terminal-forks/employee-offboarding.bpmn",
+        "sha256": "a14daa897c726bf34b18a9e43b5e6260c74ba687e3cbf149bf86457e269dd086",
+        "scenarioRelativePath": "scenarios/terminal-forks/offboarding-equipment-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "terminal-forks-offboarding-equipment-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for terminal forks; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "office-move-clearing",
+      "title": "Clear an old office for a move",
+      "businessPurpose": "Book movers through a moving service, then clear the old office in its own scope by packing the desk, returning the keys and cancelling the parking permit in parallel, each on its own, and confirm the new office once the desk is packed.",
+      "cloneFamily": "office-move-clearing",
+      "constructs": [
+        "endEvent",
+        "manualTask",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "task",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/terminal-forks/office-move.bpmn",
+        "sha256": "91f43a815727a161bb288127989611885607959498a352071caf5b88d6bf652d",
+        "scenarioRelativePath": "scenarios/terminal-forks/office-move.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "terminal-forks-office-move",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for terminal forks; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "complaint-handling-routing",
       "title": "Route a customer complaint",
       "businessPurpose": "Classify a customer complaint in a review scope, then escalate an urgent one, correct the invoice for a billing one, reship the order for a delivery one or otherwise answer the customer, and confirm the delivery afterwards when the order was reshipped.",
