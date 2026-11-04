@@ -52,7 +52,9 @@ public final class CibStateQueryEvidence {
     public MessageSubscriptionSnapshot {
       Objects.requireNonNull(afterCommandId, "afterCommandId");
       subscriptions = List.copyOf(subscriptions);
-      addresslessReceiveWaits = List.copyOf(addresslessReceiveWaits);
+      // The writer omits the empty list, so a reader receives null for it.
+      addresslessReceiveWaits =
+          addresslessReceiveWaits == null ? List.of() : List.copyOf(addresslessReceiveWaits);
     }
 
     public MessageSubscriptionSnapshot(String afterCommandId, List<MessageSubscription> subscriptions) {
