@@ -99,7 +99,8 @@ const cases = {
     inject: rewriteAt(8, ["BookTechnician#1", "ConfirmAttendeeList#1", "RentProjector#1"], opening("SendConfirmation")),
     expected: moved("trace[8].openUserTasks.length", 3, 4),
   },
-  // IGR-ROOT-01: the extras' join completing the Parallel branch must still wait for the venue at *Event ready*.
+  // IGR-ADMIT-01's composition with a root Parallel region: the extras' join completing its Parallel branch must still
+  // wait for the venue at *Event ready*.
   "booking-extras-venue-last": {
     model: "event-booking",
     inject: rewriteAt(12, ["BookVenue#1"], opening("SendConfirmation")),

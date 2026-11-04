@@ -176,6 +176,7 @@
     "inclusive-gateways-inside-sub-process-or-called-bodies",
     "inclusive-gateways-beside-choices-cycles-or-call-activities",
     "inclusive-regions-with-pass-through-unpaired-or-unstructured-branches",
+    "inclusive-regions-nested-in-inclusive-regions",
     "cycles-without-a-user-or-service-task",
     "cycles-resuming-only-inside-a-called-process",
     "boundary-events",

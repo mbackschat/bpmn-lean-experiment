@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InclusiveRegionWalk
 public import BpmnSemantics.SemanticProcessContract
 
-/-! IGR-ADMIT-01 conditions 2 to 6 and IGR-BIND-01 of the [Inclusive regions proposal](../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#admission): what the shared nested analysis cannot see about root Inclusive regions of the nested scope-data profile. That analysis projects a split as a fork and its join as a join, so it already admits a region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only placement, the outputs and default rule, the strict cut, the Call exclusion and, over a Program, every branch's expected join input. `NestedScopeControl` consumes it in hidden bodies only, through a private import; the TypeScript twin is `inclusive-region-admission.ts`. -/
+/-! IGR-ADMIT-01 conditions 2 to 6 and IGR-BIND-01 of the [Inclusive regions proposal](../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#admission): what the shared nested analysis cannot see about root Inclusive regions of the nested scope-data profile. That analysis projects a split as a fork and its join as a join, so it already admits a region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only and outermost placement, the outputs and default rule, the strict cut, the Call exclusion and, over a Program, every branch's expected join input. `NestedScopeControl` consumes it in hidden bodies only, through a private import; the TypeScript twin is `inclusive-region-admission.ts`. -/
 
 public section
 
@@ -25,6 +25,21 @@ def arms (graph : Graph) : Nat → Edge → Bool
           | .fork | .split => vertex.outputs.all (arms graph fuel)
           | _ => false
 
+/-- Condition 2's outermost rule: whether the branch from the edge holds an Inclusive split before its own join. A region nested in a region creates two live selection records under one owner, which no Lean, Temporal or CIB witness of this family exercises (closure review of `60786474`, finding 5); a Parallel block on the branch is searched through to its join. Exhausted fuel counts as nesting, so the check fails closed. -/
+private def nestsSplit (graph : Graph) : Nat → Edge → Bool
+  | 0, _ => true
+  | fuel + 1, edge =>
+      match graph.vertex? edge.target with
+      | none => false
+      | some vertex =>
+          match vertex.kind with
+          | .split => true
+          | .work | .pass | .call => vertex.outputs.any (nestsSplit graph fuel)
+          | .fork =>
+              vertex.outputs.any (nestsSplit graph fuel) ||
+                (((pairedJoin graph vertex).map (·.outputs)).getD []).any (nestsSplit graph fuel)
+          | _ => false
+
 /-- Condition 3: two or more distinct outputs, at most one default, and a selection that is never empty and reaches its default. -/
 private def guardsAdmitted (outputs : List Edge) : Bool :=
   let defaults := (outputs.filter (·.guard == .default)).length
@@ -44,6 +59,7 @@ private def regionsAdmitted (graph : Graph) (program : Bool) : Bool :=
       | some join =>
           split.scope == graph.root && join.kind == .inclusiveJoin && join.pairing == some split.id &&
             guardsAdmitted split.outputs && split.outputs.all (arms graph fuel) &&
+            !split.outputs.any (nestsSplit graph fuel) &&
             (!program || split.outputs.all fun output =>
               output.expectedJoinInput == (branchEnd graph fuel output).map (·.id))
       | none => false) &&

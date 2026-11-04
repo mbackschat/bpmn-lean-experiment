@@ -13,7 +13,8 @@ import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/
 import {
   SemanticOperationKind, SemanticProfileId, SimpleBooleanExpressionKind, StimulusKind, inclusiveOperationsArePaired,
   isWellFormedSemanticProcessProgram,
-  nestedScopeControlCheckedAnalysis, nestedScopeControlProgramAnalysis, supportsSemanticProcessExecution,
+  nestedScopeControlCheckedAnalysis, nestedScopeControlProgramAnalysis, programRegionGraph, regionBranchEnd,
+  SemanticOriginKind, supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import type { CheckedProcess, SemanticOperation, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
@@ -92,6 +93,35 @@ function rewritingCandidates(operation: SemanticOperation,
   const split = selectMany(operation);
   const [first, ...rest] = split.candidates;
   return { ...split, candidates: [rewrite(first, 0), ...rest.map((candidate, index) => rewrite(candidate, index + 1))] };
+}
+
+/**
+ * The Program with its Parallel pair `forkId` and `joinId` rewritten into an Inclusive split with always-taken candidates
+ * and its join, each expected join input the one the region walk finds in the original Program, so that IGR-BIND-01 and
+ * the outputs rule hold and only the leaf rule under test can refuse it.
+ */
+function asInclusivePair(program: SemanticProcessProgram, forkId: string, joinId: string): SemanticProcessProgram {
+  const graph = programRegionGraph(program);
+  const forked = withOperation(program, forkId, operation => {
+    assert.ok(operation.kind === SemanticOperationKind.Duplicate);
+    const edges = graph.vertices.get(operation.id)?.outputs ?? [];
+    const candidates = [...operation.outputs].sort().map(output => {
+      const edge = edges.find(({ id }) => id === output);
+      const end = edge === undefined ? undefined : regionBranchEnd(graph, edge);
+      assert.ok(end !== undefined, output);
+      return { condition: { kind: SimpleBooleanExpressionKind.Literal, value: true }, output, expectedJoinInput: end.id,
+        origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: output } } as const;
+    });
+    const [first, ...rest] = candidates;
+    assert.ok(first !== undefined, forkId);
+    return { id: operation.id, origin: operation.origin, kind: SemanticOperationKind.SelectMany, input: operation.input,
+      candidates: [first, ...rest], selectionKey: forkId };
+  });
+  return withOperation(forked, joinId, operation => {
+    assert.ok(operation.kind === SemanticOperationKind.Synchronize);
+    return { id: operation.id, origin: operation.origin, kind: SemanticOperationKind.SynchronizeSelected,
+      inputs: operation.inputs, output: operation.output, selectionKey: forkId } as SemanticOperation;
+  });
 }
 
 const stringEquals = (variable: string, value: string) =>
@@ -190,17 +220,38 @@ test("an Exclusive Choice before the split routes the model away from regions an
     '<sequenceFlow id="Flow_Declined" sourceRef="Triage" targetRef="Declined" />'),
     '<inclusiveGateway id="RequiredChecks"',
     '<exclusiveGateway id="Triage" default="Flow_Declined" /><endEvent id="Declined" /><inclusiveGateway id="RequiredChecks"');
-  const result = await compile(choice, SemanticProfileId.NestedEmbeddedScopeData, accountHandlers);
-  assert.equal(result.status, BpmnCompilationStatus.Rejected);
+  await refusedAtCheckedLevel(choice, accountHandlers, "Choice before the split");
+});
+
+test("the Inclusive rewrite of a Parallel pair is admitted at the Program level when no leaf rule fires", async () => {
+  const { semanticProcess } = await admitted(parallelTwin(await accountOpening()), accountHandlers, "Parallel twin");
+  assert.notEqual(nestedScopeControlProgramAnalysis(asInclusivePair(semanticProcess, "RequiredChecks", "ChecksComplete")),
+    null);
+});
+
+test("IGR-ADMIT-01 refuses an Inclusive region nested in another at each level while its Parallel original is admitted", async () => {
+  const booking = await eventBooking();
+  const nested = replaceOnce(replaceOnce(booking,
+    '<parallelGateway id="ArrangeTechnology" name="Arrange technology" />',
+    '<inclusiveGateway id="ArrangeTechnology" name="Arrange technology" />'),
+    '<parallelGateway id="TechnologyArranged" name="Technology arranged" />',
+    '<inclusiveGateway id="TechnologyArranged" name="Technology arranged" />');
+  await refusedAtCheckedLevel(nested, bookingHandlers, "nested Inclusive region");
+  const { semanticProcess } = await admitted(booking, bookingHandlers, "event booking");
+  assert.equal(nestedScopeControlProgramAnalysis(asInclusivePair(semanticProcess, "ArrangeTechnology", "TechnologyArranged")),
+    null);
 });
 
 test("IGR-ADMIT-01 condition 5 refuses an Inclusive supplier onboarding with Calls while its Parallel original is admitted", async () => {
   const supplier = await retained("concurrent-mapped-calls/supplier-onboarding.bpmn");
-  await admitted(supplier, [], "Parallel supplier onboarding");
+  const { semanticProcess } = await admitted(supplier, [], "Parallel supplier onboarding");
   const inclusive = supplier.replace('<parallelGateway id="ReviewsFork" name="Start reviews" />',
     '<inclusiveGateway id="ReviewsFork" name="Start reviews" />')
     .replace('<parallelGateway id="ReviewsJoin" name="Reviews done" />', '<inclusiveGateway id="ReviewsJoin" name="Reviews done" />');
+  // With a called Process the checked graph has no single root, so root placement also refuses there; the Program's
+  // root is the Process's own scope, so the Program level refuses by the Call exclusion alone.
   await refusedAtCheckedLevel(inclusive, [], "Inclusive supplier onboarding");
+  assert.equal(nestedScopeControlProgramAnalysis(asInclusivePair(semanticProcess, "ReviewsFork", "ReviewsJoin")), null);
 });
 
 test("a root Call after the join stays refused beside a region (RPF-ADMIT-01)", async () => {

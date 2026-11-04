@@ -124,17 +124,23 @@ private def accountOpeningWith (taxResidency : String × String × CheckedNode :
 
 /-- Event booking, transcribing `scenarios/inclusive-gateway-regions`: after *Quote event*, *Prepare event* forks *Book
 venue* and the split *Order extras*, whose catering and technology outputs are conditioned and whose attendee-list
-output carries no condition; the technology branch is a Parallel block. `attendeeCondition` conditions that output. -/
-private def eventBookingWith (attendeeCondition : Option String := none) : CheckedProcess :=
+output carries no condition; the technology branch is a Parallel block. `attendeeCondition` conditions that output;
+`nestedRegion` makes the technology block an Inclusive region with two unconditioned outputs. -/
+private def eventBookingWith (attendeeCondition : Option String := none) (nestedRegion : Bool := false) :
+    CheckedProcess :=
   build []
     [("P", none)]
-    [ start "P" "EventRequested"
+    ([ start "P" "EventRequested"
     , service "P" "QuoteEvent" "quoteEvent" [enclosing "event" "event"] [copied "quote" "quote"]
     , fork "P" "PrepareEvent", task "P" "BookVenue"
     , split "P" "OrderExtras" ["OrderCatering", "ArrangeTechnology", "ConfirmAttendeeList"] none
-    , task "P" "OrderCatering", fork "P" "ArrangeTechnology", task "P" "RentProjector", task "P" "BookTechnician"
-    , join "P" "TechnologyArranged", task "P" "ConfirmAttendeeList", regionJoin "P" "ExtrasOrdered" "OrderExtras"
-    , join "P" "EventReady", task "P" "SendConfirmation", finish "P" "EventBooked" ]
+    , task "P" "OrderCatering", task "P" "RentProjector", task "P" "BookTechnician"
+    , task "P" "ConfirmAttendeeList", regionJoin "P" "ExtrasOrdered" "OrderExtras"
+    , join "P" "EventReady", task "P" "SendConfirmation", finish "P" "EventBooked" ] ++
+      (if nestedRegion then
+        [split "P" "ArrangeTechnology" ["RentProjector", "BookTechnician"] none,
+          regionJoin "P" "TechnologyArranged" "ArrangeTechnology"]
+      else [fork "P" "ArrangeTechnology", join "P" "TechnologyArranged"]))
     [ plainEdge "EventRequested" "QuoteEvent", plainEdge "QuoteEvent" "PrepareEvent"
     , plainEdge "PrepareEvent" "BookVenue", plainEdge "PrepareEvent" "OrderExtras"
     , guarded "OrderExtras" "OrderCatering" "stringEquals(catering,\"yes\")"
@@ -170,6 +176,44 @@ private def selection_rule_refusals : Bool :=
 private def pass_through_branch_is_refused : Bool :=
   refusedAtEachLevel (accountOpeningWith (taxResidency := plain "P" "CollectTaxResidencyForm"))
 
+/-- IGR-ADMIT-01 condition 2's outermost rule: the technology block as an Inclusive region inside *Order extras*. -/
+private def nested_region_is_refused : Bool :=
+  refusedAtEachLevel (eventBookingWith (nestedRegion := true))
+
+/-- Two reviews in Sub-Processes, each declaring a file and a pending verdict, preparing the file and calling the
+`Expert` Process with mappings, forked by `Reviews` and joined by `ReviewsDone`, as the retained supplier onboarding
+does. `inclusive` makes the pair an Inclusive split with two unconditioned outputs and its join. -/
+private def calledReviews (inclusive : Bool) : CheckedProcess :=
+  let call := fun (owner id : String) => node owner
+    (.callActivity ⟨id⟩ ⟨"Expert"⟩ (.variableMappings [enclosing "dossier" "file"] [copied "verdict" "opinion"]))
+  let review := fun (owner : String) =>
+    ({ scopeId := scope owner, localInputs := [literal "file" owner, literal "verdict" "pending"], localOutputs := [] } :
+      ScopeLocalData)
+  build [review "Compliance", review "Financial"]
+    [("P", none), ("Financial", some "P"), ("Compliance", some "P"), ("Expert", none)]
+    ([ start "P" "Proposed", sub "P" "Financial", sub "P" "Compliance", task "P" "Approve", finish "P" "Onboarded"
+     , start "Financial" "FinancialOpened", task "Financial" "PrepareFinancial", call "Financial" "AskFinancial"
+     , finish "Financial" "FinancialClosed"
+     , start "Compliance" "ComplianceOpened", task "Compliance" "PrepareCompliance", call "Compliance" "AskCompliance"
+     , finish "Compliance" "ComplianceClosed"
+     , start "Expert" "Requested", task "Expert" "GiveOpinion", finish "Expert" "Given" ] ++
+      (if inclusive then [split "P" "Reviews" ["Financial", "Compliance"] none, regionJoin "P" "ReviewsDone" "Reviews"]
+      else [fork "P" "Reviews", join "P" "ReviewsDone"]))
+    [ plainEdge "Proposed" "Reviews", plainEdge "Reviews" "Financial", plainEdge "Reviews" "Compliance"
+    , plainEdge "Financial" "ReviewsDone", plainEdge "Compliance" "ReviewsDone", plainEdge "ReviewsDone" "Approve"
+    , plainEdge "Approve" "Onboarded"
+    , plainEdge "FinancialOpened" "PrepareFinancial", plainEdge "PrepareFinancial" "AskFinancial"
+    , plainEdge "AskFinancial" "FinancialClosed"
+    , plainEdge "ComplianceOpened" "PrepareCompliance", plainEdge "PrepareCompliance" "AskCompliance"
+    , plainEdge "AskCompliance" "ComplianceClosed"
+    , plainEdge "Requested" "GiveOpinion", plainEdge "GiveOpinion" "Given" ]
+
+/-- IGR-ADMIT-01 condition 5: the Inclusive reviews are refused while their Parallel original is admitted. With a
+called Process the checked graph has no single root, so root placement refuses there too; the Program level, whose
+root is the Process's own scope, refuses by the Call exclusion alone. -/
+private def calls_beside_a_region_are_refused : Bool :=
+  refusedAtEachLevel (calledReviews true) && admittedAtEachLevel (calledReviews false)
+
 /-- IGR-BIND-01: two expected join inputs swapped in the lowered Program; graph validation alone admits the swap. -/
 private def swapped_join_inputs_are_refused : Bool :=
   let program := lowerCheckedProcess accountOpeningWith
@@ -199,13 +243,15 @@ private def blocks (crossed : Bool) : CheckedProcess :=
 private def crossing_is_refused : Bool :=
   refusedAtEachLevel (blocks true) && admittedAtEachLevel (blocks false)
 
-/-- The minimal data-free region: `wrapped` puts it in a Sub-Process body, otherwise it follows a Sub-Process. -/
-private def minimalRegion (wrapped : Bool) : CheckedProcess :=
+/-- The minimal data-free region: `wrapped` puts it in a Sub-Process body, otherwise it follows a Sub-Process;
+`parallel` makes it the Parallel twin, a fork and join without conditions. -/
+private def minimalRegion (wrapped : Bool) (parallel : Bool := false) : CheckedProcess :=
   let owner := if wrapped then "Work" else "P"
-  let region := [ split owner "Split" ["Rush"] (some "Normal"), task owner "Rush", task owner "Normal"
-    , regionJoin owner "Join" "Split" ]
-  let regionEdges := [ guarded "Split" "Rush" "isPresent(rush)", plainEdge "Split" "Normal"
-    , plainEdge "Rush" "Join", plainEdge "Normal" "Join" ]
+  let region := [ if parallel then fork owner "Split" else split owner "Split" ["Rush"] (some "Normal")
+    , task owner "Rush", task owner "Normal"
+    , if parallel then join owner "Join" else regionJoin owner "Join" "Split" ]
+  let regionEdges := [ if parallel then plainEdge "Split" "Rush" else guarded "Split" "Rush" "isPresent(rush)"
+    , plainEdge "Split" "Normal", plainEdge "Rush" "Join", plainEdge "Normal" "Join" ]
   if wrapped then
     build [] [("P", none), ("Work", some "P")]
       ([ start "P" "Opened", task "P" "Prepare", sub "P" "Work", task "P" "Finish", finish "P" "Closed"
@@ -223,11 +269,13 @@ private def minimalRegion (wrapped : Bool) : CheckedProcess :=
 private def body_region_is_refused_beside_its_root_twin : Bool :=
   refusedAtEachLevel (minimalRegion true) && admittedAtEachLevel (minimalRegion false)
 
-/-- IGR-PROFILE-01: the root region relabelled to the embedded completion profile, without an overlay, is refused. -/
+/-- IGR-PROFILE-01: the root region relabelled to the embedded completion profile, without an overlay, is refused,
+while its Parallel twin is admitted under both profiles. -/
 private def root_region_is_refused_under_embedded_completion : Bool :=
-  let relabelled := { minimalRegion false with identity :=
-    { (minimalRegion false).identity with semanticProfile := embeddedCompletionProfileId, sourceOverlay := none } }
-  refusedAtEachLevel relabelled
+  let relabelled := fun (source : CheckedProcess) => { source with identity :=
+    { source.identity with semanticProfile := embeddedCompletionProfileId, sourceOverlay := none } }
+  refusedAtEachLevel (relabelled (minimalRegion false)) && admittedAtEachLevel (minimalRegion false (parallel := true)) &&
+    admittedAtEachLevel (relabelled (minimalRegion false (parallel := true)))
 
 /-- Every executable check of this module, named for the driver's failure report. -/
 def inclusiveRegionsConformanceChecks : List (String × Bool) := [
@@ -235,6 +283,8 @@ def inclusiveRegionsConformanceChecks : List (String × Bool) := [
   ("unconditioned_output_lowers_to_true", unconditioned_output_lowers_to_true),
   ("selection_rule_refusals", selection_rule_refusals),
   ("pass_through_branch_is_refused", pass_through_branch_is_refused),
+  ("nested_region_is_refused", nested_region_is_refused),
+  ("calls_beside_a_region_are_refused", calls_beside_a_region_are_refused),
   ("swapped_join_inputs_are_refused", swapped_join_inputs_are_refused),
   ("crossing_is_refused", crossing_is_refused),
   ("body_region_is_refused_beside_its_root_twin", body_region_is_refused_beside_its_root_twin),

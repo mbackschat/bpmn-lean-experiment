@@ -1,8 +1,8 @@
 /**
  * IGR-ADMIT-01 conditions 2 to 6 and IGR-BIND-01: what the shared nested analysis cannot see about root Inclusive
  * regions of the nested scope-data profile. The analysis projects a split as a fork and its join as a join, so it
- * already admits the region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only
- * placement, the outputs and default rule, the strict cut, the Call exclusion and, at the Program level, every
+ * already admits the region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only and
+ * outermost placement, the outputs and default rule, the strict cut, the Call exclusion and, at the Program level, every
  * branch's expected join input. Owner: the [Inclusive regions proposal](../../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#admission).
  */
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
@@ -103,6 +103,30 @@ function arms(graph: RegionGraph, edge: RegionEdge, fuel: number): boolean {
   }
 }
 
+/**
+ * Condition 2's outermost rule: whether the branch from the edge holds an Inclusive split before its own join. A region
+ * nested in a region creates two live selection records under one owner, which no Lean, Temporal or CIB witness of this
+ * family exercises (closure review of `60786474`, finding 5); a Parallel block on the branch is searched through to its join.
+ * Exhausted fuel counts as nesting, so the check fails closed.
+ */
+function nestsSplit(graph: RegionGraph, edge: RegionEdge, fuel: number): boolean {
+  const vertex = graph.vertices.get(edge.target);
+  if (fuel <= 0) return true;
+  if (vertex === undefined) return false;
+  switch (vertex.kind) {
+    case RegionVertexKind.Split: return true;
+    case RegionVertexKind.Work:
+    case RegionVertexKind.Pass:
+    case RegionVertexKind.Call: return vertex.outputs.some(output => nestsSplit(graph, output, fuel - 1));
+    case RegionVertexKind.Fork: {
+      const join = pairedJoin(graph, vertex);
+      return vertex.outputs.some(output => nestsSplit(graph, output, fuel - 1)) ||
+        (join?.outputs ?? []).some(output => nestsSplit(graph, output, fuel - 1));
+    }
+    default: return false;
+  }
+}
+
 /** Condition 3: two or more outputs, at most one default, and a selection that is never empty and reaches its default. */
 function guardsAdmitted(outputs: readonly RegionEdge[]): boolean {
   const defaults = outputs.filter(({ guard }) => guard === RegionGuard.Default).length;
@@ -121,6 +145,7 @@ export function inclusiveRegionsAdmitted(graph: RegionGraph, program: boolean): 
     const join = pairedJoin(graph, split);
     if (split.scope !== graph.root || join?.kind !== RegionVertexKind.InclusiveJoin || join.pairing !== split.id ||
         !guardsAdmitted(split.outputs) || !split.outputs.every(output => arms(graph, output, graph.vertices.size)) ||
+        split.outputs.some(output => nestsSplit(graph, output, graph.vertices.size)) ||
         (program && !split.outputs.every(output => output.expectedJoinInput === regionBranchEnd(graph, output)?.id))) {
       return false;
     }

@@ -63,7 +63,8 @@ const journeys = new Map<string, readonly Step[]>([
     [["StandardVerification#1"], ["OpenAccount#1"], []], null)],
   ["account-risk-and-online", account("ACC-5", "online", "domestic", "high",
     [["VerifyIdentityDocument#1", "VerifySourceOfFunds#1"], ["VerifySourceOfFunds#1"], ["OpenAccount#1"], []], 1)],
-  // IGR-ROOT-01: the Inclusive region inside a Parallel branch, with a nested Parallel fork in one of its branches.
+  // IGR-ADMIT-01's composition: the Inclusive region inside a Parallel branch, with a nested Parallel fork in one of its
+  // branches.
   ["booking-extras-venue-first", booking("Summer party", "yes", [allExtras,
     ["BookTechnician#1", "ConfirmAttendeeList#1", "OrderCatering#1", "RentProjector#1"],
     ["BookTechnician#1", "ConfirmAttendeeList#1", "RentProjector#1"], ["BookTechnician#1", "ConfirmAttendeeList#1"],
