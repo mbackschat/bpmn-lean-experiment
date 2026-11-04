@@ -66,6 +66,8 @@ private theorem parseFrom_visited (source : CheckedProcess) (fuel : Nat)
         | configuredTask _ _ => simp [parseFrom, nodeResult] at result
         | nonOperationalTask _ _ => simp [parseFrom, nodeResult] at result
         | noneIntermediateThrowEvent _ => simp [parseFrom, nodeResult] at result
+        | linkThrowEvent _ _ => simp [parseFrom, nodeResult] at result
+        | linkCatchEvent _ _ => simp [parseFrom, nodeResult] at result
         | userTask _ _ metadata =>
             cases metadata with
             | none =>

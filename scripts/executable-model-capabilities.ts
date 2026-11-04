@@ -124,6 +124,10 @@ export function detectExecutableBpmnCapabilities(
           capabilities.add("noneIntermediateThrowEvent");
           break;
         }
+        if (eventDefinition(element) === "linkEventDefinition") {
+          capabilities.add("linkIntermediateEventPair");
+          break;
+        }
         const definition = element.children.find(({ name }) => name === "compensateEventDefinition");
         if (eventDefinition(element) !== "compensateEventDefinition" || definition === undefined ||
             definition.attributes.activityRef !== undefined ||
@@ -403,6 +407,9 @@ function addIntermediateCatchCapability(
       return;
     case "timerEventDefinition":
       capabilities.add("intermediateCatchTimerEvent");
+      return;
+    case "linkEventDefinition":
+      capabilities.add("linkIntermediateEventPair");
       return;
     default:
       throw new TypeError(

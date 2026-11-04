@@ -329,6 +329,12 @@ def decodeCheckedNode (json : Json) : Except String CheckedNode := do
   | "noneIntermediateThrowEvent" =>
       requireObjectShape json ["id", "kind"]
       pure (.noneIntermediateThrowEvent ⟨← decodeNonemptyStringField json "id"⟩)
+  | "linkThrowEvent" =>
+      requireObjectShape json ["id", "kind", "linkName"]
+      pure (.linkThrowEvent ⟨← decodeNonemptyStringField json "id"⟩ (← decodeNonemptyStringField json "linkName"))
+  | "linkCatchEvent" =>
+      requireObjectShape json ["id", "kind", "linkName"]
+      pure (.linkCatchEvent ⟨← decodeNonemptyStringField json "id"⟩ (← decodeNonemptyStringField json "linkName"))
   | "nonOperationalTask" =>
       requireObjectShape json ["id", "kind", "notation"]
       let taskNotation ← stringField json "notation"

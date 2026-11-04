@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OnboardingMilestonesLinks" targetNamespace="urn:bpmn-lean:onboarding-milestones-links">
+  <process id="Process_OnboardingMilestones" name="Onboard a new employee with milestones" isExecutable="true">
+    <startEvent id="EmployeeHired" name="Employee hired" />
+    <userTask id="ConfirmStartDate" name="Confirm start date" />
+    <parallelGateway id="StartOnboarding" name="Start onboarding" />
+    <subProcess id="SetUpAccount" name="Set up account">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="account">${employee}</camunda:inputParameter>
+          <camunda:outputParameter name="employeeAccount">${account}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="AccountSetupOpened" name="Account setup opened" />
+      <userTask id="CreateAccount" name="Create account" />
+      <intermediateThrowEvent id="AccountReady" name="Account ready" />
+      <intermediateThrowEvent id="ThrowAccountDone" name="Account done">
+        <linkEventDefinition name="AccountDone" />
+      </intermediateThrowEvent>
+      <intermediateCatchEvent id="CatchAccountDone" name="Account done">
+        <linkEventDefinition name="AccountDone" />
+      </intermediateCatchEvent>
+      <endEvent id="AccountSetupClosed" name="Account setup closed" />
+      <sequenceFlow id="Flow_AccountSetupOpened" sourceRef="AccountSetupOpened" targetRef="CreateAccount" />
+      <sequenceFlow id="Flow_AccountCreated" sourceRef="CreateAccount" targetRef="ThrowAccountDone" />
+      <sequenceFlow id="Flow_AccountDoneCaught" sourceRef="CatchAccountDone" targetRef="AccountReady" />
+      <sequenceFlow id="Flow_AccountReady" sourceRef="AccountReady" targetRef="AccountSetupClosed" />
+    </subProcess>
+    <intermediateThrowEvent id="WelcomeSent" name="Welcome sent" />
+    <serviceTask id="OrderLaptop" name="Order laptop"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${orderLaptop}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="employee">${employee}</camunda:inputParameter>
+          <camunda:outputParameter name="laptopOrder">${order}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <parallelGateway id="OnboardingReady" name="Onboarding ready" />
+    <intermediateThrowEvent id="OnboardingComplete" name="Onboarding complete" />
+    <intermediateThrowEvent id="ThrowWelcomeTrack" name="Welcome track">
+      <linkEventDefinition name="WelcomeTrack" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="CatchWelcomeTrack" name="Welcome track">
+      <linkEventDefinition name="WelcomeTrack" />
+    </intermediateCatchEvent>
+    <intermediateThrowEvent id="ThrowAllSet" name="All set">
+      <linkEventDefinition name="AllSet" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="CatchAllSet" name="All set">
+      <linkEventDefinition name="AllSet" />
+    </intermediateCatchEvent>
+    <endEvent id="EmployeeOnboarded" name="Employee onboarded" />
+    <sequenceFlow id="Flow_Hired" sourceRef="EmployeeHired" targetRef="ConfirmStartDate" />
+    <sequenceFlow id="Flow_StartConfirmed" sourceRef="ConfirmStartDate" targetRef="StartOnboarding" />
+    <sequenceFlow id="Flow_ToAccount" sourceRef="StartOnboarding" targetRef="SetUpAccount" />
+    <sequenceFlow id="Flow_ToWelcome" sourceRef="StartOnboarding" targetRef="ThrowWelcomeTrack" />
+    <sequenceFlow id="Flow_WelcomeTrackCaught" sourceRef="CatchWelcomeTrack" targetRef="WelcomeSent" />
+    <sequenceFlow id="Flow_WelcomeSent" sourceRef="WelcomeSent" targetRef="OrderLaptop" />
+    <sequenceFlow id="Flow_LaptopOrdered" sourceRef="OrderLaptop" targetRef="OnboardingReady" />
+    <sequenceFlow id="Flow_AccountSetUp" sourceRef="SetUpAccount" targetRef="OnboardingReady" />
+    <sequenceFlow id="Flow_Ready" sourceRef="OnboardingReady" targetRef="ThrowAllSet" />
+    <sequenceFlow id="Flow_AllSetCaught" sourceRef="CatchAllSet" targetRef="OnboardingComplete" />
+    <sequenceFlow id="Flow_Complete" sourceRef="OnboardingComplete" targetRef="EmployeeOnboarded" />
+  </process>
+</definitions>

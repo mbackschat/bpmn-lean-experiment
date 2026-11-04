@@ -22,7 +22,7 @@ The counts below cover only entries recorded by this project, including the sepa
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Normative agreement records | 16 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
+| Normative agreement records | 17 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 3 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
@@ -283,6 +283,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 **Evidence:** At pinned `5a45b47`, the join of `InclusiveGatewayActivityBehavior` activates once the joined executions reach the incoming count or no other execution of the scope can reach the Gateway (`activatesGateway`, `canReachActivity`), including an execution inside a Sub-Process on a branch through its flow scope. The [Inclusive regions probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenInclusiveGatewayRegionsProbeTest.java) drives the [retained account opening and event booking](../scenarios/inclusive-gateway-regions/README.md) in CIB `2.2.0` (2026-11-04): with every check selected, *Open account* opens only with the last check in both orders, including the source-of-funds check inside its Sub-Process; a single selected check or the default alone is the join's only input; and the event booking's extras, one of them a nested Parallel region, join before *Event ready* waits for the venue in either order.
 
 **Boundary:** Structured root Inclusive regions of the nested scope-data profile, with JUEL renditions of the conditions under `CIB-CFG-0005`; public task, job and history APIs. CIB's reachability join on unstructured, looping, nested or concurrently live Inclusive or Sub-Process-body regions and at asynchronous Gateways stays outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
+
+### CIB-AGR-0018 — a Link pair continues the token as the Sequence Flow it replaces
+
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Link Events account](capsules/LINK-EVENTS-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
+
+**BPMN basis:** Clause 10.5.5 makes a Link a jump between two sections of one Process level: the Process continues as if the Sequence Flow had connected the throw's predecessor to the catch's successor, and both forms behave equivalently. One target Link Event takes a name; Clause 10.5.4 keeps a catching Link without incoming and a throwing Link without outgoing Sequence Flow. The machine-readable `LinkEventDefinition` makes `source` and `target` optional (`BPMN20.cmof:384-385`).
+
+**Evidence:** At pinned `5a45b47`, `BpmnParse#parseIntermediateThrowEvent` creates no activity for a Link throw (`BpmnParse.java:1611-1622`), `#parseSequenceFlow` retargets each flow into it to the catch of its name (`BpmnParse.java:4306-4316`), `#parseIntermediateLinkEventCatchBehavior` refuses a second catch of one name across the whole resource (`BpmnParse.java:313`, `1575-1576`), and `HistoryParseListener` writes no history for the catch (`HistoryParseListener.java:207-211`). The [Link probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenLinkEventsProbeTest.java) drives the [retained Link models](../scenarios/link-events/README.md) beside their explicit-flow twins through four journeys in CIB `2.2.0` (2026-11-04): after every command both hold the same open User Tasks and jobs, no historic activity instance names a Link Event, and the rework journey crosses the Go To loop once.
+
+**Boundary:** Single-source pairs in one scope of the executed Process with one unconditioned catch flow and no `source` or `target` reference, with JUEL renditions of the conditions under `CIB-CFG-0005`; public task, job and history APIs. Several throws of one name, chains, Links in called Processes and asynchronous or listened Link Events stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
 
 ## Interpretation register
 

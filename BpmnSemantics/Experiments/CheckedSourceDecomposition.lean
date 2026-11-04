@@ -121,6 +121,8 @@ def parseFrom (source : CheckedProcess) :
       | some (.configuredTask ..)
       | some (.nonOperationalTask ..)
       | some (.noneIntermediateThrowEvent ..)
+      | some (.linkThrowEvent ..)
+      | some (.linkCatchEvent ..)
       | some (.parallelGateway _ .converging)
       | some (.exclusiveMerge ..)
       | some (.exclusiveGateway ..)
@@ -194,6 +196,8 @@ def composedNodeSurfaceValid : CheckedNode → Bool
   | .configuredTask .. => false
   | .nonOperationalTask .. => false
   | .noneIntermediateThrowEvent .. => false
+  | .linkThrowEvent .. => false
+  | .linkCatchEvent .. => false
   | .exclusiveMerge .. => false
   | .exclusiveGateway .. => false
   | .inclusiveGatewayDiverging .. => false

@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.CheckedProcessAdmission
+public import BpmnSemantics.SemanticProcess.LinkContraction
 public import BpmnSemantics.SemanticProcess.Lowering
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcessJson.CheckedProcess
@@ -38,11 +39,12 @@ def decodeDefinitionInput (json : Json) : Except String DefinitionInput := do
 /-- Independently require checked-process and Semantic Process structural validity, then require the supplied program to equal Lean's canonical lowering exactly. This boundary does not establish XML-import correctness, profile translation, or execution semantics. -/
 def validateDefinitionInput (input : DefinitionInput) :
     Except String DefinitionInput := do
-  if !checkedWellFormed input.checkedProcess then
+  -- LNK-CONT-01: the supplied checked graph keeps its Link pairs; both checks run on its contraction.
+  if !linkedCheckedWellFormed input.checkedProcess then
     throw s!"checked Process is not well formed for {input.scenarioId.value}"
   if !programWellFormed input.semanticProcess then
     throw s!"Semantic Process is not well formed for {input.scenarioId.value}"
-  if lowerCheckedProcess input.checkedProcess ≠ input.semanticProcess then
+  if lowerLinkedCheckedProcess input.checkedProcess ≠ input.semanticProcess then
     throw s!"Semantic Process does not equal Lean lowering for {input.scenarioId.value}"
   pure input
 

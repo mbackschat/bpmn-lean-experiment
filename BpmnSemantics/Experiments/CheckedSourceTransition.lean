@@ -96,6 +96,8 @@ def fireNode? (source : CheckedProcess) (node : CheckedNode)
   | .configuredTask _ _ => none
   | .nonOperationalTask _ _ => none
   | .noneIntermediateThrowEvent _ => none
+  | .linkThrowEvent _ _ => none
+  | .linkCatchEvent _ _ => none
   | .serviceTask _ _ _ _ _ => none
   | .transactionSubProcess .. => none
   | .cancelEndEvent .. => none
@@ -197,6 +199,10 @@ theorem fireNode_sound (source : CheckedProcess) (node : CheckedNode)
   | nonOperationalTask id taskNotation =>
       simp [fireNode?] at result
   | noneIntermediateThrowEvent id =>
+      simp [fireNode?] at result
+  | linkThrowEvent id linkName =>
+      simp [fireNode?] at result
+  | linkCatchEvent id linkName =>
       simp [fireNode?] at result
   | serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
       simp [fireNode?] at result

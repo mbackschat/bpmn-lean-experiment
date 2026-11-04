@@ -1,0 +1,152 @@
+{
+  "kind": "scenario",
+  "id": "link-events-warranty-rework",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "warranty-repair-links",
+    "relativePath": "scenarios/link-events/warranty-repair-links.bpmn",
+    "sha256": "63f19b64921fcf1a59deab5eba6d8d09b1f6f60b62a9cddba9f2f1ab42ff0c98",
+    "sourceOverlay": {
+      "id": "warranty-repair-handlers",
+      "sha256": "b6727cc1cd4879d24a91cf27654a8a3034469994894014d6ec4a0e6a5f7da01e"
+    }
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_WarrantyRepair",
+      "instanceId": "Repair_1",
+      "initialVariables": [
+        {
+          "name": "device",
+          "value": {
+            "kind": "string",
+            "value": "DEV-7"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-diagnose-fault",
+      "taskId": {
+        "processInstanceId": "Repair_1",
+        "elementId": "DiagnoseFault",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-replace-part",
+      "taskId": {
+        "processInstanceId": "Repair_1",
+        "elementId": "ReplacePart",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:fe9faff13a9c2cd2f31324499a8bbe9d4924f1657c3feee745a50497bae36822",
+      "effectId": {
+        "processInstanceId": "Repair_1",
+        "elementId": "OrderSparePart",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-test-device",
+      "taskId": {
+        "processInstanceId": "Repair_1",
+        "elementId": "TestDevice",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "result",
+          "value": {
+            "kind": "string",
+            "value": "failed"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-replace-part-2",
+      "taskId": {
+        "processInstanceId": "Repair_1",
+        "elementId": "ReplacePart",
+        "activation": 2
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:a278341661f829d5e67e9312d3a9eee0e36e719172c929f474c2d22d8b1f5b21",
+      "effectId": {
+        "processInstanceId": "Repair_1",
+        "elementId": "OrderSparePart",
+        "activation": 2
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-test-device-2",
+      "taskId": {
+        "processInstanceId": "Repair_1",
+        "elementId": "TestDevice",
+        "activation": 2
+      },
+      "submittedValues": [
+        {
+          "name": "result",
+          "value": {
+            "kind": "string",
+            "value": "passed"
+          }
+        }
+      ]
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.5.4",
+      "BPMN 2.0.2 Clause 10.5.5",
+      "BPMN 2.0.2 Clause 10.6.2",
+      "BPMN 2.0.2 Clause 13.3.4",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0016",
+      "CIB-AGR-0018",
+      "CIB-EXT-0020"
+    ]
+  }
+}

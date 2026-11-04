@@ -70,6 +70,12 @@ export enum CheckedNodeKind {
   NonOperationalTask = "nonOperationalTask",
   /** NIT-KIND-01: an Intermediate Throw Event without an EventDefinition, kept apart from every Task kind. */
   NoneIntermediateThrowEvent = "noneIntermediateThrowEvent",
+  /**
+   * LNK-KIND-01: a Link throw and catch with their `linkEventDefinition` name. No admission or lowering rule reads
+   * them: `link-contraction.ts` replaces each pair by the flow it stands for (Clause 10.5.5) before either runs.
+   */
+  LinkThrowEvent = "linkThrowEvent",
+  LinkCatchEvent = "linkCatchEvent",
   ParallelGateway = "parallelGateway",
   ExclusiveMerge = "exclusiveMerge",
   ExclusiveGateway = "exclusiveGateway",
@@ -378,6 +384,11 @@ export type CheckedNode =
   | DeepReadonly<{
       kind: CheckedNodeKind.NoneIntermediateThrowEvent;
       id: string;
+    }>
+  | DeepReadonly<{
+      kind: CheckedNodeKind.LinkThrowEvent | CheckedNodeKind.LinkCatchEvent;
+      id: string;
+      linkName: string;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.ParallelGateway;

@@ -546,6 +546,8 @@ def lowerNode (source : CheckedProcess) :
         { elementId := id }
         [firstPlace (incomingPlaces source id)]
         (lowerExclusiveMergeOutput source id), scopeId)
+  -- LNK-CONT-01: lowered only through `lowerLinkedCheckedProcess`, which removes every pair first.
+  | .linkThrowEvent .. | .linkCatchEvent .. => none
   | .exclusiveGateway id candidateFlowIds defaultFlowId =>
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.choose

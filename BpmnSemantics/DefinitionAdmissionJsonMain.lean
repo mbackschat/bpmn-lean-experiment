@@ -20,7 +20,7 @@ def inspect (line : String) : Except String Json := do
   let input ← decodeDefinitionInput (← parseWireJson line)
   pure <| Json.mkObj
     [ ("scenarioId", toJson input.scenarioId.value)
-    , ("checkedWellFormed", toJson (checkedWellFormed input.checkedProcess))
+    , ("checkedWellFormed", toJson (linkedCheckedWellFormed input.checkedProcess))
     , ("programWellFormed", toJson (programWellFormed input.semanticProcess))
     , ("programProfileCapabilitiesValid", toJson (programProfileCapabilitiesValid input.semanticProcess)) ]
 

@@ -71,6 +71,7 @@ const consumers = [
   { source: "call-activity-source.ts", anchor: "isPlainNode", elementName: "element", shape: "PlainNode" },
   { source: "nested-scope-data-source.ts", anchor: "projectNonOperationalTask", elementName: "element", shape: "PlainNode" },
   { source: "nested-scope-data-source.ts", anchor: "projectNoneThrow", elementName: "element", shape: "PlainNode" },
+  { source: "nested-scope-data-source.ts", anchor: "projectLinkEvent", elementName: "element", shape: "IntermediateCatchEvent" },
 ] as const satisfies ReadonlyArray<ConsumerSite>;
 
 const inventoryCases = [

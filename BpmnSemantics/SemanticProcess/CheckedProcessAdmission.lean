@@ -414,6 +414,8 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
       -- PTT-ADMIT-01, NIT-ADMIT-01: one incoming flow of any admitted kind and one outgoing flow, whose condition
       -- placement the candidate rule refuses.
       incomingCount flows id = 1 && outgoingCount flows id = 1
+  -- LNK-CONT-01: a Link pair is admitted only through its contraction (`LinkContraction`), never as a node.
+  | .linkThrowEvent .. | .linkCatchEvent .. => false
   | .exclusiveMerge id =>
       -- CEA-ADMIT-01 merges any fork width; profiles without a variable merge keep exact-three arity.
       (if mixed || variableMerge then incomingCount flows id ≥ 2 else incomingCount flows id = 3) &&

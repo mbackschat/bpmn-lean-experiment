@@ -250,6 +250,10 @@ function hasSelectedArity(
     case CheckedNodeKind.NoneIntermediateThrowEvent:
     case CheckedNodeKind.GlobalSynchronousCompensationThrowEvent:
       return incoming === 1 && outgoing === 1;
+    // LNK-CONT-01: a Link pair is admitted only through its contraction (`link-contraction.ts`), never as a node.
+    case CheckedNodeKind.LinkThrowEvent:
+    case CheckedNodeKind.LinkCatchEvent:
+      return false;
     case CheckedNodeKind.CancelBoundaryEvent:
     case CheckedNodeKind.BoundaryErrorEvent:
     case CheckedNodeKind.TimerBoundaryEvent:
