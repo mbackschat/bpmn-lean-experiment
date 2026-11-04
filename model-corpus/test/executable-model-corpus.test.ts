@@ -92,6 +92,8 @@ test("binds every retained and external model to exact local evidence", async ()
       "root-parallel-forks-onboarding-documents-while-laptop-open",
       "terminal-forks-offboarding-equipment-first",
       "terminal-forks-office-move",
+      "inclusive-gateway-regions-account-residency-only",
+      "inclusive-gateway-regions-booking-no-extras",
       "exclusive-choice-arity-complaint-delivery",
       "none-end-fan-in-travel-booked",
       "pass-through-parallel-branches-relocation-packing-first",

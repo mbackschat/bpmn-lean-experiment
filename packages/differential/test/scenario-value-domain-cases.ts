@@ -148,7 +148,8 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     "root-parallel-forks-onboarding-documents-while-laptop-open", "pass-through-parallel-branches-relocation-packing-first",
     "pass-through-parallel-branches-invoice-settled", "none-intermediate-throw-onboarding-account-first",
     "single-scope-models-purchase-approval-first", "send-task-claim-assessed-first", "terminal-forks-offboarding-equipment-first",
-    "terminal-forks-office-move"]) {
+    "terminal-forks-office-move", "inclusive-gateway-regions-account-residency-only",
+    "inclusive-gateway-regions-account-standard-only"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addConcurrentStructuredScopeDataCases(context, add);
@@ -431,7 +432,8 @@ function addRequiredStartNameCases(context: DomainContext, add: AddCase) {
  */
 function addConcurrentStructuredScopeDataCases(context: DomainContext, add: AddCase): void {
   const { start, startWith } = addRequiredStartNameCases(context, add);
-  if (start.initialVariables[0]!.name === "application") {
+  // Only the loan's Call refuses these names (CMCALL-START-01); the account opening also starts with `application`.
+  if (context.scenario.id === "concurrent-structured-scope-data-loan-credit-first") {
     // Appended names sort after the retained `application`, which keeps the canonical name order.
     for (const name of ["case", "dossier"]) {
       startWith(`invalid-start-data-${name}-name`, [...start.initialVariables, { name, value: values[0]! }], false);

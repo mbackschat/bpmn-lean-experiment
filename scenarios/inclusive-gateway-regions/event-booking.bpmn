@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_EventBooking" targetNamespace="urn:bpmn-lean:event-booking"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_EventBooking" name="Book a corporate event" isExecutable="true">
+    <startEvent id="EventRequested" name="Event requested" />
+    <serviceTask id="QuoteEvent" name="Quote event"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${quoteEvent}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="event">${event}</camunda:inputParameter>
+          <camunda:outputParameter name="quote">${quote}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <parallelGateway id="PrepareEvent" name="Prepare event" />
+    <userTask id="BookVenue" name="Book venue" />
+    <inclusiveGateway id="OrderExtras" name="Order extras" />
+    <userTask id="OrderCatering" name="Order catering" />
+    <parallelGateway id="ArrangeTechnology" name="Arrange technology" />
+    <userTask id="RentProjector" name="Rent projector" />
+    <userTask id="BookTechnician" name="Book technician" />
+    <parallelGateway id="TechnologyArranged" name="Technology arranged" />
+    <userTask id="ConfirmAttendeeList" name="Confirm attendee list" />
+    <inclusiveGateway id="ExtrasOrdered" name="Extras ordered" />
+    <parallelGateway id="EventReady" name="Event ready" />
+    <userTask id="SendConfirmation" name="Send confirmation" />
+    <endEvent id="EventBooked" name="Event booked" />
+    <sequenceFlow id="Flow_Requested" sourceRef="EventRequested" targetRef="QuoteEvent" />
+    <sequenceFlow id="Flow_Quoted" sourceRef="QuoteEvent" targetRef="PrepareEvent" />
+    <sequenceFlow id="Flow_ToVenue" sourceRef="PrepareEvent" targetRef="BookVenue" />
+    <sequenceFlow id="Flow_ToExtras" sourceRef="PrepareEvent" targetRef="OrderExtras" />
+    <sequenceFlow id="Flow_Catering" sourceRef="OrderExtras" targetRef="OrderCatering">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(catering,"yes")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Technology" sourceRef="OrderExtras" targetRef="ArrangeTechnology">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(technology,"yes")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_AttendeeList" sourceRef="OrderExtras" targetRef="ConfirmAttendeeList" />
+    <sequenceFlow id="Flow_ToProjector" sourceRef="ArrangeTechnology" targetRef="RentProjector" />
+    <sequenceFlow id="Flow_ToTechnician" sourceRef="ArrangeTechnology" targetRef="BookTechnician" />
+    <sequenceFlow id="Flow_ProjectorRented" sourceRef="RentProjector" targetRef="TechnologyArranged" />
+    <sequenceFlow id="Flow_TechnicianBooked" sourceRef="BookTechnician" targetRef="TechnologyArranged" />
+    <sequenceFlow id="Flow_CateringOrdered" sourceRef="OrderCatering" targetRef="ExtrasOrdered" />
+    <sequenceFlow id="Flow_TechnologyDone" sourceRef="TechnologyArranged" targetRef="ExtrasOrdered" />
+    <sequenceFlow id="Flow_AttendeeListConfirmed" sourceRef="ConfirmAttendeeList" targetRef="ExtrasOrdered" />
+    <sequenceFlow id="Flow_VenueBooked" sourceRef="BookVenue" targetRef="EventReady" />
+    <sequenceFlow id="Flow_ExtrasDone" sourceRef="ExtrasOrdered" targetRef="EventReady" />
+    <sequenceFlow id="Flow_Ready" sourceRef="EventReady" targetRef="SendConfirmation" />
+    <sequenceFlow id="Flow_Confirmed" sourceRef="SendConfirmation" targetRef="EventBooked" />
+  </process>
+</definitions>

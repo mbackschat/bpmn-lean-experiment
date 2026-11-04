@@ -13,6 +13,7 @@ import { CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID, STRUCTURED_PROCESS
 import { repeatableSubscriptionCheckedShape, repeatableSubscriptionProgramShape } from "./repeatable-subscription-admission.js";
 import {
   CheckedNodeKind,
+  GatewayDirection,
 } from "./checked-process-contract.js";
 import type { CheckedNode } from "./checked-process-contract.js";
 import {
@@ -156,6 +157,13 @@ function profileAllowsProgramOperationDetails(
           operation.kind !== SemanticOperationKind.MergeExclusive ||
           operation.inputs.length === 3,
       );
+    // IGR-PROFILE-01: the exact profile keeps two conditioned candidates, a default and three join inputs, which the
+    // widened structural ranges no longer fix.
+    case SemanticProfileId.InclusiveGatewaySelectedBranches:
+      return operations.every((operation) =>
+        (operation.kind !== SemanticOperationKind.SelectMany ||
+          (operation.candidates.length === 2 && operation.defaultBranch !== undefined)) &&
+        (operation.kind !== SemanticOperationKind.SynchronizeSelected || operation.inputs.length === 3));
     case SemanticProfileId.ActivityBoundaryMessage:
       return hasExactActivityBoundaryMessageProgram(operations);
     case SemanticProfileId.ConfiguredTask:
@@ -261,6 +269,10 @@ export function requiredCheckedShapeAllows(
       node.kind !== CheckedNodeKind.UserTask ||
       userTaskMetadataMatchesProfileSelection(semanticProfile, node)
     ) &&
+    (semanticProfile !== SemanticProfileId.InclusiveGatewaySelectedBranches ||
+      nodes.every((node) => node.kind !== CheckedNodeKind.InclusiveGateway ||
+        node.direction !== GatewayDirection.Diverging ||
+        (node.candidateFlowIds.length === 2 && node.defaultFlowId !== undefined))) &&
     (semanticProfile !== SemanticProfileId.TimerStart ||
       nodes.every(
         (node) =>

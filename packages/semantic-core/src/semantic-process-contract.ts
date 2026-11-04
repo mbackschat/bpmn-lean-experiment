@@ -221,15 +221,19 @@ export type SelectManyOperation = OperationBase &
   DeepReadonly<{
     kind: SemanticOperationKind.SelectMany;
     input: string;
-    candidates: [InclusiveCandidate, InclusiveCandidate];
-    defaultBranch: InclusiveDefaultBranch;
+    candidates: [InclusiveCandidate, ...InclusiveCandidate[]];
+    /**
+     * Absent when the source declares no default; admission then requires an unconditioned candidate, whose `literal
+     * true` condition keeps the selection nonempty (IGR-ADMIT-01, CIB-INT-0005).
+     */
+    defaultBranch?: InclusiveDefaultBranch;
     selectionKey: string;
   }>;
 
 export type SynchronizeSelectedOperation = OperationBase &
   DeepReadonly<{
     kind: SemanticOperationKind.SynchronizeSelected;
-    inputs: [string, string, string];
+    inputs: [string, string, ...string[]];
     output: string;
     selectionKey: string;
   }>;

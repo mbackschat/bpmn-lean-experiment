@@ -152,7 +152,7 @@ test("raw IL rejects duplicate consumers, reused source identities and unbound o
   for (const candidate of badPrograms) assert.equal(isWellFormedSemanticProcessProgram(candidate), false);
 });
 
-test("mixed and nested scope-data profiles admit nonempty Exclusive choices while Inclusive and other profiles retain two", async () => {
+test("mixed and nested scope-data profiles admit nonempty Exclusive choices while other profiles retain two", async () => {
   type OperationModule = typeof import("../../semantic-core/src/semantic-process-operation-admission.ts");
   const { isWellFormedSemanticOperation } = await import(new URL("../../semantic-core/dist/semantic-process-operation-admission.js", import.meta.url).href) as OperationModule;
   const { semanticProcess: program } = await accepted();
@@ -180,7 +180,9 @@ test("mixed and nested scope-data profiles admit nonempty Exclusive choices whil
     }
     const node = { kind: CheckedNodeKind.ExclusiveGateway, id: "choice", direction: "diverging", candidateFlowIds: candidates.map(candidate => candidate.origin.elementId), defaultFlowId: "fallback" };
     assert.equal(nodeValid(node), count > 0);
-    assert.equal(nodeValid({ ...node, kind: CheckedNodeKind.InclusiveGateway }), count === 2);
+    // IGR-ADMIT-01 widened the wire form to one or more candidates; the exact Inclusive profile's two are its
+    // topology predicate's (IGR-PROFILE-01), not the schema's.
+    assert.equal(nodeValid({ ...node, kind: CheckedNodeKind.InclusiveGateway }), count > 0);
   }
 });
 

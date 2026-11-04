@@ -435,7 +435,7 @@ function lowerNode(
     case CheckedNodeKind.InclusiveGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging: {
-          const [firstCandidateFlowId, secondCandidateFlowId] =
+          const [firstCandidateFlowId, ...otherCandidateFlowIds] =
             node.candidateFlowIds;
           return scoped({
             ...base,
@@ -443,13 +443,11 @@ function lowerNode(
             input: requireOnly(incoming, node.id, "incoming"),
             candidates: [
               lowerInclusiveCandidate(source, node.id, firstCandidateFlowId),
-              lowerInclusiveCandidate(source, node.id, secondCandidateFlowId),
+              ...otherCandidateFlowIds.map((flowId) => lowerInclusiveCandidate(source, node.id, flowId)),
             ],
-            defaultBranch: lowerInclusiveDefaultBranch(
-              source,
-              node.id,
-              node.defaultFlowId,
-            ),
+            ...(node.defaultFlowId === undefined ? {} : {
+              defaultBranch: lowerInclusiveDefaultBranch(source, node.id, node.defaultFlowId),
+            }),
             selectionKey: node.id,
           });
         }
@@ -457,7 +455,7 @@ function lowerNode(
           return scoped({
             ...base,
             kind: SemanticOperationKind.SynchronizeSelected,
-            inputs: requireExactThree(incoming, node.id, "incoming"),
+            inputs: requireAtLeastTwo(incoming, node.id, "incoming"),
             output: requireOnly(outgoing, node.id, "outgoing"),
             selectionKey: node.pairedGatewayId,
           });
@@ -719,16 +717,16 @@ function requireMany(
   return values;
 }
 
-function requireExactThree(
+function requireAtLeastTwo(
   values: ReadonlyArray<string>,
   nodeId: string,
   direction: string,
-): [string, string, string] {
-  const [first, second, third] = values;
-  if (values.length !== 3 || first === undefined || second === undefined || third === undefined) {
-    throw new TypeError(`Checked node ${nodeId} requires exactly three ${direction} flows`);
+): [string, string, ...string[]] {
+  const [first, second, ...rest] = values;
+  if (first === undefined || second === undefined) {
+    throw new TypeError(`Checked node ${nodeId} requires at least two ${direction} flows`);
   }
-  return [first, second, third];
+  return [first, second, ...rest];
 }
 
 function compareIds(

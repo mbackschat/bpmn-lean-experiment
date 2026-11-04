@@ -72,6 +72,11 @@ export function mutateConditionalSelection(
       case SemanticOperationKind.SelectMany: {
         conditionalSelectionCount += 1;
         const [first, second] = operation.candidates;
+        if (operation.candidates.length !== 2 || second === undefined) {
+          throw new TypeError(
+            "Branch-bypass mutation requires exactly two Inclusive candidates",
+          );
+        }
         return {
           ...operation,
           candidates: [

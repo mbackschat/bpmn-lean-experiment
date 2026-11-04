@@ -272,10 +272,11 @@ function hasSelectedArity(
         semanticProfile === SemanticProfileId.NestedEmbeddedScopeData ? incoming >= 2 : incoming === 3) && outgoing === 1;
     case CheckedNodeKind.InclusiveGateway:
       switch (node.direction) {
+        // IGR-ADMIT-01: the nested scope-data profile's regions have two or more branches.
         case GatewayDirection.Diverging:
-          return incoming === 1 && outgoing === 3;
+          return incoming === 1 && (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData ? outgoing >= 2 : outgoing === 3);
         case GatewayDirection.Converging:
-          return incoming === 3 && outgoing === 1;
+          return (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData ? incoming >= 2 : incoming === 3) && outgoing === 1;
       }
     case CheckedNodeKind.EventBasedGateway:
       return incoming === 1 && outgoing === 2;

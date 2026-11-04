@@ -310,7 +310,7 @@ def internalInclusiveReadVariables (candidates : List InclusiveCandidate) :
 /-- Inclusive selection uses the existing evaluator because every candidate affects its exact branch set, including false candidates. -/
 def prepareInternalInclusive?
     (candidates : List InclusiveCandidate)
-    (defaultBranch : InclusiveDefaultBranch)
+    (defaultBranch : Option InclusiveDefaultBranch)
     (bindings : List VariableBinding) : Option InternalInclusiveSelection := do
   let selected ← evaluateInclusiveBranches candidates defaultBranch bindings
   pure ⟨selected, internalInclusiveReadVariables candidates⟩
@@ -321,7 +321,7 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`
 /-- Retaining dependency reads preserves the evaluator's exact output/input pairs, default, ordering, and failure. -/
 theorem prepare_internal_inclusive_selected
     (candidates : List InclusiveCandidate)
-    (defaultBranch : InclusiveDefaultBranch)
+    (defaultBranch : Option InclusiveDefaultBranch)
     (bindings : List VariableBinding) :
     (prepareInternalInclusive? candidates defaultBranch bindings).map
         InternalInclusiveSelection.selected =
@@ -357,7 +357,7 @@ theorem internal_inclusive_candidates_frame
 /-- The successful predecessor records all Inclusive condition dependencies; protecting those reads preserves the complete retained preparation. -/
 theorem prepare_internal_inclusive_frame
     (candidates : List InclusiveCandidate)
-    (defaultBranch : InclusiveDefaultBranch)
+    (defaultBranch : Option InclusiveDefaultBranch)
     (before after : List VariableBinding)
     (selected : InternalInclusiveSelection)
     (prepared : prepareInternalInclusive? candidates defaultBranch before = some selected)

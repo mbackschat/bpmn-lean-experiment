@@ -118,7 +118,7 @@ export type SemanticEffectIncident = DeepReadonly<{
 export type SelectedBranchSet = DeepReadonly<{
   owner: ScopeOccurrenceId;
   selectionKey: string;
-  expectedInputs: [string] | [string, string];
+  expectedInputs: [string, ...string[]];
 }>;
 
 /** Hidden ownership link for one atomically armed Event-Based Gateway race. */

@@ -744,8 +744,8 @@ type SemanticOperation = DeepReadonly<
   | (OperationBase & {
       kind: "selectMany";
       input: string;
-      candidates: [InclusiveCandidate, InclusiveCandidate];
-      defaultBranch: {
+      candidates: [InclusiveCandidate, ...InclusiveCandidate[]];
+      defaultBranch?: {
         output: string;
         expectedJoinInput: string;
         origin: BpmnSequenceFlowOrigin;
@@ -754,7 +754,7 @@ type SemanticOperation = DeepReadonly<
     })
   | (OperationBase & {
       kind: "synchronizeSelected";
-      inputs: [string, string, string];
+      inputs: [string, string, ...string[]];
       output: string;
       selectionKey: string;
     })
@@ -882,7 +882,7 @@ The implemented runtime contains one [ScopedVariables value](../packages/semanti
 
 The `process.bindings` survive Activity completion and alone project to canonical `variables`. Each entry in `activities` contains `owner` plus `bindings`, where `owner` is a closed `LocalDataOwner`: `effectOccurrence` carries the complete semantic effect identity `(processInstanceId, elementId, activation)`, while `activityOccurrence` carries the distinct complete Activity identity `(processInstanceId, activityElementId, activation)`. Existing mapping profiles create only the effect arm. Their activation creates exactly one owned local scope from evaluated inputs; matching completion requires exactly one effect-arm owner, evaluates the validated patch and output mappings against that scope, updates Process bindings, and removes only that scope atomically. Missing, duplicate, flat, or cross-arm owners reject completion with exact state preservation. The representation and existing mapping contract belong to the [scoped runtime data specification](capsules/SCOPED-DATA-SPEC.md); the first Activity-arm producer belongs to the owner-approved [Activity data-input mediation specification](capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md), and the first operation to preserve that same input-bearing Activity scope through required output completion belongs to the [composed Activity data specification](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md).
 
-Structured Inclusive Gateway execution adds a hidden `selectedBranchSets` collection. Each record carries one scope-occurrence owner, the paired split identity as `selectionKey`, and a canonical nonempty one- or two-element tuple of expected join-input control places. The collection is canonically ordered by Process instance, definition scope, activation, and selection key. It is created only by `selectMany`, removed by the matching `synchronizeSelected` or owner-scope interruption, blocks owner-scope quiescence while live, and never enters canonical public observation. The complete bounded account belongs to the [Inclusive Gateway specification](capsules/INCLUSIVE-GATEWAY-SPEC.md).
+Structured Inclusive Gateway execution adds a hidden `selectedBranchSets` collection. Each record carries one scope-occurrence owner, the paired split identity as `selectionKey`, and a canonical nonempty tuple of expected join-input control places. The collection is canonically ordered by Process instance, definition scope, activation, and selection key. It is created only by `selectMany`, removed by the matching `synchronizeSelected` or owner-scope interruption, blocks owner-scope quiescence while live, and never enters canonical public observation. The complete bounded account belongs to the [Inclusive Gateway specification](capsules/INCLUSIVE-GATEWAY-SPEC.md).
 
 Event-Based Gateway execution adds a hidden `eventRaces` collection and monotonic `eventRaceActivations`. Each race record contains the Gateway occurrence identity, its scope-occurrence owner, and the complete Message-subscription and Timer-occurrence identities armed together. The collection is canonically ordered by Process instance, Gateway element, activation, and owner. It is created only by `awaitEventRace`, removed by one matching winner or owner-scope interruption, blocks owner-scope quiescence while live, and never enters canonical public observation. A record without both owner-matching waits is invalid and is not a resumption surface. The complete bounded account belongs to the [Event-Based Gateway specification](capsules/EVENT-BASED-GATEWAY-SPEC.md).
 
@@ -932,6 +932,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | identity-only converging Exclusive Gateway | `mergeExclusive` with one canonical nonempty input collection and one output derived only from checked Sequence Flow endpoints |
 | exact structured divergent Inclusive Gateway under Simple Boolean v1 | `selectMany` with two canonical candidates, one default, branch-local expected join inputs, and the split identity as selection key |
 | paired converging Inclusive Gateway | `synchronizeSelected` with the three canonical model inputs and the paired split identity |
+| root Inclusive region of the nested scope-data profile | `selectMany` with one candidate per non-default output, an absent condition lowered to the literal `true`, the default when one is named, and each branch's expected join input derived by the region walk (`IGR-BIND-01`); `synchronizeSelected` with one canonical input per split output |
 | exact non-instantiating Exclusive Event-Based Gateway with one operation-addressed Message catch and one exact `PT1S` Timer catch | one `awaitEventRace`; configured catches produce no separate `awaitMessage` or `awaitTimer` operation |
 | none End Event | `reachNoneEnd` |
 | every ordinary embedded definition scope and the entry root | one synthetic `completeScope`; ordinary child completion emits the Sub-Process outgoing token and entry-root completion marks the aggregate Process complete; declaration-owned handler completion follows its separate row |
@@ -1082,7 +1083,7 @@ Simple Boolean v1 is total after admission. The operation therefore has no seman
 
 ### Inclusive multi-selection and selected synchronization
 
-`selectMany` is enabled by one owner-matching input token. It evaluates both canonical candidates against the same complete committed Process bindings, consumes exactly one input token, and adds one token to every true candidate output. When neither candidate is true it adds one token only to the conditionless default output. The firing atomically creates one owner- and split-keyed record containing exactly the selected branches' corresponding join inputs; an empty record and a second live record with the same owner and key are impossible.
+`selectMany` is enabled by one owner-matching input token. It evaluates every canonical candidate against the same complete committed Process bindings, consumes exactly one input token, and adds one token to every true candidate output. When no candidate is true it adds one token only to the conditionless default output; without a default it is disabled, which admission keeps unreachable by requiring a candidate whose condition is the literal `true` (`IGR-ADMIT-01`). An Inclusive output without a condition lowers to that literal (`CIB-INT-0005`). The firing atomically creates one owner- and split-keyed record containing exactly the selected branches' corresponding join inputs; an empty record and a second live record with the same owner and key are impossible.
 
 `synchronizeSelected` is enabled only when exactly one same-key record is ready: every input named by that record has a token with the record's owner. Additional unready same-key records do not disable it. It consumes exactly one token from each recorded input, consumes no unselected model input, removes the ready record, and adds exactly one owner-matching output token. Zero or multiple ready records disable the operation. This is the bounded WCP-7 interpretation for the approved closed acyclic region, not a general Inclusive Gateway reachability algorithm.
 
@@ -1175,8 +1176,8 @@ The [final preparation account](INTERNAL-COMMUTATION-PROPOSAL.md#prepared-transi
 - every `initiateTimer` has exact duration `1000` and a canonical nonempty collection of distinct existing outputs; the registered Timer Start capability has exactly one output;
 - every `mergeExclusive` has a canonical nonempty collection of distinct inputs, one distinct existing output, and the selected cycle profile has exactly three inputs;
 - every `choose` has a nonempty declaration-ordered sequence of distinct candidate outputs, a distinct existing default output, valid Simple Boolean expressions, and exact Sequence Flow origin/output agreement; existing profiles retain exactly two candidates, and only the private mixed-task profile broadens that cardinality;
-- every `selectMany` has exactly two canonical distinct candidate outputs, one distinct default output, three distinct existing branch-local expected join inputs, valid Simple Boolean expressions, exact Sequence Flow origin/output agreement, and one nonempty selection key;
-- every `synchronizeSelected` has exactly three canonical distinct inputs, one existing output, and the same nonempty selection key as exactly one `selectMany`; its input set equals that selection's three candidate/default expected inputs;
+- every `selectMany` has one or more canonical distinct candidate outputs and an optional distinct default output, two or more outputs in all, as many distinct existing branch-local expected join inputs, valid Simple Boolean expressions, exact Sequence Flow origin/output agreement, and one nonempty selection key; every profile except the nested scope-data profile keeps exactly two candidates and a default (`IGR-PROFILE-01`);
+- every `synchronizeSelected` has two or more canonical distinct inputs, exactly three outside the nested scope-data profile, one existing output, and the same nonempty selection key as exactly one `selectMany`; its input set equals that selection's candidate and default expected inputs;
 - every ordinary single-occurrence operation payload element identifier matches its BPMN origin;
 - every `awaitEventRace` has one existing input, two distinct existing outputs, distinct nonempty Message and Timer catch identities, distinct nonempty configuration-flow origins absent from the control-place origin set, one complete `operationMessage` channel, and exact Timer duration `1000`; its Gateway origin is distinct from both catches;
 - every admitted `awaitTimer` has a timer element matching its BPMN origin and exact duration `1000`;

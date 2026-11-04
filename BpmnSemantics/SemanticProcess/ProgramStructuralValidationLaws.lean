@@ -119,7 +119,7 @@ expected-input payload, as required by `hiddenRecordDeclarationsValid`. -/
 theorem programWellFormed_selectMany_declarer_unique (program : Program)
     (valid : programWellFormed program = true)
     (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
-    (candidates : List InclusiveCandidate) (defaultBranch : InclusiveDefaultBranch)
+    (candidates : List InclusiveCandidate) (defaultBranch : Option InclusiveDefaultBranch)
     (selectionKey : String)
     (member : .selectMany id origin input candidates defaultBranch selectionKey ∈
       program.operations) :
@@ -132,13 +132,13 @@ theorem programWellFormed_selectMany_declarer_unique (program : Program)
   let selections := program.operations.filterMap fun
     | .selectMany _ _ _ candidates defaultBranch key =>
         some (key, canonicalControlPlaceOrder
-          (candidates.map (·.expectedJoinInput) ++ [defaultBranch.expectedJoinInput]))
+          (candidates.map (·.expectedJoinInput) ++ defaultBranch.toList.map (·.expectedJoinInput)))
     | _ => none
   let joins := program.operations.filterMap fun
     | .synchronizeSelected _ _ inputs _ key => some (key, inputs)
     | _ => none
   let selection := (selectionKey, canonicalControlPlaceOrder
-    (candidates.map (·.expectedJoinInput) ++ [defaultBranch.expectedJoinInput]))
+    (candidates.map (·.expectedJoinInput) ++ defaultBranch.toList.map (·.expectedJoinInput)))
   have selected : selection ∈ selections :=
     List.mem_filterMap.mpr ⟨_, member, rfl⟩
   have nonempty : selections.isEmpty = false := by
@@ -174,7 +174,7 @@ join inputs differ; `IGW-TRACK-01` uses the split key as the retained-record ide
 theorem programWellFormed_rejects_selectMany_declarer_collision (program : Program)
     (leftId rightId : OperationId) (leftOrigin rightOrigin : BpmnElementOrigin)
     (leftInput rightInput : ControlPlaceId) (leftCandidates rightCandidates : List InclusiveCandidate)
-    (leftDefault rightDefault : InclusiveDefaultBranch) (selectionKey : String)
+    (leftDefault rightDefault : Option InclusiveDefaultBranch) (selectionKey : String)
     (leftMember : .selectMany leftId leftOrigin leftInput leftCandidates leftDefault selectionKey ∈
       program.operations)
     (rightMember : .selectMany rightId rightOrigin rightInput rightCandidates rightDefault selectionKey ∈

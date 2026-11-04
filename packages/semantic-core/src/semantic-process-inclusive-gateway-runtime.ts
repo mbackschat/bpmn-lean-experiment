@@ -58,7 +58,7 @@ export function selectMany(
 
 export type SelectedInclusiveBranches = Readonly<{
   selected: ReadonlyArray<InclusiveCandidate | InclusiveDefaultBranch>;
-  expectedInputs: [string] | [string, string];
+  expectedInputs: [string, ...string[]];
   readVariables: ReadonlyArray<string>;
 }>;
 
@@ -81,9 +81,10 @@ export function selectInclusiveBranches(
     }
     return evaluated.value;
   });
+  // Without a default, admission keeps an unconditioned candidate, so an empty selection is unreachable and disabled.
   const selected: ReadonlyArray<InclusiveCandidate | InclusiveDefaultBranch> =
     selectedCandidates.length === 0
-      ? [operation.defaultBranch]
+      ? operation.defaultBranch === undefined ? [] : [operation.defaultBranch]
       : selectedCandidates;
   const expectedInputs = selectedExpectedInputs(selected);
   return expectedInputs === null
@@ -93,18 +94,9 @@ export function selectInclusiveBranches(
 
 function selectedExpectedInputs(
   selected: ReadonlyArray<Readonly<{ expectedJoinInput: string }>>,
-): [string] | [string, string] | null {
-  const first = selected[0];
-  const second = selected[1];
-  if (first === undefined || selected.length > 2) {
-    return null;
-  }
-  if (second === undefined) {
-    return [first.expectedJoinInput];
-  }
-  return compareCanonicalStrings(first.expectedJoinInput, second.expectedJoinInput) <= 0
-    ? [first.expectedJoinInput, second.expectedJoinInput]
-    : [second.expectedJoinInput, first.expectedJoinInput];
+): [string, ...string[]] | null {
+  const [first, ...rest] = selected.map(({ expectedJoinInput }) => expectedJoinInput).sort(compareCanonicalStrings);
+  return first === undefined ? null : [first, ...rest];
 }
 
 export function synchronizeSelected(

@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.SerialBusinessTaskAdmission
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 public import BpmnSemantics.SemanticProcess.ConcurrentScopeDataAvailability
 import BpmnSemantics.SemanticProcess.NestedScopeBranchWork
+import BpmnSemantics.SemanticProcess.InclusiveRegionAdmission
 import BpmnSemantics.SemanticProcess.ScopeReentryAdmission
 import BpmnSemantics.SemanticProcess.ScopeDataBurst
 import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
@@ -445,6 +446,11 @@ def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : Checke
     | .callActivity _ _ callData => if callDataAdmitted data callData then some (.vertex .task) else none
     | .parallelGateway _ .diverging => some (.vertex .fork)
     | .parallelGateway _ .converging => some (.vertex .join)
+    -- IGR-ADMIT-01: under the nested scope-data profile an Inclusive split is a fork and its join a join.
+    | .inclusiveGatewayDiverging .. =>
+        if source.identity.semanticProfile == nestedScopeDataProfileId then some (.vertex .fork) else none
+    | .inclusiveGatewayConverging .. =>
+        if source.identity.semanticProfile == nestedScopeDataProfileId then some (.vertex .join) else none
     | .exclusiveMerge _ => some .merge
     -- PTPB-PROFILE-01, NIT-PROFILE-01: only the nested scope-data profile maps a pass-through step to a pass vertex.
     | .nonOperationalTask _ _ | .noneIntermediateThrowEvent _ =>
@@ -479,7 +485,10 @@ def checkedData (source : CheckedProcess) : Option Data :=
               accesses := services.map (fun (id, inputs, outputs) => (id, serviceAccess inputs outputs)) ++ calls }
 
 def checkedBodies (source : CheckedProcess) (data : Option Data) : Option (List RawBody) := do
-  if !(source.sequenceFlows.all fun flow => flow.condition.isNone &&
+  -- Only an Inclusive split's outputs carry conditions here; the region leaf checks them (IGR-ADMIT-01 condition 3).
+  let gated := fun (flow : CheckedSequenceFlow) => source.identity.semanticProfile == nestedScopeDataProfileId &&
+    source.nodes.any fun | .inclusiveGatewayDiverging id .. => id == flow.sourceId | _ => false
+  if !(source.sequenceFlows.all fun flow => (flow.condition.isNone || gated flow) &&
       (controlCheckedScope? source flow.sourceId).isSome && controlCheckedScope? source flow.sourceId == controlCheckedScope? source flow.targetId)
   then none
   else source.definitionScopes.mapM fun scope => do
@@ -510,6 +519,10 @@ private def checkedModel (source : CheckedProcess) : Option (Nat × List String 
     let root := (source.definitionScopes.find? fun scope =>
       scope.parentScopeId.isNone && scope.originElementId.value == source.processId.value).map (·.id.value)
     if !NestedScopeData.scopeCountAdmitted source.identity.semanticProfile source.definitionScopes.length then none
+    -- The local scan keeps the leaf out of every Inclusive-free model, so fixtures deciding those unfold nothing new.
+    else if source.identity.semanticProfile == nestedScopeDataProfileId &&
+        source.nodes.any (fun | .inclusiveGatewayDiverging .. | .inclusiveGatewayConverging .. => true | _ => false) &&
+        !InclusiveRegion.checkedRegionsAdmitted source then none
     else if !terminalForkBoundsKept (source.identity.semanticProfile == nestedScopeDataProfileId)
         (!source.scopeLocalData.isEmpty) (root.getD "") (contracted.map fun body => (body.scope, body.vertices)) then none
     else admittedModel source.definitionScopes bodies data
@@ -529,8 +542,8 @@ def controlOperationScope? (program : Program) (operation : SemanticOperation) :
 
 def operationInputs : SemanticOperation → List ControlPlaceId
   | .enterScope _ _ input .. | .awaitUserTask _ _ input .. | .awaitEffect _ _ input .. | .duplicate _ _ input _
-  | .reachNoneEnd _ _ input | .invokeProcess _ _ input .. => [input]
-  | .synchronize _ _ inputs _ | .mergeExclusive _ _ inputs _ => inputs
+  | .reachNoneEnd _ _ input | .invokeProcess _ _ input .. | .selectMany _ _ input .. => [input]
+  | .synchronize _ _ inputs _ | .mergeExclusive _ _ inputs _ | .synchronizeSelected _ _ inputs _ _ => inputs
   | _ => []
 
 /-- The unique same-scope operation consuming `place`. -/
@@ -586,6 +599,14 @@ def operationVertex? (program : Program) (data : Option Data) (scope : String) (
       if admitted then return (⟨id, .vertex .task, ← follow [output]⟩, none) else none
   | .duplicate _ _ _ outputs => return (⟨id, .vertex .fork, ← follow outputs⟩, none)
   | .synchronize _ _ _ output => return (⟨id, .vertex .join, ← follow [output]⟩, none)
+  -- IGR-ADMIT-01: the nested scope-data profile's Inclusive split and join, projected as fork and join.
+  | .selectMany _ _ _ candidates defaultBranch _ =>
+      if program.identity.semanticProfile != nestedScopeDataProfileId then none
+      else return (⟨id, .vertex .fork,
+        ← follow (candidates.map (·.output) ++ defaultBranch.toList.map (·.output))⟩, none)
+  | .synchronizeSelected _ _ _ output _ =>
+      if program.identity.semanticProfile != nestedScopeDataProfileId then none
+      else return (⟨id, .vertex .join, ← follow [output]⟩, none)
   | .mergeExclusive _ _ inputs output =>
       -- PTPB-PROFILE-01: a one-input merge is a lowered pass-through Task under the nested scope-data profile only.
       let kind := if program.identity.semanticProfile == nestedScopeDataProfileId && inputs.length == 1
@@ -687,6 +708,9 @@ private def programModel (program : Program) : Option (Nat × List String × Opt
     -- structural refusal without unfolding the hidden `scopeCountAdmitted`.
     let contracted ← bodies.mapM contractBody
     if !NestedScopeData.scopeCountAdmitted program.identity.semanticProfile program.definitionScopes.length then none
+    else if structured &&
+        program.operations.any (fun | .selectMany .. | .synchronizeSelected .. => true | _ => false) &&
+        !InclusiveRegion.programRegionsAdmitted program then none
     else if !terminalForkBoundsKept structured (!program.scopeLocalData.isEmpty) root.id.value
         (contracted.map fun body => (body.scope, body.vertices)) then none
     else admittedModel program.definitionScopes bodies data
@@ -731,9 +755,10 @@ namespace BpmnSemantics.SemanticProcess.StructuredScopeData
 
 open BpmnSemantics
 
+/-- IGR-ADMIT-01: an Inclusive split splits a token as a fork does, so Choices, cycles and root Calls route away from it. -/
 private def splits (operations : List SemanticOperation) : Bool :=
   operations.any fun
-    | .duplicate .. => true
+    | .duplicate .. | .selectMany .. => true
     | _ => false
 
 /-- CSSD-ROUTE-01: a Program of the nested scope-data profile that splits a token. -/
@@ -743,7 +768,7 @@ def concurrentProgram (program : Program) : Bool :=
 /-- The checked-graph counterpart of `concurrentProgram`, consulted only under the profile. -/
 private def checkedConcurrent (source : CheckedProcess) : Bool :=
   source.nodes.any fun
-    | .parallelGateway _ .diverging => true
+    | .parallelGateway _ .diverging | .inclusiveGatewayDiverging .. => true
     | _ => false
 
 /-- The scope a Process root body runs in, whose Calls the profile refuses once it forks (RPF-ADMIT-01). -/
@@ -768,7 +793,9 @@ private def programRestrictionsHold (program : Program) : Bool :=
       program.identity.sourceOverlay.isSome &&
         -- PTPB-ADMIT-01: a one-input merge is a lowered pass-through Task, not a merge region.
         !(program.operations.any fun | .mergeExclusive _ _ inputs _ => inputs.length ≥ 2 | _ => false) &&
-        !(program.operations.any (fun | .duplicate id .. => inRoot id | _ => false) &&
+        !(program.operations.any (fun operation => match operation with
+            | .duplicate id .. | .selectMany id .. => inRoot id
+            | _ => false) &&
           program.operations.any (fun | .invokeProcess id .. => inRoot id | _ => false)) &&
         callsAdmitted (program.operations.filterMap fun
           | .invokeProcess _ _ _ calledProcessId _ _ _ data => some (calledProcessId, data)
@@ -781,7 +808,9 @@ private def checkedRestrictionsHold (source : CheckedProcess) : Bool :=
       let inRoot := fun (id : NodeId) => (source.nodeScopes.find? (·.nodeId == id)).map (·.scopeId) == some root
       source.identity.sourceOverlay.isSome &&
         !(source.nodes.any fun | .exclusiveMerge _ => true | _ => false) &&
-        !(source.nodes.any (fun | .parallelGateway id .diverging => inRoot id | _ => false) &&
+        !(source.nodes.any (fun node => match node with
+            | .parallelGateway id .diverging | .inclusiveGatewayDiverging id .. => inRoot id
+            | _ => false) &&
           source.nodes.any (fun | .callActivity id .. => inRoot id | _ => false)) &&
         callsAdmitted (source.nodes.filterMap fun
           | .callActivity _ calledProcessId data => some (calledProcessId, data)

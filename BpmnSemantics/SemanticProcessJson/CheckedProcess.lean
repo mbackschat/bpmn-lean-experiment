@@ -352,14 +352,16 @@ def decodeCheckedNode (json : Json) : Except String CheckedNode := do
       let direction ← stringField json "direction"
       match direction with
       | "diverging" =>
+          let defaulted := (json.getObjVal? "defaultFlowId").isOk
           requireObjectShape json
-            ["candidateFlowIds", "defaultFlowId", "direction", "id", "kind"]
+            ((if defaulted then ["candidateFlowIds", "defaultFlowId"] else ["candidateFlowIds"]) ++
+              ["direction", "id", "kind"])
           pure
             (.inclusiveGatewayDiverging
               ⟨← stringField json "id"⟩
               ((← decodeStringArray (← field json "candidateFlowIds")).map
                 SequenceFlowId.mk)
-              ⟨← stringField json "defaultFlowId"⟩)
+              (← if defaulted then some <$> (SequenceFlowId.mk <$> stringField json "defaultFlowId") else pure none))
       | "converging" =>
           requireObjectShape json
             ["direction", "id", "kind", "pairedGatewayId"]

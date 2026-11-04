@@ -81,6 +81,7 @@ export {
 } from "./semantic-process-triggered-start.js";
 export * from "./semantic-process-admission.js";
 export * from "./inclusive-gateway-admission.js";
+export * from "./inclusive-region-admission.js";
 export * from "./event-race-admission.js";
 export * from "./semantic-process-inclusive-gateway-runtime.js";
 export * from "./semantic-process-event-race-runtime.js";

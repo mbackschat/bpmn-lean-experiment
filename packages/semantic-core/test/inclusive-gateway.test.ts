@@ -5,6 +5,7 @@ import { admittedInternalPrefix } from "./internal-operation-prefix-fixture.ts";
 
 import {
   BASELINE_SCENARIO_OBSERVATIONS,
+  CheckedNodeKind,
   CommandOutcome,
   ControlStateKind,
   ScenarioDocumentKind,
@@ -13,12 +14,17 @@ import {
   applyInternalOperation,
   applyStimulus,
   enabledInternalOperationCount,
+  GatewayDirection,
+  inclusiveOperationsArePaired,
   initialState,
   isWellFormedSemanticProcessProgram,
+  requiredCheckedShapeAllows,
   runScenario,
+  SimpleBooleanExpressionKind,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
 import type {
+  CheckedNode,
   SemanticOperation,
   SemanticProcessProgram,
   Scenario,
@@ -191,8 +197,8 @@ test("admits only complete selected-input pairings while leaving same-set pairin
         ? {
             ...operation,
             candidates: [
-              { ...operation.candidates[0], expectedJoinInput: operation.candidates[1].expectedJoinInput },
-              { ...operation.candidates[1], expectedJoinInput: operation.candidates[0].expectedJoinInput },
+              { ...operation.candidates[0], expectedJoinInput: operation.candidates[1]!.expectedJoinInput },
+              { ...operation.candidates[1]!, expectedJoinInput: operation.candidates[0].expectedJoinInput },
             ],
           }
         : operation
@@ -209,6 +215,42 @@ test("admits only complete selected-input pairings while leaving same-set pairin
     ),
   };
   assert.equal(isWellFormedSemanticProcessProgram(wrongKey), false);
+});
+
+// IGR-PROFILE-01: the wire forms admit any arity now, so the exact profile's topology predicate alone keeps its two
+// conditioned candidates, default and three join inputs; the twin keeps the three-User-Task multiset.
+test("the exact profile refuses a third conditioned candidate whose flow runs straight to the join", () => {
+  const straight: SemanticProcessProgram = {
+    ...inclusiveProgram,
+    controlPlaces: [...inclusiveProgram.controlPlaces, controlPlace("Flow_C")],
+    controlPlaceScopes: [...inclusiveProgram.controlPlaceScopes,
+      { controlPlaceId: "place:Flow_C", scopeId: inclusiveProgram.definitionScopes[0]!.id }]
+      .sort((left, right) => left.controlPlaceId < right.controlPlaceId ? -1 : 1),
+    operations: inclusiveProgram.operations.map((operation): SemanticOperation => {
+      switch (operation.kind) {
+        case SemanticOperationKind.SelectMany:
+          return { ...operation, candidates: [...operation.candidates, {
+            condition: { kind: SimpleBooleanExpressionKind.IsPresent, variable: "takeC" }, output: "place:Flow_C",
+            expectedJoinInput: "place:Flow_C", origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: "Flow_C" } }] };
+        case SemanticOperationKind.SynchronizeSelected:
+          return { ...operation, inputs: [...operation.inputs, "place:Flow_C"].sort() as [string, string, ...string[]] };
+        default:
+          return operation;
+      }
+    }),
+  };
+  assert.equal(isWellFormedSemanticProcessProgram(inclusiveProgram), true);
+  assert.equal(inclusiveOperationsArePaired(straight.operations), true, "the twin pairs");
+  assert.equal(isWellFormedSemanticProcessProgram(straight), false);
+  const node = (candidateFlowIds: [string, ...string[]]) => ({ kind: CheckedNodeKind.InclusiveGateway,
+    id: "Split", direction: GatewayDirection.Diverging, candidateFlowIds, defaultFlowId: "Flow_Default" }) as const;
+  const profile = inclusiveProgram.identity.semanticProfile;
+  const others: readonly CheckedNode[] = [{ kind: CheckedNodeKind.NoneStartEvent, id: "Start" },
+    { kind: CheckedNodeKind.NoneEndEvent, id: "End" },
+    { kind: CheckedNodeKind.InclusiveGateway, id: "Join", direction: GatewayDirection.Converging, pairedGatewayId: "Split" },
+    ...["Task_A", "Task_B", "Task_Default"].map(id => ({ kind: CheckedNodeKind.UserTask, id, name: id }) as const)];
+  assert.equal(requiredCheckedShapeAllows(profile, [...others, node(["Flow_A", "Flow_B"])], 1), true);
+  assert.equal(requiredCheckedShapeAllows(profile, [...others, node(["Flow_A", "Flow_B", "Flow_C"])], 1), false);
 });
 
 test("owner interruption removes hidden selected-branch records", () => {

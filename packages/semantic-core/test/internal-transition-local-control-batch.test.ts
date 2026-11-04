@@ -115,9 +115,11 @@ const exclusiveProgram: SemanticProcessProgram = {
       case SemanticOperationKind.SelectMany: {
         const candidates = operation.candidates.map(({ expectedJoinInput: _join, ...candidate }) => candidate);
         assert.equal(candidates.length, 2);
+        const defaultBranch = operation.defaultBranch;
+        assert.ok(defaultBranch !== undefined, "the fixture split carries a default");
         return { ...operationBase(operation.origin.elementId), kind: SemanticOperationKind.Choose,
           input: operation.input, candidates: [candidates[0]!, candidates[1]!],
-          defaultOutput: operation.defaultBranch.output, defaultOrigin: operation.defaultBranch.origin };
+          defaultOutput: defaultBranch.output, defaultOrigin: defaultBranch.origin };
       }
       case SemanticOperationKind.SynchronizeSelected:
         return { ...operationBase(operation.origin.elementId), kind: SemanticOperationKind.MergeExclusive,

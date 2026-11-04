@@ -15,9 +15,11 @@ import {
   CheckedNodeKind,
   GatewayDirection,
   SemanticOriginKind,
+  SimpleBooleanExpressionKind,
+  checkedRegionGraph,
+  regionBranchEnd,
 } from "@bpmn-lean/semantic-core";
 import type {
-  CheckedNode,
   CheckedProcess,
   CheckedSequenceFlow,
 } from "@bpmn-lean/semantic-core";
@@ -51,13 +53,25 @@ export function lowerConditionalCandidate(
   } as const;
 }
 
+/**
+ * An Inclusive candidate: an output without a condition lowers to the Simple Boolean literal `true`, because CIB takes
+ * it unconditionally and Clause 8.4.13 leaves it ungated (CIB-INT-0005); the checked graph keeps the condition `null`.
+ */
 export function lowerInclusiveCandidate(
   source: CheckedProcess,
   splitId: string,
   flowId: string,
 ) {
+  const flow = source.sequenceFlows.find(({ id }) => id === flowId);
+  const candidate = flow !== undefined && flow.condition === null
+    ? {
+      condition: { kind: SimpleBooleanExpressionKind.Literal, value: true },
+      output: controlPlaceId(flow.id),
+      origin: { kind: SemanticOriginKind.BpmnSequenceFlow, elementId: flow.id },
+    } as const
+    : lowerConditionalCandidate(source.sequenceFlows, flowId);
   return {
-    ...lowerConditionalCandidate(source.sequenceFlows, flowId),
+    ...candidate,
     expectedJoinInput: expectedJoinInputForBranch(source, splitId, flowId),
   } as const;
 }
@@ -78,6 +92,7 @@ export function lowerInclusiveDefaultBranch(
   } as const;
 }
 
+/** IGR-BIND-01: the input of the paired join that the branch starting at `flowId` reaches, by the shared region walk. */
 function expectedJoinInputForBranch(
   source: CheckedProcess,
   splitId: string,
@@ -86,26 +101,16 @@ function expectedJoinInputForBranch(
   const branch = source.sequenceFlows.find(
     (flow) => flow.id === flowId && flow.sourceId === splitId,
   );
-  const task = branch === undefined
-    ? undefined
-    : source.nodes.find(({ id }) => id === branch.targetId);
-  const join = source.nodes.find(
-    (node): node is Extract<CheckedNode, {
-      kind: CheckedNodeKind.InclusiveGateway;
-      direction: GatewayDirection.Converging;
-    }> =>
-      node.kind === CheckedNodeKind.InclusiveGateway &&
-      node.direction === GatewayDirection.Converging &&
-      node.pairedGatewayId === splitId,
-  );
-  const joinInputs = task === undefined || join === undefined
-    ? []
-    : source.sequenceFlows.filter(
-        ({ sourceId, targetId }) => sourceId === task.id && targetId === join.id,
-      );
-  const joinInput = joinInputs[0];
-  if (task?.kind !== CheckedNodeKind.UserTask || joinInputs.length !== 1 || joinInput === undefined) {
+  const graph = checkedRegionGraph(source);
+  const end = branch === undefined ? undefined : regionBranchEnd(graph, { id: branch.id, target: branch.targetId });
+  const join = end === undefined ? undefined : source.nodes.find(({ id }) => id === end.target);
+  if (
+    end === undefined ||
+    join?.kind !== CheckedNodeKind.InclusiveGateway ||
+    join.direction !== GatewayDirection.Converging ||
+    join.pairedGatewayId !== splitId
+  ) {
     throw new TypeError(`Checked Inclusive branch ${flowId} has no unique paired join input`);
   }
-  return controlPlaceId(joinInput.id);
+  return controlPlaceId(end.id);
 }

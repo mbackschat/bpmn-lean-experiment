@@ -467,29 +467,35 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
           simpleBooleanExpressionValid candidate.condition &&
             placeHasOrigin places candidate.output candidate.origin
   | .selectMany id origin input candidates defaultBranch selectionKey =>
-      let outputs := candidates.map (·.output) ++ [defaultBranch.output]
+      let outputs := candidates.map (·.output) ++ defaultBranch.toList.map (·.output)
       let expected :=
-        candidates.map (·.expectedJoinInput) ++ [defaultBranch.expectedJoinInput]
+        candidates.map (·.expectedJoinInput) ++ defaultBranch.toList.map (·.expectedJoinInput)
       nonempty id.value &&
         nonempty origin.elementId.value &&
         nonempty selectionKey &&
         placeExists places input &&
-        candidates.length = 2 &&
-        outputs.eraseDups.length = 3 &&
-        expected.eraseDups.length = 3 &&
+        -- IGR-ADMIT-01: the nested scope-data profile admits two or more branches with an optional default; every other
+        -- profile keeps the exact two conditioned candidates and default (IGR-PROFILE-01).
+        (if program.identity.semanticProfile == nestedScopeDataProfileId then
+          1 ≤ candidates.length && 2 ≤ outputs.length
+        else candidates.length = 2 && defaultBranch.isSome) &&
+        outputs.eraseDups.length = outputs.length &&
+        expected.eraseDups.length = outputs.length &&
         strictlySortedStrings
           (candidates.map fun candidate => candidate.origin.elementId.value) &&
         candidates.all fun candidate =>
           simpleBooleanExpressionValid candidate.condition &&
             placeHasOrigin places candidate.output candidate.origin &&
             placeExists places candidate.expectedJoinInput &&
-        placeHasOrigin places defaultBranch.output defaultBranch.origin &&
-        placeExists places defaultBranch.expectedJoinInput
+        defaultBranch.all fun branch =>
+          placeHasOrigin places branch.output branch.origin &&
+            placeExists places branch.expectedJoinInput
   | .synchronizeSelected id origin inputs output selectionKey =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
         nonempty selectionKey &&
-        inputs.length = 3 &&
+        (if program.identity.semanticProfile == nestedScopeDataProfileId then 2 ≤ inputs.length
+        else inputs.length = 3) &&
         sortedDistinctPlaceIds inputs &&
         inputs.all (placeExists places) &&
         placeExists places output
@@ -549,7 +555,7 @@ def inclusiveOperationsPaired (operations : List SemanticOperation) : Bool :=
         some (selectionKey,
           canonicalControlPlaceOrder
             (candidates.map (·.expectedJoinInput) ++
-              [defaultBranch.expectedJoinInput]))
+              defaultBranch.toList.map (·.expectedJoinInput)))
     | _ => none
   let joins := operations.filterMap fun
     | .synchronizeSelected _ _ inputs _ selectionKey =>

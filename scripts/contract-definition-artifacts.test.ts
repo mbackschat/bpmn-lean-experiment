@@ -395,7 +395,7 @@ test("keeps payload-bearing Message stimulus and enabled interaction arms exact"
   }), false);
 });
 
-test("binds Inclusive Gateway node directions and operation tuple arities", async () => {
+test("binds Inclusive Gateway node directions and general operation arities", async () => {
   const checkedSchema = JSON.parse(
     await readFile(`${projectRoot}/contracts/schemas/checked-process.schema.json`, "utf8"),
   ) as { readonly $defs: Readonly<Record<string, unknown>> };
@@ -461,8 +461,16 @@ test("binds Inclusive Gateway node directions and operation tuple arities", asyn
   };
   assert.equal(operation(selectMany), true);
   assert.equal(operation(synchronizeSelected), true);
-  assert.equal(operation({ ...selectMany, candidates: selectMany.candidates.slice(0, 1) }), false);
-  assert.equal(operation({ ...synchronizeSelected, inputs: synchronizeSelected.inputs.slice(0, 2) }), false);
+  // The schema binds only the general Inclusive shape (IGR-ADMIT-01); the exact one-task topology is a profile predicate.
+  const { defaultFlowId: _defaultFlowId, ...splitWithoutDefault } = split;
+  assert.equal(node(splitWithoutDefault), true);
+  assert.equal(node({ ...split, candidateFlowIds: [] }), false);
+  const { defaultBranch: _defaultBranch, ...selectManyWithoutDefault } = selectMany;
+  assert.equal(operation(selectManyWithoutDefault), true);
+  assert.equal(operation({ ...selectMany, candidates: selectMany.candidates.slice(0, 1) }), true);
+  assert.equal(operation({ ...selectMany, candidates: [] }), false);
+  assert.equal(operation({ ...synchronizeSelected, inputs: synchronizeSelected.inputs.slice(0, 2) }), true);
+  assert.equal(operation({ ...synchronizeSelected, inputs: synchronizeSelected.inputs.slice(0, 1) }), false);
 });
 
 test("binds the Event-Based Gateway node and complete heterogeneous race operation", async () => {

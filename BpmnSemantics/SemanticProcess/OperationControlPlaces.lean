@@ -96,7 +96,7 @@ def operationOutputs : SemanticOperation → List ControlPlaceId
   | .choose _ _ _ candidates defaultOutput _ =>
       candidates.map (·.output) ++ defaultOutput.toList
   | .selectMany _ _ _ candidates defaultBranch _ =>
-      candidates.map (·.output) ++ [defaultBranch.output]
+      candidates.map (·.output) ++ defaultBranch.toList.map (·.output)
   | .throwError _ _ _ _ handler => [handler.output]
   | .completeSequentialMultiInstanceScope ..
   | .completeParallelMultiInstanceScope ..

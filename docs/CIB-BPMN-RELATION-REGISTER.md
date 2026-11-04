@@ -274,6 +274,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** A None Throw with one incoming and one outgoing flow where the profile admits a pass-through Task, with JUEL renditions of the conditions under `CIB-CFG-0005`; public task, job, variable and history APIs. It does not cover several flows, asynchronous continuations, listeners, called Processes or any throw trigger, and claims no Temporal refinement beyond the registered pipeline cases.
 
+### CIB-AGR-0017 — a structured Inclusive join fires when every selected branch has arrived
+
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Inclusive regions proposal](capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
+
+**BPMN basis:** Clause 13.4.3 with Table 13.3 activates a converging Inclusive Gateway once at least one incoming flow holds a token and no token that can still reach an empty incoming flow without visiting the Gateway is missing, the Structured Synchronizing Merge (WCP-7). In an acyclic structured region the tokens that can still arrive are exactly the selected branches still live.
+
+**Evidence:** At pinned `5a45b47`, the join of `InclusiveGatewayActivityBehavior` activates once the joined executions reach the incoming count or no other execution of the scope can reach the Gateway (`activatesGateway`, `canReachActivity`), including an execution inside a Sub-Process on a branch through its flow scope. The [Inclusive regions probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenInclusiveGatewayRegionsProbeTest.java) drives the [retained account opening and event booking](../scenarios/inclusive-gateway-regions/README.md) in CIB `2.2.0` (2026-11-04): with every check selected, *Open account* opens only with the last check in both orders, including the source-of-funds check inside its Sub-Process; a single selected check or the default alone is the join's only input; and the event booking's extras, one of them a nested Parallel region, join before *Event ready* waits for the venue in either order.
+
+**Boundary:** Structured root Inclusive regions of the nested scope-data profile, with JUEL renditions of the conditions under `CIB-CFG-0005`; public task, job and history APIs. CIB's reachability join on unstructured, looping, asynchronous or Sub-Process-body regions stays outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
+
 ## Interpretation register
 
 An interpretation belongs here when BPMN is ambiguous, inconsistent, non-operational, or leaves several permitted behaviors and the pinned CIB engine supplies one concrete meaning. It is not labeled a deviation.
@@ -315,6 +325,18 @@ The addressless Receive Task profile adopts that resolution with a field-free `u
 **Evidence:** The [calibration probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenAddresslessReceiveTaskProbeTest.java) and the [addressless Receive Task account](capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md).
 
 **Boundary:** This interpretation covers only the root None Start → addressless Receive Task → None End shape of the addressless Receive Task profile. It does not cover repeated, embedded or Multi-Instance waits, trigger variables, signal names or any other profile.
+
+### CIB-INT-0005 — an Inclusive Gateway output without a condition is always taken
+
+**Status:** Selected bounded interpretation for the [Inclusive regions proposal](capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#normative-basis-and-cib-classification); closure qualification pending
+
+Clause 8.4.13 makes a Sequence Flow's `conditionExpression` an optional gating condition, while Table 10.124 gives an Inclusive Gateway's default a token "when none of the conditionExpressions on other Sequence Flows evaluate to true" and Table 13.3 throws "in case all conditions evaluate to false and a default flow has not been specified". Read literally, a split whose conditions are all false would take its default beside an ungated output, or throw without one. CIB Seven `2.2.0` at pinned `5a45b47` treats a non-default outgoing transition without a condition as true and takes the default only when nothing was selected (`InclusiveGatewayActivityBehavior.java:61-86`).
+
+The nested scope-data profile adopts that reading: an absent condition is a condition that is always true, for selection, for the default rule and for the exception rule. Lowering gives such an output the Simple Boolean literal `true`, while the checked graph keeps its condition `null`. Admission requires an unconditioned output on a split without a default and refuses one beside a default, whose default no state could then reach.
+
+**Evidence:** The [Inclusive regions probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenInclusiveGatewayRegionsProbeTest.java) runs the event booking with no extra ordered (2026-11-04): the unconditioned *Confirm attendee list* runs alone, and neither conditioned extra is activated.
+
+**Boundary:** Root Inclusive splits of the nested scope-data profile only. It does not cover Exclusive Gateways, whose candidates all carry conditions, conditional Sequence Flows from Activities, or any other profile.
 
 ### CIB-INT-0002: sequential Multi-Instance `nrOfInstances` is desired cardinality from outer entry
 
@@ -803,7 +825,7 @@ The mapping-free phase-zero control isolates that default: the Process has no re
 
 When reopened, the first JUEL compatibility profile uses `org.cibseven.bpm.juel:cibseven-juel:2.0.0`, matching pinned CIB Seven `2.0.0`, over a complete immutable Process-scope context whose values use the project's existing tagged `VariableValue.String | VariableValue.Null` contract. The Java evaluator converts those variants to `String | null` after validation. It exposes exact root-variable lookup and no bean, property-on-Java-object, method, function, class, `execution`, Process Engine service, Spring, file, network, or mutation capability.
 
-The admitted source has exactly two non-default conditions and one conditionless default (for probe calibration of the nested scope-data profile under the [Exclusive choice arity account](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md), any positive number of non-default conditions, and under the [Exclusive Choice without a default account](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-SPEC.md), two or more non-default conditions without a default), no condition `language`, `xsi:type` absent or resolving to BPMN `tFormalExpression`, and no Camunda `resource`. The condition result must be a non-null Java `Boolean`. Exact `${...}` and `#{...}` source is retained. A short-lived validation Workflow performs batched parse-only validation before any Process Workflow starts; runtime evaluator failures share one semantic `evaluationError` result, while diagnostic codes and messages do not affect semantic comparison.
+The admitted source has exactly two non-default conditions and one conditionless default (for probe calibration of the nested scope-data profile under the [Exclusive choice arity account](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md), any positive number of non-default conditions, and under the [Exclusive Choice without a default account](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-SPEC.md), two or more non-default conditions without a default, and under the [Inclusive regions proposal](capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md), the conditions of a root Inclusive split), no condition `language`, `xsi:type` absent or resolving to BPMN `tFormalExpression`, and no Camunda `resource`. The condition result must be a non-null Java `Boolean`. Exact `${...}` and `#{...}` source is retained. A short-lived validation Workflow performs batched parse-only validation before any Process Workflow starts; runtime evaluator failures share one semantic `evaluationError` result, while diagnostic codes and messages do not affect semantic comparison.
 
 **Evidence:** [JUEL evaluation architecture decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md), [isolated CIB JUEL runtime probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenIsolatedJuelRuntimeProbeTest.java), and [packaged-engine gateway probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveGatewayJuelProbeTest.java).
 

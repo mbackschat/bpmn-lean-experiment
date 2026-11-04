@@ -120,8 +120,9 @@ function referencedControlPlaces(
           output,
           expectedJoinInput,
         ]),
-        operation.defaultBranch.output,
-        operation.defaultBranch.expectedJoinInput,
+        ...(operation.defaultBranch === undefined
+          ? []
+          : [operation.defaultBranch.output, operation.defaultBranch.expectedJoinInput]),
       ];
     case "synchronizeSelected":
       return [...operation.inputs, operation.output];
@@ -356,7 +357,10 @@ export function verifyDefinitionReferences(
     ) {
       throw new Error(`operation ${selection.id} has no exact paired Inclusive Gateway join`);
     }
-    const branches = [...selection.candidates, selection.defaultBranch];
+    const branches = [
+      ...selection.candidates,
+      ...(selection.defaultBranch === undefined ? [] : [selection.defaultBranch]),
+    ];
     for (const branch of branches) {
       const splitFlow = checkedProcess.sequenceFlows.find(({ id }) => id === branch.origin.elementId);
       const expectedPlace = semanticProcess.controlPlaces.find(({ id }) => id === branch.expectedJoinInput);
@@ -530,7 +534,9 @@ export function verifyDefinitionReferences(
     if (operation.kind === "selectMany") {
       const origins = [
         ...operation.candidates.map(({ output, origin }) => ({ output, origin })),
-        { output: operation.defaultBranch.output, origin: operation.defaultBranch.origin },
+        ...(operation.defaultBranch === undefined
+          ? []
+          : [{ output: operation.defaultBranch.output, origin: operation.defaultBranch.origin }]),
       ];
       for (const { output, origin } of origins) {
         const place = semanticProcess.controlPlaces.find(({ id }) => id === output);

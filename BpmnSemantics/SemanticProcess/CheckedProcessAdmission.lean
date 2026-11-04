@@ -162,10 +162,29 @@ def checkedExclusiveGatewayValid (flows : List CheckedSequenceFlow)
     | some flow => flow.sourceId = id && flow.condition.isNone
     | none => false
 
+/-- The exact profile keeps two conditioned candidates and a default (IGR-PROFILE-01); the nested scope-data profile's
+regions (`wide`) take any non-default outputs, conditioned or not, and an optional conditionless default (IGR-ADMIT-01),
+whose selection rule its admission leaf decides. -/
 def checkedInclusiveGatewayValid (flows : List CheckedSequenceFlow)
     (id : NodeId) (candidateFlowIds : List SequenceFlowId)
-    (defaultFlowId : SequenceFlowId) : Bool :=
-  checkedExclusiveGatewayValid flows id candidateFlowIds defaultFlowId
+    (defaultFlowId : Option SequenceFlowId) (wide : Bool) : Bool :=
+  if wide then
+    !candidateFlowIds.isEmpty &&
+      (candidateFlowIds.eraseDups).length = candidateFlowIds.length &&
+      candidateFlowIds.all (fun candidateId =>
+        match flows.find? fun flow => decide (flow.id = candidateId) with
+        | some flow =>
+            flow.sourceId = id && (flow.condition.isNone || sourceConditionValid flow.condition)
+        | none => false) &&
+      defaultFlowId.all fun defaultId =>
+        !candidateFlowIds.contains defaultId &&
+          match flows.find? fun flow => decide (flow.id = defaultId) with
+          | some flow => flow.sourceId = id && flow.condition.isNone
+          | none => false
+  else
+    match defaultFlowId with
+    | some defaultId => checkedExclusiveGatewayValid flows id candidateFlowIds defaultId
+    | none => false
 
 def inclusiveBranchReachesJoin (source : CheckedProcess)
     (splitId joinId : NodeId) (flowId : SequenceFlowId) : Bool :=
@@ -182,21 +201,24 @@ def inclusiveBranchReachesJoin (source : CheckedProcess)
                 | _ => false
           | _ => false
 
+/-- Each split names exactly one join and each join an existing split. The exact profile's branches are one User Task
+each; the nested scope-data profile's regions are paired by the region walk its admission leaf runs (IGR-ADMIT-01). -/
 def checkedInclusivePairingValid (source : CheckedProcess) : Bool :=
+  let wide := source.identity.semanticProfile == nestedScopeDataProfileId
   source.nodes.all fun
     | .inclusiveGatewayDiverging splitId candidates defaultFlow =>
         match source.nodes.filter fun
             | .inclusiveGatewayConverging _ paired => paired = splitId
             | _ => false with
         | [.inclusiveGatewayConverging joinId _] =>
-            (candidates ++ [defaultFlow]).all
+            wide || (candidates ++ defaultFlow.toList).all
               (inclusiveBranchReachesJoin source splitId joinId)
         | _ => false
     | .inclusiveGatewayConverging joinId paired =>
         source.nodes.any fun
           | .inclusiveGatewayDiverging splitId _ _ =>
               splitId = paired &&
-                incomingCount source.sequenceFlows joinId = 3
+                (wide || incomingCount source.sequenceFlows joinId = 3)
           | _ => false
     | _ => true
 
@@ -411,12 +433,15 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
                 | some flow => flow.sourceId = id && sourceConditionValid flow.condition
                 | none => false
   | .inclusiveGatewayDiverging id candidateFlowIds defaultFlowId =>
+      -- IGR-ADMIT-01: the nested scope-data profile (`mixed && variableMerge`) admits two or more branches.
       incomingCount flows id = 1 &&
-        outgoingCount flows id = 3 &&
-        checkedInclusiveGatewayValid flows id candidateFlowIds defaultFlowId
+        outgoingCount flows id = candidateFlowIds.length + defaultFlowId.toList.length &&
+        (if mixed && variableMerge then outgoingCount flows id ≥ 2 else outgoingCount flows id = 3) &&
+        checkedInclusiveGatewayValid flows id candidateFlowIds defaultFlowId (mixed && variableMerge)
   | .inclusiveGatewayConverging id pairedGatewayId =>
       nonempty pairedGatewayId.value &&
-        incomingCount flows id = 3 && outgoingCount flows id = 1
+        (if mixed && variableMerge then incomingCount flows id ≥ 2 else incomingCount flows id = 3) &&
+        outgoingCount flows id = 1
   | .eventBasedGateway id =>
       incomingCount flows id = 1 && outgoingCount flows id = 2
   | .globalSynchronousCompensationThrowEvent id =>

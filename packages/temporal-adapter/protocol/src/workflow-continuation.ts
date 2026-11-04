@@ -548,7 +548,7 @@ function isSelectedBranchSet(value: unknown): boolean {
   return isRecord(value) && hasOnlyKeys(value, ["owner", "selectionKey", "expectedInputs"]) &&
     isScopeId(value.owner) && isNonemptyString(value.selectionKey) &&
     Array.isArray(value.expectedInputs) &&
-    (value.expectedInputs.length === 1 || value.expectedInputs.length === 2) &&
+    value.expectedInputs.length >= 1 &&
     value.expectedInputs.every(isNonemptyString) &&
     new Set(value.expectedInputs).size === value.expectedInputs.length;
 }

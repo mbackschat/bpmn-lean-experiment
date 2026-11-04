@@ -363,7 +363,8 @@ inductive SemanticOperation where
       (origin : BpmnElementOrigin)
       (input : ControlPlaceId)
       (candidates : List InclusiveCandidate)
-      (defaultBranch : InclusiveDefaultBranch)
+      -- Absent only when the source declares no default; admission then requires an unconditioned candidate (IGR-ADMIT-01).
+      (defaultBranch : Option InclusiveDefaultBranch)
       (selectionKey : String)
   | synchronizeSelected
       (id : OperationId)

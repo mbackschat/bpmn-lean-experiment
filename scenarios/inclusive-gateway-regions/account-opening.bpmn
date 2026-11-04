@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_AccountOpening" targetNamespace="urn:bpmn-lean:account-opening"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_AccountOpening" name="Open a customer account" isExecutable="true">
+    <startEvent id="ApplicationReceived" name="Application received" />
+    <subProcess id="AssessApplicant" name="Assess applicant">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="riskRating">unrated</camunda:inputParameter>
+          <camunda:inputParameter name="residency">unknown</camunda:inputParameter>
+          <camunda:inputParameter name="channel">unknown</camunda:inputParameter>
+          <camunda:outputParameter name="riskRating">${riskRating}</camunda:outputParameter>
+          <camunda:outputParameter name="residency">${residency}</camunda:outputParameter>
+          <camunda:outputParameter name="channel">${channel}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="AssessmentOpened" name="Assessment opened" />
+      <userTask id="AssessApplicantTask" name="Assess applicant" />
+      <endEvent id="AssessmentClosed" name="Assessment closed" />
+      <sequenceFlow id="Flow_AssessmentOpened" sourceRef="AssessmentOpened" targetRef="AssessApplicantTask" />
+      <sequenceFlow id="Flow_Assessed" sourceRef="AssessApplicantTask" targetRef="AssessmentClosed" />
+    </subProcess>
+    <inclusiveGateway id="RequiredChecks" name="Required checks" default="Flow_Standard" />
+    <subProcess id="EnhancedDueDiligence" name="Enhanced due diligence">
+      <startEvent id="DueDiligenceOpened" name="Due diligence opened" />
+      <userTask id="VerifySourceOfFunds" name="Verify source of funds" />
+      <endEvent id="DueDiligenceClosed" name="Due diligence closed" />
+      <sequenceFlow id="Flow_DueDiligenceOpened" sourceRef="DueDiligenceOpened" targetRef="VerifySourceOfFunds" />
+      <sequenceFlow id="Flow_FundsVerified" sourceRef="VerifySourceOfFunds" targetRef="DueDiligenceClosed" />
+    </subProcess>
+    <userTask id="CollectTaxResidencyForm" name="Collect tax residency form" />
+    <serviceTask id="VerifyIdentityDocument" name="Verify identity document"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${verifyIdentityDocument}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="applicant">${application}</camunda:inputParameter>
+          <camunda:outputParameter name="identityCheck">${identityCheck}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="StandardVerification" name="Standard verification" />
+    <inclusiveGateway id="ChecksComplete" name="Checks complete" />
+    <userTask id="OpenAccount" name="Open account" />
+    <endEvent id="AccountOpened" name="Account opened" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicationReceived" targetRef="AssessApplicant" />
+    <sequenceFlow id="Flow_ApplicantAssessed" sourceRef="AssessApplicant" targetRef="RequiredChecks" />
+    <sequenceFlow id="Flow_DueDiligence" sourceRef="RequiredChecks" targetRef="EnhancedDueDiligence">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(riskRating,"high")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_TaxResidency" sourceRef="RequiredChecks" targetRef="CollectTaxResidencyForm">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(residency,"foreign")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_IdentityDocument" sourceRef="RequiredChecks" targetRef="VerifyIdentityDocument">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(channel,"online")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Standard" sourceRef="RequiredChecks" targetRef="StandardVerification" />
+    <sequenceFlow id="Flow_DueDiligenceDone" sourceRef="EnhancedDueDiligence" targetRef="ChecksComplete" />
+    <sequenceFlow id="Flow_TaxResidencyDone" sourceRef="CollectTaxResidencyForm" targetRef="ChecksComplete" />
+    <sequenceFlow id="Flow_IdentityDocumentDone" sourceRef="VerifyIdentityDocument" targetRef="ChecksComplete" />
+    <sequenceFlow id="Flow_StandardDone" sourceRef="StandardVerification" targetRef="ChecksComplete" />
+    <sequenceFlow id="Flow_ChecksComplete" sourceRef="ChecksComplete" targetRef="OpenAccount" />
+    <sequenceFlow id="Flow_AccountOpened" sourceRef="OpenAccount" targetRef="AccountOpened" />
+  </process>
+</definitions>

@@ -400,8 +400,9 @@ export type CheckedNode =
       kind: CheckedNodeKind.InclusiveGateway;
       id: string;
       direction: GatewayDirection.Diverging;
-      candidateFlowIds: [string, string];
-      defaultFlowId: string;
+      /** Every non-default output, conditioned or not, in canonical order. */
+      candidateFlowIds: [string, ...string[]];
+      defaultFlowId?: string;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.InclusiveGateway;

@@ -15,6 +15,7 @@
       "Clause 10.5.3",
       "Clause 10.5.4",
       "Clause 10.6.2",
+      "Clause 10.6.3",
       "Clause 10.6.4",
       "Clause 13.1",
       "Clause 13.2",
@@ -23,6 +24,7 @@
       "Clause 13.3.4",
       "Clause 13.4.1",
       "Clause 13.4.2",
+      "Clause 13.4.3",
       "Clause 13.5.6"
     ]
   },
@@ -78,6 +80,7 @@
       "terminal-forks",
       "send-tasks",
       "exclusive-gateway-without-default",
+      "inclusive-gateway-regions",
       "successful-effect-result"
     ],
     "extensions": [
@@ -95,6 +98,8 @@
       "CIB-AGR-0006",
       "CIB-AGR-0015",
       "CIB-AGR-0016",
+      "CIB-AGR-0017",
+      "CIB-CFG-0005",
       "CIB-CFG-0009",
       "CIB-EXT-0005",
       "CIB-EXT-0006",
@@ -106,6 +111,7 @@
       "CIB-EXT-0023",
       "CIB-INT-0001",
       "CIB-INT-0003",
+      "CIB-INT-0005",
       "CIB-OP-0001",
       "CIB-OP-0010"
     ]
@@ -166,7 +172,10 @@
     "exactly-once-external-effects",
     "exclusive-gateways-inside-sub-process-or-called-bodies",
     "choices-without-a-default-after-an-effect-result",
-    "inclusive-and-event-based-gateways",
+    "event-based-gateways",
+    "inclusive-gateways-inside-sub-process-or-called-bodies",
+    "inclusive-gateways-beside-choices-cycles-or-call-activities",
+    "inclusive-regions-with-pass-through-unpaired-or-unstructured-branches",
     "cycles-without-a-user-or-service-task",
     "cycles-resuming-only-inside-a-called-process",
     "boundary-events",

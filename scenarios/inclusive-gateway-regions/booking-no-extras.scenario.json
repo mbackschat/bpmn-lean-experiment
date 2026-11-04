@@ -1,0 +1,122 @@
+{
+  "kind": "scenario",
+  "id": "inclusive-gateway-regions-booking-no-extras",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "event-booking",
+    "relativePath": "scenarios/inclusive-gateway-regions/event-booking.bpmn",
+    "sha256": "3473e077fffba315202161234dd9a09d1a462a38e6b5ce13896ab4511ed5bc2d",
+    "sourceOverlay": {
+      "id": "event-booking-handlers",
+      "sha256": "1dee28624390cbbbbb7ba5345593628664dc095f11806935dd134ccfc43bdc8c"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.6.3",
+      "BPMN 2.0.2 Clause 10.6.4",
+      "BPMN 2.0.2 Clause 13.4.3"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0017",
+      "CIB-CFG-0005",
+      "CIB-EXT-0020",
+      "CIB-INT-0005"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_EventBooking",
+      "instanceId": "EventBooking_3",
+      "initialVariables": [
+        {
+          "name": "catering",
+          "value": {
+            "kind": "string",
+            "value": "no"
+          }
+        },
+        {
+          "name": "event",
+          "value": {
+            "kind": "string",
+            "value": "Team offsite"
+          }
+        },
+        {
+          "name": "technology",
+          "value": {
+            "kind": "string",
+            "value": "no"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:6ede22d12508587bd891dd11357e8737439a891f1c8ac20378a76bba97c2add8",
+      "effectId": {
+        "processInstanceId": "EventBooking_3",
+        "elementId": "QuoteEvent",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "quote",
+            "value": {
+              "kind": "string",
+              "value": "Q-42"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-attendee-list",
+      "taskId": {
+        "processInstanceId": "EventBooking_3",
+        "elementId": "ConfirmAttendeeList",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-book-venue",
+      "taskId": {
+        "processInstanceId": "EventBooking_3",
+        "elementId": "BookVenue",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-send-confirmation",
+      "taskId": {
+        "processInstanceId": "EventBooking_3",
+        "elementId": "SendConfirmation",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

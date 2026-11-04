@@ -131,6 +131,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [event-race-admission.ts](src/event-race-admission.ts) | Well-formedness of the event-race await operation |
 | [semantic-process-event-race-runtime.ts](src/semantic-process-event-race-runtime.ts) | Atomic replacement of one Gateway token with both waits and their ownership record |
 | [inclusive-gateway-admission.ts](src/inclusive-gateway-admission.ts) | Standalone contract and pairing admission for selected-branch synchronization |
+| [inclusive-region-admission.ts](src/inclusive-region-admission.ts) | Region walk and root Inclusive region admission over checked graphs and Programs |
 | [semantic-process-inclusive-gateway-runtime.ts](src/semantic-process-inclusive-gateway-runtime.ts) | Selected-branch split and join for structured Inclusive Gateway regions |
 | [message-channel.ts](src/message-channel.ts) | Closed Message-channel validation and equality |
 | [semantic-process-message.ts](src/semantic-process-message.ts) | Message activation, delivery, refusal, and projection |

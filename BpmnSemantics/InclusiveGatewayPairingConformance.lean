@@ -21,8 +21,8 @@ def region (label input output key : String) : List SemanticOperation :=
           expectedJoinInput := ⟨label ++ "1"⟩, origin := { elementId := ⟨label ++ "1"⟩ } }
       , { condition := .isPresent "y", output := ⟨label ++ "2"⟩,
           expectedJoinInput := ⟨label ++ "2"⟩, origin := { elementId := ⟨label ++ "2"⟩ } } ]
-      { output := ⟨label ++ "3"⟩, expectedJoinInput := ⟨label ++ "3"⟩,
-        origin := { elementId := ⟨label ++ "3"⟩ } } key ]
+      (some { output := ⟨label ++ "3"⟩, expectedJoinInput := ⟨label ++ "3"⟩,
+              origin := { elementId := ⟨label ++ "3"⟩ } }) key ]
 
 def pairedProgram (secondKey thirdKey : String) : Program :=
   let processId : ProcessId := ⟨"P"⟩

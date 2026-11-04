@@ -7,6 +7,7 @@ import type { ScopeDataAccess } from "./concurrent-scope-data-availability.js";
 import { callMappingsAdmitted, scopeCountAdmitted, scopeLocalRecordAdmitted } from "./nested-scope-data-admission.js";
 import type { NestedScopeStartNames } from "./nested-scope-data-admission.js";
 import { embeddedScopeDataBearing } from "./scope-data-bearing.js";
+import { checkedRegionGraph, inclusiveRegionsAdmitted, inclusiveRegionsProgramAdmitted } from "./inclusive-region-admission.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import type { CheckedNode, CheckedSequenceFlow } from "./checked-process-contract.js";
 import { branchesReachWorkOrEnd, branchesStartWithWork } from "./nested-scope-branch-work.js";
@@ -506,11 +507,14 @@ function callDataAdmitted(callData: CallDataInterface, data: ModelData | null): 
   }
 }
 
-/** CSD-ADMIT-01's Service Task data and CMCALL-ADMIT-01's Call data. */
-function checkedKind(node: CheckedNode, data: ModelData | null, passThrough: boolean): RawBodyNodeKind | null {
+/**
+ * CSD-ADMIT-01's Service Task data and CMCALL-ADMIT-01's Call data. `structured` marks the nested scope-data profile,
+ * whose pass-through Tasks (PTPB-ADMIT-01) and Inclusive regions (IGR-ADMIT-01, as fork and join) this analysis reads.
+ */
+function checkedKind(node: CheckedNode, data: ModelData | null, structured: boolean): RawBodyNodeKind | null {
   switch (node.kind) {
     case CheckedNodeKind.NonOperationalTask:
-    case CheckedNodeKind.NoneIntermediateThrowEvent: return passThrough ? RawBodyNodeKind.Pass : null;
+    case CheckedNodeKind.NoneIntermediateThrowEvent: return structured ? RawBodyNodeKind.Pass : null;
     case CheckedNodeKind.NoneStartEvent: return RawBodyNodeKind.Start;
     case CheckedNodeKind.NoneEndEvent: return RawBodyNodeKind.End;
     case CheckedNodeKind.UserTask: return node.metadata === undefined ? RawBodyNodeKind.Task : null;
@@ -521,6 +525,8 @@ function checkedKind(node: CheckedNode, data: ModelData | null, passThrough: boo
     case CheckedNodeKind.ParallelGateway:
       return node.direction === GatewayDirection.Diverging ? RawBodyNodeKind.Fork
         : node.direction === GatewayDirection.Converging ? RawBodyNodeKind.Join : null;
+    case CheckedNodeKind.InclusiveGateway:
+      return !structured ? null : node.direction === GatewayDirection.Diverging ? RawBodyNodeKind.Fork : RawBodyNodeKind.Join;
     default: return null;
   }
 }
@@ -536,14 +542,17 @@ function checkedData(graph: NestedScopeControlCheckedGraph): ModelData | null {
     : { records, handlers: new Set(services.map(({ descriptor }) => descriptor.operation)) };
 }
 
-function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | null, passThrough: boolean): Map<string, RawBody> | null {
+function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | null, structured: boolean): Map<string, RawBody> | null {
   const calledRoot = (processId: string): string | undefined => {
     const roots = graph.definitionScopes.filter(({ parentScopeId, originElementId }) =>
       parentScopeId === null && originElementId === processId);
     return roots.length === 1 ? roots[0]!.id : undefined;
   };
   const scopeOf = new Map(graph.nodeScopes.map(({ nodeId, scopeId }) => [nodeId, scopeId]));
-  if (scopeOf.size !== graph.nodes.length || graph.flows.some(flow => flow.condition !== null ||
+  // Only an Inclusive split's outputs carry conditions here; the leaf checks them (IGR-ADMIT-01 condition 3).
+  const gated = new Set(structured ? graph.nodes.flatMap(node => node.kind === CheckedNodeKind.InclusiveGateway &&
+    node.direction === GatewayDirection.Diverging ? [node.id] : []) : []);
+  if (scopeOf.size !== graph.nodes.length || graph.flows.some(flow => (flow.condition !== null && !gated.has(flow.sourceId)) ||
       scopeOf.get(flow.sourceId) === undefined || scopeOf.get(flow.sourceId) !== scopeOf.get(flow.targetId))) return null;
   const grouped = group(graph.nodes, node => scopeOf.get(node.id));
   if (grouped === null) return null;
@@ -555,7 +564,7 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | 
     const mapped = new Set<string>();
     const accesses = new Map<string, ScopeDataAccess>();
     for (const node of nodes) {
-      const kind = checkedKind(node, data, passThrough);
+      const kind = checkedKind(node, data, structured);
       if (kind === null) return null;
       if (node.kind === CheckedNodeKind.ServiceTask) accesses.set(node.id, accessOf(node));
       if (node.kind === CheckedNodeKind.EmbeddedSubProcess) children.set(node.id, node.childScopeId);
@@ -579,9 +588,10 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | 
 
 function checkedModel(graph: NestedScopeControlCheckedGraph): Admitted | null {
   const data = checkedData(graph);
-  const passThrough = graph.identity?.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
-  if (!scopeCountAdmitted(graph.identity?.semanticProfile ?? "", graph.definitionScopes.length)) return null;
-  return admittedModel(graph.definitionScopes, checkedBodies(graph, data, passThrough), data,
+  const structured = graph.identity?.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+  if (!scopeCountAdmitted(graph.identity?.semanticProfile ?? "", graph.definitionScopes.length) ||
+      (structured && !inclusiveRegionsAdmitted(checkedRegionGraph({ ...graph, sequenceFlows: graph.flows }), false))) return null;
+  return admittedModel(graph.definitionScopes, checkedBodies(graph, data, structured), data,
     terminalForks(graph.identity?.semanticProfile, graph.scopeLocalData));
 }
 
@@ -610,7 +620,10 @@ function inputsOf(operation: SemanticOperation): readonly string[] {
     case SemanticOperationKind.Duplicate:
     case SemanticOperationKind.ReachNoneEnd:
       return [operation.input];
+    case SemanticOperationKind.SelectMany:
+      return [operation.input];
     case SemanticOperationKind.Synchronize:
+    case SemanticOperationKind.SynchronizeSelected:
     case SemanticOperationKind.MergeExclusive:
       return operation.inputs;
     default:
@@ -621,7 +634,7 @@ function inputsOf(operation: SemanticOperation): readonly string[] {
 /** The lowered child Start is elided; this synthetic vertex stands for the child's entry place. */
 const childStart = (scope: string): string => `start:${scope}`;
 
-function programBodies(program: SemanticProcessProgram, data: ModelData | null, passThrough: boolean): Map<string, RawBody> | null {
+function programBodies(program: SemanticProcessProgram, data: ModelData | null, structured: boolean): Map<string, RawBody> | null {
   const scopeOf = new Map(program.operationScopes.map(({ operationId, scopeId }) => [operationId, scopeId]));
   const completions = program.operations.filter(({ kind }) => kind === SemanticOperationKind.CompleteScope);
   const returns = program.operations.filter((operation): operation is ReturnProcessOperation =>
@@ -670,9 +683,16 @@ function programBodies(program: SemanticProcessProgram, data: ModelData | null, 
           break;
         case SemanticOperationKind.Duplicate: kind = RawBodyNodeKind.Fork; outputs = follow(operation.outputs); break;
         case SemanticOperationKind.Synchronize: kind = RawBodyNodeKind.Join; outputs = follow([operation.output]); break;
+        case SemanticOperationKind.SelectMany:
+          kind = RawBodyNodeKind.Fork;
+          outputs = structured ? follow([...operation.candidates.map(({ output }) => output),
+            ...(operation.defaultBranch === undefined ? [] : [operation.defaultBranch.output])]) : null;
+          break;
+        case SemanticOperationKind.SynchronizeSelected:
+          kind = RawBodyNodeKind.Join; outputs = structured ? follow([operation.output]) : null; break;
         case SemanticOperationKind.MergeExclusive:
           // PTPB-ADMIT-01: under the nested scope-data profile a one-input merge is a lowered pass-through Task.
-          kind = passThrough && operation.inputs.length === 1 ? RawBodyNodeKind.Pass : RawBodyNodeKind.Merge;
+          kind = structured && operation.inputs.length === 1 ? RawBodyNodeKind.Pass : RawBodyNodeKind.Merge;
           outputs = follow([operation.output]);
           break;
         case SemanticOperationKind.ReachNoneEnd: kind = RawBodyNodeKind.End; outputs = []; break;
@@ -775,7 +795,8 @@ function programModel(program: SemanticProcessProgram): Admitted | null {
     handlers: new Set(program.operations.flatMap(operation =>
       operation.kind === SemanticOperationKind.AwaitEffect ? [operation.effect.descriptor.operation] : [])),
   } : null;
-  return rootCompletion.length === 1 ? admittedModel(program.definitionScopes, programBodies(program, data, structured), data,
+  return rootCompletion.length === 1 && (!structured || inclusiveRegionsProgramAdmitted(program))
+    ? admittedModel(program.definitionScopes, programBodies(program, data, structured), data,
     terminalForks(program.identity.semanticProfile, program.scopeLocalData)) : null;
 }
 
@@ -795,10 +816,13 @@ const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
 /** The operation alphabet and the profile's lower scope bound; the analyses above bound depth, tasks and bursts. */
 export function nestedScopeControlProgramShape(operations: readonly SemanticOperation[], semanticProfile: string,
   scopeCount: number): boolean {
-  return scopeCountAdmitted(semanticProfile, scopeCount) && operations.every(({ kind }) => programOperationKinds.has(kind));
+  const regions = semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+  return scopeCountAdmitted(semanticProfile, scopeCount) && operations.every(({ kind }) => programOperationKinds.has(kind) ||
+    (regions && (kind === SemanticOperationKind.SelectMany || kind === SemanticOperationKind.SynchronizeSelected)));
 }
 
 export function nestedScopeControlCheckedShape(nodes: readonly CheckedNode[], semanticProfile: string,
   scopeCount: number): boolean {
-  return scopeCountAdmitted(semanticProfile, scopeCount) && nodes.every(({ kind }) => checkedNodeKinds.has(kind));
+  return scopeCountAdmitted(semanticProfile, scopeCount) && nodes.every(({ kind }) => checkedNodeKinds.has(kind) ||
+    (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData && kind === CheckedNodeKind.InclusiveGateway));
 }

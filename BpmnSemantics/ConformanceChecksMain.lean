@@ -95,6 +95,7 @@ public import BpmnSemantics.ReceiveTaskConformance
 public import BpmnSemantics.RecurringTimerLifetimeConformance
 public import BpmnSemantics.RegionalRemovalOwnerCoverageConformanceCheckFixtures
 public import BpmnSemantics.RootParallelForksConformance
+public import BpmnSemantics.InclusiveRegionsConformance
 public import BpmnSemantics.RuntimeStateActivityOccurrenceConformance
 public import BpmnSemantics.RuntimeStateControllerConformanceCheckFixtures
 public import BpmnSemantics.RuntimeStateIdentityBoundConformance
@@ -267,6 +268,7 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("RecurringTimerLifetimeConformance", BpmnSemantics.RecurringTimerLifetimeConformance.checks),
   ("RegionalRemovalOwnerCoverageConformance", BpmnSemantics.RegionalRemovalOwnerCoverageConformance.checks),
   ("RootParallelForksConformance", BpmnSemantics.RootParallelForksConformance.rootParallelForksConformanceChecks),
+  ("InclusiveRegionsConformance", BpmnSemantics.InclusiveRegionsConformance.inclusiveRegionsConformanceChecks),
   ("RuntimeStateActivityOccurrenceConformance", BpmnSemantics.RuntimeStateWellFormedConformance.runtimeStateActivityOccurrenceConformanceChecks),
   ("RuntimeStateControllerConformance", BpmnSemantics.RuntimeStateWellFormedConformance.runtimeStateControllerConformanceChecks),
   ("RuntimeStateIdentityBoundConformance", BpmnSemantics.RuntimeStateIdentityBoundConformance.checks),

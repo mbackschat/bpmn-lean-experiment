@@ -305,8 +305,9 @@ inductive CheckedNode where
       (defaultFlowId : Option SequenceFlowId)
   | inclusiveGatewayDiverging
       (id : NodeId)
+      -- Every non-default output, conditioned or not (IGR-ADMIT-01).
       (candidateFlowIds : List SequenceFlowId)
-      (defaultFlowId : SequenceFlowId)
+      (defaultFlowId : Option SequenceFlowId)
   | inclusiveGatewayConverging
       (id : NodeId)
       (pairedGatewayId : NodeId)

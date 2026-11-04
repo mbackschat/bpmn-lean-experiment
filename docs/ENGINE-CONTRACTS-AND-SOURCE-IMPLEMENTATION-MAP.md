@@ -51,7 +51,7 @@ Private Message handler: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](
 - a guarded catalog of answer-free target scenarios with CIB evidence required only by declared CIB target sets
 - produced checked-process and Semantic Process artifacts
 - nullable checked conditions, one typed Simple Boolean expression union, and declaration-ordered `choose` candidates
-- exact divergent/convergent Inclusive Gateway checked-node arms, canonically ordered `selectMany` candidates, and fixed-cardinality `synchronizeSelected` inputs
+- divergent/convergent Inclusive Gateway checked-node arms, canonically ordered `selectMany` candidates, and profile-bounded `synchronizeSelected` inputs
 - exact divergent Event-Based Gateway checked-node arm and named operation-addressed Message/exact-duration Timer arms on `awaitEventRace`, including both configuration-flow origins
 - exact Message Start checked-node, channel-bound `initiateMessage`, and `triggerMessageStart` scenario/start shapes with strict first-stimulus placement
 - registered exact Timer Start checked-node, duration-bound `initiateTimer`, and `triggerTimerStart` scenario/start shapes with strict first-stimulus placement
@@ -109,7 +109,7 @@ Private Message handler: [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](
 - registered checked/program support for `correlatedPayloadMessageCatchEvent` and `awaitCorrelatedPayloadMessage`, preserving the exact channel, key/property identities, and context-specific scalar selectors under the Message key-correlation profile
 - bounded checked Compensation declaration and global synchronous throw node, with strict shared-schema and Lean decoding, exact dormant-scope/profile admission, and deterministic lowering to the existing optional `compensationActivityRetention`, `compensationEventSubProcessSnapshots`, `compensationExecution`, and `triggerCompensation` contracts
 - `choose` carries nonempty declaration-ordered Simple Boolean candidates and one distinct default; only the bounded mixed-task profiles permit counts other than two; see [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md#mixed-task-control-flow)
-- `selectMany` carries two canonically ordered typed Simple Boolean candidates plus one default, each retaining its branch-local expected join input and one split-derived selection key; `synchronizeSelected` waits for the selected subset without changing `synchronize`
+- `selectMany` carries canonically ordered typed Simple Boolean candidates plus an optional default, each retaining its branch-local expected join input and one split-derived selection key; `synchronizeSelected` waits for the selected subset without changing `synchronize`
 - `awaitEventRace` carries one named operation-addressed Message arm and one named exact-`PT1S` Timer arm with their configuration-flow origins, catch identities, and distinct winner outputs; its configuration Flows are not control places
 - `awaitMessageBoundedUserTask` carries one User Task body and one operation-addressed payload-free Message handler with distinct normal and boundary outputs under one Activity-owned operation
 - `mergeExclusive` carries canonical nonempty inputs and one output, with per-offered-token declarative pass-through, a unique-offer raw helper, and complete private owner/input frontier execution; only the registered cycle profile fixes three inputs

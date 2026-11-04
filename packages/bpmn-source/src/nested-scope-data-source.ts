@@ -25,6 +25,7 @@ import { effectResultReachesDefaultlessChoice } from "./defaultless-choice-effec
 import { definitionScopeId } from "./scoped-flow-elements.js";
 import { projectSerialBusinessServiceTask } from "./serial-business-task-source.js";
 import { projectExclusiveGateway } from "./simple-boolean-exclusive-gateway-source.js";
+import { projectInclusiveGateway } from "./inclusive-gateway-source.js";
 import type { AdmittedSourceOverlay } from "./source-overlay.js";
 
 const camunda = "http://camunda.org/schema/1.0/bpmn";
@@ -62,6 +63,8 @@ type ScopeDataReader = Readonly<{
   sendTasks: boolean;
   /** XND-ADMIT-01: root Choices without a default, refused where an effect result's closure can reach them. */
   defaultlessChoices: boolean;
+  /** IGR-ADMIT-01: Inclusive Gateways in any scope, whose admission keeps them to root regions. */
+  inclusiveRegions: boolean;
   projectCall: (element: ElementRecord) => CheckedNode | undefined;
   /** The caller Process of the read roots, or `undefined` when the roots and Calls do not form one call forest. */
   caller: (roots: readonly ProcessRoot[], collected: Collected) => string | undefined;
@@ -74,7 +77,7 @@ type ScopeDataReader = Readonly<{
 
 const nestedScopeDataReader: ScopeDataReader = {
   semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, rootChoices: true, nonOperationalTasks: true,
-  sendTasks: true, defaultlessChoices: true,
+  sendTasks: true, defaultlessChoices: true, inclusiveRegions: true,
   projectCall: projectMappedCall,
   caller: callerProcess, overlayRequired: true,
   // CSSD-ADMIT-01: the routed analysis refuses the merges and forking-root Calls (RPF-ADMIT-01) the shared gateway
@@ -83,14 +86,15 @@ const nestedScopeDataReader: ScopeDataReader = {
   admitted: (checkedProcess, policy) => structuredScopeDataCheckedAnalysis(checkedProcess) !== null &&
     !effectResultReachesDefaultlessChoice(checkedProcess) &&
     (policy.effectBindings.length > 0 || checkedProcess.nodes.some(node =>
-      node.kind === CheckedNodeKind.ParallelGateway && node.direction === GatewayDirection.Diverging)),
+      (node.kind === CheckedNodeKind.ParallelGateway || node.kind === CheckedNodeKind.InclusiveGateway) &&
+      node.direction === GatewayDirection.Diverging)),
   refusal: "The checked graph does not satisfy nested scope-data admission.",
 };
 
 // Checked admission of the embedded completion profile already runs its nested scope-control and data analysis.
 const embeddedScopeDataReader: ScopeDataReader = {
   semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, rootChoices: false, nonOperationalTasks: false,
-  sendTasks: false, defaultlessChoices: false,
+  sendTasks: false, defaultlessChoices: false, inclusiveRegions: false,
   projectCall: projectEmbeddedCall,
   caller: callForestCaller, overlayRequired: false,
   admitted: checkedProcess => (checkedProcess.identity.sourceOverlay !== null) ===
@@ -191,7 +195,10 @@ function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overl
 function readScope(elements: readonly ElementRecord[], scopeId: string, depth: number, definitions: ElementRecord,
   policy: MappedServiceTaskSourcePolicy, reader: ScopeDataReader, collected: Collected): string | null {
   const flowElements = elements.filter(element => element.$type === "bpmn:SequenceFlow");
-  const conditional = reader.rootChoices && depth === 0 && flowElements.some(flow => flow.conditionExpression !== undefined);
+  // An Inclusive split's conditions are read in any scope, so a body region reaches admission and is refused there.
+  const inclusive = reader.inclusiveRegions && elements.some(element => element.$type === bpmnTypes.inclusiveGatewayType);
+  const conditional = ((reader.rootChoices && depth === 0) || inclusive) &&
+    flowElements.some(flow => flow.conditionExpression !== undefined);
   const flows = conditional ? projectCheckedSequenceFlows(flowElements, definitions.expressionLanguage, undefined)
     : projectMappedSuccessSequenceFlows(flowElements);
   if (flows === undefined) return "Sequence Flows exceed the selected condition contract.";
@@ -247,6 +254,10 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
       case bpmnTypes.intermediateThrowEventType:
         if (!reader.nonOperationalTasks) return "The flow element is outside the nested scope-data contract.";
         node = projectNoneThrow(element);
+        break;
+      case bpmnTypes.inclusiveGatewayType:
+        if (!reader.inclusiveRegions) return "The flow element is outside the nested scope-data contract.";
+        node = projectInclusiveGateway(element, readId(element) ?? "", flows, elements, true);
         break;
       case "bpmn:ParallelGateway":
       case "bpmn:ExclusiveGateway":

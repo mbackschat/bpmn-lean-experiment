@@ -695,7 +695,7 @@ function operationOutputs(
     case SemanticOperationKind.SelectMany:
       return [
         ...operation.candidates.map(({ output }) => output),
-        operation.defaultBranch.output,
+        ...(operation.defaultBranch === undefined ? [] : [operation.defaultBranch.output]),
       ];
     case SemanticOperationKind.SynchronizeSelected:
       return [operation.output];

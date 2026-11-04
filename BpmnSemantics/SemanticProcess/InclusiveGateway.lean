@@ -101,14 +101,14 @@ theorem evaluated_true_candidate_membership_iff
                     inductionHypothesis restSelected restEq
                   grind
 
-/-- Produce all true branch/output pairs, or the default pair exactly when none is true. -/
+/-- Produce all true branch/output pairs, or the default pair exactly when none is true. Without a default an empty selection stays empty, which `selectManyState?` disables; admission keeps it unreachable through an unconditioned candidate (IGR-ADMIT-01). -/
 def evaluateInclusiveBranches (candidates : List InclusiveCandidate)
-    (defaultBranch : InclusiveDefaultBranch)
+    (defaultBranch : Option InclusiveDefaultBranch)
     (bindings : List VariableBinding) :
     Option (List (ControlPlaceId × ControlPlaceId)) := do
   let selected ← evaluateTrueInclusiveCandidates bindings candidates
   if selected.isEmpty then
-    pure [(defaultBranch.output, defaultBranch.expectedJoinInput)]
+    pure (defaultBranch.toList.map fun branch => (branch.output, branch.expectedJoinInput))
   else
     pure (selected.map fun candidate =>
       (candidate.output, candidate.expectedJoinInput))
@@ -125,7 +125,7 @@ theorem evaluated_default_iff_no_candidate_true
     (defaultDistinct : ∀ candidate ∈ candidates,
       (candidate.output, candidate.expectedJoinInput) ≠
         (defaultBranch.output, defaultBranch.expectedJoinInput)) :
-    evaluateInclusiveBranches candidates defaultBranch bindings =
+    evaluateInclusiveBranches candidates (some defaultBranch) bindings =
         some [(defaultBranch.output, defaultBranch.expectedJoinInput)] ↔
       ∀ candidate ∈ candidates,
         evaluateSimpleBooleanExpression candidate.condition bindings ≠
@@ -173,7 +173,7 @@ theorem evaluated_candidate_output_membership_iff
         (defaultBranch.output, defaultBranch.expectedJoinInput))
     (candidateEvaluation : evaluateTrueInclusiveCandidates bindings candidates =
       some selectedCandidates)
-    (branchEvaluation : evaluateInclusiveBranches candidates defaultBranch
+    (branchEvaluation : evaluateInclusiveBranches candidates (some defaultBranch)
       bindings = some selected) :
     (candidate.output, candidate.expectedJoinInput) ∈ selected ↔
       evaluateSimpleBooleanExpression candidate.condition bindings =
@@ -221,9 +221,20 @@ theorem evaluated_candidate_output_membership_iff
             (item.output, item.expectedJoinInput)) (head :: tail)
         exact List.mem_map.mpr ⟨candidate, selectedMember, rfl⟩
 
+/-- Without a default, a successful selection is exactly the true candidates' pairs, empty when none holds. -/
+private theorem evaluated_without_default_is_true_subset
+    (bindings : List VariableBinding) (candidates : List InclusiveCandidate)
+    (selectedCandidates : List InclusiveCandidate)
+    (evaluation : evaluateTrueInclusiveCandidates bindings candidates =
+      some selectedCandidates) :
+    evaluateInclusiveBranches candidates none bindings =
+      some (selectedCandidates.map fun candidate =>
+        (candidate.output, candidate.expectedJoinInput)) := by
+  cases selectedCandidates <;> simp [evaluateInclusiveBranches, evaluation]
+
 def selectManyState? (state : RuntimeState) (input : ControlPlaceId)
     (candidates : List InclusiveCandidate)
-    (defaultBranch : InclusiveDefaultBranch) (selectionKey : String) :
+    (defaultBranch : Option InclusiveDefaultBranch) (selectionKey : String) :
     Option RuntimeState :=
   match onlyTokenOwner? state input with
   | none => none
@@ -275,7 +286,7 @@ def synchronizeSelectedState? (state : RuntimeState)
 
 /-- Declarative selected-branch split relation with explicit ownership, evaluation, freshness, and state-update premises. -/
 inductive SelectManyStep : RuntimeState → ControlPlaceId →
-    List InclusiveCandidate → InclusiveDefaultBranch → String →
+    List InclusiveCandidate → Option InclusiveDefaultBranch → String →
     RuntimeState → Prop where
   | permitted before input candidates defaultBranch selectionKey owner selected
       (owned : onlyTokenOwner? before input = some owner)
@@ -348,7 +359,7 @@ theorem synchronize_selected_exact_consumption_and_record_removal
 
 theorem selectManyState_sound (before after : RuntimeState)
     (input : ControlPlaceId) (candidates : List InclusiveCandidate)
-    (defaultBranch : InclusiveDefaultBranch) (selectionKey : String)
+    (defaultBranch : Option InclusiveDefaultBranch) (selectionKey : String)
     (result : selectManyState? before input candidates defaultBranch
       selectionKey = some after) :
     SelectManyStep before input candidates defaultBranch selectionKey after := by

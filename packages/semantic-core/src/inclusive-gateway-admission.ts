@@ -15,13 +15,15 @@ export function isWellFormedSelectManyOperation(
   placeIds: ReadonlySet<string>,
   placeOrigins: ReadonlyMap<string, string>,
 ): boolean {
+  const defaulted = "defaultBranch" in value;
   if (
-    !hasOnlyKeys(value, ["id", "kind", "origin", "input", "candidates", "defaultBranch", "selectionKey"]) ||
+    !hasOnlyKeys(value, ["id", "kind", "origin", "input", "candidates", ...(defaulted ? ["defaultBranch"] : []),
+      "selectionKey"]) ||
     !isPlaceReference(value.input, placeIds) ||
     !Array.isArray(value.candidates) ||
-    value.candidates.length !== 2 ||
+    value.candidates.length < 1 ||
     !isNonEmptyString(value.selectionKey) ||
-    !isWellFormedDefaultBranch(value.defaultBranch, placeIds, placeOrigins)
+    (defaulted && !isWellFormedDefaultBranch(value.defaultBranch, placeIds, placeOrigins))
   ) {
     return false;
   }
@@ -29,20 +31,14 @@ export function isWellFormedSelectManyOperation(
   if (!candidates.every((candidate) => isWellFormedCandidate(candidate, placeIds, placeOrigins))) {
     return false;
   }
-  const candidateRecords = candidates.filter(isRecord);
-  const outputs = [
-    ...candidateRecords.map(({ output }) => output),
-    isRecord(value.defaultBranch) ? value.defaultBranch.output : undefined,
-  ];
-  const expectedInputs = [
-    ...candidateRecords.map(({ expectedJoinInput }) => expectedJoinInput),
-    isRecord(value.defaultBranch) ? value.defaultBranch.expectedJoinInput : undefined,
-  ];
-  const origins = candidateRecords.map(({ origin }) =>
+  // A split has at least two branches, so its join synchronizes at least two inputs (IGR-ADMIT-01 condition 3).
+  const branches = [...candidates.filter(isRecord), ...(isRecord(value.defaultBranch) ? [value.defaultBranch] : [])];
+  const origins = candidates.filter(isRecord).map(({ origin }) =>
     isRecord(origin) ? origin.elementId : undefined
   );
-  return new Set(outputs).size === 3 &&
-    new Set(expectedInputs).size === 3 &&
+  return branches.length >= 2 &&
+    new Set(branches.map(({ output }) => output)).size === branches.length &&
+    new Set(branches.map(({ expectedJoinInput }) => expectedJoinInput)).size === branches.length &&
     origins.every(
       (origin, index) =>
         typeof origin === "string" &&
@@ -55,7 +51,7 @@ export function isWellFormedSynchronizeSelectedOperation(
   placeIds: ReadonlySet<string>,
 ): boolean {
   return hasOnlyKeys(value, ["id", "kind", "origin", "inputs", "output", "selectionKey"]) &&
-    isExactSortedPlaceTuple(value.inputs, placeIds, 3) &&
+    isSortedPlaceList(value.inputs, placeIds, 2) &&
     isPlaceReference(value.output, placeIds) &&
     isNonEmptyString(value.selectionKey);
 }
@@ -84,9 +80,10 @@ export function inclusiveOperationsArePaired(
     }
     const expectedInputs = [
       ...selection.candidates.map(({ expectedJoinInput }) => expectedJoinInput),
-      selection.defaultBranch.expectedJoinInput,
+      ...(selection.defaultBranch === undefined ? [] : [selection.defaultBranch.expectedJoinInput]),
     ].sort(compareCanonicalStrings);
-    return expectedInputs.every((input, index) => matching[0]?.inputs[index] === input);
+    return expectedInputs.length === matching[0].inputs.length &&
+      expectedInputs.every((input, index) => matching[0]?.inputs[index] === input);
   }) && joins.every(({ selectionKey }) =>
     selections.filter((selection) => selection.selectionKey === selectionKey).length === 1
   );
@@ -119,13 +116,13 @@ function isWellFormedDefaultBranch(
     placeOrigins.get(value.output) === value.origin.elementId;
 }
 
-function isExactSortedPlaceTuple(
+function isSortedPlaceList(
   value: unknown,
   placeIds: ReadonlySet<string>,
-  length: number,
+  minimum: number,
 ): boolean {
   return Array.isArray(value) &&
-    value.length === length &&
+    value.length >= minimum &&
     value.every(
       (item, index) =>
         isPlaceReference(item, placeIds) &&

@@ -10,6 +10,7 @@ public import BpmnSemantics.SemanticProcess.CompensationSourceLowering
 public import BpmnSemantics.SemanticProcess.InterruptingMessageEventSubProcessLowering
 import all BpmnSemantics.SemanticProcess.CheckedGraphValidation
 public import BpmnSemantics.SemanticProcess.GraphValidation
+import BpmnSemantics.SemanticProcess.InclusiveRegionWalk
 import all BpmnSemantics.SemanticProcess.GraphValidation
 meta import BpmnSemantics.PrivateEquationLemmas
 
@@ -190,29 +191,17 @@ def lowerConditionalCandidate (source : CheckedProcess)
         output := flowControlPlaceId flowId
         origin := { elementId := flowId } }
 
-def pairedInclusiveJoinId? (source : CheckedProcess)
-    (splitId : NodeId) : Option NodeId :=
-  source.nodes.findSome? fun
-    | .inclusiveGatewayConverging joinId pairedGatewayId =>
-        if pairedGatewayId = splitId then some joinId else none
-    | _ => none
-
-def expectedJoinInput (source : CheckedProcess) (splitId : NodeId)
+/-- IGR-BIND-01: the input of the paired join that the branch from `flowId` reaches, by the shared region walk. -/
+def expectedJoinInput (source : CheckedProcess) (_splitId : NodeId)
     (flowId : SequenceFlowId) : ControlPlaceId :=
-  let branchTarget := (source.sequenceFlows.find? fun flow =>
-    decide (flow.id = flowId && flow.sourceId = splitId)).map (·.targetId)
-  let joinId := pairedInclusiveJoinId? source splitId
-  match branchTarget, joinId with
-  | some taskId, some joinId =>
-      let inputs := source.sequenceFlows.filter fun flow =>
-        decide (flow.sourceId = taskId && flow.targetId = joinId)
-      flowControlPlaceId (inputs.head?.map (·.id) |>.getD ⟨""⟩)
-  | _, _ => ⟨""⟩
+  flowControlPlaceId ((InclusiveRegion.checkedBranchJoinInput? source flowId).getD ⟨""⟩)
 
+/-- An output without a condition lowers to the literal `true`: CIB takes it unconditionally and Clause 8.4.13 leaves it ungated (CIB-INT-0005). -/
 def lowerInclusiveCandidate (source : CheckedProcess)
     (splitId : NodeId) (flowId : SequenceFlowId) : InclusiveCandidate :=
   let candidate := lowerConditionalCandidate source flowId
-  { condition := candidate.condition
+  let unconditioned := (source.sequenceFlows.find? fun flow => decide (flow.id = flowId)).any (·.condition.isNone)
+  { condition := if unconditioned then .literal true else candidate.condition
     output := candidate.output
     expectedJoinInput := expectedJoinInput source splitId flowId
     origin := candidate.origin }
@@ -574,7 +563,7 @@ def lowerNode (source : CheckedProcess) :
         (firstPlace (incomingPlaces source id))
         (sortInclusiveCandidates
           (candidateFlowIds.map (lowerInclusiveCandidate source id)))
-        (lowerInclusiveDefaultBranch source id defaultFlowId)
+        (defaultFlowId.map (lowerInclusiveDefaultBranch source id))
         id.value, scopeId)
   | .inclusiveGatewayConverging id pairedGatewayId =>
       checkedNodeScopeId? source id |>.map fun scopeId =>

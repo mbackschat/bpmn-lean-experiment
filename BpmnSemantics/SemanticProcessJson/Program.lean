@@ -648,14 +648,15 @@ def decodeOperation (json : Json) :
           (← if defaulted then some <$> (ControlPlaceId.mk <$> stringField json "defaultOutput") else pure none)
           (← if defaulted then some <$> decodeSequenceFlowOrigin (← field json "defaultOrigin") else pure none))
   | "selectMany" =>
+      let defaulted := (json.getObjVal? "defaultBranch").isOk
       requireObjectShape json
-        ["candidates", "defaultBranch", "id", "input", "kind", "origin",
-          "selectionKey"]
+        ((if defaulted then ["candidates", "defaultBranch"] else ["candidates"]) ++
+          ["id", "input", "kind", "origin", "selectionKey"])
       pure
         (.selectMany id origin
           ⟨← stringField json "input"⟩
           (← decodeArray decodeInclusiveCandidate (← field json "candidates"))
-          (← decodeInclusiveDefaultBranch (← field json "defaultBranch"))
+          (← if defaulted then some <$> decodeInclusiveDefaultBranch (← field json "defaultBranch") else pure none)
           (← stringField json "selectionKey"))
   | "synchronizeSelected" =>
       requireObjectShape json

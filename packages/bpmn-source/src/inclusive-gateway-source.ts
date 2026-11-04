@@ -1,12 +1,19 @@
-/** Source projection for the bounded structured Inclusive Gateway region. */
+/**
+ * Source projection for structured Inclusive Gateway regions: the exact profile's one split over three User Tasks, and
+ * under `wide` the nested scope-data profile's regions of any admitted arity, unconditioned outputs and optional
+ * default (IGR-ADMIT-01), whose admission decides the rest.
+ */
 import {
   CheckedNodeKind,
   GatewayDirection,
+  RegionVertexKind,
   compareCanonicalStrings,
+  regionPairedJoin,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
   CheckedSequenceFlow,
+  RegionGraph,
 } from "@bpmn-lean/semantic-core";
 
 import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" with {
@@ -30,6 +37,7 @@ export function projectInclusiveGateway(
   id: string,
   flows: ReadonlyArray<CheckedSequenceFlow>,
   elements: ReadonlyArray<ElementRecord>,
+  wide = false,
 ): Extract<CheckedNode, { kind: CheckedNodeKind.InclusiveGateway }> | undefined {
   if (!hasOnlyProjectedFlowElementKeys(
     element,
@@ -39,9 +47,10 @@ export function projectInclusiveGateway(
   }
   const incoming = flows.filter(({ targetId }) => targetId === id);
   const outgoing = flows.filter(({ sourceId }) => sourceId === id);
-  const direction = incoming.length === 1 && outgoing.length === 3
+  const branches = (count: number) => wide ? count >= 2 : count === 3;
+  const direction = incoming.length === 1 && branches(outgoing.length)
     ? GatewayDirection.Diverging
-    : incoming.length === 3 && outgoing.length === 1
+    : branches(incoming.length) && outgoing.length === 1
       ? GatewayDirection.Converging
       : undefined;
   if (
@@ -51,12 +60,13 @@ export function projectInclusiveGateway(
     return undefined;
   }
   if (direction === GatewayDirection.Diverging) {
-    return projectDivergingGateway(element, id, incoming, outgoing);
+    return wide ? projectWideDivergingGateway(element, id, outgoing)
+      : projectDivergingGateway(element, id, incoming, outgoing);
   }
   if (element.default !== undefined) {
     return undefined;
   }
-  const pairedGatewayId = derivePairedGatewayId(incoming, flows, elements);
+  const pairedGatewayId = derivePairedGatewayId(id, flows, elements);
   return pairedGatewayId === undefined
     ? undefined
     : {
@@ -104,27 +114,82 @@ function projectDivergingGateway(
   };
 }
 
+/**
+ * Every non-default output is a candidate, conditioned or not; the default, when named, carries no condition. Whether
+ * the outputs and default satisfy IGR-ADMIT-01 condition 3 is admission's decision, so a refused split stays visible.
+ */
+function projectWideDivergingGateway(
+  element: ElementRecord,
+  id: string,
+  outgoing: ReadonlyArray<CheckedSequenceFlow>,
+): Extract<
+  CheckedNode,
+  { kind: CheckedNodeKind.InclusiveGateway; direction: GatewayDirection.Diverging }
+> | undefined {
+  const defaultFlow = asElement(element.default);
+  const defaultFlowId = defaultFlow === undefined ? undefined : readId(defaultFlow);
+  const defaultCandidate = outgoing.find(({ id: flowId }) => flowId === defaultFlowId);
+  const [first, ...rest] = outgoing
+    .filter(({ id: flowId }) => flowId !== defaultFlowId)
+    .map(({ id: flowId }) => flowId)
+    .sort(compareCanonicalStrings);
+  if (first === undefined || (defaultFlowId !== undefined && defaultCandidate?.condition !== null)) {
+    return undefined;
+  }
+  return {
+    kind: CheckedNodeKind.InclusiveGateway,
+    id,
+    direction: GatewayDirection.Diverging,
+    candidateFlowIds: [first, ...rest],
+    ...(defaultFlowId === undefined ? {} : { defaultFlowId }),
+  };
+}
+
+/**
+ * IGR-BIND-01's walk over the scope's elements: the join's paired split is the one diverging Inclusive Gateway whose
+ * every branch reaches this join through a distinct input, passing nested regions whole.
+ */
 function derivePairedGatewayId(
-  joinInputs: ReadonlyArray<CheckedSequenceFlow>,
+  joinId: string,
   flows: ReadonlyArray<CheckedSequenceFlow>,
   elements: ReadonlyArray<ElementRecord>,
 ): string | undefined {
-  const branchSources = joinInputs.map(({ sourceId }) => sourceId);
-  if (new Set(branchSources).size !== 3) {
-    return undefined;
+  const graph = sourceRegionGraph(flows, elements);
+  const paired = [...graph.vertices.values()].filter((vertex) =>
+    vertex.kind === RegionVertexKind.Split && regionPairedJoin(graph, vertex)?.id === joinId
+  );
+  return paired.length === 1 ? paired[0]?.id : undefined;
+}
+
+function sourceVertexKind(type: unknown, inputs: number, outputs: number): RegionVertexKind {
+  switch (type) {
+    case bpmnTypes.userTaskType:
+    case bpmnTypes.serviceTaskType:
+    case bpmnTypes.sendTaskType:
+    case bpmnTypes.subProcessType: return RegionVertexKind.Work;
+    case bpmnTypes.taskType:
+    case bpmnTypes.manualTaskType:
+    case bpmnTypes.intermediateThrowEventType: return RegionVertexKind.Pass;
+    case bpmnTypes.parallelGatewayType:
+      return inputs === 1 ? RegionVertexKind.Fork : outputs === 1 ? RegionVertexKind.Join : RegionVertexKind.Other;
+    case bpmnTypes.inclusiveGatewayType:
+      return inputs === 1 ? RegionVertexKind.Split : outputs === 1 ? RegionVertexKind.InclusiveJoin : RegionVertexKind.Other;
+    case bpmnTypes.endEventType: return RegionVertexKind.End;
+    case bpmnTypes.callActivityType: return RegionVertexKind.Call;
+    default: return RegionVertexKind.Other;
   }
-  const splitIds = branchSources.map((taskId) => {
-    const task = elements.find((candidate) => readId(candidate) === taskId);
-    const taskInputs = flows.filter(({ targetId }) => targetId === taskId);
-    return task?.$type === bpmnTypes.userTaskType && taskInputs.length === 1
-      ? taskInputs[0]?.sourceId
-      : undefined;
+}
+
+function sourceRegionGraph(
+  flows: ReadonlyArray<CheckedSequenceFlow>,
+  elements: ReadonlyArray<ElementRecord>,
+): RegionGraph {
+  const vertices = elements.flatMap((element) => {
+    const id = readId(element);
+    if (id === undefined || element.$type === "bpmn:SequenceFlow") return [];
+    const outputs = flows.filter(({ sourceId }) => sourceId === id).map((flow) => ({ id: flow.id, target: flow.targetId }));
+    const inputs = flows.filter(({ targetId }) => targetId === id).map(({ id: flowId }) => flowId);
+    return [[id, { id, kind: sourceVertexKind(element.$type, inputs.length, outputs.length), scope: "", outputs, inputs }]] as const;
   });
-  const splitId = splitIds[0];
-  const split = elements.find((candidate) => readId(candidate) === splitId);
-  return splitId !== undefined &&
-      splitIds.every((candidate) => candidate === splitId) &&
-      split?.$type === bpmnTypes.inclusiveGatewayType
-    ? splitId
-    : undefined;
+  return { root: "", vertices: new Map(vertices) };
 }

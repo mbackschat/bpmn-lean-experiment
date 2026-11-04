@@ -24,11 +24,13 @@ import { semanticProcessClosureLimit } from "./semantic-process-limits.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 
+// IGR-ADMIT-01: an Inclusive split splits a token as a fork does, so Choices, cycles and root Calls route away from it.
 const splits = (operations: readonly SemanticOperation[]): boolean =>
-  operations.some(({ kind }) => kind === SemanticOperationKind.Duplicate);
+  operations.some(({ kind }) => kind === SemanticOperationKind.Duplicate || kind === SemanticOperationKind.SelectMany);
 
 const forks = (nodes: readonly CheckedNode[]): boolean =>
-  nodes.some(node => node.kind === CheckedNodeKind.ParallelGateway && node.direction === GatewayDirection.Diverging);
+  nodes.some(node => (node.kind === CheckedNodeKind.ParallelGateway || node.kind === CheckedNodeKind.InclusiveGateway) &&
+    node.direction === GatewayDirection.Diverging);
 
 /** CSSD-ROUTE-01: a Program of the nested scope-data profile that splits a token. */
 export function concurrentStructuredScopeDataProgram(program: SemanticProcessProgram): boolean {
@@ -60,7 +62,8 @@ function programRestrictionsHold(program: SemanticProcessProgram): boolean {
   return program.identity.sourceOverlay !== null && root !== undefined &&
     // PTPB-ADMIT-01: a one-input merge is a lowered pass-through Task, not a merge region.
     !program.operations.some(operation => operation.kind === SemanticOperationKind.MergeExclusive && operation.inputs.length >= 2) &&
-    !(inRoot(SemanticOperationKind.Duplicate) && inRoot(SemanticOperationKind.InvokeProcess)) &&
+    !((inRoot(SemanticOperationKind.Duplicate) || inRoot(SemanticOperationKind.SelectMany)) &&
+      inRoot(SemanticOperationKind.InvokeProcess)) &&
     calledProcessesAdmitted(program.operations.flatMap(operation =>
       operation.kind === SemanticOperationKind.InvokeProcess ? [operation] : []));
 }

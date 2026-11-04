@@ -184,7 +184,7 @@ def checkedProcess : CheckedProcess :=
       [ .noneEndEvent ⟨"End"⟩
       , .inclusiveGatewayConverging ⟨"Join"⟩ ⟨"Split"⟩
       , .inclusiveGatewayDiverging ⟨"Split"⟩
-          [⟨"Flow_A"⟩, ⟨"Flow_B"⟩] ⟨"Flow_Default"⟩
+          [⟨"Flow_A"⟩, ⟨"Flow_B"⟩] (some ⟨"Flow_Default"⟩)
       , .noneStartEvent ⟨"Start"⟩
       , .userTask ⟨"Task_A"⟩ (some "A")
       , .userTask ⟨"Task_B"⟩ (some "B")
@@ -235,8 +235,8 @@ def program : Program :=
              expectedJoinInput := ⟨"place:Flow_A_Join"⟩, origin := ⟨⟨"Flow_A"⟩⟩ },
            { condition := .isPresent "takeB", output := ⟨"place:Flow_B"⟩
              expectedJoinInput := ⟨"place:Flow_B_Join"⟩, origin := ⟨⟨"Flow_B"⟩⟩ }]
-          { output := ⟨"place:Flow_Default"⟩, expectedJoinInput := ⟨"place:Flow_Default_Join"⟩
-            origin := ⟨⟨"Flow_Default"⟩⟩ } "Split"
+          (some { output := ⟨"place:Flow_Default"⟩, expectedJoinInput := ⟨"place:Flow_Default_Join"⟩,
+                  origin := ⟨⟨"Flow_Default"⟩⟩ }) "Split"
       , .initiate ⟨"operation:Start"⟩ ⟨⟨"Start"⟩⟩ ⟨"place:Flow_Start"⟩
       , .awaitUserTask ⟨"operation:Task_A"⟩ ⟨⟨"Task_A"⟩⟩
           ⟨"place:Flow_A"⟩ ⟨"place:Flow_A_Join"⟩ { id := ⟨"Task_A"⟩, name := some "A" }
@@ -318,9 +318,9 @@ def lowering_derives_branch_local_join_inputs : Bool := decide <|
               output := ⟨"place:Flow_B"⟩
               expectedJoinInput := ⟨"place:Flow_B_Join"⟩
               origin := { elementId := ⟨"Flow_B"⟩ } } ]
-          { output := ⟨"place:Flow_Default"⟩
-            expectedJoinInput := ⟨"place:Flow_Default_Join"⟩
-            origin := { elementId := ⟨"Flow_Default"⟩ } }
+          (some { output := ⟨"place:Flow_Default"⟩,
+                  expectedJoinInput := ⟨"place:Flow_Default_Join"⟩,
+                  origin := { elementId := ⟨"Flow_Default"⟩ } })
           "Split")
 
 def permuted_branch_pairing_fails_definition_binding : Bool := decide <|
@@ -413,8 +413,41 @@ theorem live_selection_blocks_scope_quiescence :
     scopeQuiescent otherwiseQuiescent owner = false := by
   decide +kernel
 
+/-- IGR-PROFILE-01's exact-profile twin: a third conditioned candidate whose flow `Flow_C` runs straight to the join,
+keeping the three-User-Task multiset, in the checked graph and in the Program. -/
+private def straightFlowCheckedProcess : CheckedProcess :=
+  { checkedProcess with
+    sequenceFlowScopes := checkedProcess.sequenceFlowScopes ++
+      [{ sequenceFlowId := ⟨"Flow_C"⟩, scopeId := ⟨"scope:Process_Inclusive"⟩ }]
+    nodes := checkedProcess.nodes.map fun
+      | .inclusiveGatewayDiverging id candidates defaultFlowId =>
+          .inclusiveGatewayDiverging id (candidates ++ [⟨"Flow_C"⟩]) defaultFlowId
+      | node => node
+    sequenceFlows := checkedProcess.sequenceFlows ++
+      [{ id := ⟨"Flow_C"⟩, sourceId := ⟨"Split"⟩, targetId := ⟨"Join"⟩, condition := condition "isPresent(takeC)" }] }
+
+private def straightFlowProgram : Program :=
+  { program with
+    controlPlaceScopes := program.controlPlaceScopes ++
+      [{ controlPlaceId := ⟨"place:Flow_C"⟩, scopeId := ⟨"scope:Process_Inclusive"⟩ }]
+    controlPlaces := program.controlPlaces ++ [{ id := ⟨"place:Flow_C"⟩, origin := ⟨⟨"Flow_C"⟩⟩ }]
+    operations := program.operations.map fun
+      | .selectMany id origin input candidates defaultBranch key =>
+          .selectMany id origin input (candidates ++
+            [{ condition := .isPresent "takeC", output := ⟨"place:Flow_C"⟩,
+               expectedJoinInput := ⟨"place:Flow_C"⟩, origin := ⟨⟨"Flow_C"⟩⟩ }]) defaultBranch key
+      | .synchronizeSelected id origin inputs output key =>
+          .synchronizeSelected id origin (canonicalControlPlaceOrder (inputs ++ [⟨"place:Flow_C"⟩])) output key
+      | operation => operation }
+
+/-- IGR-PROFILE-01: the exact profile keeps its topology at each level once the wire forms widen. -/
+private def straight_flow_twin_is_refused_by_the_exact_profile : Bool :=
+  checkedWellFormed checkedProcess && programWellFormed program &&
+    !checkedWellFormed straightFlowCheckedProcess && !programWellFormed straightFlowProgram
+
 /-- Every executable check of this module, named for the driver's failure report. -/
 def checks : List (String × Bool) := [
+  ("straight_flow_twin_is_refused_by_the_exact_profile", straight_flow_twin_is_refused_by_the_exact_profile),
   ("permuted_branch_pairing_fails_definition_binding", permuted_branch_pairing_fails_definition_binding),
   ("both_true_selects_both_branches", both_true_selects_both_branches),
   ("all_false_selects_only_default", all_false_selects_only_default),

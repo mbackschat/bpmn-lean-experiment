@@ -1447,6 +1447,90 @@
       }
     },
     {
+      "id": "account-opening-required-checks",
+      "title": "Open a customer account after its required checks",
+      "businessPurpose": "Assess an applicant in a review scope, then run every check the assessment requires at once, enhanced due diligence for a high risk rating, a tax residency form for a foreign resident and an identity document check for an online application, or standard verification when none applies, and open the account once all required checks are done.",
+      "cloneFamily": "account-opening-required-checks",
+      "constructs": [
+        "endEvent",
+        "inclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "conditionalRouting",
+        "inclusiveSplitJoin",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/inclusive-gateway-regions/account-opening.bpmn",
+        "sha256": "978c15bedb190c5961cfc4897a6d65b00496d3df7ebb7177cba0c301e8c81e8e",
+        "scenarioRelativePath": "scenarios/inclusive-gateway-regions/account-residency-only.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "inclusive-gateway-regions-account-residency-only",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for root Inclusive regions; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "event-booking-optional-extras",
+      "title": "Book a corporate event with optional extras",
+      "businessPurpose": "Quote a corporate event through a pricing service, then book the venue while ordering the extras the request asks for, catering and a projector with a technician, always confirming the attendee list, and send the confirmation once the venue and every ordered extra are arranged.",
+      "cloneFamily": "event-booking-optional-extras",
+      "constructs": [
+        "endEvent",
+        "inclusiveGateway",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelSplit",
+        "conditionalRouting",
+        "inclusiveSplitJoin",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/inclusive-gateway-regions/event-booking.bpmn",
+        "sha256": "3473e077fffba315202161234dd9a09d1a462a38e6b5ce13896ab4511ed5bc2d",
+        "scenarioRelativePath": "scenarios/inclusive-gateway-regions/booking-no-extras.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "inclusive-gateway-regions-booking-no-extras",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for root Inclusive regions; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "complaint-handling-routing",
       "title": "Route a customer complaint",
       "businessPurpose": "Classify a customer complaint in a review scope, then escalate an urgent one, correct the invoice for a billing one, reship the order for a delivery one or otherwise answer the customer, and confirm the delivery afterwards when the order was reshipped.",

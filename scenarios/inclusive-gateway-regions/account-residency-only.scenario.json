@@ -1,0 +1,109 @@
+{
+  "kind": "scenario",
+  "id": "inclusive-gateway-regions-account-residency-only",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "account-opening",
+    "relativePath": "scenarios/inclusive-gateway-regions/account-opening.bpmn",
+    "sha256": "978c15bedb190c5961cfc4897a6d65b00496d3df7ebb7177cba0c301e8c81e8e",
+    "sourceOverlay": {
+      "id": "account-opening-handlers",
+      "sha256": "e5207d32461c6821394dc608bd1f70635a737b82bcf340c3babe7d148b081b4e"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.3",
+      "BPMN 2.0.2 Clause 10.6.3",
+      "BPMN 2.0.2 Clause 13.4.3"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0017",
+      "CIB-CFG-0005",
+      "CIB-EXT-0020",
+      "CIB-INT-0005"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_AccountOpening",
+      "instanceId": "AccountOpening_3",
+      "initialVariables": [
+        {
+          "name": "application",
+          "value": {
+            "kind": "string",
+            "value": "ACC-3"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-assess-applicant",
+      "taskId": {
+        "processInstanceId": "AccountOpening_3",
+        "elementId": "AssessApplicantTask",
+        "activation": 1
+      },
+      "submittedValues": [
+        {
+          "name": "channel",
+          "value": {
+            "kind": "string",
+            "value": "branch"
+          }
+        },
+        {
+          "name": "residency",
+          "value": {
+            "kind": "string",
+            "value": "foreign"
+          }
+        },
+        {
+          "name": "riskRating",
+          "value": {
+            "kind": "string",
+            "value": "low"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-collect-tax-residency-form",
+      "taskId": {
+        "processInstanceId": "AccountOpening_3",
+        "elementId": "CollectTaxResidencyForm",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-open-account",
+      "taskId": {
+        "processInstanceId": "AccountOpening_3",
+        "elementId": "OpenAccount",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}
