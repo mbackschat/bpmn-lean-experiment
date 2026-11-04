@@ -98,13 +98,13 @@ Current task: Link Events in the nested scope-data profile, batch 4 (`PC-BASIC-0
 
 Deliverable: single-source Link pairs admitted in the nested scope-data profile, each behaving as its explicit-flow twin, landed on `main`.
 
-Acceptance blockers: the cold review of the [proposal](capsules/LINK-EVENTS-PROPOSAL.md), implementation, closure review and hosted `verify-complete`.
+Acceptance blockers: the closure review of the [proposal](capsules/LINK-EVENTS-PROPOSAL.md)'s implementation and hosted `verify-complete` on [PR #55](https://github.com/mbackschat/bpmn-lean-experiment/pull/55).
 
-Current result: proposal approved (`945479ad`, corrections `5b1591ac` audited); implementation started.
+Current result: implemented at `ae4bdf5d` (cost rows `ad6f3966`), fast guards, type checks and focused Link tests green; the hosted pipeline job runs as two partition legs (`c7d55330`) because the grown catalog's derived deadline outgrew the job timeout.
 
 Effort budget: 8 hours from 2026-11-04 19:00 CET, ending 2026-11-05 03:00.
 
-Next action: the two `CheckedNode` arms and the Link contraction in both languages.
+Next action: on green hosted checks, the cold closure review, then graduation and landing.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
