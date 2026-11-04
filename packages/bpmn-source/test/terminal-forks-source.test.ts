@@ -80,9 +80,10 @@ test("TFK-DATA-01 refuses wait-free branches beside a declaring Sub-Process at e
   const free = await admitted(move, ["bookMovers"], "data-free office move");
   // Past the source reader: the data-free graph and Program with the twin's declaration grafted on differ from the
   // admitted data-free model only in that declaration, and from the admitted twin only in the wait-free branches.
-  assert.notEqual(twin.checkedProcess.scopeLocalData?.length ?? 0, 0);
-  const graph = { ...free.checkedProcess, scopeLocalData: twin.checkedProcess.scopeLocalData };
-  const program = { ...free.semanticProcess, scopeLocalData: twin.semanticProcess.scopeLocalData };
+  const [checkedRecords, programRecords] = [twin.checkedProcess.scopeLocalData, twin.semanticProcess.scopeLocalData];
+  assert.ok(checkedRecords !== undefined && checkedRecords.length > 0 && programRecords !== undefined);
+  const graph = { ...free.checkedProcess, scopeLocalData: checkedRecords };
+  const program = { ...free.semanticProcess, scopeLocalData: programRecords };
   assert.equal(nestedScopeControlCheckedAnalysis(controlGraph(graph)), null, "checked");
   assert.equal(nestedScopeControlProgramAnalysis(program), null, "Program");
 });
