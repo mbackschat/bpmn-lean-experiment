@@ -98,7 +98,7 @@ Current task: Link Events in the nested scope-data profile, batch 4 (`PC-BASIC-0
 
 Deliverable: single-source Link pairs admitted in the nested scope-data profile, each behaving as its explicit-flow twin, landed on `main`.
 
-Acceptance blockers: hosted `verify-complete` on the re-applied branch and the closure reviewer's correction audit; then graduation.
+Acceptance blockers: hosted `verify-complete` on the re-applied branch and the closure reviewer's correction audit, recorded in the [Link Events receipt](capsules/LINK-EVENTS-PROPOSAL.md#independent-cold-review-receipt); then graduation.
 
 Current result: the closure review of `653296d4` approved with required edits; the corrected change (the Inclusive join pairing walk over Link-contracted scopes, two Lean witnesses, the hosted pipeline legs split by Temporal execution schedule after a HIGH direction review, and the model-corpus run's refusal of a leg selection) is re-applied from `7fcb74d0` under a reviewed Rule 2 declaration, the working branch `link-events` keeping its history ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84), fifth instance).
 
