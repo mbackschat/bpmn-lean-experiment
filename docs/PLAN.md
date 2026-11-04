@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the addressless Receive Task wait in a new addressless Receive Task profile, batch 4 (`PC-HUM-06` primary, root clauses). The default-less Choice landed at `ff367285`. Close call, decided on reach and reuse: at most 5 pinned CIB models admitted against 3 for Activity fan-in, with the foundations for 31 more. The repeated and embedded clauses wait for Messages in the nested scope-data profile, the next family; the Multi-Instance clauses also need a profile with a Multi-Instance Receive Task body. Batch 3 stays open behind the owner's holds.
+Current task: terminal forks in the nested scope-data profile, batch 4 (`PC-HUM-04` primary; `PC-HUM-05`, `PC-CF-03`, `PC-BASIC-01`). The addressless Receive Task landed at `67f68f43`. Close call, decided on reach and batch order: 38 pinned models end Parallel branches at separate root Ends against 4 with Link Events; the Receive Task clauses PLAN had queued wait for Messages in this profile, which is batch 5.
 
-Deliverable: a Receive Task without a Message admitted in its own Receive Task profile, waiting until a delivery naming its published occurrence resumes it once, and refusing every other command unchanged, landed on `main`.
+Deliverable: root terminal forks and wait-free terminal branches admitted in the nested scope-data profile, each scope completing only when its last token is consumed, landed on `main`.
 
-Acceptance blockers: hosted `verify-complete` and landing.
+Acceptance blockers: the cold proposal review, implementation, closure review and landing.
 
-Current result: the [capsule](capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md) is implemented and graduated ([pull request 52](https://github.com/mbackschat/bpmn-lean-experiment/pull/52)) with no guard bound raised; every local `verify.sh` stage passes at `23168089` or `869cecfd`, after one recorded TD-001-pattern publication loss; the closure review approved after its correction audit at `0e441f60`.
+Current result: the [proposal](capsules/TERMINAL-FORKS-PROPOSAL.md) is drafted.
 
-Effort budget: 8 hours from 2026-11-04 05:12 CET, ending 13:12.
+Effort budget: 8 hours from 2026-11-04 09:30 CET, ending 17:30.
 
-Next action: land on green hosted checks, then open the next batch-4 family.
+Next action: commit the proposal and request its cold review.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
