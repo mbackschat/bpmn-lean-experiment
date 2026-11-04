@@ -3,6 +3,7 @@ import { BoundaryInterruption, CheckedNodeKind, GatewayDirection } from "./check
 import type { CheckedNode, CheckedSequenceFlow, NodeScopeOwnership } from "./checked-process-contract.js";
 import { InternalSchedulingMode, SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
+import { MessageChannelKind } from "./semantic-value-contract.js";
 import type { DefinitionScope } from "./semantic-value-contract.js";
 
 enum StepKind { Start, Wait, Fork, Scope, End, Terminate, Boundary }
@@ -29,10 +30,10 @@ export function repeatableSubscriptionCheckedShape(nodes: readonly CheckedNode[]
         case CheckedNodeKind.NoneStartEvent:
         case CheckedNodeKind.EmbeddedSubProcess:
         case CheckedNodeKind.IntermediateCatchMessageEvent:
-        case CheckedNodeKind.ReceiveTask:
         case CheckedNodeKind.NoneEndEvent:
         case CheckedNodeKind.TerminateEndEvent: return true;
         case CheckedNodeKind.UserTask: return node.metadata === undefined;
+        case CheckedNodeKind.ReceiveTask: return node.channel.kind === MessageChannelKind.DirectMessage;
         case CheckedNodeKind.ParallelGateway: return node.direction === GatewayDirection.Diverging;
         case CheckedNodeKind.IntermediateCatchTimerEvent: return node.durationLiteral === "PT1S";
         case CheckedNodeKind.MessageBoundaryEvent:

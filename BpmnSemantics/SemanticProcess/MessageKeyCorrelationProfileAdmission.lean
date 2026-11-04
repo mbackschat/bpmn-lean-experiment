@@ -24,7 +24,7 @@ def exactOperationChannelIdentities (elementId : NodeId)
         messageId.value] ++ extra
       channel.identifiersNonempty && identities.all (fun id => !id.isEmpty) &&
         identities.eraseDups.length = identities.length
-  | .directMessage .. => false
+  | .directMessage .. | .unspecifiedMessage => false
 
 def messageKeyCorrelationCheckedPayloadValid (source : CheckedProcess) : Bool :=
   if source.identity.semanticProfile = messageKeyCorrelationProfileId then

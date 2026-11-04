@@ -11,6 +11,7 @@ import type {
 import type {
   CibSevenEvidence,
   MappingExecutionSnapshot,
+  AddresslessReceiveWaitEvidence,
   MessageSubscriptionEvidence,
   TaskQueryTask,
   TimerJob,
@@ -61,6 +62,7 @@ export function verifyProducerProjection(
     states.map(({ afterCommandId }) => ({
       afterCommandId,
       subscriptions: [],
+      addresslessReceiveWaits: [],
     }));
   const effectSnapshots =
     evidence.producerObservations.effectJobs ??
@@ -132,6 +134,7 @@ export function verifyProducerProjection(
     const messageProjection = projectMessageSubscriptions(
       expectedInstanceId,
       messageSnapshot.subscriptions,
+      messageSnapshot.addresslessReceiveWaits ?? [],
     );
     const effectProjection = projectCibIncidentCancellationState(
       evidence.profile.id,
@@ -436,9 +439,12 @@ function projectTimerJobs(
   return { activeWaits, openTimers };
 }
 
+// An addressless wait projects to the field-free unspecified channel (CIB-OP-0011): CIB Seven 2.2.0 keeps
+// no event subscription for it, so the runner retains the waiting execution instead.
 function projectMessageSubscriptions(
   instanceId: string,
   subscriptions: ReadonlyArray<MessageSubscriptionEvidence>,
+  addresslessWaits: ReadonlyArray<AddresslessReceiveWaitEvidence>,
 ): Pick<
   StateObservation,
   "activeWaits" | "openMessageSubscriptions" | "enabledInteractions"
@@ -447,7 +453,7 @@ function projectMessageSubscriptions(
     StateObservation["enabledInteractions"][number],
     { readonly subscriptionId: OccurrenceId }
   >;
-  if (subscriptions.length > 1) {
+  if (subscriptions.length + addresslessWaits.length > 1) {
     throw new Error(
       "producer Message projection supports one live Receive Task subscription",
     );
@@ -462,20 +468,27 @@ function projectMessageSubscriptions(
       );
     }
   }
-  const openMessageSubscriptions = subscriptions.map((subscription) => ({
-    id: {
-      processInstanceId: instanceId,
-      elementId: subscription.elementId,
-      activation: 1,
-    },
-    channel: {
-      kind: "directMessage" as const,
-      messageId: subscription.messageId,
-    },
-  }));
+  const occurrence = (elementId: string) => ({
+    processInstanceId: instanceId,
+    elementId,
+    activation: 1,
+  });
+  const openMessageSubscriptions: StateObservation["openMessageSubscriptions"] = [
+    ...subscriptions.map((subscription) => ({
+      id: occurrence(subscription.elementId),
+      channel: {
+        kind: "directMessage" as const,
+        messageId: subscription.messageId,
+      },
+    })),
+    ...addresslessWaits.map((wait) => ({
+      id: occurrence(wait.elementId),
+      channel: { kind: "unspecifiedMessage" as const },
+    })),
+  ];
   return {
-    activeWaits: subscriptions.map((subscription) => ({
-      elementId: subscription.elementId,
+    activeWaits: openMessageSubscriptions.map((subscription) => ({
+      elementId: subscription.id.elementId,
       kind: "message" as WaitKind.Message,
       multiplicity: 1,
     })),

@@ -204,6 +204,7 @@ export function projectCheckedNodes(
           element,
           id,
           rootSelection.messageArtifacts,
+          semanticProfile === SemanticProfileId.AddresslessReceiveTask,
         );
       case bpmnTypes.serviceTaskType:
         return serviceTaskBinding === null

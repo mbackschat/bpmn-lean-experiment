@@ -49,6 +49,7 @@ type CibRunnerResult = Readonly<{
     taskQueries: ReadonlyArray<unknown>;
     messageSubscriptions: ReadonlyArray<Readonly<{
       subscriptions: ReadonlyArray<unknown>;
+      addresslessReceiveWaits?: ReadonlyArray<unknown>;
     }>>;
     timerJobs: ReadonlyArray<unknown>;
     effectJobs: ReadonlyArray<Readonly<{
@@ -316,7 +317,9 @@ async function replaceEvidence() {
               stateQueries: result.diagnostics.stateQueries,
               taskQueries: result.diagnostics.taskQueries,
               ...(result.diagnostics.messageSubscriptions.some(
-                ({ subscriptions }) => subscriptions.length > 0,
+                ({ subscriptions, addresslessReceiveWaits }) =>
+                  subscriptions.length > 0 ||
+                  (addresslessReceiveWaits?.length ?? 0) > 0,
               )
                 ? {
                     messageSubscriptions:

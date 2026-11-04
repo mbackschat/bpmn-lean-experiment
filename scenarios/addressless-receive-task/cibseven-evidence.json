@@ -1,0 +1,189 @@
+{
+  "kind": "cibSevenScenarioEvidence",
+  "scenario": {
+    "id": "addressless-receive-task",
+    "sha256": "3435ec08dd7df18e94e1f5ab84c320c293d2ec4930fe1a9b374987b933a0476f"
+  },
+  "profile": {
+    "id": "cibseven-2.2.0-addressless-receive-task-draft",
+    "sha256": "6fe0533d7c3b0315e2649dca1857f5d47db41c430ca1b1223a3395bd3f59ffb7"
+  },
+  "producer": {
+    "engine": "CIB Seven",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "runner": "cibseven-oracle",
+    "java": "21",
+    "database": "H2 2.3.232"
+  },
+  "producerObservations": {
+    "stateQueries": [
+      {
+        "afterCommandId": "request-handover",
+        "processInstanceCount": 1,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "courier-scanned",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      },
+      {
+        "afterCommandId": "courier-scanned-again",
+        "processInstanceCount": 0,
+        "engineClockTimeMs": 0,
+        "variables": []
+      }
+    ],
+    "taskQueries": [
+      {
+        "afterCommandId": "request-handover",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "courier-scanned",
+        "tasks": []
+      },
+      {
+        "afterCommandId": "courier-scanned-again",
+        "tasks": []
+      }
+    ],
+    "messageSubscriptions": [
+      {
+        "afterCommandId": "request-handover",
+        "subscriptions": [],
+        "addresslessReceiveWaits": [
+          {
+            "elementId": "ReceiveTask_AwaitCourierPickup"
+          }
+        ]
+      },
+      {
+        "afterCommandId": "courier-scanned",
+        "subscriptions": []
+      },
+      {
+        "afterCommandId": "courier-scanned-again",
+        "subscriptions": []
+      }
+    ],
+    "timerJobs": [
+      {
+        "afterCommandId": "request-handover",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "courier-scanned",
+        "jobs": []
+      },
+      {
+        "afterCommandId": "courier-scanned-again",
+        "jobs": []
+      }
+    ]
+  },
+  "projection": {
+    "id": "canonical-scenario-result"
+  },
+  "result": {
+    "outcome": {
+      "kind": "semantic",
+      "outcome": "rejected"
+    },
+    "trace": [
+      {
+        "kind": "deployment",
+        "outcome": "committed"
+      },
+      {
+        "kind": "command",
+        "commandId": "request-handover",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Handover_1",
+        "status": "running",
+        "activeWaits": [
+          {
+            "elementId": "ReceiveTask_AwaitCourierPickup",
+            "kind": "message",
+            "multiplicity": 1
+          }
+        ],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [
+          {
+            "id": {
+              "processInstanceId": "Handover_1",
+              "elementId": "ReceiveTask_AwaitCourierPickup",
+              "activation": 1
+            },
+            "channel": {
+              "kind": "unspecifiedMessage"
+            }
+          }
+        ],
+        "openTimers": [],
+        "openEffects": [],
+        "openIncidents": [],
+        "variables": [],
+        "enabledInteractions": [
+          {
+            "kind": "deliverMessage",
+            "subscriptionId": {
+              "processInstanceId": "Handover_1",
+              "elementId": "ReceiveTask_AwaitCourierPickup",
+              "activation": 1
+            },
+            "channel": {
+              "kind": "unspecifiedMessage"
+            }
+          }
+        ],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "courier-scanned",
+        "outcome": "committed"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Handover_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "openIncidents": [],
+        "variables": [],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      },
+      {
+        "kind": "command",
+        "commandId": "courier-scanned-again",
+        "outcome": "rejected"
+      },
+      {
+        "kind": "state",
+        "instanceId": "Handover_1",
+        "status": "completed",
+        "activeWaits": [],
+        "openUserTasks": [],
+        "openMessageSubscriptions": [],
+        "openTimers": [],
+        "openEffects": [],
+        "openIncidents": [],
+        "variables": [],
+        "enabledInteractions": [],
+        "logicalTimeMs": 0
+      }
+    ]
+  }
+}

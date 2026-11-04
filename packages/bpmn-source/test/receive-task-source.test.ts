@@ -215,3 +215,66 @@ test("Receive Task and Intermediate Catch Message profiles reject each other's g
   assert.equal(receiveUnderCatch.status, BpmnCompilationStatus.Rejected);
   assert.equal(catchUnderReceive.status, BpmnCompilationStatus.Rejected);
 });
+
+const addresslessProfile = "cibseven-2.2.0-addressless-receive-task-draft";
+const addresslessSourceUrl = new URL(
+  "../../../scenarios/addressless-receive-task/process.bpmn",
+  import.meta.url,
+);
+
+// Locks ARECV-ADDRESS-01 of the addressless Receive Task proposal: a Receive Task without `messageRef`
+// projects to the field-free unspecified channel, never to a synthetic Message identity.
+test("lowers an addressless Receive Task to awaitMessage on the unspecified channel", async () => {
+  const result = requireAccepted(await compile(await readFile(addresslessSourceUrl), addresslessProfile));
+  const channel = { kind: MessageChannelKind.UnspecifiedMessage } as const;
+
+  assert.deepEqual(
+    result.checkedProcess.nodes.find(({ id }) => id === "ReceiveTask_AwaitCourierPickup"),
+    { kind: CheckedNodeKind.ReceiveTask, id: "ReceiveTask_AwaitCourierPickup", channel },
+  );
+  assert.deepEqual(
+    result.semanticProcess.operations.find(({ kind }) => kind === SemanticOperationKind.AwaitMessage),
+    {
+      id: "operation:ReceiveTask_AwaitCourierPickup",
+      kind: SemanticOperationKind.AwaitMessage,
+      origin: { kind: "bpmnElement", elementId: "ReceiveTask_AwaitCourierPickup" },
+      input: "place:SequenceFlow_RequestedToPickup",
+      output: "place:SequenceFlow_PickupToHandedOver",
+      message: { elementId: "ReceiveTask_AwaitCourierPickup", channel },
+    },
+  );
+});
+
+test("rejects an addressless Receive Task outside the exact selected slice and profile", async () => {
+  const xml = await readFile(addresslessSourceUrl, "utf8");
+  const task = '<bpmn:receiveTask\n      id="ReceiveTask_AwaitCourierPickup"';
+  const mutations = [
+    xml.replace("<bpmn:process", '<bpmn:message id="Message_Unreferenced" name="unreferenced" />\n  <bpmn:process'),
+    xml.replace(task, `${task}\n      instantiate="true"`),
+    xml.replace(task, `${task}\n      implementation="##unspecified"`),
+    xml.replace(task, `${task}\n      operationRef="Operation_Forbidden"`),
+    xml
+      .replace('targetNamespace=', 'xmlns:camunda="http://camunda.org/schema/1.0/bpmn"\n  targetNamespace=')
+      .replace(
+        "<bpmn:incoming>SequenceFlow_RequestedToPickup</bpmn:incoming>",
+        "<bpmn:extensionElements><camunda:inputOutput><camunda:inputParameter name=\"courier\">c</camunda:inputParameter></camunda:inputOutput></bpmn:extensionElements>\n      <bpmn:incoming>SequenceFlow_RequestedToPickup</bpmn:incoming>",
+      ),
+  ];
+  for (const [index, mutation] of mutations.entries()) {
+    assert.notEqual(mutation, xml, `mutation ${index}`);
+    const result = await compile(new TextEncoder().encode(mutation), addresslessProfile);
+    assert.equal(result.status, BpmnCompilationStatus.Rejected, `mutation ${index}`);
+  }
+  const direct = await compile(await readFile(sourceUrl), addresslessProfile);
+  assert.equal(direct.status, BpmnCompilationStatus.Rejected, "a direct Receive Task under the addressless profile");
+
+  for (const profile of [
+    receiveTaskProfile,
+    "cibseven-2.2.0-nested-embedded-scope-data-draft",
+    "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+    "bpmn-2.0.2-intermediate-catch-message-draft",
+  ]) {
+    const result = await compile(new TextEncoder().encode(xml), profile);
+    assert.equal(result.status, BpmnCompilationStatus.Rejected, profile);
+  }
+});

@@ -18,6 +18,7 @@ import {
   PipelineReplaySelection,
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
+import type { PipelineCaseId } from "./pipeline-case-id-registry.ts";
 import type {
   MutableScenarioResult,
   MutableStateObservation,
@@ -56,6 +57,25 @@ function mutateOperationMessageId(result: MutableScenarioResult): void {
       ...subscription.channel,
       messageId: `${subscription.channel.messageId}-mutated`,
     },
+  };
+}
+
+function mutateUnspecifiedMessageChannelKind(
+  result: MutableScenarioResult,
+): void {
+  const running = runningObservation(result);
+  const subscription = running.openMessageSubscriptions[0];
+  if (
+    subscription === undefined ||
+    subscription.channel.kind !== MessageChannelKind.UnspecifiedMessage
+  ) {
+    throw new Error(
+      "one calibrated unspecified Message wait is required",
+    );
+  }
+  running.openMessageSubscriptions[0] = {
+    ...subscription,
+    channel: { kind: MessageChannelKind.DirectMessage, messageId: "Message_Mutated" },
   };
 }
 
@@ -139,7 +159,39 @@ const messageAddressedReceiveTaskCase: PipelineCase = Object.freeze({
   expectedInjectedDisagreement: messageAddressedReceiveTaskDisagreement,
 });
 
+const addresslessReceiveTaskDisagreement: ObservationValueDisagreement = {
+  kind: DisagreementKind.ObservationValue,
+  path: "trace[2].openMessageSubscriptions[0].channel.messageId",
+  expected: undefined,
+  actual: "Message_Mutated",
+};
+
+function addresslessReceiveTaskCase(id: PipelineCaseId, scenarioFile: string): PipelineCase {
+  return Object.freeze({
+    id,
+    scenarioRelativePath: `scenarios/addressless-receive-task/${scenarioFile}.json`,
+    bpmnRelativePath: "scenarios/addressless-receive-task/process.bpmn",
+    workflowIdPrefix: id,
+    cib: Object.freeze({
+      evidenceRelativePath: `scenarios/addressless-receive-task/${scenarioFile.replace(/scenario$/u, "cibseven-evidence")}.json`,
+      version: "2.2.0" as const,
+      relation: CibCaseRelation.ExactSemantic,
+      effectExecutionSchedule: CibEffectExecutionSchedule.None,
+    }),
+    expectedWaitTraceLength: 3,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: null,
+    replaySelection: PipelineReplaySelection.Primary,
+    injectMutation: mutateUnspecifiedMessageChannelKind,
+    expectedInjectedDisagreement: addresslessReceiveTaskDisagreement,
+  });
+}
+
 export const messagePipelineCases = Object.freeze([
   intermediateCatchMessageCase,
   messageAddressedReceiveTaskCase,
+  addresslessReceiveTaskCase("addressless-receive-task", "scenario"),
+  addresslessReceiveTaskCase("addressless-receive-task-named-delivery-first", "named-delivery-first.scenario"),
 ]);

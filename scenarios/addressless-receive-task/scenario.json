@@ -1,0 +1,69 @@
+{
+  "kind": "scenario",
+  "id": "addressless-receive-task",
+  "profile": "cibseven-2.2.0-addressless-receive-task-draft",
+  "bpmn": {
+    "id": "addressless-receive-task-process",
+    "relativePath": "scenarios/addressless-receive-task/process.bpmn",
+    "sha256": "8cd4ab3670897b60e8a68152e5021bc5f684c5522115a28a2fa46621d68ba3aa",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "request-handover",
+      "processId": "Process_ParcelHandover",
+      "instanceId": "Handover_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "deliverMessage",
+      "commandId": "courier-scanned",
+      "subscriptionId": {
+        "processInstanceId": "Handover_1",
+        "elementId": "ReceiveTask_AwaitCourierPickup",
+        "activation": 1
+      },
+      "channel": {
+        "kind": "unspecifiedMessage"
+      }
+    },
+    {
+      "kind": "deliverMessage",
+      "commandId": "courier-scanned-again",
+      "subscriptionId": {
+        "processInstanceId": "Handover_1",
+        "elementId": "ReceiveTask_AwaitCourierPickup",
+        "activation": 1
+      },
+      "channel": {
+        "kind": "unspecifiedMessage"
+      }
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10 Table 10.10",
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §13.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ReceiveTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/SignalCmd.java"
+    ]
+  }
+}

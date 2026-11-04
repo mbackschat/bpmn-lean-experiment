@@ -6,6 +6,7 @@ import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
 import java.util.Date;
 import org.bpmnlean.cibseven.ScenarioMessageProtocol.DeliverMessageStimulus;
 import org.bpmnlean.cibseven.ScenarioMessageProtocol.DirectMessageChannel;
+import org.bpmnlean.cibseven.ScenarioMessageProtocol.UnspecifiedMessageChannel;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteEffectStimulus;
 import org.bpmnlean.cibseven.ScenarioProtocol.CompleteUserTaskInstanceStimulus;
@@ -42,8 +43,13 @@ final class CibSevenScenarioCommandExecutor {
       DeliverMessageStimulus delivery) {
     var submitted = delivery.subscriptionId();
     if (!submitted.processInstanceId().equals(stableInstanceId)
-        || submitted.activation() != 1
-        || !(delivery.channel() instanceof DirectMessageChannel channel)) {
+        || submitted.activation() != 1) {
+      return REJECTED;
+    }
+    if (delivery.channel() instanceof UnspecifiedMessageChannel) {
+      return signalAddressless(engineInstanceId, submitted.elementId());
+    }
+    if (!(delivery.channel() instanceof DirectMessageChannel channel)) {
       return REJECTED;
     }
     var subscriptions = messageGateway.find(engineInstanceId);
@@ -56,6 +62,17 @@ final class CibSevenScenarioCommandExecutor {
       return REJECTED;
     }
     messageGateway.deliver(subscription);
+    return COMMITTED;
+  }
+
+  // CIB-OP-0011: an unspecified delivery signals the one execution waiting at an addressless Receive Task.
+  // CIB would also accept the signal at a Message-addressed task; CIB-INT-0004 refuses that instead.
+  private CommandOutcome signalAddressless(String engineInstanceId, String elementId) {
+    var waits = messageGateway.findAddressless(engineInstanceId);
+    if (waits.size() != 1 || !waits.getFirst().elementId().equals(elementId)) {
+      return REJECTED;
+    }
+    messageGateway.signal(waits.getFirst());
     return COMMITTED;
   }
 

@@ -303,6 +303,7 @@ function profileValueDomain(
     case REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.IntermediateCatchTimer:
     case SemanticProfileId.MessageAddressedReceiveTask:
+    case SemanticProfileId.AddresslessReceiveTask:
     case SemanticProfileId.MessageStart:
     case SemanticProfileId.NonInterruptingBoundaryTimer:
     case SemanticProfileId.ParallelForkJoin:

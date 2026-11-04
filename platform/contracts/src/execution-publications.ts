@@ -93,6 +93,7 @@ export type VariableBinding = DeepReadonly<{
 export const MessageChannelKind = {
   OperationMessage: "operationMessage",
   DirectMessage: "directMessage",
+  UnspecifiedMessage: "unspecifiedMessage",
 } as const;
 
 export type MessageChannel = DeepReadonly<
@@ -103,6 +104,7 @@ export type MessageChannel = DeepReadonly<
       messageId: string;
     }
   | { kind: typeof MessageChannelKind.DirectMessage; messageId: string }
+  | { kind: typeof MessageChannelKind.UnspecifiedMessage }
 >;
 
 export type EffectIncidentId = DeepReadonly<{

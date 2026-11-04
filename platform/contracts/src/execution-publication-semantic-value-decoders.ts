@@ -476,6 +476,9 @@ function requireChannel(value: unknown, label: string): MessageChannel {
       exact(value, label, ["kind", "messageId"]);
       requireNonemptyString(readOwn(value, "messageId"), `${label}.messageId`);
       return value as MessageChannel;
+    case MessageChannelKind.UnspecifiedMessage:
+      exact(value, label, ["kind"]);
+      return value as MessageChannel;
     default:
       throw new TypeError(`${label}.kind is unknown`);
   }

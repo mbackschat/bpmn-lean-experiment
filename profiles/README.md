@@ -42,6 +42,7 @@ This directory contains reviewed semantic-profile artifacts. A profile identifie
 - [BPMN 2.0.2 User Task with preserved notation draft](bpmn-2.0.2-user-task-preserved-notation-draft/README.md)
 - [CIB Seven 2.0.0 mapped-boundary-Error Service Task draft](cibseven-2.0.0-mapped-boundary-error-service-task-draft/README.md)
 - [CIB Seven 2.0.0 mapped-success Service Task draft](cibseven-2.0.0-mapped-success-service-task-draft/README.md)
+- [CIB Seven 2.2.0 addressless Receive Task draft](cibseven-2.2.0-addressless-receive-task-draft/README.md)
 - [CIB Seven 2.2.0 embedded Sub-Process completion draft](cibseven-2.2.0-embedded-subprocess-completion-draft/README.md)
 - [CIB Seven 2.2.0 Intermediate Catch Timer draft](cibseven-2.2.0-intermediate-catch-timer-draft/README.md)
 - [CIB Seven 2.2.0 Message-addressed Receive Task draft](cibseven-2.2.0-message-addressed-receive-task-draft/README.md)

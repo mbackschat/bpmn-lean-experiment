@@ -38,6 +38,7 @@ import {
   exerciseReceiveTaskChannelErasure,
   exerciseReceiveTaskPrimary,
 } from "./receive-task-message-temporal-cases.ts";
+import { exerciseAddresslessReceiveTask } from "./addressless-receive-task-temporal-cases.ts";
 import {
   temporalCacheDirectory,
   withDeadline,
@@ -104,6 +105,10 @@ describe("Message Signal delivery", { concurrency: false }, () => {
 
   test("reverse User Task and Message order preserves delivery", async () => {
     await exerciseIntermediateCatchMessageReverseOrder(caseContext());
+  });
+
+  test("addressless Receive Task refuses a named Message and survives Worker absence", async () => {
+    await exerciseAddresslessReceiveTask(caseContext());
   });
 
   test("direct-channel erasure is observably rejected", async () => {

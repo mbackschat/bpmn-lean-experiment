@@ -44,6 +44,7 @@ import type {
   CibSevenEvidence,
 } from "./contract-cib-evidence.ts";
 export type {
+  AddresslessReceiveWaitEvidence,
   CibSevenEvidence,
   EffectJob,
   EffectJobSnapshot,

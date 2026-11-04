@@ -21,6 +21,8 @@ export function sameMessageChannel(
     case MessageChannelKind.DirectMessage:
       return right.kind === MessageChannelKind.DirectMessage &&
         left.messageId === right.messageId;
+    case MessageChannelKind.UnspecifiedMessage:
+      return right.kind === MessageChannelKind.UnspecifiedMessage;
     default:
       return assertNever(left);
   }
@@ -45,6 +47,8 @@ export function isMessageChannel(value: unknown): value is MessageChannel {
     case MessageChannelKind.DirectMessage:
       return hasOnlyKeys(value, ["kind", "messageId"]) &&
         isNonEmptyString(value.messageId);
+    case MessageChannelKind.UnspecifiedMessage:
+      return hasOnlyKeys(value, ["kind"]);
     default:
       return false;
   }

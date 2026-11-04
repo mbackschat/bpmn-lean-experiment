@@ -2191,6 +2191,38 @@
       }
     },
     {
+      "id": "parcel-handover-wait",
+      "title": "Wait for a courier to pick up a parcel",
+      "businessPurpose": "Keep a parcel handover waiting until the courier's scanner reports the pickup for exactly this handover, without any named or correlated Message.",
+      "cloneFamily": "addressless-receive-task",
+      "constructs": [
+        "endEvent",
+        "process",
+        "receiveTask",
+        "sequenceFlow",
+        "startEvent"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "receiveTaskMessage"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/addressless-receive-task/process.bpmn",
+        "sha256": "8cd4ab3670897b60e8a68152e5021bc5f684c5522115a28a2fa46621d68ba3aa",
+        "scenarioRelativePath": "scenarios/addressless-receive-task/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-addressless-receive-task-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "addressless-receive-task",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for the addressless Receive Task; Product 2 decodes its publications, but retained engine evidence does not establish catalog readiness."
+      }
+    },
+    {
       "id": "applicable-review-tracks",
       "title": "Prepare every applicable review track",
       "businessPurpose": "Open every review track selected by current case data and continue after all selected tracks finish.",

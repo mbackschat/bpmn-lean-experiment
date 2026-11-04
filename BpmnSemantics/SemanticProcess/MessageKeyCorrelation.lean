@@ -46,7 +46,7 @@ def correlatedMessageAddressValid (address : CorrelatedMessageAddress) : Bool :=
     | none => true
     | some overlay => !overlay.id.value.isEmpty && sha256Valid overlay.sha256) &&
     !address.processId.value.isEmpty && address.channel.identifiersNonempty &&
-    (match address.channel with | .operationMessage .. => true | .directMessage .. => false) &&
+    (match address.channel with | .operationMessage .. => true | .directMessage .. | .unspecifiedMessage => false) &&
     !address.correlationKeyId.isEmpty
 
 def correlatedMessageCandidateValid (candidate : CorrelatedMessageCandidate) : Bool :=

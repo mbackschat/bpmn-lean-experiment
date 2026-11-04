@@ -31,6 +31,7 @@ import {
 import {
   EffectOperation,
   EffectProtocol,
+  MessageChannelKind,
   SimpleBooleanExpressionKind,
 } from "./semantic-value-contract.js";
 import {
@@ -59,6 +60,7 @@ export function profileAllowsProgramShape(
   actualOperations: ReadonlyArray<SemanticOperation>,
   definitionScopeCount: number,
 ): boolean {
+  if (!awaitMessageChannelsMatchProfile(semanticProfile, actualOperations)) return false;
   if (semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID) return sequentialScopeProgramShape(actualOperations, definitionScopeCount);
   if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return mixedTaskControlProgramShape(actualOperations, definitionScopeCount, semanticProfile);
   if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return structuredScopeDataProgramShape(actualOperations, definitionScopeCount);
@@ -81,6 +83,20 @@ export function profileAllowsProgramShape(
     return repeatableSubscriptionProgramShape(actualOperations, definitionScopeCount);
   }
   return requiredProgramShapeAllows(semanticProfile, actualOperations, definitionScopeCount);
+}
+
+/**
+ * The unspecified Message arm belongs to the addressless Receive Task profile alone, and that profile's
+ * wait carries no other arm (ARECV-ADDRESS-02).
+ */
+function awaitMessageChannelsMatchProfile(
+  semanticProfile: string,
+  operations: ReadonlyArray<SemanticOperation>,
+): boolean {
+  const addressless = semanticProfile === SemanticProfileId.AddresslessReceiveTask;
+  return operations.every((operation) =>
+    operation.kind !== SemanticOperationKind.AwaitMessage ||
+    (operation.message.channel.kind === MessageChannelKind.UnspecifiedMessage) === addressless);
 }
 
 /** The exact operation multiset a profile selects, when it selects one. */

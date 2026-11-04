@@ -151,7 +151,7 @@ def messageTaskStateFootprint (patch : InternalMessageTaskPatch) : InternalRegio
 
 def messageTaskArmAdmitted (contract : InternalMessageTaskContract) : Bool :=
   decide (contract.task.output ≠ contract.message.output) &&
-    (match contract.message.channel with | .directMessage _ => false | .operationMessage .. => true)
+    (match contract.message.channel with | .directMessage _ | .unspecifiedMessage => false | .operationMessage .. => true)
 
 def prepareInternalMessageTaskContract? (program : Program) (state : RuntimeState)
     (contract : InternalMessageTaskContract) : Option InternalMessageTaskPatch := do
@@ -225,6 +225,7 @@ theorem prepareInternalMessageTaskContract_refines_operation
     exact of_decide_eq_true (Bool.and_eq_true_iff.mp admitted).1
   cases channel : contract.message.channel with
   | directMessage id => simp [messageTaskArmAdmitted, channel] at admitted
+  | unspecifiedMessage => simp [messageTaskArmAdmitted, channel] at admitted
   | operationMessage interfaceId operationId messageId =>
       cases kind : contract.kind <;>
         simp only [fire?, snapshots, InternalMessageTaskContract.operation, kind]

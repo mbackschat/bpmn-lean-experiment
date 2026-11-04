@@ -61,6 +61,43 @@ final class CibSevenMessageSubscriptionGateway {
         .toList();
   }
 
+  /**
+   * Finds the executions waiting at a Receive Task without a Message, which CIB keeps without an event
+   * subscription (`CIB-OP-0011`): each live execution whose current activity is such a task.
+   */
+  List<AddresslessReceiveWait> findAddressless(String engineInstanceId) {
+    var processInstance =
+        processEngine
+            .getRuntimeService()
+            .createProcessInstanceQuery()
+            .processInstanceId(engineInstanceId)
+            .singleResult();
+    if (processInstance == null) {
+      return List.of();
+    }
+    var model =
+        processEngine
+            .getRepositoryService()
+            .getBpmnModelInstance(processInstance.getProcessDefinitionId());
+    return model.getModelElementsByType(ReceiveTask.class).stream()
+        .filter(receiveTask -> receiveTask.getMessage() == null)
+        .flatMap(
+            receiveTask ->
+                processEngine
+                    .getRuntimeService()
+                    .createExecutionQuery()
+                    .processInstanceId(engineInstanceId)
+                    .activityId(receiveTask.getId())
+                    .list()
+                    .stream()
+                    .map(execution -> new AddresslessReceiveWait(receiveTask.getId(), execution.getId())))
+        .toList();
+  }
+
+  void signal(AddresslessReceiveWait wait) {
+    processEngine.getRuntimeService().signal(wait.executionId());
+  }
+
   void deliver(HostMessageSubscription subscription) {
     processEngine
         .getRuntimeService()
@@ -75,6 +112,13 @@ final class CibSevenMessageSubscriptionGateway {
       Objects.requireNonNull(host, "host");
       Objects.requireNonNull(elementId, "elementId");
       Objects.requireNonNull(messageId, "messageId");
+    }
+  }
+
+  record AddresslessReceiveWait(String elementId, String executionId) {
+    AddresslessReceiveWait {
+      Objects.requireNonNull(elementId, "elementId");
+      Objects.requireNonNull(executionId, "executionId");
     }
   }
 }

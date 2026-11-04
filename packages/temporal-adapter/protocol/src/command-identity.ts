@@ -177,6 +177,8 @@ function messageChannelTuple(
       ];
     case MessageChannelKind.DirectMessage:
       return [channel.kind, channel.messageId];
+    case MessageChannelKind.UnspecifiedMessage:
+      return [channel.kind];
     default:
       return assertNever(channel);
   }

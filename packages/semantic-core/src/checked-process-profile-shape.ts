@@ -129,6 +129,7 @@ export function requiredCheckedProcessShape(
         boundaryInterruption: undefined,
       };
     case SemanticProfileId.MessageAddressedReceiveTask:
+    case SemanticProfileId.AddresslessReceiveTask:
       return rootChecked([
         start,
         CheckedNodeKind.ReceiveTask,

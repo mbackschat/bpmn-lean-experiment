@@ -260,6 +260,9 @@ def decodeMessageChannel (json : Json) :
   | "directMessage" =>
       requireObjectShape json ["kind", "messageId"]
       pure (.directMessage (← decodeSemanticIdentityField json "messageId"))
+  | "unspecifiedMessage" =>
+      requireObjectShape json ["kind"]
+      pure .unspecifiedMessage
   | kind => throw s!"unsupported Message channel {kind}"
 
 /-- Decode the exact operation-addressed channel used by Message Start and operation-bound catches. -/
@@ -268,7 +271,7 @@ def decodeOperationMessageChannel (json : Json) :
   let channel ← decodeMessageChannel json
   match channel with
   | .operationMessage .. => pure channel
-  | .directMessage .. => throw "operation-addressed Message channel expected"
+  | .directMessage .. | .unspecifiedMessage => throw "operation-addressed Message channel expected"
 
 mutual
 /-- Encode one portable value; this owns the wire spelling of every portable arm. -/

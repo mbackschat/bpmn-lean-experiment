@@ -69,6 +69,7 @@ import {
   waitForWorkflowChainRunCount,
   workflowChainRuns,
 } from "./workflow-chain-test-support.ts";
+import { withMessageId } from "./message-channel-test-support.ts";
 
 const scenarioUrl = new URL(
   "../../../../scenarios/intermediate-catch-message/scenario.json",
@@ -101,10 +102,7 @@ test("a Message subscription and delivery cross forced Workflow Runs", async () 
   const rejectedBeforeRollover = {
     ...delivery,
     commandId: "reject-message-before-rollover",
-    channel: {
-      ...delivery.channel,
-      messageId: "Message_WrongBeforeRollover",
-    },
+    channel: withMessageId(delivery.channel, "Message_WrongBeforeRollover"),
   } satisfies DeliverMessageStimulus;
   const originalCompletion = requiredAt(scenario.stimuli, 2, "Message stimuli");
   assert.equal(originalCompletion.kind, StimulusKind.CompleteUserTaskInstance);
@@ -229,10 +227,7 @@ test("a Message subscription and delivery cross forced Workflow Runs", async () 
     );
     const conflicting = {
       ...delivery,
-      channel: {
-        ...delivery.channel,
-        messageId: "Message_ConflictingAfterRollover",
-      },
+      channel: withMessageId(delivery.channel, "Message_ConflictingAfterRollover"),
     } satisfies DeliverMessageStimulus;
     await assert.rejects(
       submitMessageDelivery(

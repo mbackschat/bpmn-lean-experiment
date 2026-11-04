@@ -294,6 +294,10 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
         nonempty message.elementId.value &&
         decide (origin.elementId = message.elementId) &&
         message.channel.identifiersNonempty &&
+        -- ARECV-ADDRESS-02: the unspecified arm belongs to the addressless Receive Task profile alone,
+        -- and that profile's wait carries no other arm.
+        ((message.channel == .unspecifiedMessage) ==
+          (program.identity.semanticProfile.value == "cibseven-2.2.0-addressless-receive-task-draft")) &&
         decide (input ≠ output) &&
         placeExists places input &&
         placeExists places output
@@ -310,7 +314,7 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
             decide (directOutput.sourceDataOutputName ≠ some "") &&
             decide (input ≠ output) &&
             placeExists places input && placeExists places output
-      | .directMessage .. => false
+      | .directMessage .. | .unspecifiedMessage => false
   | .awaitCorrelatedPayloadMessage id origin input output message correlationKeyId
       correlationPropertyId payloadSelector processPropertySelector =>
       match message.channel with
@@ -325,7 +329,7 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
             correlationProcessPropertyPathValid processPropertySelector &&
             decide (input ≠ output) &&
             placeExists places input && placeExists places output
-      | .directMessage .. => false
+      | .directMessage .. | .unspecifiedMessage => false
   | .awaitEventRace id origin input message timer =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
@@ -333,7 +337,7 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
         nonempty message.elementId.value &&
         (match message.channel with
           | .operationMessage .. => message.channel.identifiersNonempty
-          | .directMessage .. => false) &&
+          | .directMessage .. | .unspecifiedMessage => false) &&
         nonempty timer.configurationOrigin.elementId.value &&
         nonempty timer.elementId.value &&
         timer.durationMs = 1000 &&
@@ -378,7 +382,7 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
         decide (origin.elementId.value = task.id.value) &&
         (match boundaryMessage.channel with
         | .operationMessage .. => boundaryMessage.channel.identifiersNonempty
-        | .directMessage .. => false) &&
+        | .directMessage .. | .unspecifiedMessage => false) &&
         decide (
           task.id.value ≠ boundaryMessage.elementId.value ∧
           task.output ≠ boundaryMessage.output ∧

@@ -1,5 +1,6 @@
 package org.bpmnlean.cibseven;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,12 +37,33 @@ public final class CibStateQueryEvidence {
     }
   }
 
-  /** Raw public-subscription facts plus the adapter-decided deployed Message identity. */
+  /**
+   * Raw public-subscription facts plus the adapter-decided deployed Message identity.
+   *
+   * <p>An addressless Receive Task wait has no event subscription in CIB Seven `2.2.0`, so its raw fact is
+   * the waiting execution itself (`CIB-OP-0011`); the list is omitted when empty, keeping every
+   * Message-addressed snapshot byte-identical.
+   */
   public record MessageSubscriptionSnapshot(
-      String afterCommandId, List<MessageSubscription> subscriptions) {
+      String afterCommandId,
+      List<MessageSubscription> subscriptions,
+      @JsonInclude(JsonInclude.Include.NON_EMPTY)
+          List<AddresslessReceiveWait> addresslessReceiveWaits) {
     public MessageSubscriptionSnapshot {
       Objects.requireNonNull(afterCommandId, "afterCommandId");
       subscriptions = List.copyOf(subscriptions);
+      addresslessReceiveWaits = List.copyOf(addresslessReceiveWaits);
+    }
+
+    public MessageSubscriptionSnapshot(String afterCommandId, List<MessageSubscription> subscriptions) {
+      this(afterCommandId, subscriptions, List.of());
+    }
+  }
+
+  /** One active execution at a Receive Task that declares no `messageRef`. */
+  public record AddresslessReceiveWait(String elementId) {
+    public AddresslessReceiveWait {
+      Objects.requireNonNull(elementId, "elementId");
     }
   }
 

@@ -304,6 +304,18 @@ The nested scope-data profile adopts that resolution as the semantic outcome `ro
 
 **Boundary:** This interpretation covers only root-body Choices of the nested scope-data profile with Simple Boolean conditions, reached by a Start or a User Task completion. It does not cover a no-match after an effect result, incidents, job retries, a converging or mixed gateway, or any other profile.
 
+### CIB-INT-0004 — a Receive Task without a Message waits for an occurrence-addressed trigger
+
+**Status:** Selected bounded interpretation; standards capsule in implementation
+
+BPMN Table 10.10 makes a Receive Task's `messageRef` optional, and Clauses 10.3.3 and 13.3.3 say the task waits for its associated Message and completes when it arrives, without saying how an unspecified Message is addressed. CIB Seven `2.2.0` declares no event subscription for such a task (`BpmnParse#parseReceiveTask`), waits in `ReceiveTaskActivityBehavior#performExecution` and leaves on an execution signal (`#signal`, reached through `RuntimeService#signal(executionId)` and `SignalCmd`).
+
+The addressless Receive Task profile adopts that resolution with a field-free `unspecifiedMessage` channel: the wait is resumed only by a delivery naming its published occurrence with that channel. An unspecified delivery addresses only an addressless wait; CIB's signal also completes a Message-addressed Receive Task (`ReceiveTaskTest#testSupportsLegacySignalingOnSingleReceiveTask`), which the profile refuses as a project restriction, claiming no CIB agreement there. The trigger carries no variables, and CIB's variable-setting signal stays outside the profile.
+
+**Evidence:** The [calibration probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenAddresslessReceiveTaskProbeTest.java) and the [addressless Receive Task account](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md).
+
+**Boundary:** This interpretation covers only the root None Start → addressless Receive Task → None End shape of the addressless Receive Task profile. It does not cover repeated, embedded or Multi-Instance waits, trigger variables, signal names or any other profile.
+
 ### CIB-INT-0002: sequential Multi-Instance `nrOfInstances` is desired cardinality from outer entry
 
 **Status:** Observed bounded interpretation; not selected by the standards profile
@@ -735,6 +747,18 @@ The project instead commits one effect wait per occurrence, runs one Temporal Ac
 
 **Boundary:** Under the embedded completion profile only, for data-free overlay-bound Service Tasks admitted by the [concurrent scope Service Tasks](capsules/CONCURRENT-SCOPE-SERVICE-TASKS-SPEC.md#normative-basis-and-cib-classification) family under the default job-acquisition configuration. The nested scope-data profile lists this relationship for its data-bearing Service Tasks on Parallel branches in Sub-Process bodies ([concurrent structured scope data](capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md#normative-basis-and-cib-classification)), under the same configuration; for them, argument agreement holds only on schedules where each continuation job runs before the next command commits. No job, transaction-timing, exclusive-lock, retry, incident or exactly-once external-effect equivalence is claimed, and no claim covers asynchronous continuation of other activity kinds.
 
+### CIB-OP-0011: CIB execution waiting at an addressless Receive Task mapped to the project occurrence
+
+**Status:** Selected operational mapping; standards capsule in implementation
+
+CIB keeps no event subscription for a Receive Task without a Message, so its public state shows only an execution whose activity is the task, addressed by a generated execution ID. BPMN prescribes no host identity, while the project addresses the wait by `(Process instance, BPMN element, activation ordinal)` with the field-free `unspecifiedMessage` channel selected by `CIB-INT-0004`.
+
+For the one admitted addressless Receive Task, the oracle adapter finds the execution waiting at the task's activity ID by an execution query, maps it to activation `1` of the scenario's stable semantic instance with channel `unspecifiedMessage`, and maps the project delivery to `RuntimeService#signal(executionId)` without variables, keeping the execution ID local to the call. Missing, multiple or already consumed executions are refused before the call. The projected open wait is adapter-derived, not an engine-observed Message subscription.
+
+**Evidence:** The [addressless Receive Task scenario](../scenarios/addressless-receive-task/README.md), its content-bound retained result and the [addressless Receive Task account](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md).
+
+**Boundary:** The mapping is limited to one live activation-`1` addressless Receive Task wait in one Process instance. It does not establish repeated activation, multiple waits, signal names, trigger variables or signals to other activities.
+
 ## Configuration-specific register
 
 ### CIB-CFG-0001 — pinned Milestone 0 oracle environment
@@ -833,6 +857,7 @@ Without a Spin JSON default, CIB stores a serializable `java.util.Map` or `List`
 | Process start with a public variable map | `CIB-EXT-0006` under `CIB-CFG-0001` | Runtime-service and first-task observations establish initial Process-variable visibility before completion; BPMN does not define this host start API or universal start-map semantics |
 | Exact-code Error End propagation from an embedded Sub-Process | `CIB-AGR-0008` | Both child-command orders expose only Recover after the Error and complete only after Recover; retained raw task-state mutation detects a wrongly retained child sibling without claiming hidden execution-tree microsteps |
 | Message-addressed Receive Task subscription and completion | `CIB-AGR-0009` | A project-authored direct-Message Receive Task exposes one public Message subscription; exact public delivery removes it and completes the Process, without equating CIB's event name or generated execution ID with project semantic identity |
+| Addressless Receive Task wait and execution-signal resumption | `CIB-INT-0004` and `CIB-OP-0011` | A project-authored Receive Task without a Message keeps no event subscription; one execution signal completes the Process, a second is refused, and neither Message correlation nor Signal broadcast reaches the wait |
 | Modeled BPMN key/context Message correlation | `CIB-LIM-0002` under `CIB-CFG-0001` | Schema-valid modeled retrieval and Process-binding metadata leaves two same-name waits ambiguous; only a separate public API Process-variable criterion selects one instance, and no CIB correlation semantics are adopted by the project |
 | Collection-driven sequential Multi-Instance lifecycle | `CIB-AGR-0011`, `CIB-INT-0002`, and `CIB-LIM-0001` under `CIB-CFG-0001` | Public services expose ordered distinct task turnover, zero-item closure, one stable outer Timer, and interruption; desired cardinality is stored at entry, while the standard output collection is not produced |
 | Java delegates, beans, expressions, scripts, FEEL, listeners, mappings, connectors and other Camunda extension families | Research inventory only | The family-level surface is recorded in [CIB Seven extension research](research/CIB-SEVEN-EXTENSIONS-RESEARCH.md); no blanket extension or API compatibility claim is selected |

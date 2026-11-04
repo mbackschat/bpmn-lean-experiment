@@ -118,8 +118,8 @@ def checkedShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
     some (1,
       { starts := 1, userTasks := 1, payloadMessages := 1,
         correlatedPayloadMessages := 1, ends := 1 })
-  else if profile =
-      "cibseven-2.2.0-message-addressed-receive-task-draft" then
+  else if profile = "cibseven-2.2.0-message-addressed-receive-task-draft" ∨
+      profile = "cibseven-2.2.0-addressless-receive-task-draft" then
     some (1, { starts := 1, receiveTasks := 1, ends := 1 })
   else if profile =
       "cibseven-2.2.0-embedded-subprocess-completion-draft" then
@@ -239,8 +239,8 @@ def programShape? (profile : String) : Option (Nat × ShapeCardinalities) :=
     some (1, withScopeCompletions 1
       { initiates := 1, userTasks := 1, payloadMessages := 1,
         correlatedPayloadMessages := 1, ends := 1 })
-  else if profile =
-      "cibseven-2.2.0-message-addressed-receive-task-draft" then
+  else if profile = "cibseven-2.2.0-message-addressed-receive-task-draft" ∨
+      profile = "cibseven-2.2.0-addressless-receive-task-draft" then
     some (1, withScopeCompletions 1
       { initiates := 1, messages := 1, ends := 1 })
   else if profile =
@@ -639,7 +639,7 @@ def operationPayloadCapabilitiesValid (profile : String)
                 message.channel.identifiersNonempty && identities.all (fun id => !id.isEmpty) &&
                   identities.eraseDups.length = identities.length &&
                   decide (directOutput.sourceDataOutputName ≠ some "")
-            | .directMessage .. => false
+            | .directMessage .. | .unspecifiedMessage => false
       | _ => true
   else if profile = activityBoundaryMessageProfileId.value then
     operations.all fun
@@ -648,7 +648,7 @@ def operationPayloadCapabilitiesValid (profile : String)
             boundaryMessage.channel.identifiersNonempty &&
             match boundaryMessage.channel with
             | .operationMessage .. => true
-            | .directMessage .. => false
+            | .directMessage .. | .unspecifiedMessage => false
       | _ => true
   else if profile = "bpmn-2.0.2-timer-start-event-draft" then
     operations.all fun

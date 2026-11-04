@@ -145,6 +145,7 @@ export function requiredProgramShape(
         ],
       };
     case SemanticProfileId.MessageAddressedReceiveTask:
+    case SemanticProfileId.AddresslessReceiveTask:
       return rootProgram([
         SemanticOperationKind.Initiate,
         SemanticOperationKind.AwaitMessage,

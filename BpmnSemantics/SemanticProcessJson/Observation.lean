@@ -93,6 +93,7 @@ def messageChannelJson : MessageChannel → Json
       Json.mkObj
         [ ("kind", toJson "directMessage")
         , ("messageId", toJson messageId.value) ]
+  | .unspecifiedMessage => Json.mkObj [("kind", toJson "unspecifiedMessage")]
 
 def sourceOverlayIdentityJson : Option SourceOverlayIdentity → Json
   | none => .null

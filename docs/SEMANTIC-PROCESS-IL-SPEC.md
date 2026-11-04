@@ -144,6 +144,7 @@ type CheckedCondition = DeepReadonly<{
 const MessageChannelKind = {
   OperationMessage: "operationMessage",
   DirectMessage: "directMessage",
+  UnspecifiedMessage: "unspecifiedMessage",
 } as const;
 
 type MessageChannel = DeepReadonly<
@@ -156,6 +157,9 @@ type MessageChannel = DeepReadonly<
   | {
       kind: typeof MessageChannelKind.DirectMessage;
       messageId: string;
+    }
+  | {
+      kind: typeof MessageChannelKind.UnspecifiedMessage;
     }
 >;
 
@@ -327,7 +331,7 @@ type CheckedNode = DeepReadonly<
       id: string;
       channel: Extract<
         MessageChannel,
-        { kind: typeof MessageChannelKind.DirectMessage }
+        { kind: typeof MessageChannelKind.DirectMessage | typeof MessageChannelKind.UnspecifiedMessage }
       >;
     }
   | CheckedServiceTask
@@ -1014,7 +1018,7 @@ The exact `PT1S` lexical value remains in the checked graph; Lean and TypeScript
 
 ### Message subscription wait
 
-`awaitMessage` is enabled when its input control place contains at least one token and no subscription for that firing already exists. Firing consumes exactly one input token and creates one Process-owned subscription containing the full Process-instance, Message-wait element, and activation identity plus one complete closed channel arm. An Intermediate Catch Message Event uses `operationMessage` with resolved Interface, Interface Operation, and Message identities; a direct-Message Receive Task uses `directMessage` with only the resolved Message identity. Internal closure stops at that public resumption surface.
+`awaitMessage` is enabled when its input control place contains at least one token and no subscription for that firing already exists. Firing consumes exactly one input token and creates one Process-owned subscription containing the full Process-instance, Message-wait element, and activation identity plus one complete closed channel arm. An Intermediate Catch Message Event uses `operationMessage` with resolved Interface, Interface Operation, and Message identities; a direct-Message Receive Task uses `directMessage` with only the resolved Message identity; a Receive Task without a Message uses the field-free `unspecifiedMessage`, addressed by its occurrence alone ([addressless Receive Task account](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md)). Internal closure stops at that public resumption surface.
 
 An exact `deliverMessage` stimulus commits only when its full subscription identity and complete discriminated channel equal the active subscription. Arm kind and every field in that arm participate in equality; matching `messageId` under different arms is not equality. Commit removes the subscription, adds one token to the operation output, and resumes closure. A pre-activation, wrong-identity, wrong-channel, stale, or repeated well-formed delivery is rejected with exact state preservation. The operation carries no payload and does not perform key-based correlation, global routing, or modeled Message throw. The operation-addressed rules and Signal refinement belong to the [Intermediate Catch Message specification](capsules/INTERMEDIATE-CATCH-MESSAGE-SPEC.md); the direct-Message specialization belongs to the [Receive Task specification](capsules/RECEIVE-TASK-MESSAGE-SPEC.md).
 
@@ -1177,7 +1181,7 @@ The [final preparation account](INTERNAL-COMMUTATION-PROPOSAL.md#prepared-transi
 - every `awaitEventRace` has one existing input, two distinct existing outputs, distinct nonempty Message and Timer catch identities, distinct nonempty configuration-flow origins absent from the control-place origin set, one complete `operationMessage` channel, and exact Timer duration `1000`; its Gateway origin is distinct from both catches;
 - every admitted `awaitTimer` has a timer element matching its BPMN origin and exact duration `1000`;
 - every `awaitSequentialMultiInstanceUserTask` has one existing input, one exact task origin and definition, the closed direct input/output role graph, one distinct existing normal output, one distinct exact-duration `1000` boundary Timer output with complete Sequence Flow origin, the fixed `16`/`512`/`8192` limits, one unique operation-scope owner, and the registered profile's exact operation/control-place cardinality;
-- every admitted `awaitMessage` has a Message-wait element matching its BPMN origin and exactly one closed channel arm: `operationMessage` requires nonempty Interface, Interface Operation, and Message identities, while `directMessage` requires only a nonempty Message identity and forbids Interface fields;
+- every admitted `awaitMessage` has a Message-wait element matching its BPMN origin and exactly one closed channel arm: `operationMessage` requires nonempty Interface, Interface Operation, and Message identities, while `directMessage` requires only a nonempty Message identity and forbids Interface fields, and `unspecifiedMessage` carries no field and is admitted only under the addressless Receive Task profile, which admits no other arm;
 - every admitted `awaitPayloadMessage` has distinct existing input and output places, a Message-wait element matching its BPMN origin, one complete `operationMessage` channel, and one direct output whose association, source DataOutput, and target Property identities are nonempty and whose source name is null or nonempty; the Catch Event, Message, association, DataOutput, and Property identities are pairwise distinct;
 - every admitted `awaitCorrelatedPayloadMessage` has distinct existing input and output places, a Message-wait element matching its BPMN origin, one complete `operationMessage` channel, nonempty CorrelationKey and CorrelationProperty identities, the exact `payload` selector, and the exact `property:<id>` selector resolving to one Process Property distinct from the Event, Message, key, and correlation property;
 - every admitted `awaitEffect` has a profile-permitted descriptor and the exact mapping pair for that descriptor;

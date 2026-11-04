@@ -50,7 +50,7 @@ test("one Message definition can address both a catch and a Receive Task", async
   ), { kind: "operationMessage", messageId: "ApplicationReminder",
     interfaceId: "ApplicationMessages", interfaceOperationId: "ReceiveReminder" });
   assert.deepEqual(projectReceiveTask(
-    record(parsed.elementsById.IndependentAudit), "IndependentAudit", selection.messageArtifacts,
+    record(parsed.elementsById.IndependentAudit), "IndependentAudit", selection.messageArtifacts, false,
   ), { kind: "receiveTask", id: "IndependentAudit",
     channel: { kind: "directMessage", messageId: "ApplicationReminder" } });
 });
@@ -73,8 +73,8 @@ test("distinct Message and operation chains resolve by exact references", async 
     interfaceOperationId: "OtherOperation",
   });
   record(parsed.elementsById.IndependentAudit).messageRef = parsed.elementsById.OtherMessage;
-  assert.equal(projectReceiveTask(record(parsed.elementsById.IndependentAudit), "IndependentAudit",
-    selection.messageArtifacts)?.channel.messageId, "OtherMessage");
+  assert.deepEqual(projectReceiveTask(record(parsed.elementsById.IndependentAudit), "IndependentAudit",
+    selection.messageArtifacts, false)?.channel, { kind: "directMessage", messageId: "OtherMessage" });
 });
 
 test("additional Message roots retain legacy profile refusal", async () => {

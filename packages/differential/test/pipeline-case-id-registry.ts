@@ -75,6 +75,8 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "user-task-process-data-preserved-notation",
   "intermediate-catch-message",
   "message-addressed-receive-task",
+  "addressless-receive-task",
+  "addressless-receive-task-named-delivery-first",
   "message-payload-catch-supplied-scalar",
   "message-payload-catch-supplied-null",
   "message-payload-catch-absent-payload",

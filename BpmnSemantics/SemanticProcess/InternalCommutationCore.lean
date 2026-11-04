@@ -249,6 +249,8 @@ def messageChannelBefore (left right : MessageChannel) : Bool :=
   | .operationMessage .., .directMessage .. => true
   | .directMessage left, .directMessage right => left.value < right.value
   | .directMessage .., .operationMessage .. => false
+  | .operationMessage .., .unspecifiedMessage | .directMessage .., .unspecifiedMessage => true
+  | .unspecifiedMessage, _ => false
 
 def correlatedAddressBefore
     (left right : CorrelatedMessageAddress) : Bool :=

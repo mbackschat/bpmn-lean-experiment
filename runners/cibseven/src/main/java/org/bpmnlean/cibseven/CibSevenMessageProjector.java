@@ -3,6 +3,7 @@ package org.bpmnlean.cibseven;
 import static org.bpmnlean.cibseven.ScenarioProtocol.WaitKind.MESSAGE;
 
 import java.util.List;
+import java.util.stream.Stream;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.MessageSubscription;
 import org.bpmnlean.cibseven.CibStateQueryEvidence.MessageSubscriptionSnapshot;
 import org.bpmnlean.cibseven.CibSevenMessageSubscriptionGateway.HostMessageSubscription;
@@ -10,10 +11,11 @@ import org.bpmnlean.cibseven.ScenarioMessageProtocol.DeliverMessageInteraction;
 import org.bpmnlean.cibseven.ScenarioMessageProtocol.DirectMessageChannel;
 import org.bpmnlean.cibseven.ScenarioMessageProtocol.MessageSubscriptionId;
 import org.bpmnlean.cibseven.ScenarioMessageProtocol.OpenMessageSubscription;
+import org.bpmnlean.cibseven.ScenarioMessageProtocol.UnspecifiedMessageChannel;
 import org.bpmnlean.cibseven.ScenarioProtocol.ActiveWait;
 import org.bpmnlean.cibseven.ScenarioInteractionProtocol.EnabledInteraction;
 
-/** Maps the admitted singleton CIB Receive Task subscription into canonical Message state. */
+/** Maps the admitted singleton CIB Receive Task subscription or addressless wait into canonical Message state. */
 final class CibSevenMessageProjector {
 
   private final CibSevenMessageSubscriptionGateway gateway;
@@ -25,13 +27,20 @@ final class CibSevenMessageProjector {
   ProjectedMessageState project(
       String engineInstanceId, String stableInstanceId, String afterCommandId) {
     var hosts = gateway.find(engineInstanceId);
-    if (hosts.size() > 1) {
+    var addressless = gateway.findAddressless(engineInstanceId);
+    if (hosts.size() + addressless.size() > 1) {
       throw new IllegalStateException(
           "Repeated or concurrent Message waits require activation derivation");
     }
     var subscriptions =
-        hosts.stream()
-            .map(host -> openSubscription(stableInstanceId, host))
+        Stream.concat(
+                hosts.stream().map(host -> openSubscription(stableInstanceId, host)),
+                addressless.stream()
+                    .map(
+                        wait ->
+                            new OpenMessageSubscription(
+                                new MessageSubscriptionId(stableInstanceId, wait.elementId(), 1),
+                                new UnspecifiedMessageChannel())))
             .toList();
     var activeWaits =
         subscriptions.stream()
@@ -51,6 +60,9 @@ final class CibSevenMessageProjector {
             afterCommandId,
             hosts.stream()
                 .map(host -> rawSubscription(engineInstanceId, host))
+                .toList(),
+            addressless.stream()
+                .map(wait -> new CibStateQueryEvidence.AddresslessReceiveWait(wait.elementId()))
                 .toList());
     return new ProjectedMessageState(activeWaits, subscriptions, interactions, raw);
   }

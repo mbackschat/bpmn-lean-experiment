@@ -106,6 +106,7 @@ export type SimpleBooleanExpression =
 export const MessageChannelKind = {
   OperationMessage: "operationMessage",
   DirectMessage: "directMessage",
+  UnspecifiedMessage: "unspecifiedMessage",
 } as const;
 
 export type MessageChannelKind =
@@ -121,5 +122,10 @@ export type MessageChannel = DeepReadonly<
   | {
       kind: typeof MessageChannelKind.DirectMessage;
       messageId: string;
+    }
+  // A Receive Task without `messageRef`: BPMN leaves its Message unspecified, so the arm carries no
+  // identity and the waiting occurrence alone addresses it (CIB-INT-0004).
+  | {
+      kind: typeof MessageChannelKind.UnspecifiedMessage;
     }
 >;

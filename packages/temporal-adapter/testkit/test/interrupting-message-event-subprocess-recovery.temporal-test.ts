@@ -20,6 +20,7 @@ import { temporalCacheDirectory, withDeadline } from "./temporal-test-support.ts
 import { replayBpmnHistory, startBpmnTestWorker, stopBpmnTestWorker } from "./temporal-worker-test-support.ts";
 import type { WorkerLease } from "./temporal-worker-test-support.ts";
 import { waitForPublishedWorkflowChainState, workflowChainRuns } from "./workflow-chain-test-support.ts";
+import { withMessageId } from "./message-channel-test-support.ts";
 
 const compilation = await compileBpmnToSemanticProcess({
   bytes: await readFile(new URL("../../../bpmn-source/test/fixtures/application-review-withdrawal.bpmn", import.meta.url)),
@@ -81,7 +82,7 @@ for (const mode of ["withdraw-both", "withdraw-last", "normal", "terminate-handl
         await assertCurrent();
       }
       await assertCurrent();
-      await submit({ ...delivery, commandId: "wrong-channel", channel: { ...delivery.channel, messageId: "Other_Message" } }, CommandOutcome.Rejected);
+      await submit({ ...delivery, commandId: "wrong-channel", channel: withMessageId(delivery.channel, "Other_Message") }, CommandOutcome.Rejected);
       assert.ok((await workflowChainRuns(environment, workflowId)).length > 1);
       await replaceWorker();
       if (mode === "withdraw-last" || mode === "normal") await submit(complete("Task_Eligibility"), CommandOutcome.Committed);

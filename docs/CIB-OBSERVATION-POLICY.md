@@ -58,13 +58,13 @@ This table classifies every current top-level and recursively reachable field of
 | `openUserTasks[].inputs[].value.value[].name` | `not-claimed` | Portable Map entry name; no CIB profile projects or admits this arm |
 | `openUserTasks[].inputs[].value.value[].value` | `not-claimed` | Recursive portable List or Map member; nested members take this field's fidelity |
 | `openUserTasks[].state` | `adapter-decided` | Canonical `active` stamp for rows returned by the live-task query |
-| `openMessageSubscriptions` | `adapter-derived` | Canonical singleton projection over the retained public Receive Task subscription under `CIB-OP-0005`; other retained CIB cases are empty |
+| `openMessageSubscriptions` | `adapter-derived` | Canonical singleton projection over the retained public Receive Task subscription under `CIB-OP-0005`, or over the one execution waiting at an addressless Receive Task under `CIB-OP-0011`; an `unspecifiedMessage` entry is an occurrence-addressed wait, no BPMN or CIB Message subscription; other retained CIB cases are empty |
 | `openMessageSubscriptions[].id` | `adapter-derived` | Composite semantic subscription occurrence identity |
 | `openMessageSubscriptions[].id.processInstanceId` | `not-claimed` | Scenario-supplied semantic identity |
 | `openMessageSubscriptions[].id.elementId` | `engine-observed` | Public Message-subscription Activity ID |
 | `openMessageSubscriptions[].id.activation` | `adapter-decided` | Constant singleton ordinal `1`; repeated or concurrent subscriptions are refused |
-| `openMessageSubscriptions[].channel` | `adapter-decided` | The exact admitted Receive Task profile selects a direct source Message reference |
-| `openMessageSubscriptions[].channel.kind` | `adapter-decided` | Profile-owned `directMessage` discriminant |
+| `openMessageSubscriptions[].channel` | `adapter-decided` | The Message-addressed Receive Task profile selects a direct source Message reference; the addressless profile selects the field-free unspecified arm |
+| `openMessageSubscriptions[].channel.kind` | `adapter-decided` | Profile-owned `directMessage` or `unspecifiedMessage` discriminant |
 | `openMessageSubscriptions[].channel.interfaceId` | `not-claimed` | Structurally absent from the direct-Message arm |
 | `openMessageSubscriptions[].channel.interfaceOperationId` | `not-claimed` | Structurally absent from the direct-Message arm |
 | `openMessageSubscriptions[].channel.messageId` | `adapter-decided` | Deployed Receive Task Message reference; CIB's public subscription API exposes only its Message name |
@@ -208,7 +208,7 @@ This table classifies every current top-level and recursively reachable field of
 | `enabledInteractions[].subscriptionId.elementId` | `engine-observed` | Public Message-subscription Activity ID |
 | `enabledInteractions[].subscriptionId.activation` | `adapter-decided` | Same singleton ordinal as the projected subscription |
 | `enabledInteractions[].channel` | `adapter-decided` | Reuses the profile-owned direct Message channel |
-| `enabledInteractions[].channel.kind` | `adapter-decided` | Profile-owned `directMessage` discriminant |
+| `enabledInteractions[].channel.kind` | `adapter-decided` | Profile-owned `directMessage` or `unspecifiedMessage` discriminant |
 | `enabledInteractions[].channel.interfaceId` | `not-claimed` | Structurally absent from the direct-Message arm |
 | `enabledInteractions[].channel.interfaceOperationId` | `not-claimed` | Structurally absent from the direct-Message arm |
 | `enabledInteractions[].channel.messageId` | `adapter-decided` | Same deployed Receive Task Message reference as the projected subscription |

@@ -17,6 +17,7 @@ import type {
   SemanticProcessProgram,
   StartProcessStimulus,
 } from "@bpmn-lean/semantic-core";
+import { withMessageId } from "./message-channel-test-support.ts";
 
 const fixtureUrl = new URL(
   "../../../../scenarios/activity-boundary-message/process.bpmn",
@@ -111,10 +112,7 @@ export function activityBoundaryMessageFixture(
     wrongDelivery: {
       ...delivery,
       commandId: `reject-wrong-boundary-${suffix}`,
-      channel: {
-        ...delivery.channel,
-        messageId: "Message_WrongActivityBoundary",
-      },
+      channel: withMessageId(delivery.channel, "Message_WrongActivityBoundary"),
     },
     staleDelivery: {
       ...delivery,

@@ -365,7 +365,7 @@ export type CheckedNode =
       id: string;
       channel: Extract<
         MessageChannel,
-        { kind: typeof MessageChannelKind.DirectMessage }
+        { kind: typeof MessageChannelKind.DirectMessage | typeof MessageChannelKind.UnspecifiedMessage }
       >;
     }>
   | CheckedServiceTask

@@ -79,6 +79,7 @@ The required root Message name is a source-admission fact only: lowering never p
 const MessageChannelKind = {
   OperationMessage: "operationMessage",
   DirectMessage: "directMessage",
+  UnspecifiedMessage: "unspecifiedMessage",
 } as const;
 
 type MessageChannel = DeepReadonly<
@@ -92,10 +93,13 @@ type MessageChannel = DeepReadonly<
       kind: typeof MessageChannelKind.DirectMessage;
       messageId: string;
     }
+  | {
+      kind: typeof MessageChannelKind.UnspecifiedMessage;
+    }
 >;
 ```
 
-The implemented Intermediate Catch Message source always produces `operationMessage`. The selected Receive Task source always produces `directMessage`. Neither arm has optional fields, and no decoder infers an arm from missing data. Equality remains exact structural equality over the selected discriminant and all arm fields.
+The implemented Intermediate Catch Message source always produces `operationMessage`. The selected Receive Task source always produces `directMessage` under this profile; the [addressless Receive Task account](ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md) owns the field-free `unspecifiedMessage` arm of a Receive Task without a Message, under its own profile. Neither arm has optional fields, and no decoder infers an arm from missing data. Equality remains exact structural equality over the selected discriminant and all arm fields.
 
 `messageId` is the BPMN root Message identity. It is not a Message name, broker topic, CIB subscription name, business key, correlation key, Workflow ID, or transport operation. The Process instance and exact runtime occurrence remain selected by `subscriptionId`; `channel` remains a caller-supplied definition-consistency assertion rather than a global lookup key.
 
@@ -305,7 +309,7 @@ No immutable release/profile or retained production Event History baseline exist
 
 This capsule excludes:
 
-- Receive Task without `messageRef`, including CIB's legacy `signal(executionId)` path;
+- Receive Task without `messageRef`, including CIB's legacy `signal(executionId)` path, which the [addressless Receive Task account](ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md) covers under its own profile;
 - `operationRef`, realizing the default `##WebService` transport, every non-default `implementation`, `instantiate=true`, Process instantiation, Message Start behavior, and pre-activation buffering;
 - Message payload, `itemRef`, I/O specifications, DataInput/DataOutput, Data Associations, variable writes, and form or simulated-human input;
 - Message name matching as vendor-neutral identity, CorrelationKey, CorrelationSubscription, business-key/global correlation, broadcast, multiple subscriptions, and races;

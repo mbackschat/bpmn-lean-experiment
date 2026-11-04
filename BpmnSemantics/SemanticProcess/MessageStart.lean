@@ -22,7 +22,7 @@ def messageInitiationOperationWellFormed (places : List ControlPlace)
     nonempty origin.elementId.value &&
     (match channel with
       | .operationMessage .. => channel.identifiersNonempty
-      | .directMessage .. => false) &&
+      | .directMessage .. | .unspecifiedMessage => false) &&
     !outputs.isEmpty &&
     strictlySortedStrings (outputs.map fun output => output.value) &&
     outputs.all fun output => places.any fun place => decide (place.id = output)

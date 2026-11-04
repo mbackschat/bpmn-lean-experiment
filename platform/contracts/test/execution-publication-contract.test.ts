@@ -118,6 +118,26 @@ test("matches each open Message subscription to exactly one delivery interaction
   }, /public fields|order or kind|open occurrences/u);
 });
 
+// Locks the addressless Receive Task account's Product 2 disclosure: the field-free unspecified channel
+// decodes in the open wait, its interaction and its delivery, and carries no Message identity.
+test("decodes the unspecified Message channel of an addressless Receive Task", () => {
+  const unspecified = { kind: "unspecifiedMessage" };
+  const page = messageStatePublicationPage("deliverMessage");
+  page.current.state.openMessageSubscriptions[0]!.channel = unspecified;
+  page.current.state.enabledInteractions[1]!.channel = unspecified;
+  assert.deepEqual(decodePublicationPage(page), page);
+
+  const delivery = payloadStimulusPublicationPage({ kind: "deliverMessage", includePayload: false });
+  const transition = delivery.batches[0]!.transitions[0]!.transition;
+  transition.stimulus = { ...transition.stimulus, channel: unspecified };
+  assert.deepEqual(decodePayloadStimulusPage(delivery), delivery);
+
+  const named = messageStatePublicationPage("deliverMessage");
+  named.current.state.openMessageSubscriptions[0]!.channel = { ...unspecified, messageId: "PayloadMessage" };
+  named.current.state.enabledInteractions[1]!.channel = { ...unspecified, messageId: "PayloadMessage" };
+  assert.throws(() => decodePublicationPage(named), /public fields|exact|unexpected|keys/u);
+});
+
 test("accepts the exact sequential Multi-Instance progress publication", () => {
   const livePage = sequentialMultiInstancePublicationPage();
 

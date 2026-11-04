@@ -231,7 +231,7 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
   | .messageStartEvent id channel =>
       (match channel with
         | .operationMessage .. => channel.identifiersNonempty
-        | .directMessage .. => false) &&
+        | .directMessage .. | .unspecifiedMessage => false) &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         (flows.find? fun flow => decide (flow.sourceId = id)).all
           (fun flow => flow.condition.isNone)
@@ -270,7 +270,7 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
       (repeatable || interruption == .interrupting) &&
         (match channel with
         | .operationMessage .. => channel.identifiersNonempty
-        | .directMessage .. => false) &&
+        | .directMessage .. | .unspecifiedMessage => false) &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
   | .userTask id _ _ =>
@@ -328,7 +328,7 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
   | .intermediateCatchMessageEvent id channel =>
       (match channel with
         | .operationMessage .. => channel.identifiersNonempty
-        | .directMessage .. => false) &&
+        | .directMessage .. | .unspecifiedMessage => false) &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .payloadMessageCatchEvent id channel directOutput =>
       match channel with
@@ -341,7 +341,7 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
             identities.eraseDups.length = identities.length &&
             decide (directOutput.sourceDataOutputName ≠ some "") &&
             incomingCount flows id = 1 && outgoingCount flows id = 1
-      | .directMessage .. => false
+      | .directMessage .. | .unspecifiedMessage => false
   | .correlatedPayloadMessageCatchEvent id channel correlationKeyId
       correlationPropertyId payloadSelector processPropertySelector =>
       match channel with
@@ -354,11 +354,12 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
             correlationMessagePathValid payloadSelector &&
             correlationProcessPropertyPathValid processPropertySelector &&
             incomingCount flows id = 1 && outgoingCount flows id = 1
-      | .directMessage .. => false
+      | .directMessage .. | .unspecifiedMessage => false
   | .receiveTask id channel =>
       (match channel with
         | .operationMessage .. => false
-        | .directMessage .. => channel.identifiersNonempty) &&
+        | .directMessage .. => channel.identifiersNonempty
+        | .unspecifiedMessage => true) &&
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .configuredTask id descriptor =>
       descriptor.protocol = "urn:bpmn-lean:effect-protocol:activity-v1" &&

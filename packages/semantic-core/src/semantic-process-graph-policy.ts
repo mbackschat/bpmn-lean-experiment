@@ -98,6 +98,7 @@ export function semanticGraphPolicyForProfile(
     case COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID:
     case MESSAGE_KEY_CORRELATION_CHECKPOINT_PROFILE_ID:
     case SemanticProfileId.MessageAddressedReceiveTask:
+    case SemanticProfileId.AddresslessReceiveTask:
     case SemanticProfileId.NonInterruptingBoundaryTimer:
     case SemanticProfileId.ParallelForkJoin:
     case SemanticProfileId.ParallelMultiInstanceUserTask:

@@ -93,7 +93,7 @@ def armMessageBoundedUserTaskState? (state : RuntimeState) (input : ControlPlace
     (task : BoundedTaskArm) (boundaryMessage : BoundaryMessageArm) : Option RuntimeState := do
   if task.output = boundaryMessage.output then none else
   match boundaryMessage.channel with
-  | .directMessage _ => none
+  | .directMessage _ | .unspecifiedMessage => none
   | .operationMessage .. =>
       let owner ← onlyTokenOwner? state input
       let instanceId ← messageBoundedRunningInstance? state
@@ -123,6 +123,7 @@ theorem armMessageBoundedUserTaskState_sound (before after : RuntimeState)
   · simp [distinctOutputs] at success
   · cases channelEq : boundaryMessage.channel with
     | directMessage messageId => simp [distinctOutputs, channelEq] at success
+    | unspecifiedMessage => simp [distinctOutputs, channelEq] at success
     | operationMessage interfaceId operationId messageId =>
         cases owned : onlyTokenOwner? before input with
         | none => simp [distinctOutputs, channelEq, owned] at success

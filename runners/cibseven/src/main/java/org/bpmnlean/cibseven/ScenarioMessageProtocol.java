@@ -26,10 +26,11 @@ public final class ScenarioMessageProtocol {
     @JsonSubTypes.Type(
         value = OperationMessageChannel.class,
         name = "operationMessage"),
-    @JsonSubTypes.Type(value = DirectMessageChannel.class, name = "directMessage")
+    @JsonSubTypes.Type(value = DirectMessageChannel.class, name = "directMessage"),
+    @JsonSubTypes.Type(value = UnspecifiedMessageChannel.class, name = "unspecifiedMessage")
   })
   public sealed interface MessageChannel
-      permits OperationMessageChannel, DirectMessageChannel {}
+      permits OperationMessageChannel, DirectMessageChannel, UnspecifiedMessageChannel {}
 
   public record OperationMessageChannel(
       String interfaceId,
@@ -47,6 +48,9 @@ public final class ScenarioMessageProtocol {
       Objects.requireNonNull(messageId, "messageId");
     }
   }
+
+  /** The field-free channel of a Receive Task without a Message (`CIB-INT-0004`). */
+  public record UnspecifiedMessageChannel() implements MessageChannel {}
 
   public record OpenMessageSubscription(
       MessageSubscriptionId id, MessageChannel channel) {

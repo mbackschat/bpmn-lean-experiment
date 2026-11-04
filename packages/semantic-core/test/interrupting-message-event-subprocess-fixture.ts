@@ -2,7 +2,7 @@ import { InternalSchedulingMode, INTERRUPTING_MESSAGE_EVENT_SUBPROCESS_CHECKPOIN
   SemanticOperationKind, SemanticOriginKind, SemanticProcessCompilerId, SemanticProcessKind } from "@bpmn-lean/semantic-core";
 import type { MessageChannel, SemanticOperation, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
 
-export const channel: MessageChannel = { kind: MessageChannelKind.OperationMessage, messageId: "Message", interfaceId: "Interface", interfaceOperationId: "Operation" };
+export const channel: Extract<MessageChannel, { kind: typeof MessageChannelKind.OperationMessage }> = { kind: MessageChannelKind.OperationMessage, messageId: "Message", interfaceId: "Interface", interfaceOperationId: "Operation" };
 export const rootScopeId = "scope:Application";
 export const handlerScopeId = "scope:Withdrawal";
 const origin = (elementId: string) => ({ kind: SemanticOriginKind.BpmnElement as const, elementId });

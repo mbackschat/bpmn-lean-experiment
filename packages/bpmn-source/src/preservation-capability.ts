@@ -145,6 +145,7 @@ function preservationCapabilityKind(
     case SemanticProfileId.MappedBoundaryErrorServiceTask:
     case SemanticProfileId.MappedSuccessServiceTask:
     case SemanticProfileId.MessageAddressedReceiveTask:
+    case SemanticProfileId.AddresslessReceiveTask:
     case SemanticProfileId.MessageStart:
     case SemanticProfileId.RepeatableEventSubscriptions:
     case SemanticProfileId.NonInterruptingBoundaryTimer:

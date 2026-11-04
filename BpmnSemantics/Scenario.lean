@@ -183,6 +183,9 @@ inductive MessageChannel where
   | operationMessage
       (interfaceId interfaceOperationId messageId : SemanticId)
   | directMessage (messageId : SemanticId)
+  /-- A Receive Task without `messageRef`: BPMN leaves its Message unspecified, so the arm carries no
+  identity and the waiting occurrence alone addresses it (CIB-INT-0004). -/
+  | unspecifiedMessage
   deriving Repr, DecidableEq
 
 /-- Complete immutable definition address for one correlated Message candidate population. -/
@@ -216,6 +219,7 @@ structure DeliverCorrelatedPayloadMessageStimulus where
         !interfaceOperationId.value.isEmpty &&
         !messageId.value.isEmpty
   | .directMessage messageId => !messageId.value.isEmpty
+  | .unspecifiedMessage => true
 
 structure OpenMessageSubscription where
   id : MessageSubscriptionId

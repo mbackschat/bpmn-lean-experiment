@@ -319,6 +319,18 @@
         }
       }
     },
+    "unspecifiedMessageChannel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "const": "unspecifiedMessage"
+        }
+      }
+    },
     "directMessageChannel": {
       "type": "object",
       "additionalProperties": false,
@@ -1633,7 +1645,14 @@
               "$ref": "#/$defs/nonemptyString"
             },
             "channel": {
-              "$ref": "#/$defs/directMessageChannel"
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/directMessageChannel"
+                },
+                {
+                  "$ref": "#/$defs/unspecifiedMessageChannel"
+                }
+              ]
             }
           }
         },

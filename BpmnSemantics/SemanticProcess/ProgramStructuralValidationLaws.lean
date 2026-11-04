@@ -244,6 +244,9 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
     | directMessage messageId =>
         unfold operationWellFormed at operationValid
         simp_all
+    | unspecifiedMessage =>
+        unfold operationWellFormed at operationValid
+        simp_all
     | operationMessage interfaceId operationId messageId =>
         unfold operationWellFormed at operationValid
         simp only [channelEq, nonempty, Bool.and_eq_true, decide_eq_true_eq] at operationValid
@@ -257,6 +260,9 @@ theorem programWellFormed_internalArm_element_nonempty (program : Program)
     generalize channelEq : message.channel = channel at operationValid
     cases channel with
     | directMessage messageId =>
+        unfold operationWellFormed at operationValid
+        simp_all
+    | unspecifiedMessage =>
         unfold operationWellFormed at operationValid
         simp_all
     | operationMessage interfaceId operationId messageId =>

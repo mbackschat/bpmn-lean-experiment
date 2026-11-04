@@ -564,6 +564,27 @@
             "$ref": "#/$defs/messageSubscriptionEvidence"
           },
           "maxItems": 1
+        },
+        "addresslessReceiveWaits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/addresslessReceiveWaitEvidence"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      }
+    },
+    "addresslessReceiveWaitEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elementId"
+      ],
+      "properties": {
+        "elementId": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },

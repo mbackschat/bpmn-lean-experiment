@@ -58,9 +58,14 @@ export type MessageSubscriptionEvidence = Readonly<{
   executionIdPresent: boolean;
 }>;
 
+export type AddresslessReceiveWaitEvidence = Readonly<{
+  elementId: string;
+}>;
+
 type MessageSubscriptionSnapshot = Readonly<{
   afterCommandId: string;
   subscriptions: ReadonlyArray<MessageSubscriptionEvidence>;
+  addresslessReceiveWaits?: ReadonlyArray<AddresslessReceiveWaitEvidence>;
 }>;
 
 export type EffectJob = Readonly<{

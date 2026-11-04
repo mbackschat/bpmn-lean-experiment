@@ -41,6 +41,7 @@ import type {
 } from "./message-temporal-test-support.ts";
 import { assertWorkflowChainPatchHistory } from "./temporal-history-facts.ts";
 import { loadJson } from "./temporal-test-support.ts";
+import { withMessageId } from "./message-channel-test-support.ts";
 
 const scenarioUrl = new URL(
   "../../../../scenarios/intermediate-catch-message/scenario.json",
@@ -77,10 +78,7 @@ export async function exerciseIntermediateCatchMessagePrimary(
   const wrongChannel = {
     ...delivery,
     commandId: "deliver-message-wrong-channel",
-    channel: {
-      ...delivery.channel,
-      messageId: "Message_Other",
-    },
+    channel: withMessageId(delivery.channel, "Message_Other"),
   } satisfies DeliverMessageStimulus;
   assert.deepEqual(
     await submitMessageDelivery(
@@ -162,10 +160,7 @@ export async function exerciseIntermediateCatchMessagePrimary(
 
   const conflicting = {
     ...delivery,
-    channel: {
-      ...delivery.channel,
-      messageId: "Message_Conflicting",
-    },
+    channel: withMessageId(delivery.channel, "Message_Conflicting"),
   } satisfies DeliverMessageStimulus;
   await assert.rejects(
     submitMessageDelivery(

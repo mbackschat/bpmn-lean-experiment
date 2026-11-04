@@ -111,6 +111,10 @@ export function selectRootDefinitions(
       return selected(selectMessageRoots(rootElements, process));
     case SemanticProfileId.MessageAddressedReceiveTask:
       return selected(selectDirectMessageRoots(rootElements, process));
+    case SemanticProfileId.AddresslessReceiveTask:
+      return selected(rootElements.length === 1
+        ? { process, messageArtifacts: [], errorArtifact: undefined }
+        : undefined);
     case SemanticProfileId.SubProcessErrorPropagation:
       return selected(selectErrorRoots(rootElements, process));
     default:

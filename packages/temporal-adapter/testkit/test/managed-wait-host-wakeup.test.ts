@@ -40,6 +40,7 @@ import {
 import { compensationFixture, compensationProgram } from "./compensation-durability-support.ts";
 import { commands, runDirectVmActivations, workflowFailureType } from "./direct-vm-activation-harness.ts";
 import type { Activation, Completion } from "./direct-vm-activation-harness.ts";
+import { messageIdOf, withMessageId } from "./message-channel-test-support.ts";
 
 type Job = NonNullable<Activation["jobs"]>[number];
 const bundle = loadBpmnWorkflowBundle().then(({ code }) => parseWorkflowCode(code));
@@ -217,7 +218,7 @@ function queueFillingDeliveries(instanceId: string, bound: "entries" | "bytes"):
     let remaining = byteLimit - workflowChainCanonicalUtf8ByteLength(deliveries);
     for (const [index, delivery] of deliveries.entries()) {
       const padding = Math.ceil(remaining / (deliveries.length - index));
-      deliveries[index] = { ...delivery, channel: { ...delivery.channel, messageId: `${delivery.channel.messageId}${"x".repeat(padding)}` } };
+      deliveries[index] = { ...delivery, channel: withMessageId(delivery.channel, `${messageIdOf(delivery.channel)}${"x".repeat(padding)}`) };
       remaining -= padding;
     }
     assert.equal(workflowChainCanonicalUtf8ByteLength(deliveries), byteLimit);
