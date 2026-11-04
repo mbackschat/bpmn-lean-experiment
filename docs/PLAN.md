@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Inclusive Gateway regions in the nested scope-data profile, batch 4 (`PC-CF-04` primary; `PC-CF-08`). Terminal forks landed at `339fec34`. Close call, re-decided after the rejected first review: the class with unconditioned outputs and an optional default reaches the split shape of 10 of 23 pinned and 50 of 52 MIWG Inclusive splits, against implicit split and merge, which needs a kernel extension; default-less all-conditioned splits and comparison conditions stay later steps.
+Current task: Inclusive Gateway regions in the nested scope-data profile, batch 4 (`PC-CF-04` primary; `PC-CF-08`). Terminal forks landed at `339fec34`. Close call, re-decided after the reviews on semantic risk and cost, since no pinned or MIWG whole model of either candidate falls in its class as it stands: the non-local Inclusive join is the highest-risk open gateway mechanism and reuses an existing operation pair, where implicit split and merge needs a kernel extension.
 
 Deliverable: structured root Inclusive regions admitted in the nested scope-data profile, the join waiting for all and only the selected branches, landed on `main`.
 
 Acceptance blockers: the cold proposal review of the [proposal](capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md), then implementation, closure review and hosted `verify-complete`.
 
-Current result: the first proposal review rejected `1d904f4a` on reach and witness admissibility; the redesign is drafted.
+Current result: the first proposal review rejected `1d904f4a` on reach and witness admissibility; the redesign `fcb119ca` drew seven required findings, now corrected.
 
 Effort budget: 10 hours from 2026-11-04 13:11 CET, ending 23:11.
 
-Next action: a new cold proposal review of the redesign.
+Next action: the correction audit, then implementation.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
