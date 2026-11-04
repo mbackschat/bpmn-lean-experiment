@@ -94,13 +94,13 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the addressless Receive Task wait in the Receive Task profile, batch 4 (`PC-HUM-06` primary, root clauses). The default-less Choice landed at `ff367285`. Close call, decided on reach and reuse: at most 5 pinned CIB models admitted against 3 for Activity fan-in, with the foundations for 31 more. The repeated and embedded clauses wait for Messages in the nested scope-data profile, the next family; the Multi-Instance clauses also need a profile with a Multi-Instance Receive Task body. Batch 3 stays open behind the owner's holds.
+Current task: the addressless Receive Task wait in a new addressless Receive Task profile, batch 4 (`PC-HUM-06` primary, root clauses). The default-less Choice landed at `ff367285`. Close call, decided on reach and reuse: at most 5 pinned CIB models admitted against 3 for Activity fan-in, with the foundations for 31 more. The repeated and embedded clauses wait for Messages in the nested scope-data profile, the next family; the Multi-Instance clauses also need a profile with a Multi-Instance Receive Task body. Batch 3 stays open behind the owner's holds.
 
-Deliverable: a Receive Task without a Message admitted in the Receive Task profile, waiting until a delivery naming its published occurrence resumes it once, and refusing every other command unchanged, landed on `main`.
+Deliverable: a Receive Task without a Message admitted in its own Receive Task profile, waiting until a delivery naming its published occurrence resumes it once, and refusing every other command unchanged, landed on `main`.
 
 Acceptance blockers: implementation of the [proposal](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md), the CIB probe and hosted witness, closure review and landing.
 
-Current result: the proposal is approved after two correction audits (`4a757db0`); the CIB probe passes.
+Current result: the proposal is approved (`4a757db0`); a post-approval correction moves the wait from in-place growth to a new profile, because a frozen preservation baseline binds the old profile's digest; TypeScript, CIB runner and Product 2 are implemented.
 
 Effort budget: 8 hours from 2026-11-04 05:12 CET, ending 13:12.
 

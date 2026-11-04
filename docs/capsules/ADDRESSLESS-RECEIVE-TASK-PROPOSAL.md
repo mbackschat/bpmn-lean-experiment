@@ -7,7 +7,7 @@ Review: approved
 
 ## Question and delivery boundary
 
-Can the Receive Task profile admit a Receive Task that names no Message, so that it waits until one explicit command naming its published occurrence resumes it, while a named, correlated or payload Message delivery, a User Task completion and every other command leave it waiting? CIB realizes this wait as an execution signal; the project exposes its own occurrence-addressed ingress instead of cloning that API.
+Can a Receive Task profile admit a Receive Task that names no Message, so that it waits until one explicit command naming its published occurrence resumes it, while a named, correlated or payload Message delivery, a User Task completion and every other command leave it waiting? CIB realizes this wait as an execution signal; the project exposes its own occurrence-addressed ingress instead of cloning that API.
 
 This is the next family of batch 4 in [PLAN](../PLAN.md#scheduled-delivery-batches) (task breadth). It serves `PC-HUM-06` of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), primary, for its root clauses: the root witness resuming exactly once, the classified CIB execution-signal realization, the project-owned ingress, the wrong or stale occurrence refusing unchanged, and the Message or Signal broadcast that cannot resume the wait. The family establishes the channel arm, the CIB mapping, the Temporal path and the Product 2 decoding that the remaining clauses reuse.
 
@@ -33,7 +33,7 @@ Two register entries classify the realization, added with the implementation:
 
 ## Required, optional and excluded scope
 
-Required: in the Receive Task profile, a non-instantiating Receive Task with only `id` and optional `name`, no `messageRef`, `operationRef`, `implementation`, data output, extension elements or Camunda attributes, as the profile's one Receive Task between its None Start and None End, with the Process as the only root definition.
+Required: in the new addressless Receive Task profile, a non-instantiating Receive Task with only `id` and optional `name`, no `messageRef`, `operationRef`, `implementation`, data output, extension elements or Camunda attributes, as the profile's one Receive Task between its None Start and None End, with the Process as the only root definition.
 
 Optional: none.
 
@@ -48,7 +48,7 @@ These bound admission only: the repeated, embedded and Multi-Instance clauses br
 
 ## Profile and public contract
 
-The profile `cibseven-2.2.0-message-addressed-receive-task-draft` grows in place, under the [owner direction of 2026-10-14](../../contracts/README.md): the widening is additive, and every model, command and observation it admits today keeps its exact meaning. It gains the feature `addressless-receive-task`, loses that entry from `excluded`, and names `CIB-INT-0004` and `CIB-OP-0011`; its claim string widens to name both Receive Task variants, and its id keeps its name because the identity rule ties the id to unchanged meaning of what is already admitted, which holds. The profile's digest changes, so the retained CIB evidence of the Message-addressed scenario is replaced through the explicit evidence-replacement operation and the model-corpus progress baseline is rebound in the same change.
+A new profile, `cibseven-2.2.0-addressless-receive-task-draft`, selects the shape; it names `CIB-INT-0004`, `CIB-OP-0011` and `CIB-CFG-0001`, and excludes the Message-addressed Receive Task. Growing `cibseven-2.2.0-message-addressed-receive-task-draft` in place instead was rejected after approval: the cyclic-control-flow specification's non-updatable preservation baseline binds that profile's digest and authorizes one projection exception only, so in-place growth would need a second guard exception, while the owner direction of 2026-10-14 permits but does not require in-place growth for a new family. The Message-addressed profile, its retained evidence and that baseline stay unchanged.
 
 The public contract gains one arm of the closed Message channel, `unspecifiedMessage`, with no fields. It is admitted in exactly four positions: the checked Receive Task node, its `awaitMessage` operation, the runtime Message wait with its open wait and enabled `deliverMessage` interaction, and the `DeliverMessage` stimulus. Every other position the channel types refuses it (`ARECV-ADDRESS-02`): the Message Start trigger, the correlated Message address of publication and delivery, the payload Message wait, delivery and interaction, the Intermediate Catch and boundary Message arms, the event-race arms, the Message initiation and the Event Sub-Process Message subscription.
 
@@ -67,8 +67,8 @@ No runtime-only or synthetic construct is introduced: the channel arm is source-
 
 ## Admission
 
-- **TypeScript.** The source reader projects the addressless node only under this profile; the profile shape `Start → ReceiveTask → End` already admits one Receive Task; the operation admission accepts `awaitMessage` with either channel arm of a Receive Task, and every other channel position keeps its positive kind check.
-- **Lean.** The checked-process profile control and the Program-level profile shape accept the unspecified arm exactly where they accept the direct one, and every other channel match refuses it.
+- **TypeScript.** The source reader projects the addressless node only under this profile, and selects no root Message for it; the profile reuses the shape `Start → ReceiveTask → End`; Program admission accepts an `awaitMessage` with the unspecified arm under this profile only and requires that arm there, and every other channel position keeps its positive kind check.
+- **Lean.** The checked-process profile control and the Program-level profile shape admit the unspecified arm under this profile only, and every other channel match refuses it.
 - **Host.** Host admission already classifies `awaitMessage` as passive external ingress without a channel predicate; the new arm changes no host-admission predicate.
 
 ## Stable rules
@@ -91,7 +91,7 @@ The retained whole model is a parcel handover: *Handover requested* starts, *Awa
 - **Named delivery first.** Deliver a direct Message naming the same occurrence: refused, state unchanged; then resume.
 - **Stale.** Resume, then deliver again: refused; another occurrence ID: refused.
 - **Broadcast.** A correlated address carrying the unspecified arm is refused by address admission in the core and Lean; a correlated delivery with an operation address naming this definition is refused because no correlated wait exists, and the host's correlated-ingress admission refuses a publication to a definition without one; the CIB probe shows that Message correlation and Signal broadcast do not reach CIB's wait.
-- **Admission.** Adding a root Message, `instantiate="true"`, `camunda:inputOutput`, or the same model under the nested scope-data profile: refused.
+- **Admission.** Adding a root Message, `instantiate="true"`, `camunda:inputOutput`, the same model under the Message-addressed or nested scope-data profile, and a Message-addressed task under this profile: refused.
 - **Separation from the direct slice.** The existing Message-addressed scenarios keep their exact results; the direct channel still refuses an unspecified delivery, a project restriction where CIB's legacy signal would complete the task.
 
 ## Rule-to-evidence matrix
@@ -142,14 +142,14 @@ Smallest refinement witness: start the parcel handover, observe the unspecified 
 
 One current representation: the channel union gains its arm in every producer and consumer atomically, with no compatibility reader. The new arm carries no field, so the caller's channel assertion degenerates to naming the variant; the occurrence stays selected by `subscriptionId` alone, as it is for the direct arm.
 
-These owners state the closed two-arm union or exclude the addressless task, and are amended in the same change: the [Message-addressed Receive Task specification](RECEIVE-TASK-MESSAGE-SPEC.md#closed-message-address-representation) (closed union, "always produces `directMessage`", first exclusion), [contracts/README.md](../../contracts/README.md), the [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md), the [CIB observation policy](../CIB-OBSERVATION-POLICY.md) rows for `openMessageSubscriptions` and `enabledInteractions`, and the Receive Task conformance module's documentation.
+These owners state the closed two-arm union or exclude the addressless task, and are amended in the same change: the [Message-addressed Receive Task specification](RECEIVE-TASK-MESSAGE-SPEC.md#closed-message-address-representation) (closed union and "always produces `directMessage`"; its exclusion of the addressless task stays true for its own profile and gains a pointer here), [contracts/README.md](../../contracts/README.md), the [Semantic Process IL specification](../SEMANTIC-PROCESS-IL-SPEC.md), the [CIB observation policy](../CIB-OBSERVATION-POLICY.md) rows for `openMessageSubscriptions` and `enabledInteractions`, and the Receive Task conformance module's documentation.
 
 ### Owners this implementation grows
 
 - Source: [`receive-task-source.ts`](../../packages/bpmn-source/src/receive-task-source.ts), [`root-definition-selection.ts`](../../packages/bpmn-source/src/root-definition-selection.ts).
 - Core: [`semantic-value-contract.ts`](../../packages/semantic-core/src/semantic-value-contract.ts), [`message-channel.ts`](../../packages/semantic-core/src/message-channel.ts), [`checked-process-contract.ts`](../../packages/semantic-core/src/checked-process-contract.ts).
 - Lean: [`Scenario.lean`](../../BpmnSemantics/Scenario.lean) (420/800 nonblank lines), the modules listed in the Lean lane, [`ReceiveTaskConformance.lean`](../../BpmnSemantics/ReceiveTaskConformance.lean).
-- Contracts: [`scenario.schema.json`](../../contracts/schemas/scenario.schema.json), [`checked-process.schema.json`](../../contracts/schemas/checked-process.schema.json), [`semantic-process.schema.json`](../../contracts/schemas/semantic-process.schema.json), the [profile](../../profiles/cibseven-2.2.0-message-addressed-receive-task-draft/profile.json).
+- Contracts: [`scenario.schema.json`](../../contracts/schemas/scenario.schema.json), [`checked-process.schema.json`](../../contracts/schemas/checked-process.schema.json), [`semantic-process.schema.json`](../../contracts/schemas/semantic-process.schema.json), the new [profile](../../profiles/cibseven-2.2.0-addressless-receive-task-draft/profile.json).
 - Host: [`command-identity.ts`](../../packages/temporal-adapter/protocol/src/command-identity.ts).
 - CIB runner: [`ScenarioMessageProtocol.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/ScenarioMessageProtocol.java), [`CibSevenMessageSubscriptionGateway.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenMessageSubscriptionGateway.java), [`CibSevenMessageProjector.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenMessageProjector.java), [`CibSevenScenarioCommandExecutor.java`](../../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenScenarioCommandExecutor.java).
 - Product 2: [`execution-publications.ts`](../../platform/contracts/src/execution-publications.ts), [`execution-publication-semantic-value-decoders.ts`](../../platform/contracts/src/execution-publication-semantic-value-decoders.ts).
