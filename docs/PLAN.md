@@ -98,13 +98,13 @@ Current task: the addressless Receive Task wait in the Receive Task profile, bat
 
 Deliverable: a Receive Task without a Message admitted in the Receive Task profile, waiting until a delivery naming its published occurrence resumes it once, and refusing every other command unchanged, landed on `main`.
 
-Acceptance blockers: the cold review of the [proposal](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md), implementation, the CIB probe and hosted witness, closure review and landing.
+Acceptance blockers: implementation of the [proposal](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md), the CIB probe and hosted witness, closure review and landing.
 
-Current result: the proposal review approved with required edits, now applied; the CIB probe passes.
+Current result: the proposal is approved after two correction audits (`4a757db0`); the CIB probe passes.
 
 Effort budget: 8 hours from 2026-11-04 05:12 CET, ending 13:12.
 
-Next action: the correction audit, then red/green implementation.
+Next action: red/green implementation, TypeScript first.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

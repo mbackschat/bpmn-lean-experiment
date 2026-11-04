@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved
 
 ## Question and delivery boundary
 
@@ -11,7 +11,7 @@ Can the Receive Task profile admit a Receive Task that names no Message, so that
 
 This is the next family of batch 4 in [PLAN](../PLAN.md#scheduled-delivery-batches) (task breadth). It serves `PC-HUM-06` of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), primary, for its root clauses: the root witness resuming exactly once, the classified CIB execution-signal realization, the project-owned ingress, the wrong or stale occurrence refusing unchanged, and the Message or Signal broadcast that cannot resume the wait. The family establishes the channel arm, the CIB mapping, the Temporal path and the Product 2 decoding that the remaining clauses reuse.
 
-The repeated, embedded and both Multi-Instance clauses stay open, with two blockers. The repeated and embedded clauses need the Message wait in the nested scope-data profile, which admits task-separated cycles, repeated scope activations and embedded Sub-Processes but excludes Messages; its Lean analyses case on the User Task wait in many modules, about 46 by a rough count, many at their size ceilings. A follow-up family admitting the wait there is scheduled in PLAN directly after this one lands. The two Multi-Instance clauses additionally need a profile admitting a Multi-Instance Receive Task body in both modes, which no profile does today (the nested scope-data profile excludes `multi-instance`, and the `PC-MI` contracts select User, Service, Call and Sub-Process bodies); they stay open behind that separate prerequisite.
+The repeated, embedded and both Multi-Instance clauses stay open, with two blockers. The repeated and embedded clauses need the Message wait in the nested scope-data profile, which admits task-separated cycles, repeated scope activations and embedded Sub-Processes but excludes Messages; its Lean analyses case on the User Task wait in many modules, about 46 by a rough count, many at their size ceilings. A follow-up family admitting the wait there is scheduled in PLAN directly after this one lands. The two Multi-Instance clauses additionally need a profile admitting a Multi-Instance Receive Task body in both modes, which no profile does today (the nested scope-data profile excludes `multi-instance`, and the `PC-MI` contracts select User, Service, Call and Sub-Process bodies); they stay open behind that separate prerequisite, unless the follow-up family's proposal finds a Receive Task inside a Multi-Instance Sub-Process body (`PC-MI-04` to `PC-MI-06`) an adequate witness.
 
 Selection, 2026-11-04. Over the pinned CIB checkout, outside `target/` and `model-api`, 167 model files hold a Receive Task without `messageRef`; 60 of them carry no boundary, timer, message, signal, error, escalation, compensation, conditional, link, terminate or Multi-Instance definition, no Inclusive, Event-Based or Complex Gateway, no Script or Rule Task, no Collaboration and no Java class, expression, asynchronous continuation or listener. Of those 60, 29 are exactly Start, one Receive Task and End, and 24 of those carry `camunda:inputOutput`, which stays refused, so this family admits at most 5 pinned models, a heuristic count that source admission confirms during implementation; the other 31 compose the wait with chains, User or Service Tasks or Parallel forms and wait for the follow-up family. Activity fan-in (`PC-CF-07`) admits 3 such models and needs a kernel extension; Link Events (`PC-BASIC-02`) admit none, both executable Link models needing this wait first.
 
@@ -168,6 +168,6 @@ Guards it must satisfy: [`lean-fanout.test.ts`](../../scripts/lean-fanout.test.t
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `ba5192c6` | `fork-turns-none` | `approve-with-required-edits` | `4a757db0` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
