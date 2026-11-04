@@ -30,8 +30,8 @@ import {
 } from "./pipeline-target-support.ts";
 import type {
   LeanDefinitionRecord,
+  LeanMutationProbes,
   PipelineContext,
-  PipelineTargets,
   SemanticDifferentialCase,
   TargetBatch,
 } from "./pipeline-types.ts";
@@ -150,7 +150,7 @@ export async function runLeanTargets<Case extends SemanticDifferentialCase>(
 export async function requireLeanDefinitionMutationRejection(
   contexts: ReadonlyArray<PipelineContext>,
   inputPath: string,
-): Promise<PipelineTargets["leanDefinitionMutation"]> {
+): Promise<LeanMutationProbes["definition"]> {
   const records = mutableClone(leanDefinitionRecords(contexts));
   const firstOperation = records[0]?.semanticProcess?.operations?.[0];
   if (firstOperation?.origin?.elementId === undefined) {
@@ -188,7 +188,7 @@ export async function requireLeanScenarioMutationRejection(
   contexts: ReadonlyArray<PipelineContext>,
   inputPath: string,
   scenarioPath: string,
-): Promise<PipelineTargets["leanScenarioMutation"]> {
+): Promise<LeanMutationProbes["scenario"]> {
   const firstContext = contexts[0];
   if (firstContext === undefined) {
     throw new TypeError("Lean scenario mutation requires one context");
@@ -228,7 +228,7 @@ export async function requireLeanScenarioMutationRejection(
 export async function requireLeanProvenanceErasureRejection(
   contexts: ReadonlyArray<PipelineContext>,
   inputPath: string,
-): Promise<PipelineTargets["leanProvenanceMutation"]> {
+): Promise<LeanMutationProbes["provenance"]> {
   const records = mutableClone(leanDefinitionRecords(contexts));
   const parallelRecord = records.find(
     ({ semanticProcess }) =>

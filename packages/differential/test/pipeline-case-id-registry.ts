@@ -215,6 +215,24 @@ export type PipelineCasePartition = typeof PipelineCasePartition[keyof typeof Pi
 
 const eventsDataEffectsStart = pipelineCaseIdRegistry.indexOf("subprocess-error-propagation-trigger-first");
 
+/**
+ * Whether a selected partition runs the catalog-level Lean mutation probes. They run once per catalog, like the
+ * Lean-core suites `scripts/verify.sh` runs once, and the provenance probe needs a `parallel-fork-join-draft`
+ * definition, which only the control-flow cases carry.
+ */
+export function pipelinePartitionRunsLeanMutationProbes(partition: string | undefined): boolean {
+  switch (partition) {
+    case undefined:
+    case "":
+    case PipelineCasePartition.ControlFlow:
+      return true;
+    case PipelineCasePartition.EventsDataEffects:
+      return false;
+    default:
+      throw new TypeError(`BPMN_PIPELINE_PARTITION must name a pipeline case partition, received ${JSON.stringify(partition)}`);
+  }
+}
+
 /** The registered ids a selected partition runs; an absent selection runs the whole catalog. */
 export function pipelineCaseIdsFor(partition: string | undefined): readonly PipelineCaseId[] {
   switch (partition) {

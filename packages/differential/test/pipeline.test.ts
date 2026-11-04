@@ -52,7 +52,7 @@ import {
   warmPipelineTestTimeoutMs,
   warmSoftTargetMsFor,
 } from "../../../scripts/pipeline-budget.ts";
-import { pipelineCaseIdsFor } from "./pipeline-case-id-registry.ts";
+import { pipelineCaseIdsFor, pipelinePartitionRunsLeanMutationProbes } from "./pipeline-case-id-registry.ts";
 
 /**
  * Warm-pipeline feedback measures in milliseconds.
@@ -226,7 +226,8 @@ test(
     const selectedIds = new Set<string>(pipelineCaseIdsFor(process.env["BPMN_PIPELINE_PARTITION"]));
     const selectedCases = pipelineCases.filter(({ id }) => selectedIds.has(id));
     assert.equal(selectedCases.length, selectedIds.size, "every selected identifier names a registered case");
-    const { report, evidence } = await runPipelineCases(selectedCases);
+    const runsLeanMutationProbes = pipelinePartitionRunsLeanMutationProbes(process.env["BPMN_PIPELINE_PARTITION"]);
+    const { report, evidence } = await runPipelineCases(selectedCases, { runsLeanMutationProbes });
 
     assert.equal(report.kind, "bpmnPipelineReport");
     assert.equal(report.cases.length, selectedCases.length);
@@ -486,18 +487,13 @@ test(
         0,
       ),
     });
-    assert.deepEqual(report.leanDefinitionMutation, {
-      kind: "rejected",
-      mutation: "operationOrigin",
-    });
-    assert.deepEqual(report.leanScenarioMutation, {
-      kind: "rejected",
-      mutation: "scenarioExtraField",
-    });
-    assert.deepEqual(report.leanProvenanceMutation, {
-      kind: "rejected",
-      mutation: "parallelControlPlaceProvenanceErasure",
-    });
+    assert.deepEqual(report.leanMutationProbes, runsLeanMutationProbes
+      ? {
+        definition: { kind: "rejected", mutation: "operationOrigin" },
+        scenario: { kind: "rejected", mutation: "scenarioExtraField" },
+        provenance: { kind: "rejected", mutation: "parallelControlPlaceProvenanceErasure" },
+      }
+      : null);
     assert.equal(
       report.isolation.temporalWorkflowIds.length,
       selectedCases.length * 2,

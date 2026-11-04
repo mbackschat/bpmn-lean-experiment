@@ -7,6 +7,7 @@ import {
   PipelineCasePartition,
   pipelineCaseIdRegistry,
   pipelineCaseIdsFor,
+  pipelinePartitionRunsLeanMutationProbes,
 } from "../packages/differential/test/pipeline-case-id-registry.ts";
 
 import {
@@ -45,6 +46,16 @@ test("the case partitions split the registry into disjoint covering runs", () =>
   assert.deepEqual(partitions.flat(), [...pipelineCaseIdRegistry]);
   assert.deepEqual(pipelineCaseIdsFor(undefined), pipelineCaseIdRegistry);
   assert.throws(() => pipelineCaseIdsFor("control"), TypeError);
+  // The catalog-level Lean mutation probes run in exactly one leg, which must hold the Parallel fork/join cases their
+  // provenance probe erases.
+  const probeLegs = Object.values(PipelineCasePartition).filter(pipelinePartitionRunsLeanMutationProbes);
+  assert.equal(probeLegs.length, 1);
+  const parallelForkJoinIds = pipelineCaseIdRegistry.filter((id) => id.startsWith("parallel-fork-join-"));
+  assert.ok(parallelForkJoinIds.length > 0);
+  for (const id of parallelForkJoinIds) {
+    assert.ok(pipelineCaseIdsFor(probeLegs[0]).includes(id), id);
+  }
+  assert.equal(pipelinePartitionRunsLeanMutationProbes(undefined), true);
   assert.equal(
     warmBudgetMs({ BPMN_PIPELINE_PARTITION: PipelineCasePartition.ControlFlow }),
     pipelineCaseIdsFor(PipelineCasePartition.ControlFlow).length * warmBudgetPerCaseMs,
