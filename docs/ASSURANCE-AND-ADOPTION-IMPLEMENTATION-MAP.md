@@ -79,7 +79,7 @@ Registered answer-free scenarios run declared Lean, TypeScript, Temporal and pin
 - retained actual Java Boolean Process-variable observations and canonical tagged Boolean projection for the exact completion profile
 - verifier reconstruction of canonical status, logical time, variables, waits, interactions, and semantic instance identity from those raw observations
 - reconstruction deliberately reuses the Java projector's ordering and raw-binding translation, so it checks raw-to-canonical consistency rather than independently deriving projection semantics
-- phase-zero public-service probes for start and completion data, Service Task binding and retry, direct-Message Receive Task, modeled key/context Message correlation separation from public API variable criteria, Sub-Process Error propagation, and both product-neutral mapped Service Task host relations
+- phase-zero public-service probes for start and completion data, Service Task binding and retry, direct-Message and addressless Receive Task, modeled key/context Message correlation separation from public API variable criteria, Sub-Process Error propagation, and both product-neutral mapped Service Task host relations
 - one schema-valid sequential Multi-Instance phase-zero probe establishing ordered distinct task turnover, zero-item closure, one stable outer Timer, boundary interruption, desired-cardinality counter interpretation, and absent standard output aggregation without selecting a CIB Multi-Instance semantic oracle
 - public-service E2 raw evidence retains one candidate-group identity link and one typed Form Service field independently of completion
 - one content-bound CIB Seven `2.2.0` evidence artifact executes the notation-bearing interchange source under the composed profile with the predecessor's exact String/Null Process-start and User Task completion behavior; the retained notation is not a CIB semantic authority
@@ -146,7 +146,7 @@ Registered answer-free scenarios run declared Lean, TypeScript, Temporal and pin
 
 ### CIB oracle
 
-- modeled BPMN key/context correlation execution or compatibility; Intermediate Catch Message compatibility evidence; Receive Task compatibility beyond the retained direct-Message singleton profile
+- modeled BPMN key/context correlation execution or compatibility; Intermediate Catch Message compatibility evidence; Receive Task compatibility beyond the retained singleton profiles
 - arbitrary nested Sub-Process, Event Sub-Process, catch-all/multi-handler/ancestor Error search, or exceptional propagation beyond the direct-parent slice
 - A CIB semantic effect-in-flight state, project transport key, typed Worker result, or engine-derived effect activation ordinal
 - repeated live instances of one BPMN element and engine-derived activation ordinals
