@@ -96,15 +96,15 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: Exclusive Choices without a default under the nested scope-data profile, batch 4 (`PC-CF-02` primary). The Send Task landed at `b9e52f19`. Close call, decided on reach: 46 clean pinned CIB root models choose without a default. Batch 3 stays open behind the owner's holds.
 
-Deliverable: a Choice without a default admitted wherever the profile admits a Choice, routing as before when a condition holds and rolling the command back atomically when none does, landed on `main`.
+Deliverable: a Choice without a default admitted wherever the profile admits a Choice that no effect result reaches within its command, routing as before when a condition holds and rolling the command back atomically when none does, landed on `main`.
 
-Acceptance blockers: hosted `verify-complete`, the cold closure review, graduation and landing.
+Acceptance blockers: the closure correction audit, graduation and landing.
 
-Current result: the [capsule](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md) is implemented ([pull request 51](https://github.com/mbackschat/bpmn-lean-experiment/pull/51)) with no guard bound raised. Local `verify.sh` stages and the model corpus pass at `8ec53479`, except the pipeline's replay deadline under another project's host load; the hosted pipeline passes. Hosted `verify Temporal` lost one unrelated publication read ([TD-001](TEMPORAL-DEFECTS-LEDGER.md#td-001-query-loss-during-run-eviction)).
+Current result: the [capsule](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md) is implemented ([pull request 51](https://github.com/mbackschat/bpmn-lean-experiment/pull/51)) with no guard bound raised. Local `verify.sh` stages and the model corpus pass at `8ec53479`, except the pipeline's replay deadline under another project's host load; the hosted pipeline passes. One hosted `verify Temporal` run lost a publication read of a journey without this Choice, recorded under [TD-001](TEMPORAL-DEFECTS-LEDGER.md#td-001-query-loss-during-run-eviction) as not demonstrably TD-001.
 
 Effort budget: 8 hours from 2026-11-03 17:05 CET, extended once by owner direction (2026-11-04) by the owner pause from 20:10 to 01:55, so it ends about 06:50.
 
-Next action: on green hosted checks, the cold closure review, graduation and landing.
+Next action: the closure review's correction audit, then graduation and landing.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

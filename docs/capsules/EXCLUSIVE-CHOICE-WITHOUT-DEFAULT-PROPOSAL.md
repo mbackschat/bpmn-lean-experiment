@@ -7,7 +7,7 @@ Review: approved
 
 ## Question and delivery boundary
 
-Can the nested scope-data profile admit a divergent Exclusive Gateway that has no default flow, wherever it admits a Choice, routing exactly as before when a condition holds and rolling the whole command back when none does? The rollback must reach the caller as CIB's does: a Start creates no instance, and a User Task completion leaves the task open.
+Can the nested scope-data profile admit a divergent Exclusive Gateway that has no default flow, wherever it admits a Choice that no effect result reaches within its command, routing exactly as before when a condition holds and rolling the whole command back when none does? The rollback must reach the caller as CIB's does: a Start creates no instance, and a User Task completion leaves the task open.
 
 This is the next family of batch 4 in [PLAN](../PLAN.md#scheduled-delivery-batches). It serves `PC-CF-02` of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), primary, for Choices that declare no default:
 
@@ -230,12 +230,12 @@ This separates a Workflow failure, a created Workflow, a lost or reinterpreted r
 
 Lane shape: proved
 
-Evidence: the no-match outcome is proved over the scheduled closure of [`InternalScheduledClosure`](../../BpmnSemantics/SemanticProcess/InternalScheduledClosure.lean); admission and the journeys are checked.
+Evidence: the dispatch is proved in [`SimpleBooleanExpression`](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean) and command atomicity given the closure's no-flow report in [`Execution`](../../BpmnSemantics/SemanticProcess/Execution.lean); that a reached no-match Choice makes the closure report it (the frontier exclusion, the stable-exit raise and its pass-through by `prependClosureStep`) holds by definition and is checked by the three rolled-back journeys, not proved; admission is checked.
 
 Proved beside the definitions they govern, since the build fan-out guard refused a family leaf (see [Implementation notes](#implementation-notes)):
 
 - in [`SimpleBooleanExpression`](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean), the dispatch selects nothing when the default is absent and every candidate evaluates to `some false`, selects the first true candidate after only false ones, and agrees with `selectConditionalOutput` when the default is present; in [`TransitionStates`](../../BpmnSemantics/SemanticProcess/TransitionStates.lean), the step of such a Choice is disabled, so it contributes no successor;
-- in [`Execution`](../../BpmnSemantics/SemanticProcess/Execution.lean), over the scheduled closure function: whenever the closure from an admitted state reports a no-flow Choice, after any number of steps, the command result is `rolledBack` with both flags false and `state = before`, and it publishes no transition or lifecycle; the closure raises that report at its stable exit when `stuckChoice` holds, and `prependClosureStep` passes it through every earlier step;
+- in [`Execution`](../../BpmnSemantics/SemanticProcess/Execution.lean), over the scheduled closure function: whenever the closure from an admitted state reports a no-flow Choice, after any number of steps, the command result is `rolledBack` with both flags false and `state = before`, and it publishes no transition or lifecycle;
 - in [`InternalScheduledClosure`](../../BpmnSemantics/SemanticProcess/InternalScheduledClosure.lean), `stuckChoice` is false for every Program without a default-less Choice, the lemma each analysis's discharge applies.
 
 Checked: an executable conformance module checks:
@@ -338,7 +338,9 @@ Implemented as proposed, with these deviations:
 
   The proposal's consumer list missed `StructuredCompositionProgressProofs`, `MixedTaskControlFlowProgressProofs`, `MixedTaskControlFlowClosureProofs` and `ParallelScopeCommandSuccessProofs`. Every size-excepted module keeps its line count.
 - **Frontier exclusion checked, not proved.** The proofs stop at the step and at the command: `chooseState_none_of_allFalse` disables a no-flow Choice, and the command law covers every closure that reports one. The claim that the derived frontier then holds neither an offer nor a preparation failure for the parked Choice, so the closure reaches its stable exit, is checked by the journeys, not proved. Proving it would add a law to `InternalExecutionFrontier`, which this family leaves unchanged.
-- **Product 2.** No Product 2 surface switches over the start failure code, so `startRolledBack` reaches its generic start-failure presentation unchanged.
+- **Reach of the effect-closure exclusion.** Measured at closure over this profile's own retained models: stripping every default from its 7 Choice-bearing models, the reader would refuse 3 (claim rework, complaint handling, invoice clearing), against 1 of the 46 selected CIB models. The exclusion is forced: the profile's mapped tasks are `asyncBefore`, so in CIB a no-match after their result is a job failure and an incident, which the profile does not admit.
+- **Admitted but unwitnessed.** A default-less Choice reached through a Call Activity's return, or on a cyclic re-entry, is admitted; the core rolls such a command back flag-free with the state unchanged, but no Lean, hosted or CIB witness calibrates either path.
+- **Product 2, accepted at closure.** The approved contract had Product 2 show `startRolledBack` as its own message. No Product 2 surface switches over the start failure code, so it reaches the generic start-failure presentation unchanged.
 - **Maps.** The [`implementation-status-owner:TEMPORAL-HOSTING`](../TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) map, at its word backstop, gains no line; the control-flow family entry links the hosted witness and the client refusal instead.
 
 ## Independent cold-review receipt

@@ -9,6 +9,7 @@ import {
   replayCommittedTransitions,
   runtimeStateDefects,
   runtimeStateRegressions,
+  SemanticOperationKind,
   StimulusKind,
   type RuntimeState,
   type Scenario,
@@ -23,9 +24,9 @@ import { loadAndCompileCases } from "./pipeline-targets.ts";
  * Finite executable preservation evidence over every registered single-instance pipeline program.
  *
  * Every committed transition prefix is replayed so the invariant is checked at microsteps hidden by
- * stable scenario observations. Rejected commands, and the flag-free rollback of a Choice without a default that
- * matches no route (XND-ROLLBACK-01), must preserve the exact received state and emit no committed transition; a
- * rollback carrying a closure flag is a harness failure, never a supported outcome. This finite registry lane cannot substitute for the general quantified Lean
+ * stable scenario observations. Rejected commands, and the flag-free rollback of a Program holding a Choice without a
+ * default (XND-ROLLBACK-01), must preserve the exact received state and emit no committed transition; any other
+ * rollback is a harness failure, never a supported outcome. This finite registry lane cannot substitute for the general quantified Lean
  * obligation: an unregistered program or schedule can still reach a state this corpus never visits.
  */
 
@@ -69,6 +70,12 @@ function assertAdmittedState(
   );
 }
 
+/** Only a Program with a Choice without a default can roll back flag-free (XND-ROLLBACK-01). */
+function hasChoiceWithoutDefault(program: SemanticProcessProgram): boolean {
+  return program.operations.some((operation) =>
+    operation.kind === SemanticOperationKind.Choose && operation.defaultOutput === undefined);
+}
+
 function committedStatesFor(
   caseId: string,
   program: SemanticProcessProgram,
@@ -79,7 +86,7 @@ function committedStatesFor(
   if (traced.result.outcome !== CommandOutcome.Committed) {
     assert.ok(
       traced.result.outcome === CommandOutcome.Rejected ||
-        (traced.result.outcome === CommandOutcome.RolledBack &&
+        (traced.result.outcome === CommandOutcome.RolledBack && hasChoiceWithoutDefault(program) &&
           !traced.result.internalStepBoundExceeded && !traced.result.ambiguousInternalChoice),
       `${caseId} produced an unsupported non-commit outcome ${traced.result.outcome}`,
     );
