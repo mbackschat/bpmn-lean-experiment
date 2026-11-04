@@ -29,12 +29,12 @@ private def sortedById {α : Type} (key : α → String) (values : List α) : Li
   values.mergeSort fun left right => decide (key left ≤ key right)
 
 /-- `graph` with the flow `source>target` ending at a new throw of `linkName` and a new flow leaving its catch for
-`target`, both Events and the new flow owned by the interrupted flow's scope. -/
-private def splice (graph : CheckedProcess) (source target linkName : String) : CheckedProcess :=
+`target`, both Events and the new flow owned by the interrupted flow's scope; `tag` keeps a second pair's ids distinct. -/
+private def splice (graph : CheckedProcess) (source target linkName : String) (tag := "") : CheckedProcess :=
   let interrupted : SequenceFlowId := ⟨source ++ ">" ++ target⟩
   let owner := ((graph.sequenceFlowScopes.find? (·.sequenceFlowId == interrupted)).map (·.scopeId)).getD ⟨""⟩
-  let throwId : NodeId := ⟨"Throw" ++ linkName⟩
-  let catchId : NodeId := ⟨"Catch" ++ linkName⟩
+  let throwId : NodeId := ⟨"Throw" ++ linkName ++ tag⟩
+  let catchId : NodeId := ⟨"Catch" ++ linkName ++ tag⟩
   let caught : SequenceFlowId := ⟨catchId.value ++ ">" ++ target⟩
   { graph with
     nodes := sortedById (·.id.value) (graph.nodes ++ [.linkThrowEvent throwId linkName, .linkCatchEvent catchId linkName])
@@ -104,6 +104,15 @@ private def excluded_pairings_are_refused : Bool :=
   , renamed (renamed warrantyLinks "ThrowBackToRepair" "") "CatchBackToRepair" "", conditioned, crossed, chained
   ].all fun graph => contractLinks? graph == none && !linkedCheckedWellFormed graph
 
+/-- LNK-PAIR-01: a name pairs across the whole executed Process, as CIB deploys it, not per scope: a second complete
+pair of the root name *Back to repair* inside the *Repair device* body is refused. A Link model whose entry root is not
+the Process it names is refused too, while its Link-free twin relabelled the same way contracts to itself. -/
+private def names_pair_across_the_executed_process : Bool :=
+  let secondPair := splice warrantyLinks "ReplacePart" "OrderSparePart" "BackToRepair" "InBody"
+  let otherRoot (graph : CheckedProcess) : CheckedProcess := { graph with processId := ⟨"Other"⟩ }
+  contractLinks? secondPair == none && !linkedCheckedWellFormed secondPair &&
+    contractLinks? (otherRoot warrantyLinks) == none && contractLinks? (otherRoot warranty) == some (otherRoot warranty)
+
 /-- LNK-PROFILE-01: under another profile the Link model is refused, while its Link-free twin passes unchanged. -/
 private def other_profiles_refuse_links : Bool :=
   let relabel (graph : CheckedProcess) : CheckedProcess :=
@@ -139,6 +148,7 @@ def linkEventsConformanceChecks : List (String × Bool) := [
   ("analyses_run_on_the_contraction", analyses_run_on_the_contraction),
   ("pairing_follows_the_link_name", pairing_follows_the_link_name),
   ("excluded_pairings_are_refused", excluded_pairings_are_refused),
+  ("names_pair_across_the_executed_process", names_pair_across_the_executed_process),
   ("other_profiles_refuse_links", other_profiles_refuse_links),
   ("arms_decode_with_their_names", arms_decode_with_their_names),
   ("definition_input_binds_the_twin_program", definition_input_binds_the_twin_program)

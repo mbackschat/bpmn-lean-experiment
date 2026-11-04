@@ -16,18 +16,20 @@ import type { CheckedProcess } from "@bpmn-lean/semantic-core";
 import { effectResultReachesDefaultlessChoice } from "../src/defaultless-choice-effect-closure.ts";
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 
-type Witness = Readonly<{ model: string; twin: string }>;
+type Witness = Readonly<{ model: string; twin: string; twinDirectory?: string }>;
 const warranty: Witness = { model: "warranty-repair-links", twin: "warranty-repair" };
 const onboarding: Witness = { model: "onboarding-milestones-links", twin: "onboarding-milestones" };
+const accountOpening: Witness = { model: "account-opening", twin: "account-opening", twinDirectory: "inclusive-gateway-regions" };
 
 const scenarios = new URL("../../../scenarios/", import.meta.url);
 const read = (path: string): Promise<string> => readFile(new URL(path, scenarios), "utf8");
 const source = (witness: Witness): Promise<string> => read(`link-events/${witness.model}.bpmn`);
-const twinSource = (witness: Witness): Promise<string> => read(`none-intermediate-throw/${witness.twin}.bpmn`);
+const twinDirectory = (witness: Witness): string => witness.twinDirectory ?? "none-intermediate-throw";
+const twinSource = (witness: Witness): Promise<string> => read(`${twinDirectory(witness)}/${witness.twin}.bpmn`);
 
 /** Both models bind the twin's overlay, whose one handler they share. */
 async function compile(witness: Witness, xml: string) {
-  const bytes = await readFile(new URL(`none-intermediate-throw/${witness.twin}-overlay.json`, scenarios));
+  const bytes = await readFile(new URL(`${twinDirectory(witness)}/${witness.twin}-overlay.json`, scenarios));
   const sourceOverlay = { id: `${witness.twin}-handlers`, sha256: createHash("sha256").update(bytes).digest("hex"), bytes };
   return compileBpmnToSemanticProcess({ bytes: new TextEncoder().encode(xml), sourceId: witness.twin,
     expectedSha256: undefined, semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, sourceOverlay,
@@ -264,4 +266,22 @@ test("the checked-process schema admits both Link arms and refuses one without i
   for (const arm of arms) assert.equal(node(arm), true, arm.id);
   assert.equal(node({ kind: "linkThrowEvent", id: "Event" }), false);
   assert.equal(node({ kind: "linkCatchEvent", id: "Event", linkName: "" }), false);
+});
+
+test("a Link pair on an Inclusive region branch pairs the join as its explicit flow does", async () => {
+  // Closure review finding 1: the join's paired split is derived by walking the source scope, which must read the pair
+  // contracted, or every Link inside a region is refused while its twin is admitted.
+  const xml = await twinSource(accountOpening);
+  const pair = '<intermediateThrowEvent id="ThrowStandard" name="Standard"><linkEventDefinition name="Standard" /></intermediateThrowEvent>' +
+    '<intermediateCatchEvent id="CatchStandard" name="Standard"><linkEventDefinition name="Standard" /></intermediateCatchEvent>';
+  const beforeJoin = replaceOnce(xml,
+    '<sequenceFlow id="Flow_StandardDone" sourceRef="StandardVerification" targetRef="ChecksComplete" />',
+    '<sequenceFlow id="Flow_StandardDone" sourceRef="StandardVerification" targetRef="ThrowStandard" />' +
+      '<sequenceFlow id="Flow_StandardCaught" sourceRef="CatchStandard" targetRef="ChecksComplete" />' + pair);
+  const onDefaultBranch = replaceOnce(xml,
+    '<sequenceFlow id="Flow_Standard" sourceRef="RequiredChecks" targetRef="StandardVerification" />',
+    '<sequenceFlow id="Flow_Standard" sourceRef="RequiredChecks" targetRef="ThrowStandard" />' +
+      '<sequenceFlow id="Flow_StandardCaught" sourceRef="CatchStandard" targetRef="StandardVerification" />' + pair);
+  await assertTwin(accountOpening, beforeJoin, "pair before the Inclusive join");
+  await assertTwin(accountOpening, onDefaultBranch, "pair on the Inclusive default branch");
 });

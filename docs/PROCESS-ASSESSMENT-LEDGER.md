@@ -1604,7 +1604,7 @@ The owner directed that ordinary work never need a complete Lean rebuild. The wh
 A bulk repair script ran without a declared target effect or an independent check, and a green build was taken as its success, so it reversed the outcome it served.
 
 Instances
-: 4
+: 5
 
 Disposition
 : `executable guard`
@@ -1621,6 +1621,8 @@ Hiding hub bodies broke proofs in their importers. A repair script answered each
 **Third instance (2026-11-04):** the hand-authored implementation commit `aa47af68` of the [addressless Receive Task](capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md#implementation-notes) touched 77 files; its scope and target-effect limits were declared after the implementation and before the commit, and a LOW post-check against them passed. The trigger fired on a hand change again, so the declaration belongs at implementation start, when the proposal's inventory is approved.
 
 **Fourth instance (2026-11-04):** a scratch generator wrote the three answer-free scenario inputs of [terminal forks](capsules/TERMINAL-FORKS-SPEC.md#evidence-and-acceptance) into `scenarios/terminal-forks/` in `65347b64` with no declaration, review or check, filed under Rule 3 as a one-off script although Rule 2 governs every script that creates repository files; the closure review caught it, the files were reverted in `116889d8` and re-created by a declared, reviewed and checked generator. No executable guard can see a scratch script's writes, so this instance rests on the closure review.
+
+**Fifth instance (2026-11-04):** the hand-authored [Link Events](capsules/LINK-EVENTS-PROPOSAL.md#owners-this-implementation-grows) implementation commit `ae4bdf5d` touched 57 files, and the hosted pipeline job split `c7d55330` changed a budget derivation, both with the approved proposal's owner inventory as their only declaration; the closure review caught it, and a LOW post-check of `7fcb74d0..653296d4` found 21 changed files outside that inventory. As in the fourth instance the unlanded result was set aside in full: the corrected change was declared, reviewed, applied afresh from `7fcb74d0` and checked against its declaration. It is the third hand change to cross the trigger without a declaration at implementation start, the timing the third instance named, so that prose did not bind.
 
 ### Finding 85
 
