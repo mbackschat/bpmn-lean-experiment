@@ -3,6 +3,7 @@ package org.bpmnlean.cibseven;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,7 +25,10 @@ import org.junit.Test;
  * specification's two witness models: `IntermediateThrowNoneEventActivityBehavior` leaves at once (BpmnParse.java:1669-1672),
  * so each None Throw activation is an ended `intermediateNoneThrowEvent` instance of the same kind. On the single-scope
  * models specification's two witness models (`SSM-ADMIT-01`) it calibrates the same activations with the Process root as the
- * only scope, where no Sub-Process instance exists. CIB does not execute the project's Simple Boolean v1 conditions, so each
+ * only scope, where no Sub-Process instance exists. On the terminal forks specification's two witness models (`TFK-END-01`,
+ * `TFK-QUIESCE-01`) it calibrates that each None End is one ended `noneEndEvent` instance consuming only its own execution,
+ * reached without a wait on a wait-free branch, and that the Process instance, or the Sub-Process instance in a body, ends
+ * only with its last execution (`PvmAtomicOperationActivityEnd`). CIB does not execute the project's Simple Boolean v1 conditions, so each
  * condition is rendered as JUEL under `CIB-CFG-0005` before deployment; the probe compares activations, never condition
  * truth. Expected values are built here from the specification's witness-model account, never read from a target result.
  */
@@ -34,6 +38,8 @@ public final class CibSevenPassThroughTaskProbeTest {
   private static final Path BRANCH_MODELS = PROJECT_ROOT.resolve("scenarios/pass-through-parallel-branches");
   private static final Path THROW_MODELS = PROJECT_ROOT.resolve("scenarios/none-intermediate-throw");
   private static final Path SINGLE_SCOPE_MODELS = PROJECT_ROOT.resolve("scenarios/single-scope-models");
+  private static final Path TERMINAL_FORK_MODELS = PROJECT_ROOT.resolve("scenarios/terminal-forks");
+  private static final String NONE_END = "noneEndEvent";
   private static final String NONE_THROW = "intermediateNoneThrowEvent";
   private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
   private static final String SIMPLE_BOOLEAN = " expressionLanguage=\"urn:bpmn-lean:expression:simple-boolean:v1\"";
@@ -287,6 +293,53 @@ public final class CibSevenPassThroughTaskProbeTest {
     }
   }
 
+  @Test
+  public void theLookupResultEndsBothWaitFreeBranchesAndTheRootEndsOnlyWithTheLastEquipmentOrAccessBranch() throws Exception {
+    for (var order : List.of(List.of("CollectEquipment", "RevokeSystemAccess"), List.of("RevokeSystemAccess", "CollectEquipment"))) {
+      try (var session = new Session(TERMINAL_FORK_MODELS, "employee-offboarding", 0, "lookUpEmployee", "number", "E-4711")) {
+        var instance = session.start("Process_EmployeeOffboarding", Map.of("employee", "Ada Example"));
+        session.assertPassedThrough(instance, "NotifyPayroll", "task", 0);
+        session.runJob(instance);
+        session.assertPassedThrough(instance, "NotifyPayroll", "task", 1);
+        session.assertPassedThrough(instance, "PayrollNotified", NONE_END, 1);
+        session.assertPassedThrough(instance, "DepartureRecorded", NONE_END, 1);
+        session.assertOpenTasks(instance, "CollectEquipment", "RevokeSystemAccess");
+        session.assertRunning(instance);
+
+        var ends = Map.of("CollectEquipment", "EquipmentCollected", "RevokeSystemAccess", "AccessRevoked");
+        session.complete(instance, order.get(0));
+        session.assertPassedThrough(instance, ends.get(order.get(0)), NONE_END, 1);
+        session.assertOpenTasks(instance, order.get(1));
+        session.assertRunning(instance);
+        session.complete(instance, order.get(1));
+        session.assertPassedThrough(instance, ends.get(order.get(1)), NONE_END, 1);
+        session.assertNoSubProcess(instance);
+        session.assertEnded(instance);
+      }
+    }
+  }
+
+  @Test
+  public void enteringTheClearingEndsBothWaitFreeBranchesAndTheSubProcessEndsOnlyWithTheDeskPacked() throws Exception {
+    try (var session = new Session(TERMINAL_FORK_MODELS, "office-move", 0, "bookMovers", "code", "MV-12")) {
+      var instance = session.start("Process_OfficeMove", Map.of("office", "Building B"));
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "ReturnKeys", "manualTask", 1);
+      session.assertPassedThrough(instance, "KeysReturned", NONE_END, 1);
+      session.assertPassedThrough(instance, "CancelParkingPermit", "task", 1);
+      session.assertPassedThrough(instance, "ParkingCancelled", NONE_END, 1);
+      session.assertOpenTasks(instance, "PackDesk");
+      assertNull(session.activations(instance, "ClearOldOffice").get(0).getEndTime());
+
+      session.complete(instance, "PackDesk");
+      session.assertPassedThrough(instance, "DeskPacked", NONE_END, 1);
+      session.assertPassedThrough(instance, "ClearOldOffice", "subProcess", 1);
+      session.assertOpenTasks(instance, "ConfirmNewOffice");
+      session.complete(instance, "ConfirmNewOffice");
+      session.assertEnded(instance);
+    }
+  }
+
   private static final class Session implements AutoCloseable {
     final ProcessEngine engine;
     final String deployment;
@@ -383,6 +436,17 @@ public final class CibSevenPassThroughTaskProbeTest {
       var tasks = engine.getTaskService().createTaskQuery().processInstanceId(instance).list();
       assertEquals(1, tasks.size());
       assertEquals(element, tasks.get(0).getTaskDefinitionKey());
+    }
+
+    /** Exactly `elements` are open as User Tasks, in any order. */
+    void assertOpenTasks(String instance, String... elements) {
+      var open = engine.getTaskService().createTaskQuery().processInstanceId(instance).list().stream()
+          .map(task -> task.getTaskDefinitionKey()).sorted().toList();
+      assertEquals(List.of(elements).stream().sorted().toList(), open);
+    }
+
+    void assertRunning(String instance) {
+      assertEquals(1, engine.getRuntimeService().createProcessInstanceQuery().processInstanceId(instance).count());
     }
 
     List<HistoricActivityInstance> activations(String instance, String element) {
