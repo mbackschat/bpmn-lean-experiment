@@ -1,8 +1,8 @@
-# Exclusive Choice without a default proposal
+# Exclusive Choice without a default specification
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -230,7 +230,7 @@ This separates a Workflow failure, a created Workflow, a lost or reinterpreted r
 
 Lane shape: proved
 
-Evidence: the dispatch is proved in [`SimpleBooleanExpression`](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean) and command atomicity given the closure's no-flow report in [`Execution`](../../BpmnSemantics/SemanticProcess/Execution.lean); that a reached no-match Choice makes the closure report it (the frontier exclusion, the stable-exit raise and its pass-through by `prependClosureStep`) holds by definition and is checked by the three rolled-back journeys, not proved; admission is checked.
+Evidence: the dispatch is proved by [`selectChoiceOutput_none_of_allFalse`](../../BpmnSemantics/SemanticProcess/SimpleBooleanExpression.lean#selectChoiceOutput_none_of_allFalse) and command atomicity given the closure's no-flow report by the private `evaluateStimulusScheduled_noFlowChoice` in [`Execution`](../../BpmnSemantics/SemanticProcess/Execution.lean); that a reached no-match Choice makes the closure report it (the frontier exclusion, the stable-exit raise and its pass-through by `prependClosureStep`) holds by definition and is checked by the three rolled-back journeys, not proved; admission is checked.
 
 Proved beside the definitions they govern, since the build fan-out guard refused a family leaf (see [Implementation notes](#implementation-notes)):
 

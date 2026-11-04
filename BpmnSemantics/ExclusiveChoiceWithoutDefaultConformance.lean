@@ -14,7 +14,7 @@ witness here. Like `ExclusiveChoiceArityConformance`, the module runs no command
 the no-match outcome is proved in `Execution`, and Lean executes the rolled-back journeys in the
 pipeline and the Lean-core differential test. Its graph helpers repeat that module's private ones on purpose: a
 shared fixture module would join both modules' rebuild sets for a few one-line definitions. See the
-[Exclusive Choice without a default account](../docs/capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md#separating-witnesses).
+[Exclusive Choice without a default account](../docs/capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-SPEC.md#separating-witnesses).
 -/
 
 public section

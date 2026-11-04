@@ -54,7 +54,7 @@ The [root Parallel forks account](capsules/ROOT-PARALLEL-FORKS-SPEC.md) grows th
 
 ## Exclusive Choice without a default
 
-The [Exclusive Choice without a default account](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md) grows the same profile with root Choices of two or more conditions and no default (`CIB-INT-0003`); its receipt owns review state.
+The [Exclusive Choice without a default account](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-SPEC.md) grows the same profile with root Choices of two or more conditions and no default (`CIB-INT-0003`); its receipt owns review state.
 
 **Implemented.** The default becomes optional in the checked node and the IL `choose`; a default-less Choice takes its first true condition (`XND-ROUTE-01`), and when every condition is false the closure stabilizes with it parked and reports `noFlowChoice`, so the Start or User Task completion rolls back flag-free to its exact prior state (`XND-ROLLBACK-01`; Lean proves the dispatch and the [command boundary](../BpmnSemantics/SemanticProcess/Execution.lean) given that report, and the journeys check the report itself). Admission refuses one conditional flow and an unconditioned flow (`XND-ADMIT-01`, [conformance module](../BpmnSemantics/ExclusiveChoiceWithoutDefaultConformance.lean)); the source reader alone refuses a Choice that an effect result can reach. Two pipeline cases, a Lean-core differential test for the catering Start and cash payout, the [hosted witness](../packages/temporal-adapter/testkit/test/exclusive-choice-without-default-recovery.temporal-test.ts) of a rolled-back completion across Worker replacement and retry, the client's `startRolledBack` refusal before any Workflow (`XND-HOST-01`), two corpus rows, About and the CIB probe witness it.
 
