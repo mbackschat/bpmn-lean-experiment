@@ -38,12 +38,13 @@ test("keeps the portable budget and both process deadlines ordered", () => {
   );
 });
 
-test("the case partitions split the registry into disjoint covering runs", () => {
+test("the case partitions split the registry into disjoint covering runs", async () => {
   const partitions = Object.values(PipelineCasePartition).map((partition) => pipelineCaseIdsFor(partition));
   for (const ids of partitions) {
     assert.ok(ids.length > 0, "an empty partition would be a hosted leg that verifies nothing");
   }
-  assert.deepEqual(partitions.flat(), [...pipelineCaseIdRegistry]);
+  assert.deepEqual([...partitions.flat()].sort(), [...pipelineCaseIdRegistry].sort());
+  assert.equal(new Set(partitions.flat()).size, pipelineCaseIdRegistry.length);
   assert.deepEqual(pipelineCaseIdsFor(undefined), pipelineCaseIdRegistry);
   assert.throws(() => pipelineCaseIdsFor("control"), TypeError);
   // The catalog-level Lean mutation probes run in exactly one leg, which must hold the Parallel fork/join cases their
@@ -55,10 +56,16 @@ test("the case partitions split the registry into disjoint covering runs", () =>
   for (const id of parallelForkJoinIds) {
     assert.ok(pipelineCaseIdsFor(probeLegs[0]).includes(id), id);
   }
+  // The definition probe mutates the first selected record, the registry head in a whole-catalog run.
+  assert.equal(pipelineCaseIdsFor(probeLegs[0])[0], pipelineCaseIdRegistry[0]);
+  // The Lean-core suites run in that same leg and in no other.
+  const verifyScript = await readFile(new URL("./verify.sh", import.meta.url), "utf8");
+  const suiteGate = verifyScript.match(/pipeline_leg_runs_lean_core_suites\(\) \{\n {2}case "\$\{BPMN_PIPELINE_PARTITION:-\}" in\n {4}"" \| ([a-z-]+)\) return 0 ;;\n {4}\*\) return 1 ;;/u);
+  assert.equal(suiteGate?.[1], probeLegs[0]);
   assert.equal(pipelinePartitionRunsLeanMutationProbes(undefined), true);
   assert.equal(
-    warmBudgetMs({ BPMN_PIPELINE_PARTITION: PipelineCasePartition.ControlFlow }),
-    pipelineCaseIdsFor(PipelineCasePartition.ControlFlow).length * warmBudgetPerCaseMs,
+    warmBudgetMs({ BPMN_PIPELINE_PARTITION: PipelineCasePartition.StimulusOrder }),
+    pipelineCaseIdsFor(PipelineCasePartition.StimulusOrder).length * warmBudgetPerCaseMs,
   );
 });
 

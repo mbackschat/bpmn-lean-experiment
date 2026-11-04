@@ -201,48 +201,145 @@ export const pipelineCaseIdRegistry = Object.freeze([
 export type PipelineCaseId = typeof pipelineCaseIdRegistry[number];
 
 /**
- * The two contiguous runs of the registry that the hosted integration job runs as separate legs. One job's deadline,
- * derived from the whole catalog, outgrew its timeout once the Link Event cases registered, and the budget guard
- * (`scripts/pipeline-budget.test.ts`) requires a split by owned contract rather than a longer timeout. The control-flow
- * and scope families come first in the registry; the event, data and effect families begin at the Sub-Process Error
- * propagation cases.
+ * The hosted integration job's legs, one per owned contract: each registered case declares the Temporal execution
+ * schedule its stimuli are delivered by (`TemporalExecutionSchedule`), and the legs split the catalog by that field. One
+ * job's derived deadline outgrew its timeout when the Link Event cases registered, and the budget guard
+ * (`scripts/pipeline-budget.test.ts`) requires a split by owned contract rather than a longer timeout.
  */
 export const PipelineCasePartition = Object.freeze({
-  ControlFlow: "control-flow",
-  EventsDataEffects: "events-data-effects",
+  StimulusOrder: "stimulus-order",
+  OtherSchedules: "other-schedules",
 } as const);
 export type PipelineCasePartition = typeof PipelineCasePartition[keyof typeof PipelineCasePartition];
 
-const eventsDataEffectsStart = pipelineCaseIdRegistry.indexOf("subprocess-error-propagation-trigger-first");
+/**
+ * The registered ids, in registry order, whose `executionSchedule` is not `StimulusOrder`. Frozen here so a leg's
+ * deadline is countable before any case loads; `pipeline-catalog.test.ts` asserts it equals the registry filtered by
+ * that field, in order.
+ */
+export const otherSchedulePipelineCaseIds = Object.freeze([
+  "user-task-discovery-completion",
+  "user-task-wrong-activation",
+  "user-task-stale-completion",
+  "parallel-fork-join-a-then-b",
+  "parallel-fork-join-b-then-a",
+  "parallel-fork-join-stale-a-while-b-active",
+  "embedded-subprocess-completion-a-then-b",
+  "embedded-subprocess-completion-b-then-a",
+  "embedded-subprocess-completion-stale-a-while-b-active",
+  "embedded-subprocess-completion-stale-a-after-scope",
+  "nested-scope-control-onboarding-setup-first",
+  "nested-scope-control-onboarding-equipment-first",
+  "nested-scope-control-audit-early-and-stale",
+  "concurrent-activations-audit-interleaved-and-stale",
+  "concurrent-activations-audit-reversed",
+  "concurrent-activations-intake-reverse-assessments",
+  "repeated-nested-calls-natural-order",
+  "repeated-nested-calls-reverse-order-stale-and-cross-addressed",
+  "subprocess-error-propagation-trigger-first",
+  "subprocess-error-propagation-sibling-first",
+  "subprocess-error-propagation-stale-sibling-after-error",
+  "intermediate-catch-timer-pt1s",
+  "timer-user-task-composition",
+  "user-task-preserved-notation",
+  "user-task-process-data-preserved-notation",
+  "intermediate-catch-message",
+  "message-addressed-receive-task",
+  "addressless-receive-task",
+  "addressless-receive-task-named-delivery-first",
+  "message-payload-catch-supplied-scalar",
+  "message-payload-catch-supplied-null",
+  "message-payload-catch-absent-payload",
+  "exclusive-gateway-simple-boolean-first-true",
+  "inclusive-gateway-one-true",
+  "inclusive-gateway-both-true-a-then-b",
+  "inclusive-gateway-both-true-b-then-a",
+  "inclusive-gateway-default",
+  "event-based-gateway-message-wins",
+  "event-based-gateway-timer-wins",
+  "activity-boundary-timer-activity-wins",
+  "activity-boundary-timer-deadline-wins",
+  "subprocess-boundary-timer-scope-completes",
+  "subprocess-boundary-timer-deadline-wins",
+  "non-interrupting-boundary-timer-deadline-then-both-branches",
+  "non-interrupting-boundary-timer-completion-before-the-deadline",
+  "called-process-call-activity",
+  "call-data-supplier-string",
+  "call-data-supplier-null",
+  "structured-composition-invoice-approve",
+  "structured-composition-invoice-reject",
+  "structured-composition-invoice-manual",
+  "structured-composition-serial-string",
+  "structured-composition-serial-null",
+  "portable-handoff-order-nested",
+  "portable-handoff-order-revised",
+  "portable-handoff-order-null",
+  "portable-message-payload-manifest-delivered",
+  "portable-message-payload-manifest-payload-free-refused",
+  "user-task-cycle-repeat-rework-exit",
+  "message-start-event",
+  "timer-start-event",
+  "terminate-end-event-trigger-first",
+  "terminate-end-event-sibling-first",
+  "terminate-end-event-stale-sibling-after-termination",
+  "service-task-effect-success",
+  "service-task-effect-incident-retry-success",
+  "service-task-effect-incident-root-cancellation",
+  "mapped-success-service-task",
+  "mapped-boundary-error-service-task-caught",
+  "configured-task",
+  "user-task-boolean-completion",
+  "user-task-assignment-form-metadata",
+  "parallel-user-task-metadata-content-then-risk",
+  "parallel-user-task-metadata-risk-then-content",
+  "expense-exception-review-approve",
+  "expense-exception-review-request-changes",
+  "expense-exception-review-abort",
+  "sequential-multi-instance-natural",
+  "parallel-multi-instance-all",
+  "parallel-multi-instance-first",
+  "activity-data-input-absent",
+  "activity-data-input-present",
+  "activity-data-input-null",
+  "activity-data-output-supplied",
+  "activity-data-output-null",
+  "activity-data-output-omitted",
+  "activity-data-input-output-present",
+  "activity-data-input-output-null",
+  "activity-data-input-output-absent",
+  "activity-data-input-output-omitted",
+] as const satisfies readonly PipelineCaseId[]);
+
+const otherSchedules = new Set<string>(otherSchedulePipelineCaseIds);
 
 /**
  * Whether a selected partition runs the catalog-level Lean mutation probes. They run once per catalog, like the
- * Lean-core suites `scripts/verify.sh` runs once, and the provenance probe needs a `parallel-fork-join-draft`
- * definition, which only the control-flow cases carry.
+ * Lean-core suites `scripts/verify.sh` runs once, in the leg that holds the `parallel-fork-join-draft` definition the
+ * provenance probe erases and the registry head the definition probe mutates.
  */
 export function pipelinePartitionRunsLeanMutationProbes(partition: string | undefined): boolean {
   switch (partition) {
     case undefined:
     case "":
-    case PipelineCasePartition.ControlFlow:
+    case PipelineCasePartition.OtherSchedules:
       return true;
-    case PipelineCasePartition.EventsDataEffects:
+    case PipelineCasePartition.StimulusOrder:
       return false;
     default:
       throw new TypeError(`BPMN_PIPELINE_PARTITION must name a pipeline case partition, received ${JSON.stringify(partition)}`);
   }
 }
 
-/** The registered ids a selected partition runs; an absent selection runs the whole catalog. */
+/** The registered ids a selected partition runs, in registry order; an absent selection runs the whole catalog. */
 export function pipelineCaseIdsFor(partition: string | undefined): readonly PipelineCaseId[] {
   switch (partition) {
     case undefined:
     case "":
       return pipelineCaseIdRegistry;
-    case PipelineCasePartition.ControlFlow:
-      return pipelineCaseIdRegistry.slice(0, eventsDataEffectsStart);
-    case PipelineCasePartition.EventsDataEffects:
-      return pipelineCaseIdRegistry.slice(eventsDataEffectsStart);
+    case PipelineCasePartition.StimulusOrder:
+      return pipelineCaseIdRegistry.filter((id) => !otherSchedules.has(id));
+    case PipelineCasePartition.OtherSchedules:
+      return otherSchedulePipelineCaseIds;
     default:
       throw new TypeError(`BPMN_PIPELINE_PARTITION must name a pipeline case partition, received ${JSON.stringify(partition)}`);
   }

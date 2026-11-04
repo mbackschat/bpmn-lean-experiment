@@ -59,10 +59,14 @@ verify_temporal_serial() {
   ./scripts/pnpm.sh run test:temporal:built:hosted-serial
 }
 
-# The hosted job runs one leg per case partition (`pipelineCaseIdsFor`); the Lean-core integration suites run once,
-# outside the events-data-effects leg, and a local run without a partition runs everything.
+# The hosted job runs one leg per case partition (`pipelineCaseIdsFor`); the Lean-core integration suites run once, in
+# the other-schedules leg, which also runs the catalog-level Lean mutation probes, and a local run without a partition
+# runs everything. A leg not named here runs none of them.
 pipeline_leg_runs_lean_core_suites() {
-  [ "${BPMN_PIPELINE_PARTITION:-}" != "events-data-effects" ]
+  case "${BPMN_PIPELINE_PARTITION:-}" in
+    "" | other-schedules) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 verify_pipeline() {
