@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 
 import { defaultCibSevenMavenTimeoutMs } from "./cibseven-maven-budget.ts";
@@ -230,4 +231,16 @@ test("hosted warm-pipeline budget has real headroom and the runner derives its d
     /timeout: warmPipelineTestTimeoutMs\(process\.env\)/u,
     "the Node test deadline must be derived from the selected warm budget instead of becoming a second lower ceiling",
   );
+});
+
+test("the model-corpus run refuses a hosted leg selection before building", () => {
+  // The corpus run selects its own cases, but its warm deadline derives from the cases BPMN_PIPELINE_PARTITION selects,
+  // so a set partition would give the corpus a leg's deadline.
+  const run = spawnSync(process.execPath, [new URL("./test-pipeline.ts", import.meta.url).pathname, "--model-corpus"], {
+    env: { ...process.env, BPMN_PIPELINE_PARTITION: "stimulus-order", BPMN_PIPELINE_PREBUILT: "1" },
+    encoding: "utf8",
+    timeout: 30_000,
+  });
+  assert.notEqual(run.status, 0);
+  assert.match(run.stderr, /--model-corpus selects its own cases; unset BPMN_PIPELINE_PARTITION/u);
 });
