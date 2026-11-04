@@ -44,7 +44,7 @@ export {
 export {
   lowerCheckedProcess,
 } from "./semantic-process-lowering.js";
-export { contractLinks, lowerLinkedCheckedProcess } from "./link-contraction.js";
+export { contractLinks } from "./link-contraction.js";
 export {
   callActivityDefinitionBindingValid,
 } from "./call-activity-lowering.js";

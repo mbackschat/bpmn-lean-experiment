@@ -71,18 +71,18 @@ pipeline_leg_runs_lean_core_suites() {
 
 verify_pipeline() {
   if pipeline_leg_runs_lean_core_suites; then
-  ./scripts/pnpm.sh run test:lean-fixture-bindings:built
-  ./scripts/pnpm.sh run test:committed-execution-publication-parity:built
-  ./scripts/pnpm.sh run test:message-key-correlation-population-lean-core:built
-  ./scripts/pnpm.sh run test:message-payload-lean-core:built
-  ./scripts/pnpm.sh run test:activity-boundary-message-lean-core:built
-  ./scripts/pnpm.sh run test:internal-choice-schedule-lean-core:built
-  node --test --test-concurrency=1 packages/differential/test/compensation-pipeline-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/transaction-pipeline-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/repeatable-subscriptions-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/scenario-value-domain-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/pipeline-publication-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/exclusive-choice-without-default-lean-core.integration-test.ts
+    ./scripts/pnpm.sh run test:lean-fixture-bindings:built
+    ./scripts/pnpm.sh run test:committed-execution-publication-parity:built
+    ./scripts/pnpm.sh run test:message-key-correlation-population-lean-core:built
+    ./scripts/pnpm.sh run test:message-payload-lean-core:built
+    ./scripts/pnpm.sh run test:activity-boundary-message-lean-core:built
+    ./scripts/pnpm.sh run test:internal-choice-schedule-lean-core:built
+    node --test --test-concurrency=1 packages/differential/test/compensation-pipeline-lean-core.integration-test.ts
+    node --test --test-concurrency=1 packages/differential/test/transaction-pipeline-lean-core.integration-test.ts
+    node --test --test-concurrency=1 packages/differential/test/repeatable-subscriptions-lean-core.integration-test.ts
+    node --test --test-concurrency=1 packages/differential/test/scenario-value-domain-lean-core.integration-test.ts
+    node --test --test-concurrency=1 packages/differential/test/pipeline-publication-lean-core.integration-test.ts
+    node --test --test-concurrency=1 packages/differential/test/exclusive-choice-without-default-lean-core.integration-test.ts
   fi
   env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
   git diff --check

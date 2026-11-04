@@ -98,13 +98,13 @@ Current task: Link Events in the nested scope-data profile, batch 4 (`PC-BASIC-0
 
 Deliverable: single-source Link pairs admitted in the nested scope-data profile, each behaving as its explicit-flow twin, landed on `main`.
 
-Acceptance blockers: the Rule 2 re-application of the corrected change from `7fcb74d0` on a fresh branch, its LOW post-check, hosted `verify-complete`, and the closure reviewer's correction audit.
+Acceptance blockers: hosted `verify-complete` on the re-applied branch and the closure reviewer's correction audit; then graduation.
 
-Current result: the closure review of `653296d4` approved with required edits. The corrections are on the unlanded working branch `link-events`: the Inclusive join pairing walk over Link-contracted scopes and two Lean witnesses (`b43451ed`), the hosted pipeline legs split by Temporal execution schedule after a HIGH direction review (`7412c5db`), and the model-corpus run's refusal of a leg selection (`bb963760`). The 57-file implementation and the budget-derivation change ran without a Rule 2 declaration ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84), fifth instance), so the change is set aside and re-applied under one.
+Current result: the closure review of `653296d4` approved with required edits; the corrected change (the Inclusive join pairing walk over Link-contracted scopes, two Lean witnesses, the hosted pipeline legs split by Temporal execution schedule after a HIGH direction review, and the model-corpus run's refusal of a leg selection) is re-applied from `7fcb74d0` under a reviewed Rule 2 declaration, the working branch `link-events` keeping its history ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84), fifth instance).
 
 Effort budget: 8 hours from 2026-11-04 19:00 CET, ending 2026-11-05 03:00.
 
-Next action: declare and review the re-application, apply it on a fresh branch from `7fcb74d0`, re-measure the cost rows there, then the LOW post-check, hosted checks, correction audit, graduation and landing.
+Next action: on green hosted checks, the closure reviewer's correction audit, then graduation and landing.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
