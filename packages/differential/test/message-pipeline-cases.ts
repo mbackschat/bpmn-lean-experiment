@@ -161,9 +161,9 @@ const messageAddressedReceiveTaskCase: PipelineCase = Object.freeze({
 
 const addresslessReceiveTaskDisagreement: ObservationValueDisagreement = {
   kind: DisagreementKind.ObservationValue,
-  path: "trace[2].openMessageSubscriptions[0].channel.messageId",
-  expected: undefined,
-  actual: "Message_Mutated",
+  path: "trace[2].openMessageSubscriptions[0].channel.kind",
+  expected: MessageChannelKind.UnspecifiedMessage,
+  actual: MessageChannelKind.DirectMessage,
 };
 
 function addresslessReceiveTaskCase(id: PipelineCaseId, scenarioFile: string): PipelineCase {
