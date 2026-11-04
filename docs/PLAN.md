@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: terminal forks in the nested scope-data profile, batch 4 (`PC-HUM-04` primary; `PC-HUM-05`, `PC-CF-03`, `PC-BASIC-01`). The addressless Receive Task landed at `67f68f43`. Close call, decided on reach and batch order: 38 pinned models end Parallel branches at separate root Ends against 4 with Link Events; the Receive Task clauses PLAN had queued wait for Messages in this profile, which is batch 5.
+Current task: Inclusive Gateway regions in the nested scope-data profile, batch 4 (`PC-CF-04` primary; `PC-CF-08`). Terminal forks landed at `339fec34`. Close call, decided on reach and cost: 9 pinned Inclusive models within Simple Boolean conditions against 7 implicit-flow models, which need a kernel extension; comparison conditions wait for `PC-DATA-07/08`.
 
-Deliverable: root terminal forks and wait-free terminal branches admitted in the nested scope-data profile, each scope completing only when its last token is consumed, landed on `main`.
+Deliverable: structured root Inclusive regions admitted in the nested scope-data profile, the join waiting for all and only the selected branches, landed on `main`.
 
-Acceptance blockers: hosted `verify-complete` and landing.
+Acceptance blockers: the cold proposal review of the [proposal](capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md), then implementation, closure review and hosted `verify-complete`.
 
-Current result: the [specification](capsules/TERMINAL-FORKS-SPEC.md) is implemented, closure-approved after two correction audits and graduated; its closure gates are green, with hosted checks green at `bac7df9f` after a rerun of Temporal serial, and the scenario inputs were re-created through a declared generator.
+Current result: proposal drafted.
 
-Effort budget: 8 hours from 2026-11-04 09:30 CET, ending 17:30.
+Effort budget: 10 hours from 2026-11-04 13:11 CET, ending 23:11.
 
-Next action: land on green hosted checks, then open the next batch-4 family.
+Next action: cold proposal review.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
