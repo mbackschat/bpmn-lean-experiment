@@ -75,6 +75,7 @@
       "process-completion",
       "finite-serial-scope-chain",
       "single-scope-models",
+      "terminal-forks",
       "send-tasks",
       "exclusive-gateway-without-default",
       "successful-effect-result"
@@ -141,7 +142,7 @@
     "legacy-string-list-values",
     "arithmetic-or-implicit-conversion",
     "implicit-task-split-merge",
-    "pass-through-tasks-on-wait-free-terminal-branches-or-in-called-processes",
+    "pass-through-tasks-in-called-processes-or-on-wait-free-terminal-branches-beside-scope-local-data",
     "pass-through-tasks-with-async-continuations-mappings-listeners-or-boundaries",
     "none-intermediate-throw-events-with-several-flows-async-continuations-or-listeners-or-in-called-processes",
     "intermediate-throw-event-triggers",
