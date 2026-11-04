@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Inclusive Gateway regions in the nested scope-data profile, batch 4 (`PC-CF-04` primary; `PC-CF-08`). Terminal forks landed at `339fec34`. Close call, decided on reach and cost: 9 pinned Inclusive models within Simple Boolean conditions against 7 implicit-flow models, which need a kernel extension; comparison conditions wait for `PC-DATA-07/08`.
+Current task: Inclusive Gateway regions in the nested scope-data profile, batch 4 (`PC-CF-04` primary; `PC-CF-08`). Terminal forks landed at `339fec34`. Close call, re-decided after the rejected first review: the class with unconditioned outputs and an optional default reaches the split shape of 10 of 23 pinned and 50 of 52 MIWG Inclusive splits, against implicit split and merge, which needs a kernel extension; default-less all-conditioned splits and comparison conditions stay later steps.
 
 Deliverable: structured root Inclusive regions admitted in the nested scope-data profile, the join waiting for all and only the selected branches, landed on `main`.
 
 Acceptance blockers: the cold proposal review of the [proposal](capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md), then implementation, closure review and hosted `verify-complete`.
 
-Current result: proposal drafted.
+Current result: the first proposal review rejected `1d904f4a` on reach and witness admissibility; the redesign is drafted.
 
 Effort budget: 10 hours from 2026-11-04 13:11 CET, ending 23:11.
 
-Next action: cold proposal review.
+Next action: a new cold proposal review of the redesign.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
