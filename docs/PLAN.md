@@ -94,13 +94,13 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Link Events in the nested scope-data profile, batch 4 (`PC-BASIC-02`). Inclusive regions landed at `77a8d8f2`. Close call against nested and sibling Inclusive regions: Link Events win on reach (MIWG B.2.0 and 6 CIB files, all single-source) and risk, a pure flow continuation.
+Current task: Link Events in the nested scope-data profile, batch 4 (`PC-BASIC-02`). Inclusive regions landed at `77a8d8f2`. Close call against nested and sibling Inclusive regions: reach is small on both sides (one valid single-source CIB model), and Link Events win on risk and cost, a pure flow continuation adding no operation.
 
 Deliverable: single-source Link pairs admitted in the nested scope-data profile, each behaving as its explicit-flow twin, landed on `main`.
 
 Acceptance blockers: the cold review of the [proposal](capsules/LINK-EVENTS-PROPOSAL.md), implementation, closure review and hosted `verify-complete`.
 
-Current result: proposal drafted.
+Current result: proposal corrected after its cold review (approve with required edits); correction audit pending.
 
 Effort budget: 8 hours from 2026-11-04 19:00 CET, ending 2026-11-05 03:00.
 
