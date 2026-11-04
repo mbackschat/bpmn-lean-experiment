@@ -119,10 +119,10 @@ Both models carry a source overlay and a mapped Service Task, as the profile's s
 - **Refused edits**, each asserted at the checked and Program levels separately:
   - *Clear old office* declaring `keysReturned = "no"`, refused (wrong algorithm 2); its twin with both wait-free branches replaced by User Tasks keeps the declaration and is admitted, so the refusal comes from `TFK-DATA-01` alone.
   - The offboarding's branch two replaced by a paired block, fork → [*Revoke system access*], [empty] → join → End *Access revoked*, refused by the cut alone (wrong algorithm 3); the same block with a pass-through Task on its second branch is admitted.
-- **Profile control (minimal pairs)**, each asserted at the checked and Program analyses separately, with neither a pass-through Task nor a None Throw, data-free, and with a User Task before the first fork, which puts each outside the embedded completion profile's retained exact multiset:
-  - a root terminal fork whose branches are a Sub-Process with one User Task and a User Task, each to its own End;
-  - a Sub-Process body fork whose branches are a User Task to an End and a direct End.
-  - Each is refused under the embedded completion profile's identity and admitted under this profile's identity (wrong algorithms 4 and 5).
+- **Profile control (minimal pairs)**, each data-free and effect-free, with neither a pass-through Task nor a None Throw, and each asserted at the checked and Program analyses and at profile admission separately. The embedded completion twin carries no source overlay and the nested scope-data twin carries one, as each profile's overlay rule requires, so the relaxed rule is each twin's only refusal. Both differ in a count from the embedded completion profile's retained exact multiset of three User Tasks, three None Ends, one Sub-Process, one Parallel Gateway and two scopes, so its exact class cannot admit them:
+  - (a) root terminal fork: Start → fork → [Sub-Process with Start → User Task → End] → End, [User Task] → End, [User Task] → End; four None Ends;
+  - (b) body wait-free branch: Start → User Task → Sub-Process with Start → fork → [User Task → End], [direct End] → End; two User Tasks, and one root End, so only the cut separates it.
+  - Each is refused under the embedded completion identity and admitted under this profile's identity (wrong algorithms 4 and 5).
 - **Runtime control:** seeded pipeline mutations that complete the root at its first End on an offboarding journey, and the Sub-Process at its first End on the office move, must each disagree (wrong algorithm 1).
 
 End beside local control rests on `prepared_end_local_control_pair_commutes` without a scenario witness.
@@ -134,7 +134,7 @@ End beside local control rests on `prepared_end_local_control_pair_commutes` wit
 | `TFK-ADMIT-01` | Both models admitted at both levels; the empty joined branch refused and its pass-through twin admitted | Source, core, Lean conformance checks, pipeline | Relax at one level only (5), or relax joined branches (3) |
 | `TFK-END-01`, `TFK-QUIESCE-01` | Both offboarding orders and the office move, through the batched Ends and the first End to completion | Core, pipeline across Lean, core, Temporal and CIB | Complete a scope at its first End (1), at the root and in a body |
 | `TFK-DATA-01` | The declaring office move refused, its waiting twin admitted, per level | Source, core, Lean conformance checks | Drop the data test (2) |
-| `TFK-PROFILE-01` | The two embedded completion minimal pairs, per level | Core and Lean conformance checks | Relax for every profile (4) |
+| `TFK-PROFILE-01` | The two embedded completion minimal pairs, per analysis level and at profile admission | Core and Lean conformance checks | Relax for every profile (4) |
 
 ## Lean assurance lane
 
@@ -167,7 +167,7 @@ No wire, schema or Program change, so the [pre-release wire policy](../../contra
 
 No kernel type, hub interface, public signature, import or guard bound changes.
 
-- Lean: [`NestedScopeBranchWork`](../../BpmnSemantics/SemanticProcess/NestedScopeBranchWork.lean) gains the relaxed cut, an interface edit of a leaf that only `NestedScopeControlAdmission` imports, privately. [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean) takes body edits only (`analyze`, `scanBody`, `checkedModel`, `programModel`), at 745 of 800 nonblank lines. Predicted rebuild set: the two modules, the six modules that `import all` it (`RuntimeStateInitializationConformance`, `SequentialMultiInstanceProgramBindingConformance`, `SerialBusinessTaskDataProofs`, `SerialBusinessTaskLifecycleProofs`, `SerialBusinessTaskProgressProofs`, `StructuredCompositionAdmissionProofs`), and `RootParallelForksConformance`. Their statements are unchanged; a kernel-decided consumer that unfolds a changed body must still reduce, which its narrow build confirms before the commit.
+- Lean: [`NestedScopeBranchWork`](../../BpmnSemantics/SemanticProcess/NestedScopeBranchWork.lean) gains the relaxed cut, an interface edit of a leaf that only `NestedScopeControlAdmission` imports, privately. [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean) takes body edits only (`analyze`, `scanBody`, `checkedModel`, `programModel`), at 745 of 800 nonblank lines; any helper the re-imposition needs lives in the leaf, because a new private declaration there changes its public `.olean`. Predicted rebuild set: the two modules, the six modules that `import all` it (`RuntimeStateInitializationConformance`, `SequentialMultiInstanceProgramBindingConformance`, `SerialBusinessTaskDataProofs`, `SerialBusinessTaskLifecycleProofs`, `SerialBusinessTaskProgressProofs`, `StructuredCompositionAdmissionProofs`), and `RootParallelForksConformance`. Their statements are unchanged; a kernel-decided consumer that unfolds a changed body must still reduce, which its narrow build confirms before the commit.
 - TypeScript: the [nested scope-control admission](../../packages/semantic-core/src/nested-scope-control-admission.ts) stands at 791 of 800 nonblank lines, so its branch cut moves into its own module, mirroring the Lean leaf, before it grows; never an exception.
 - Source: none. The [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts) refuses only an End-free scope, and the source reader projects every End.
 
@@ -176,7 +176,7 @@ Guards the implementation must satisfy, with bounds unchanged: [`lean-fanout`](.
 Existing witnesses that change, each with its disposition:
 
 - `terminal_root_fork_is_refused` of the [root Parallel forks conformance module](../../BpmnSemantics/RootParallelForksConformance.lean) and its TypeScript twin in the root Parallel forks source test: the branches arm, so the model becomes admitted; the witness is inverted and keeps its refusal under the embedded completion profile.
-- The `terminalFork` refusal of the [single-scope models conformance module](../../BpmnSemantics/SingleScopeModelsConformance.lean) and its TypeScript twin in the single-scope models source test: inverted the same way.
+- The `terminalFork` refusal of the [single-scope models conformance module](../../BpmnSemantics/SingleScopeModelsConformance.lean) and its TypeScript twin in the single-scope models source test: inverted the same way; its embedded completion refusal is a regression row, not a profile-control separator, because that profile also requires a Sub-Process or a Call.
 - The wait-free refusals of the [pass-through branch](../../BpmnSemantics/PassThroughParallelBranchesConformance.lean) and [None Throw](../../BpmnSemantics/NoneIntermediateThrowConformance.lean) conformance modules and their TypeScript twins: each stays refused only if its model declares scope-local data; otherwise it is rewritten to declare data, so it witnesses `TFK-DATA-01`, and its data-free form becomes an admission witness.
 
 Owner passages amended at closure:
