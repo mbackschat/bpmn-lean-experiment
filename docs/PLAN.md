@@ -98,13 +98,13 @@ Current task: terminal forks in the nested scope-data profile, batch 4 (`PC-HUM-
 
 Deliverable: root terminal forks and wait-free terminal branches admitted in the nested scope-data profile, each scope completing only when its last token is consumed, landed on `main`.
 
-Acceptance blockers: implementation, closure review and landing.
+Acceptance blockers: closure gates, closure review and landing.
 
-Current result: the [proposal](capsules/TERMINAL-FORKS-PROPOSAL.md) is approved after two correction audits.
+Current result: the approved [proposal](capsules/TERMINAL-FORKS-PROPOSAL.md) is implemented in TypeScript and Lean with scenarios, pipeline cases, corpus, About, profile and CIB probe; focused tests, the CIB probe and the fast guards are green.
 
 Effort budget: 8 hours from 2026-11-04 09:30 CET, ending 17:30.
 
-Next action: implement admission red/green in TypeScript, then Lean, then scenarios and registrations.
+Next action: run the family closure gates, then the cold closure review.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

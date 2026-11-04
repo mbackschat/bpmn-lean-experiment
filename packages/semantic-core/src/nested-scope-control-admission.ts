@@ -308,7 +308,7 @@ function invokesEachDefinitionOnce(expanded: ExpandedTree): boolean {
 
 /**
  * CALLN-SHARED-01: the call trees of two concurrent Calls of the caller root share no definition that contains a Call.
- * The root body is a structured fork-join body with one End, so two of its vertices lie on distinct branches of one
+ * The root body is a structured body, so two of its vertices lie on distinct branches of one
  * Parallel block exactly when neither reaches the other.
  */
 function sharesNoCallBearingDefinition(expanded: ExpandedTree, called: ReadonlyMap<string, Body>): boolean {
