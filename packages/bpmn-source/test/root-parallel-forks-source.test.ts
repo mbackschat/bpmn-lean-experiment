@@ -9,8 +9,8 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { BpmnCompilationStatus, BpmnSourceDiagnosticCode, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
-  SemanticProfileId, concurrentStructuredScopeDataProgram, structuredScopeDataCheckedAnalysis,
-  structuredScopeDataProgramAnalysis,
+  SemanticProfileId, concurrentStructuredScopeDataProgram, nestedScopeControlCheckedAnalysis,
+  nestedScopeControlProgramAnalysis, structuredScopeDataCheckedAnalysis, structuredScopeDataProgramAnalysis,
 } from "@bpmn-lean/semantic-core";
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 
@@ -80,14 +80,26 @@ test("the onboarding branches run in sequence stay on the serial route", async (
   assert.equal(concurrentStructuredScopeDataProgram(semanticProcess), false);
 });
 
-// TFK-ADMIT-01 admits the edit RPF-ADMIT-01 refused: both root branches still wait before their Ends.
+// TFK-ADMIT-01 admits the edit RPF-ADMIT-01 refused: both root branches still wait before their Ends. Under the embedded
+// completion identity, overlay kept, the plain onboarding stays admitted by both analyses and the edit is refused by
+// both, so the pair separates exactly the root End rule (TFK-PROFILE-01).
 test("TFK-ADMIT-01 admits the onboarding's terminal root fork with a second root End", async () => {
-  await admitted("terminal root fork with a second root End", edited(onboarding,
+  const embedded = async (label: string, xml: string) => {
+    const { checkedProcess, semanticProcess } = await admitted(label, xml);
+    const relabel = <T extends { identity: { semanticProfile: string } }>(value: T): T =>
+      ({ ...value, identity: { ...value.identity, semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion } });
+    return [nestedScopeControlCheckedAnalysis({ ...relabel(checkedProcess), flows: checkedProcess.sequenceFlows }),
+      nestedScopeControlProgramAnalysis(relabel(semanticProcess))] as const;
+  };
+  const [plainChecked, plainProgram] = await embedded("onboarding", onboarding);
+  assert.ok(plainChecked !== null && plainProgram !== null, "the plain onboarding under the embedded completion identity");
+  const [terminalChecked, terminalProgram] = await embedded("terminal root fork with a second root End", edited(onboarding,
     [flow("Flow_LaptopOrdered", "OrderLaptop", "OnboardingReady"), flow("Flow_LaptopOrdered", "OrderLaptop", "LaptopOrdered")],
     [flow("Flow_DocumentsCollected", "CollectDocuments", "OnboardingReady"),
       flow("Flow_DocumentsCollected", "CollectDocuments", "HoldWelcomeMeeting")],
     [flow("Flow_Ready", "OnboardingReady", "HoldWelcomeMeeting"), ""],
     [`<parallelGateway id="OnboardingReady" name="Onboarding ready" />`, `<endEvent id="LaptopOrdered" />`]));
+  assert.deepEqual([terminalChecked, terminalProgram], [null, null], "the terminal edit under the embedded completion identity");
 });
 
 test("RPF-ADMIT-01 refuses each one-fact edit of the onboarding model that leaves the class", async () => {

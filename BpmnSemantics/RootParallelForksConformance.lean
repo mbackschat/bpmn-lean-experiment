@@ -168,9 +168,18 @@ private def sequenced_branches_stay_serial : Bool :=
   admitted serial && !StructuredScopeData.concurrentProgram (lowerCheckedProcess serial)
 
 /-- TFK-ADMIT-01: a terminal root fork, whose *Order laptop* branch ends at a second root End, is admitted, which
-RPF-ADMIT-01 first refused; both branches still wait before their Ends. -/
+RPF-ADMIT-01 first refused; both branches still wait before their Ends. Under the embedded completion identity, overlay
+kept, both analyses still admit the plain onboarding and refuse the edit, so the pair separates exactly the root End
+rule (TFK-PROFILE-01). -/
 private def terminal_root_fork_is_admitted : Bool :=
-  admitted onboarding && admitted (onboardingWith (terminal := true))
+  let embedded := fun (source : CheckedProcess) =>
+    { source with identity := { source.identity with semanticProfile := embeddedCompletionProfileId } }
+  let terminal := onboardingWith (terminal := true)
+  admitted onboarding && admitted terminal &&
+    (NestedScopeControl.checkedAnalysis (embedded onboarding)).isSome &&
+    (NestedScopeControl.programAnalysis (lowerCheckedProcess (embedded onboarding))).isSome &&
+    (NestedScopeControl.checkedAnalysis (embedded terminal)).isNone &&
+    (NestedScopeControl.programAnalysis (lowerCheckedProcess (embedded terminal))).isNone
 
 /-- A mapped Call on the root path before the root fork is refused. CSE-ADMIT-01 also refuses it, a Service Task
 beside a Call, so the root Call pair below separates the root-Call clause. -/

@@ -100,7 +100,7 @@ Deliverable: root terminal forks and wait-free terminal branches admitted in the
 
 Acceptance blockers: closure review corrections and their audit, graduation and landing.
 
-Current result: the approved [proposal](capsules/TERMINAL-FORKS-PROPOSAL.md) is implemented and its closure gates are green, with hosted checks green at `bac7df9f`; the cold closure review requires six edits, among them re-creating the scenario inputs through a declared generator.
+Current result: the approved [proposal](capsules/TERMINAL-FORKS-PROPOSAL.md) is implemented and its closure gates are green, with hosted checks green at `bac7df9f` after a rerun of Temporal serial; the cold closure review requires six edits, among them re-creating the scenario inputs through a declared generator.
 
 Effort budget: 8 hours from 2026-11-04 09:30 CET, ending 17:30.
 
