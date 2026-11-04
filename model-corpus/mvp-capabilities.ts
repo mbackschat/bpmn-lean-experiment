@@ -192,7 +192,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Receive Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "One direct-Message, payload-free, non-instantiating Receive Task; no buffering or correlation.",
+    restriction: "One direct-Message, payload-free, non-instantiating Receive Task; or, under its own profile, one root Receive Task without a Message that only a delivery naming its published wait occurrence resumes; no buffering or correlation.",
     cibEvidence: exactCib("message-addressed-receive-task"),
   },
   {
