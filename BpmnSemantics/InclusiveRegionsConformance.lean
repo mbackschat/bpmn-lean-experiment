@@ -180,6 +180,27 @@ private def pass_through_branch_is_refused : Bool :=
 private def nested_region_is_refused : Bool :=
   refusedAtEachLevel (eventBookingWith (nestedRegion := true))
 
+/-- After *Prepare*, a fork runs region `A` beside block `B` and joins them before *Finish*; `siblingRegion` makes `B`
+an Inclusive region as well, otherwise a Parallel block. -/
+private def forkedRegions (siblingRegion : Bool) : CheckedProcess :=
+  build [] [("P", none)]
+    ([ start "P" "Opened", task "P" "Prepare", fork "P" "Fork", join "P" "Joined", task "P" "Finish", finish "P" "Closed"
+     , split "P" "ASplit" ["ARush"] (some "ANormal"), task "P" "ARush", task "P" "ANormal", regionJoin "P" "AJoin" "ASplit"
+     , task "P" "BRush", task "P" "BNormal" ] ++
+      (if siblingRegion then [split "P" "BSplit" ["BRush"] (some "BNormal"), regionJoin "P" "BJoin" "BSplit"]
+      else [fork "P" "BSplit", join "P" "BJoin"]))
+    [ plainEdge "Opened" "Prepare", plainEdge "Prepare" "Fork", plainEdge "Fork" "ASplit", plainEdge "Fork" "BSplit"
+    , guarded "ASplit" "ARush" "isPresent(rush)", plainEdge "ASplit" "ANormal", plainEdge "ARush" "AJoin"
+    , plainEdge "ANormal" "AJoin"
+    , if siblingRegion then guarded "BSplit" "BRush" "isPresent(rush)" else plainEdge "BSplit" "BRush"
+    , plainEdge "BSplit" "BNormal", plainEdge "BRush" "BJoin", plainEdge "BNormal" "BJoin"
+    , plainEdge "AJoin" "Joined", plainEdge "BJoin" "Joined", plainEdge "Joined" "Finish", plainEdge "Finish" "Closed" ]
+
+/-- IGR-ADMIT-01 condition 2's sibling rule: two regions on branches of one fork would hold two live selection records,
+refused, while one region beside a Parallel block is admitted. -/
+private def sibling_regions_are_refused : Bool :=
+  refusedAtEachLevel (forkedRegions true) && admittedAtEachLevel (forkedRegions false)
+
 /-- Two reviews in Sub-Processes, each declaring a file and a pending verdict, preparing the file and calling the
 `Expert` Process with mappings, forked by `Reviews` and joined by `ReviewsDone`, as the retained supplier onboarding
 does. `inclusive` makes the pair an Inclusive split with two unconditioned outputs and its join. -/
@@ -284,6 +305,7 @@ def inclusiveRegionsConformanceChecks : List (String × Bool) := [
   ("selection_rule_refusals", selection_rule_refusals),
   ("pass_through_branch_is_refused", pass_through_branch_is_refused),
   ("nested_region_is_refused", nested_region_is_refused),
+  ("sibling_regions_are_refused", sibling_regions_are_refused),
   ("calls_beside_a_region_are_refused", calls_beside_a_region_are_refused),
   ("swapped_join_inputs_are_refused", swapped_join_inputs_are_refused),
   ("crossing_is_refused", crossing_is_refused),

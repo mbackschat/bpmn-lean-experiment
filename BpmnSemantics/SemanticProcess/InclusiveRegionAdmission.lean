@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InclusiveRegionWalk
 public import BpmnSemantics.SemanticProcessContract
 
-/-! IGR-ADMIT-01 conditions 2 to 6 and IGR-BIND-01 of the [Inclusive regions proposal](../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#admission): what the shared nested analysis cannot see about root Inclusive regions of the nested scope-data profile. That analysis projects a split as a fork and its join as a join, so it already admits a region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only and outermost placement, the outputs and default rule, the strict cut, the Call exclusion and, over a Program, every branch's expected join input. `NestedScopeControl` consumes it in hidden bodies only, through a private import; the TypeScript twin is `inclusive-region-admission.ts`. -/
+/-! IGR-ADMIT-01 conditions 2 to 6 and IGR-BIND-01 of the [Inclusive regions proposal](../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#admission): what the shared nested analysis cannot see about root Inclusive regions of the nested scope-data profile. That analysis projects a split as a fork and its join as a join, so it already admits a region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only placement with at most one live region, the outputs and default rule, the strict cut, the Call exclusion and, over a Program, every branch's expected join input. `NestedScopeControl` consumes it in hidden bodies only, through a private import; the TypeScript twin is `inclusive-region-admission.ts`. -/
 
 public section
 
@@ -47,7 +47,7 @@ private def guardsAdmitted (outputs : List Edge) : Bool :=
   2 ≤ outputs.length && (outputs.map (·.id)).eraseDups.length == outputs.length && defaults ≤ 1 &&
     (if defaults == 1 then !always else always)
 
-/-- Conditions 2 to 5 over one projected graph, and condition 6 when `program` asks for the expected join inputs. A terminal fork pairs with no join; a fork that does pairs with a Parallel join. -/
+/-- Conditions 2 to 5 over one projected graph, and condition 6 when `program` asks for the expected join inputs. A terminal fork pairs with no join; a fork that does pairs with a Parallel join. At most one branch of a fork holds a region, so that no two selection records are live at once (closure audit of `50790a59`). -/
 private def regionsAdmitted (graph : Graph) (program : Bool) : Bool :=
   let fuel := walkFuel graph
   let splits := graph.vertices.filter (·.kind == .split)
@@ -65,6 +65,7 @@ private def regionsAdmitted (graph : Graph) (program : Bool) : Bool :=
       | none => false) &&
       graph.vertices.all fun vertex =>
         (vertex.kind != .fork || (pairedJoin graph vertex).all (·.kind != .inclusiveJoin)) &&
+          (vertex.kind != .fork || (vertex.outputs.filter (nestsSplit graph fuel)).length ≤ 1) &&
           (vertex.kind != .inclusiveJoin || paired.any (·.id == vertex.id)) && vertex.kind != .call
 
 private def programVertexKind : SemanticOperation → VertexKind

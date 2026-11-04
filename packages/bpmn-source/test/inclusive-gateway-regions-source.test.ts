@@ -315,6 +315,23 @@ const wrappedRegion = definitions(`
     ${flow("Flow_1", "Opened", "Prepare")}${flow("Flow_2", "Prepare", "Work")}${flow("Flow_3", "Work", "Finish")}
     ${flow("Flow_4", "Finish", "Closed")}`);
 
+/** After *Prepare*, a fork runs region `A` beside `B`, a second region or, as the twin, a Parallel block. */
+const forkedRegions = (sibling: boolean) => definitions(`
+    <startEvent id="Opened" /><userTask id="Prepare" /><parallelGateway id="Fork" />${region("A")}
+    ${sibling ? region("B") : `<parallelGateway id="BSplit" /><userTask id="BRush" /><userTask id="BNormal" />
+    <parallelGateway id="BJoin" />${flow("BFlow_Rush", "BSplit", "BRush")}${flow("BFlow_Normal", "BSplit", "BNormal")}
+    ${flow("BFlow_RushDone", "BRush", "BJoin")}${flow("BFlow_NormalDone", "BNormal", "BJoin")}`}
+    <parallelGateway id="Joined" /><userTask id="Finish" /><endEvent id="Closed" />
+    ${flow("Flow_1", "Opened", "Prepare")}${flow("Flow_2", "Prepare", "Fork")}${flow("Flow_3", "Fork", "ASplit")}
+    ${flow("Flow_4", "Fork", "BSplit")}${flow("Flow_5", "AJoin", "Joined")}${flow("Flow_6", "BJoin", "Joined")}
+    ${flow("Flow_7", "Joined", "Finish")}${flow("Flow_8", "Finish", "Closed")}`);
+
+test("IGR-ADMIT-01 refuses regions on two branches of one fork at each level while one region beside a block is admitted", async () => {
+  await refusedAtCheckedLevel(forkedRegions(true), [], "sibling regions");
+  const { semanticProcess } = await admitted(forkedRegions(false), [], "region beside a Parallel block");
+  assert.equal(nestedScopeControlProgramAnalysis(asInclusivePair(semanticProcess, "BSplit", "BJoin")), null);
+});
+
 test("IGR-ROOT-01 refuses a region in a Sub-Process body while the same region in the root is admitted", async () => {
   await admitted(rootRegion, [], "root region");
   await refusedAtCheckedLevel(wrappedRegion, [], "body region");

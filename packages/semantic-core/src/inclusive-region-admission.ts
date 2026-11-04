@@ -1,8 +1,8 @@
 /**
  * IGR-ADMIT-01 conditions 2 to 6 and IGR-BIND-01: what the shared nested analysis cannot see about root Inclusive
  * regions of the nested scope-data profile. The analysis projects a split as a fork and its join as a join, so it
- * already admits the region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only and
- * outermost placement, the outputs and default rule, the strict cut, the Call exclusion and, at the Program level, every
+ * already admits the region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only
+ * placement with at most one live region, the outputs and default rule, the strict cut, the Call exclusion and, at the Program level, every
  * branch's expected join input. Owner: the [Inclusive regions proposal](../../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#admission).
  */
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
@@ -152,8 +152,11 @@ export function inclusiveRegionsAdmitted(graph: RegionGraph, program: boolean): 
     paired.add(join.id);
   }
   return vertices.every(vertex =>
-    // A terminal fork pairs with no join; a fork that does pairs with a Parallel join (condition 2).
+    // A terminal fork pairs with no join; a fork that does pairs with a Parallel join (condition 2). At most one branch
+    // of a fork holds a region, so that no two selection records are live at once (closure audit of `50790a59`).
     (vertex.kind !== RegionVertexKind.Fork || pairedJoin(graph, vertex)?.kind !== RegionVertexKind.InclusiveJoin) &&
+    (vertex.kind !== RegionVertexKind.Fork ||
+      vertex.outputs.filter(output => nestsSplit(graph, output, graph.vertices.size)).length <= 1) &&
     (vertex.kind !== RegionVertexKind.InclusiveJoin || paired.has(vertex.id)) &&
     vertex.kind !== RegionVertexKind.Call);
 }
