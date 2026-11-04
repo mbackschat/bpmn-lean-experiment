@@ -1,8 +1,8 @@
-# Link Events proposal
+# Link Events specification
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -169,7 +169,7 @@ Both models are the retained [None Throw models](../../scenarios/none-intermedia
 
 Lane shape: checked
 
-Evidence: the family adds no transition family, operation or runtime law. Its meaning is the contraction, a partial executable function on checked graphs whose result the existing admission and lowering decide. `lowerLinkedCheckedProcess` and `linkedCheckedWellFormed` are by definition the existing lowering and well-formedness of the contraction, so no existing law changes and no proof unfolds the contraction. [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean), a hub near its size target, takes only the exhaustive-match arm, and [`DefinitionInput`](../../BpmnSemantics/SemanticProcessJson/DefinitionInput.lean) the linked entry points. A new executable conformance module, `linkEventsConformanceChecks`, holds:
+Evidence: the family adds no transition family, operation or runtime law. Its meaning is the contraction, a partial executable function on checked graphs whose result the existing admission and lowering decide. `lowerLinkedCheckedProcess` and `linkedCheckedWellFormed` are by definition the existing lowering and well-formedness of the contraction, so no existing law changes and no proof unfolds the contraction. [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean), a hub near its size target, takes only the exhaustive-match arm, and [`DefinitionInput`](../../BpmnSemantics/SemanticProcessJson/DefinitionInput.lean) the linked entry points. A new executable conformance module, [`linkEventsConformanceChecks`](../../BpmnSemantics/LinkEventsConformance.lean#linkEventsConformanceChecks), holds:
 
 - both models admitted at both levels, with `linkedDefinitionBindingValid`;
 - the Program and checked twin equalities against transcriptions of the retained twins, and the crossed Event names;
@@ -239,4 +239,4 @@ Registration:
 |---|---|---|---|---|
 | Proposal | `945479ad` | `fork-turns-none` | `approve-with-required-edits` | `5b1591ac` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `653296d4` | `fork-turns-none` | `approve-with-required-edits` | `34878019` |

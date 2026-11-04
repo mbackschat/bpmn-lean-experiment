@@ -269,8 +269,8 @@ test("the checked-process schema admits both Link arms and refuses one without i
 });
 
 test("a Link pair on an Inclusive region branch pairs the join as its explicit flow does", async () => {
-  // Closure review finding 1: the join's paired split is derived by walking the source scope, which must read the pair
-  // contracted, or every Link inside a region is refused while its twin is admitted.
+  // LNK-ADMIT-01: the join's paired split is derived by walking the source scope, which must read the pair contracted,
+  // or every Link inside a region is refused while its twin is admitted.
   const xml = await twinSource(accountOpening);
   const pair = '<intermediateThrowEvent id="ThrowStandard" name="Standard"><linkEventDefinition name="Standard" /></intermediateThrowEvent>' +
     '<intermediateCatchEvent id="CatchStandard" name="Standard"><linkEventDefinition name="Standard" /></intermediateCatchEvent>';

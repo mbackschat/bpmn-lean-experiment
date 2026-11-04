@@ -98,13 +98,13 @@ Current task: Link Events in the nested scope-data profile, batch 4 (`PC-BASIC-0
 
 Deliverable: single-source Link pairs admitted in the nested scope-data profile, each behaving as its explicit-flow twin, landed on `main`.
 
-Acceptance blockers: hosted `verify-complete` on the re-applied branch and the closure reviewer's correction audit, recorded in the [Link Events receipt](capsules/LINK-EVENTS-PROPOSAL.md#independent-cold-review-receipt); then graduation.
+Acceptance blockers: hosted `verify-complete` on [PR #56](https://github.com/mbackschat/bpmn-lean-experiment/pull/56), the condition of the approving correction audit in the [Link Events receipt](capsules/LINK-EVENTS-SPEC.md#independent-cold-review-receipt).
 
-Current result: the closure review of `653296d4` approved with required edits; the corrected change (the Inclusive join pairing walk over Link-contracted scopes, two Lean witnesses, the hosted pipeline legs split by Temporal execution schedule after a HIGH direction review, and the model-corpus run's refusal of a leg selection) is re-applied from `7fcb74d0` under a reviewed Rule 2 declaration, the working branch `link-events` keeping its history ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84), fifth instance).
+Current result: Link Events graduated to an implemented [specification](capsules/LINK-EVENTS-SPEC.md); `34878019` re-applies the corrected change from `7fcb74d0` under a reviewed Rule 2 declaration whose LOW post-check passed ([Finding 84](PROCESS-ASSESSMENT-LEDGER.md#finding-84), fifth instance), and the closure reviewer's correction audit approved it. `PC-BASIC-02` is accepted for single-source pairs and stays open on multiple sources.
 
 Effort budget: 8 hours from 2026-11-04 19:00 CET, ending 2026-11-05 03:00.
 
-Next action: on green hosted checks, the closure reviewer's correction audit, then graduation and landing.
+Next action: land through the branch push flow on green `verify-complete`, then select the next batch 4 family.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

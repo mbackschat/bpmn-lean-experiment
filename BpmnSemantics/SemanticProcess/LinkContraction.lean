@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.DefinitionBindingValidation
 import BpmnSemantics.SemanticProcess.EffectMappingValuePolicy
 
-/-! LNK-PAIR-01, LNK-CONT-01 and LNK-PROFILE-01 of the [Link Events proposal](../../docs/capsules/LINK-EVENTS-PROPOSAL.md#representation-and-runtime-ownership): a Link throw and catch of one name behave as the Sequence Flow they replace (Clause 10.5.5), so a Link definition is admitted and lowered as its explicit-flow twin. The contraction runs only at the boundaries that see a raw Link graph; `checkedWellFormed` and `lowerCheckedProcess` stay Link-free, so their laws and fixtures are unchanged. The TypeScript twin is `link-contraction.ts`. -/
+/-! LNK-PAIR-01, LNK-CONT-01 and LNK-PROFILE-01 of the [Link Events proposal](../../docs/capsules/LINK-EVENTS-SPEC.md#representation-and-runtime-ownership): a Link throw and catch of one name behave as the Sequence Flow they replace (Clause 10.5.5), so a Link definition is admitted and lowered as its explicit-flow twin. The contraction runs only at the boundaries that see a raw Link graph; `checkedWellFormed` and `lowerCheckedProcess` stay Link-free, so their laws and fixtures are unchanged. The TypeScript twin is `link-contraction.ts`. -/
 
 public section
 

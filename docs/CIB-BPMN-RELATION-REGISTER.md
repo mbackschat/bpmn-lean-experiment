@@ -286,7 +286,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0018 — a Link pair continues the token as the Sequence Flow it replaces
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Link Events account](capsules/LINK-EVENTS-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Link Events account](capsules/LINK-EVENTS-SPEC.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
 
 **BPMN basis:** Clause 10.5.5 makes a Link a jump between two sections of one Process level: the Process continues as if the Sequence Flow had connected the throw's predecessor to the catch's successor, and both forms behave equivalently. One target Link Event takes a name; Clause 10.5.4 keeps a catching Link without incoming and a throwing Link without outgoing Sequence Flow. The machine-readable `LinkEventDefinition` makes `source` and `target` optional (`BPMN20.cmof:384-385`).
 

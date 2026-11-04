@@ -14,7 +14,7 @@ retained `scenarios/link-events` models are: the interrupted flow keeps its iden
 the catch. The oracle is the twin itself, so contraction must return it exactly and lowering must give its Program;
 each refused graph differs from an admitted Link model in the fact its name states. The module runs no command: equal
 journeys are executions of the registered scenarios in the pipeline. See the
-[Link Events proposal](../docs/capsules/LINK-EVENTS-PROPOSAL.md#separating-witnesses).
+[Link Events proposal](../docs/capsules/LINK-EVENTS-SPEC.md#separating-witnesses).
 -/
 
 public section
