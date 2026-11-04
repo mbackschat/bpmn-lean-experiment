@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Inclusive Gateway regions in the nested scope-data profile, batch 4 (`PC-CF-04` primary; `PC-CF-08`). Terminal forks landed at `339fec34`. Close call, re-decided after the reviews on semantic risk and cost, since no pinned or MIWG whole model of either candidate falls in its class as it stands: the non-local Inclusive join is the highest-risk open gateway mechanism and reuses an existing operation pair, where implicit split and merge needs a kernel extension.
+Current task: Link Events in the nested scope-data profile, batch 4 (`PC-BASIC-02`). Inclusive regions landed at `77a8d8f2`. Close call against nested and sibling Inclusive regions: Link Events win on reach (MIWG B.2.0 and 6 CIB files, all single-source) and risk, a pure flow continuation.
 
-Deliverable: structured root Inclusive regions admitted in the nested scope-data profile, the join waiting for all and only the selected branches, landed on `main`.
+Deliverable: single-source Link pairs admitted in the nested scope-data profile, each behaving as its explicit-flow twin, landed on `main`.
 
-Acceptance blockers: hosted `verify-complete` on the graduation commit, then the fast-forward of `main`.
+Acceptance blockers: the cold review of the [proposal](capsules/LINK-EVENTS-PROPOSAL.md), implementation, closure review and hosted `verify-complete`.
 
-Current result: the [specification](capsules/INCLUSIVE-GATEWAY-REGIONS-SPEC.md) is implemented and its closure review approved after corrections `50790a59` and `e8069b9d`, which refuse nested and sibling regions; full Lean, Lean checks and pipeline green at `e8069b9d`.
+Current result: proposal drafted.
 
-Effort budget: 10 hours from 2026-11-04 13:11 CET, ending 23:11.
+Effort budget: 8 hours from 2026-11-04 19:00 CET, ending 2026-11-05 03:00.
 
-Next action: land PR #54 on green hosted checks, then select the next batch-4 family.
+Next action: the proposal's cold review.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
