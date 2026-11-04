@@ -159,7 +159,7 @@ def exactProbeServiceNode (route : Option CheckedBpmnErrorRoute := none) :
 
 def excludedExclusiveGateway : CheckedNode :=
   .exclusiveGateway ⟨"Choice"⟩
-    [⟨"Flow_First"⟩, ⟨"Flow_Second"⟩] ⟨"Flow_Default"⟩
+    [⟨"Flow_First"⟩, ⟨"Flow_Second"⟩] (some ⟨"Flow_Default"⟩)
 
 def excludedMessageCatch : CheckedNode :=
   .intermediateCatchMessageEvent ⟨"MessageCatch"⟩
