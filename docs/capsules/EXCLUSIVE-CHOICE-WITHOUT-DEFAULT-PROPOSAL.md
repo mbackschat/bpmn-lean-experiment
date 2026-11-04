@@ -349,4 +349,4 @@ Implemented as proposed, with these deviations:
 |---|---|---|---|---|
 | Proposal | `39cdfd32` | `fork-turns-none` | `approve-with-required-edits` | `240c0da2` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `f439e526` | `fork-turns-none` | `approve-with-required-edits` | `85edfbdb` |
