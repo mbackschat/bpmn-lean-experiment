@@ -100,11 +100,11 @@ Deliverable: single-source Link pairs admitted in the nested scope-data profile,
 
 Acceptance blockers: the cold review of the [proposal](capsules/LINK-EVENTS-PROPOSAL.md), implementation, closure review and hosted `verify-complete`.
 
-Current result: proposal corrected after its cold review (approve with required edits); correction audit pending.
+Current result: proposal approved (`945479ad`, corrections `5b1591ac` audited); implementation started.
 
 Effort budget: 8 hours from 2026-11-04 19:00 CET, ending 2026-11-05 03:00.
 
-Next action: the proposal's cold review.
+Next action: the two `CheckedNode` arms and the Link contraction in both languages.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

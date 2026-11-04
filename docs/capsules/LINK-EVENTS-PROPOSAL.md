@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved
 
 ## Question and delivery boundary
 
@@ -82,7 +82,7 @@ Observation adds no field and publishes nothing for a Link Event: no occurrence,
 
   For each pair it then retargets the throw's incoming flow to the catch's successor. It removes the throw, the catch, the catch's outgoing flow and their scope-ownership entries, and keeps every other node, flow, condition, default and record unchanged. The leaf also defines `linkedCheckedWellFormed` (the contraction succeeds and `checkedWellFormed` accepts its result), `lowerLinkedCheckedProcess` (`lowerCheckedProcess` of the contraction, or of the raw graph when the contraction refuses, so it claims meaning only under `linkedCheckedWellFormed`, as the lowering does under `checkedWellFormed`) and `linkedDefinitionBindingValid` (the same over the linked pair).
 - **Link-free core.** `checkedWellFormed` and `lowerCheckedProcess` and their TypeScript twins in [checked admission](../../packages/bpmn-source/src/checked-process-admission.ts) and [lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) do not contract. Their exhaustive matches refuse both arms (`checkedNodeArityValid`) and lower them to no operation (`lowerNode`). Their callers, their laws (among them `lower_preserves_sequence_flow_origins`, which stays true of the raw graph it is stated over), the proofs that unfold the lowering and every kernel-decided fixture keep their statements and cost. Under every profile the analyses, routers, burst rules, `ProfileCardinalities`' shape counts and `definitionBindingValid` need no Link case, because no Link arm reaches them.
-- **Boundaries that see a raw Link graph contract first.** In Lean, `validateDefinitionInput` in [`DefinitionInput`](../../BpmnSemantics/SemanticProcessJson/DefinitionInput.lean) checks `linkedCheckedWellFormed` and compares the supplied Program with `lowerLinkedCheckedProcess`. In TypeScript, the [nested scope-data source reader](../../packages/bpmn-source/src/nested-scope-data-source.ts) contracts the projected graph once, before its `admitted` hook and before `isAdmittedCheckedProcess`, so `structuredScopeDataCheckedAnalysis` and `effectResultReachesDefaultlessChoice` in [`defaultless-choice-effect-closure.ts`](../../packages/bpmn-source/src/defaultless-choice-effect-closure.ts) see the twin, and the [compiler](../../packages/bpmn-source/src/compile.ts) lowers through `lowerLinkedCheckedProcess`. The emitted checked artifact stays the raw graph with its Link arms, so the Lean boundary re-derives the contraction independently. No Temporal adapter module reads a checked graph.
+- **Boundaries that see a raw Link graph contract first.** In Lean, `validateDefinitionInput` in [`DefinitionInput`](../../BpmnSemantics/SemanticProcessJson/DefinitionInput.lean) checks `linkedCheckedWellFormed` and compares the supplied Program with `lowerLinkedCheckedProcess`. In TypeScript, the [nested scope-data source reader](../../packages/bpmn-source/src/nested-scope-data-source.ts) contracts the projected graph once, before its `admitted` hook and before `isAdmittedCheckedProcess`, so `structuredScopeDataCheckedAnalysis` and `effectResultReachesDefaultlessChoice` in [`defaultless-choice-effect-closure.ts`](../../packages/bpmn-source/src/defaultless-choice-effect-closure.ts) see the twin, and the [compiler](../../packages/bpmn-source/src/compile.ts) lowers through `lowerLinkedCheckedProcess`. The emitted checked artifact stays the raw graph with its Link arms, so the Lean boundary re-derives the contraction independently. The diagnostic [`DefinitionAdmissionJsonMain`](../../BpmnSemantics/DefinitionAdmissionJsonMain.lean) reports `linkedCheckedWellFormed` for the same reason. No Temporal adapter module reads a checked graph.
 - **Control places.** A Link definition's Program has one control place for every Sequence Flow of its contraction, so none for a catch's outgoing flow. The [Semantic Process IL](../SEMANTIC-PROCESS-IL-SPEC.md) statement of "one control place for every admitted Sequence Flow" describes its Link-free parallel example and stays true. The IL's general rules are stated over the Program and do not change.
 - **Program.** The Program of a Link model equals, operation for operation and place for place, the Program of its twin, the definition identity aside. The incoming flow of the throw keeps its identity, so a Choice candidate, a default or a branch place keeps its origin.
 - **Runtime.** Unchanged. No operation stands for a Link Event, so none publishes, waits or counts against the closure limit.
@@ -237,6 +237,6 @@ Registration:
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `945479ad` | `fork-turns-none` | `approve-with-required-edits` | `5b1591ac` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
