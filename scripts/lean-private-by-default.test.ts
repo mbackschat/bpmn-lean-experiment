@@ -31,6 +31,15 @@ test("another module naming a new declaration, or a public statement of its modu
   ]);
 });
 
+test("a name after a prefix `!` or `?` operator is named, while one continuing an identifier is not", () => {
+  const hub = module("Pkg/Hub.lean", "def negated : Bool := true\n\ndef suffixed : Bool := true");
+  // `!negated` is Boolean negation; `get!suffixed` is one identifier, since Lean admits `!` inside a name.
+  const user = module("Pkg/User.lean", "private def uses : Bool := !negated && get!suffixed");
+  assert.deepEqual(leanPublicAdditions([], [hub, user], [hub, user]), [
+    "Pkg/Hub.lean: Pkg.suffixed is new and public, but no other module names it; declare it private until one does",
+  ]);
+});
+
 test("a statement of an existing public declaration keeps a new declaration it names public", () => {
   const hub = module("Pkg/Hub.lean", "def bound : Nat := 2\n\ntheorem existing : bound = 2 := rfl");
   assert.deepEqual(leanPublicAdditions([module("Pkg/Hub.lean", "theorem existing : True := trivial")], [hub], [hub]), []);

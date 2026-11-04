@@ -83,7 +83,11 @@ function statementOf(block: string): string {
   return block;
 }
 
-/** Whether `text` names `name`, alone or as the last component of a qualified name. */
+/**
+ * Whether `text` names `name`, alone or as the last component of a qualified name. Lean admits `!` and `?` inside an
+ * identifier but not at its start, so one of them continues an identifier only after an identifier character; after
+ * anything else it is a prefix operator such as Boolean negation, and the name that follows is named.
+ */
 function names(text: string, name: string): boolean {
-  return new RegExp(`(?<![\\w'?!])${name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}(?![\\w'?!])`, "u").test(text);
+  return new RegExp(`(?<![\\w'])(?<![\\w'?!][?!])${name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}(?![\\w'?!])`, "u").test(text);
 }
