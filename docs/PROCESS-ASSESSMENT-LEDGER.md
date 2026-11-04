@@ -205,7 +205,7 @@ The third and fourth instances are the public subscription registration and boun
 
 The fifth and sixth instances are the structured Message-payload profile (`310cb4cd`) and the nested scope-data profile, both committed without a runnable example although `node scripts/what-binds.ts` on each `profile.json` names this guard; the port-free test was not run before either commit, and the closure `test:temporal` gate failed on both. The guard held and its focused lane is named, so the failure was skipping a named guard rather than a missing one.
 
-The seventh instance is the addressless Receive Task profile (`aa47af68`, fixed by `542b447c`): `what-binds` on its `profile.json` named this guard, the guard was not run before the commit, and the complete gate's Temporal stage failed on it. The same family's pre-commit set also skipped the Java, differential and pipeline lanes, whose enrolment and calibration misses the complete gate caught in turn ([implementation notes](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md#implementation-notes)).
+The seventh instance is the addressless Receive Task profile (`aa47af68`, fixed by `542b447c`): `what-binds` on its `profile.json` named this guard, the guard was not run before the commit, and the complete gate's Temporal stage failed on it. The same family's pre-commit set also skipped the Java, differential and pipeline lanes, whose enrolment and calibration misses the complete gate caught in turn ([implementation notes](capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md#implementation-notes)).
 
 ### Finding 08
 
@@ -1618,7 +1618,7 @@ Hiding hub bodies broke proofs in their importers. A repair script answered each
 
 **Second instance (2026-11-02):** two hand-authored family commits of 21 and 23 files, `1d7afa1f` and `e6ead9a9` in [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md#evidence-and-acceptance), crossed Rule 2's 20-file trigger with only the approved proposal's inventory as declaration; the closure review caught it and a later LOW post-check found no growth beyond that inventory.
 
-**Third instance (2026-11-04):** the hand-authored implementation commit `aa47af68` of the [addressless Receive Task](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md#implementation-notes) touched 77 files; its scope and target-effect limits were declared after the implementation and before the commit, and a LOW post-check against them passed. The trigger fired on a hand change again, so the declaration belongs at implementation start, when the proposal's inventory is approved.
+**Third instance (2026-11-04):** the hand-authored implementation commit `aa47af68` of the [addressless Receive Task](capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md#implementation-notes) touched 77 files; its scope and target-effect limits were declared after the implementation and before the commit, and a LOW post-check against them passed. The trigger fired on a hand change again, so the declaration belongs at implementation start, when the proposal's inventory is approved.
 
 ### Finding 85
 

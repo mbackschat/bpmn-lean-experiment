@@ -306,13 +306,13 @@ The nested scope-data profile adopts that resolution as the semantic outcome `ro
 
 ### CIB-INT-0004 — a Receive Task without a Message waits for an occurrence-addressed trigger
 
-**Status:** Selected bounded interpretation; standards capsule in implementation
+**Status:** Selected bounded interpretation; implemented and evidence-closed
 
 BPMN Table 10.10 makes a Receive Task's `messageRef` optional, and Clauses 10.3.3 and 13.3.3 say the task waits for its associated Message and completes when it arrives, without saying how an unspecified Message is addressed. CIB Seven `2.2.0` declares no event subscription for such a task (`BpmnParse#parseReceiveTask`), waits in `ReceiveTaskActivityBehavior#performExecution` and leaves on an execution signal (`#signal`, reached through `RuntimeService#signal(executionId)` and `SignalCmd`).
 
 The addressless Receive Task profile adopts that resolution with a field-free `unspecifiedMessage` channel: the wait is resumed only by a delivery naming its published occurrence with that channel. An unspecified delivery addresses only an addressless wait; CIB's signal also completes a Message-addressed Receive Task (`ReceiveTaskTest#testSupportsLegacySignalingOnSingleReceiveTask`), which the profile refuses as a project restriction, claiming no CIB agreement there. The trigger carries no variables, and CIB's variable-setting signal stays outside the profile.
 
-**Evidence:** The [calibration probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenAddresslessReceiveTaskProbeTest.java) and the [addressless Receive Task account](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md).
+**Evidence:** The [calibration probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenAddresslessReceiveTaskProbeTest.java) and the [addressless Receive Task account](capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md).
 
 **Boundary:** This interpretation covers only the root None Start → addressless Receive Task → None End shape of the addressless Receive Task profile. It does not cover repeated, embedded or Multi-Instance waits, trigger variables, signal names or any other profile.
 
@@ -749,13 +749,13 @@ The project instead commits one effect wait per occurrence, runs one Temporal Ac
 
 ### CIB-OP-0011: CIB execution waiting at an addressless Receive Task mapped to the project occurrence
 
-**Status:** Selected operational mapping; standards capsule in implementation
+**Status:** Selected operational mapping; implemented and evidence-closed
 
 CIB keeps no event subscription for a Receive Task without a Message, so its public state shows only an execution whose activity is the task, addressed by a generated execution ID. BPMN prescribes no host identity, while the project addresses the wait by `(Process instance, BPMN element, activation ordinal)` with the field-free `unspecifiedMessage` channel selected by `CIB-INT-0004`.
 
 For the one admitted addressless Receive Task, the oracle adapter finds the execution waiting at the task's activity ID by an execution query, maps it to activation `1` of the scenario's stable semantic instance with channel `unspecifiedMessage`, and maps the project delivery to `RuntimeService#signal(executionId)` without variables, keeping the execution ID local to the call. Missing, multiple or already consumed executions are refused before the call. The projected open wait is adapter-derived, not an engine-observed Message subscription.
 
-**Evidence:** The [addressless Receive Task scenario](../scenarios/addressless-receive-task/README.md), its content-bound retained result and the [addressless Receive Task account](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md).
+**Evidence:** The [addressless Receive Task scenario](../scenarios/addressless-receive-task/README.md), its content-bound retained result and the [addressless Receive Task account](capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md).
 
 **Boundary:** The mapping is limited to one live activation-`1` addressless Receive Task wait in one Process instance. It does not establish repeated activation, multiple waits, signal names, trigger variables or signals to other activities.
 

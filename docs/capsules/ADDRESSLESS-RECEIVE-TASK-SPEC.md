@@ -1,8 +1,8 @@
-# Addressless Receive Task proposal
+# Addressless Receive Task specification
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -182,4 +182,4 @@ Implemented as proposed, with these deviations:
 |---|---|---|---|---|
 | Proposal | `ba5192c6` | `fork-turns-none` | `approve-with-required-edits` | `1ccbd2d4, 4a757db0` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `33f5d2f5` | `fork-turns-none` | `approve-with-required-edits` | `0e441f60` |

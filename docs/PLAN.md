@@ -98,13 +98,13 @@ Current task: the addressless Receive Task wait in a new addressless Receive Tas
 
 Deliverable: a Receive Task without a Message admitted in its own Receive Task profile, waiting until a delivery naming its published occurrence resumes it once, and refusing every other command unchanged, landed on `main`.
 
-Acceptance blockers: hosted `verify-complete`, the closure correction audit, graduation and landing.
+Acceptance blockers: hosted `verify-complete` and landing.
 
-Current result: the [capsule](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md) is implemented through `7c5d9817` ([pull request 52](https://github.com/mbackschat/bpmn-lean-experiment/pull/52)) with no guard bound raised; every local `verify.sh` stage passes at `23168089` or `869cecfd`, after one recorded TD-001-pattern publication loss; the closure review's required edits await audit.
+Current result: the [capsule](capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md) is implemented and graduated ([pull request 52](https://github.com/mbackschat/bpmn-lean-experiment/pull/52)) with no guard bound raised; every local `verify.sh` stage passes at `23168089` or `869cecfd`, after one recorded TD-001-pattern publication loss; the closure review approved after its correction audit at `0e441f60`.
 
 Effort budget: 8 hours from 2026-11-04 05:12 CET, ending 13:12.
 
-Next action: on the approving audit, graduation, then landing on green hosted checks.
+Next action: land on green hosted checks, then open the next batch-4 family.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

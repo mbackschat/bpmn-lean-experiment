@@ -86,7 +86,7 @@ import all BpmnSemantics.Scenario
 
 This module specializes the existing Message wait and delivery semantics to one payload-free, non-instantiating Receive Task with a direct Message address. It owns the exact checked-source lowering lock, bounded closure witnesses, direct-versus-operation address discriminator, and concrete refusal cases. Temporal hosting, retained CIB projection, payload, correlation, and general Receive Task lifecycle remain outside this checkpoint.
 
-The `Addressless` section adds the same laws for the parcel-handover Receive Task without a Message, whose wait carries the field-free `unspecifiedMessage` arm ([addressless Receive Task account](../docs/capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md)). It sits here rather than in a family leaf because only a module that already runs commands keeps the `CommandAdmission` hidden-edit cone unchanged.
+The `Addressless` section adds the same laws for the parcel-handover Receive Task without a Message, whose wait carries the field-free `unspecifiedMessage` arm ([addressless Receive Task account](../docs/capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md)). It sits here rather than in a family leaf because only a module that already runs commands keeps the `CommandAdmission` hidden-edit cone unchanged.
 -/
 
 public section
