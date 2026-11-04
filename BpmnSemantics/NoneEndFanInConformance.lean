@@ -94,7 +94,7 @@ private def travelWith (rejectTo : String := "RequestClosed") (phoneDirect secon
       [copied "channel" "channel", copied "decision" "decision"]]
     [("P", none), ("AssessRequest", some "P")]
     ([ start "P" "RequestReceived", sub "P" "AssessRequest"
-     , node "P" (.exclusiveGateway ⟨"RouteRequest"⟩ [⟨"Flow_Reject"⟩, ⟨"Flow_Call"⟩] ⟨"Flow_Book"⟩)
+     , node "P" (.exclusiveGateway ⟨"RouteRequest"⟩ [⟨"Flow_Reject"⟩, ⟨"Flow_Call"⟩] (some ⟨"Flow_Book"⟩))
      , service "P" "BookTravel" "bookTravel" [enclosing "traveller" "traveller"] [copied "bookingNumber" "booking"]
      , finish "P" "RequestClosed"
      , start "AssessRequest" "AssessmentOpened", task "AssessRequest" "CheckRequest"

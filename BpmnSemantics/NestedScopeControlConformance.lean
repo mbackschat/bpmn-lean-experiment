@@ -248,7 +248,7 @@ def unstructured_bodies_are_refused : Bool := decide <|
       (NestedScopeControl.checkedAnalysis crossing).isNone = true ∧
       (NestedScopeControl.checkedAnalysis joinFedFromTwoScopes).isNone = true ∧
       (NestedScopeControl.checkedAnalysis rootTerminalFork).isNone = true ∧
-      (NestedScopeControl.checkedAnalysis (detour (.exclusiveGateway ⟨"QN"⟩ [] ⟨"QN>QU"⟩))).isNone = true ∧
+      (NestedScopeControl.checkedAnalysis (detour (.exclusiveGateway ⟨"QN"⟩ [] (some ⟨"QN>QU"⟩)))).isNone = true ∧
       (NestedScopeControl.checkedAnalysis (detour (.serviceTask ⟨"QN"⟩
         { protocol := "urn:bpmn-lean:effect-protocol:activity-v1"
           operation := "urn:bpmn-lean:effect-operation:probe-v1" } [] [] none))).isNone = true
