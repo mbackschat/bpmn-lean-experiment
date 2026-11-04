@@ -3,7 +3,7 @@
  * regions of the nested scope-data profile. The analysis projects a split as a fork and its join as a join, so it
  * already admits the region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only
  * placement with at most one live region, the outputs and default rule, the strict cut, the Call exclusion and, at the Program level, every
- * branch's expected join input. Owner: the [Inclusive regions proposal](../../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#admission).
+ * branch's expected join input. Owner: the [Inclusive regions specification](../../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-SPEC.md#admission).
  */
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
 import type { CheckedNode, CheckedSequenceFlow } from "./checked-process-contract.js";

@@ -98,13 +98,13 @@ Current task: Inclusive Gateway regions in the nested scope-data profile, batch 
 
 Deliverable: structured root Inclusive regions admitted in the nested scope-data profile, the join waiting for all and only the selected branches, landed on `main`.
 
-Acceptance blockers: implementation of the approved [proposal](capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md), closure review and hosted `verify-complete`.
+Acceptance blockers: hosted `verify-complete` on the graduation commit, then the fast-forward of `main`.
 
-Current result: proposal `fcb119ca` approved; implementation committed with its evidence; the CIB probe agrees on all six journeys; fast guards and TypeScript suites green.
+Current result: the [specification](capsules/INCLUSIVE-GATEWAY-REGIONS-SPEC.md) is implemented and its closure review approved after corrections `50790a59` and `e8069b9d`, which refuse nested and sibling regions; full Lean, Lean checks and pipeline green at `e8069b9d`.
 
 Effort budget: 10 hours from 2026-11-04 13:11 CET, ending 23:11.
 
-Next action: run the closure heavy lanes once (full Lean, `BpmnConformance`, pipeline, hosted Temporal and the model corpus), then the cold closure review.
+Next action: land PR #54 on green hosted checks, then select the next batch-4 family.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

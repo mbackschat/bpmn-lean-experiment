@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.CheckedProcessContract
 
-/-! The region walk of IGR-BIND-01 in the [Inclusive regions proposal](../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#representation-and-runtime-ownership): from one branch edge, a serial vertex passes to its sole output, a nested Parallel or Inclusive split passes to its paired join's output, and the walk stops at the edge into the first join it meets. Lowering derives each branch's expected join input with it over the checked graph, and the region admission runs it over checked graphs and Programs alike. The TypeScript twin is `inclusive-region-admission.ts`. -/
+/-! The region walk of IGR-BIND-01 in the [Inclusive regions specification](../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-SPEC.md#representation-and-runtime-ownership): from one branch edge, a serial vertex passes to its sole output, a nested Parallel or Inclusive split passes to its paired join's output, and the walk stops at the edge into the first join it meets. Lowering derives each branch's expected join input with it over the checked graph, and the region admission runs it over checked graphs and Programs alike. The TypeScript twin is `inclusive-region-admission.ts`. -/
 
 public section
 

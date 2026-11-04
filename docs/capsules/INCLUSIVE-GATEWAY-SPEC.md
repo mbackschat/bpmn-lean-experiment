@@ -119,7 +119,7 @@ The existing `choose` contract remains first-true and single-output. The existin
 
 Lean independently lowers the checked graph into these operations and requires exact equality with the received program before execution. The TypeScript source compiler and semantic core remain separate transcriptions of the reviewed account.
 
-The [Inclusive regions proposal](INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#profile-and-public-contract) widened both wire forms for the nested scope-data profile: the divergent node holds one or more candidate Flow IDs and an optional default, `selectMany.candidates` one or more candidates and `selectMany.defaultBranch` is optional, and `synchronizeSelected.inputs` holds two or more inputs. This profile's exact topology above, two conditioned candidates, a default, three join inputs and one User Task per branch, is now an explicit predicate of its profile (`IGR-PROFILE-01`) rather than a fixed arity of the contract, so every form it admitted and refused is unchanged.
+The [Inclusive regions specification](INCLUSIVE-GATEWAY-REGIONS-SPEC.md#profile-and-public-contract) widened both wire forms for the nested scope-data profile: the divergent node holds one or more candidate Flow IDs and an optional default, `selectMany.candidates` one or more candidates and `selectMany.defaultBranch` is optional, and `synchronizeSelected.inputs` holds two or more inputs. This profile's exact topology above, two conditioned candidates, a default, three join inputs and one User Task per branch, is now an explicit predicate of its profile (`IGR-PROFILE-01`) rather than a fixed arity of the contract, so every form it admitted and refused is unchanged.
 
 ## Runtime-only selection record
 

@@ -15,7 +15,7 @@ import org.cibseven.bpm.engine.delegate.JavaDelegate;
 import org.junit.Test;
 
 /**
- * Calibrates the Inclusive regions proposal's `CIB-INT-0005` and `CIB-AGR-0017` on its two witness models. CIB Seven
+ * Calibrates the Inclusive regions specification's `CIB-INT-0005` and `CIB-AGR-0017` on its two witness models. CIB Seven
  * `2.2.0` takes every non-default outgoing flow whose condition is absent or true and the default only when none is
  * (`InclusiveGatewayActivityBehavior.java:61-86`), and its join activates once no other execution of the scope can reach
  * it (`activatesGateway`, `canReachActivity`). On these acyclic structured root regions that is exactly when every

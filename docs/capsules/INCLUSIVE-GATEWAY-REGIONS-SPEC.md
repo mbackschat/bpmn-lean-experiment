@@ -1,8 +1,8 @@
-# Inclusive Gateway regions proposal
+# Inclusive Gateway regions specification
 
 ## Status
 
-Lifecycle: implementation-in-progress
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -169,7 +169,7 @@ Both models carry a source overlay and a mapped Service Task, as the profile's s
 
 Lane shape: checked
 
-Evidence: the family adds no transition family. The two operations' relation, evaluator soundness and laws are quantified over candidate and input lists in [`InclusiveGateway`](../../BpmnSemantics/SemanticProcess/InclusiveGateway.lean): `evaluated_true_candidate_membership_iff`, `evaluated_default_iff_no_candidate_true`, `nonempty_selected_subset_join_ready_iff`, `synchronize_selected_exact_consumption_and_record_removal`, `selectManyState_sound` and `synchronizeSelectedState_sound`. Their distinctness premises (`defaultDistinct`, injective addresses) are discharged by admission condition 3. The optional default changes the relation `SelectManyStep` and re-establishes `selectManyState_sound` for both arms, with a `none` law beside the existing `some` laws. Batches commit through the quantified local-control pair laws named under [Representation](#representation-and-runtime-ownership). What stays argued, not proved: the availability premise that no admitted closure reaches the ambiguous rollback of a split beside a declared completion; that the selected-set reading equals Table 13.3 on every admitted region; and join liveness, that every selected branch's token reaches its recorded input. Executable admission checks live in a new conformance module, admission-only and outside `CommandAdmission`'s cone: both models at both levels, the refused edits other than the separate Ends, the Choice and the root Call, the binding control and the profile controls other than the exact profile's, which `InclusiveGatewayConformance` owns. The journeys run through the pipeline's Lean target.
+Evidence: the family adds no transition family. The two operations' relation, evaluator soundness and laws are quantified over candidate and input lists in [`InclusiveGateway`](../../BpmnSemantics/SemanticProcess/InclusiveGateway.lean): `evaluated_true_candidate_membership_iff`, `evaluated_default_iff_no_candidate_true`, `nonempty_selected_subset_join_ready_iff`, `synchronize_selected_exact_consumption_and_record_removal`, `selectManyState_sound` and `synchronizeSelectedState_sound`. Their distinctness premises (`defaultDistinct`, injective addresses) are discharged by admission condition 3. The optional default changes the relation `SelectManyStep` and re-establishes `selectManyState_sound` for both arms, with a `none` law beside the existing `some` laws. Batches commit through the quantified local-control pair laws named under [Representation](#representation-and-runtime-ownership). What stays argued, not proved: the availability premise that no admitted closure reaches the ambiguous rollback of a split beside a declared completion; that the selected-set reading equals Table 13.3 on every admitted region; and join liveness, that every selected branch's token reaches its recorded input. Executable admission checks live in [`inclusiveRegionsConformanceChecks`](../../BpmnSemantics/InclusiveRegionsConformance.lean#inclusiveRegionsConformanceChecks), admission-only and outside `CommandAdmission`'s cone: both models at both levels, the refused edits other than the separate Ends, the Choice and the root Call, the binding control and the profile controls other than the exact profile's, which `InclusiveGatewayConformance` owns. The journeys run through the pipeline's Lean target.
 
 ## Temporal hosting and refinement preflight
 
@@ -183,7 +183,8 @@ Then `PC-CF-04` is evidenced for root structured regions with Simple Boolean or 
 
 Nearest unsupported claims:
 
-- Inclusive regions in Sub-Process or called bodies, beside Calls, unpaired, looping or unstructured Inclusive merges, and a default-less split whose every output is conditional;
+- Inclusive regions in Sub-Process or called bodies, beside Calls, nested in or concurrently live beside another region, unpaired, looping or unstructured Inclusive merges, and a default-less split whose every output is conditional;
+- a hosted continuation that carries a selection record across Continue-As-New, for which only the protocol test exists;
 - the singleton premise, the selected-set reading beyond acyclic structured regions, and join liveness, each argued and checked, not proved;
 - that every actual closure stays within the admitted burst, not proved in Lean, as for the accounts this family reuses.
 
@@ -217,6 +218,6 @@ Registration: the profile artifact's `features`, normative clauses, relationship
 |---|---|---|---|---|
 | Proposal | `fcb119ca` | `fork-turns-none` | `approve-with-required-edits` | `80a3e631, f60cbef3` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `60786474` | `fork-turns-none` | `approve-with-required-edits` | `50790a59, e8069b9d` |
 
-The first proposal review of `1d904f4a` rejected an earlier account that required a default and a condition on every other output, which reached none of the models its selection counted, held an event booking witness above the closure limit, and omitted the checked router, the Lean checked admission and the exact profile's topology owner. The redesign `fcb119ca` took a new cold review, packet digest `c6e95ac9f5d099a82b344e160a06d426ec677bd990605f0d0343bc6857635380`, with seven required findings. The same reviewer's first correction audit of `80a3e631` closed six of them and raised two text defects; its second audit, of `f60cbef3`, closed the rest and approved. Proposal approval selected this account only.
+The first proposal review of `1d904f4a` rejected an earlier account that required a default and a condition on every other output, which reached none of the models its selection counted, held an event booking witness above the closure limit, and omitted the checked router, the Lean checked admission and the exact profile's topology owner. The redesign `fcb119ca` took a new cold review, packet digest `c6e95ac9f5d099a82b344e160a06d426ec677bd990605f0d0343bc6857635380`, with seven required findings. The same reviewer's first correction audit of `80a3e631` closed six of them and raised two text defects; its second audit, of `f60cbef3`, closed the rest and approved. Proposal approval selected this account only. The closure review of `60786474`, packet digest `c3bc00e281e85b0ecf762d1dfc0e8f4d9c61dba7d9782d8ebfbab8d8551aa9f6`, raised six required findings: an unkilled Call exclusion, two claimed witnesses absent, a narrower refused-edit matrix than stated, and an admitted nested region no cross-target witness exercised. The correction `50790a59` added the Program-level and Lean witnesses, narrowed the claims, and refused nested regions; the same reviewer's audit found sibling regions on one fork reaching the same two-record state, which `e8069b9d` refused, and its second audit approved.

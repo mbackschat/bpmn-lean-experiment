@@ -1,6 +1,6 @@
 /**
  * Locks the continuation reader's widening for Inclusive regions (IGR, Temporal preflight of the
- * [Inclusive regions proposal](../../../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#temporal-hosting-and-refinement-preflight)):
+ * [Inclusive regions specification](../../../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-SPEC.md#temporal-hosting-and-refinement-preflight)):
  * a carried selection record of three expected inputs, which the account opening's all-checks journey creates, restores
  * unchanged, while the same record with one input duplicated is malformed. The state is the engine's own stable state
  * after *Assess applicant*, so a refusal can only come from the edited record.

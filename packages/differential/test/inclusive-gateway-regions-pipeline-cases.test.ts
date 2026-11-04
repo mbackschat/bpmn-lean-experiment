@@ -1,5 +1,5 @@
 /**
- * Locks the registered Inclusive region schedules against the Inclusive regions proposal's separating witnesses without
+ * Locks the registered Inclusive region schedules against the Inclusive regions specification's separating witnesses without
  * Lean or Temporal: the open work and Process variables after every command, host admission, and every named seeded
  * mutation, each of which must move exactly the observation it names.
  *

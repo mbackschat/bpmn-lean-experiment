@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcess.InclusiveRegionWalk
 public import BpmnSemantics.SemanticProcessContract
 
-/-! IGR-ADMIT-01 conditions 2 to 6 and IGR-BIND-01 of the [Inclusive regions proposal](../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#admission): what the shared nested analysis cannot see about root Inclusive regions of the nested scope-data profile. That analysis projects a split as a fork and its join as a join, so it already admits a region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only placement with at most one live region, the outputs and default rule, the strict cut, the Call exclusion and, over a Program, every branch's expected join input. `NestedScopeControl` consumes it in hidden bodies only, through a private import; the TypeScript twin is `inclusive-region-admission.ts`. -/
+/-! IGR-ADMIT-01 conditions 2 to 6 and IGR-BIND-01 of the [Inclusive regions specification](../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-SPEC.md#admission): what the shared nested analysis cannot see about root Inclusive regions of the nested scope-data profile. That analysis projects a split as a fork and its join as a join, so it already admits a region's structure, depth and burst; this leaf checks the kind of each paired vertex, root-only placement with at most one live region, the outputs and default rule, the strict cut, the Call exclusion and, over a Program, every branch's expected join input. `NestedScopeControl` consumes it in hidden bodies only, through a private import; the TypeScript twin is `inclusive-region-admission.ts`. -/
 
 public section
 

@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 
 /-! # Inclusive regions conformance
 
-Finite admission witnesses of IGR-ADMIT-01, IGR-BIND-01, IGR-ROOT-01 and IGR-PROFILE-01 of the [Inclusive regions proposal](../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md#separating-witnesses) under the nested scope-data profile. The account opening and event booking graphs transcribe the retained `scenarios/inclusive-gateway-regions` models; each refused graph differs from an admitted one in the fact its name states, and each Program-level check lowers the graph and decides on the Program alone. The module runs no command: the journeys are Lean executions of the registered scenarios in the pipeline. It imports admission owners only, as `RootParallelForksConformance` does, so it stays outside `CommandAdmission`'s hidden-edit cone (`lean-fanout`).
+Finite admission witnesses of IGR-ADMIT-01, IGR-BIND-01, IGR-ROOT-01 and IGR-PROFILE-01 of the [Inclusive regions specification](../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-SPEC.md#separating-witnesses) under the nested scope-data profile. The account opening and event booking graphs transcribe the retained `scenarios/inclusive-gateway-regions` models; each refused graph differs from an admitted one in the fact its name states, and each Program-level check lowers the graph and decides on the Program alone. The module runs no command: the journeys are Lean executions of the registered scenarios in the pipeline. It imports admission owners only, as `RootParallelForksConformance` does, so it stays outside `CommandAdmission`'s hidden-edit cone (`lean-fanout`).
 -/
 
 public section

@@ -1,5 +1,5 @@
 /**
- * Locks the region leaf of IGR-ADMIT-01 against the crossing of the Inclusive regions proposal's wrong algorithm 5, which
+ * Locks the region leaf of IGR-ADMIT-01 against the crossing of the Inclusive regions specification's wrong algorithm 5, which
  * source projection cannot express: a split whose branches meet at a Parallel join, followed by a Parallel fork whose
  * branches meet at the Inclusive join naming that split. Selection-key pairing alone accepts it; the structural walk
  * does not. The Lean twin is `crossing_is_refused` in `InclusiveRegionsConformance`.

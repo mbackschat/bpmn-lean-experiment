@@ -1,6 +1,6 @@
 /**
  * IGR-ADMIT-01, IGR-BIND-01, IGR-ROOT-01 and IGR-PROFILE-01 through the exact-bytes source path. The oracle is the
- * Inclusive regions proposal's witness account: both retained models compile under the nested scope-data profile at
+ * Inclusive regions specification's witness account: both retained models compile under the nested scope-data profile at
  * the checked and Program levels, and every refused edit differs from an admitted twin in exactly its named fact.
  * Program-level refusals mutate the admitted Program in the one fact the edit changes, so the Program analysis decides
  * without the checked graph.
