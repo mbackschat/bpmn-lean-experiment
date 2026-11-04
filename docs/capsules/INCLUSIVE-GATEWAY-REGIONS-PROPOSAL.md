@@ -2,8 +2,8 @@
 
 ## Status
 
-Lifecycle: draft
-Review: pending
+Lifecycle: implementation-in-progress
+Review: approved
 
 ## Question and delivery boundary
 
@@ -21,7 +21,7 @@ Screened out, each with its reason:
 - Script and Business Rule Tasks (`PC-AUTO-05` to `PC-AUTO-08`): both open with a dependency and runtime design decision.
 - A default-less split whose every output is conditional: when every condition is false it needs the no-match outcome of the [Exclusive Choice without a default](EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-SPEC.md#representation-and-runtime-ownership), whose closure-result, host-start and proof changes are a family of their own; the next reach step of this mechanism.
 
-Selection, 2026-11-04, re-decided after the first proposal review: chosen on semantic risk, standards value and cost; reach does not separate the candidates. Measured as deduplicated whole models (pinned checkout `5a45b47` and the MIWG reference checkout, 2026-11-04; every `*.bpmn`, `*.bpmn2` and `*.bpmn20.xml` file outside `target/` and `node_modules/` that parses as XML), no pinned or MIWG model holding an Inclusive Gateway falls inside this class as it stands, and none would be admitted anyway, because the profile requires a source overlay and refuses CIB attributes and JUEL. The pinned models fall out on the paired join (`ProcessInstanceAssert-isWaitingForJoinAt3`, `testDefaultSequenceFlow` and the three asynchronous splits to separate Ends), the strict cut (`BPMNParseListenerTest.testAlterActivityBehaviors`), the Call exclusion (`testJoinAfterCall`), the cycle exclusion (`testLoopingInclusiveGateways`) and the conditioned default-less split (13 of the 23 pinned splits); the MIWG hits are four distinct reference models, 48 of 52 splits being copies of B.2.0, none a paired structured region. The split-shape measure that guided the redesign remains: 10 of 23 pinned and 17 of 52 MIWG splits have a shape this class admits, against 1 and 2 for a required default with every other output conditioned. Close call: the Inclusive join is the highest-risk open gateway mechanism, a non-local synchronization whose liveness Table 13.3 defines by reachability, and this family reuses an existing operation pair, two Lean contract field types and one runtime record bound, where implicit flow needs new operation outputs on every Activity.
+Selection, 2026-11-04, re-decided after the first proposal review: chosen on semantic risk, standards value and cost; reach, measured on deduplicated whole models for Inclusive only, admits no pinned or MIWG model as it stands. Measured as deduplicated whole models (pinned checkout `5a45b47` and the MIWG reference checkout, 2026-11-04; every `*.bpmn`, `*.bpmn2` and `*.bpmn20.xml` file outside `target/` and `node_modules/` that parses as XML), no pinned or MIWG model holding an Inclusive Gateway falls inside this class as it stands, and none would be admitted anyway, because the profile requires a source overlay and refuses CIB attributes and JUEL. The pinned models fall out on the paired join (`ProcessInstanceAssert-isWaitingForJoinAt3`, `testDefaultSequenceFlow` and the three asynchronous splits to separate Ends), the strict cut (`BPMNParseListenerTest.testAlterActivityBehaviors`), the Call exclusion (`testJoinAfterCall`), the cycle exclusion (`testLoopingInclusiveGateways`) and the conditioned default-less split (13 of the 23 pinned splits); the MIWG hits are four distinct reference models, 48 of 52 splits being copies of B.2.0, none a paired structured region. The split-shape measure that guided the redesign remains: 10 of 23 pinned and 17 of 52 MIWG splits have a shape this class admits, against 1 and 2 for a required default with every other output conditioned. Close call: the Inclusive join is the highest-risk open gateway mechanism, a non-local synchronization whose liveness Table 13.3 defines by reachability, and this family reuses an existing operation pair, two Lean contract field types and one runtime record bound, where implicit flow needs new operation outputs on every Activity.
 
 ## Normative basis and CIB classification
 
@@ -212,8 +212,8 @@ Registration: the profile artifact's `features`, normative clauses, relationship
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `fcb119ca` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `fcb119ca` | `fork-turns-none` | `approve-with-required-edits` | `80a3e631, f60cbef3` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
 
-The first proposal review of `1d904f4a` rejected an earlier account that required a default and a condition on every other output, which reached none of the models its selection counted, held an event booking witness above the closure limit, and omitted the checked router, the Lean checked admission and the exact profile's topology owner. The redesign `fcb119ca` took a new cold review, packet digest `c6e95ac9f5d099a82b344e160a06d426ec677bd990605f0d0343bc6857635380`, with seven required findings; their corrections await the same reviewer's audit.
+The first proposal review of `1d904f4a` rejected an earlier account that required a default and a condition on every other output, which reached none of the models its selection counted, held an event booking witness above the closure limit, and omitted the checked router, the Lean checked admission and the exact profile's topology owner. The redesign `fcb119ca` took a new cold review, packet digest `c6e95ac9f5d099a82b344e160a06d426ec677bd990605f0d0343bc6857635380`, with seven required findings. The same reviewer's first correction audit of `80a3e631` closed six of them and raised two text defects; its second audit, of `f60cbef3`, closed the rest and approved. Proposal approval selected this account only.

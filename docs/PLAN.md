@@ -98,13 +98,13 @@ Current task: Inclusive Gateway regions in the nested scope-data profile, batch 
 
 Deliverable: structured root Inclusive regions admitted in the nested scope-data profile, the join waiting for all and only the selected branches, landed on `main`.
 
-Acceptance blockers: the cold proposal review of the [proposal](capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md), then implementation, closure review and hosted `verify-complete`.
+Acceptance blockers: implementation of the approved [proposal](capsules/INCLUSIVE-GATEWAY-REGIONS-PROPOSAL.md), closure review and hosted `verify-complete`.
 
-Current result: the first proposal review rejected `1d904f4a` on reach and witness admissibility; the redesign `fcb119ca` drew seven required findings, now corrected.
+Current result: the first proposal review rejected `1d904f4a` on reach and witness admissibility; the redesign `fcb119ca` is approved after two correction audits.
 
 Effort budget: 10 hours from 2026-11-04 13:11 CET, ending 23:11.
 
-Next action: the correction audit, then implementation.
+Next action: implement the Lean and TypeScript contract batch, then admission, witnesses and evidence.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
