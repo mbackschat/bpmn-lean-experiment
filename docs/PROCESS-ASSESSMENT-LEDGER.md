@@ -1604,7 +1604,7 @@ The owner directed that ordinary work never need a complete Lean rebuild. The wh
 A bulk repair script ran without a declared target effect or an independent check, and a green build was taken as its success, so it reversed the outcome it served.
 
 Instances
-: 3
+: 4
 
 Disposition
 : `executable guard`
@@ -1619,6 +1619,8 @@ Hiding hub bodies broke proofs in their importers. A repair script answered each
 **Second instance (2026-11-02):** two hand-authored family commits of 21 and 23 files, `1d7afa1f` and `e6ead9a9` in [Exclusive choice arity](capsules/EXCLUSIVE-CHOICE-ARITY-SPEC.md#evidence-and-acceptance), crossed Rule 2's 20-file trigger with only the approved proposal's inventory as declaration; the closure review caught it and a later LOW post-check found no growth beyond that inventory.
 
 **Third instance (2026-11-04):** the hand-authored implementation commit `aa47af68` of the [addressless Receive Task](capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md#implementation-notes) touched 77 files; its scope and target-effect limits were declared after the implementation and before the commit, and a LOW post-check against them passed. The trigger fired on a hand change again, so the declaration belongs at implementation start, when the proposal's inventory is approved.
+
+**Fourth instance (2026-11-04):** a scratch generator wrote the three answer-free scenario inputs of [terminal forks](capsules/TERMINAL-FORKS-PROPOSAL.md#evidence-and-acceptance) into `scenarios/terminal-forks/` in `65347b64` with no declaration, review or check, filed under Rule 3 as a one-off script although Rule 2 governs every script that creates repository files; the closure review caught it, the files were reverted in `116889d8` and re-created by a declared, reviewed and checked generator. No executable guard can see a scratch script's writes, so this instance rests on the closure review.
 
 ### Finding 85
 

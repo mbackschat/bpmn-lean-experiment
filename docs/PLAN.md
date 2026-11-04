@@ -86,7 +86,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 ## Current evidence
 
-- Send Task closure. Command: `./scripts/verify.sh`. Status: `exit 0`, the pipeline over 177 cases; `./scripts/doctor.sh research && ./scripts/pnpm.sh run test:model-corpus` `exit 0`, 30 tests. Date: `2026-11-03`. Commit: `e9f0753d`.
+- Terminal forks closure. Command: `./scripts/verify.sh`. Status: `exit 1` in temporal-serial, a publication loss recorded in the [Temporal defects ledger](TEMPORAL-DEFECTS-LEDGER.md#td-001-query-loss-during-run-eviction); `./scripts/verify.sh temporal-serial && ./scripts/verify.sh pipeline && ./scripts/verify.sh composition-parity` `exit 0`, the pipeline over 184 cases; `./scripts/doctor.sh research && ./scripts/pnpm.sh run test:model-corpus` `exit 0`, 30 tests. Date: `2026-11-04`. Commit: `bac7df9f`.
 
 - Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Preserve prior local `/tmp/publication-runtime-d187fad4-20261009` failure at `d187fad4`: live Temporal 398/399, V8 GC SIGSEGV at `0xe`, consistent with [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash), and TD-001 `/tmp/mue-prepush-3ee96954-v8-fixed-20261002`. Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
 
@@ -98,13 +98,13 @@ Current task: terminal forks in the nested scope-data profile, batch 4 (`PC-HUM-
 
 Deliverable: root terminal forks and wait-free terminal branches admitted in the nested scope-data profile, each scope completing only when its last token is consumed, landed on `main`.
 
-Acceptance blockers: closure gates, closure review and landing.
+Acceptance blockers: closure review corrections and their audit, graduation and landing.
 
-Current result: the approved [proposal](capsules/TERMINAL-FORKS-PROPOSAL.md) is implemented in TypeScript and Lean with scenarios, pipeline cases, corpus, About, profile and CIB probe; focused tests, the CIB probe and the fast guards are green.
+Current result: the approved [proposal](capsules/TERMINAL-FORKS-PROPOSAL.md) is implemented and its closure gates are green, with hosted checks green at `bac7df9f`; the cold closure review requires six edits, among them re-creating the scenario inputs through a declared generator.
 
 Effort budget: 8 hours from 2026-11-04 09:30 CET, ending 17:30.
 
-Next action: run the family closure gates, then the cold closure review.
+Next action: finish the closure corrections, request their audit, then graduate and land.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

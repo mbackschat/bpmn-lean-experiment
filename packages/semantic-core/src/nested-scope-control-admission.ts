@@ -116,7 +116,6 @@ function embeddedCallsPlaced(body: Body, depth: number, dataBearing: boolean): b
     [...body.calls.keys()].every(vertex => body.mapped.has(vertex) && !first.includes(vertex));
 }
 
-/** Validates the scope tree and every body, returning the tree with its per-body scans. */
 /**
  * TFK-ADMIT-01: the nested scope-data profile admits several root Ends and wait-free terminal branches; every other
  * profile keeps one root End and the strict cut. TFK-DATA-01 keeps the strict cut for a definition that declares
@@ -129,6 +128,7 @@ function terminalForks(semanticProfile: string | undefined, records: readonly Sc
   return { rootEnds: relaxed, waitFreeEnds: relaxed && (records?.length ?? 0) === 0 };
 }
 
+/** Validates the scope tree and every body, returning the tree with its per-body scans. */
 function analyzeTree(scopes: readonly DefinitionScope[], bodies: ReadonlyMap<string, Body>, dataBearing: boolean,
   forks: TerminalForks):
   Readonly<{ tree: Tree; scans: ReadonlyMap<string, ParallelBodyScans>; weightedTasks: number; weightedServiceTasks: number }> | null {
