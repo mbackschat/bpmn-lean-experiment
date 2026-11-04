@@ -123,13 +123,13 @@ test("matches each open Message subscription to exactly one delivery interaction
 test("decodes the unspecified Message channel of an addressless Receive Task", () => {
   const unspecified = { kind: "unspecifiedMessage" };
   const page = messageStatePublicationPage("deliverMessage");
-  page.current.state.openMessageSubscriptions[0]!.channel = unspecified;
-  page.current.state.enabledInteractions[1]!.channel = unspecified;
+  Object.assign(page.current.state.openMessageSubscriptions[0]!, { channel: unspecified });
+  Object.assign(page.current.state.enabledInteractions[1]!, { channel: unspecified });
   assert.deepEqual(decodePublicationPage(page), page);
 
   const delivery = payloadStimulusPublicationPage({ kind: "deliverMessage", includePayload: false });
   const transition = delivery.batches[0]!.transitions[0]!.transition;
-  transition.stimulus = { ...transition.stimulus, channel: unspecified };
+  Object.assign(transition.stimulus, { channel: unspecified });
   assert.deepEqual(decodePayloadStimulusPage(delivery), delivery);
 
   const named = messageStatePublicationPage("deliverMessage");
