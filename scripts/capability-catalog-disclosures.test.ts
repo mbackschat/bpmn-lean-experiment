@@ -96,10 +96,12 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "a fork whose task branches all end at one Exclusive merge into a Sub-Process",
     "The nested scope-data profile admits the same paired forks and joins inside Sub-Process bodies and in the Process root body, never into a merge",
     "a model whose root body forks holds no Call in it",
+    "a scope completes only when its last branch has ended",
+    "only when no Sub-Process of the model declares locals",
   ]],
   ["abstractTask", "restriction", [
     "or on a Parallel branch of the Process root or a Sub-Process body",
-    "a branch that ends at its own None End must reach a User or Service Task before it",
+    "unless a Sub-Process of the model declares locals, in which case that branch must reach a User or Service Task before its End",
   ]],
   ["sendTask", "element", ["Send Task"]],
   ["sendTask", "restriction", [
@@ -120,6 +122,7 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ["noneEndEvent", "restriction", [
     "each arriving token ends there on its own, never waiting for another flow",
     "Ends inside Sub-Process bodies or the called Process keep one incoming flow",
+    "the scope completes only once no branch is live",
   ]],
   ["exclusiveGateway", "restriction", [
     "which passes each arriving token on its own",
