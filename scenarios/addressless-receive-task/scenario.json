@@ -27,18 +27,6 @@
       "channel": {
         "kind": "unspecifiedMessage"
       }
-    },
-    {
-      "kind": "deliverMessage",
-      "commandId": "courier-scanned-again",
-      "subscriptionId": {
-        "processInstanceId": "Handover_1",
-        "elementId": "ReceiveTask_AwaitCourierPickup",
-        "activation": 1
-      },
-      "channel": {
-        "kind": "unspecifiedMessage"
-      }
     }
   ],
   "observations": [

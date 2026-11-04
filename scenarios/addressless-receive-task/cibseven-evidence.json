@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "addressless-receive-task",
-    "sha256": "3435ec08dd7df18e94e1f5ab84c320c293d2ec4930fe1a9b374987b933a0476f"
+    "sha256": "4f715a37886a1c5a6710fcd555bd32649ee37c88c277c9bcafdb84509c60a633"
   },
   "profile": {
     "id": "cibseven-2.2.0-addressless-receive-task-draft",
@@ -29,12 +29,6 @@
         "processInstanceCount": 0,
         "engineClockTimeMs": 0,
         "variables": []
-      },
-      {
-        "afterCommandId": "courier-scanned-again",
-        "processInstanceCount": 0,
-        "engineClockTimeMs": 0,
-        "variables": []
       }
     ],
     "taskQueries": [
@@ -44,10 +38,6 @@
       },
       {
         "afterCommandId": "courier-scanned",
-        "tasks": []
-      },
-      {
-        "afterCommandId": "courier-scanned-again",
         "tasks": []
       }
     ],
@@ -64,10 +54,6 @@
       {
         "afterCommandId": "courier-scanned",
         "subscriptions": []
-      },
-      {
-        "afterCommandId": "courier-scanned-again",
-        "subscriptions": []
       }
     ],
     "timerJobs": [
@@ -78,10 +64,6 @@
       {
         "afterCommandId": "courier-scanned",
         "jobs": []
-      },
-      {
-        "afterCommandId": "courier-scanned-again",
-        "jobs": []
       }
     ]
   },
@@ -91,7 +73,7 @@
   "result": {
     "outcome": {
       "kind": "semantic",
-      "outcome": "rejected"
+      "outcome": "committed"
     },
     "trace": [
       {
@@ -150,25 +132,6 @@
         "kind": "command",
         "commandId": "courier-scanned",
         "outcome": "committed"
-      },
-      {
-        "kind": "state",
-        "instanceId": "Handover_1",
-        "status": "completed",
-        "activeWaits": [],
-        "openUserTasks": [],
-        "openMessageSubscriptions": [],
-        "openTimers": [],
-        "openEffects": [],
-        "openIncidents": [],
-        "variables": [],
-        "enabledInteractions": [],
-        "logicalTimeMs": 0
-      },
-      {
-        "kind": "command",
-        "commandId": "courier-scanned-again",
-        "outcome": "rejected"
       },
       {
         "kind": "state",
