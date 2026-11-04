@@ -260,7 +260,8 @@ private def events_lower_to_one_input_merges : Bool :=
 private def second_flows_are_refused : Bool :=
   !admitted (warrantyWith .secondOutgoing) && !admitted (warrantyWith .secondIncoming)
 
-/-- NIT-ADMIT-01: a None Throw alone on a terminal branch is refused while its User Task twin is admitted. -/
+/-- NIT-ADMIT-01: a None Throw alone on a terminal branch is refused while its User Task twin is admitted. TFK-DATA-01
+keeps this refusal: *Set up account* declares scope-local data. -/
 private def wait_free_terminal_branch_is_refused : Bool :=
   admitted (onboardingWith (some true)) && !admitted (onboardingWith (some false))
 

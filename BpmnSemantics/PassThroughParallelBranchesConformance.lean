@@ -229,7 +229,8 @@ private def burst_of_eight_is_admitted_and_nine_refused : Bool :=
   admitted (relocationWith 1) && burst? (relocationWith 1) == some 8 && !admitted (relocationWith 2)
 
 /-- PTPB-WORK-01: an empty branch, a terminal branch of a plain Task alone, and one through a nested wait-free fork
-are refused, while each terminal twin whose first branch waits is admitted. -/
+are refused, while each terminal twin whose first branch waits is admitted. TFK-DATA-01 keeps the two terminal refusals:
+*Review invoice* declares scope-local data. -/
 private def wait_free_terminal_and_empty_branches_are_refused : Bool :=
   !admitted (settlementWith .emptyBranch) &&
     admitted (settlementWith (.terminal true)) && !admitted (settlementWith (.terminal false)) &&

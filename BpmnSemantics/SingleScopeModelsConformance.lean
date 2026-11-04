@@ -236,13 +236,13 @@ private def call_without_sub_process_is_admitted : Bool :=
     admitted source && routed source && (NestedScopeData.checkedAnalysis source).isSome &&
       (NestedScopeData.programAnalysis (lowerCheckedProcess source)).isSome
 
-/-- SSM-ADMIT-01: a Call in the forking root and a terminal fork, the root's second None End, stay refused at both
-levels, while the same Call on a serial root path and the same fork inside a Sub-Process are routed, so neither refusal
-comes from another rule. -/
+/-- SSM-ADMIT-01: a Call in the forking root stays refused at both levels, while the same Call on a serial root path is
+routed, so the refusal comes from no other rule. TFK-ADMIT-01 routes the terminal fork both inside a Sub-Process and at
+the root, where it is the root's second None End. -/
 private def excluded_forms_are_refused : Bool :=
-  [purchaseWith .rootCall, terminalFork false].all (fun source =>
-    !StructuredScopeData.checkedRouted source && !StructuredScopeData.programRouted (lowerCheckedProcess source)) &&
-    [serialCall, terminalFork true].all fun source => admitted source && routed source
+  !StructuredScopeData.checkedRouted (purchaseWith .rootCall) &&
+    !StructuredScopeData.programRouted (lowerCheckedProcess (purchaseWith .rootCall)) &&
+    [serialCall, terminalFork true, terminalFork false].all fun source => admitted source && routed source
 
 /-- SSM-PROFILE-01: under the embedded completion profile the data-free fork and the data-bearing serial model are
 refused with one scope at both levels and admitted inside a Sub-Process, while the same one-scope graphs under the

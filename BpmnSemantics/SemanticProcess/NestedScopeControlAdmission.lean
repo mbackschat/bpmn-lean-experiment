@@ -105,7 +105,7 @@ def armed (vertices : List Vertex) (closure : Closure) : List String :=
 
 def scanBody (body : Body) : Option BodyScan := do
   let ordered ← structureOrder body.vertices
-  if !branchesStartWithWork body.vertices then none
+  if !branchesReachWorkOrEnd body.vertices then none
   else do
     let start ← body.vertices.find? (·.kind == .start)
     return { body, entry := close body.vertices ordered [start.id]
@@ -281,8 +281,8 @@ def callBearing (expanded : List Body) (invoked : List (String × String)) (call
       own ++ children.flatMap fun (_, child) => callBearing expanded invoked called fuel child
 
 /-- CALLN-SHARED-01: the call trees of two concurrent Calls of the caller root share no definition that
-contains a Call. The root body is a structured fork-join body with one End, so two of its vertices lie on
-distinct branches of one Parallel block exactly when neither reaches the other. -/
+contains a Call. The root body is a structured body, so two of its vertices lie on distinct branches of one
+Parallel block exactly when neither reaches the other. -/
 def sharesNoCallBearingDefinition (rootBody : Body) (expanded : List Body) (invoked : List (String × String))
     (called : List (String × Body)) (fuel : Nat) : Bool :=
   let sites := rootBody.children.filter fun (_, site) => (List.lookup site invoked).isSome
@@ -323,7 +323,7 @@ def analyze (allScopes : List DefinitionScope) (allBodies : List Body) (dataBear
       scopes.all (fun scope => match depthOf parents fuel scope.id.value with
         | some depth => depth ≤ depthLimit
         | none => false) &&
-      (rootBody.vertices.filter (·.kind == .finish)).length == 1 && rootBody.regions.isEmpty &&
+      rootBody.regions.isEmpty &&
       bodies.all (fun body => body.scope == root.id.value ||
         embeddedCallsPlaced dataBearing (depthOf parents fuel body.scope) body) &&
       regions.all (fun region => (bodies.find? (·.scope == region.targetScope)).any serialTargetBody)) then none
@@ -506,7 +506,12 @@ private def checkedModel (source : CheckedProcess) : Option (Nat × List String 
   else
     let data := checkedData source
     let bodies ← checkedBodies source data
+    let contracted ← bodies.mapM contractBody
+    let root := (source.definitionScopes.find? fun scope =>
+      scope.parentScopeId.isNone && scope.originElementId.value == source.processId.value).map (·.id.value)
     if !NestedScopeData.scopeCountAdmitted source.identity.semanticProfile source.definitionScopes.length then none
+    else if !terminalForkBoundsKept (source.identity.semanticProfile == nestedScopeDataProfileId)
+        (!source.scopeLocalData.isEmpty) (root.getD "") (contracted.map fun body => (body.scope, body.vertices)) then none
     else admittedModel source.definitionScopes bodies data
 
 /-- NSC-ADMIT-01 and CSD-ADMIT-01 over the checked graph; `none` refuses it, otherwise the admitted
@@ -680,7 +685,10 @@ private def programModel (program : Program) : Option (Nat × List String × Opt
     -- SSM-PROFILE-01 follows the structural reading, where the one-scope refusal stood inside `analyze`: kernel-decided
     -- fixtures that open only this module, such as the sequential Multi-Instance binding refusals, reach their
     -- structural refusal without unfolding the hidden `scopeCountAdmitted`.
+    let contracted ← bodies.mapM contractBody
     if !NestedScopeData.scopeCountAdmitted program.identity.semanticProfile program.definitionScopes.length then none
+    else if !terminalForkBoundsKept structured (!program.scopeLocalData.isEmpty) root.id.value
+        (contracted.map fun body => (body.scope, body.vertices)) then none
     else admittedModel program.definitionScopes bodies data
 
 /-- NSC-ADMIT-01 and CSD-ADMIT-01 over the Program, independent of the checked graph; `none` refuses it. -/

@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 
 /-! # Root Parallel forks conformance
 
-Finite admission witnesses of RPF-ADMIT-01 under the nested scope-data profile. The employee onboarding graph
+Finite admission witnesses of RPF-ADMIT-01, and of the [terminal forks specification](../docs/capsules/TERMINAL-FORKS-PROPOSAL.md#separating-witnesses)'s TFK-ADMIT-01, TFK-DATA-01 and TFK-PROFILE-01, under the nested scope-data profile. The employee onboarding graph
 transcribes the retained `scenarios/root-parallel-forks` model, and the loan intake and loan review graphs the source
 test's root Call pair and its Call in a root-branch Sub-Process; their routes and Start names are the TypeScript
 analysis's values for the same graphs, and each refused graph differs from an admitted one in the fact its name states. The module runs no command: the journeys and the refused
@@ -167,9 +167,10 @@ private def sequenced_branches_stay_serial : Bool :=
   let serial := onboardingWith (forked := false)
   admitted serial && !StructuredScopeData.concurrentProgram (lowerCheckedProcess serial)
 
-/-- A terminal root fork, whose *Order laptop* branch ends at a second root End, is refused. -/
-private def terminal_root_fork_is_refused : Bool :=
-  admitted onboarding && !admitted (onboardingWith (terminal := true))
+/-- TFK-ADMIT-01: a terminal root fork, whose *Order laptop* branch ends at a second root End, is admitted, which
+RPF-ADMIT-01 first refused; both branches still wait before their Ends. -/
+private def terminal_root_fork_is_admitted : Bool :=
+  admitted onboarding && admitted (onboardingWith (terminal := true))
 
 /-- A mapped Call on the root path before the root fork is refused. CSE-ADMIT-01 also refuses it, a Service Task
 beside a Call, so the root Call pair below separates the root-Call clause. -/
@@ -207,16 +208,113 @@ private def call_in_a_root_branch_sub_process_is_admitted : Bool :=
   admitted loanReview && StructuredScopeData.concurrentProgram (lowerCheckedProcess loanReview) &&
     StructuredScopeData.checkedRouted loanReview && StructuredScopeData.programRouted (lowerCheckedProcess loanReview)
 
+private def plain (owner id : String) := node owner (.nonOperationalTask ⟨id⟩ .abstractTask)
+
+/-- Both analyses admit, each on its own, so a relaxation at one level cannot hide behind the other. -/
+private def admittedAtEachLevel (source : CheckedProcess) : Bool :=
+  admitted source && (NestedScopeControl.checkedAnalysis source).isSome &&
+    (NestedScopeControl.programAnalysis (lowerCheckedProcess source)).isSome
+
+private def refusedAtEachLevel (source : CheckedProcess) : Bool :=
+  (NestedScopeControl.checkedAnalysis source).isNone &&
+    (NestedScopeControl.programAnalysis (lowerCheckedProcess source)).isNone
+
+/-- Employee offboarding, transcribing `scenarios/terminal-forks`: root `P` runs *Look up employee*, then forks *Start
+offboarding* into *Collect equipment*, *Revoke system access*, the plain Task *Notify payroll* and a direct End, each to
+its own End. `revoke` replaces the *Revoke system access* branch's members and edges. -/
+private def offboardingWith (revoke : List (String × String × CheckedNode) × List (String × String) :=
+    ([task "P" "RevokeSystemAccess"], [("StartOffboarding", "RevokeSystemAccess"), ("RevokeSystemAccess", "AccessRevoked")])) :
+    CheckedProcess :=
+  build [] [("P", none)]
+    ([ start "P" "DepartureAnnounced"
+     , service "P" "LookUpEmployee" "lookUpEmployee" [enclosing "employee" "employee"] [copied "employeeNumber" "number"]
+     , fork "P" "StartOffboarding", task "P" "CollectEquipment", finish "P" "EquipmentCollected"
+     , finish "P" "AccessRevoked", plain "P" "NotifyPayroll", finish "P" "PayrollNotified", finish "P" "DepartureRecorded" ]
+      ++ revoke.1)
+    ([ ("DepartureAnnounced", "LookUpEmployee"), ("LookUpEmployee", "StartOffboarding")
+     , ("StartOffboarding", "CollectEquipment"), ("CollectEquipment", "EquipmentCollected")
+     , ("StartOffboarding", "NotifyPayroll"), ("NotifyPayroll", "PayrollNotified")
+     , ("StartOffboarding", "DepartureRecorded") ] ++ revoke.2)
+
+/-- Office move, transcribing `scenarios/terminal-forks`: *Book movers*, then the Sub-Process *Clear old office*, whose
+body forks into *Pack desk*, the Manual Task *Return keys* and the plain Task *Cancel parking permit*, each to its own End,
+then *Confirm new office*. `waiting` makes the two wait-free branches User Tasks; `declaring` gives the Sub-Process a
+scope-local `keysReturned`. -/
+private def officeMoveWith (waiting declaring : Bool := false) : CheckedProcess :=
+  let records := if declaring
+    then [{ scopeId := scope "ClearOldOffice", localInputs := [literal "keysReturned" "no"], localOutputs := [] }]
+    else []
+  build records [("P", none), ("ClearOldOffice", some "P")]
+    [ start "P" "MoveRequested", service "P" "BookMovers" "bookMovers" [enclosing "office" "office"] [copied "bookingCode" "code"]
+    , sub "P" "ClearOldOffice", task "P" "ConfirmNewOffice", finish "P" "MoveCompleted"
+    , start "ClearOldOffice" "ClearingStarted", fork "ClearOldOffice" "SplitClearing", task "ClearOldOffice" "PackDesk"
+    , finish "ClearOldOffice" "DeskPacked"
+    , if waiting then task "ClearOldOffice" "ReturnKeys" else manual "ClearOldOffice" "ReturnKeys"
+    , finish "ClearOldOffice" "KeysReturned"
+    , if waiting then task "ClearOldOffice" "CancelParkingPermit" else plain "ClearOldOffice" "CancelParkingPermit"
+    , finish "ClearOldOffice" "ParkingCancelled" ]
+    [ ("MoveRequested", "BookMovers"), ("BookMovers", "ClearOldOffice"), ("ClearOldOffice", "ConfirmNewOffice")
+    , ("ConfirmNewOffice", "MoveCompleted"), ("ClearingStarted", "SplitClearing"), ("SplitClearing", "PackDesk")
+    , ("PackDesk", "DeskPacked"), ("SplitClearing", "ReturnKeys"), ("ReturnKeys", "KeysReturned")
+    , ("SplitClearing", "CancelParkingPermit"), ("CancelParkingPermit", "ParkingCancelled") ]
+
+/-- TFK-ADMIT-01: four root Ends, two reached wait-free. -/
+private def offboarding_is_admitted_at_each_level : Bool := admittedAtEachLevel (offboardingWith)
+
+/-- TFK-ADMIT-01: two wait-free terminal branches in a Sub-Process body. -/
+private def office_move_is_admitted_at_each_level : Bool := admittedAtEachLevel (officeMoveWith)
+
+/-- TFK-DATA-01: the declaration alone refuses the wait-free branches, and only beside them. -/
+private def declaring_office_move_is_refused_beside_its_waiting_twin : Bool :=
+  refusedAtEachLevel (officeMoveWith (declaring := true)) &&
+    admittedAtEachLevel (officeMoveWith (waiting := true) (declaring := true))
+
+/-- PTPB-WORK-01 keeps refusing an empty branch to its paired join, which TFK-ADMIT-01 does not relax; the same block
+with a pass-through Task on that branch is admitted. -/
+private def empty_joined_branch_is_refused_beside_its_pass_through_twin : Bool :=
+  let block := fun (second : List (String × String × CheckedNode)) (edges : List (String × String)) =>
+    offboardingWith ([fork "P" "InnerSplit", task "P" "RevokeSystemAccess", join "P" "InnerJoin"] ++ second,
+      [("StartOffboarding", "InnerSplit"), ("InnerSplit", "RevokeSystemAccess"), ("RevokeSystemAccess", "InnerJoin"),
+       ("InnerJoin", "AccessRevoked")] ++ edges)
+  refusedAtEachLevel (block [] [("InnerSplit", "InnerJoin")]) &&
+    admittedAtEachLevel (block [plain "P" "LogRevocation"] [("InnerSplit", "LogRevocation"), ("LogRevocation", "InnerJoin")])
+
+/-- The graph relabelled to the embedded completion profile, which an effect-free model enters without an overlay. -/
+private def asEmbeddedCompletion (source : CheckedProcess) : CheckedProcess :=
+  { source with identity := { source.identity with semanticProfile := embeddedCompletionProfileId, sourceOverlay := none } }
+
+/-- TFK-PROFILE-01's minimal pairs, data-free and effect-free: (a) a root terminal fork with four None Ends and (b) a
+body branch straight to its End beside two User Tasks, each outside the embedded completion profile's exact multiset of
+three User Tasks and three Ends. Each is admitted under this profile and refused at each level under the other. -/
+private def terminal_fork_controls_are_refused_under_embedded_completion : Bool :=
+  let rootFork := build [] [("P", none), ("Work", some "P")]
+    [ start "P" "Opened", fork "P" "Split", sub "P" "Work", finish "P" "WorkDone", task "P" "Left", finish "P" "LeftDone"
+    , task "P" "Right", finish "P" "RightDone", start "Work" "WorkOpened", task "Work" "Inner", finish "Work" "WorkClosed" ]
+    [ ("Opened", "Split"), ("Split", "Work"), ("Work", "WorkDone"), ("Split", "Left"), ("Left", "LeftDone")
+    , ("Split", "Right"), ("Right", "RightDone"), ("WorkOpened", "Inner"), ("Inner", "WorkClosed") ]
+  let bodyEnd := build [] [("P", none), ("Work", some "P")]
+    [ start "P" "Opened", task "P" "Prepare", sub "P" "Work", finish "P" "Closed", start "Work" "WorkOpened"
+    , fork "Work" "Split", task "Work" "Inner", finish "Work" "InnerDone", finish "Work" "Skipped" ]
+    [ ("Opened", "Prepare"), ("Prepare", "Work"), ("Work", "Closed"), ("WorkOpened", "Split"), ("Split", "Inner")
+    , ("Inner", "InnerDone"), ("Split", "Skipped") ]
+  [rootFork, bodyEnd].all fun control =>
+    admittedAtEachLevel control && refusedAtEachLevel (asEmbeddedCompletion control)
+
 /-- Every executable check of this module, named for the driver's failure report. -/
 def rootParallelForksConformanceChecks : List (String × Bool) := [
   ("root_fork_is_admitted_and_routed_concurrent", root_fork_is_admitted_and_routed_concurrent),
   ("sequenced_branches_stay_serial", sequenced_branches_stay_serial),
-  ("terminal_root_fork_is_refused", terminal_root_fork_is_refused),
+  ("terminal_root_fork_is_admitted", terminal_root_fork_is_admitted),
   ("call_in_a_forking_root_is_refused", call_in_a_forking_root_is_refused),
   ("pass_through_on_a_root_branch_is_admitted", pass_through_on_a_root_branch_is_admitted),
   ("root_merge_is_refused", root_merge_is_refused),
   ("root_call_pair_separates_the_restriction", root_call_pair_separates_the_restriction),
-  ("call_in_a_root_branch_sub_process_is_admitted", call_in_a_root_branch_sub_process_is_admitted)
+  ("call_in_a_root_branch_sub_process_is_admitted", call_in_a_root_branch_sub_process_is_admitted),
+  ("offboarding_is_admitted_at_each_level", offboarding_is_admitted_at_each_level),
+  ("office_move_is_admitted_at_each_level", office_move_is_admitted_at_each_level),
+  ("declaring_office_move_is_refused_beside_its_waiting_twin", declaring_office_move_is_refused_beside_its_waiting_twin),
+  ("empty_joined_branch_is_refused_beside_its_pass_through_twin", empty_joined_branch_is_refused_beside_its_pass_through_twin),
+  ("terminal_fork_controls_are_refused_under_embedded_completion", terminal_fork_controls_are_refused_under_embedded_completion)
 ]
 
 end BpmnSemantics.RootParallelForksConformance
