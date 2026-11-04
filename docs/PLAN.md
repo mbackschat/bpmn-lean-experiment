@@ -98,13 +98,13 @@ Current task: the addressless Receive Task wait in a new addressless Receive Tas
 
 Deliverable: a Receive Task without a Message admitted in its own Receive Task profile, waiting until a delivery naming its published occurrence resumes it once, and refusing every other command unchanged, landed on `main`.
 
-Acceptance blockers: implementation of the [proposal](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md), the CIB probe and hosted witness, closure review and landing.
+Acceptance blockers: hosted `verify-complete`, the cold closure review, graduation and landing.
 
-Current result: the proposal is approved (`4a757db0`); a post-approval correction moves the wait from in-place growth to a new profile, because a frozen preservation baseline binds the old profile's digest; TypeScript, CIB runner and Product 2 are implemented.
+Current result: the [capsule](capsules/ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md) is implemented through `869cecfd` ([pull request 52](https://github.com/mbackschat/bpmn-lean-experiment/pull/52)) with no guard bound raised; every local `verify.sh` stage passes at `23168089` or `869cecfd`, after one recorded TD-001-pattern publication loss.
 
 Effort budget: 8 hours from 2026-11-04 05:12 CET, ending 13:12.
 
-Next action: red/green implementation, TypeScript first.
+Next action: on green hosted checks and the model-corpus lane, the cold closure review, graduation and landing.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
