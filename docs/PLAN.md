@@ -94,7 +94,7 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: the addressless Receive Task wait in the Receive Task profile, batch 4 (`PC-HUM-06` primary, root clauses). The default-less Choice landed at `ff367285`. Close call, decided on reach and reuse: 5 pinned CIB models admitted against 3 for Activity fan-in, with the foundations for 31 more. The repeated, embedded and Multi-Instance clauses wait for Messages in the nested scope-data profile, the next family. Batch 3 stays open behind the owner's holds.
+Current task: the addressless Receive Task wait in the Receive Task profile, batch 4 (`PC-HUM-06` primary, root clauses). The default-less Choice landed at `ff367285`. Close call, decided on reach and reuse: at most 5 pinned CIB models admitted against 3 for Activity fan-in, with the foundations for 31 more. The repeated and embedded clauses wait for Messages in the nested scope-data profile, the next family; the Multi-Instance clauses also need a profile with a Multi-Instance Receive Task body. Batch 3 stays open behind the owner's holds.
 
 Deliverable: a Receive Task without a Message admitted in the Receive Task profile, waiting until a delivery naming its published occurrence resumes it once, and refusing every other command unchanged, landed on `main`.
 
