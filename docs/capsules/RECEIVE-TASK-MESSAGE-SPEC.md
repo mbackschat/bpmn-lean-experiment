@@ -99,7 +99,7 @@ type MessageChannel = DeepReadonly<
 >;
 ```
 
-The implemented Intermediate Catch Message source always produces `operationMessage`. The selected Receive Task source always produces `directMessage` under this profile; the [addressless Receive Task account](ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md) owns the field-free `unspecifiedMessage` arm of a Receive Task without a Message, under its own profile. Neither arm has optional fields, and no decoder infers an arm from missing data. Equality remains exact structural equality over the selected discriminant and all arm fields.
+The implemented Intermediate Catch Message source always produces `operationMessage`. The selected Receive Task source always produces `directMessage` under this profile; the [addressless Receive Task account](ADDRESSLESS-RECEIVE-TASK-PROPOSAL.md) owns the field-free `unspecifiedMessage` arm of a Receive Task without a Message, under its own profile. No arm has optional fields, and no decoder infers an arm from missing data. Equality remains exact structural equality over the selected discriminant and all arm fields.
 
 `messageId` is the BPMN root Message identity. It is not a Message name, broker topic, CIB subscription name, business key, correlation key, Workflow ID, or transport operation. The Process instance and exact runtime occurrence remain selected by `subscriptionId`; `channel` remains a caller-supplied definition-consistency assertion rather than a global lookup key.
 

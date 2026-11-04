@@ -158,6 +158,15 @@ test("admits only the operation-addressed payload-catch IL identity chain", () =
     isWellFormedSemanticProcessProgram(payloadProgram(directMessageOperation)),
     false,
   );
+  // ARECV-ADDRESS-02: no payload wait carries the addressless arm.
+  const unspecifiedOperation = {
+    ...validOperation,
+    message: { ...validOperation.message, channel: { kind: MessageChannelKind.UnspecifiedMessage } },
+  } as unknown as AwaitPayloadMessageOperation;
+  assert.equal(
+    isWellFormedSemanticProcessProgram(payloadProgram(unspecifiedOperation)),
+    false,
+  );
   assert.equal(
     isWellFormedSemanticProcessProgram(payloadProgram(awaitPayloadMessage({
       ...channel,
@@ -350,6 +359,8 @@ test("refuses every subscription or channel mismatch with exact state preservati
     { channel: { ...channel, interfaceId: "OtherInterface" } },
     { channel: { ...channel, interfaceOperationId: "OtherOperation" } },
     { channel: { ...channel, messageId: "OtherMessage" } },
+    // ARECV-ADDRESS-02: the wire admits the addressless arm, application refuses it.
+    { channel: { kind: MessageChannelKind.UnspecifiedMessage } },
   ];
   for (const [index, mutation] of mutations.entries()) {
     const result = applyStimulus(program, waiting, {

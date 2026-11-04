@@ -9,12 +9,14 @@ import {
   CanonicalObservationKind,
   CommandOutcome,
   ControlStateKind,
+  EffectExecutionResultKind,
   MessageChannelKind,
   ProcessStatus,
   SemanticOperationKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
   StimulusKind,
+  VariableValueKind,
   WaitKind,
   advanceScenario,
   applyStimulus,
@@ -26,7 +28,7 @@ import {
   sameMessageChannel,
   supportsSemanticProcessExecution,
 } from "@bpmn-lean/semantic-core";
-import type { DeliverMessageStimulus, MessageChannel } from "@bpmn-lean/semantic-core";
+import type { DeliverMessageStimulus, MessageChannel, Stimulus } from "@bpmn-lean/semantic-core";
 
 import { controlPlace, operationBase } from "./semantic-program-parts.ts";
 import { rootScopedProgram, rootScopeOccurrence } from "./root-scope-fixture.ts";
@@ -143,6 +145,76 @@ test("ARECV-REFUSE-01: named, wrong, early and stale deliveries leave the state 
   const stale = applyStimulus(program, completed, { ...pickup, commandId: "stale" });
   assert.equal(stale.outcome, CommandOutcome.Rejected);
   assert.deepEqual(stale.state, completed);
+});
+
+// Keyed by every StimulusKind member so that a new stimulus kind fails to compile until its refusal is witnessed.
+test("ARECV-REFUSE-01: every stimulus kind but the named-occurrence delivery leaves the wait unchanged", () => {
+  const waiting = applyStimulus(program, initialState, start).state;
+  const effect = Object.freeze({ effectId: subscriptionId, generation: 1 as const });
+  const refused: { readonly [K in StimulusKind]: Extract<Stimulus, { kind: K }> } = {
+    [StimulusKind.StartProcess]: { ...start, commandId: "duplicate-start" },
+    [StimulusKind.TriggerMessageStart]: {
+      kind: StimulusKind.TriggerMessageStart,
+      commandId: "message-start",
+      processId: program.processId,
+      instanceId: "Handover_2",
+      startEventId: "StartEvent_HandoverRequested",
+      channel: operation,
+    },
+    [StimulusKind.TriggerTimerStart]: {
+      kind: StimulusKind.TriggerTimerStart,
+      commandId: "timer-start",
+      processId: program.processId,
+      instanceId: "Handover_2",
+      startEventId: "StartEvent_HandoverRequested",
+    },
+    [StimulusKind.CompleteUserTaskInstance]: {
+      kind: StimulusKind.CompleteUserTaskInstance,
+      commandId: "complete-task",
+      taskId: subscriptionId,
+      submittedValues: [],
+    },
+    [StimulusKind.DeliverMessage]: { ...pickup, commandId: "wrong-occurrence", subscriptionId: { ...subscriptionId, activation: 2 } },
+    // ARECV-ADDRESS-02: the payload wire admits the addressless arm; application refuses it.
+    [StimulusKind.DeliverPayloadMessage]: {
+      kind: StimulusKind.DeliverPayloadMessage,
+      commandId: "payload-delivery",
+      subscriptionId,
+      channel: unspecified,
+      payload: { kind: VariableValueKind.String, value: "parcel" },
+    },
+    [StimulusKind.DeliverCorrelatedPayloadMessage]: {
+      kind: StimulusKind.DeliverCorrelatedPayloadMessage,
+      commandId: "correlated-delivery",
+      address: { definition: program.identity, processId: program.processId, channel: operation, correlationKeyId: "CorrelationKey_Parcel" },
+      ingressOrdinal: 1,
+      subscriptionId,
+      correlationPropertyId: "CorrelationProperty_Parcel",
+      processPropertyId: "Property_Parcel",
+      payload: { kind: VariableValueKind.String, value: "parcel" },
+    },
+    [StimulusKind.FireTimer]: { kind: StimulusKind.FireTimer, commandId: "fire-timer", timerId: subscriptionId, logicalTimeMs: 1_000 },
+    [StimulusKind.CompleteEffect]: {
+      kind: StimulusKind.CompleteEffect,
+      commandId: "complete-effect",
+      effectId: subscriptionId,
+      result: { kind: EffectExecutionResultKind.Success, localPatch: [] },
+    },
+    [StimulusKind.ReportEffectFailure]: { kind: StimulusKind.ReportEffectFailure, commandId: "report-failure", ...effect },
+    [StimulusKind.RetryIncident]: { kind: StimulusKind.RetryIncident, commandId: "retry-incident", incidentId: effect },
+    [StimulusKind.CancelIncidentProcess]: {
+      kind: StimulusKind.CancelIncidentProcess,
+      commandId: "cancel-incident",
+      processInstanceId: start.instanceId,
+      incidentId: effect,
+    },
+  };
+  for (const stimulus of Object.values(refused)) {
+    assert.equal(isWellFormedStimulus(stimulus), true, `${stimulus.kind} is refused by semantics, not by shape`);
+    const result = applyStimulus(program, waiting, stimulus);
+    assert.equal(result.outcome, CommandOutcome.Rejected, stimulus.kind);
+    assert.deepEqual(result.state, waiting, stimulus.kind);
+  }
 });
 
 // Locks the project restriction of CIB-INT-0004: CIB's legacy signal would complete a Message-addressed
