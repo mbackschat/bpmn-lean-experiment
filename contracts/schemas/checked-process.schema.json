@@ -1182,6 +1182,46 @@
           "required": [
             "kind",
             "id",
+            "linkName"
+          ],
+          "properties": {
+            "kind": {
+              "const": "linkThrowEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "linkName": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "linkName"
+          ],
+          "properties": {
+            "kind": {
+              "const": "linkCatchEvent"
+            },
+            "id": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "linkName": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
             "childScopeId"
           ],
           "properties": {

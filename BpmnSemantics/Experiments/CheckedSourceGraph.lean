@@ -75,6 +75,8 @@ def nodeArityValid (source : CheckedProcess) :
   | .configuredTask .. => false
   | .nonOperationalTask .. => false
   | .noneIntermediateThrowEvent .. => false
+  | .linkThrowEvent .. => false
+  | .linkCatchEvent .. => false
   | .transactionSubProcess ..
   | .cancelEndEvent ..
   | .cancelBoundaryEvent ..

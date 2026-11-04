@@ -202,21 +202,27 @@ export type TemporalTargetBatch =
     workflowIds: ReadonlyArray<string>;
   }>;
 
-export type PipelineTargets = Readonly<{
-  cib: TargetBatch<CibPipelineResult>;
-  lean: TargetBatch<ScenarioResult>;
-  leanDefinitionMutation: Readonly<{
+/** The Lean driver's rejections of three injected input defects, each probed once over the run's definitions. */
+export type LeanMutationProbes = Readonly<{
+  definition: Readonly<{
     kind: "rejected";
     mutation: "operationOrigin";
   }>;
-  leanScenarioMutation: Readonly<{
+  scenario: Readonly<{
     kind: "rejected";
     mutation: "scenarioExtraField";
   }>;
-  leanProvenanceMutation: Readonly<{
+  provenance: Readonly<{
     kind: "rejected";
     mutation: "parallelControlPlaceProvenanceErasure";
   }>;
+}>;
+
+export type PipelineTargets = Readonly<{
+  cib: TargetBatch<CibPipelineResult>;
+  lean: TargetBatch<ScenarioResult>;
+  // Null only in a run that leaves the catalog-level probes to another hosted leg (`pipelinePartitionRunsLeanMutationProbes`).
+  leanMutationProbes: LeanMutationProbes | null;
   core: TargetBatch<ScenarioResult>;
   temporal: TemporalTargetBatch;
   cibEffectRetry: TargetBatch<CibPipelineResult> | null;

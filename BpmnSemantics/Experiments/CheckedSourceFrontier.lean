@@ -246,6 +246,8 @@ theorem nodeDisabled (source : CheckedProcess) (state : SourceRuntimeState)
   | configuredTask id descriptor => rfl
   | nonOperationalTask id taskNotation => rfl
   | noneIntermediateThrowEvent id => rfl
+  | linkThrowEvent id linkName => rfl
+  | linkCatchEvent id linkName => rfl
   | serviceTask id descriptor inputs outputs route => rfl
   | exclusiveMerge id =>
       simp [nodeArityValid] at candidateArity

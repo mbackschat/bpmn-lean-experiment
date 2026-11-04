@@ -372,6 +372,14 @@ export const mvpBpmnCapabilities = Object.freeze([
     cibEvidence: notSelected,
   },
   {
+    id: "linkIntermediateEventPair",
+    family: "Intermediate Throw Events",
+    element: "Link Intermediate Throw and Catch Event pair",
+    support: BpmnCapabilitySupport.BoundedStandard,
+    restriction: "Under the nested scope-data profile only: one throw and one catch of each Link name in one scope of the executed Process, the throw with one incoming flow and the catch with one unconditioned outgoing flow. The pair behaves exactly as the Sequence Flow it replaces and publishes no occurrence or wait. No several throws of one name, chains, source or target references, asynchronous continuations, listeners, called Processes or Multi-Instance bodies.",
+    cibEvidence: notSelected,
+  },
+  {
     id: "interruptingUserTaskBoundaryTimerEvent",
     family: "Boundary Events",
     element: "Interrupting Timer Boundary Event on User Task",

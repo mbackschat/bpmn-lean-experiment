@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_WarrantyRepairLinks" targetNamespace="urn:bpmn-lean:warranty-repair-links"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_WarrantyRepair" name="Repair a device under warranty" isExecutable="true">
+    <startEvent id="RepairRequested" name="Repair requested" />
+    <userTask id="DiagnoseFault" name="Diagnose fault" />
+    <intermediateThrowEvent id="FaultDiagnosed" name="Fault diagnosed" />
+    <exclusiveGateway id="RepairRound" name="Repair round" gatewayDirection="Converging" />
+    <subProcess id="RepairDevice" name="Repair device">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="result">untested</camunda:inputParameter>
+          <camunda:outputParameter name="testResult">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="RepairOpened" name="Repair opened" />
+      <intermediateThrowEvent id="RepairStarted" name="Repair started" />
+      <userTask id="ReplacePart" name="Replace part" />
+      <serviceTask id="OrderSparePart" name="Order spare part"
+                   implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${orderSparePart}" camunda:asyncBefore="true" />
+      <intermediateThrowEvent id="ThrowToTesting" name="To testing">
+        <linkEventDefinition name="ToTesting" />
+      </intermediateThrowEvent>
+      <intermediateCatchEvent id="CatchToTesting" name="To testing">
+        <linkEventDefinition name="ToTesting" />
+      </intermediateCatchEvent>
+      <userTask id="TestDevice" name="Test device" />
+      <endEvent id="RepairClosed" name="Repair closed" />
+      <sequenceFlow id="Flow_RepairOpened" sourceRef="RepairOpened" targetRef="RepairStarted" />
+      <sequenceFlow id="Flow_RepairStarted" sourceRef="RepairStarted" targetRef="ReplacePart" />
+      <sequenceFlow id="Flow_PartReplaced" sourceRef="ReplacePart" targetRef="OrderSparePart" />
+      <sequenceFlow id="Flow_SparePartOrdered" sourceRef="OrderSparePart" targetRef="ThrowToTesting" />
+      <sequenceFlow id="Flow_TestingCaught" sourceRef="CatchToTesting" targetRef="TestDevice" />
+      <sequenceFlow id="Flow_DeviceTested" sourceRef="TestDevice" targetRef="RepairClosed" />
+    </subProcess>
+    <exclusiveGateway id="DevicePasses" name="Device passes?" gatewayDirection="Diverging" default="Flow_Failed" />
+    <intermediateThrowEvent id="DeviceReleased" name="Device released" />
+    <intermediateThrowEvent id="ReworkRequested" name="Rework requested" />
+    <intermediateThrowEvent id="ThrowBackToRepair" name="Back to repair">
+      <linkEventDefinition name="BackToRepair" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="CatchBackToRepair" name="Back to repair">
+      <linkEventDefinition name="BackToRepair" />
+    </intermediateCatchEvent>
+    <intermediateThrowEvent id="ThrowReleaseDevice" name="Release device">
+      <linkEventDefinition name="ReleaseDevice" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="CatchReleaseDevice" name="Release device">
+      <linkEventDefinition name="ReleaseDevice" />
+    </intermediateCatchEvent>
+    <endEvent id="DeviceReturned" name="Device returned" />
+    <sequenceFlow id="Flow_Requested" sourceRef="RepairRequested" targetRef="DiagnoseFault" />
+    <sequenceFlow id="Flow_Diagnosed" sourceRef="DiagnoseFault" targetRef="FaultDiagnosed" />
+    <sequenceFlow id="Flow_ToRepair" sourceRef="FaultDiagnosed" targetRef="RepairRound" />
+    <sequenceFlow id="Flow_Repair" sourceRef="RepairRound" targetRef="RepairDevice" />
+    <sequenceFlow id="Flow_Repaired" sourceRef="RepairDevice" targetRef="DevicePasses" />
+    <sequenceFlow id="Flow_Passed" sourceRef="DevicePasses" targetRef="ThrowReleaseDevice">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(testResult,"passed")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Failed" sourceRef="DevicePasses" targetRef="ReworkRequested" />
+    <sequenceFlow id="Flow_Rework" sourceRef="ReworkRequested" targetRef="ThrowBackToRepair" />
+    <sequenceFlow id="Flow_BackToRepairCaught" sourceRef="CatchBackToRepair" targetRef="RepairRound" />
+    <sequenceFlow id="Flow_ReleaseCaught" sourceRef="CatchReleaseDevice" targetRef="DeviceReleased" />
+    <sequenceFlow id="Flow_Released" sourceRef="DeviceReleased" targetRef="DeviceReturned" />
+  </process>
+</definitions>

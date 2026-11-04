@@ -64,6 +64,10 @@ if (unknownArguments.length > 0) {
     `unsupported pipeline arguments: ${unknownArguments.join(", ")}`,
   );
 }
+// The corpus run selects its own cases, while the warm deadline derives from the cases a hosted leg selects.
+if (modelCorpusOnly && (process.env.BPMN_PIPELINE_PARTITION ?? "") !== "") {
+  throw new TypeError("--model-corpus selects its own cases; unset BPMN_PIPELINE_PARTITION");
+}
 const buildStarted = performance.now();
 if (!isPrebuilt) {
   await buildPipeline();

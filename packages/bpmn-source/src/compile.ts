@@ -26,9 +26,7 @@ import {
 import {
   referenceTargetRejections,
 } from "./reference-target-admission.js";
-import {
-  lowerCheckedProcess,
-} from "./semantic-process-lowering.js";
+import { lowerLinkedCheckedProcess } from "./link-contraction.js";
 import {
   COMPENSATION_SOURCE_CHECKPOINT_PROFILE_ID,
   CheckedNodeKind,
@@ -252,7 +250,8 @@ export async function compileBpmnToSemanticProcess(
   if (projection.checkedProcess === undefined) {
     return reject(projection.diagnostics);
   }
-  const semanticProcess = lowerCheckedProcess(projection.checkedProcess);
+  // LNK-CONT-01: the checked artifact keeps its Link pairs; the Program is its contraction's.
+  const semanticProcess = lowerLinkedCheckedProcess(projection.checkedProcess);
   if ((request.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID || request.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || isSerialChainProfile(request.semanticProfile)) && !isWellFormedSemanticProcessProgram(semanticProcess)) {
     return reject([diagnostic(BpmnSourceDiagnosticCode.UnsupportedModel, "The lowered business chain must satisfy independent IL admission.")]);
   }

@@ -25,6 +25,7 @@ export {
   pipelineCases,
 } from "./pipeline-cases.ts";
 import type {
+  LeanMutationProbes,
   PipelineCase,
   PipelineTargets,
 } from "./pipeline-types.ts";
@@ -59,6 +60,7 @@ const buildMode = process.env.BPMN_PIPELINE_BUILD_MODE;
 
 export async function runPipelineCases(
   cases: ReadonlyArray<PipelineCase>,
+  options: Readonly<{ runsLeanMutationProbes: boolean }> = { runsLeanMutationProbes: true },
 ) {
   requireUniqueCaseIds(cases);
   if (!Number.isFinite(buildMs)) {
@@ -147,22 +149,25 @@ export async function runPipelineCases(
       ),
       runOwnedStepsInOrder([
         () => runLeanTargets(contexts, leanInputPath),
-        () =>
-          requireLeanDefinitionMutationRejection(
+        async (): Promise<LeanMutationProbes | null> => {
+          if (!options.runsLeanMutationProbes) {
+            return null;
+          }
+          const definition = await requireLeanDefinitionMutationRejection(
             contexts,
             leanMutationInputPath,
-          ),
-        () =>
-          requireLeanScenarioMutationRejection(
+          );
+          const scenario = await requireLeanScenarioMutationRejection(
             contexts,
             leanScenarioMutationInputPath,
             leanScenarioMutationPath,
-          ),
-        () =>
-          requireLeanProvenanceErasureRejection(
+          );
+          const provenance = await requireLeanProvenanceErasureRejection(
             contexts,
             leanProvenanceMutationInputPath,
-          ),
+          );
+          return { definition, scenario, provenance };
+        },
       ] as const),
       runTemporalTargets(runner, contexts),
       effectContexts.length === 0
@@ -174,18 +179,11 @@ export async function runPipelineCases(
             EffectExecutionSchedule.FailAfterMutationOnce,
           ),
     ] as const);
-    const [
-      lean,
-      leanDefinitionMutation,
-      leanScenarioMutation,
-      leanProvenanceMutation,
-    ] = leanEvidence;
+    const [lean, leanMutationProbes] = leanEvidence;
     const completedTargets: PipelineTargets = {
       cib,
       lean,
-      leanDefinitionMutation,
-      leanScenarioMutation,
-      leanProvenanceMutation,
+      leanMutationProbes,
       core,
       temporal,
       cibEffectRetry,
@@ -252,9 +250,7 @@ export async function runPipelineCases(
     buildMode,
     implementationRevision: revision,
     cases: caseResults.map(({ report: caseReport }) => caseReport),
-    leanDefinitionMutation: targets.leanDefinitionMutation,
-    leanScenarioMutation: targets.leanScenarioMutation,
-    leanProvenanceMutation: targets.leanProvenanceMutation,
+    leanMutationProbes: targets.leanMutationProbes,
     replay,
     phaseMs: {
       build: buildMs,

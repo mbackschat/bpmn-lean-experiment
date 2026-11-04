@@ -1785,6 +1785,93 @@
       }
     },
     {
+      "id": "warranty-repair-links",
+      "title": "Repair a device under warranty with Go To links",
+      "businessPurpose": "Repair a faulty device as the warranty repair does, with the rework loop drawn as a Go To link back to the repair round, the hand-over to testing inside the repair as an Off-Page link, and the release of a passed device as a link.",
+      "cloneFamily": "warranty-repair-milestones",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "intermediateCatchEvent",
+        "intermediateThrowEvent",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "conditionalRouting",
+        "cyclicControlFlow",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/link-events/warranty-repair-links.bpmn",
+        "sha256": "63f19b64921fcf1a59deab5eba6d8d09b1f6f60b62a9cddba9f2f1ab42ff0c98",
+        "scenarioRelativePath": "scenarios/link-events/warranty-rework.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "link-events-warranty-rework",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for Link Events; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "employee-onboarding-links",
+      "title": "Onboard a new employee with Off-Page links",
+      "businessPurpose": "Onboard a new employee as the milestone onboarding does, with the welcome branch, the account hand-over inside the account set-up and the completion after the join each drawn across an Off-Page link.",
+      "cloneFamily": "employee-onboarding-milestones",
+      "constructs": [
+        "endEvent",
+        "intermediateCatchEvent",
+        "intermediateThrowEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/link-events/onboarding-milestones-links.bpmn",
+        "sha256": "70c4842b74b704ee4d5ced2cd8bf1d6e3e73b3ce3111f4465f189705a765d11e",
+        "scenarioRelativePath": "scenarios/link-events/onboarding-laptop-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "link-events-onboarding-laptop-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for Link Events; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "purchase-request-single-scope",
       "title": "Approve and place a purchase request",
       "businessPurpose": "Review a purchase request, then check the budget through a budget service and log the check while, in parallel, collecting a signature and approving the purchase, and mark the purchase approved before placing the order, all in the Process itself without a Sub-Process.",

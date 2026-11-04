@@ -80,6 +80,7 @@ public import BpmnSemantics.NestedScopeDataConformance
 public import BpmnSemantics.NonInterruptingBoundaryTimerConformance
 public import BpmnSemantics.NoneEndFanInConformance
 public import BpmnSemantics.NoneIntermediateThrowConformance
+public import BpmnSemantics.LinkEventsConformance
 public import BpmnSemantics.ParallelBalancedTopologyConformance
 public import BpmnSemantics.ParallelMultiInstanceConformance
 public import BpmnSemantics.ParallelScopeGraphConformance
@@ -253,6 +254,7 @@ def conformanceChecks : List (String × List (String × Bool)) := [
   ("NonInterruptingBoundaryTimerConformance", BpmnSemantics.NonInterruptingBoundaryTimerConformance.checks),
   ("NoneEndFanInConformance", BpmnSemantics.NoneEndFanInConformance.noneEndFanInConformanceChecks),
   ("NoneIntermediateThrowConformance", BpmnSemantics.NoneIntermediateThrowConformance.noneIntermediateThrowConformanceChecks),
+  ("LinkEventsConformance", BpmnSemantics.LinkEventsConformance.linkEventsConformanceChecks),
   ("ParallelBalancedTopologyConformance", BpmnSemantics.ParallelBalancedTopologyConformance.checks),
   ("ParallelMultiInstanceConformance", BpmnSemantics.ParallelMultiInstanceConformance.checks),
   ("ParallelScopeGraphConformance", BpmnSemantics.ParallelScopeGraphConformance.checks),

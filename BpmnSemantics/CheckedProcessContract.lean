@@ -290,6 +290,11 @@ inductive CheckedNode where
   /-- NIT-KIND-01: an Intermediate Throw Event without an EventDefinition. Its own arm rather than a Task notation,
   because it is an Event in the source and a later event family must find it as one. -/
   | noneIntermediateThrowEvent (id : NodeId)
+  /-- LNK-KIND-01: a Link throw and catch keep their source kind and `linkEventDefinition` name. No admission or
+  lowering rule reads them: `LinkContraction` replaces each pair by the explicit flow it stands for (Clause 10.5.5)
+  before either runs, so `checkedWellFormed` refuses them and lowering gives them no operation. -/
+  | linkThrowEvent (id : NodeId) (linkName : String)
+  | linkCatchEvent (id : NodeId) (linkName : String)
   | serviceTask
       (id : NodeId)
       (descriptor : EffectDescriptor)
@@ -346,6 +351,8 @@ inductive CheckedNode where
   | .configuredTask id _
   | .nonOperationalTask id _
   | .noneIntermediateThrowEvent id
+  | .linkThrowEvent id _
+  | .linkCatchEvent id _
   | .serviceTask id _ _ _ _
   | .parallelGateway id _
   | .exclusiveMerge id

@@ -147,6 +147,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
   for (const id of ["concurrent-structured-scope-data-order-review-first", "concurrent-structured-scope-data-loan-credit-first",
     "root-parallel-forks-onboarding-documents-while-laptop-open", "pass-through-parallel-branches-relocation-packing-first",
     "pass-through-parallel-branches-invoice-settled", "none-intermediate-throw-onboarding-account-first",
+    "link-events-onboarding-account-first",
     "single-scope-models-purchase-approval-first", "send-task-claim-assessed-first", "terminal-forks-offboarding-equipment-first",
     "terminal-forks-office-move", "inclusive-gateway-regions-account-residency-only",
     "inclusive-gateway-regions-account-standard-only"]) {
@@ -161,7 +162,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     addScopeReentryCases(context, add);
   }
   for (const id of ["pass-through-task-equipment-return", "pass-through-task-intake-illegible-twice-then-paper",
-    "none-intermediate-throw-warranty-passed"]) {
+    "none-intermediate-throw-warranty-passed", "link-events-warranty-passed"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addPassThroughTaskCases(context, add);

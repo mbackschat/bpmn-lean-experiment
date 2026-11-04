@@ -340,7 +340,8 @@ public final class CibSevenPassThroughTaskProbeTest {
     }
   }
 
-  private static final class Session implements AutoCloseable {
+  /** Shared with `CibSevenLinkEventsProbeTest`, which drives the Link models beside these twins. */
+  static final class Session implements AutoCloseable {
     final ProcessEngine engine;
     final String deployment;
 

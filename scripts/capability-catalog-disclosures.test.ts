@@ -119,6 +119,12 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "wherever that profile admits a pass-through Abstract Task",
     "No several flows, asynchronous continuations, listeners, called Processes, Multi-Instance bodies or throw triggers",
   ]],
+  ["linkIntermediateEventPair", "element", ["Link Intermediate Throw and Catch Event pair"]],
+  ["linkIntermediateEventPair", "restriction", [
+    "one throw and one catch of each Link name in one scope of the executed Process",
+    "behaves exactly as the Sequence Flow it replaces and publishes no occurrence or wait",
+    "No several throws of one name, chains, source or target references",
+  ]],
   ["noneEndEvent", "restriction", [
     "each arriving token ends there on its own, never waiting for another flow",
     "Ends inside Sub-Process bodies or the called Process keep one incoming flow",

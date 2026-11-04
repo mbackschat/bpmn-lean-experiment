@@ -1,8 +1,15 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 
 import { defaultCibSevenMavenTimeoutMs } from "./cibseven-maven-budget.ts";
+import {
+  PipelineCasePartition,
+  pipelineCaseIdRegistry,
+  pipelineCaseIdsFor,
+  pipelinePartitionRunsLeanMutationProbes,
+} from "../packages/differential/test/pipeline-case-id-registry.ts";
 
 import {
   defaultWarmBudgetMs,
@@ -29,6 +36,37 @@ test("keeps the portable budget and both process deadlines ordered", () => {
   assert.equal(
     warmPipelineCommandTimeoutMs({}),
     defaultWarmBudgetMs + 10_000,
+  );
+});
+
+test("the case partitions split the registry into disjoint covering runs", async () => {
+  const partitions = Object.values(PipelineCasePartition).map((partition) => pipelineCaseIdsFor(partition));
+  for (const ids of partitions) {
+    assert.ok(ids.length > 0, "an empty partition would be a hosted leg that verifies nothing");
+  }
+  assert.deepEqual([...partitions.flat()].sort(), [...pipelineCaseIdRegistry].sort());
+  assert.equal(new Set(partitions.flat()).size, pipelineCaseIdRegistry.length);
+  assert.deepEqual(pipelineCaseIdsFor(undefined), pipelineCaseIdRegistry);
+  assert.throws(() => pipelineCaseIdsFor("control"), TypeError);
+  // The catalog-level Lean mutation probes run in exactly one leg, which must hold the Parallel fork/join cases their
+  // provenance probe erases.
+  const probeLegs = Object.values(PipelineCasePartition).filter(pipelinePartitionRunsLeanMutationProbes);
+  assert.equal(probeLegs.length, 1);
+  const parallelForkJoinIds = pipelineCaseIdRegistry.filter((id) => id.startsWith("parallel-fork-join-"));
+  assert.ok(parallelForkJoinIds.length > 0);
+  for (const id of parallelForkJoinIds) {
+    assert.ok(pipelineCaseIdsFor(probeLegs[0]).includes(id), id);
+  }
+  // The definition probe mutates the first selected record, the registry head in a whole-catalog run.
+  assert.equal(pipelineCaseIdsFor(probeLegs[0])[0], pipelineCaseIdRegistry[0]);
+  // The Lean-core suites run in that same leg and in no other.
+  const verifyScript = await readFile(new URL("./verify.sh", import.meta.url), "utf8");
+  const suiteGate = verifyScript.match(/pipeline_leg_runs_lean_core_suites\(\) \{\n {2}case "\$\{BPMN_PIPELINE_PARTITION:-\}" in\n {4}"" \| ([a-z-]+)\) return 0 ;;\n {4}\*\) return 1 ;;/u);
+  assert.equal(suiteGate?.[1], probeLegs[0]);
+  assert.equal(pipelinePartitionRunsLeanMutationProbes(undefined), true);
+  assert.equal(
+    warmBudgetMs({ BPMN_PIPELINE_PARTITION: PipelineCasePartition.StimulusOrder }),
+    pipelineCaseIdsFor(PipelineCasePartition.StimulusOrder).length * warmBudgetPerCaseMs,
   );
 });
 
@@ -154,8 +192,15 @@ test("hosted warm-pipeline budget has real headroom and the runner derives its d
   if (hostedFactorMatch === null || pipelineJobMatch === null) {
     throw new Error("warm-pipeline budget owners are absent");
   }
-  const hostedEnvironment = { BPMN_PIPELINE_WARM_BUDGET_FACTOR: hostedFactorMatch[1] };
-  const hostedBudget = warmBudgetMs(hostedEnvironment);
+  // The job runs one matrix leg per registered partition, so each leg's deadline derives from its own cases.
+  const matrixPartitions = [...(pipelineJob?.match(/^ {6}matrix:\n {8}partition:\n((?: {10}- .*\n)+)/mu)?.[1] ?? "")
+    .matchAll(/^ {10}- (\S+)$/gmu)].map((match) => match[1]);
+  assert.deepEqual(matrixPartitions, Object.values(PipelineCasePartition));
+  assert.match(pipelineJob ?? "", /^ {10}BPMN_PIPELINE_PARTITION: \$\{\{ matrix\.partition \}\}$/mu);
+  const hostedEnvironments = Object.values(PipelineCasePartition).map((partition) => ({
+    BPMN_PIPELINE_WARM_BUDGET_FACTOR: hostedFactorMatch[1],
+    BPMN_PIPELINE_PARTITION: partition,
+  }));
 
   assert.ok(
     Number(hostedFactorMatch[1]) >= minimumHostedWarmBudgetFactor,
@@ -164,14 +209,18 @@ test("hosted warm-pipeline budget has real headroom and the runner derives its d
   // Parent over child: a job timeout below the pipeline's own deadline would end a pathological run
   // as an anonymous cancellation instead of the budget failure that names it.
   const pipelineJobMs = Number(pipelineJobMatch[1]) * 60_000;
-  assert.ok(
-    pipelineJobMs >= warmPipelineCommandTimeoutMs(hostedEnvironment) + hostedPipelineJobOverheadMs,
-    `the verify_pipeline job's ${pipelineJobMs}ms timeout must exceed the hosted command deadline ${warmPipelineCommandTimeoutMs(hostedEnvironment)}ms plus the ${hostedPipelineJobOverheadMs}ms job overhead allowance; split the job by owned contract rather than raising the timeout`,
-  );
-  assert.ok(
-    hostedBudget >= defaultCibSevenMavenTimeoutMs + 10_000,
-    `hosted warm-pipeline budget ${hostedBudget}ms must exceed the longest nested CIB deadline ${defaultCibSevenMavenTimeoutMs}ms plus reporting headroom`,
-  );
+  for (const hostedEnvironment of hostedEnvironments) {
+    const leg = hostedEnvironment.BPMN_PIPELINE_PARTITION;
+    const hostedBudget = warmBudgetMs(hostedEnvironment);
+    assert.ok(
+      pipelineJobMs >= warmPipelineCommandTimeoutMs(hostedEnvironment) + hostedPipelineJobOverheadMs,
+      `the verify_pipeline ${leg} leg's ${pipelineJobMs}ms timeout must exceed the hosted command deadline ${warmPipelineCommandTimeoutMs(hostedEnvironment)}ms plus the ${hostedPipelineJobOverheadMs}ms job overhead allowance; split the job by owned contract rather than raising the timeout`,
+    );
+    assert.ok(
+      hostedBudget >= defaultCibSevenMavenTimeoutMs + 10_000,
+      `hosted warm-pipeline budget ${hostedBudget}ms for the ${leg} leg must exceed the longest nested CIB deadline ${defaultCibSevenMavenTimeoutMs}ms plus reporting headroom`,
+    );
+  }
   assert.match(
     pipelineRunner,
     /timeoutMs: warmPipelineCommandTimeoutMs\(process\.env\)/u,
@@ -182,4 +231,16 @@ test("hosted warm-pipeline budget has real headroom and the runner derives its d
     /timeout: warmPipelineTestTimeoutMs\(process\.env\)/u,
     "the Node test deadline must be derived from the selected warm budget instead of becoming a second lower ceiling",
   );
+});
+
+test("the model-corpus run refuses a hosted leg selection before building", () => {
+  // The corpus run selects its own cases, but its warm deadline derives from the cases BPMN_PIPELINE_PARTITION selects,
+  // so a set partition would give the corpus a leg's deadline.
+  const run = spawnSync(process.execPath, [new URL("./test-pipeline.ts", import.meta.url).pathname, "--model-corpus"], {
+    env: { ...process.env, BPMN_PIPELINE_PARTITION: "stimulus-order", BPMN_PIPELINE_PREBUILT: "1" },
+    encoding: "utf8",
+    timeout: 30_000,
+  });
+  assert.notEqual(run.status, 0);
+  assert.match(run.stderr, /--model-corpus selects its own cases; unset BPMN_PIPELINE_PARTITION/u);
 });

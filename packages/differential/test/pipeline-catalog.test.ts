@@ -7,6 +7,7 @@ import {
   StimulusKind,
 } from "@bpmn-lean/semantic-core";
 import type { Scenario } from "@bpmn-lean/semantic-core";
+import { TemporalExecutionSchedule } from "@bpmn-lean/temporal-testkit";
 import {
   ComparisonKind,
   DifferentialTarget,
@@ -54,7 +55,10 @@ import {
 import {
   messagePayloadCatchPipelineCases,
 } from "./message-payload-catch-pipeline-cases.ts";
-import { pipelineCaseIdRegistry } from "./pipeline-case-id-registry.ts";
+import {
+  otherSchedulePipelineCaseIds,
+  pipelineCaseIdRegistry,
+} from "./pipeline-case-id-registry.ts";
 import {
   mutableClone,
   projectRoot,
@@ -86,6 +90,16 @@ test("binds the complete ordered pipeline inventory before target execution", ()
     false,
   );
   assert.equal(rejectedPipelineCaseId, unregisteredPipelineCaseId);
+});
+
+// The hosted legs split by each case's Temporal execution schedule; the frozen leg list must be that field's reading of
+// the registry, in order, or a leg would run cases of the other schedule or miss its own.
+test("freezes the other-schedules leg as exactly the non-stimulus-order cases in registry order", () => {
+  assert.deepEqual(
+    otherSchedulePipelineCaseIds,
+    pipelineCases.filter(({ executionSchedule }) => executionSchedule !== TemporalExecutionSchedule.StimulusOrder)
+      .map(({ id }) => id),
+  );
 });
 
 // Every target batch is keyed by scenario identity and every projection looks a result up by it, so

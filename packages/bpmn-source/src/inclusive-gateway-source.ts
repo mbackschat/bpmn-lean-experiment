@@ -21,6 +21,7 @@ import metamodelManifest from "./bpmn-2.0.2-semantic-process-metamodel.json" wit
 };
 import {
   asElement,
+  asElementArray,
   readId,
 } from "./moddle-graph.js";
 import type { ElementRecord } from "./moddle-graph.js";
@@ -154,11 +155,53 @@ function derivePairedGatewayId(
   flows: ReadonlyArray<CheckedSequenceFlow>,
   elements: ReadonlyArray<ElementRecord>,
 ): string | undefined {
-  const graph = sourceRegionGraph(flows, elements);
+  const contracted = linkContractedScope(flows, elements);
+  const graph = sourceRegionGraph(contracted.flows, contracted.elements);
   const paired = [...graph.vertices.values()].filter((vertex) =>
     vertex.kind === RegionVertexKind.Split && regionPairedJoin(graph, vertex)?.id === joinId
   );
   return paired.length === 1 ? paired[0]?.id : undefined;
+}
+
+/**
+ * LNK-ADMIT-01: the walk reads the scope as its Link-contracted twin, as admission does, so a pair on a region branch
+ * pairs the join exactly as its explicit flow would. A name without exactly one throw and one catch in this scope, or a
+ * pair breaking the flow rules, stays raw here and is refused by the contraction (`link-contraction.ts`).
+ */
+function linkContractedScope(
+  flows: ReadonlyArray<CheckedSequenceFlow>,
+  elements: ReadonlyArray<ElementRecord>,
+): Readonly<{ flows: ReadonlyArray<CheckedSequenceFlow>; elements: ReadonlyArray<ElementRecord> }> {
+  const ends = (type: string) => elements.flatMap((element) => {
+    const definitions = asElementArray(element.eventDefinitions);
+    const id = readId(element);
+    const name = definitions?.length === 1 && definitions[0]!.$type === "bpmn:LinkEventDefinition"
+      ? definitions[0]!.name : undefined;
+    return element.$type === type && id !== undefined && typeof name === "string" ? [{ id, name }] : [];
+  });
+  const throws = ends(bpmnTypes.intermediateThrowEventType);
+  const catches = ends(bpmnTypes.intermediateCatchEventType);
+  const successor = new Map<string, string>();
+  const removedFlows = new Set<string>();
+  for (const throwEnd of throws) {
+    const pair = catches.filter(({ name }) => name === throwEnd.name);
+    const sameName = throws.filter(({ name }) => name === throwEnd.name);
+    const leaving = flows.filter(({ sourceId }) => sourceId === pair[0]?.id);
+    if (pair.length !== 1 || sameName.length !== 1 || leaving.length !== 1 ||
+      flows.some(({ sourceId, targetId }) => sourceId === throwEnd.id || targetId === pair[0]!.id)) continue;
+    successor.set(throwEnd.id, leaving[0]!.targetId);
+    removedFlows.add(leaving[0]!.id);
+  }
+  if (successor.size === 0) return { flows, elements };
+  const removedNodes = new Set([...successor.keys(), ...[...removedFlows].map((flowId) =>
+    flows.find(({ id }) => id === flowId)!.sourceId)]);
+  return {
+    flows: flows.filter(({ id }) => !removedFlows.has(id)).map((flow) => {
+      const target = successor.get(flow.targetId);
+      return target === undefined ? flow : { ...flow, targetId: target };
+    }),
+    elements: elements.filter((element) => !removedNodes.has(readId(element) ?? "")),
+  };
 }
 
 function sourceVertexKind(type: unknown, inputs: number, outputs: number): RegionVertexKind {

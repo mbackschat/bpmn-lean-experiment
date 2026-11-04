@@ -11,6 +11,7 @@ import type {
   CheckedNode, CheckedProcess, CheckedSequenceFlow, DefinitionScope, ScopeLocalData, VariableMapping,
 } from "@bpmn-lean/semantic-core";
 import { isAdmittedCheckedProcess } from "./checked-process-admission.js";
+import { contractLinks } from "./link-contraction.js";
 import { locateContainedElements, orderedElementDiagnostics } from "./admission-diagnostics.js";
 import { BpmnSourceDiagnosticCode } from "./contracts.js";
 import type { BpmnSourceIdentity, CheckedCompilationProjection } from "./contracts.js";
@@ -65,6 +66,8 @@ type ScopeDataReader = Readonly<{
   defaultlessChoices: boolean;
   /** IGR-ADMIT-01: Inclusive Gateways in any scope, whose admission keeps them to root regions. */
   inclusiveRegions: boolean;
+  /** LNK-ADMIT-01: Link throws and catches, admitted only through their contraction. */
+  linkEvents: boolean;
   projectCall: (element: ElementRecord) => CheckedNode | undefined;
   /** The caller Process of the read roots, or `undefined` when the roots and Calls do not form one call forest. */
   caller: (roots: readonly ProcessRoot[], collected: Collected) => string | undefined;
@@ -77,7 +80,7 @@ type ScopeDataReader = Readonly<{
 
 const nestedScopeDataReader: ScopeDataReader = {
   semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, gateways: true, rootChoices: true, nonOperationalTasks: true,
-  sendTasks: true, defaultlessChoices: true, inclusiveRegions: true,
+  sendTasks: true, defaultlessChoices: true, inclusiveRegions: true, linkEvents: true,
   projectCall: projectMappedCall,
   caller: callerProcess, overlayRequired: true,
   // CSSD-ADMIT-01: the routed analysis refuses the merges and forking-root Calls (RPF-ADMIT-01) the shared gateway
@@ -94,7 +97,7 @@ const nestedScopeDataReader: ScopeDataReader = {
 // Checked admission of the embedded completion profile already runs its nested scope-control and data analysis.
 const embeddedScopeDataReader: ScopeDataReader = {
   semanticProfile: SemanticProfileId.EmbeddedSubProcessCompletion, gateways: true, rootChoices: false, nonOperationalTasks: false,
-  sendTasks: false, defaultlessChoices: false, inclusiveRegions: false,
+  sendTasks: false, defaultlessChoices: false, inclusiveRegions: false, linkEvents: false,
   projectCall: projectEmbeddedCall,
   caller: callForestCaller, overlayRequired: false,
   admitted: checkedProcess => (checkedProcess.identity.sourceOverlay !== null) ===
@@ -185,8 +188,10 @@ function compileScopeDataSource(root: unknown, source: BpmnSourceIdentity, overl
       scopeLocalData: [...collected.records].sort((a, b) => compareCanonicalStrings(a.scopeId, b.scopeId)),
     }),
   };
-  return reader.admitted(checkedProcess, selection.policy) &&
-      isAdmittedCheckedProcess({ ...checkedProcess, flows: checkedProcess.sequenceFlows }, definitions.expressionLanguage, semanticProfile)
+  // LNK-CONT-01: the profile's analyses and checked admission see the explicit-flow twin; the artifact keeps the pairs.
+  const contracted = contractLinks(checkedProcess);
+  return contracted !== undefined && reader.admitted(contracted, selection.policy) &&
+      isAdmittedCheckedProcess({ ...contracted, flows: contracted.sequenceFlows }, definitions.expressionLanguage, semanticProfile)
     ? { checkedProcess, diagnostics: [] }
     : unsupported(reader.refusal);
 }
@@ -252,8 +257,17 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
         node = projectNonOperationalTask(element);
         break;
       case bpmnTypes.intermediateThrowEventType:
+        if (element.eventDefinitions !== undefined) {
+          if (!reader.linkEvents) return "The flow element is outside the nested scope-data contract.";
+          node = projectLinkEvent(element, CheckedNodeKind.LinkThrowEvent);
+          break;
+        }
         if (!reader.nonOperationalTasks) return "The flow element is outside the nested scope-data contract.";
         node = projectNoneThrow(element);
+        break;
+      case bpmnTypes.intermediateCatchEventType:
+        if (!reader.linkEvents) return "The flow element is outside the nested scope-data contract.";
+        node = projectLinkEvent(element, CheckedNodeKind.LinkCatchEvent);
         break;
       case bpmnTypes.inclusiveGatewayType:
         if (!reader.inclusiveRegions) return "The flow element is outside the nested scope-data contract.";
@@ -316,6 +330,27 @@ function projectNoneThrow(element: ElementRecord): CheckedNode | undefined {
   return id === undefined || element["eventDefinitionRef"] !== undefined ||
     !hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.PlainNode) ? undefined
     : { kind: CheckedNodeKind.NoneIntermediateThrowEvent, id };
+}
+
+/**
+ * LNK-KIND-01: a Link throw or catch with exactly one `linkEventDefinition` of a nonempty name and an optional `id`.
+ * Any CIB attribute, extension element or second definition is another key, so it is refused rather than passed
+ * through as a jump. moddle keeps the `eventDefinitionRef` reference and the definition's `source` and `target`
+ * references out of the key inventory, so they are refused by name: CIB pairs by name and ignores them, and an admitted
+ * model therefore never lets the two pairings disagree. The catch has the same keys, so it shares the inventory.
+ */
+function projectLinkEvent(element: ElementRecord,
+  kind: CheckedNodeKind.LinkThrowEvent | CheckedNodeKind.LinkCatchEvent): CheckedNode | undefined {
+  const id = readId(element);
+  const definitions = asElementArray(element.eventDefinitions);
+  if (id === undefined || element["eventDefinitionRef"] !== undefined || definitions?.length !== 1 ||
+    !hasOnlyProjectedFlowElementKeys(element, ProjectedFlowElementShape.IntermediateCatchEvent)) return undefined;
+  const definition = definitions[0]!;
+  const absent = (value: unknown) => value === undefined || (Array.isArray(value) && value.length === 0);
+  const linkName = definition.name;
+  return definition.$type !== "bpmn:LinkEventDefinition" || !absent(definition["source"]) ||
+    !absent(definition["target"]) || !hasOnlyModelledKeys(definition, ["$type", "id", "name"]) ||
+    typeof linkName !== "string" || linkName === "" ? undefined : { kind, id, linkName };
 }
 
 /** CSD-ADMIT-01's gateways: a paired Parallel fork or join, or a converging Exclusive merge of any width. */

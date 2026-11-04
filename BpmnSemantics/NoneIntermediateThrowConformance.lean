@@ -222,8 +222,10 @@ private def approval (thrown : Bool) : CheckedProcess :=
   build [] [("P", none)] ([start "P" "Started", task "P" "Approve", finish "P" "Approved"] ++ members)
     ([("Approve", "Approved")] ++ edges) [] ⟨"bpmn-2.0.2-user-task-preserved-notation-draft"⟩ (overlaid := false)
 
-private def warranty : CheckedProcess := warrantyWith
-private def onboarding : CheckedProcess := onboardingWith
+/-- The retained warranty repair graph; `LinkEventsConformance` splices its Link pairs into it as their explicit-flow twin. -/
+def warranty : CheckedProcess := warrantyWith
+/-- The retained onboarding milestones graph, the other Link model's explicit-flow twin. -/
+def onboarding : CheckedProcess := onboardingWith
 
 /-- Both checks, the lowered Program's capability catalog and the binding between the two. -/
 private def admitted (source : CheckedProcess) : Bool :=

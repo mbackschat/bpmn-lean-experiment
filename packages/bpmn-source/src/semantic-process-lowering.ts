@@ -422,6 +422,10 @@ function lowerNode(
         inputs: requireMany(incoming, node.id, "incoming") as [string, ...string[]],
         output: requireOnly(outgoing, node.id, "outgoing"),
       });
+    // LNK-CONT-01: lowered only through `lowerLinkedCheckedProcess`, which removes every pair first.
+    case CheckedNodeKind.LinkThrowEvent:
+    case CheckedNodeKind.LinkCatchEvent:
+      return [];
     case CheckedNodeKind.NonOperationalTask:
     case CheckedNodeKind.NoneIntermediateThrowEvent:
       // PTT-PASS-01 and NIT-PASS-01: the nonsynchronizing token move with the Task or Event as origin, so its one

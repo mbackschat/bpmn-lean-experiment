@@ -150,6 +150,8 @@ def nodeCardinalities (nodes : List CheckedNode) : ShapeCardinalities :=
     | .terminateEndEvent .. =>
         { counts with terminateEnds := counts.terminateEnds + 1 }
     | .noneEndEvent .. => { counts with ends := counts.ends + 1 }
+    -- LNK-CONT-01: counted graphs are contractions, which hold no Link arm.
+    | .linkThrowEvent .. | .linkCatchEvent .. => counts
 
 def addOperationCardinality (counts : ShapeCardinalities)
     (operation : SemanticOperation) : ShapeCardinalities :=
