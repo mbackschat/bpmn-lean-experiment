@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved
 
 ## Question and delivery boundary
 
@@ -194,6 +194,6 @@ Registration: the profile artifact's `features` and its README; scenarios, pipel
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `d3e99ac9` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `d3e99ac9` | `fork-turns-none` | `approve-with-required-edits` | `bb47474f, 13b13cad` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
