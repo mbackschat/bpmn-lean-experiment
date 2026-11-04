@@ -69,6 +69,7 @@ const expectedDomains = new Map<string, ProfileValueDomains>([
   [SemanticProfileId.MessagePayloadCatch, { start: none, human: none, effect: none, payload: messagePayloadScalars }],
   [SemanticProfileId.MessageKeyCorrelation, { start: none, human: none, effect: none, payload: messagePayloadScalars }],
   [SemanticProfileId.MessageAddressedReceiveTask, { start: none, human: none, effect: none, payload: none }],
+  [SemanticProfileId.AddresslessReceiveTask, { start: none, human: none, effect: none, payload: none }],
   [SemanticProfileId.NonInterruptingBoundaryTimer, { start: none, human: none, effect: none, payload: none }],
   [SemanticProfileId.RepeatableEventSubscriptions, { start: none, human: none, effect: none, payload: none }],
   [SemanticProfileId.ParallelForkJoin, { start: none, human: none, effect: none, payload: none }],
