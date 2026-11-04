@@ -9,6 +9,7 @@ import type { NestedScopeStartNames } from "./nested-scope-data-admission.js";
 import { embeddedScopeDataBearing } from "./scope-data-bearing.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import type { CheckedNode, CheckedSequenceFlow } from "./checked-process-contract.js";
+import { branchesStartWithWork } from "./nested-scope-branch-work.js";
 import { parallelBodyScans } from "./parallel-body-burst-analysis.js";
 import type { ParallelBodyScans } from "./parallel-body-burst-analysis.js";
 import { InternalSchedulingMode, SemanticOperationKind } from "./semantic-process-contract.js";
@@ -94,60 +95,6 @@ function serialTargetBody(body: Body | undefined): body is Body {
 }
 
 type Tree = Readonly<{ root: string; bodies: ReadonlyMap<string, Body>; parent: ReadonlyMap<string, Readonly<{ scope: string; vertex: string }>> }>;
-
-/** Where one fork output's closure scan stops: at a task it arms, at a join it cannot pass, or at an End. */
-enum BranchStop {
-  Work = "work",
-  Join = "join",
-  End = "end",
-}
-
-type BranchScan = Readonly<{ stop: BranchStop; join: string | null; passes: boolean }>;
-
-/**
- * BPMN 13.4.1: every path from a fork output reaches a task vertex before a join or End can consume it. PTPB-WORK-01
- * relaxes this only for a branch whose closure scan meets a pass vertex: such a branch may reach its fork's paired join
- * without waiting, but never an End, so an End is never co-enabled with a sibling branch's entry (the singleton premise
- * of the [pass-through branch specification](../../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#representation-and-runtime-ownership)).
- * The scan passes a nested fork's join only when every branch of that fork reaches it wait-free.
- */
-function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boolean {
-  const byId = new Map(nodes.map(node => [node.id, node]));
-  const reachesWork = (id: string): boolean => {
-    const node = byId.get(id);
-    switch (node?.kind) {
-      case Kind.Task: return true;
-      case Kind.Fork: return node.outputs.every(reachesWork);
-      default: return false;
-    }
-  };
-  const scan = (id: string): BranchScan => {
-    const node = byId.get(id);
-    switch (node?.kind) {
-      case Kind.Task: return { stop: BranchStop.Work, join: null, passes: false };
-      case Kind.Pass: return { ...scan(node.outputs[0]!), passes: true };
-      case Kind.Join: return { stop: BranchStop.Join, join: node.id, passes: false };
-      case Kind.Fork: {
-        const branches = node.outputs.map(scan);
-        const passes = branches.some(branch => branch.passes);
-        if (branches.some(({ stop }) => stop === BranchStop.End)) return { stop: BranchStop.End, join: null, passes };
-        const join = branches[0]!.join;
-        if (join === null || !branches.every(branch => branch.stop === BranchStop.Join && branch.join === join)) {
-          return { stop: BranchStop.Work, join: null, passes };
-        }
-        const after = scan(byId.get(join)!.outputs[0]!);
-        return { ...after, passes: passes || after.passes };
-      }
-      default: return { stop: BranchStop.End, join: null, passes: false };
-    }
-  };
-  const admitted = (id: string): boolean => {
-    if (reachesWork(id)) return true;
-    const branch = scan(id);
-    return branch.passes && branch.stop !== BranchStop.End;
-  };
-  return nodes.every(node => node.kind !== Kind.Fork || node.outputs.every(admitted));
-}
 
 /**
  * CMCALL-ADMIT-01: a Call outside the root is a mapped Call of a data-bearing model in a serial body at depth one or
