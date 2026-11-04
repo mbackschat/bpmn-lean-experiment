@@ -1473,7 +1473,7 @@ The complete Temporal gate failed a varying set of publication reads with `unava
 A semantic-core classification change was qualified by hand-picked consumer tests, so a Workflow component test that pins the changed classification stayed red in the committed target although the complete Temporal component lane would have run it.
 
 Instances
-: 3
+: 4
 
 Disposition
 : `unguardable`
@@ -1488,6 +1488,8 @@ Commit `2fb8a861` made a refused Start a semantic rejection in `advanceScenario`
 Second instance, `PC-DATA-03` effect-data closure on 2026-10-14: `b6a6fe74` widened effect transport to every value arm and was qualified by the component lane, selected hosted files and the pipeline, while a structured-human-work testkit test in `test:temporal:built:concurrent` still pinned the old transport refusal; the closure `test:temporal` gate failed on it and `041ad7f5` moved the lock to the profile policy. The consumer set is computable from imports, but which lanes an author ran before a local commit leaves no tracked fact; the acceptance-boundary complete gate that observed both instances is the designed backstop, so the class is unguardable short of running every complete lane per commit, which the verification cadence rejects. Reusable question: before committing a change to an exported encoder or classifier, have the complete lanes of every package that imports it run, not only the lanes already under attention?
 
 Third instance, `PC-SCOPE-04` checkpoint corrections on 2026-10-22: `560ba25c` was qualified by focused `node --test` runs, which strip types without checking them, so a test helper that passed a `VariableBinding` array where the canonical patch measure takes business values was committed and approved by the correction audit; the closure `test:temporal` gate failed in its harness type check before any test ran. The [verification rule](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery) already asks for type checks while coding, so the instance is a lapse in a written step, and the disposition stands for the class. This variant alone is cheaply guardable, by a type check before each local commit; that is a cadence change for the owner, not one an agent adds.
+
+Fourth instance, `PC-CF-02` closure on 2026-11-04: `ab97b983` made the checked Exclusive Gateway's default optional and was qualified by a focused target list of the edited modules and their proof consumers. Three fixture roots that construct the node with a literal default were outside it: two conformance modules in `BpmnConformance` and the `Experiments` checked-source admission, which only `verify.sh` builds. Two consecutive complete runs failed on them (`55d1934d`, `8ec53479`). The consumer criterion was exact and cheap, every syntactic constructor site of the changed constructor across all Lean sources and every `lakefile.toml` root, and one search with that criterion found the last site before a single green focused build of every executable root. The disposition stands for the class. Reusable question: when a constructor's signature changes, did the focused target list come from a search for its construction sites across every Lean root, rather than from the modules already under edit?
 
 ### Finding 78
 

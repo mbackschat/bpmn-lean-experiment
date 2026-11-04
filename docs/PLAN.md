@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Exclusive Choices without a default under the nested scope-data profile, batch 4 (`PC-CF-02` primary). The Send Task landed at `b9e52f19`. Close call, decided on reach: of the pinned CIB checkout's models, 46 clean root models choose without a default, while every model that both forks and chooses with defaults also throws an Escalation, Error or Signal End, so neither that shape nor an Exclusive Gateway in a Sub-Process reaches an admissible model. Batch 3 stays open behind the owner's holds.
+Current task: Exclusive Choices without a default under the nested scope-data profile, batch 4 (`PC-CF-02` primary). The Send Task landed at `b9e52f19`. Close call, decided on reach: 46 clean pinned CIB root models choose without a default. Batch 3 stays open behind the owner's holds.
 
 Deliverable: a Choice without a default admitted wherever the profile admits a Choice, routing as before when a condition holds and rolling the command back atomically when none does, landed on `main`.
 
-Acceptance blockers: implementation across source, IL, Lean, core and Temporal, the closure gates, and landing.
+Acceptance blockers: hosted `verify-complete`, the model-corpus lane, the cold closure review, graduation and landing.
 
-Current result: the [proposal](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md) is approved after correction audits; the CIB probe calibrates both witness models (7/7); the source reader and both analyses still refuse a Choice without a default.
+Current result: the [capsule](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-PROPOSAL.md) is implemented through `8ec53479` ([pull request 51](https://github.com/mbackschat/bpmn-lean-experiment/pull/51)) with no guard bound raised. Local `verify.sh` passes except the pipeline's 10-second replay deadline, missed once under another project's host load of 19 to 40.
 
-Effort budget: 8 hours from 2026-11-03 17:05 CET, including one full Lean library and `BpmnConformance` build at closure.
+Effort budget: 8 hours from 2026-11-03 17:05 CET, extended once by owner direction (2026-11-04) by the owner pause from 20:10 to 01:55, so it ends about 06:50.
 
-Next action: implement red/green, TypeScript first (source, contracts, selection and stable exit, host), then the Lean batch.
+Next action: on green hosted checks and corpus lane, the cold closure review, graduation and landing; if the hosted pipeline also misses the replay deadline, measure the replay batch on a quiet host first.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
