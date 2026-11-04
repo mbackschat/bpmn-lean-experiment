@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 
 /-! # Root Parallel forks conformance
 
-Finite admission witnesses of RPF-ADMIT-01, and of the [terminal forks specification](../docs/capsules/TERMINAL-FORKS-PROPOSAL.md#separating-witnesses)'s TFK-ADMIT-01, TFK-DATA-01 and TFK-PROFILE-01, under the nested scope-data profile. The employee onboarding graph
+Finite admission witnesses of RPF-ADMIT-01, and of the [terminal forks specification](../docs/capsules/TERMINAL-FORKS-SPEC.md#separating-witnesses)'s TFK-ADMIT-01, TFK-DATA-01 and TFK-PROFILE-01, under the nested scope-data profile. The employee onboarding graph
 transcribes the retained `scenarios/root-parallel-forks` model, and the loan intake and loan review graphs the source
 test's root Call pair and its Call in a root-branch Sub-Process; their routes and Start names are the TypeScript
 analysis's values for the same graphs, and each refused graph differs from an admitted one in the fact its name states. The module runs no command: the journeys and the refused

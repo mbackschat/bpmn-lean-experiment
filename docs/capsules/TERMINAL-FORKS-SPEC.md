@@ -1,8 +1,8 @@
-# Terminal forks proposal
+# Terminal forks specification
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -140,7 +140,7 @@ End beside local control and End beside scope creation rest on `prepared_end_loc
 
 Lane shape: checked
 
-Evidence: the family adds no transition family and no runtime law. The owner direction of 2026-10-14 in the [assurance-lane rule](../PROJECT-DESIGN.md#lean-assurance-lane) gives concurrency families `proved`; this family is breadth over an already proved mechanism. Every batch it makes reachable commits only through the quantified pair laws listed under [Representation](#representation-and-runtime-ownership), and a violated premise fails closed to `ambiguousInternalChoice`. What stays argued, not proved, is that no admitted closure co-enables an End with a declared entry or mapped invocation. Executable admission checks join the [root Parallel forks conformance module](../../BpmnSemantics/RootParallelForksConformance.lean), which stays admission-only and outside `CommandAdmission`'s cone: both models at both levels, the refused edits with their admitted twins, and the profile control. The journeys run through the pipeline's Lean target.
+Evidence: the family adds no transition family and no runtime law. The owner direction of 2026-10-14 in the [assurance-lane rule](../PROJECT-DESIGN.md#lean-assurance-lane) gives concurrency families `proved`; this family is breadth over an already proved mechanism. Every batch it makes reachable commits only through the quantified pair laws listed under [Representation](#representation-and-runtime-ownership), and a violated premise fails closed to `ambiguousInternalChoice`. What stays argued, not proved, is that no admitted closure co-enables an End with a declared entry or mapped invocation. Executable admission checks join the root Parallel forks conformance module's [`rootParallelForksConformanceChecks`](../../BpmnSemantics/RootParallelForksConformance.lean#rootParallelForksConformanceChecks), which stays admission-only and outside `CommandAdmission`'s cone: both models at both levels, the refused edits with their admitted twins, and the profile control. The journeys run through the pipeline's Lean target.
 
 ## Temporal hosting and refinement preflight
 
@@ -198,4 +198,4 @@ Registration: the profile artifact's `features` and its README; scenarios, pipel
 |---|---|---|---|---|
 | Proposal | `d3e99ac9` | `fork-turns-none` | `approve-with-required-edits` | `bb47474f, 13b13cad` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Closure | `d645c982` | `fork-turns-none` | `approve-with-required-edits` | `c5dbcf50, 6b1249f5` |

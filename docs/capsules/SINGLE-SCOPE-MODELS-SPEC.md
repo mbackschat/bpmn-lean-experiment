@@ -44,7 +44,7 @@ Optional: none.
 Excluded, each refused at admission:
 
 - a single-scope model under the embedded completion profile, the only other profile reaching these analyses, on every route, data-bearing or not, which keeps requiring a Sub-Process or a Call; every other profile keeps its own shape rules unchanged;
-- a Call in a forking root, a terminal fork or a second None End in the root, the latter two admitted since by the [terminal forks account](TERMINAL-FORKS-PROPOSAL.md#admission), and every other exclusion of the accounts above.
+- a Call in a forking root, a terminal fork or a second None End in the root, the latter two admitted since by the [terminal forks account](TERMINAL-FORKS-SPEC.md#admission), and every other exclusion of the accounts above.
 
 These bound admission only. Nothing is reinterpreted: a model admitted today has at least one Sub-Process, and its Program, route and behavior are unchanged.
 
@@ -108,7 +108,7 @@ Each model carries a source overlay and a mapped Service Task.
   - Journey one: valid at once. Journey two: invalid, then valid; *Review invoice* and *Validate invoice* get fresh occurrences in the second round.
 - **Call without a Sub-Process:** the retained [loan application](../../scenarios/call-variable-mapping/loan-application.bpmn) with its *Review application* Sub-Process replaced by a User Task, admitted at both levels and run to completion in the core; the unedited model stays admitted.
 - **Degenerate model:** a Process of one None Start flowing to one None End stays refused by the unchanged overlay rule of `NSD-ADMIT-01`, under which a serial model binds at least one handler, while its twin with one mapped Service Task between them is admitted at both levels.
-- **Refused edits:** a mapped Call added to the purchase request's root (wrong algorithm 4), and a terminal fork, the root's only way to a second None End, since a fork that both joins and ends a branch is refused in a body too; the terminal fork is admitted since by the [terminal forks account](TERMINAL-FORKS-PROPOSAL.md#admission). Each is refused by the checked-graph rule, while the same Call on a serial root path and the same fork inside a Sub-Process are admitted, so no other rule produces the refusal.
+- **Refused edits:** a mapped Call added to the purchase request's root (wrong algorithm 4), and a terminal fork, the root's only way to a second None End, since a fork that both joins and ends a branch is refused in a body too; the terminal fork is admitted since by the [terminal forks account](TERMINAL-FORKS-SPEC.md#admission). Each is refused by the checked-graph rule, while the same Call on a serial root path and the same fork inside a Sub-Process are admitted, so no other rule produces the refusal.
 - **Profile control (minimal pairs):** under the embedded completion profile, a single-scope serial model with a data-mapped Service Task, and a data-free single-scope serial model of User Tasks, are each refused at the source level, and their checked graphs and Programs are refused by the core and Lean analyses and the profile-shape checks under that profile's identity, while each model with its Tasks inside a Sub-Process is admitted (wrong algorithms 1 and 2). The data-free pair kills a relaxation of the shared shape and analysis functions keyed on anything but profile identity.
 - **Route control:** a one-scope Program of this profile that both the structured analysis and the nested route admit, checked executably in Lean, so the premise of `SSM-ROUTE-01` is necessary and not vacuous (wrong algorithm 3).
 

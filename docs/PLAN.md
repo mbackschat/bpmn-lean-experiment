@@ -98,13 +98,13 @@ Current task: terminal forks in the nested scope-data profile, batch 4 (`PC-HUM-
 
 Deliverable: root terminal forks and wait-free terminal branches admitted in the nested scope-data profile, each scope completing only when its last token is consumed, landed on `main`.
 
-Acceptance blockers: closure review corrections and their audit, graduation and landing.
+Acceptance blockers: hosted `verify-complete` and landing.
 
-Current result: the approved [proposal](capsules/TERMINAL-FORKS-PROPOSAL.md) is implemented and its closure gates are green, with hosted checks green at `bac7df9f` after a rerun of Temporal serial; the cold closure review requires six edits, among them re-creating the scenario inputs through a declared generator.
+Current result: the [specification](capsules/TERMINAL-FORKS-SPEC.md) is implemented, closure-approved after two correction audits and graduated; its closure gates are green, with hosted checks green at `bac7df9f` after a rerun of Temporal serial, and the scenario inputs were re-created through a declared generator.
 
 Effort budget: 8 hours from 2026-11-04 09:30 CET, ending 17:30.
 
-Next action: finish the closure corrections, request their audit, then graduate and land.
+Next action: land on green hosted checks, then open the next batch-4 family.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

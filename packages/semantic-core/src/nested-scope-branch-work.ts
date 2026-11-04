@@ -25,7 +25,7 @@ export function branchesStartWithWork(nodes: readonly ParallelBodyNode[]): boole
  * TFK-ADMIT-01 also admits a terminal-fork branch whose closure scan stops at its End without arming a task, so its End
  * may share a closure with sibling work; a branch that reaches its paired join keeps PTPB-WORK-01. Admission applies
  * this cut only where TFK-DATA-01 rules out a declared entry, the one co-enabled member with no commutation law beside an
- * End (the [terminal forks specification](../../../docs/capsules/TERMINAL-FORKS-PROPOSAL.md#representation-and-runtime-ownership)).
+ * End (the [terminal forks specification](../../../docs/capsules/TERMINAL-FORKS-SPEC.md#representation-and-runtime-ownership)).
  */
 export function branchesReachWorkOrEnd(nodes: readonly ParallelBodyNode[]): boolean {
   return branchCut(nodes, true);

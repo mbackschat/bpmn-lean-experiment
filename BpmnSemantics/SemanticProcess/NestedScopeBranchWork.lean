@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
 
 /-! The fork-branch cut of NSC-ADMIT-01 and the Call placement scan of CMCALL-ADMIT-01, as PTPB-WORK-01 and
 PTPB-CALL-01 of the [pass-through branch specification](../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#admission)
-relax them for pass vertices, and the terminal-fork relaxation of the [terminal forks specification](../../docs/capsules/TERMINAL-FORKS-PROPOSAL.md#admission). `NestedScopeControl` consumes them in hidden bodies only, through a private import. -/
+relax them for pass vertices, and the terminal-fork relaxation of the [terminal forks specification](../../docs/capsules/TERMINAL-FORKS-SPEC.md#admission). `NestedScopeControl` consumes them in hidden bodies only, through a private import. -/
 
 public section
 
