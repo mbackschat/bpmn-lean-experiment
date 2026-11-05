@@ -46,7 +46,7 @@ Optional: several pass-through Tasks on one branch or across branches.
 
 Excluded, each refused at admission:
 
-- every form `PTT-ADMIT-01` refuses;
+- every form `PTT-ADMIT-01` refuses, except the splitting node the [pass-through implicit split and merge account](PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#required-optional-and-excluded-scope) admits, whose branches follow a Parallel fork's;
 - a branch of a terminal fork whose closure scan, from its first vertex, can reach its separate None End without arming a task, whether through pass-through Tasks or through a nested fork whose every branch is wait-free: such an End would be co-enabled with a sibling branch's entry (`PTPB-WORK-01`); the [terminal forks account](TERMINAL-FORKS-SPEC.md#admission) admits it since in a definition that declares no scope-local data, and the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-SPEC.md#admission) in every definition of this profile;
 - an empty branch, a flow straight from a fork to its join, which today's cut refuses and this family keeps refusing in both profiles;
 - a body whose Call would lead it once its pass-through Tasks are skipped, such as Start → Manual Task → Call (`PTPB-CALL-01`);

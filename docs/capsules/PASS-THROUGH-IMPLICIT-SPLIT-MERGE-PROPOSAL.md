@@ -257,6 +257,8 @@ The CIB lane extends the [pass-through Task probe](../../runners/cibseven/src/te
 
 Then the clauses of the [delivery boundary](#question-and-delivery-boundary) are accepted. `PC-HUM-05` and `PC-BASIC-01` stay open on the residuals named there, and `PC-CF-07` is evidenced for pass-through nodes only.
 
+Implemented with two recorded additions. The shared Lean predicates live in a new leaf, [`CheckedPassThroughFlow`](../../BpmnSemantics/SemanticProcess/CheckedPassThroughFlow.lean), because no owner is imported by all three consumers (`InclusiveRegionWalk`, `NestedScopeControlAdmission`, `ScopeReentryAdmission`), which import it plainly; the TypeScript twin is [`checked-pass-through-flow.ts`](../../packages/semantic-core/src/checked-pass-through-flow.ts). The profile artifact also names Clause 10.3, whose Activity notes the scenarios cite. The two private lowering laws keep their one-flow statements under one-flow hypotheses. The [conformance module](../../BpmnSemantics/PassThroughImplicitSplitMergeConformance.lean) holds nine checks over both models and their notation twins, the projection witness, the five refused edits and the profile control; forcing `splits` to `false` fails five of them. The [source test](../../packages/bpmn-source/test/pass-through-implicit-split-merge-source.test.ts) asserts the same at the checked and Program levels, the Program level of the node that both merges and splits being unrepresentable; the changed oracles flip or re-attribute as listed above.
+
 ## Versioning consequences
 
 No wire, schema or Program shape change, so the [pre-release wire policy](../../contracts/README.md#evolution-policy) has nothing to migrate. No admitted model changes its Program, route or behavior: every admitted pass-through node has one incoming and one outgoing flow, keeps its lowering, and is classified as before by every widened projection. Previously refused models of this profile become admitted.
@@ -286,7 +288,7 @@ TypeScript:
 - the [scope re-entry admission](../../packages/semantic-core/src/scope-reentry-admission.ts);
 - the [Inclusive region admission](../../packages/semantic-core/src/inclusive-region-admission.ts).
 
-Source: none. The source reader already projects every flow.
+Source: the source region projection [`inclusive-gateway-source.ts`](../../packages/bpmn-source/src/inclusive-gateway-source.ts), whose `sourceVertexKind` classifies a several-flow pass-through node by its arity as the checked and Program walks do; the source reader already projects every flow.
 
 Headroom, measured at `ffeec083` in nonblank lines against the 800 target:
 

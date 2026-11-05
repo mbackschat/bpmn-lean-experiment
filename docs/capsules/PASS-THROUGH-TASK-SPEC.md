@@ -52,13 +52,13 @@ Excluded, each refused at admission:
 
 - a pass-through Task in a Program that forks, which this account leaves to the concurrent account; the [pass-through branch specification](PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md) admits it there;
 - in a called Process, whose body stays one to three User Tasks;
-- several incoming or outgoing flows, or a conditional or default outgoing flow (`PC-CF-07`);
+- several incoming or outgoing flows outside the forms the [pass-through implicit split and merge account](PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#required-optional-and-excluded-scope) admits, and a conditional or default outgoing flow (`PC-CF-07`);
 - a pass-through Task on a Parallel branch, which the [pass-through branch specification](PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md) admits;
 - `camunda:asyncBefore` or `asyncAfter`, execution listeners, `camunda:inputOutput` or other extension elements;
 - loop or Multi-Instance characteristics;
 - attached boundary events, and `isForCompensation`.
 
-These bound admission only. Each later widening changes the lowering or arity of the same checked node without reinterpreting an accepted model. An implicit merge, for example, lowers to a many-input `mergeExclusive`, which is CIB's per-token activation. That widening must also replace the Program-level classifier of [Admission](#admission), because a many-input `mergeExclusive` is then indistinguishable from an Exclusive merge.
+These bound admission only. Each later widening changes the lowering or arity of the same checked node without reinterpreting an accepted model. An implicit merge, for example, lowers to a many-input `mergeExclusive`, which is CIB's per-token activation. The [pass-through implicit split and merge account](PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#admission) kept the Program-level classifier of [Admission](#admission) instead: every checked analysis classifies a several-flow node as its lowered operation is classified, so a many-input `mergeExclusive` is a Merge at both levels.
 
 ## Profile and public contract
 
@@ -122,7 +122,7 @@ Both models carry one mapped Service Task bound by an exact source overlay and a
 
 | Rule | Positive and negative witness | Lanes | Killing mutation |
 |---|---|---|---|
-| `PTT-ADMIT-01` | Both models admitted; each refused edit refused | Source and core for every edit; the Lean conformance module for the second outgoing flow, second incoming flow, conditioned outgoing flow and forking Program | Accept an asynchronous, defaulted or two-outgoing Task |
+| `PTT-ADMIT-01` | Both models admitted; each refused edit refused | Source and core for every edit; the Lean conformance module for the second outgoing flow, the Task that both merges and splits, conditioned outgoing flow and forking Program | Accept an asynchronous or defaulted Task, or a two-outgoing Task in a re-entry model |
 | `PTT-KIND-01` | `manualTask` and `abstractTask` survive the checked JSON round trip | Core, Lean decoder check | Erase the notation to `abstractTask` |
 | `PTT-PASS-01` | The first publication after *Schedule pickup* shows *Unpack equipment* started and ended, with *Record condition* open | Pipeline, CIB probe | Lower the Task as `awaitUserTask` |
 | `PTT-BURST-01` | Burst-eight chain admitted, burst-nine refused; the core runtime closure agrees at the limit | Conformance module, core, source test committing every stimulus of each burst-eight model's scenario | Cost zero for the vertex |
@@ -161,7 +161,7 @@ Then `PC-HUM-04` is evidenced except its Parallel-branch clause, and `PC-HUM-05`
 
 Nearest unsupported claims:
 
-- pass-through Tasks with token multiplicity above one, in called Processes and with several flows;
+- pass-through Tasks with token multiplicity above one, in called Processes, with both several incoming and several outgoing flows, and merging under a fork;
 - asynchronous continuations, listeners and mappings on them;
 - quantified bounded closure.
 
