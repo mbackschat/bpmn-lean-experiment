@@ -100,11 +100,11 @@ Deliverable: Activities, None Starts and Link targets with several incoming or s
 
 Acceptance blockers: a proposal with the kernel representation and Temporal preflight, its cold design review, implementation, closure review and hosted `verify-complete`.
 
-Current result: not started; the rejected fan-in proposal records the representation gap.
+Current result: [proposal](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) drafted with multi-place Activity operations.
 
 Effort budget: 10 hours from 2026-11-05 06:30 CET, ending 16:30.
 
-Next action: write the family proposal.
+Next action: cold design review of the proposal.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
