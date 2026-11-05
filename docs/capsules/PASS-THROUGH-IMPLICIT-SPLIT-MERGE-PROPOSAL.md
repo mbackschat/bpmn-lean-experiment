@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved
 
 ## Question and delivery boundary
 
@@ -316,6 +316,6 @@ Owner passages amended at closure:
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `ffeec083` | `fork-turns-none` | `approve-with-required-edits` | `63409a05, 7d900d26` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |

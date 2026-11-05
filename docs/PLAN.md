@@ -98,13 +98,13 @@ Current task: pass-through implicit split and merge in the nested scope-data pro
 
 Deliverable: pass-through Abstract and Manual Tasks and None Throws with several incoming or several unconditioned outgoing Sequence Flows admitted in the nested scope-data profile, each arrival passing once and one activation forking every outgoing flow, landed on `main`.
 
-Acceptance blockers: correction audit of the [proposal](capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md), implementation, closure review and hosted `verify-complete`.
+Acceptance blockers: implementation of the [proposal](capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md), closure review and hosted `verify-complete`.
 
-Current result: proposal corrected for its cold design review findings.
+Current result: proposal review receipt recorded.
 
 Effort budget: 8 hours from 2026-11-05 02:52 CET, ending 10:52.
 
-Next action: correction audit by the same reviewer.
+Next action: Rule 2 declaration of the implementation and its review.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
