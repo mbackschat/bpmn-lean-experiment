@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Activity implicit split and merge through a kernel extension in the nested scope-data profile, batch 4: `PC-CF-07` primary, with `PC-BASIC-01` multiple outgoing Start flows, `PC-BASIC-02` multiple Link sources and `PC-HUM-05` the merge of concurrent arrivals. Pass-through implicit split and merge landed through PR 58, accepting its clauses with no row closed. Close call: every remaining batch-4 control clause needs the multi-input or multi-output target operation the [implicit fan-in review](capsules/IMPLICIT-FAN-IN-PROPOSAL.md#independent-cold-review-receipt) required, since CIB publishes no step for a Link catch, so multiple sources are fan-in at the successor; Script and Business Rule Tasks wait on a runtime dependency decision.
+Current task: Activity implicit split and merge through a kernel extension in the nested scope-data profile, batch 4: `PC-CF-07` primary, with `PC-BASIC-01` multiple outgoing Start flows and `PC-BASIC-02` ordered multiple Link sources; concurrent arrivals stay open. Pass-through implicit split and merge landed through PR 58, accepting its clauses with no row closed. Close call: every remaining batch-4 control clause needs the multi-input or multi-output target operation the [implicit fan-in review](capsules/IMPLICIT-FAN-IN-PROPOSAL.md#independent-cold-review-receipt) required, since CIB publishes no step for a Link catch, so multiple sources are fan-in at the successor; Script and Business Rule Tasks wait on a runtime dependency decision.
 
-Deliverable: Activities, None Starts and Link targets with several incoming or several outgoing Sequence Flows admitted in the nested scope-data profile, one occurrence per arriving token, landed on `main`.
+Deliverable: Activities and None Starts with several incoming or several outgoing Sequence Flows, and several Link throws of one name, admitted in the nested scope-data profile, one occurrence per arriving token, landed on `main`.
 
 Acceptance blockers: a proposal with the kernel representation and Temporal preflight, its cold design review, implementation, closure review and hosted `verify-complete`.
 
-Current result: [proposal](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) drafted with multi-place Activity operations.
+Current result: [proposal](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) reviewed `approve-with-required-edits`; edits applied.
 
 Effort budget: 10 hours from 2026-11-05 06:30 CET, ending 16:30.
 
-Next action: cold design review of the proposal.
+Next action: correction audit, then the representation commit's Rule 2 declaration.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
