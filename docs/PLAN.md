@@ -98,17 +98,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Timer exact durations, batch 5 ([proposal](capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md)): `PC-TIMER-01` primary, its exact-duration clause, with the duration-parsing clause of `PC-TIMER-02`; `PC-TIMER-03` needs a runtime-carried duration and stays a later family. Close call: `PC-TIMER-01` over `PC-ERROR-01` at equal reach, because Timer forms extend the existing deadline mechanism without a kernel representation change while Error routing needs scope-cancellation semantics. Batch 4 is blocked: its remaining control clauses need Kernel IL orthogonalization, and Script and Business Rule Tasks wait on a dependency decision.
+Current task: Timer exact durations, batch 5 ([proposal](capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md)), increment 1: `PC-TIMER-01`'s duration clause at the Intermediate Catch Timer, whose durable timer never defers Continue-As-New; the managed-deadline sites, the Timer Start Schedule and the repeatable cycle follow as their own increments. Close call: `PC-TIMER-01` over `PC-ERROR-01` at equal reach, because Timer forms extend the existing deadline mechanism without a kernel representation change while Error routing needs scope-cancellation semantics. Batch 4 is blocked: its remaining control clauses need Kernel IL orthogonalization, and Script and Business Rule Tasks wait on a dependency decision.
 
-Deliverable: every exact ISO 8601 duration (`PT[nH][nM][nS]`, positive, at most `PT87660H`) admitted and executed wherever `PT1S`, `PT5S` or `R/PT1S` is admitted today, landed on `main`.
+Deliverable: every exact ISO 8601 duration (`PT[nH][nM][nS]`, positive, at most `PT87660H`) admitted and executed at the Intermediate Catch Timer, landed on `main`.
 
 Acceptance blockers: a family proposal with the BPMN and CIB account, Temporal preflight and pre-measured structural guards, its cold design review, implementation, closure review and hosted `verify-complete`.
 
-Current result: proposal revised for its required design corrections (site census, parser home and fan-out, kernel-decide probe, maximum, CIB evidence, witnesses, cost).
+Current result: proposal narrowed to increment 1 after its design review (parser private in `Lowering`, hosting split by mechanism).
 
 Effort budget: 8 hours from 2026-11-05 21:40 CET; at the limit, record the boundary and continue unless the evidence invalidates the path.
 
-Next action: obtain the correction audit of the [proposal](capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md) from its cold reviewer; meanwhile write the Rule 2 declaration for the implementation.
+Next action: obtain the correction audit of the [proposal](capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md) from its cold reviewer, then implement increment 1 within 4 hours.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the affected profiles, the CIB probe, and approving proposal and closure reviews.
 
