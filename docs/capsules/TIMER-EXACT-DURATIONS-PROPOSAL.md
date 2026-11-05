@@ -64,7 +64,7 @@ None: the same Intermediate Catch waits are reached with other deadlines. They a
 - Deadlines in logical time, Lean against the semantic core (integration cases, no host clock): `PT15M` refused at 899,999 ms and fired at 900,000 ms; `PT2H` fires at 7,200,000 ms.
 - Hosted: one pipeline case with `PT2S`, which the pipeline's host-clock Temporal target runs within the aggregate pipeline budget; the time-skipping lane runs one `PT15M` Intermediate Catch Timer to completion.
 - Sites: a race arm, a boundary Timer and a repeatable-subscription Intermediate Catch with `PT2S` are refused in both languages.
-- Oracle: the Intermediate Catch runner cases `PT1H30M` and `PT90M` against CIB Seven.
+- Oracle: the Intermediate Catch runner cases `PT1H30M` and `PT90M` against CIB Seven, asserted in the runner test against unregistered scenario sources; they retain no evidence file, because a registered scenario must also be a pipeline case.
 - Unchanged: every existing Timer scenario keeps its expected result byte for byte.
 
 ## Oracles this family changes
@@ -94,7 +94,7 @@ No new hosting mechanism. Durable ingress, wait and timer: the generic host path
 
 ## Evidence and acceptance
 
-The rule matrix, the Lean and TypeScript gates of the affected packages, `test:pipeline`, the CIB oracle cases and the [CIB gate](../SEMANTIC-VERIFICATION-POLICY.md#current-cib-gate) row for them, the hosted time-skipping witness, one retained whole model (a reminder Process that waits `PT2H` before escalating a User Task), the register entries, and the cold closure review.
+The rule matrix, the Lean and TypeScript gates of the affected packages, `test:pipeline`, the CIB oracle cases and the [CIB gate](../SEMANTIC-VERIFICATION-POLICY.md#current-cib-gate) row for them, the hosted time-skipping witness, one retained whole model (an alarm-debounce Process that waits `PT2S` before an operator acknowledges the alarm in a User Task; it is the `PT2S` pipeline case, because every retained model binds to a pipeline case and the pipeline's Temporal target runs on the host clock), the register entries, and the cold closure review.
 
 ## Versioning consequences
 
