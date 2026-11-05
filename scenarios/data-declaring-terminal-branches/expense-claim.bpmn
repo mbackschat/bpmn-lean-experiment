@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ExpenseClaim" targetNamespace="urn:bpmn-lean:expense-claim">
+  <process id="Process_ExpenseClaim" name="Settle an expense claim" isExecutable="true">
+    <startEvent id="ClaimSubmitted" name="Claim submitted" />
+    <serviceTask id="CheckClaimPolicy" name="Check claim policy"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${checkClaimPolicy}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="claim">${claim}</camunda:inputParameter>
+          <camunda:outputParameter name="policyLimit">${limit}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <parallelGateway id="SplitClaimHandling" name="Split claim handling" />
+    <task id="AssignReviewer" name="Assign reviewer" />
+    <subProcess id="ReviewClaim" name="Review claim">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="verdict">pending</camunda:inputParameter>
+          <camunda:outputParameter name="reviewVerdict">${verdict}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+      <startEvent id="ReviewOpened" name="Review opened" />
+      <userTask id="ApproveClaim" name="Approve claim" />
+      <endEvent id="ReviewDone" name="Review done" />
+      <sequenceFlow id="Flow_ReviewOpened" sourceRef="ReviewOpened" targetRef="ApproveClaim" />
+      <sequenceFlow id="Flow_Approved" sourceRef="ApproveClaim" targetRef="ReviewDone" />
+    </subProcess>
+    <endEvent id="ClaimReviewed" name="Claim reviewed" />
+    <manualTask id="FilePaperReceipt" name="File paper receipt" />
+    <endEvent id="ReceiptFiled" name="Receipt filed" />
+    <task id="NotifyCostCentre" name="Notify cost centre" />
+    <endEvent id="CostCentreNotified" name="Cost centre notified" />
+    <sequenceFlow id="Flow_Submitted" sourceRef="ClaimSubmitted" targetRef="CheckClaimPolicy" />
+    <sequenceFlow id="Flow_Checked" sourceRef="CheckClaimPolicy" targetRef="SplitClaimHandling" />
+    <sequenceFlow id="Flow_ToAssign" sourceRef="SplitClaimHandling" targetRef="AssignReviewer" />
+    <sequenceFlow id="Flow_Assigned" sourceRef="AssignReviewer" targetRef="ReviewClaim" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewClaim" targetRef="ClaimReviewed" />
+    <sequenceFlow id="Flow_ToReceipt" sourceRef="SplitClaimHandling" targetRef="FilePaperReceipt" />
+    <sequenceFlow id="Flow_ReceiptDone" sourceRef="FilePaperReceipt" targetRef="ReceiptFiled" />
+    <sequenceFlow id="Flow_ToCostCentre" sourceRef="SplitClaimHandling" targetRef="NotifyCostCentre" />
+    <sequenceFlow id="Flow_CostCentreDone" sourceRef="NotifyCostCentre" targetRef="CostCentreNotified" />
+  </process>
+</definitions>

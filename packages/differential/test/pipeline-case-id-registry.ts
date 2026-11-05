@@ -43,6 +43,7 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "terminal-forks-offboarding-equipment-first",
   "terminal-forks-offboarding-access-first",
   "terminal-forks-office-move",
+  "data-declaring-terminal-branches-expense-claim",
   "inclusive-gateway-regions-account-all-checks-funds-last",
   "inclusive-gateway-regions-account-all-checks-identity-last",
   "inclusive-gateway-regions-account-residency-only",

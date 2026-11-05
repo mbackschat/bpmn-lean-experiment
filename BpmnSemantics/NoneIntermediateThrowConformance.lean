@@ -262,10 +262,10 @@ private def events_lower_to_one_input_merges : Bool :=
 private def second_flows_are_refused : Bool :=
   !admitted (warrantyWith .secondOutgoing) && !admitted (warrantyWith .secondIncoming)
 
-/-- NIT-ADMIT-01: a None Throw alone on a terminal branch is refused while its User Task twin is admitted. TFK-DATA-01
-keeps this refusal: *Set up account* declares scope-local data. -/
-private def wait_free_terminal_branch_is_refused : Bool :=
-  admitted (onboardingWith (some true)) && !admitted (onboardingWith (some false))
+/-- NIT-ADMIT-01 with DTB-ADMIT-01: a None Throw alone on a terminal branch is admitted (burst 8) as its User Task twin is,
+though *Set up account* declares scope-local data. -/
+private def wait_free_terminal_branch_is_admitted : Bool :=
+  admitted (onboardingWith (some true)) && admitted (onboardingWith (some false))
 
 /-- NIT-ADMIT-01: a Call that only a None Throw separates from its body's Start is refused. -/
 private def call_behind_only_a_none_throw_is_refused : Bool :=
@@ -302,7 +302,7 @@ def noneIntermediateThrowConformanceChecks : List (String × Bool) := [
   ("retained_models_are_admitted_on_their_routes", retained_models_are_admitted_on_their_routes),
   ("events_lower_to_one_input_merges", events_lower_to_one_input_merges),
   ("second_flows_are_refused", second_flows_are_refused),
-  ("wait_free_terminal_branch_is_refused", wait_free_terminal_branch_is_refused),
+  ("wait_free_terminal_branch_is_admitted", wait_free_terminal_branch_is_admitted),
   ("call_behind_only_a_none_throw_is_refused", call_behind_only_a_none_throw_is_refused),
   ("other_profiles_refuse_the_event", other_profiles_refuse_the_event),
   ("event_decodes_to_its_own_arm", event_decodes_to_its_own_arm)

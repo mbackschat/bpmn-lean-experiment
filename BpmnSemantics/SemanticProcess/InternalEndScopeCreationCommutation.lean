@@ -1,6 +1,8 @@
 module
 
 import BpmnSemantics.SemanticProcess.InternalEndCommutation
+import BpmnSemantics.SemanticProcess.InternalDeclaredEntryCommutation
+import BpmnSemantics.SemanticProcess.NestedScopeDataLaws
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFootprintFrames
 import BpmnSemantics.SemanticProcess.InternalRegionalLocalControlDependencies
 import BpmnSemantics.SemanticProcess.InternalScopeCreationFreshness
@@ -27,8 +29,9 @@ token places are separate. Existing scope-selection laws retain issuance and own
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.InternalEndSelection.apply,
   `InternalCommutation.InternalEndSelection.tokens, `InternalCommutation.InternalScopeCreationSelection.apply,
   `InternalCommutation.internalEndStateFootprint, `InternalCommutation.liftRegionalStateAtom,
-  `InternalCommutation.regionalStateAtomsConflict, `TokenPatch.apply, `addTokens, `removeTokens,
-  `setCallActivationCount]
+  `InternalCommutation.liftRegionalStateFootprint, `InternalCommutation.regionalAtomListsDisjoint,
+  `InternalCommutation.regionalStateAtomsConflict, `InternalCommutation.regionalStateFootprintsIndependent,
+  `TokenPatch.apply, `addTokens, `removeTokens, `setCallActivationCount]
 
 public section
 
@@ -113,5 +116,63 @@ theorem prepared_end_scope_creation_pair_commutes (program : Program) (state : R
     (scopeCreation_apply_control state creation) (liveAfter.trans live.symm) (scopeCreation_apply_time state creation)
   change (creation.apply state).tokens.filter (fun token => decide (token.placeId = selected.input)) = _
   exact scopeCreation_apply_token_filter state creation _ (by simpa using input) (by simpa using entry)
+
+/-- Regional independence survives shrinking the right footprint: the entry's scope-creation footprint is contained in
+the declared entry's, and lifting by one owner preserves that containment. -/
+private theorem regionalIndependent_of_lifted_subsets (left : InternalRegionalStateFootprint)
+    (owner : ScopeOccurrenceId) (smaller larger : InternalTransitionStateFootprint)
+    (reads : smaller.reads ⊆ larger.reads) (writes : smaller.writes ⊆ larger.writes)
+    (independent : regionalStateFootprintsIndependent left (liftRegionalStateFootprint owner larger) = true) :
+    regionalStateFootprintsIndependent left (liftRegionalStateFootprint owner smaller) = true := by
+  simp only [regionalStateFootprintsIndependent, regionalAtomListsDisjoint, liftRegionalStateFootprint,
+    Bool.and_eq_true, List.all_eq_true, Bool.not_eq_true', List.any_eq_false, List.mem_map] at independent ⊢
+  obtain ⟨⟨writeRead, readWrite⟩, writeWrite⟩ := independent
+  refine ⟨⟨fun atom member other found => writeRead atom member other ?_, fun atom found => ?_⟩,
+    fun atom member other found => writeWrite atom member other ?_⟩
+  · obtain ⟨source, sourceMember, rfl⟩ := found
+    exact ⟨source, reads sourceMember, rfl⟩
+  · obtain ⟨source, sourceMember, rfl⟩ := found
+    exact readWrite _ ⟨source, writes sourceMember, rfl⟩
+  · obtain ⟨source, sourceMember, rfl⟩ := found
+    exact ⟨source, writes sourceMember, rfl⟩
+
+private theorem end_apply_scope_data (state : RuntimeState) (selected : InternalEndSelection)
+    (variables : ScopedVariables) :
+    (selected.apply state).scopeOccurrences = state.scopeOccurrences ∧
+      (selected.apply state).variables = state.variables ∧
+      selected.apply { state with variables } = { selected.apply state with variables } :=
+  ⟨rfl, rfl, rfl⟩
+
+/-- DTB-COMMUTE-01: under the regional footprint independence that `PreparedInternalTransition.Independent` applies to
+the pair, each stays prepared after the other and both orders give one state. The triple is the shape
+`prepared_end_transition_pair` consumes for a declared-entry companion. -/
+theorem prepared_end_declared_entry_pair (program : Program) (state : RuntimeState)
+    (ending : PreparedInternalEnd) (entry : PreparedInternalDeclaredEntry)
+    (endFound : prepareInternalEnd? program state ending.operation = some ending)
+    (entryFound : prepareInternalDeclaredEntry? program state entry.control.selection.operation = some entry)
+    (canonical : canonicalCollectionOrder state = true)
+    (independent : regionalStateFootprintsIndependent ending.footprint
+      (liftRegionalStateFootprint entry.control.selection.owner entry.footprint) = true) :
+    prepareInternalDeclaredEntry? program (ending.selection.apply state) entry.control.selection.operation = some entry ∧
+      prepareInternalEnd? program (entry.apply state) ending.operation = some ending ∧
+      entry.apply (ending.selection.apply state) = ending.selection.apply (entry.apply state) := by
+  obtain ⟨reads, writes, _, _, control, _, _⟩ :=
+    declared_entry_shape program state entry.control.selection.operation entry entryFound
+  have pair := prepared_end_scope_creation_pair_commutes program state ending.operation
+    entry.control.selection.operation ending entry.control endFound control canonical
+    (regionalIndependent_of_lifted_subsets _ _ _ _ reads writes independent)
+  have moved := end_apply_scope_data state ending.selection state.variables
+  refine ⟨?_, ?_, ?_⟩
+  · refine prepareInternalDeclaredEntry_after program state _ _ entry entryFound pair.2.1 ?_ ?_
+    · intro record evaluated
+      rw [NestedScopeData.evaluateFrame?_frame program state _ moved.1 (by rw [moved.2.1]) (by rw [moved.2.1])]
+      exact evaluated
+    · intro names reads read
+      rw [NestedScopeData.readSet?_frame state _ moved.1 (by rw [moved.2.1])]
+      exact read
+  · rw [PreparedInternalDeclaredEntry.apply_eq]
+    exact prepareInternalEnd_read_frame program _ _ _ ending pair.1 rfl rfl rfl rfl
+  · rw [PreparedInternalDeclaredEntry.apply_eq, PreparedInternalDeclaredEntry.apply_eq, pair.2.2]
+    rfl
 
 end BpmnSemantics.SemanticProcess.InternalCommutation

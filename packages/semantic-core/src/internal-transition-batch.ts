@@ -208,8 +208,8 @@ export function prepareInternalTransitionBatch(
  * The frame-inserting families of CSD-PREPARE-01 and CMCALL-PREPARE-01, and their batch premise as Lean's
  * `PreparedInternalTransition.Independent` states it: their commutation is established only beside declared entries,
  * mapped invocations, scope creations, ordinary armings and local control, and a declared entry's also beside a Merge
- * input (PTPB-COMMUTE-01), so any other companion is dependent and never batched with them, so no unproved order is
- * committed.
+ * input (PTPB-COMMUTE-01) and an ordinary End (DTB-COMMUTE-01), so any other companion is dependent and never batched
+ * with them, so no unproved order is committed.
  */
 const frameInserting: ReadonlySet<PreparedInternalTransitionFamily> = new Set([
   PreparedInternalTransitionFamily.DeclaredScopeEntry, PreparedInternalTransitionFamily.MappedInvocation,
@@ -219,7 +219,7 @@ const frameInsertingCompanions: ReadonlySet<PreparedInternalTransitionFamily> = 
   PreparedInternalTransitionFamily.Arming, PreparedInternalTransitionFamily.LocalControl,
 ]);
 const declaredEntryCompanions: ReadonlySet<PreparedInternalTransitionFamily> = new Set([
-  ...frameInsertingCompanions, PreparedInternalTransitionFamily.MergeInput,
+  ...frameInsertingCompanions, PreparedInternalTransitionFamily.MergeInput, PreparedInternalTransitionFamily.OrdinaryEnd,
 ]);
 
 const frameInsertingPremiseHolds = (member: PreparedInternalTransition, companion: PreparedInternalTransition): boolean => {

@@ -1,0 +1,89 @@
+{
+  "kind": "scenario",
+  "id": "data-declaring-terminal-branches-expense-claim",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "expense-claim",
+    "relativePath": "scenarios/data-declaring-terminal-branches/expense-claim.bpmn",
+    "sha256": "8d140b7ad4817f33baa3b6ef545727184c5e3bffc4fc435ba0134d2eeddd4f69",
+    "sourceOverlay": {
+      "id": "expense-claim-handlers",
+      "sha256": "5a06e2118339668149b72502459a98f7cebb08a74be9b54207d0156dc338f550"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3.5",
+      "BPMN 2.0.2 Clause 10.4.1",
+      "BPMN 2.0.2 Clause 10.5.3",
+      "BPMN 2.0.2 Clause 13.4.1",
+      "BPMN 2.0.2 Clause 13.5.6"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-EXT-0019",
+      "CIB-EXT-0020",
+      "CIB-EXT-0022"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ExpenseClaim",
+      "instanceId": "ExpenseClaim_1",
+      "initialVariables": [
+        {
+          "name": "claim",
+          "value": {
+            "kind": "string",
+            "value": "Taxi to client, EUR 42"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:2ea09fe71d0e8f8afa501c479000abc43742c030be9cff18e2c506faa41e6601",
+      "effectId": {
+        "processInstanceId": "ExpenseClaim_1",
+        "elementId": "CheckClaimPolicy",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "limit",
+            "value": {
+              "kind": "string",
+              "value": "EUR 500"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-approve-claim",
+      "taskId": {
+        "processInstanceId": "ExpenseClaim_1",
+        "elementId": "ApproveClaim",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

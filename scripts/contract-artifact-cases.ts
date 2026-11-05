@@ -223,6 +223,7 @@ export const normativeArtifactCases = Object.freeze([
   ...["offboarding-equipment-first", "offboarding-access-first", "office-move"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/terminal-forks/${name}.scenario.json`,
   })),
+  Object.freeze({ scenarioRelativePath: "scenarios/data-declaring-terminal-branches/expense-claim.scenario.json" }),
   ...["account-all-checks-funds-last", "account-all-checks-identity-last", "account-residency-only", "account-standard-only",
     "account-risk-and-online", "booking-extras-venue-first", "booking-extras-venue-last", "booking-no-extras"].map(name =>
     Object.freeze({ scenarioRelativePath: `scenarios/inclusive-gateway-regions/${name}.scenario.json` })),

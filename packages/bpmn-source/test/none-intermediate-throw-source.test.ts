@@ -91,8 +91,8 @@ test("the onboarding milestones run on the concurrent route with agreeing bursts
   assert.equal(nestedScopeControlCheckedAnalysis({ ...checkedProcess, flows: checkedProcess.sequenceFlows }), 7);
 });
 
-// TFK-DATA-01 keeps this refusal: the onboarding model's Set up account Sub-Process declares scope-local data.
-test("a None Throw alone on a terminal branch is refused in a declaring model while its waiting twin is admitted", async () => {
+// DTB-ADMIT-01 admits this branch, though the onboarding model's Set up account Sub-Process declares scope-local data.
+test("a None Throw alone on a terminal branch is admitted in a declaring model as its waiting twin is", async () => {
   const xml = await source(onboarding);
   // Set up account forks after its Start: Create account as before, beside a terminal branch of `branch` alone.
   const terminal = (branch: string): string => replaceOnce(xml,
@@ -103,8 +103,9 @@ test("a None Throw alone on a terminal branch is refused in a declaring model wh
       '<sequenceFlow id="Flow_SplitToBadge" sourceRef="SplitSetup" targetRef="Badge" />' +
       '<sequenceFlow id="Flow_Badge" sourceRef="Badge" targetRef="BadgeClosed" />');
   await admitted(onboarding, terminal('<userTask id="Badge" name="Print badge" />'), "waiting terminal branch");
-  await refused(onboarding, terminal('<intermediateThrowEvent id="Badge" name="Badge requested" />'),
+  const free = await admitted(onboarding, terminal('<intermediateThrowEvent id="Badge" name="Badge requested" />'),
     "wait-free terminal branch");
+  assert.equal(nestedScopeControlProgramAnalysis(free.semanticProcess), 8);
 });
 
 test("each excluded None Throw form is refused", async () => {

@@ -207,7 +207,9 @@ private theorem prepared_end_transition_pair (program : Program) [InterruptionIn
       have pair := prepared_end_scope_creation_pair_commutes program state ending.operation creation.selection.operation
         ending creation endFound otherFound.1 canonical independent
       exact ⟨⟨pair.2.1, otherFound.2⟩, pair.1, pair.2.2⟩
-  | declaredEntry _ | mappedInvocation _ => exact (independent : False).elim
+  | declaredEntry entry =>
+      exact prepared_end_declared_entry_pair program state ending entry endFound otherFound canonical independent
+  | mappedInvocation _ => exact (independent : False).elim
   | ordinaryEnd other =>
       have pair := prepared_end_pair_commutes program state ending.operation other.operation ending other
         endFound otherFound independent
@@ -440,8 +442,12 @@ theorem prepared_transition_pair (program : Program) [InterruptionInvocationsRoo
           exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
   | declaredEntry left =>
       cases right with
-      | messageTask _ _ | boundedScope _ _ | timerTask _ _ | regional _ | ordinaryEnd _ =>
+      | messageTask _ _ | boundedScope _ _ | timerTask _ _ | regional _ =>
           exact (independent : False).elim
+      | ordinaryEnd right =>
+          have pair := prepared_end_transition_pair program state instanceId right (.declaredEntry left)
+            programValid stateValid rightPrepared leftPrepared canonical (PreparedInternalTransition.independent_symm independent)
+          exact ⟨pair.2.1, pair.1, pair.2.2.symm⟩
       | mergeInput right =>
           exact prepared_declared_entry_merge_pair program state left.control.selection.operation left right
             leftPrepared rightPrepared canonical independent

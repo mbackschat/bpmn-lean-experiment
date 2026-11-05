@@ -179,6 +179,9 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   -- PTPB-COMMUTE-01: a one-input Merge on another Parallel branch only moves tokens beside the entry's frame.
   | .declaredEntry first, .mergeInput second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .mergeInput first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
+  -- DTB-COMMUTE-01: an ordinary End only consumes its own token and counts `endOccurrences`, beside the entry's frame.
+  | .declaredEntry _, .ordinaryEnd _ | .ordinaryEnd _, .declaredEntry _ =>
+      regionalStateFootprintsIndependent left.stateFootprint right.stateFootprint = true
   | .mappedInvocation first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .mappedInvocation first, .declaredEntry second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
   | .declaredEntry first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.footprint second.footprint = true
@@ -190,7 +193,7 @@ def PreparedInternalTransition.Independent (left right : PreparedInternalTransit
   | .arming first, .mappedInvocation second => localControlStateFootprintsNonInterfering first.stateFootprint second.footprint = true
   -- CSD-PREPARE-01's and CMCALL-PREPARE-01's batch premise: a frame-inserting member's commutation is
   -- established only beside the frame-inserting families, scope creations, local control, armings and (for a
-  -- declared entry) Merge inputs, so every
+  -- declared entry) Merge inputs and ordinary Ends, so every
   -- other companion refuses the batch.
   | .declaredEntry _, _ | _, .declaredEntry _ | .mappedInvocation _, _ | _, .mappedInvocation _ => False
   | .messageTask .., _ | _, .messageTask .. | .boundedScope .., _ | _, .boundedScope ..

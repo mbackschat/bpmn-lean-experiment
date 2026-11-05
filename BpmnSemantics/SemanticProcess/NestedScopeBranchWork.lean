@@ -67,20 +67,19 @@ def branchesStartWithWork (vertices : List Vertex) : Bool :=
       (let scan := branchScan vertices vertices.length id; scan.2 && scan.1 != .finish)
 
 /-- TFK-ADMIT-01 also admits a terminal-fork branch whose closure scan stops at its End without arming a task,
-so its End may share a closure with sibling work; a branch that reaches its paired join keeps PTPB-WORK-01. -/
+so its End may share a closure with sibling work, a declared entry included (DTB-COMMUTE-01); a branch that
+reaches its paired join keeps PTPB-WORK-01. -/
 def branchesReachWorkOrEnd (vertices : List Vertex) : Bool :=
   vertices.all fun vertex => vertex.kind != .fork || vertex.outputs.all fun id =>
     reachesWork vertices vertices.length id ||
       (let scan := branchScan vertices vertices.length id; scan.1 == .finish || scan.2)
 
-/-- TFK-ADMIT-01 and TFK-DATA-01: the shared analysis relaxes the root End count and the cut for every caller,
+/-- TFK-ADMIT-01 and DTB-ADMIT-01: the shared analysis relaxes the root End count and the cut for every caller,
 and this restores one root End and the strict cut wherever the relaxation does not apply. `relaxed` is the
-nested scope-data profile; a definition declaring scope-local data keeps the strict cut, because its declared
-entry has no commutation law beside an End (the terminal forks specification). -/
-def terminalForkBoundsKept (relaxed declaresData : Bool) (root : String)
-    (bodies : List (String × List Vertex)) : Bool :=
+nested scope-data profile, whether or not the definition declares scope-local data. -/
+def terminalForkBoundsKept (relaxed : Bool) (root : String) (bodies : List (String × List Vertex)) : Bool :=
   (relaxed || ((bodies.lookup root).getD []).countP (·.kind == .finish) == 1) &&
-    ((relaxed && !declaresData) || bodies.all fun body => branchesStartWithWork body.2)
+    (relaxed || bodies.all fun body => branchesStartWithWork body.2)
 
 /-- PTPB-CALL-01: pass vertices never wait, so a body's first vertex is the first one after them. -/
 def afterPasses (vertices : List Vertex) : Nat → List String → List String

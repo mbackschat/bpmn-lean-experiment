@@ -524,7 +524,7 @@ private def checkedModel (source : CheckedProcess) : Option (Nat × List String 
         source.nodes.any (fun | .inclusiveGatewayDiverging .. | .inclusiveGatewayConverging .. => true | _ => false) &&
         !InclusiveRegion.checkedRegionsAdmitted source then none
     else if !terminalForkBoundsKept (source.identity.semanticProfile == nestedScopeDataProfileId)
-        (!source.scopeLocalData.isEmpty) (root.getD "") (contracted.map fun body => (body.scope, body.vertices)) then none
+        (root.getD "") (contracted.map fun body => (body.scope, body.vertices)) then none
     else admittedModel source.definitionScopes bodies data
 
 /-- NSC-ADMIT-01 and CSD-ADMIT-01 over the checked graph; `none` refuses it, otherwise the admitted
@@ -711,7 +711,7 @@ private def programModel (program : Program) : Option (Nat × List String × Opt
     else if structured &&
         program.operations.any (fun | .selectMany .. | .synchronizeSelected .. => true | _ => false) &&
         !InclusiveRegion.programRegionsAdmitted program then none
-    else if !terminalForkBoundsKept structured (!program.scopeLocalData.isEmpty) root.id.value
+    else if !terminalForkBoundsKept structured root.id.value
         (contracted.map fun body => (body.scope, body.vertices)) then none
     else admittedModel program.definitionScopes bodies data
 

@@ -182,11 +182,11 @@ test("each prepared declared entry equals the evaluator's entry, and the two sib
 });
 
 // Oracle: Lean's `PreparedInternalTransition.Independent`, which refuses a declared entry beside every family but declared
-// entries, scope creations, armings, local control and, by PTPB-COMMUTE-01's pair law, Merge inputs (CSD-PREPARE-01's batch
-// premise); a mapped invocation still refuses a Merge input. The companion is the independent sibling entry relabelled,
-// because independence reads only family and footprint; the frontier rule is the production path that must honour the
-// premise.
-test("a declared entry beside an unproved prepared family is dependent and rolls the frontier back, and beside a Merge input batches",
+// entries, scope creations, armings, local control and, by the pair laws PTPB-COMMUTE-01 and DTB-COMMUTE-01, Merge inputs
+// and ordinary Ends (CSD-PREPARE-01's batch premise); a mapped invocation still refuses both. The companion is the
+// independent sibling entry relabelled, because independence reads only family and footprint; the frontier rule is the
+// production path that must honour the premise.
+test("a declared entry beside an unproved prepared family is dependent and rolls the frontier back, and beside a Merge input or an End batches",
   async () => {
     const facility = await program("facility-inspection");
     const start: Stimulus = { kind: StimulusKind.StartProcess, commandId: "start", processId: "Process_FacilityInspection",
@@ -199,7 +199,7 @@ test("a declared entry beside an unproved prepared family is dependent and rolls
     const [declared, sibling] = entries.map(operation =>
       deriveInternalTransitionPreparation(facility, state, { operation, owner: inspection })!);
     const refused = [PreparedInternalTransitionFamily.CallData, PreparedInternalTransitionFamily.BoundedScope,
-      PreparedInternalTransitionFamily.Regional, PreparedInternalTransitionFamily.OrdinaryEnd];
+      PreparedInternalTransitionFamily.Regional];
     for (const family of refused) {
       const companion = { ...sibling!, family } as unknown as typeof sibling;
       assert.equal(preparedInternalTransitionsAreIndependent(declared!, companion!), false, family);
@@ -211,9 +211,15 @@ test("a declared entry beside an unproved prepared family is dependent and rolls
     assert.equal(preparedInternalTransitionsAreIndependent(declared!, merge!), true);
     assert.equal(preparedInternalTransitionsAreIndependent(merge!, declared!), true);
     assert.equal(classifyPreparedInternalFrontier([declared!, merge!])?.kind, InternalFrontierDisposition.IndependentBatch);
+    const ending = { ...sibling!, family: PreparedInternalTransitionFamily.OrdinaryEnd } as unknown as typeof sibling;
+    assert.equal(preparedInternalTransitionsAreIndependent(declared!, ending!), true);
+    assert.equal(preparedInternalTransitionsAreIndependent(ending!, declared!), true);
+    assert.equal(classifyPreparedInternalFrontier([declared!, ending!])?.kind, InternalFrontierDisposition.IndependentBatch);
     const invocation = { ...declared!, family: PreparedInternalTransitionFamily.MappedInvocation } as unknown as typeof declared;
     assert.equal(preparedInternalTransitionsAreIndependent(invocation!, merge!), false);
     assert.equal(preparedInternalTransitionsAreIndependent(merge!, invocation!), false);
+    assert.equal(preparedInternalTransitionsAreIndependent(invocation!, ending!), false);
+    assert.equal(preparedInternalTransitionsAreIndependent(ending!, invocation!), false);
   });
 
 test("nested effect arming reads its precise frame, chain and Process atoms instead of the Activity population", async () => {

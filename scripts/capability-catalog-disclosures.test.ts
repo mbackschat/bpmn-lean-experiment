@@ -97,11 +97,11 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "The nested scope-data profile admits the same paired forks and joins inside Sub-Process bodies and in the Process root body, never into a merge",
     "a model whose root body forks holds no Call in it",
     "a scope completes only when its last branch has ended",
-    "only when no Sub-Process of the model declares locals",
+    "may reach its End without a User or Service Task whether or not a Sub-Process of the model declares locals",
   ]],
   ["abstractTask", "restriction", [
     "or on a Parallel branch of the Process root or a Sub-Process body",
-    "unless a Sub-Process of the model declares locals, in which case that branch must reach a User or Service Task before its End",
+    "and so may a branch that ends at its own None End, whether or not a Sub-Process of the model declares locals",
   ]],
   ["sendTask", "element", ["Send Task"]],
   ["sendTask", "restriction", [

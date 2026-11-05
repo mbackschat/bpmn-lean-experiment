@@ -1447,6 +1447,50 @@
       }
     },
     {
+      "id": "expense-claim-settlement",
+      "title": "Settle an expense claim",
+      "businessPurpose": "Check a submitted expense claim against the travel policy through a policy service, then in parallel assign a reviewer who approves the claim inside its own review scope with a local verdict, file the paper receipt by hand and notify the cost centre, each of the last two ending on its own, and settle the claim once the review is done.",
+      "cloneFamily": "expense-claim-settlement",
+      "constructs": [
+        "endEvent",
+        "manualTask",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "task",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/data-declaring-terminal-branches/expense-claim.bpmn",
+        "sha256": "8d140b7ad4817f33baa3b6ef545727184c5e3bffc4fc435ba0134d2eeddd4f69",
+        "scenarioRelativePath": "scenarios/data-declaring-terminal-branches/expense-claim.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "data-declaring-terminal-branches-expense-claim",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for data-declaring terminal branches; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "account-opening-required-checks",
       "title": "Open a customer account after its required checks",
       "businessPurpose": "Assess an applicant in a review scope, then run every check the assessment requires at once, enhanced due diligence for a high risk rating, a tax residency form for a foreign resident and an identity document check for an online application, or standard verification when none applies, and open the account once all required checks are done.",

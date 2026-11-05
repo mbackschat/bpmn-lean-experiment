@@ -148,6 +148,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     "root-parallel-forks-onboarding-documents-while-laptop-open", "pass-through-parallel-branches-relocation-packing-first",
     "pass-through-parallel-branches-invoice-settled", "none-intermediate-throw-onboarding-account-first",
     "link-events-onboarding-account-first",
+    "data-declaring-terminal-branches-expense-claim",
     "single-scope-models-purchase-approval-first", "send-task-claim-assessed-first", "terminal-forks-offboarding-equipment-first",
     "terminal-forks-office-move", "inclusive-gateway-regions-account-residency-only",
     "inclusive-gateway-regions-account-standard-only"]) {

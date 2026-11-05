@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcess.NestedScopeControlAdmission
 
 /-! # Root Parallel forks conformance
 
-Finite admission witnesses of RPF-ADMIT-01, and of the [terminal forks specification](../docs/capsules/TERMINAL-FORKS-SPEC.md#separating-witnesses)'s TFK-ADMIT-01, TFK-DATA-01 and TFK-PROFILE-01, under the nested scope-data profile. The employee onboarding graph
+Finite admission witnesses of RPF-ADMIT-01, and of the [terminal forks specification](../docs/capsules/TERMINAL-FORKS-SPEC.md#separating-witnesses)'s TFK-ADMIT-01 and TFK-PROFILE-01, and of the [data-declaring terminal branches proposal](../docs/capsules/DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md#separating-witnesses)'s DTB-ADMIT-01 and DTB-PROFILE-01, which retired TFK-DATA-01, under the nested scope-data profile. The employee onboarding graph
 transcribes the retained `scenarios/root-parallel-forks` model, and the loan intake and loan review graphs the source
 test's root Call pair and its Call in a root-branch Sub-Process; their routes and Start names are the TypeScript
 analysis's values for the same graphs, and each refused graph differs from an admitted one in the fact its name states. The module runs no command: the journeys and the refused
@@ -273,10 +273,31 @@ private def offboarding_is_admitted_at_each_level : Bool := admittedAtEachLevel 
 /-- TFK-ADMIT-01: two wait-free terminal branches in a Sub-Process body. -/
 private def office_move_is_admitted_at_each_level : Bool := admittedAtEachLevel (officeMoveWith)
 
-/-- TFK-DATA-01: the declaration alone refuses the wait-free branches, and only beside them. -/
-private def declaring_office_move_is_refused_beside_its_waiting_twin : Bool :=
-  refusedAtEachLevel (officeMoveWith (declaring := true)) &&
+/-- DTB-ADMIT-01: the declaration no longer refuses the wait-free branches; both twins are admitted. -/
+private def declaring_office_move_is_admitted_as_its_waiting_twin : Bool :=
+  admittedAtEachLevel (officeMoveWith (declaring := true)) &&
     admittedAtEachLevel (officeMoveWith (waiting := true) (declaring := true))
+
+/-- Expense claim, transcribing `scenarios/data-declaring-terminal-branches`: *Check claim policy*, then a root fork into
+the plain Task *Assign reviewer* before the Sub-Process *Review claim*, which declares `verdict`, and two wait-free branches
+to their own Ends, the Manual Task *File paper receipt* and the plain Task *Notify cost centre*. -/
+private def expenseClaim : CheckedProcess :=
+  let review : ScopeLocalData :=
+    { scopeId := scope "ReviewClaim", localInputs := [literal "verdict" "pending"], localOutputs := [copied "reviewVerdict" "verdict"] }
+  build [review] [("P", none), ("ReviewClaim", some "P")]
+    [ start "P" "ClaimSubmitted"
+    , service "P" "CheckClaimPolicy" "checkClaimPolicy" [enclosing "claim" "claim"] [copied "policyLimit" "limit"]
+    , fork "P" "SplitClaimHandling", plain "P" "AssignReviewer", sub "P" "ReviewClaim", finish "P" "ClaimReviewed"
+    , manual "P" "FilePaperReceipt", finish "P" "ReceiptFiled", plain "P" "NotifyCostCentre", finish "P" "CostCentreNotified"
+    , start "ReviewClaim" "ReviewOpened", task "ReviewClaim" "ApproveClaim", finish "ReviewClaim" "ReviewDone" ]
+    [ ("ClaimSubmitted", "CheckClaimPolicy"), ("CheckClaimPolicy", "SplitClaimHandling")
+    , ("SplitClaimHandling", "AssignReviewer"), ("AssignReviewer", "ReviewClaim"), ("ReviewClaim", "ClaimReviewed")
+    , ("SplitClaimHandling", "FilePaperReceipt"), ("FilePaperReceipt", "ReceiptFiled")
+    , ("SplitClaimHandling", "NotifyCostCentre"), ("NotifyCostCentre", "CostCentreNotified")
+    , ("ReviewOpened", "ApproveClaim"), ("ApproveClaim", "ReviewDone") ]
+
+/-- DTB-ADMIT-01: the expense claim's wait-free Ends beside a declaring Sub-Process, at each level. -/
+private def expense_claim_is_admitted_at_each_level : Bool := admittedAtEachLevel expenseClaim
 
 /-- PTPB-WORK-01 keeps refusing an empty branch to its paired join, which TFK-ADMIT-01 does not relax; the same block
 with a pass-through Task on that branch is admitted. -/
@@ -309,6 +330,28 @@ private def terminal_fork_controls_are_refused_under_embedded_completion : Bool 
   [rootFork, bodyEnd].all fun control =>
     admittedAtEachLevel control && refusedAtEachLevel (asEmbeddedCompletion control)
 
+/-- The graph relabelled to the embedded completion profile with its source overlay kept, as its mapped Service Task needs. -/
+private def asMappedEmbeddedCompletion (source : CheckedProcess) : CheckedProcess :=
+  { source with identity := { source.identity with semanticProfile := embeddedCompletionProfileId } }
+
+/-- DTB-PROFILE-01's minimal pair, without pass vertices: the declaring office move with *Return keys* a User Task and
+the parking branch a direct End is admitted here and refused at each level under the embedded completion profile, whose
+data-bearing twin with every branch waiting it admits, so the cut alone separates them. -/
+private def declaring_direct_end_is_refused_under_embedded_completion : Bool :=
+  let pair := build [{ scopeId := scope "ClearOldOffice", localInputs := [literal "keysReturned" "no"], localOutputs := [] }]
+    [("P", none), ("ClearOldOffice", some "P")]
+    [ start "P" "MoveRequested", service "P" "BookMovers" "bookMovers" [enclosing "office" "office"] [copied "bookingCode" "code"]
+    , sub "P" "ClearOldOffice", task "P" "ConfirmNewOffice", finish "P" "MoveCompleted"
+    , start "ClearOldOffice" "ClearingStarted", fork "ClearOldOffice" "SplitClearing", task "ClearOldOffice" "PackDesk"
+    , finish "ClearOldOffice" "DeskPacked", task "ClearOldOffice" "ReturnKeys", finish "ClearOldOffice" "KeysReturned"
+    , finish "ClearOldOffice" "ParkingCancelled" ]
+    [ ("MoveRequested", "BookMovers"), ("BookMovers", "ClearOldOffice"), ("ClearOldOffice", "ConfirmNewOffice")
+    , ("ConfirmNewOffice", "MoveCompleted"), ("ClearingStarted", "SplitClearing"), ("SplitClearing", "PackDesk")
+    , ("PackDesk", "DeskPacked"), ("SplitClearing", "ReturnKeys"), ("ReturnKeys", "KeysReturned")
+    , ("SplitClearing", "ParkingCancelled") ]
+  admittedAtEachLevel pair && refusedAtEachLevel (asMappedEmbeddedCompletion pair) &&
+    admittedAtEachLevel (asMappedEmbeddedCompletion (officeMoveWith (waiting := true) (declaring := true)))
+
 /-- Every executable check of this module, named for the driver's failure report. -/
 def rootParallelForksConformanceChecks : List (String × Bool) := [
   ("root_fork_is_admitted_and_routed_concurrent", root_fork_is_admitted_and_routed_concurrent),
@@ -321,8 +364,10 @@ def rootParallelForksConformanceChecks : List (String × Bool) := [
   ("call_in_a_root_branch_sub_process_is_admitted", call_in_a_root_branch_sub_process_is_admitted),
   ("offboarding_is_admitted_at_each_level", offboarding_is_admitted_at_each_level),
   ("office_move_is_admitted_at_each_level", office_move_is_admitted_at_each_level),
-  ("declaring_office_move_is_refused_beside_its_waiting_twin", declaring_office_move_is_refused_beside_its_waiting_twin),
+  ("declaring_office_move_is_admitted_as_its_waiting_twin", declaring_office_move_is_admitted_as_its_waiting_twin),
+  ("expense_claim_is_admitted_at_each_level", expense_claim_is_admitted_at_each_level),
   ("empty_joined_branch_is_refused_beside_its_pass_through_twin", empty_joined_branch_is_refused_beside_its_pass_through_twin),
+  ("declaring_direct_end_is_refused_under_embedded_completion", declaring_direct_end_is_refused_under_embedded_completion),
   ("terminal_fork_controls_are_refused_under_embedded_completion", terminal_fork_controls_are_refused_under_embedded_completion)
 ]
 

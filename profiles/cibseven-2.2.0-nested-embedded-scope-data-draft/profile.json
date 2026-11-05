@@ -151,7 +151,7 @@
     "legacy-string-list-values",
     "arithmetic-or-implicit-conversion",
     "implicit-task-split-merge",
-    "pass-through-tasks-in-called-processes-or-on-wait-free-terminal-branches-beside-scope-local-data",
+    "pass-through-tasks-in-called-processes",
     "pass-through-tasks-with-async-continuations-mappings-listeners-or-boundaries",
     "none-intermediate-throw-events-with-several-flows-async-continuations-or-listeners-or-in-called-processes",
     "intermediate-throw-event-triggers-other-than-link",

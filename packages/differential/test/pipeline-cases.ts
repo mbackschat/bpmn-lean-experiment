@@ -14,6 +14,7 @@ import { scopeReentryPipelineCases } from "./scope-reentry-pipeline-cases.ts";
 import { passThroughTaskPipelineCases } from "./pass-through-task-pipeline-cases.ts";
 import { rootParallelForksPipelineCases } from "./root-parallel-forks-pipeline-cases.ts";
 import { terminalForksPipelineCases } from "./terminal-forks-pipeline-cases.ts";
+import { dataDeclaringTerminalBranchesPipelineCases } from "./data-declaring-terminal-branches-pipeline-cases.ts";
 import { inclusiveGatewayRegionsPipelineCases } from "./inclusive-gateway-regions-pipeline-cases.ts";
 import { exclusiveChoiceArityPipelineCases } from "./exclusive-choice-arity-pipeline-cases.ts";
 import { noneEndFanInPipelineCases } from "./none-end-fan-in-pipeline-cases.ts";
@@ -602,6 +603,7 @@ export const pipelineCases = Object.freeze([
   ...passThroughTaskPipelineCases,
   ...rootParallelForksPipelineCases,
   ...terminalForksPipelineCases,
+  ...dataDeclaringTerminalBranchesPipelineCases,
   ...inclusiveGatewayRegionsPipelineCases,
   ...exclusiveChoiceArityPipelineCases,
   ...noneEndFanInPipelineCases,

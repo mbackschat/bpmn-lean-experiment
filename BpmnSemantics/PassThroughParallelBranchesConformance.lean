@@ -114,6 +114,8 @@ private inductive Closing where
   | terminal (archiveWaits : Bool)
   /-- As `terminal`, with *Archive receipt* behind a nested fork of two pass-through Tasks joined before it. -/
   | terminalNested (archiveWaits : Bool)
+  /-- As `terminalNested`, with the nested join going straight to the End and no *Archive receipt*. -/
+  | terminalNestedToEnd
 
 /-- Invoice settlement: root `P` reviews the invoice in a Sub-Process, then pays it through a mapped Service Task.
 The body checks the invoice and forks into *Archive receipt* and *Notify accounting*, closed as `closing` states. -/
@@ -136,6 +138,12 @@ private def settlementWith (closing : Closing := .joined) : CheckedProcess :=
           [("RecordInvoice", "SplitArchive"), ("SplitArchive", "ArchivePaper"), ("SplitArchive", "ArchiveScan"),
             ("ArchivePaper", "ArchiveDone"), ("ArchiveScan", "ArchiveDone"), ("ArchiveDone", "ArchiveReceipt"),
             ("ArchiveReceipt", "ReceiptArchived"), ("NotifyAccounting", "ConfirmBooking"), ("ConfirmBooking", "ReviewClosed")])
+    | .terminalNestedToEnd =>
+        ([task body "ConfirmBooking", finish body "ReceiptArchived", fork body "SplitArchive", pass body "ArchivePaper",
+            pass body "ArchiveScan", join body "ArchiveDone"],
+          [("RecordInvoice", "SplitArchive"), ("SplitArchive", "ArchivePaper"), ("SplitArchive", "ArchiveScan"),
+            ("ArchivePaper", "ArchiveDone"), ("ArchiveScan", "ArchiveDone"), ("ArchiveDone", "ReceiptArchived"),
+            ("NotifyAccounting", "ConfirmBooking"), ("ConfirmBooking", "ReviewClosed")])
   build
     [declare body [literal "verdict" "pending"] [copied "reviewVerdict" "verdict"]]
     [("P", none), (body, some "P")]
@@ -228,13 +236,14 @@ two exceed it and are refused. -/
 private def burst_of_eight_is_admitted_and_nine_refused : Bool :=
   admitted (relocationWith 1) && burst? (relocationWith 1) == some 8 && !admitted (relocationWith 2)
 
-/-- PTPB-WORK-01: an empty branch, a terminal branch of a plain Task alone, and one through a nested wait-free fork
-are refused, while each terminal twin whose first branch waits is admitted. TFK-DATA-01 keeps the two terminal refusals:
-*Review invoice* declares scope-local data. -/
-private def wait_free_terminal_and_empty_branches_are_refused : Bool :=
+/-- PTPB-WORK-01 refuses an empty branch. Though *Review invoice* declares scope-local data, DTB-ADMIT-01 admits a
+terminal branch of a plain Task alone (burst 5) and one through a nested wait-free fork straight to its End (burst 8);
+only PTPB-BURST-01 refuses the nested fork followed by a plain Task (burst 9). Each waiting twin is admitted. -/
+private def empty_branch_and_burst_refuse_while_wait_free_terminal_branches_admit : Bool :=
   !admitted (settlementWith .emptyBranch) &&
-    admitted (settlementWith (.terminal true)) && !admitted (settlementWith (.terminal false)) &&
-    admitted (settlementWith (.terminalNested true)) && !admitted (settlementWith (.terminalNested false))
+    admitted (settlementWith (.terminal true)) && admitted (settlementWith (.terminal false)) &&
+    admitted (settlementWith (.terminalNested true)) && !admitted (settlementWith (.terminalNested false)) &&
+    admitted (settlementWith .terminalNestedToEnd)
 
 /-- PTPB-CALL-01: a Call that only a Manual Task separates from its body's Start is refused, while a pass-through Task
 between the body's first wait and its Call is admitted. -/
@@ -255,7 +264,7 @@ private def embedded_completion_profile_produces_no_pass_vertex : Bool :=
 def passThroughParallelBranchesConformanceChecks : List (String × Bool) := [
   ("retained_models_are_admitted_on_the_concurrent_route", retained_models_are_admitted_on_the_concurrent_route),
   ("burst_of_eight_is_admitted_and_nine_refused", burst_of_eight_is_admitted_and_nine_refused),
-  ("wait_free_terminal_and_empty_branches_are_refused", wait_free_terminal_and_empty_branches_are_refused),
+  ("empty_branch_and_burst_refuse_while_wait_free_terminal_branches_admit", empty_branch_and_burst_refuse_while_wait_free_terminal_branches_admit),
   ("call_behind_only_pass_through_tasks_is_refused", call_behind_only_pass_through_tasks_is_refused),
   ("embedded_completion_profile_produces_no_pass_vertex", embedded_completion_profile_produces_no_pass_vertex)
 ]

@@ -1,5 +1,5 @@
 /**
- * TFK-ADMIT-01, TFK-DATA-01 and TFK-PROFILE-01 through the exact-bytes source path, each at the checked and Program
+ * TFK-ADMIT-01, TFK-PROFILE-01 and DTB-ADMIT-01, which retired TFK-DATA-01, through the exact-bytes source path, each at the checked and Program
  * levels. The oracle is the terminal forks specification's witness account: both retained models compile under the
  * nested scope-data profile, every refused edit differs from an admitted twin in exactly its named fact, and each
  * profile-control pair is refused under the embedded completion identity only by the relaxed rule.
@@ -72,10 +72,11 @@ const waiting = (xml: string): string => replaceOnce(replaceOnce(xml,
   '<task id="CancelParkingPermit" name="Cancel parking permit" />',
   '<userTask id="CancelParkingPermit" name="Cancel parking permit" />');
 
-test("TFK-DATA-01 refuses wait-free branches beside a declaring Sub-Process at each level, never their waiting twin", async () => {
+test("DTB-ADMIT-01 admits wait-free branches beside a declaring Sub-Process at each level, as their waiting twin", async () => {
   const move = await retained("office-move");
   const declaring = replaceOnce(move, '<subProcess id="ClearOldOffice" name="Clear old office">', declaration);
-  await refusedAtCheckedLevel(declaring, ["bookMovers"], "declaring office move");
+  assert.equal(nestedScopeControlProgramAnalysis((await admitted(declaring, ["bookMovers"], "declaring office move"))
+    .semanticProcess), 7, "declaring office move burst");
   const twin = await admitted(waiting(declaring), ["bookMovers"], "declaring waiting twin");
   const free = await admitted(move, ["bookMovers"], "data-free office move");
   // Past the source reader: the data-free graph and Program with the twin's declaration grafted on differ from the
@@ -84,8 +85,8 @@ test("TFK-DATA-01 refuses wait-free branches beside a declaring Sub-Process at e
   assert.ok(checkedRecords !== undefined && checkedRecords.length > 0 && programRecords !== undefined);
   const graph = { ...free.checkedProcess, scopeLocalData: checkedRecords };
   const program = { ...free.semanticProcess, scopeLocalData: programRecords };
-  assert.equal(nestedScopeControlCheckedAnalysis(controlGraph(graph)), null, "checked");
-  assert.equal(nestedScopeControlProgramAnalysis(program), null, "Program");
+  assert.notEqual(nestedScopeControlCheckedAnalysis(controlGraph(graph)), null, "checked");
+  assert.notEqual(nestedScopeControlProgramAnalysis(program), null, "Program");
 });
 
 /** The offboarding's branch two as a paired block whose second branch is `second`, empty when it is the empty string. */

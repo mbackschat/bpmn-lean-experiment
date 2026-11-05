@@ -130,13 +130,15 @@ function terminalFork(xml: string, first: string): string {
   return edited;
 }
 
-// TFK-DATA-01 keeps these refusals: the invoice model's Review invoice Sub-Process declares scope-local data.
-test("a terminal-fork branch that reaches its End without arming a task is refused beside its waiting twin in a declaring model", async () => {
+// DTB-ADMIT-01: the invoice model's Review invoice Sub-Process declares scope-local data, and a wait-free terminal branch
+// is admitted beside it; only the burst bound (PTPB-BURST-01) still refuses the branch through a nested fork and a Task.
+test("a terminal-fork branch that reaches its End without arming a task is admitted in a declaring model within the burst", async () => {
   const xml = await source(settlement);
   await admitted(settlement, terminalFork(xml, '<userTask id="ArchiveReceipt" name="Archive receipt" />'),
     "terminal fork whose branches both wait");
-  await refused(settlement, terminalFork(xml, '<task id="ArchiveReceipt" name="Archive receipt" />'),
+  const plain = await admitted(settlement, terminalFork(xml, '<task id="ArchiveReceipt" name="Archive receipt" />'),
     "terminal branch of a plain Task alone");
+  assert.equal(nestedScopeControlProgramAnalysis(plain.semanticProcess), 5);
   // A nested fork of two plain Tasks joined before the End: its join is not work, so the branch is still wait-free.
   const nested = '<parallelGateway id="SplitArchive" name="Split archive" />' +
     '<task id="ArchivePaper" name="Archive paper" /><task id="ArchiveScan" name="Archive scan" />' +
@@ -151,8 +153,16 @@ test("a terminal-fork branch that reaches its End without arming a task is refus
     '<sequenceFlow id="Flow_ToArchive" sourceRef="RecordInvoice" targetRef="SplitArchive" />');
   await admitted(settlement, throughNested('<userTask id="ArchiveReceipt" name="Archive receipt" />'),
     "nested wait-free fork before a waiting Task");
+  // Burst 9: the nested fork, its two passes, its join, Archive receipt and the End beside Notify accounting's arming.
   await refused(settlement, throughNested('<task id="ArchiveReceipt" name="Archive receipt" />'),
-    "terminal branch through a nested wait-free fork");
+    "terminal branch through a nested wait-free fork and a Task");
+  const joinToEnd = replaceOnce(replaceOnce(replaceOnce(throughNested('<task id="ArchiveReceipt" name="Archive receipt" />'),
+    '<task id="ArchiveReceipt" name="Archive receipt" />', ""),
+    '<sequenceFlow id="Flow_Archived" sourceRef="ArchiveReceipt" targetRef="ReceiptArchived" />', ""),
+    '<sequenceFlow id="Flow_ArchiveDone" sourceRef="ArchiveDone" targetRef="ArchiveReceipt" />',
+    '<sequenceFlow id="Flow_ArchiveDone" sourceRef="ArchiveDone" targetRef="ReceiptArchived" />');
+  const toEnd = await admitted(settlement, joinToEnd, "terminal branch through a nested wait-free fork to its End");
+  assert.equal(nestedScopeControlProgramAnalysis(toEnd.semanticProcess), 8);
 });
 
 test("a Call that only pass-through Tasks separate from its body's Start is refused", async () => {

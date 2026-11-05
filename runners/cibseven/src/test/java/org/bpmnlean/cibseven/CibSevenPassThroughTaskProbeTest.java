@@ -31,6 +31,9 @@ import org.junit.Test;
  * only with its last execution (`PvmAtomicOperationActivityEnd`). CIB does not execute the project's Simple Boolean v1 conditions, so each
  * condition is rendered as JUEL under `CIB-CFG-0005` before deployment; the probe compares activations, never condition
  * truth. Expected values are built here from the specification's witness-model account, never read from a target result.
+ * On the data-declaring terminal branches proposal's expense claim (`DTB-COMMUTE-01`) it calibrates that both wait-free
+ * Ends leave the entered Sub-Process instance and its local data in place, though the last concurrent End's
+ * `tryPruneLastConcurrentChild` re-parents that scope execution.
  */
 public final class CibSevenPassThroughTaskProbeTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
@@ -39,6 +42,7 @@ public final class CibSevenPassThroughTaskProbeTest {
   private static final Path THROW_MODELS = PROJECT_ROOT.resolve("scenarios/none-intermediate-throw");
   private static final Path SINGLE_SCOPE_MODELS = PROJECT_ROOT.resolve("scenarios/single-scope-models");
   private static final Path TERMINAL_FORK_MODELS = PROJECT_ROOT.resolve("scenarios/terminal-forks");
+  private static final Path DATA_TERMINAL_MODELS = PROJECT_ROOT.resolve("scenarios/data-declaring-terminal-branches");
   private static final String NONE_END = "noneEndEvent";
   private static final String NONE_THROW = "intermediateNoneThrowEvent";
   private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
@@ -336,6 +340,37 @@ public final class CibSevenPassThroughTaskProbeTest {
       session.assertPassedThrough(instance, "ClearOldOffice", "subProcess", 1);
       session.assertOpenTasks(instance, "ConfirmNewOffice");
       session.complete(instance, "ConfirmNewOffice");
+      session.assertEnded(instance);
+    }
+  }
+
+  @Test
+  public void thePolicyResultEndsBothWaitFreeBranchesBesideTheEnteredReviewWhoseLocalVerdictSurvives() throws Exception {
+    try (var session = new Session(DATA_TERMINAL_MODELS, "expense-claim", 0, "checkClaimPolicy", "limit", "EUR 500")) {
+      var instance = session.start("Process_ExpenseClaim", Map.of("claim", "Taxi to client, EUR 42"));
+      session.runJob(instance);
+      session.assertPassedThrough(instance, "AssignReviewer", "task", 1);
+      session.assertPassedThrough(instance, "FilePaperReceipt", "manualTask", 1);
+      session.assertPassedThrough(instance, "ReceiptFiled", NONE_END, 1);
+      session.assertPassedThrough(instance, "NotifyCostCentre", "task", 1);
+      session.assertPassedThrough(instance, "CostCentreNotified", NONE_END, 1);
+      session.assertOpenTasks(instance, "ApproveClaim");
+      var review = session.activations(instance, "ReviewClaim");
+      assertEquals(1, review.size());
+      assertNull(review.get(0).getEndTime());
+      var verdict = session.engine.getRuntimeService().createVariableInstanceQuery().processInstanceIdIn(instance)
+          .variableName("verdict").list();
+      assertEquals(1, verdict.size());
+      assertEquals("pending", verdict.get(0).getValue());
+      assertEquals(review.get(0).getId(), verdict.get(0).getActivityInstanceId());
+      assertNull(session.engine.getRuntimeService().getVariableLocal(instance, "verdict"));
+
+      session.complete(instance, "ApproveClaim");
+      session.assertPassedThrough(instance, "ReviewDone", NONE_END, 1);
+      session.assertPassedThrough(instance, "ReviewClaim", "subProcess", 1);
+      session.assertPassedThrough(instance, "ClaimReviewed", NONE_END, 1);
+      assertEquals("pending", session.engine.getHistoryService().createHistoricVariableInstanceQuery()
+          .processInstanceId(instance).variableName("reviewVerdict").singleResult().getValue());
       session.assertEnded(instance);
     }
   }
