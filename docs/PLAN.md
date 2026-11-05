@@ -94,18 +94,20 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Activity implicit split and merge through a kernel extension in the nested scope-data profile, batch 4: `PC-CF-07` primary, with `PC-BASIC-01` multiple outgoing Start flows and `PC-BASIC-02` ordered multiple Link sources; concurrent arrivals stay open. Pass-through implicit split and merge landed through PR 58, accepting its clauses with no row closed. Close call: every remaining batch-4 control clause needs this kernel extension; Script and Business Rule Tasks wait on a dependency decision.
+Current task: Timer deadline forms, batch 5: `PC-TIMER-01` primary, with `PC-TIMER-03` data-derived deadlines and the value-parsing clause of `PC-TIMER-02` (its recurrence runtime stays open). Close call: `PC-TIMER-01` over `PC-ERROR-01` at equal reach, because Timer forms extend the existing deadline mechanism without a kernel representation change while Error routing needs scope-cancellation semantics. Batch 4 is blocked: its remaining control clauses need the parked kernel extension below, and Script and Business Rule Tasks wait on a dependency decision.
 
-Deliverable: Activities and None Starts with several incoming or several outgoing Sequence Flows, and several Link throws of one name, admitted in the nested scope-data profile, one occurrence per arriving token, landed on `main`.
+Parked: Activity implicit split and merge (`PC-CF-07`, `PC-BASIC-01`, `PC-BASIC-02`; [proposal](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) approved), by owner decision on 2026-11-05 ("Park AISM"). Its representation commit exceeded the Rule 2 line limits, and after a one-time owner-approved raise and restoration `lean-fanout` reported 67 violations: importer bounds, the new `MarkedInputSelection` module and hidden-definition rewrites. The stopped state is local branch `park/aism-representation` (`ca979e7d`, unpushed, not buildable). Resumption re-cuts it through a new proposal (selection inside an existing kernel module, laws instead of hidden rewrites, no new leaves), never by raising bounds.
 
-Acceptance blockers: a proposal with the kernel representation and Temporal preflight, its cold design review, implementation, closure review and hosted `verify-complete`.
+Deliverable: duration and absolute-date deadlines beyond PT1S/PT5S, with the selected cycle and data-derived forms, admitted and executed wherever a Timer is admitted, landed on `main`.
 
-Current result: [proposal](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) approved.
+Acceptance blockers: a family proposal with the BPMN and CIB account, Temporal preflight and pre-measured structural guards, its cold design review, implementation, closure review and hosted `verify-complete`.
 
-Effort budget: 10 hours from 2026-11-05 06:30 CET, ending 16:30; at the limit, stop at the representation commit and decide the next budget explicitly (owner direction 2026-11-05: "record the boundary and continue unless the evidence invalidates the path").
+Current result: none.
 
-Next action: the representation commit's Rule 2 declaration and review.
+Effort budget: 8 hours from 2026-11-05 21:40 CET; at the limit, record the boundary and continue unless the evidence invalidates the path.
 
-Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
+Next action: read the Timer owners and the pinned CIB Timer parsing, then write the family proposal.
+
+Oracle: Lean, core and pipeline agreement on every scenario of the affected profiles, the CIB probe, and approving proposal and closure reviews.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
