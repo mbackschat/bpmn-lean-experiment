@@ -58,9 +58,9 @@ test("the predecessor checked profile cannot acquire scalar Call meaning", () =>
     { kind: CheckedNodeKind.NoneEndEvent, id: "CalledEnd" },
   ] as const;
   const profile = callActivityProgram.identity.semanticProfile;
-  assert.equal(profileAllowsCheckedProcessShape(profile, nodes, 2), true);
+  assert.equal(profileAllowsCheckedProcessShape(profile, nodes, 2, []), true);
   assert.equal(profileAllowsCheckedProcessShape(profile,
-    nodes.map((node) => node.kind === CheckedNodeKind.CallActivity ? { ...node, data } : node), 2), false);
+    nodes.map((node) => node.kind === CheckedNodeKind.CallActivity ? { ...node, data } : node), 2, []), false);
 });
 
 test("Call wire shapes reject absent, extra, mistyped and wrong-direction fields", () => {

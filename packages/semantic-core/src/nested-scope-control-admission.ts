@@ -2,6 +2,7 @@ import { sameCallDataInterface } from "./call-data-admission.js";
 import { CallDataKind } from "./call-data-contract.js";
 import type { CallDataInterface, VariableMappingCallData } from "./call-data-contract.js";
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
+import { checkedNodeSplits } from "./checked-pass-through-flow.js";
 import { concurrentScopeStartNames, enclosingReads } from "./concurrent-scope-data-availability.js";
 import type { ScopeDataAccess } from "./concurrent-scope-data-availability.js";
 import { callMappingsAdmitted, scopeCountAdmitted, scopeLocalRecordAdmitted } from "./nested-scope-data-admission.js";
@@ -507,11 +508,13 @@ function callDataAdmitted(callData: CallDataInterface, data: ModelData | null): 
 /**
  * CSD-ADMIT-01's Service Task data and CMCALL-ADMIT-01's Call data. `structured` marks the nested scope-data profile,
  * whose pass-through Tasks (PTPB-ADMIT-01) and Inclusive regions (IGR-ADMIT-01, as fork and join) this analysis reads.
+ * A pass-through node with several outgoing flows is a fork, as its lowered `duplicate` is (PTSM-ADMIT-01).
  */
-function checkedKind(node: CheckedNode, data: ModelData | null, structured: boolean): RawBodyNodeKind | null {
+function checkedKind(node: CheckedNode, data: ModelData | null, structured: boolean, splits: boolean): RawBodyNodeKind | null {
   switch (node.kind) {
     case CheckedNodeKind.NonOperationalTask:
-    case CheckedNodeKind.NoneIntermediateThrowEvent: return structured ? RawBodyNodeKind.Pass : null;
+    case CheckedNodeKind.NoneIntermediateThrowEvent:
+      return !structured ? null : splits ? RawBodyNodeKind.Fork : RawBodyNodeKind.Pass;
     case CheckedNodeKind.NoneStartEvent: return RawBodyNodeKind.Start;
     case CheckedNodeKind.NoneEndEvent: return RawBodyNodeKind.End;
     case CheckedNodeKind.UserTask: return node.metadata === undefined ? RawBodyNodeKind.Task : null;
@@ -561,7 +564,7 @@ function checkedBodies(graph: NestedScopeControlCheckedGraph, data: ModelData | 
     const mapped = new Set<string>();
     const accesses = new Map<string, ScopeDataAccess>();
     for (const node of nodes) {
-      const kind = checkedKind(node, data, structured);
+      const kind = checkedKind(node, data, structured, checkedNodeSplits(node, graph.flows));
       if (kind === null) return null;
       if (node.kind === CheckedNodeKind.ServiceTask) accesses.set(node.id, accessOf(node));
       if (node.kind === CheckedNodeKind.EmbeddedSubProcess) children.set(node.id, node.childScopeId);

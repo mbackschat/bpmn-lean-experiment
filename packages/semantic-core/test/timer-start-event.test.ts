@@ -390,7 +390,7 @@ test("admits the exact checked registered profile", () => {
     { kind: CheckedNodeKind.NoneEndEvent, id: "EndEvent_1" },
   ] as const satisfies ReadonlyArray<CheckedNode>;
   assert.equal(
-    profileAllowsCheckedProcessShape(SemanticProfileId.TimerStart, nodes, 1),
+    profileAllowsCheckedProcessShape(SemanticProfileId.TimerStart, nodes, 1, []),
     true,
   );
   const wrongDuration = {
@@ -402,6 +402,7 @@ test("admits the exact checked registered profile", () => {
       SemanticProfileId.TimerStart,
       [wrongDuration, ...nodes.slice(1)],
       1,
+      [],
     ),
     false,
   );

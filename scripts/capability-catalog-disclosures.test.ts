@@ -102,6 +102,8 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ["abstractTask", "restriction", [
     "or on a Parallel branch of the Process root or a Sub-Process body",
     "and so may a branch that ends at its own None End, whether or not a Sub-Process of the model declares locals",
+    "Several incoming flows are admitted in the Process root of a re-entry graph",
+    "several unconditioned outgoing flows wherever a Parallel fork of that arity is admitted",
   ]],
   ["sendTask", "element", ["Send Task"]],
   ["sendTask", "restriction", [
@@ -117,7 +119,8 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ["noneIntermediateThrowEvent", "restriction", [
     "an Intermediate Throw Event without an EventDefinition",
     "wherever that profile admits a pass-through Abstract Task",
-    "No several flows, asynchronous continuations, listeners, called Processes, Multi-Instance bodies or throw triggers",
+    "with several outgoing flows that one activation puts a token on each",
+    "No Event that both merges and splits, asynchronous continuations, listeners, called Processes, Multi-Instance bodies or throw triggers",
   ]],
   ["linkIntermediateEventPair", "element", ["Link Intermediate Throw and Catch Event pair"]],
   ["linkIntermediateEventPair", "restriction", [

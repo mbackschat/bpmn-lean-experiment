@@ -1,0 +1,87 @@
+{
+  "kind": "scenario",
+  "id": "pass-through-implicit-split-merge-claim-approved",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "claim-archiving",
+    "relativePath": "scenarios/pass-through-implicit-split-merge/claim-archiving.bpmn",
+    "sha256": "76ad8309a3af93d4355a4f7f0bdd53042f9ed088053bd7d1a64e95ff3147e35d",
+    "sourceOverlay": {
+      "id": "claim-archiving-handlers",
+      "sha256": "303c2269870db5830e210bf4c2224c4f8b20a280be97ac7594d38c0acb2aeef3"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3",
+      "BPMN 2.0.2 Clause 13.3.1",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.2"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-EXT-0022",
+      "CIB-AGR-0019"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_ClaimArchiving",
+      "instanceId": "ClaimArchiving_1",
+      "initialVariables": [
+        {
+          "name": "claim",
+          "value": {
+            "kind": "string",
+            "value": "CLM-7: water damage, EUR 1,800"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:a5d5ff3c03387982fca412de720f5c22e90765594e6d0900b3861a8e8828b583",
+      "effectId": {
+        "processInstanceId": "ClaimArchiving_1",
+        "elementId": "AssessClaim",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "decision",
+            "value": {
+              "kind": "string",
+              "value": "approve"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-approve-payout",
+      "taskId": {
+        "processInstanceId": "ClaimArchiving_1",
+        "elementId": "ApprovePayout",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

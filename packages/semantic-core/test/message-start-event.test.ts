@@ -529,6 +529,7 @@ test("admits the exact checked Message Start node shape", () => {
         { kind: CheckedNodeKind.NoneEndEvent, id: "EndEvent_1" },
       ],
       1,
+      [],
     ),
     true,
   );

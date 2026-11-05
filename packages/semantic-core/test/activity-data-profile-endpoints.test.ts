@@ -67,7 +67,7 @@ test("existing Activity data profiles admit Property arms only in checked and ex
         ];
         const context = `${profile}: Process input=${processInput}, output=${processOutput}`;
         assert.equal(profileAllowsProgramShape(profile, operations, 1), accepted, `program ${context}`);
-        assert.equal(profileAllowsCheckedProcessShape(profile, nodes, 1), accepted, `checked ${context}`);
+        assert.equal(profileAllowsCheckedProcessShape(profile, nodes, 1, []), accepted, `checked ${context}`);
       }
     }
   }

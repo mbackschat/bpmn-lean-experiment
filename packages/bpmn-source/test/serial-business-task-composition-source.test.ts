@@ -78,7 +78,7 @@ for (const family of ["serial-business-task-composition", "mixed-task-control-fl
       ...["execution", ...handlers].map(key => [{ ...metadata, form: { fields: [{ key, type: "string" }] } }, false]),
       [null, false], [undefined, false],
     ] as const) {
-      assert.equal(profileAllowsCheckedProcessShape(overlay.semanticProfile, changedNodes(selected as UserTaskMetadata), 1), admitted);
+      assert.equal(profileAllowsCheckedProcessShape(overlay.semanticProfile, changedNodes(selected as UserTaskMetadata), 1, checkedProcess.sequenceFlows), admitted);
       assert.equal(isWellFormedSemanticProcessProgram(changedProgram(selected as UserTaskMetadata)), admitted);
     }
     const dropped: SemanticProcessProgram = { ...program, operations: program.operations.map((item, index) =>
@@ -224,7 +224,7 @@ test("checked and IL admission reject reserved handlers independently of source"
       { ...item, effect: { ...item.effect, descriptor: { ...item.effect.descriptor, operation } } } : item) };
     assert.equal(isWellFormedSemanticProcessProgram(changed), false);
     const nodes: readonly CheckedNode[] = compiled.checkedProcess.nodes.map(node => node.kind === "serviceTask" ? { ...node, descriptor: { ...node.descriptor, operation } } : node);
-    assert.equal(profileAllowsCheckedProcessShape(compiled.semanticProcess.identity.semanticProfile, nodes, 1), false);
+    assert.equal(profileAllowsCheckedProcessShape(compiled.semanticProcess.identity.semanticProfile, nodes, 1, compiled.checkedProcess.sequenceFlows), false);
   }
 });
 

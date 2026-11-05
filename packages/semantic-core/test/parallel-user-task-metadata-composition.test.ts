@@ -141,7 +141,7 @@ test("registers the exact composition profile for ordinary execution", () => {
     true,
   );
   assert.equal(
-    profileAllowsCheckedProcessShape(checkpointProfile, checkedNodes, 1),
+    profileAllowsCheckedProcessShape(checkpointProfile, checkedNodes, 1, []),
     true,
   );
   assert.equal(
@@ -162,7 +162,7 @@ test("registers the exact composition profile for ordinary execution", () => {
     SemanticProfileId.UserTaskAssignmentFormMetadata,
   ]) {
     assert.equal(
-      profileAllowsCheckedProcessShape(oldProfile, checkedNodes, 1),
+      profileAllowsCheckedProcessShape(oldProfile, checkedNodes, 1, []),
       false,
       oldProfile,
     );

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ClaimArchiving" targetNamespace="urn:bpmn-lean:claim-archiving"
+             expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1">
+  <process id="Process_ClaimArchiving" name="Decide and archive an insurance claim" isExecutable="true">
+    <startEvent id="ClaimReceived" name="Claim received" />
+    <serviceTask id="AssessClaim" name="Assess claim"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${assessClaim}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="claim">${claim}</camunda:inputParameter>
+          <camunda:outputParameter name="decision">${decision}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <exclusiveGateway id="ClaimApproved" name="Claim approved?" gatewayDirection="Diverging" default="Flow_Rejected" />
+    <userTask id="ApprovePayout" name="Approve payout" />
+    <userTask id="WriteRejectionLetter" name="Write rejection letter" />
+    <manualTask id="ArchiveClaimFile" name="Archive claim file" />
+    <endEvent id="ClaimClosed" name="Claim closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ClaimReceived" targetRef="AssessClaim" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="AssessClaim" targetRef="ClaimApproved" />
+    <sequenceFlow id="Flow_Approved" sourceRef="ClaimApproved" targetRef="ApprovePayout">
+      <conditionExpression xsi:type="tFormalExpression">stringEquals(decision,"approve")</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Rejected" sourceRef="ClaimApproved" targetRef="WriteRejectionLetter" />
+    <sequenceFlow id="Flow_PayoutApproved" sourceRef="ApprovePayout" targetRef="ArchiveClaimFile" />
+    <sequenceFlow id="Flow_LetterWritten" sourceRef="WriteRejectionLetter" targetRef="ArchiveClaimFile" />
+    <sequenceFlow id="Flow_Archived" sourceRef="ArchiveClaimFile" targetRef="ClaimClosed" />
+  </process>
+</definitions>

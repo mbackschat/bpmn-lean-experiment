@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.CheckedProcessContract
+import BpmnSemantics.SemanticProcess.CheckedPassThroughFlow
 
 /-! The region walk of IGR-BIND-01 in the [Inclusive regions specification](../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-SPEC.md#representation-and-runtime-ownership): from one branch edge, a serial vertex passes to its sole output, a nested Parallel or Inclusive split passes to its paired join's output, and the walk stops at the edge into the first join it meets. Lowering derives each branch's expected join input with it over the checked graph, and the region admission runs it over checked graphs and Programs alike. The TypeScript twin is `inclusive-region-admission.ts`. -/
 
@@ -84,7 +85,11 @@ def walkFuel (graph : Graph) : Nat := graph.vertices.length + 1
 def pairedJoin (graph : Graph) (vertex : Vertex) : Option Vertex :=
   joinOf graph (vertex.outputs.map (branchEnd graph (walkFuel graph)))
 
-private def checkedVertexKind : CheckedNode → VertexKind
+/-- PTSM-ADMIT-01: a several-flow pass-through node is classified as its lowered `duplicate` or many-input merge is. -/
+private def checkedVertexKind (flows : List CheckedSequenceFlow) (node : CheckedNode) : VertexKind :=
+  if CheckedPassThroughFlow.splits flows node then .fork
+  else if CheckedPassThroughFlow.merges flows node then .other
+  else match node with
   | .noneStartEvent _ => .start
   | .userTask .. | .serviceTask .. | .embeddedSubProcess .. => .work
   | .nonOperationalTask .. | .noneIntermediateThrowEvent _ => .pass
@@ -111,7 +116,7 @@ def checkedGraph (source : CheckedProcess) : Graph :=
         else if flow.condition.all (·.body == "true") then .always
         else .conditioned
       { id := node.id.value
-        kind := checkedVertexKind node
+        kind := checkedVertexKind source.sequenceFlows node
         scope := ((source.nodeScopes.find? (·.nodeId == node.id)).map (·.scopeId.value)).getD ""
         outputs := (source.sequenceFlows.filter (·.sourceId == node.id)).map fun flow =>
           { id := flow.id.value, target := flow.targetId.value, guard := guard flow }

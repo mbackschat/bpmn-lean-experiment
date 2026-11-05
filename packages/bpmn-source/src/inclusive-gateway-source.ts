@@ -210,9 +210,11 @@ function sourceVertexKind(type: unknown, inputs: number, outputs: number): Regio
     case bpmnTypes.serviceTaskType:
     case bpmnTypes.sendTaskType:
     case bpmnTypes.subProcessType: return RegionVertexKind.Work;
+    // PTSM-ADMIT-01: a several-flow pass-through node is classified as its lowered `duplicate` or many-input merge is.
     case bpmnTypes.taskType:
     case bpmnTypes.manualTaskType:
-    case bpmnTypes.intermediateThrowEventType: return RegionVertexKind.Pass;
+    case bpmnTypes.intermediateThrowEventType:
+      return outputs >= 2 ? RegionVertexKind.Fork : inputs >= 2 ? RegionVertexKind.Other : RegionVertexKind.Pass;
     case bpmnTypes.parallelGatewayType:
       return inputs === 1 ? RegionVertexKind.Fork : outputs === 1 ? RegionVertexKind.Join : RegionVertexKind.Other;
     case bpmnTypes.inclusiveGatewayType:

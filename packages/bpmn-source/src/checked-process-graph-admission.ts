@@ -69,6 +69,15 @@ export function noneEndFanIn(semanticProfile: string): boolean {
   return semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
 }
 
+/**
+ * PTSM-ADMIT-01: the profiles whose pass-through Tasks and None Throws may take several incoming or several outgoing
+ * flows, never both. Placement is the profile's own admission; the Lean twin is the pass-through arm of
+ * `checkedNodeArityValid`.
+ */
+export function passThroughSplitMerge(semanticProfile: string): boolean {
+  return semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+}
+
 export function resolveAdmittedCheckedProcessGraph(
   graph: CheckedProcessGraph,
   semanticProfile: string = SemanticProfileId.UserTask,
@@ -246,10 +255,13 @@ function hasSelectedArity(
     case CheckedNodeKind.ReceiveTask:
     case CheckedNodeKind.ServiceTask:
     case CheckedNodeKind.ConfiguredTask:
-    case CheckedNodeKind.NonOperationalTask:
-    case CheckedNodeKind.NoneIntermediateThrowEvent:
     case CheckedNodeKind.GlobalSynchronousCompensationThrowEvent:
       return incoming === 1 && outgoing === 1;
+    case CheckedNodeKind.NonOperationalTask:
+    case CheckedNodeKind.NoneIntermediateThrowEvent:
+      return passThroughSplitMerge(semanticProfile)
+        ? incoming >= 1 && outgoing >= 1 && (incoming === 1 || outgoing === 1)
+        : incoming === 1 && outgoing === 1;
     // LNK-CONT-01: a Link pair is admitted only through its contraction (`link-contraction.ts`), never as a node.
     case CheckedNodeKind.LinkThrowEvent:
     case CheckedNodeKind.LinkCatchEvent:

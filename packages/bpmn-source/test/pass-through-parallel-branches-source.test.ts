@@ -99,10 +99,11 @@ test("a forking burst of eight through chained Tasks on a branch is admitted and
   await refused(relocation, chain(xml, "Flow_FacilitiesNotified", 2), "nine-step fork closure");
 });
 
-test("a pass-through Task with a second outgoing flow on a branch is refused", async () => {
+// PTSM-ADMIT-01 makes the Task a fork, whose second branch reaches past the enclosing join.
+test("a splitting pass-through Task whose branch leaves the enclosing fork's block is refused", async () => {
   await refused(relocation, replaceOnce(await source(relocation), '<sequenceFlow id="Flow_Ready" ',
     '<sequenceFlow id="Flow_Split" sourceRef="NotifyFacilities" targetRef="CloseRelocationTicket" />' +
-    '<sequenceFlow id="Flow_Ready" '), "two outgoing flows on a branch");
+    '<sequenceFlow id="Flow_Ready" '), "a splitting Task whose branch leaves the block");
 });
 
 test("an empty branch from a fork straight to its join is refused", async () => {

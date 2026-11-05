@@ -9,6 +9,7 @@ import {
   scopeDataStructureAdmitted, scopeDataVertexWalk,
 } from "./nested-scope-data-admission.js";
 import type { NestedScopeStartNames, ScopeDataAccess, ScopeDataModel, ScopeDataVertex } from "./nested-scope-data-admission.js";
+import { checkedNodeMerges } from "./checked-pass-through-flow.js";
 import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { CheckedProcess } from "./checked-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
@@ -45,9 +46,11 @@ export function scopeReentryProgram(program: SemanticProcessProgram): boolean {
 export function scopeReentryChecked(source: CheckedProcess): boolean {
   const root = source.definitionScopes.find(({ parentScopeId, originElementId }) =>
     parentScopeId === null && originElementId === source.processId)?.id;
-  return source.nodes.some(({ id, kind }) =>
-    (kind === CheckedNodeKind.ExclusiveGateway || kind === CheckedNodeKind.ExclusiveMerge) &&
-    source.nodeScopes.some(({ nodeId, scopeId }) => nodeId === id && scopeId === root));
+  // PTSM-ADMIT-01: a pass-through node with several incoming flows counts as a Merge, as its lowered operation does.
+  return source.nodes.some(node =>
+    (node.kind === CheckedNodeKind.ExclusiveGateway || node.kind === CheckedNodeKind.ExclusiveMerge ||
+      checkedNodeMerges(node, source.sequenceFlows)) &&
+    source.nodeScopes.some(({ nodeId, scopeId }) => nodeId === node.id && scopeId === root));
 }
 
 /** SRE-ADMIT-01 over the checked graph; `null` refuses it or routes it elsewhere. */

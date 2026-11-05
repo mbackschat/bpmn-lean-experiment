@@ -1,0 +1,97 @@
+{
+  "kind": "scenario",
+  "id": "pass-through-implicit-split-merge-dispatch-packed-first",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "equipment-dispatch",
+    "relativePath": "scenarios/pass-through-implicit-split-merge/equipment-dispatch.bpmn",
+    "sha256": "dfbd69e8140d4e465b2dd02daad584801121d3e66b73af729dad661a0a3544ed",
+    "sourceOverlay": {
+      "id": "equipment-dispatch-handlers",
+      "sha256": "426426aa305556cba08c87d23717b0301661537d70076c3a6b63f6831aa86b8a"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.3",
+      "BPMN 2.0.2 Clause 13.3.1",
+      "BPMN 2.0.2 Clause 13.3.3",
+      "BPMN 2.0.2 Clause 13.4.1"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-EXT-0022",
+      "CIB-AGR-0019"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_EquipmentDispatch",
+      "instanceId": "EquipmentDispatch_1",
+      "initialVariables": [
+        {
+          "name": "order",
+          "value": {
+            "kind": "string",
+            "value": "ORD-31: two survey drones, 3 days"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:a9d7c3996c31829aa338db66f908d5ad96c01525605dc2c9954bed59a249e2f7",
+      "effectId": {
+        "processInstanceId": "EquipmentDispatch_1",
+        "elementId": "ReserveEquipment",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "reservation",
+            "value": {
+              "kind": "string",
+              "value": "RES-31"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-pack-equipment",
+      "taskId": {
+        "processInstanceId": "EquipmentDispatch_1",
+        "elementId": "PackEquipment",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-book-courier",
+      "taskId": {
+        "processInstanceId": "EquipmentDispatch_1",
+        "elementId": "BookCourier",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

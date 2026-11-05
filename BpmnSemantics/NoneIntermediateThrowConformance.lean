@@ -98,6 +98,8 @@ private inductive WarrantyEdit where
   /-- The Merge *Repair round* is dropped and *Rework requested* re-enters at *Fault diagnosed*, so the Event joins the
   loop as uncontrolled flow. -/
   | secondIncoming
+  /-- Both edits at once, so the Event both merges and splits (PTSM-ADMIT-01). -/
+  | mergeAndSplit
 
 /-- Warranty repair: root `P` diagnoses the fault, throws *Fault diagnosed*, merges into the *Repair device* Sub-Process,
 whose body throws *Repair started*, replaces the part, orders a spare part and tests the device into its own `result`,
@@ -106,7 +108,7 @@ re-enters the Sub-Process. -/
 private def warrantyWith (edit : WarrantyEdit := .retained) : CheckedProcess :=
   let body := "RepairDevice"
   let (round, loop) : List (String × String × CheckedNode) × List (String × String) := match edit with
-    | .secondIncoming => ([], [("FaultDiagnosed", body), ("ReworkRequested", "FaultDiagnosed")])
+    | .secondIncoming | .mergeAndSplit => ([], [("FaultDiagnosed", body), ("ReworkRequested", "FaultDiagnosed")])
     | _ => ([merge "P" "RepairRound"],
         [("FaultDiagnosed", "RepairRound"), ("RepairRound", body), ("ReworkRequested", "RepairRound")])
   build [declare body [literal "result" "untested"] [copied "testResult" "result"]] [("P", none), (body, some "P")]
@@ -119,7 +121,7 @@ private def warrantyWith (edit : WarrantyEdit := .retained) : CheckedProcess :=
      , ("DevicePasses", "DeviceReleased"), ("DevicePasses", "ReworkRequested"), ("DeviceReleased", "DeviceReturned")
      , ("RepairOpened", "RepairStarted"), ("RepairStarted", "ReplacePart"), ("ReplacePart", "OrderSparePart")
      , ("OrderSparePart", "TestDevice"), ("TestDevice", "RepairClosed") ] ++ loop
-      ++ (if let .secondOutgoing := edit then [("FaultDiagnosed", "DeviceReturned")] else []))
+      ++ (match edit with | .secondOutgoing | .mergeAndSplit => [("FaultDiagnosed", "DeviceReturned")] | _ => []))
     [(("DevicePasses", "DeviceReleased"), equals "testResult" "passed")]
 
 /-- Onboarding milestones: root `P` confirms the start date and forks into the *Set up account* Sub-Process, whose body
@@ -258,9 +260,11 @@ private def events_lower_to_one_input_merges : Bool :=
   ["FaultDiagnosed", "RepairStarted", "DeviceReleased", "ReworkRequested"].all (lowersToOneInputMerge warranty) &&
     ["WelcomeSent", "AccountReady", "OnboardingComplete"].all (lowersToOneInputMerge onboarding)
 
-/-- NIT-ADMIT-01: a None Throw with a second outgoing flow or a second incoming flow is refused. -/
-private def second_flows_are_refused : Bool :=
-  !admitted (warrantyWith .secondOutgoing) && !admitted (warrantyWith .secondIncoming)
+/-- PTSM-ADMIT-01: a None Throw with a second outgoing flow forks, which the re-entry route refuses; one with a second
+incoming flow is a root implicit merge, admitted; one with both is refused. -/
+private def second_flows_split_or_merge : Bool :=
+  !admitted (warrantyWith .secondOutgoing) && admitted (warrantyWith .secondIncoming) &&
+    !admitted (warrantyWith .mergeAndSplit)
 
 /-- NIT-ADMIT-01 with DTB-ADMIT-01: a None Throw alone on a terminal branch is admitted (burst 8) as its User Task twin is,
 though *Set up account* declares scope-local data. -/
@@ -302,7 +306,7 @@ private def event_decodes_to_its_own_arm : Bool :=
 def noneIntermediateThrowConformanceChecks : List (String × Bool) := [
   ("retained_models_are_admitted_on_their_routes", retained_models_are_admitted_on_their_routes),
   ("events_lower_to_one_input_merges", events_lower_to_one_input_merges),
-  ("second_flows_are_refused", second_flows_are_refused),
+  ("second_flows_split_or_merge", second_flows_split_or_merge),
   ("wait_free_terminal_branch_is_admitted", wait_free_terminal_branch_is_admitted),
   ("call_behind_only_a_none_throw_is_refused", call_behind_only_a_none_throw_is_refused),
   ("other_profiles_refuse_the_event", other_profiles_refuse_the_event),

@@ -120,7 +120,7 @@ the original by hand and indexes its location, illegible phones the sender and r
 registers the digital copy; both filings merge before the End. `chain` inserts that many plain Tasks between the
 registration and the filing Merge; `conditioned` puts a condition on *Register digital copy*'s outgoing flow.
 `split` gives *Register digital copy* a second outgoing flow into the Merge *Intake requested*, which takes any number
-of inputs. `recontact` drops the Merge *Intake requested*, so the received document goes straight to classification, and sends
+of inputs, or into the End once `recontact` drops that Merge. `recontact` drops the Merge *Intake requested*, so the received document goes straight to classification, and sends
 *Phone sender* to the given node instead. -/
 private def intakeWith (chain : Nat := 0) (conditioned split : Bool := false) (recontact : Option String := none) :
     CheckedProcess :=
@@ -149,7 +149,7 @@ private def intakeWith (chain : Nat := 0) (conditioned split : Bool := false) (r
      , ("IndexArchiveLocation", "ArchivingClosed"), ("ClassificationOpened", "RecordDocumentFormat")
      , ("RecordDocumentFormat", "ClassificationClosed") ]
       ++ (if chain = 0 then [("RegisterDigitalCopy", "Filed")] else linkEdges)
-      ++ (if split then [("RegisterDigitalCopy", "IntakeRequested")] else []))
+      ++ (if split then [("RegisterDigitalCopy", if recontact.isNone then "IntakeRequested" else "DocumentFiled")] else []))
     ([(("DocumentFormat", "ArchivePaperOriginal"), equals "documentFormat" "paper"),
       (("DocumentFormat", "PhoneSender"), equals "documentFormat" "illegible")]
       ++ (if conditioned then [(("RegisterDigitalCopy", "Filed"), equals "documentFormat" "digital")] else []))
@@ -206,13 +206,15 @@ private def reentry_burst_of_eight_is_admitted_and_nine_refused : Bool :=
   ScopeReentry.checkedBurst? (intakeWith (chain := 1)) = some 8 && admitted (intakeWith (chain := 1)) &&
     !admitted (intakeWith (chain := 2))
 
-/-- PTT-ADMIT-01: a Task with a second outgoing flow is refused; its target, a Merge, admits the extra input. -/
+/-- PTT-ADMIT-01 with PTSM-ADMIT-01: a Task with a second outgoing flow forks, and the re-entry route refuses a forking
+model; its target, a Merge, admits the extra input. -/
 private def second_outgoing_flow_is_refused : Bool := !admitted (intakeWith (split := true))
 
-/-- PTT-ADMIT-01: a Task with a second incoming flow is refused, while the same graph sending that flow to the Merge
-*Filed* instead is admitted, so the Task's in-degree is the only difference. -/
-private def second_incoming_flow_is_refused : Bool :=
-  admitted (intakeWith (recontact := some "Filed")) && !admitted (intakeWith (recontact := some "RegisterDigitalCopy"))
+/-- PTSM-MERGE-01: a Task with a second incoming flow is a root implicit merge, admitted as the same graph sending that
+flow to the Merge *Filed* is; given a second outgoing flow too, the Task both merges and splits and is refused. -/
+private def second_incoming_flow_is_an_implicit_merge : Bool :=
+  admitted (intakeWith (recontact := some "Filed")) && admitted (intakeWith (recontact := some "RegisterDigitalCopy")) &&
+    !admitted (intakeWith (split := true) (recontact := some "RegisterDigitalCopy"))
 
 /-- PTT-ADMIT-01: a Task whose outgoing flow carries a condition is refused. -/
 private def conditioned_outgoing_flow_is_refused : Bool := !admitted (intakeWith (conditioned := true))
@@ -246,7 +248,7 @@ def passThroughTaskConformanceChecks : List (String × Bool) := [
   ("serial_burst_of_eight_is_admitted_and_nine_refused", serial_burst_of_eight_is_admitted_and_nine_refused),
   ("reentry_burst_of_eight_is_admitted_and_nine_refused", reentry_burst_of_eight_is_admitted_and_nine_refused),
   ("second_outgoing_flow_is_refused", second_outgoing_flow_is_refused),
-  ("second_incoming_flow_is_refused", second_incoming_flow_is_refused),
+  ("second_incoming_flow_is_an_implicit_merge", second_incoming_flow_is_an_implicit_merge),
   ("conditioned_outgoing_flow_is_refused", conditioned_outgoing_flow_is_refused),
   ("tasks_in_a_forking_program_are_admitted", tasks_in_a_forking_program_are_admitted),
   ("notations_decode_to_their_own_kind", notations_decode_to_their_own_kind)

@@ -20,6 +20,7 @@ import { exclusiveChoiceArityPipelineCases } from "./exclusive-choice-arity-pipe
 import { noneEndFanInPipelineCases } from "./none-end-fan-in-pipeline-cases.ts";
 import { passThroughParallelBranchesPipelineCases } from "./pass-through-parallel-branches-pipeline-cases.ts";
 import { noneIntermediateThrowPipelineCases } from "./none-intermediate-throw-pipeline-cases.ts";
+import { passThroughImplicitSplitMergePipelineCases } from "./pass-through-implicit-split-merge-pipeline-cases.ts";
 import { linkEventsPipelineCases } from "./link-events-pipeline-cases.ts";
 import { singleScopeModelsPipelineCases } from "./single-scope-models-pipeline-cases.ts";
 import { sendTaskPipelineCases } from "./send-task-pipeline-cases.ts";
@@ -609,6 +610,7 @@ export const pipelineCases = Object.freeze([
   ...noneEndFanInPipelineCases,
   ...passThroughParallelBranchesPipelineCases,
   ...noneIntermediateThrowPipelineCases,
+  ...passThroughImplicitSplitMergePipelineCases,
   ...linkEventsPipelineCases,
   ...singleScopeModelsPipelineCases,
   ...sendTaskPipelineCases,

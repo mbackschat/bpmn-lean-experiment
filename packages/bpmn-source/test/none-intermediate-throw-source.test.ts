@@ -125,12 +125,15 @@ test("each excluded None Throw form is refused", async () => {
     "asynchronous continuation");
   await refused(warranty, edit(`${open}<extensionElements><camunda:executionListener class="org.example.Audit" ` +
     `event="start" /></extensionElements>${close}`), "execution listener");
-  // The extra flow ends at the root End, whose fan-in the profile admits, so only the Event's arity is at fault.
+  // The extra flow ends at the root End, whose fan-in the profile admits; it makes the Event a fork (PTSM-ADMIT-01),
+  // and the re-entry route refuses a forking model.
+  const abandoned = '<sequenceFlow id="Flow_Abandoned" sourceRef="FaultDiagnosed" targetRef="DeviceReturned" />';
   await refused(warranty, replaceOnce(xml,
     '<sequenceFlow id="Flow_ToRepair" sourceRef="FaultDiagnosed" targetRef="RepairRound" />',
     '<sequenceFlow id="Flow_ToRepair" sourceRef="FaultDiagnosed" targetRef="RepairRound" />' +
-      '<sequenceFlow id="Flow_Abandoned" sourceRef="FaultDiagnosed" targetRef="DeviceReturned" />'), "second outgoing flow");
-  // The Event replaces the rework Merge as the loop's join, Clause 10.5.4's uncontrolled flow.
+      abandoned), "a splitting None Throw in a re-entry model");
+  // The Event replaces the rework Merge as the loop's join, Clause 10.5.4's uncontrolled flow, which this profile admits
+  // as a root implicit merge (PTSM-MERGE-01); given the extra outgoing flow too, it both merges and splits.
   const uncontrolled = [
     ['<exclusiveGateway id="RepairRound" name="Repair round" gatewayDirection="Converging" />', ""],
     ['<sequenceFlow id="Flow_ToRepair" sourceRef="FaultDiagnosed" targetRef="RepairRound" />',
@@ -139,8 +142,9 @@ test("each excluded None Throw form is refused", async () => {
     ['<sequenceFlow id="Flow_Rework" sourceRef="ReworkRequested" targetRef="RepairRound" />',
       '<sequenceFlow id="Flow_Rework" sourceRef="ReworkRequested" targetRef="FaultDiagnosed" />'],
   ] as const;
-  await refused(warranty, uncontrolled.reduce((edited, [from, to]) => replaceOnce(edited, from, to), xml),
-    "second incoming flow");
+  const merging = uncontrolled.reduce((edited, [from, to]) => replaceOnce(edited, from, to), xml);
+  await admitted(warranty, merging, "a merging None Throw");
+  await refused(warranty, replaceOnce(merging, "</process>", `${abandoned}</process>`), "a None Throw that merges and splits");
 });
 
 test("a None Throw that alone separates a Call from its body's Start is refused", async () => {

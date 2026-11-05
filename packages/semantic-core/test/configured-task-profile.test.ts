@@ -134,7 +134,7 @@ const userTaskCompletion = Object.freeze({
 
 test("admits only the exact configured checked and program shape", () => {
   assert.equal(
-    profileAllowsCheckedProcessShape(configuredTaskProfile, configuredNodes, 1),
+    profileAllowsCheckedProcessShape(configuredTaskProfile, configuredNodes, 1, []),
     true,
   );
   assert.equal(
@@ -165,6 +165,7 @@ test("descriptor drift, a Service Task discriminator, and pass-through refuse", 
       descriptor: { ...descriptor, operation: EffectOperation.MappedSuccess },
     } as CheckedNode),
     1,
+    [],
   ), false);
   assert.equal(profileAllowsCheckedProcessShape(
     configuredTaskProfile,
@@ -177,6 +178,7 @@ test("descriptor drift, a Service Task discriminator, and pass-through refuse", 
       bpmnErrorRoute: null,
     }),
     1,
+    [],
   ), false);
 
   const driftedOperations = configuredProgram.operations.map((operation) =>

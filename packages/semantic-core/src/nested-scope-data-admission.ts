@@ -1,6 +1,7 @@
 import { sameCallDataInterface, variableMappingsValid } from "./call-data-admission.js";
 import { CallDataKind } from "./call-data-contract.js";
 import type { VariableMappingCallData } from "./call-data-contract.js";
+import { checkedNodeMerges } from "./checked-pass-through-flow.js";
 import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { CheckedProcess } from "./checked-process-contract.js";
 import { EffectExecutionResultKind, StimulusKind } from "./contract.js";
@@ -354,8 +355,10 @@ function checkedVertex(source: CheckedProcess, node: CheckedProcess["nodes"][num
         ? { ...base, kind: VertexKind.Choice, outputs: targets as string[] } : null;
     }
     case CheckedNodeKind.ExclusiveMerge: return { ...base, kind: VertexKind.Merge };
+    // PTSM-ADMIT-01: several incoming flows make it the many-input merge it lowers to.
     case CheckedNodeKind.NonOperationalTask:
-    case CheckedNodeKind.NoneIntermediateThrowEvent: return { ...base, kind: VertexKind.PassThrough };
+    case CheckedNodeKind.NoneIntermediateThrowEvent:
+      return { ...base, kind: checkedNodeMerges(node, source.sequenceFlows) ? VertexKind.Merge : VertexKind.PassThrough };
     case CheckedNodeKind.CallActivity: {
       const calledRoot = unique(source.definitionScopes.filter(({ parentScopeId, originElementId }) =>
         parentScopeId === null && originElementId === node.calledProcessId));
@@ -480,7 +483,8 @@ function operationVertex(program: SemanticProcessProgram, operation: SemanticOpe
     }
     case SemanticOperationKind.MergeExclusive: {
       const outputs = following(operation.output);
-      // Every checked Exclusive merge has at least two inputs, so one input is an Abstract or Manual Task (PTT-ADMIT-01).
+      // Every checked Exclusive merge has at least two inputs, so one input is an Abstract or Manual Task (PTT-ADMIT-01);
+      // a pass-through node with several inputs is a merge at both levels (PTSM-ADMIT-01).
       return outputs === null ? null
         : { ...base, kind: operation.inputs.length === 1 ? VertexKind.PassThrough : VertexKind.Merge, outputs };
     }

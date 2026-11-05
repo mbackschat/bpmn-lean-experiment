@@ -178,6 +178,7 @@ test("refuses the opposite disposition at the checked-graph boundary", () => {
       profile,
       graph(BoundaryInterruption.NonInterrupting),
       1,
+      [],
     ),
     true,
   );
@@ -187,6 +188,7 @@ test("refuses the opposite disposition at the checked-graph boundary", () => {
       profile,
       graph(BoundaryInterruption.Interrupting),
       1,
+      [],
     ),
     false,
   );

@@ -21,6 +21,7 @@ test("admits the exact registered checked and IL multisets", () => {
       SemanticProfileId.TerminateEnd,
       terminateCheckedNodes,
       2,
+      [],
     ),
     true,
   );

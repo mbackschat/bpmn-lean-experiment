@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_EquipmentDispatch" targetNamespace="urn:bpmn-lean:equipment-dispatch">
+  <process id="Process_EquipmentDispatch" name="Dispatch rented equipment" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <serviceTask id="ReserveEquipment" name="Reserve equipment"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${reserveEquipment}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="order">${order}</camunda:inputParameter>
+          <camunda:outputParameter name="reservation">${reservation}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <manualTask id="PrintDispatchNote" name="Print dispatch note" />
+    <userTask id="PackEquipment" name="Pack equipment" />
+    <userTask id="BookCourier" name="Book courier" />
+    <parallelGateway id="ReadyToShip" name="Ready to ship" gatewayDirection="Converging" />
+    <endEvent id="EquipmentDispatched" name="Equipment dispatched" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="ReserveEquipment" />
+    <sequenceFlow id="Flow_Reserved" sourceRef="ReserveEquipment" targetRef="PrintDispatchNote" />
+    <sequenceFlow id="Flow_ToPacking" sourceRef="PrintDispatchNote" targetRef="PackEquipment" />
+    <sequenceFlow id="Flow_ToCourier" sourceRef="PrintDispatchNote" targetRef="BookCourier" />
+    <sequenceFlow id="Flow_Packed" sourceRef="PackEquipment" targetRef="ReadyToShip" />
+    <sequenceFlow id="Flow_CourierBooked" sourceRef="BookCourier" targetRef="ReadyToShip" />
+    <sequenceFlow id="Flow_Shipped" sourceRef="ReadyToShip" targetRef="EquipmentDispatched" />
+  </process>
+</definitions>

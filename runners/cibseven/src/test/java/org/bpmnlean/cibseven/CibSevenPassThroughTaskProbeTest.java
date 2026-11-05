@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import org.cibseven.bpm.engine.ProcessEngine;
 import org.cibseven.bpm.engine.delegate.JavaDelegate;
@@ -34,6 +35,10 @@ import org.junit.Test;
  * On the data-declaring terminal branches proposal's expense claim (`DTB-COMMUTE-01`) it calibrates that both wait-free
  * Ends leave the entered Sub-Process instance and its local data in place, though the last concurrent End's
  * `tryPruneLastConcurrentChild` re-parents that scope execution.
+ * On the pass-through implicit split and merge proposal's two models and their Abstract Task and None Throw twins
+ * (`PTSM-MERGE-01`, `PTSM-SPLIT-01`) it calibrates that a pass-through node entered through either of two incoming flows
+ * is one ended instance per arrival, and that one with two outgoing flows is one ended instance after which both
+ * outgoing paths are open in the same command (`BpmnActivityBehavior.performOutgoingBehavior`).
  */
 public final class CibSevenPassThroughTaskProbeTest {
   private static final Path PROJECT_ROOT = Path.of("../..").toAbsolutePath().normalize();
@@ -43,6 +48,7 @@ public final class CibSevenPassThroughTaskProbeTest {
   private static final Path SINGLE_SCOPE_MODELS = PROJECT_ROOT.resolve("scenarios/single-scope-models");
   private static final Path TERMINAL_FORK_MODELS = PROJECT_ROOT.resolve("scenarios/terminal-forks");
   private static final Path DATA_TERMINAL_MODELS = PROJECT_ROOT.resolve("scenarios/data-declaring-terminal-branches");
+  private static final Path SPLIT_MERGE_MODELS = PROJECT_ROOT.resolve("scenarios/pass-through-implicit-split-merge");
   private static final String NONE_END = "noneEndEvent";
   private static final String NONE_THROW = "intermediateNoneThrowEvent";
   private static final Pattern STRING_EQUALS = Pattern.compile("stringEquals\\((\\w+),\"([^\"]*)\"\\)");
@@ -375,6 +381,63 @@ public final class CibSevenPassThroughTaskProbeTest {
     }
   }
 
+  @Test
+  public void eachClaimDecisionPassesTheArchiveTaskOnceAndCompletesTheClaim() throws Exception {
+    for (var decision : List.of("approve", "reject")) {
+      for (var twin : List.of(MANUAL, ABSTRACT, NONE_THROW_TWIN)) {
+        try (var session = new Session(SPLIT_MERGE_MODELS, "claim-archiving", 1, "assessClaim", "decision", List.of(decision),
+            twin.edit("ArchiveClaimFile"))) {
+          var instance = session.start("Process_ClaimArchiving", Map.of("claim", "CLM-7: water damage, EUR 1,800"));
+          session.runJob(instance);
+          var task = decision.equals("approve") ? "ApprovePayout" : "WriteRejectionLetter";
+          session.assertOnlyOpenTask(instance, task);
+          session.complete(instance, task);
+          session.assertPassedThrough(instance, "ArchiveClaimFile", twin.type(), 1);
+          session.assertPassedThrough(instance, "ClaimClosed", NONE_END, 1);
+          session.assertEnded(instance);
+        }
+      }
+    }
+  }
+
+  @Test
+  public void theReservationPassesTheDispatchNoteOnceAndOpensBothBranchesInEitherCompletionOrder() throws Exception {
+    for (var order : List.of(List.of("PackEquipment", "BookCourier"), List.of("BookCourier", "PackEquipment"))) {
+      for (var twin : List.of(MANUAL, ABSTRACT, NONE_THROW_TWIN)) {
+        try (var session = new Session(SPLIT_MERGE_MODELS, "equipment-dispatch", 0, "reserveEquipment", "reservation",
+            List.of("RES-31"), twin.edit("PrintDispatchNote"))) {
+          var instance = session.start("Process_EquipmentDispatch", Map.of("order", "ORD-31: two survey drones, 3 days"));
+          session.runJob(instance);
+          session.assertPassedThrough(instance, "PrintDispatchNote", twin.type(), 1);
+          session.assertOpenTasks(instance, "PackEquipment", "BookCourier");
+          session.complete(instance, order.get(0));
+          session.assertOnlyOpenTask(instance, order.get(1));
+          session.assertRunning(instance);
+          session.complete(instance, order.get(1));
+          session.assertPassedThrough(instance, "PrintDispatchNote", twin.type(), 0);
+          session.assertPassedThrough(instance, "EquipmentDispatched", NONE_END, 1);
+          session.assertEnded(instance);
+        }
+      }
+    }
+  }
+
+  /** A notation twin: the retained Manual Task, or the same element rewritten as an Abstract Task or a None Throw. */
+  private record Twin(String type, String tag) {
+    UnaryOperator<String> edit(String element) {
+      return source -> {
+        var manual = "<manualTask id=\"" + element + "\"";
+        assertEquals(1, source.split(Pattern.quote(manual), -1).length - 1);
+        return source.replace(manual, "<" + tag + " id=\"" + element + "\"");
+      };
+    }
+  }
+
+  private static final Twin MANUAL = new Twin("manualTask", "manualTask");
+  private static final Twin ABSTRACT = new Twin("task", "task");
+  private static final Twin NONE_THROW_TWIN = new Twin(NONE_THROW, "intermediateThrowEvent");
+
+
   /** Shared with `CibSevenLinkEventsProbeTest`, which drives the Link models beside these twins. */
   static final class Session implements AutoCloseable {
     final ProcessEngine engine;
@@ -395,6 +458,12 @@ public final class CibSevenPassThroughTaskProbeTest {
 
     /** As above, with the delegate's `n`-th invocation writing `values.get(n)`. */
     Session(Path models, String model, int conditions, String handler, String result, List<?> values) throws Exception {
+      this(models, model, conditions, handler, result, values, UnaryOperator.identity());
+    }
+
+    /** As above, deploying `edit` applied to the retained source, a notation twin of the model. */
+    Session(Path models, String model, int conditions, String handler, String result, List<?> values,
+        UnaryOperator<String> edit) throws Exception {
       var invocations = new int[1];
       JavaDelegate delegate = execution -> {
         if (result != null) execution.setVariableLocal(result, values.get(invocations[0]++));
@@ -402,7 +471,7 @@ public final class CibSevenPassThroughTaskProbeTest {
       engine = CibSevenTestEngine.create("pass-through-task-" + model,
           configuration -> configuration.setBeans(Map.<Object, Object>of(handler, delegate)));
       try {
-        var source = Files.readString(models.resolve(model + ".bpmn"));
+        var source = edit.apply(Files.readString(models.resolve(model + ".bpmn")));
         assertEquals(conditions, STRING_EQUALS.matcher(source).results().count());
         var rendition = STRING_EQUALS.matcher(source.replace(SIMPLE_BOOLEAN, "")).replaceAll("\\${$1 == \"$2\"}");
         deployment = engine.getRepositoryService().createDeployment().addString(model + ".bpmn", rendition).deploy()

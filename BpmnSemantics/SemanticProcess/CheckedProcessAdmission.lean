@@ -411,9 +411,12 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
   | .parallelGateway id .converging =>
       incomingCount flows id ≥ 2 && outgoingCount flows id = 1
   | .nonOperationalTask id _ | .noneIntermediateThrowEvent id =>
-      -- PTT-ADMIT-01, NIT-ADMIT-01: one incoming flow of any admitted kind and one outgoing flow, whose condition
-      -- placement the candidate rule refuses.
-      incomingCount flows id = 1 && outgoingCount flows id = 1
+      -- PTT-ADMIT-01, NIT-ADMIT-01: one incoming flow of any admitted kind and one outgoing flow; the candidate rule
+      -- refuses a condition on any outgoing flow. PTSM-ADMIT-01: the nested scope-data profile alone (`mixed &&
+      -- variableMerge`) admits several incoming or several outgoing flows, never both.
+      (incomingCount flows id = 1 && outgoingCount flows id = 1) ||
+        (mixed && variableMerge && incomingCount flows id ≥ 1 && outgoingCount flows id ≥ 1 &&
+          (incomingCount flows id = 1 || outgoingCount flows id = 1))
   -- LNK-CONT-01: a Link pair is admitted only through its contraction (`LinkContraction`), never as a node.
   | .linkThrowEvent .. | .linkCatchEvent .. => false
   | .exclusiveMerge id =>

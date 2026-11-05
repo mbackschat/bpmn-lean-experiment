@@ -22,7 +22,7 @@ The counts below cover only entries recorded by this project, including the sepa
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Normative agreement records | 17 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
+| Normative agreement records | 18 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 3 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
@@ -293,6 +293,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 **Evidence:** At pinned `5a45b47`, `BpmnParse#parseIntermediateThrowEvent` creates no activity for a Link throw (`BpmnParse.java:1611-1622`), `#parseSequenceFlow` retargets each flow into it to the catch of its name (`BpmnParse.java:4306-4316`), `#parseIntermediateLinkEventCatchBehavior` refuses a second catch of one name across the whole resource (`BpmnParse.java:313`, `1575-1576`), and `HistoryParseListener` writes no history for the catch (`HistoryParseListener.java:207-211`). The [Link probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenLinkEventsProbeTest.java) drives the [retained Link models](../scenarios/link-events/README.md) beside their explicit-flow twins through four journeys in CIB `2.2.0` (2026-11-04): after every command both hold the same open User Tasks and jobs, no historic activity instance names a Link Event, and the rework journey crosses the Go To loop once.
 
 **Boundary:** Single-source pairs in one scope of the executed Process with one unconditioned catch flow and no `source` or `target` reference, with JUEL renditions of the conditions under `CIB-CFG-0005`; public task, job and history APIs. Several throws of one name, chains, Links in called Processes and asynchronous or listened Link Events stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
+
+### CIB-AGR-0019 — a pass-through node passes each arriving token on its own and one activation starts every outgoing flow
+
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [pass-through implicit split and merge account](capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
+
+**BPMN basis:** Clause 13.3.1 makes an Activity that is the target of several Sequence Flows participate in uncontrolled flow, enabled for each arriving token independently of the others as an Exclusive Gateway would be, and gives every unconditioned outgoing flow a token when it completes, as a parallel split. The Activity notes of Clause 10.3 and, for an Intermediate Event, Clause 10.5.4 state the same: a further token creates a separate instance, and each outgoing flow a separate parallel path.
+
+**Evidence:** At pinned `5a45b47`, a transition enters its destination without consulting the destination's other incoming transitions (`AbstractPvmAtomicOperationTransitionNotifyListenerTake.java:34-51`), and a `task`, a `manualTask` and a None Throw leave through `BpmnActivityBehavior.performOutgoingBehavior` (`BpmnActivityBehavior.java:81-130`), which takes every unconditioned non-default transition, reusing the leaving execution for the first and creating one concurrent execution per further one (`PvmAtomicOperationTransitionDestroyScope.java:82-135`). The [pass-through Task probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPassThroughTaskProbeTest.java) drives the [retained claim archiving and equipment dispatch](../scenarios/pass-through-implicit-split-merge/README.md) and their Abstract Task and None Throw twins in CIB `2.2.0` (2026-11-05): each claim decision passes *Archive claim file* as one ended instance and completes the Process, and the reservation passes *Print dispatch note* as one ended instance after which both User Tasks are open in the same command, in either completion order.
+
+**Boundary:** Abstract Tasks, Manual Tasks and None Throws of the nested scope-data profile with several incoming flows in the Process root of a re-entry graph or several unconditioned outgoing flows where a Parallel fork of that arity is admitted, never both; public task, job and history APIs. Merges under a fork, conditioned or default outgoing flows, every other Activity kind, Start Events and asynchronous or listened nodes stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
 
 ## Interpretation register
 

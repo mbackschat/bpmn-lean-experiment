@@ -5,8 +5,9 @@
  * the [concurrent structured scope data specification](../../../docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md).
  */
 import { CallDataKind } from "./call-data-contract.js";
-import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
-import type { CheckedNode, CheckedProcess } from "./checked-process-contract.js";
+import { CheckedNodeKind } from "./checked-process-contract.js";
+import type { CheckedNode, CheckedProcess, CheckedSequenceFlow } from "./checked-process-contract.js";
+import { checkedNodeForks, checkedNodeMerges } from "./checked-pass-through-flow.js";
 import {
   nestedScopeControlCheckedShape, nestedScopeControlCheckedStartNameRule, nestedScopeControlProgramShape,
   nestedScopeControlProgramStartNameRule,
@@ -28,9 +29,9 @@ import type { SemanticOperation, SemanticProcessProgram } from "./semantic-proce
 const splits = (operations: readonly SemanticOperation[]): boolean =>
   operations.some(({ kind }) => kind === SemanticOperationKind.Duplicate || kind === SemanticOperationKind.SelectMany);
 
-const forks = (nodes: readonly CheckedNode[]): boolean =>
-  nodes.some(node => (node.kind === CheckedNodeKind.ParallelGateway || node.kind === CheckedNodeKind.InclusiveGateway) &&
-    node.direction === GatewayDirection.Diverging);
+// PTSM-ADMIT-01: a pass-through node with several outgoing flows forks, as its lowered `duplicate` splits.
+const forks = (nodes: readonly CheckedNode[], flows: readonly CheckedSequenceFlow[]): boolean =>
+  nodes.some(node => checkedNodeForks(node, flows));
 
 /** CSSD-ROUTE-01: a Program of the nested scope-data profile that splits a token. */
 export function concurrentStructuredScopeDataProgram(program: SemanticProcessProgram): boolean {
@@ -73,8 +74,9 @@ function checkedRestrictionsHold(source: CheckedProcess): boolean {
   const scopeOf = new Map(source.nodeScopes.map(({ nodeId, scopeId }) => [nodeId, scopeId]));
   const rootNodes = source.nodes.filter(({ id }) => scopeOf.get(id) === root);
   return source.identity.sourceOverlay !== null && root !== undefined &&
-    !source.nodes.some(({ kind }) => kind === CheckedNodeKind.ExclusiveMerge) &&
-    !(forks(rootNodes) && rootNodes.some(({ kind }) => kind === CheckedNodeKind.CallActivity)) &&
+    // PTSM-ADMIT-01: a pass-through node with several incoming flows is a merge, as its lowered many-input merge is.
+    !source.nodes.some(node => node.kind === CheckedNodeKind.ExclusiveMerge || checkedNodeMerges(node, source.sequenceFlows)) &&
+    !(forks(rootNodes, source.sequenceFlows) && rootNodes.some(({ kind }) => kind === CheckedNodeKind.CallActivity)) &&
     calledProcessesAdmitted(source.nodes.flatMap(node => node.kind === CheckedNodeKind.CallActivity ? [node] : []));
 }
 
@@ -102,8 +104,8 @@ export function structuredScopeDataProgramStartNames(program: SemanticProcessPro
 
 /** The checked-graph counterpart of `structuredScopeDataProgramStartNames`. */
 export function structuredScopeDataCheckedStartNames(source: CheckedProcess): NestedScopeStartNames | null {
-  if (scopeReentryChecked(source)) return forks(source.nodes) ? null : scopeReentryCheckedAnalysis(source);
-  if (!forks(source.nodes)) {
+  if (scopeReentryChecked(source)) return forks(source.nodes, source.sequenceFlows) ? null : scopeReentryCheckedAnalysis(source);
+  if (!forks(source.nodes, source.sequenceFlows)) {
     return serialBurstAdmitted(nestedScopeCheckedModel(source)) ? nestedScopeCheckedStartNames(source) : null;
   }
   return checkedRestrictionsHold(source)
@@ -127,10 +129,11 @@ export function structuredScopeDataProgramShape(operations: readonly SemanticOpe
     : nestedScopeProgramShape(operations, profile, scopeCount);
 }
 
-export function structuredScopeDataCheckedShape(nodes: readonly CheckedNode[], scopeCount: number): boolean {
+export function structuredScopeDataCheckedShape(nodes: readonly CheckedNode[], flows: readonly CheckedSequenceFlow[],
+  scopeCount: number): boolean {
   // PTPB-ADMIT-01 and NIT-ADMIT-01: this profile alone admits a pass-through Task or None Throw in the shared
   // concurrent alphabet.
-  return forks(nodes)
+  return forks(nodes, flows)
     ? nestedScopeControlCheckedShape(nodes.filter(({ kind }) => kind !== CheckedNodeKind.NonOperationalTask &&
       kind !== CheckedNodeKind.NoneIntermediateThrowEvent), SemanticProfileId.NestedEmbeddedScopeData, scopeCount)
     : nestedScopeCheckedShape(nodes, SemanticProfileId.NestedEmbeddedScopeData, scopeCount);

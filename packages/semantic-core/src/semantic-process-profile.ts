@@ -15,7 +15,7 @@ import {
   CheckedNodeKind,
   GatewayDirection,
 } from "./checked-process-contract.js";
-import type { CheckedNode } from "./checked-process-contract.js";
+import type { CheckedNode, CheckedSequenceFlow } from "./checked-process-contract.js";
 import {
   requiredCheckedProcessShape,
 } from "./checked-process-profile-shape.js";
@@ -224,9 +224,11 @@ export function profileAllowsCheckedProcessShape(
   semanticProfile: string,
   nodes: ReadonlyArray<CheckedNode>,
   definitionScopeCount: number,
+  // PTSM-ADMIT-01: read only by the nested scope-data profile, whose pass-through nodes fork by their outgoing flows.
+  sequenceFlows: ReadonlyArray<CheckedSequenceFlow>,
 ): boolean {
   if (semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) return mixedTaskControlCheckedShape(nodes, definitionScopeCount, semanticProfile);
-  if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return structuredScopeDataCheckedShape(nodes, definitionScopeCount);
+  if (semanticProfile === SemanticProfileId.NestedEmbeddedScopeData) return structuredScopeDataCheckedShape(nodes, sequenceFlows, definitionScopeCount);
   if (semanticProfile === SemanticProfileId.EmbeddedSubProcessCompletion) {
     return requiredCheckedShapeAllows(semanticProfile, nodes, definitionScopeCount) ||
       nestedScopeControlCheckedShape(nodes, semanticProfile, definitionScopeCount);

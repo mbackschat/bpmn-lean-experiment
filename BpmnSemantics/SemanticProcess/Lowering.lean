@@ -530,22 +530,24 @@ def lowerNode (source : CheckedProcess) :
         { elementId := id }
         (lowerExclusiveMergeInputs source id)
         (lowerExclusiveMergeOutput source id), scopeId)
-  | .nonOperationalTask id _ =>
-      -- PTT-PASS-01: the nonsynchronizing token move with the Task as origin; the notation stays in the checked graph.
+  | .nonOperationalTask id _ | .noneIntermediateThrowEvent id =>
+      -- PTT-PASS-01, NIT-PASS-01: the nonsynchronizing token move with the Task or Event as origin; the notation stays
+      -- in the checked graph. PTSM-SPLIT-01 and PTSM-MERGE-01: several outgoing flows make it a node-origin fork, several
+      -- incoming flows a many-input merge over the canonical inputs, as a Parallel fork and an Exclusive merge lower.
       checkedNodeScopeId? source id |>.map fun scopeId =>
-      (.mergeExclusive
-        (nodeOperationId id)
-        { elementId := id }
-        [firstPlace (incomingPlaces source id)]
-        (lowerExclusiveMergeOutput source id), scopeId)
-  | .noneIntermediateThrowEvent id =>
-      -- NIT-PASS-01: the same nonsynchronizing token move as a pass-through Task, with the Event as origin.
-      checkedNodeScopeId? source id |>.map fun scopeId =>
-      (.mergeExclusive
-        (nodeOperationId id)
-        { elementId := id }
-        [firstPlace (incomingPlaces source id)]
-        (lowerExclusiveMergeOutput source id), scopeId)
+      if 2 ≤ (outgoingPlaces source id).length then
+        (.duplicate
+          (nodeOperationId id)
+          { elementId := id }
+          (firstPlace (incomingPlaces source id))
+          (outgoingPlaces source id), scopeId)
+      else
+        (.mergeExclusive
+          (nodeOperationId id)
+          { elementId := id }
+          (if (incomingPlaces source id).length = 1 then [firstPlace (incomingPlaces source id)]
+            else lowerExclusiveMergeInputs source id)
+          (lowerExclusiveMergeOutput source id), scopeId)
   -- LNK-CONT-01: lowered only through `lowerLinkedCheckedProcess`, which removes every pair first.
   | .linkThrowEvent .. | .linkCatchEvent .. => none
   | .exclusiveGateway id candidateFlowIds defaultFlowId =>
@@ -620,11 +622,12 @@ theorem lower_exclusive_merge_uses_checked_flow_endpoints
           (lowerExclusiveMergeOutput source id), scopeId) := by
   rfl
 
-/-- PTT-PASS-01, PTT-KIND-01: an Abstract or Manual Task lowers to the one-input nonsynchronizing merge whose origin is
-the Task, the same operation for both notations, so its one activation is an instantaneous occurrence of the Task and no
-wait, effect or data operation is introduced. -/
+/-- PTT-PASS-01, PTT-KIND-01: an Abstract or Manual Task with one incoming and one outgoing flow lowers to the one-input
+nonsynchronizing merge whose origin is the Task, the same operation for both notations, so its one activation is an
+instantaneous occurrence of the Task and no wait, effect or data operation is introduced. -/
 private theorem lower_non_operational_task_is_one_input_merge
-    (source : CheckedProcess) (id : NodeId) (taskNotation : TaskNotation) :
+    (source : CheckedProcess) (id : NodeId) (taskNotation : TaskNotation)
+    (one_in : (incomingPlaces source id).length = 1) (one_out : (outgoingPlaces source id).length = 1) :
     lowerNode source (.nonOperationalTask id taskNotation) =
       (checkedNodeScopeId? source id).map fun scopeId =>
         (.mergeExclusive
@@ -632,11 +635,13 @@ private theorem lower_non_operational_task_is_one_input_merge
           { elementId := id }
           [firstPlace (incomingPlaces source id)]
           (lowerExclusiveMergeOutput source id), scopeId) := by
-  rfl
+  simp [lowerNode, one_in, one_out]
 
-/-- NIT-PASS-01: a None Intermediate Throw Event lowers to the one-input nonsynchronizing merge whose origin is the
-Event, so its one activation is an instantaneous occurrence and no wait, effect or data operation is introduced. -/
-private theorem lower_none_intermediate_throw_event_is_one_input_merge (source : CheckedProcess) (id : NodeId) :
+/-- NIT-PASS-01: a None Intermediate Throw Event with one incoming and one outgoing flow lowers to the one-input
+nonsynchronizing merge whose origin is the Event, so its one activation is an instantaneous occurrence and no wait,
+effect or data operation is introduced. -/
+private theorem lower_none_intermediate_throw_event_is_one_input_merge (source : CheckedProcess) (id : NodeId)
+    (one_in : (incomingPlaces source id).length = 1) (one_out : (outgoingPlaces source id).length = 1) :
     lowerNode source (.noneIntermediateThrowEvent id) =
       (checkedNodeScopeId? source id).map fun scopeId =>
         (.mergeExclusive
@@ -644,7 +649,7 @@ private theorem lower_none_intermediate_throw_event_is_one_input_merge (source :
           { elementId := id }
           [firstPlace (incomingPlaces source id)]
           (lowerExclusiveMergeOutput source id), scopeId) := by
-  rfl
+  simp [lowerNode, one_in, one_out]
 
 /-- Ordinary User Task lowering preserves the exact checked/IL resumption-cut classification when no boundary deadline changes the operation family. -/
 theorem lowering_preserves_user_task_resumption_cut

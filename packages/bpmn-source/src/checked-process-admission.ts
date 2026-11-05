@@ -62,6 +62,7 @@ export function isAdmittedCheckedProcess(
       semanticProfile,
       graph.nodes,
       graph.definitionScopes.length,
+      graph.flows,
     ) &&
     admittedGraph !== undefined &&
     checkedNodeIdentitiesAreValid(graph.nodes) &&

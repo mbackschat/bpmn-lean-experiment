@@ -298,6 +298,7 @@ test("selects the exact checked and IL metadata profile shapes", () => {
       SemanticProfileId.UserTaskAssignmentFormMetadata,
       checkedNodes,
       1,
+      [],
     ),
     true,
   );
@@ -318,7 +319,7 @@ test("selects the exact checked and IL metadata profile shapes", () => {
     SemanticProfileId.UserTaskBooleanCompletionData,
   ]) {
     assert.equal(
-      profileAllowsCheckedProcessShape(oldProfile, checkedNodes, 1),
+      profileAllowsCheckedProcessShape(oldProfile, checkedNodes, 1, []),
       false,
       oldProfile,
     );

@@ -214,6 +214,9 @@ export const normativeArtifactCases = Object.freeze([
   ...["warranty-passed", "warranty-rework", "onboarding-account-first", "onboarding-laptop-first"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/none-intermediate-throw/${name}.scenario.json`,
   })),
+  ...["claim-approved", "claim-rejected", "dispatch-packed-first", "dispatch-courier-first"].map(name => Object.freeze({
+    scenarioRelativePath: `scenarios/pass-through-implicit-split-merge/${name}.scenario.json`,
+  })),
   ...["warranty-passed", "warranty-rework", "onboarding-account-first", "onboarding-laptop-first"].map(name => Object.freeze({
     scenarioRelativePath: `scenarios/link-events/${name}.scenario.json`,
   })),

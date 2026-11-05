@@ -143,6 +143,7 @@ test("pins the exact checked and IL cardinalities", () => {
       { kind: CheckedNodeKind.NoneEndEvent, id: "End" },
     ],
     1,
+    [],
   ), true);
   assert.equal(profileAllowsProgramShape(
     SemanticProfileId.UserTaskCycle,

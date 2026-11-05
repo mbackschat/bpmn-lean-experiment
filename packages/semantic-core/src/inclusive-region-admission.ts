@@ -5,6 +5,7 @@
  * placement with at most one live region, the outputs and default rule, the strict cut, the Call exclusion and, at the Program level, every
  * branch's expected join input. Owner: the [Inclusive regions specification](../../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-SPEC.md#admission).
  */
+import { checkedNodeMerges, checkedNodeSplits } from "./checked-pass-through-flow.js";
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
 import type { CheckedNode, CheckedSequenceFlow } from "./checked-process-contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
@@ -165,7 +166,10 @@ function isAlwaysTrue(condition: SimpleBooleanExpression): boolean {
   return condition.kind === SimpleBooleanExpressionKind.Literal && condition.value;
 }
 
-function checkedVertexKind(node: CheckedNode): RegionVertexKind {
+/** PTSM-ADMIT-01: a several-flow pass-through node is classified as its lowered `duplicate` or many-input merge is. */
+function checkedVertexKind(node: CheckedNode, flows: readonly CheckedSequenceFlow[]): RegionVertexKind {
+  if (checkedNodeSplits(node, flows)) return RegionVertexKind.Fork;
+  if (checkedNodeMerges(node, flows)) return RegionVertexKind.Other;
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent: return RegionVertexKind.Start;
     case CheckedNodeKind.UserTask:
@@ -206,7 +210,7 @@ export function checkedRegionGraph(source: Readonly<{
     }));
     const pairing = node.kind === CheckedNodeKind.InclusiveGateway && node.direction === GatewayDirection.Converging
       ? { pairing: node.pairedGatewayId } : {};
-    return [node.id, { id: node.id, kind: checkedVertexKind(node), scope: scopeOf.get(node.id) ?? "", outputs, ...pairing,
+    return [node.id, { id: node.id, kind: checkedVertexKind(node, source.sequenceFlows), scope: scopeOf.get(node.id) ?? "", outputs, ...pairing,
       inputs: source.sequenceFlows.filter(({ targetId }) => targetId === node.id).map(({ id }) => id) }];
   }));
   return { root, vertices };

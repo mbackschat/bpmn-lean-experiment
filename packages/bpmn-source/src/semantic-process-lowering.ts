@@ -430,12 +430,21 @@ function lowerNode(
     case CheckedNodeKind.NoneIntermediateThrowEvent:
       // PTT-PASS-01 and NIT-PASS-01: the nonsynchronizing token move with the Task or Event as origin, so its one
       // activation is an instantaneous occurrence; the source kind stays in the checked graph, not in the Program.
-      return scoped({
-        ...base,
-        kind: SemanticOperationKind.MergeExclusive,
-        inputs: [requireOnly(incoming, node.id, "incoming")],
-        output: requireOnly(outgoing, node.id, "outgoing"),
-      });
+      // PTSM-SPLIT-01 and PTSM-MERGE-01: several outgoing flows make it a fork, several incoming flows a many-input merge.
+      return scoped(outgoing.length >= 2
+        ? {
+          ...base,
+          kind: SemanticOperationKind.Duplicate,
+          input: requireOnly(incoming, node.id, "incoming"),
+          outputs: requireMany(outgoing, node.id, "outgoing"),
+        }
+        : {
+          ...base,
+          kind: SemanticOperationKind.MergeExclusive,
+          inputs: (incoming.length === 1 ? [requireOnly(incoming, node.id, "incoming")]
+            : requireMany(incoming, node.id, "incoming")) as [string, ...string[]],
+          output: requireOnly(outgoing, node.id, "outgoing"),
+        });
     case CheckedNodeKind.InclusiveGateway:
       switch (node.direction) {
         case GatewayDirection.Diverging: {

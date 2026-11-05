@@ -8,6 +8,7 @@ import BpmnSemantics.SemanticProcess.NestedScopeBranchWork
 import BpmnSemantics.SemanticProcess.InclusiveRegionAdmission
 import BpmnSemantics.SemanticProcess.ScopeReentryAdmission
 import BpmnSemantics.SemanticProcess.ScopeDataBurst
+import BpmnSemantics.SemanticProcess.CheckedPassThroughFlow
 import all BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 meta import BpmnSemantics.PrivateEquationLemmas
 
@@ -452,9 +453,11 @@ def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : Checke
     | .inclusiveGatewayConverging .. =>
         if source.identity.semanticProfile == nestedScopeDataProfileId then some (.vertex .join) else none
     | .exclusiveMerge _ => some .merge
-    -- PTPB-PROFILE-01, NIT-PROFILE-01: only the nested scope-data profile maps a pass-through step to a pass vertex.
+    -- PTPB-PROFILE-01, NIT-PROFILE-01: only the nested scope-data profile maps a pass-through step to a pass vertex,
+    -- or to a fork when it splits, as its lowered `duplicate` does (PTSM-ADMIT-01).
     | .nonOperationalTask _ _ | .noneIntermediateThrowEvent _ =>
-        if source.identity.semanticProfile == nestedScopeDataProfileId then some (.vertex .pass) else none
+        if source.identity.semanticProfile != nestedScopeDataProfileId then none
+        else some (.vertex (if CheckedPassThroughFlow.splits source.sequenceFlows node then .fork else .pass))
     | _ => none
   let child := match node with
     | .embeddedSubProcess _ child => some child.value
@@ -765,11 +768,10 @@ private def splits (operations : List SemanticOperation) : Bool :=
 def concurrentProgram (program : Program) : Bool :=
   program.identity.semanticProfile == nestedScopeDataProfileId && splits program.operations
 
-/-- The checked-graph counterpart of `concurrentProgram`, consulted only under the profile. -/
+/-- The checked-graph counterpart of `concurrentProgram`, consulted only under the profile; a splitting pass-through
+node forks as its lowered `duplicate` splits (PTSM-ADMIT-01). -/
 private def checkedConcurrent (source : CheckedProcess) : Bool :=
-  source.nodes.any fun
-    | .parallelGateway _ .diverging | .inclusiveGatewayDiverging .. => true
-    | _ => false
+  source.nodes.any (CheckedPassThroughFlow.forks source.sequenceFlows)
 
 /-- The scope a Process root body runs in, whose Calls the profile refuses once it forks (RPF-ADMIT-01). -/
 private def rootScope? (scopes : List DefinitionScope) (processId : ProcessId) : Option DefinitionScopeId :=
@@ -807,10 +809,11 @@ private def checkedRestrictionsHold (source : CheckedProcess) : Bool :=
   | some root =>
       let inRoot := fun (id : NodeId) => (source.nodeScopes.find? (·.nodeId == id)).map (·.scopeId) == some root
       source.identity.sourceOverlay.isSome &&
-        !(source.nodes.any fun | .exclusiveMerge _ => true | _ => false) &&
-        !(source.nodes.any (fun node => match node with
-            | .parallelGateway id .diverging | .inclusiveGatewayDiverging id .. => inRoot id
-            | _ => false) &&
+        -- PTSM-ADMIT-01: a merging pass-through node is a merge region, a splitting one a fork, as lowered.
+        !(source.nodes.any fun node => match node with
+            | .exclusiveMerge _ => true
+            | _ => CheckedPassThroughFlow.merges source.sequenceFlows node) &&
+        !(source.nodes.any (fun node => CheckedPassThroughFlow.forks source.sequenceFlows node && inRoot node.id) &&
           source.nodes.any (fun | .callActivity id .. => inRoot id | _ => false)) &&
         callsAdmitted (source.nodes.filterMap fun
           | .callActivity _ calledProcessId data => some (calledProcessId, data)

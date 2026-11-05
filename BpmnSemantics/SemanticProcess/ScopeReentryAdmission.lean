@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.NestedScopeDataAdmission
 import BpmnSemantics.SemanticProcess.ScopeDataBurst
+import BpmnSemantics.SemanticProcess.CheckedPassThroughFlow
 
 /-! # Scope re-entry admission
 
@@ -100,9 +101,10 @@ private def rootGraphAnalysis (vertices : List Vertex) (joints : List (String ×
               optional := if vertices.any (fun v => match v.kind with | .call .. => true | _ => false)
                 then some (barrierNames outputs entry walked optionalCallNames) else none }, burst)
 
-private def checkedJoint : CheckedNode → Bool
+/-- PTSM-ADMIT-01: a pass-through node with several incoming flows is a Merge, as its lowered many-input merge is. -/
+private def checkedJoint (source : CheckedProcess) : CheckedNode → Bool
   | .exclusiveGateway .. | .exclusiveMerge .. => true
-  | _ => false
+  | node => CheckedPassThroughFlow.merges source.sequenceFlows node
 
 /-- SRE-ADMIT-01, XCA-ADMIT-01, XND-ADMIT-01: a Choice with one or more conditions and a default, or two or more without
 one, or a single-output Merge of the root scope; one in a body refuses. -/
@@ -113,7 +115,7 @@ private def checkedJoint? (source : CheckedProcess) (root : DefinitionScopeId) :
       let outputs ← (candidates ++ default.toList).mapM fun flowId =>
         (source.sequenceFlows.find? (·.id == flowId)).map (·.targetId.value)
       some (id.value, outputs)
-  | .exclusiveMerge id =>
+  | .exclusiveMerge id | .nonOperationalTask id _ | .noneIntermediateThrowEvent id =>
       match (source.sequenceFlows.filter (·.sourceId == id)).map (·.targetId.value) with
       | [output] => if dataCheckedNodeScope? source id != some root then none else some (id.value, [output])
       | _ => none
@@ -150,14 +152,14 @@ def programReentry (program : Program) : Bool :=
 
 /-- SRE-ROUTE-01 over the checked graph, independent of the Program; consulted only under the profile. -/
 def checkedReentry (source : CheckedProcess) : Bool :=
-  source.nodes.any fun node => checkedJoint node &&
+  source.nodes.any fun node => checkedJoint source node &&
     (source.nodeScopes.find? (·.nodeId == node.id)).map (·.scopeId) ==
       rootScopeOf source.definitionScopes source.processId
 
 private def checkedAdmission (source : CheckedProcess) : Option (Analysis × Nat) := do
   let (root, entry) ← checkedEnvelope? source
-  let vertices ← (source.nodes.filter (!checkedJoint ·)).mapM (checkedVertex? source)
-  let joints ← (source.nodes.filter checkedJoint).mapM (checkedJoint? source root)
+  let vertices ← (source.nodes.filter (!checkedJoint source ·)).mapM (checkedVertex? source)
+  let joints ← (source.nodes.filter (checkedJoint source)).mapM (checkedJoint? source root)
   rootGraphAnalysis vertices joints source.scopeLocalData source.definitionScopes root.value entry.value
     (SerialBusinessTask.checkedHandlers source) (vertices.filter fun v => v.scope == root.value && v.kind == .finish).length
 

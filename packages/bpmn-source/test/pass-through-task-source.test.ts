@@ -194,12 +194,13 @@ test("each excluded Task form is refused", async () => {
   await refused("equipment-return", replaceOnce(equipment, close,
     '<task id="CloseReturnTicket" name="Close return ticket" default="Flow_Requested" />'), "default naming another flow");
   const intake = await source("document-intake");
-  // Two outgoing flows: the second enters the Merge *Intake requested*, which takes any number of inputs.
+  // Two outgoing flows make the Task a fork (PTSM-ADMIT-01), and the re-entry route refuses a forking model.
   await refused("document-intake", replaceOnce(intake, '<sequenceFlow id="Flow_Recontacted" ',
     '<sequenceFlow id="Flow_Split" sourceRef="RegisterDigitalCopy" targetRef="IntakeRequested" />' +
-    '<sequenceFlow id="Flow_Recontacted" '), "two outgoing flows");
-  // Two incoming flows: without the Merge *Intake requested*, *Phone sender* feeds *Register digital copy*; the control
-  // sends it to the Merge *Filed* instead, so the Task's in-degree is the only difference.
+    '<sequenceFlow id="Flow_Recontacted" '), "a splitting Task in a re-entry model");
+  // Two incoming flows: without the Merge *Intake requested*, *Phone sender* feeds *Register digital copy*, a root
+  // implicit merge this profile admits (PTSM-MERGE-01); the control sends it to the Merge *Filed* instead, so the Task's
+  // in-degree is the only difference. Given a second outgoing flow too, the Task both merges and splits and is refused.
   const unmerged = replaceOnce(replaceOnce(replaceOnce(intake,
     '<exclusiveGateway id="IntakeRequested" name="Intake requested" gatewayDirection="Converging" />', ""),
     '<sequenceFlow id="Flow_Received" sourceRef="DocumentReceived" targetRef="IntakeRequested" />',
@@ -208,8 +209,12 @@ test("each excluded Task form is refused", async () => {
   const recontacted = '<sequenceFlow id="Flow_Recontacted" sourceRef="PhoneSender" targetRef="IntakeRequested" />';
   await admitted("document-intake", replaceOnce(unmerged, recontacted,
     '<sequenceFlow id="Flow_Recontacted" sourceRef="PhoneSender" targetRef="Filed" />'));
-  await refused("document-intake", replaceOnce(unmerged, recontacted,
-    '<sequenceFlow id="Flow_Recontacted" sourceRef="PhoneSender" targetRef="RegisterDigitalCopy" />'), "two incoming flows");
+  const merging = replaceOnce(unmerged, recontacted,
+    '<sequenceFlow id="Flow_Recontacted" sourceRef="PhoneSender" targetRef="RegisterDigitalCopy" />');
+  await admitted("document-intake", merging);
+  await refused("document-intake", replaceOnce(merging, '<sequenceFlow id="Flow_Recontacted" ',
+    '<sequenceFlow id="Flow_Split" sourceRef="RegisterDigitalCopy" targetRef="Filed" />' +
+    '<sequenceFlow id="Flow_Recontacted" '), "a Task that both merges and splits");
   await refused("document-intake", replaceOnce(intake,
     '<sequenceFlow id="Flow_DigitalFiled" sourceRef="RegisterDigitalCopy" targetRef="Filed" />',
     '<sequenceFlow id="Flow_DigitalFiled" sourceRef="RegisterDigitalCopy" targetRef="Filed">' +

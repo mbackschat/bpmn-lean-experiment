@@ -1829,6 +1829,88 @@
       }
     },
     {
+      "id": "claim-archiving",
+      "title": "Decide and archive an insurance claim",
+      "businessPurpose": "Assess an insurance claim through a claims service, approve the payout or write a rejection letter according to the decision, and archive the claim file by hand whichever way it was decided.",
+      "cloneFamily": "claim-archiving",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "manualTask",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "conditionalRouting",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/pass-through-implicit-split-merge/claim-archiving.bpmn",
+        "sha256": "76ad8309a3af93d4355a4f7f0bdd53042f9ed088053bd7d1a64e95ff3147e35d",
+        "scenarioRelativePath": "scenarios/pass-through-implicit-split-merge/claim-approved.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "pass-through-implicit-split-merge-claim-approved",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for implicit split and merge at pass-through nodes; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
+      "id": "equipment-dispatch",
+      "title": "Dispatch rented equipment",
+      "businessPurpose": "Reserve rented equipment through a reservation service, print the dispatch note by hand, and then pack the equipment and book the courier in parallel before it ships.",
+      "cloneFamily": "equipment-dispatch",
+      "constructs": [
+        "endEvent",
+        "manualTask",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "parallelSplit",
+        "genericTask",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/pass-through-implicit-split-merge/equipment-dispatch.bpmn",
+        "sha256": "dfbd69e8140d4e465b2dd02daad584801121d3e66b73af729dad661a0a3544ed",
+        "scenarioRelativePath": "scenarios/pass-through-implicit-split-merge/dispatch-packed-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "pass-through-implicit-split-merge-dispatch-packed-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for implicit split and merge at pass-through nodes; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "warranty-repair-links",
       "title": "Repair a device under warranty with Go To links",
       "businessPurpose": "Repair a faulty device as the warranty repair does, with the rework loop drawn as a Go To link back to the repair round, the hand-over to testing inside the repair as an Off-Page link, and the release of a passed device as a link.",
