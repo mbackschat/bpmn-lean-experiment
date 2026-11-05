@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: pass-through implicit split and merge in the nested scope-data profile, batch 4 (`PC-HUM-05` split and sequential merge clauses, `PC-BASIC-01` several-flow None Throws, `PC-CF-07` evidenced for pass-through nodes). Data-declaring terminal branches landed at `8998f58d` (`PC-HUM-04` done). Close call, re-decided after the design review kept `PC-HUM-05` open on concurrent-arrival merge: the general Activity family has the larger reach but needs a kernel extension, while this one accepts three clauses with no kernel change and builds the several-flow checked projections the general family reuses, so it goes first.
+Current task: Activity implicit split and merge through a kernel extension in the nested scope-data profile, batch 4: `PC-CF-07` primary, with `PC-BASIC-01` multiple outgoing Start flows, `PC-BASIC-02` multiple Link sources and `PC-HUM-05` the merge of concurrent arrivals. Pass-through implicit split and merge landed through PR 58, accepting its clauses with no row closed. Close call: every remaining batch-4 control clause needs the multi-input or multi-output target operation the [implicit fan-in review](capsules/IMPLICIT-FAN-IN-PROPOSAL.md#independent-cold-review-receipt) required, since CIB publishes no step for a Link catch, so multiple sources are fan-in at the successor; Script and Business Rule Tasks wait on a runtime dependency decision.
 
-Deliverable: pass-through Abstract and Manual Tasks and None Throws with several incoming or several unconditioned outgoing Sequence Flows admitted in the nested scope-data profile, each arrival passing once and one activation forking every outgoing flow, landed on `main`.
+Deliverable: Activities, None Starts and Link targets with several incoming or several outgoing Sequence Flows admitted in the nested scope-data profile, one occurrence per arriving token, landed on `main`.
 
-Acceptance blockers: implementation of the [proposal](capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md), closure review and hosted `verify-complete`.
+Acceptance blockers: a proposal with the kernel representation and Temporal preflight, its cold design review, implementation, closure review and hosted `verify-complete`.
 
-Current result: implemented above `a9f1e121`; local closure lanes green; closure review corrections applied.
+Current result: not started; the rejected fan-in proposal records the representation gap.
 
-Effort budget: 8 hours from 2026-11-05 02:52 CET, ending 10:52.
+Effort budget: 10 hours from 2026-11-05 06:30 CET, ending 16:30.
 
-Next action: Lean closure lanes, hosted `verify-complete`, correction audit, graduation, branch push flow.
+Next action: write the family proposal.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

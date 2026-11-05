@@ -296,7 +296,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0019 — a pass-through node passes each arriving token on its own and one activation starts every outgoing flow
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [pass-through implicit split and merge account](capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [pass-through implicit split and merge account](capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-SPEC.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending.
 
 **BPMN basis:** Clause 13.3.1 makes an Activity that is the target of several Sequence Flows participate in uncontrolled flow, enabled for each arriving token independently of the others as an Exclusive Gateway would be, and gives every unconditioned outgoing flow a token when it completes, as a parallel split. The Activity notes of Clause 10.3 and, for an Intermediate Event, Clause 10.5.4 state the same: a further token creates a separate instance, and each outgoing flow a separate parallel path.
 

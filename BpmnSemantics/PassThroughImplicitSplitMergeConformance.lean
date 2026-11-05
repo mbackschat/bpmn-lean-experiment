@@ -13,7 +13,7 @@ Throw as notation twins; the event booking, loan intake and forked-region graphs
 witness and refused edits. Each refused graph differs from an admitted one in the fact its name states. The module runs
 no command: the journeys are Lean executions of the registered scenarios in the pipeline. It imports admission owners
 only, as `PassThroughTaskConformance` does, so it stays outside `CommandAdmission`'s hidden-edit cone (`lean-fanout`).
-See the [pass-through implicit split and merge proposal](../docs/capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#separating-witnesses).
+See the [pass-through implicit split and merge specification](../docs/capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-SPEC.md#separating-witnesses).
 -/
 
 public section

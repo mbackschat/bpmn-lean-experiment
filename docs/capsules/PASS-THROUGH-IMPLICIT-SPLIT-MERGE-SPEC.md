@@ -1,8 +1,8 @@
-# Pass-through implicit split and merge proposal
+# Pass-through implicit split and merge specification
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -231,7 +231,7 @@ Each oracle below asserts a refusal that this family turns into admission. None 
 
 Lane shape: checked
 
-Evidence: the family adds no runtime transition family and no law. It widens lowering and admission. Their agreement with TypeScript is tested on the witnesses by the conformance checks and by definition binding. The runtime steps are those of `mergeExclusive` and `duplicate`, and the existing batch and preservation laws over them are origin-agnostic. Admission checks join a new `PassThroughImplicitSplitMergeConformance` module in the `BpmnConformance` root, beside the [pass-through branch conformance module](../../BpmnSemantics/PassThroughParallelBranchesConformance.lean).
+Evidence: the family adds no runtime transition family and no law. It widens lowering and admission. Their agreement with TypeScript is tested on the witnesses by the conformance checks and by definition binding. The runtime steps are those of `mergeExclusive` and `duplicate`, and the existing batch and preservation laws over them are origin-agnostic. Admission checks join a new module, [`passThroughImplicitSplitMergeConformanceChecks`](../../BpmnSemantics/PassThroughImplicitSplitMergeConformance.lean#passThroughImplicitSplitMergeConformanceChecks), in the `BpmnConformance` root, beside the [pass-through branch conformance module](../../BpmnSemantics/PassThroughParallelBranchesConformance.lean).
 
 ## Temporal hosting and refinement preflight
 
@@ -258,6 +258,8 @@ The CIB lane extends the [pass-through Task probe](../../runners/cibseven/src/te
 Then the clauses of the [delivery boundary](#question-and-delivery-boundary) are accepted. `PC-HUM-05` and `PC-BASIC-01` stay open on the residuals named there, and `PC-CF-07` is evidenced for pass-through nodes only.
 
 Implemented with two recorded additions. The shared Lean predicates live in a new leaf, [`CheckedPassThroughFlow`](../../BpmnSemantics/SemanticProcess/CheckedPassThroughFlow.lean), because no owner is imported by all four consumers (`InclusiveRegionWalk`, `NestedScopeDataAdmission`, `NestedScopeControlAdmission`, `ScopeReentryAdmission`), which import it plainly; the TypeScript twin is [`checked-pass-through-flow.ts`](../../packages/semantic-core/src/checked-pass-through-flow.ts). The profile artifact also names Clause 10.3, whose Activity notes the scenarios cite. The two private lowering laws keep their one-flow statements under one-flow hypotheses. The [conformance module](../../BpmnSemantics/PassThroughImplicitSplitMergeConformance.lean) holds ten checks over both models and their notation twins, the projection witness, the five refused edits and the two profile controls; forcing `splits` to `false` fails five of them. Forcing the TypeScript `checkedNodeMerges` to `false` failed none of the family's source tests in the closure review, as the matrix records for the merge side of wrong algorithm 5. The [source test](../../packages/bpmn-source/test/pass-through-implicit-split-merge-source.test.ts) asserts the same at the checked and Program levels, the Program level of the node that both merges and splits being unrepresentable; the changed oracles flip or re-attribute as listed above.
+
+Closure gates: green at `a93d2bc9`, the local `LEAN_FULL_GATE=ptsm-closure` Lean library test and `BpmnConformance` builds, and hosted `verify-complete` on PR 58 with the Lean library and executable checks, the runtime stage with the CIB oracle and the pass-through Task probe, both integration pipeline legs, Temporal and Temporal serial.
 
 ## Versioning consequences
 
@@ -320,4 +322,4 @@ Owner passages amended at closure:
 |---|---|---|---|---|
 | Proposal | `ffeec083` | `fork-turns-none` | `approve-with-required-edits` | `63409a05, 7d900d26` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `0de751dc` | `fork-turns-none` | `approve-with-required-edits` | `a93d2bc9` |

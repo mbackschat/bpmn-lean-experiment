@@ -2,7 +2,7 @@ module
 
 public import BpmnSemantics.CheckedProcessContract
 
-/-! PTSM-ADMIT-01 of the [pass-through implicit split and merge proposal](../../docs/capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#admission): every checked analysis classifies a node as the Program-level analysis classifies its lowered operation. A pass-through Task or None Throw with two or more outgoing flows lowers to a `duplicate` with the node as origin, so it forks; one with two or more incoming flows lowers to a many-input `mergeExclusive`, so it merges. Arity admission keeps both forms apart and confines them to the nested scope-data profile, so these predicates need no profile. The TypeScript twin is `checked-pass-through-flow.ts`. -/
+/-! PTSM-ADMIT-01 of the [pass-through implicit split and merge specification](../../docs/capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-SPEC.md#admission): every checked analysis classifies a node as the Program-level analysis classifies its lowered operation. A pass-through Task or None Throw with two or more outgoing flows lowers to a `duplicate` with the node as origin, so it forks; one with two or more incoming flows lowers to a many-input `mergeExclusive`, so it merges. Arity admission keeps both forms apart and confines them to the nested scope-data profile, so these predicates need no profile. The TypeScript twin is `checked-pass-through-flow.ts`. -/
 
 public section
 

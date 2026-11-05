@@ -3,7 +3,7 @@
  * A pass-through Task or None Throw with two or more outgoing flows lowers to a `duplicate` with the node as origin, so it
  * forks; one with two or more incoming flows lowers to a many-input `mergeExclusive`, so it merges. Arity admission keeps
  * both forms apart and confines them to the nested scope-data profile, so these predicates need no profile. Owner: the
- * [pass-through implicit split and merge proposal](../../../docs/capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#admission);
+ * [pass-through implicit split and merge specification](../../../docs/capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-SPEC.md#admission);
  * the Lean twin is `CheckedPassThroughFlow`.
  */
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";

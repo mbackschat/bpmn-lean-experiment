@@ -47,7 +47,7 @@ Excluded, each refused at admission:
 
 - any EventDefinition, contained or referenced through `eventDefinitionRef`, including Message, Signal, Escalation, Compensation, Link, Multiple and an empty `messageEventDefinition`; moddle declares the reference non-enumerable, so the reader refuses it by name, as it does `default`;
 - a CIB attribute or extension element, such as `camunda:asyncBefore`, `camunda:asyncAfter`, an execution listener or `camunda:inputOutput`, and data inputs or input sets;
-- a second incoming or outgoing flow outside the forms the [pass-through implicit split and merge account](PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#required-optional-and-excluded-scope) admits, and a conditioned or default outgoing flow;
+- a second incoming or outgoing flow outside the forms the [pass-through implicit split and merge account](PASS-THROUGH-IMPLICIT-SPLIT-MERGE-SPEC.md#required-optional-and-excluded-scope) admits, and a conditioned or default outgoing flow;
 - a None Throw in a called Process, whose body stays one to three User Tasks;
 - every form the pass-through Task and pass-through branch accounts refuse, including a wait-free terminal branch, admitted since by the [terminal forks account](TERMINAL-FORKS-SPEC.md#admission) in a definition whose Sub-Processes declare no scope-local data and by the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-SPEC.md#admission) in one whose Sub-Processes do; the forking model without an embedded Sub-Process refused when this account closed is admitted since by the [single-scope models account](SINGLE-SCOPE-MODELS-SPEC.md#admission);
 - every other profile.
@@ -155,7 +155,7 @@ Then `PC-BASIC-01`'s Intermediate Throw None clause is accepted for this profile
 
 Nearest unsupported claims:
 
-- None Throws that both merge and split, or merge under a fork, the residual uncontrolled-flow forms of Clause 10.5.4 after the [pass-through implicit split and merge account](PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md);
+- None Throws that both merge and split, or merge under a fork, the residual uncontrolled-flow forms of Clause 10.5.4 after the [pass-through implicit split and merge account](PASS-THROUGH-IMPLICIT-SPLIT-MERGE-SPEC.md);
 - in called Processes, Multi-Instance bodies and every other profile;
 - Message, Signal, Escalation and other throw triggers;
 - the residual forms of the pass-through branch account;

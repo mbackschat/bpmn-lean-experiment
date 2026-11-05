@@ -35,7 +35,7 @@ import org.junit.Test;
  * On the data-declaring terminal branches proposal's expense claim (`DTB-COMMUTE-01`) it calibrates that both wait-free
  * Ends leave the entered Sub-Process instance and its local data in place, though the last concurrent End's
  * `tryPruneLastConcurrentChild` re-parents that scope execution.
- * On the pass-through implicit split and merge proposal's two models and their Abstract Task and None Throw twins
+ * On the pass-through implicit split and merge specification's two models and their Abstract Task and None Throw twins
  * (`PTSM-MERGE-01`, `PTSM-SPLIT-01`) it calibrates that a pass-through node entered through either of two incoming flows
  * is one ended instance per arrival, and that one with two outgoing flows is one ended instance after which both
  * outgoing paths are open in the same command (`BpmnActivityBehavior.performOutgoingBehavior`).
