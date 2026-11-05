@@ -94,17 +94,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: pass-through Task implicit split and merge in the nested scope-data profile, batch 4 (`PC-HUM-05` primary; `PC-CF-07` evidenced for pass-through Tasks). Data-declaring terminal branches landed at `8998f58d` (`PC-HUM-04` done). Close call against general Activity split and merge, which has the larger reach but needs a kernel extension through about 500 control-place origin sites: this family closes a row with no kernel change and its lowering is the pass-through case of the general one, so it goes first.
+Current task: pass-through implicit split and merge in the nested scope-data profile, batch 4 (`PC-HUM-05` split and sequential merge clauses, `PC-BASIC-01` several-flow None Throws, `PC-CF-07` evidenced for pass-through nodes). Data-declaring terminal branches landed at `8998f58d` (`PC-HUM-04` done). Close call, re-decided after the design review kept `PC-HUM-05` open on concurrent-arrival merge: the general Activity family has the larger reach but needs a kernel extension, while this one accepts three clauses with no kernel change and builds the several-flow checked projections the general family reuses, so it goes first.
 
-Deliverable: pass-through Abstract and Manual Tasks with several incoming or several unconditioned outgoing Sequence Flows admitted in the nested scope-data profile, each arrival passing once and one activation forking every outgoing flow, landed on `main`.
+Deliverable: pass-through Abstract and Manual Tasks and None Throws with several incoming or several unconditioned outgoing Sequence Flows admitted in the nested scope-data profile, each arrival passing once and one activation forking every outgoing flow, landed on `main`.
 
-Acceptance blockers: cold design review of the [proposal](capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md), implementation, closure review and hosted `verify-complete`.
+Acceptance blockers: correction audit of the [proposal](capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md), implementation, closure review and hosted `verify-complete`.
 
-Current result: proposal drafted.
+Current result: proposal corrected for its cold design review findings.
 
 Effort budget: 8 hours from 2026-11-05 02:52 CET, ending 10:52.
 
-Next action: cold design review of the proposal.
+Next action: correction audit by the same reviewer.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 
