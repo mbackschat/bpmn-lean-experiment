@@ -98,13 +98,13 @@ Current task: data-declaring terminal branches in the nested scope-data profile,
 
 Deliverable: wait-free terminal branches admitted beside scope-local data in the nested scope-data profile, an End committing beside a declared Sub-Process entry through a proved pair law, landed on `main`.
 
-Acceptance blockers: implementation of the approved [proposal](capsules/DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md), closure review and hosted `verify-complete`.
+Acceptance blockers: implementation of the approved [proposal](capsules/DATA-DECLARING-TERMINAL-BRANCHES-SPEC.md), closure review and hosted `verify-complete`.
 
-Current result: implemented at `e7a97d0c` under a reviewed and post-checked Rule 2 declaration (re-applied after a reverted post-check violation) and mapped at `cd9cbb4c`; closure gates green there (local Lean library test and `BpmnConformance` under `LEAN_FULL_GATE=dtb-closure`, hosted `verify-complete` on PR 57); the cold closure review approved with required edits, applied in the correction commit.
+Current result: implemented at `e7a97d0c` under a reviewed and post-checked Rule 2 declaration (re-applied after a reverted post-check violation) and mapped at `cd9cbb4c`; closure gates green there (local Lean library test and `BpmnConformance` under `LEAN_FULL_GATE=dtb-closure`, hosted `verify-complete` on PR 57); the cold closure review approved with required edits, corrected in `beb3c0c7` and audited; graduated with `PC-HUM-04` done.
 
 Effort budget: 6 hours from 2026-11-05 00:00 CET, ending 06:00.
 
-Next action: correction audit by the same reviewer, then graduation (receipt, `PC-HUM-04` accepted) and landing on `main` through the branch flow.
+Next action: land on `main` through PR 57 once hosted `verify-complete` is green on the graduation commit, then propose the next batch-4 family, implicit Activity split and merge (`PC-CF-07`; `PC-HUM-05`, `PC-BASIC-01`, `PC-BASIC-02` clauses), whose kernel extension the [implicit fan-in review](capsules/IMPLICIT-FAN-IN-PROPOSAL.md#independent-cold-review-receipt) requires.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

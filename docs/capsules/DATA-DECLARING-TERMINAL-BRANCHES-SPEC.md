@@ -1,8 +1,8 @@
-# Data-declaring terminal branches proposal
+# Data-declaring terminal branches specification
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -161,4 +161,4 @@ Registration: the profile artifact's exclusion and its README; scenario, pipelin
 |---|---|---|---|---|
 | Proposal | `b99f99a7` | `fork-turns-none` | `approve-with-required-edits` | `6e20e05c, b58b8c42` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `cd9cbb4c` | `fork-turns-none` | `approve-with-required-edits` | `beb3c0c7` |

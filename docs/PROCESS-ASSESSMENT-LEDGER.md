@@ -1604,7 +1604,7 @@ The owner directed that ordinary work never need a complete Lean rebuild. The wh
 A bulk repair script ran without a declared target effect or an independent check, and a green build was taken as its success, so it reversed the outcome it served.
 
 Instances
-: 5
+: 6
 
 Disposition
 : `executable guard`
@@ -1623,6 +1623,8 @@ Hiding hub bodies broke proofs in their importers. A repair script answered each
 **Fourth instance (2026-11-04):** a scratch generator wrote the three answer-free scenario inputs of [terminal forks](capsules/TERMINAL-FORKS-SPEC.md#evidence-and-acceptance) into `scenarios/terminal-forks/` in `65347b64` with no declaration, review or check, filed under Rule 3 as a one-off script although Rule 2 governs every script that creates repository files; the closure review caught it, the files were reverted in `116889d8` and re-created by a declared, reviewed and checked generator. No executable guard can see a scratch script's writes, so this instance rests on the closure review.
 
 **Fifth instance (2026-11-04):** the hand-authored [Link Events](capsules/LINK-EVENTS-SPEC.md#owners-this-implementation-grows) implementation commit `ae4bdf5d` touched 57 files, and the hosted pipeline job split `c7d55330` changed a budget derivation, both with the approved proposal's owner inventory as their only declaration; the closure review caught it, and a LOW post-check of `7fcb74d0..653296d4` found 21 changed files outside that inventory. The corrected split then exceeded its own reviewed declaration: `7412c5db` added 153 and removed 30 lines against a limit of 120 and 60, because the limit was set before the 90-identifier frozen leg list it had to count was generated, so its largest part was estimated, not measured. As in the fourth instance the unlanded result is set aside in full and the corrected change is re-applied from `7fcb74d0` by a script whose declaration names each part's measured scope and limit, reviewed at HIGH before it runs and checked by a LOW post-check before its commit; the declared commit `34878019` carries the content, and a content-free merge (`aee37481`) keeps the cited commits and the closure review target resolvable. It is the third hand change to cross the trigger without a declaration at implementation start, the timing the third instance named, so that prose did not bind.
+
+**Sixth instance (2026-11-05):** the [data-declaring terminal branches](capsules/DATA-DECLARING-TERMINAL-BRANCHES-SPEC.md#evidence-and-acceptance) implementation was declared and reviewed before it started, yet its uncommitted result broke the declaration's deleted-line locality clause in five places: four rewritten neighbouring lines or restructured assertions, and four corpus count assertions the clause did not list. Per-part measurement used only `numstat` and the path set, which cannot see that clause, and the clause listed allowed deletions by category rather than from what the change makes false. The LOW post-check caught it before any commit; the result was reverted in full and re-applied by a reviewed script that enforces the exact expected deleted-line set, and a second LOW post-check passed before `e7a97d0c`.
 
 ### Finding 85
 
