@@ -2,9 +2,12 @@
 
 ## Status
 
-Proposal, Practical CIB7 Coverage batch 5. It awaits its cold design review. Rows: `PC-TIMER-01` (primary; its duration clause for exact durations), `PC-TIMER-02` (the duration-parsing clause of an unbounded cycle only). Both rows stay `open`: `PC-TIMER-01` keeps absolute dates, nominal durations and past-deadline outcomes, and `PC-TIMER-02` keeps finite repetition, dated intervals, Cron and the recurrence runtime.
+Lifecycle: draft
+Review: pending
 
 ## Question and delivery boundary
+
+Practical CIB7 Coverage batch 5. Rows: `PC-TIMER-01` (primary; its duration clause for exact durations), `PC-TIMER-02` (the duration-parsing clause of an unbounded cycle only). Both rows stay `open`: `PC-TIMER-01` keeps absolute dates, nominal durations and past-deadline outcomes, and `PC-TIMER-02` keeps finite repetition, dated intervals, Cron and the recurrence runtime.
 
 Every admitted Timer site accepts exactly one lexeme today. The Intermediate Catch, Timer Start, interrupting and non-interrupting Activity boundary and Sub-Process boundary Timers accept `PT1S`; the bounded and monitored scopes of the Multi-Instance profiles accept `PT5S`; the repeatable non-interrupting boundary accepts `R/PT1S`. The question is whether one shared duration owner can admit every exact ISO 8601 duration at all of these sites without a kernel representation change. The deliverable: a model whose Timers wait `PT30S`, `PT15M`, `PT2H` or `PT1H30M` is admitted and executed with that deadline, wherever `PT1S` or `PT5S` is admitted today, and landed on `main`.
 
@@ -83,4 +86,22 @@ The rule matrix, the Lean and TypeScript gates of the affected packages, `test:p
 
 ## Versioning consequences
 
-Pre-release, one current representation: the schema, fixtures and profiles change atomically. Models admitted before keep the same programs and results.
+Pre-release, one current representation: the [semantic process](../../contracts/README.md) schema, fixtures and profiles change atomically. Models admitted before keep the same programs and results.
+
+### Owners this implementation grows
+
+Duration owners: [`timer-duration-normalization.ts`](../../packages/bpmn-source/src/timer-duration-normalization.ts) (33 nonblank lines) and [`CheckedProcessAdmission`](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean) (546), which gains the Lean parser; [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean) (774) only delegates. Pin owners, each a body edit: [`ProgramStructuralValidation`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) (592), [`ProfileShapeCatalog`](../../BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean) (713), `ParallelMultiInstanceProfileAdmission`, `RepeatableSubscriptionAdmission`, `TimerStart`, `TimerStartAdmission`, and in TypeScript [`semantic-process-operation-admission.ts`](../../packages/semantic-core/src/semantic-process-operation-admission.ts), `semantic-process-profile.ts`, `repeatable-subscription-admission.ts`, `bounded-wait-admission.ts` and [`host-admission.ts`](../../packages/temporal-adapter/protocol/src/host-admission.ts). Nonblank counts measured 2026-11-05; no owner crosses 800.
+
+Guards the implementation must satisfy, with bounds unchanged and measured before the first edit: [`lean-fanout`](../../scripts/lean-fanout.test.ts) (no new module, so importer counts stay; the body edits must add no rewrite with a hidden definition), [`lean-module-cost`](../../scripts/lean-module-cost.test.ts) (kernel-decided fixtures that evaluate `normalizeTimerDuration` are re-measured), [`source-hygiene`](../../scripts/source-hygiene.test.ts), and the executable oracles named in the rule matrix: the Lean conformance checks, `test:bpmn-source`, `test:semantic-core`, `test:contracts`, `test:pipeline` and `test:timer-time-skipping`.
+
+**Cost.** One commit under a [Rule 2](../../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change) declaration, because the pins span more than 20 files: about 25 files, Lean +150/−40 and TypeScript +250/−60 lines including tests, scenarios and the model; estimated 5 to 6 hours, dominated by one rebuild of the fixtures that kernel-decide durations and the closure lanes.
+
+Registration: the register entries, profile artifacts, scenarios, pipeline cases, the corpus model, and the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) cell for Timer durations.
+
+## Independent cold-review receipt
+
+| Stage | Review target | Isolation | Verdict | Correction audit |
+|---|---|---|---|---|
+| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
+| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
