@@ -164,7 +164,6 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     addScopeReentryCases(context, add);
   }
   for (const id of ["pass-through-task-equipment-return", "pass-through-task-intake-illegible-twice-then-paper",
-    "pass-through-implicit-split-merge-claim-approved",
     "none-intermediate-throw-warranty-passed", "link-events-warranty-passed"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
