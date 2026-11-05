@@ -49,7 +49,7 @@ Excluded, each refused at admission:
 - a CIB attribute or extension element, such as `camunda:asyncBefore`, `camunda:asyncAfter`, an execution listener or `camunda:inputOutput`, and data inputs or input sets;
 - a second incoming or outgoing flow, and a conditioned or default outgoing flow, the uncontrolled-flow and parallel-path forms of Clause 10.5.4 on which `PC-BASIC-01` stays open;
 - a None Throw in a called Process, whose body stays one to three User Tasks;
-- every form the pass-through Task and pass-through branch accounts refuse, including a wait-free terminal branch, admitted since by the [terminal forks account](TERMINAL-FORKS-SPEC.md#admission) in a definition whose Sub-Processes declare no scope-local data; the forking model without an embedded Sub-Process refused when this account closed is admitted since by the [single-scope models account](SINGLE-SCOPE-MODELS-SPEC.md#admission);
+- every form the pass-through Task and pass-through branch accounts refuse, including a wait-free terminal branch, admitted since by the [terminal forks account](TERMINAL-FORKS-SPEC.md#admission) in a definition whose Sub-Processes declare no scope-local data and by the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md#admission) in one whose Sub-Processes do; the forking model without an embedded Sub-Process refused when this account closed is admitted since by the [single-scope models account](SINGLE-SCOPE-MODELS-SPEC.md#admission);
 - every other profile.
 
 These bound admission only. A later widening admits more forms of the same checked node without reinterpreting an admitted model.

@@ -19,7 +19,7 @@ This is the next family of batch 4 in [PLAN](../PLAN.md#scheduled-delivery-batch
 Screened out, each with its reason:
 
 - Exclusive Choices whose branches end at separate Ends, the second-largest several-End form below: no open checklist clause names it, and it reuses no element of this family's branch rule; a later family.
-- A wait-free terminal branch in a definition that holds a data-declaring Sub-Process: its End could be co-enabled with a declared entry, a pair with no commutation law (see [Representation](#representation-and-runtime-ownership)).
+- A wait-free terminal branch in a definition that holds a data-declaring Sub-Process: its End could be co-enabled with a declared entry, a pair with no commutation law (see [Representation](#representation-and-runtime-ownership)). Admitted since by the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md#admission) through the End and declared-entry pair law (`DTB-ADMIT-01`, `DTB-COMMUTE-01`).
 - Script and Business Rule Tasks (`PC-AUTO-05` to `PC-AUTO-08`), the remaining batch-4 task breadth: both open with a dependency and runtime design decision.
 
 Selection, 2026-11-04: chosen on reach and semantic risk. Of the pinned checkout's single-Process BPMN files whose elements this profile reads, plus `subProcess`, 768 parse and 59 hold several None Ends in one scope. Classified by the nearest splitting element behind each End, 38 end Parallel branches at separate root Ends, 15 end Exclusive branches at separate root Ends and 4 end Parallel branches at separate Ends in a Sub-Process body; the remaining 2 hold implicit flows. As before, none is admitted as it stands, because the profile requires a source overlay and refuses CIB attributes. Selector (pinned checkout `5a45b47`, 2026-11-04): every `*.bpmn` and `*.bpmn20.xml` file of the whole checkout outside `target/` directories that parses as XML and holds exactly one `process` element whose descendant element local names all lie in the [single-scope selector set](SINGLE-SCOPE-MODELS-SPEC.md#question-and-delivery-boundary) plus `subProcess`; a scope holds several Ends when two or more `endEvent` elements are its direct children, and an End's form is the kind of the first element with several outgoing flows on its single-input backward path. Close call against Link Events (`PC-BASIC-02`): 4 models against 38, and Link needs a control place with no Sequence Flow behind it, the kernel extension the [implicit fan-in proposal](IMPLICIT-FAN-IN-PROPOSAL.md#independent-cold-review-receipt) was rejected on.
@@ -35,14 +35,14 @@ CIB Seven `2.2.0` at the pinned checkout executes concurrent paths as concurrent
 Required, for the nested scope-data profile only:
 
 - **Root terminal forks.** The Process root body admits terminal unjoined Parallel forks and so several None Ends, in every arrangement that contraction rule 3 of the [nested scope-control class](NESTED-EMBEDDED-SCOPE-CONTROL-SPEC.md#admission) reduces, as a Sub-Process body already does.
-- **Wait-free terminal branches.** A terminal fork's branch, in the root or a Sub-Process body, may reach its None End without arming a task: through pass-through Tasks, None Throws, a nested fork whose branches are themselves wait-free, or directly. This is admitted only when no scope of the definition declares scope-local data (`TFK-DATA-01`).
+- **Wait-free terminal branches.** A terminal fork's branch, in the root or a Sub-Process body, may reach its None End without arming a task: through pass-through Tasks, None Throws, a nested fork whose branches are themselves wait-free, or directly. This family admitted it only when no scope of the definition declares scope-local data (`TFK-DATA-01`); the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md#admission) retired that condition (`DTB-ADMIT-01`).
 
 Optional: none.
 
 Excluded, each refused at admission:
 
 - every form above under any other profile, including the embedded completion profile, which shares the structural class and keeps its single root End and its branch cut;
-- a wait-free terminal branch in a definition with a data-declaring Sub-Process;
+- a wait-free terminal branch in a definition with a data-declaring Sub-Process, admitted since by the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md#admission);
 - an empty branch from a fork straight to its paired join, a Call in a forking root (the unchanged rule that refuses a root `duplicate` beside a root `invokeProcess`), a root merge region, and every other exclusion of the [root Parallel forks](ROOT-PARALLEL-FORKS-SPEC.md#required-optional-and-excluded-scope), [pass-through branch](PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#required-optional-and-excluded-scope) and [single-scope models](SINGLE-SCOPE-MODELS-SPEC.md#required-optional-and-excluded-scope) accounts;
 - Exclusive Choices to separate Ends, implicit split and merge, Terminate Ends and Link Events.
 
@@ -56,16 +56,16 @@ The profile `cibseven-2.2.0-nested-embedded-scope-data-draft` grows in place und
 
 No kernel type, IL, opcode or runtime change. A root terminal fork lowers to the existing `duplicate` and one `reachNoneEnd` per End; root completion stays the quiescent `completeScope` of the root (`selectQuiescentScopeCompletion`), which already waits for every token, wait and child. A wait-free branch lowers to the existing pass vertices (one-input merges) and `reachNoneEnd`.
 
-**Co-enabled members.** A wait-free terminal branch makes `reachNoneEnd` (`ordinaryEnd`) reachable in the same closure batch as a sibling branch's arming, scope creation, local control, Merge input or another End. Lean proves each of these pairs commutes under independent footprints in [`InternalTransitionBatch`](../../BpmnSemantics/SemanticProcess/InternalTransitionBatch.lean): `prepared_end_arming_pair_commutes`, `prepared_end_scope_creation_pair_commutes`, `prepared_end_local_control_pair_commutes`, `prepared_merge_end_pair_commutes` and `prepared_end_pair_commutes`; the TypeScript batch preparation accepts the same pairs. A regional completion is never co-enabled in this class: every body arms a task on entry, and every token of a closure descends from the one token that started it, so a body empties only along a single path. The only members without a law beside an End are the declared entry and the mapped invocation, whose pairs `PreparedInternalTransition.Independent` sets to `False`:
+**Co-enabled members.** A wait-free terminal branch makes `reachNoneEnd` (`ordinaryEnd`) reachable in the same closure batch as a sibling branch's arming, scope creation, local control, Merge input or another End. Lean proves each of these pairs commutes under independent footprints in [`InternalTransitionBatch`](../../BpmnSemantics/SemanticProcess/InternalTransitionBatch.lean): `prepared_end_arming_pair_commutes`, `prepared_end_scope_creation_pair_commutes`, `prepared_end_local_control_pair_commutes`, `prepared_merge_end_pair_commutes` and `prepared_end_pair_commutes`; the TypeScript batch preparation accepts the same pairs. A regional completion is never co-enabled in this class: every body arms a task on entry, and every token of a closure descends from the one token that started it, so a body empties only along a single path. The only members without a law beside an End were the declared entry and the mapped invocation, whose pairs `PreparedInternalTransition.Independent` set to `False`:
 
-- a declared entry exists only for a Sub-Process with scope-local data, so `TFK-DATA-01` removes it from every definition that holds a wait-free terminal branch;
+- a declared entry exists only for a Sub-Process with scope-local data, so `TFK-DATA-01` removed it from every definition that held a wait-free terminal branch; the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md#representation-and-runtime-ownership) replaced that rule by the pair law `prepared_end_declared_entry_pair`, so a declared entry now commits beside an End;
 - a mapped invocation stays where `CMCALL-ADMIT-01` and the root Parallel forks account put it: never first in a serial body, and in the root only when the root does not fork. It therefore follows a wait from a single token and is never co-enabled.
 
 This re-establishes the singleton premise of the [concurrent scope data specification](CONCURRENT-SCOPE-DATA-SPEC.md) for the widened class without a new law. A violated premise fails closed: the batch preparation returns `ambiguousInternalChoice` and commits nothing.
 
 Rejected alternatives:
 
-- proving an `ordinaryEnd` pair law beside declared entries: an End would commute with an entry, but the law lands on the `InternalPreparedTransition` and `InternalTransitionBatch` hubs, and no selected model needs that shape;
+- proving an `ordinaryEnd` pair law beside declared entries: an End would commute with an entry, but the law lands on the `InternalPreparedTransition` and `InternalTransitionBatch` hubs, and no selected model needed that shape (adopted since by the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md#representation-and-runtime-ownership), whose expense claim does);
 - a per-closure analysis that refuses only closures holding both an End and a declared entry: exact, but it adds a flag to the burst composition in both languages for no selected model, where the definition-wide test is one read of the scope-local data.
 
 ## Admission
@@ -73,16 +73,16 @@ Rejected alternatives:
 Admission stays [profile-parameterized](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.md). Under this profile only, and at the Program and checked levels alike:
 
 1. the scope-tree check stops requiring exactly one End in the root body and applies contraction rule 3 there, keeping its refusal of root merge regions and of a Call in a forking root;
-2. the branch cut (`branchesStartWithWork`, `PTPB-WORK-01`) also accepts a terminal-fork branch whose closure scan stops at its End, when no scope of the definition declares scope-local data. A branch that reaches its paired join keeps today's rule: it holds work or a pass vertex.
+2. the branch cut (`branchesStartWithWork`, `PTPB-WORK-01`) also accepts a terminal-fork branch whose closure scan stops at its End, when no scope of the definition declares scope-local data, a condition the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md#admission) retired (`DTB-ADMIT-01`). A branch that reaches its paired join keeps today's rule: it holds work or a pass vertex.
 
-**Mechanism.** The shared analysis (`analyze` and `scanBody` in Lean, `analyzeTree` in TypeScript) relaxes both rules for every caller, and the private profile-aware entry points (`checkedModel` and `programModel` in Lean, the checked and Program model functions of the TypeScript twin) re-impose the single root End and the strict cut for every other profile, and the strict cut for a data-declaring definition of this profile. They already read the profile identity and the scope-local data, so no public signature changes. The relaxed cut is a new declaration of the [`NestedScopeBranchWork`](../../BpmnSemantics/SemanticProcess/NestedScopeBranchWork.lean) leaf, which only `NestedScopeControlAdmission` imports, privately.
+**Mechanism.** The shared analysis (`analyze` and `scanBody` in Lean, `analyzeTree` in TypeScript) relaxes both rules for every caller, and the private profile-aware entry points (`checkedModel` and `programModel` in Lean, the checked and Program model functions of the TypeScript twin) re-impose the single root End and the strict cut for every other profile, and, until `DTB-ADMIT-01`, the strict cut for a data-declaring definition of this profile. They already read the profile identity and the scope-local data, so no public signature changes. The relaxed cut is a new declaration of the [`NestedScopeBranchWork`](../../BpmnSemantics/SemanticProcess/NestedScopeBranchWork.lean) leaf, which only `NestedScopeControlAdmission` imports, privately.
 
 The closure-burst composition is unchanged: an End costs its step, a closure that leaves a body without a wait already charges a `completeScope` and the parent's resumption, and a definition whose largest burst exceeds `semanticProcessClosureLimit = 8` stays refused.
 
 Nearest wrong algorithms, each with a separating witness below:
 
 1. completing a scope at its first End;
-2. admitting a wait-free terminal branch beside a data-declaring Sub-Process, whose End can then share a closure with a declared entry, a pair with no law;
+2. admitting a wait-free terminal branch beside a data-declaring Sub-Process, whose End can then share a closure with a declared entry, a pair that then had no law (`DTB-COMMUTE-01` has since proved it);
 3. relaxing the cut for joined branches too, admitting an empty branch from a fork to its join;
 4. relaxing the root End count or the branch cut for every profile, which widens the embedded completion profile;
 5. relaxing at one level only.
@@ -94,7 +94,7 @@ Nearest wrong algorithms, each with a separating witness below:
 | `TFK-ADMIT-01` | The nested scope-data profile admits root terminal forks, and wait-free terminal branches in the root and Sub-Process bodies, within the unchanged depth, task and closure bounds, at the Program and checked levels alike. |
 | `TFK-END-01` | A None End consumes only its own token; while its scope owns another token, wait or child, the scope, root included, stays live. |
 | `TFK-QUIESCE-01` | A scope, root included, completes exactly when its last token is consumed and it owns no wait or child; the root's completion completes the Process. |
-| `TFK-DATA-01` | A definition with a wait-free terminal branch holds no Sub-Process that declares scope-local data. |
+| `TFK-DATA-01` | Retired by `DTB-ADMIT-01`: a definition with a wait-free terminal branch held no Sub-Process that declares scope-local data. |
 | `TFK-PROFILE-01` | Every other profile refuses each form it refuses today. |
 
 ## Newly reachable waits and resumption
@@ -117,7 +117,7 @@ Both models carry a source overlay and a mapped Service Task, as the profile's s
   - *Clear old office* body: Start → fork. Branch one: User Task *Pack desk* → End. Branch two, wait-free: Manual Task *Return keys* → End. Branch three, wait-free: plain Task *Cancel parking permit* → End.
   - Entering the body runs the fork, then one batch of the arming and both merges, then one batch of both wait-free Ends (End beside End, in a body). After the booking result, *Clear old office* is live with the *Pack desk* wait; completing *Pack desk* completes the Sub-Process and arms *Confirm new office*.
 - **Refused edits**, each asserted at the checked and Program levels separately:
-  - *Clear old office* declaring `keysReturned = "no"`, refused (wrong algorithm 2); its twin with both wait-free branches replaced by User Tasks keeps the declaration and is admitted, so the refusal comes from `TFK-DATA-01` alone.
+  - *Clear old office* declaring `keysReturned = "no"`, refused (wrong algorithm 2); its twin with both wait-free branches replaced by User Tasks keeps the declaration and is admitted, so the refusal came from `TFK-DATA-01` alone; since `DTB-ADMIT-01` both are admitted.
   - The offboarding's branch two replaced by a paired block, fork → [*Revoke system access*], [empty] → join → End *Access revoked*, refused by the cut alone (wrong algorithm 3); the same block with a pass-through Task on its second branch is admitted.
 - **Profile control (minimal pairs)**, each data-free and effect-free, with neither a pass-through Task nor a None Throw, and each asserted at the checked and Program analyses and at profile admission separately. The embedded completion twin carries no source overlay and the nested scope-data twin carries one, as each profile's overlay rule requires, so the relaxed rule is each twin's only refusal. Both differ in a count from the embedded completion profile's retained exact multiset of three User Tasks, three None Ends, one Sub-Process, one Parallel Gateway and two scopes, so its exact class cannot admit them:
   - (a) root terminal fork: Start → fork → [Sub-Process with Start → User Task → End] → End, [User Task] → End, [User Task] → End; four None Ends;
@@ -133,7 +133,7 @@ End beside local control and End beside scope creation rest on `prepared_end_loc
 |---|---|---|---|
 | `TFK-ADMIT-01` | Both models admitted at both levels; the empty joined branch refused and its pass-through twin admitted | Source, core, Lean conformance checks, pipeline | Relax at one level only (5), or relax joined branches (3) |
 | `TFK-END-01`, `TFK-QUIESCE-01` | Both offboarding orders and the office move, through the batched Ends and the first End to completion | Core, pipeline across Lean, core and Temporal; CIB through the pass-through Task probe | Complete a scope at its first End (1), at the root and in a body |
-| `TFK-DATA-01` | The declaring office move refused, its waiting twin admitted, per level | Source, core, Lean conformance checks | Drop the data test (2) |
+| `TFK-DATA-01`, retired by `DTB-ADMIT-01` | The declaring office move admitted as its waiting twin, per level | Source, core, Lean conformance checks | Restore the data test |
 | `TFK-PROFILE-01` | The two embedded completion minimal pairs, per analysis level and at profile admission | Core and Lean conformance checks | Relax for every profile (4) |
 
 ## Lean assurance lane
@@ -152,13 +152,12 @@ The models run as answer-free scenarios with registered pipeline cases, each wit
 
 Then `PC-HUM-04` is evidenced except a wait-free terminal branch in a data-declaring definition; `PC-HUM-05` except that form and implicit split and merge; `PC-CF-03` gains wait-free body Ends and root Ends; and `PC-BASIC-01` gains concurrent None Ends and root-versus-child completion, staying open on multiple outgoing Start flows. All four stay open.
 
-Implemented as proposed. The [source test](../../packages/bpmn-source/test/terminal-forks-source.test.ts) admits both models at both levels and refuses the declaring office move, the empty joined branch and both profile controls, each per level beside its admitted twin. The [root Parallel forks conformance module](../../BpmnSemantics/RootParallelForksConformance.lean) holds thirteen checks, its terminal root fork inverted to admitted with its embedded completion refusal and five added for the separating witnesses; before the Lean admission change five of them fail. The single-scope models module and its source twin admit the root terminal fork, and the pass-through branch and None Throw refusals hold through `TFK-DATA-01`, since their models declare scope-local data. Three [pipeline cases](../../packages/differential/test/terminal-forks-pipeline-cases.ts) carry the journeys and seeded mutations that complete the root at *Departure recorded* or *Access revoked* and *Clear old office* at its first End; the CIB probe's two new tests observe each End end alone and the owner end with its last execution. Re-measured module costs: the root Parallel forks module at 317,072 KiB, from 312,656, for its added fixtures, and the single-scope models module at 317,952 KiB. One guard repair outside the family: the private-by-default scan read a negating `!` as part of an identifier, so a declaration named elsewhere only under Boolean negation counted as unused; it now treats `!` and `?` as identifier characters only after one.
+Implemented as proposed. The [source test](../../packages/bpmn-source/test/terminal-forks-source.test.ts) admits both models at both levels and refuses the declaring office move, the empty joined branch and both profile controls, each per level beside its admitted twin. The [root Parallel forks conformance module](../../BpmnSemantics/RootParallelForksConformance.lean) holds thirteen checks, its terminal root fork inverted to admitted with its embedded completion refusal and five added for the separating witnesses; before the Lean admission change five of them fail. The single-scope models module and its source twin admit the root terminal fork, and the pass-through branch and None Throw refusals held through `TFK-DATA-01`, since their models declare scope-local data, until `DTB-ADMIT-01` admitted them. Three [pipeline cases](../../packages/differential/test/terminal-forks-pipeline-cases.ts) carry the journeys and seeded mutations that complete the root at *Departure recorded* or *Access revoked* and *Clear old office* at its first End; the CIB probe's two new tests observe each End end alone and the owner end with its last execution. Re-measured module costs: the root Parallel forks module at 317,072 KiB, from 312,656, for its added fixtures, and the single-scope models module at 317,952 KiB. One guard repair outside the family: the private-by-default scan read a negating `!` as part of an identifier, so a declaration named elsewhere only under Boolean negation counted as unused; it now treats `!` and `?` as identifier characters only after one.
 
 Nearest unsupported claims:
 
 - several Ends under any other profile, or reached by an Exclusive Choice;
-- a wait-free terminal branch beside a data-declaring Sub-Process;
-- that no admitted closure co-enables an End with a declared entry or mapped invocation, which is argued and checked, not proved;
+- that no admitted closure co-enables an End with a mapped invocation, which is argued and checked, not proved;
 - that every actual closure stays within the admitted burst, not proved in Lean, as for the accounts this family reuses.
 
 ## Versioning consequences
