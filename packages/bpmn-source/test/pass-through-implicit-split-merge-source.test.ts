@@ -256,6 +256,18 @@ test("PTSM-ADMIT-01: regions on both branches of a splitting Task are refused wh
   assert.equal((await compileRegions(forkedRegions(true))).status, BpmnCompilationStatus.Rejected);
 });
 
+// PTSM-PROFILE-01's checked-level profile control (wrong algorithm 2), which the relabelling below cannot reach because
+// every other profile refuses the pass-through node kind before its arity.
+test("PTSM-PROFILE-01: only the nested scope-data profile gives pass-through nodes several flows", async () => {
+  type GraphModule = typeof import("../src/checked-process-graph-admission.ts");
+  const { passThroughSplitMerge } =
+    await import(new URL("../dist/checked-process-graph-admission.js", import.meta.url).href) as GraphModule;
+  for (const registeredProfile of Object.values(SemanticProfileId)) {
+    assert.equal(passThroughSplitMerge(registeredProfile), registeredProfile === SemanticProfileId.NestedEmbeddedScopeData,
+      registeredProfile);
+  }
+});
+
 test("PTSM-PROFILE-01: both models and their twins are refused under the embedded completion profile", async () => {
   for (const [model, node] of [["claim-archiving", archive], ["equipment-dispatch", note]] as const) {
     for (const [label, element] of notations) {

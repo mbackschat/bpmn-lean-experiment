@@ -454,10 +454,13 @@ def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : Checke
         if source.identity.semanticProfile == nestedScopeDataProfileId then some (.vertex .join) else none
     | .exclusiveMerge _ => some .merge
     -- PTPB-PROFILE-01, NIT-PROFILE-01: only the nested scope-data profile maps a pass-through step to a pass vertex,
-    -- or to a fork when it splits, as its lowered `duplicate` does (PTSM-ADMIT-01).
+    -- or to a fork when it splits and a merge when it merges, as its lowered `duplicate` and many-input merge are
+    -- (PTSM-ADMIT-01).
     | .nonOperationalTask _ _ | .noneIntermediateThrowEvent _ =>
         if source.identity.semanticProfile != nestedScopeDataProfileId then none
-        else some (.vertex (if CheckedPassThroughFlow.splits source.sequenceFlows node then .fork else .pass))
+        else if CheckedPassThroughFlow.splits source.sequenceFlows node then some (.vertex .fork)
+        else if CheckedPassThroughFlow.merges source.sequenceFlows node then some .merge
+        else some (.vertex .pass)
     | _ => none
   let child := match node with
     | .embeddedSubProcess _ child => some child.value

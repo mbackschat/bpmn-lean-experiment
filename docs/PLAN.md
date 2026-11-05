@@ -100,11 +100,11 @@ Deliverable: pass-through Abstract and Manual Tasks and None Throws with several
 
 Acceptance blockers: implementation of the [proposal](capsules/PASS-THROUGH-IMPLICIT-SPLIT-MERGE-PROPOSAL.md), closure review and hosted `verify-complete`.
 
-Current result: implemented above `a9f1e121` within its approved Rule 2 declaration; focused suites, narrow Lean builds, conformance checks and the CIB probe are green.
+Current result: implemented above `a9f1e121`; local closure lanes green; closure review corrections applied.
 
 Effort budget: 8 hours from 2026-11-05 02:52 CET, ending 10:52.
 
-Next action: closure heavy lanes, full CIB oracle, closure cold review, owner amendments, graduation, branch push flow.
+Next action: Lean closure lanes, hosted `verify-complete`, correction audit, graduation, branch push flow.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

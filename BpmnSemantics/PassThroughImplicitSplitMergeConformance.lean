@@ -278,6 +278,25 @@ private def other_profiles_refuse_both_forms : Bool :=
       !admitted (embedded source) && (NestedScopeControl.checkedAnalysis (embedded source)).isNone &&
         (NestedScopeControl.programAnalysis (lowerCheckedProcess (embedded source))).isNone
 
+/-- PTSM-PROFILE-01's checked-level profile control (wrong algorithm 2), which the check above cannot reach because every
+other profile refuses the pass-through node kind before its arity: the arm admits a merging or a splitting node exactly
+when both its `mixed` and `variableMerge` flags hold, of the profiles either flag names only the nested scope-data
+profile sets both, and the single-flow twin is admitted under every flag. -/
+private def split_merge_arity_holds_for_the_nested_profile_alone : Bool :=
+  let named : List ProfileId := [mixedTaskControlFlowProfileId, mixedTaskBusinessErrorProfileId, nestedScopeDataProfileId,
+    ⟨embeddedCompletionProfile⟩]
+  let claim := claimWith .manual
+  let twin := { claim with sequenceFlows := claim.sequenceFlows.filter (·.sourceId.value != "WriteRejectionLetter") }
+  let arity (source : CheckedProcess) (id : String) (mixed variableMerge : Bool) : Bool :=
+    (source.nodes.find? (·.id.value == id)).any
+      (checkedNodeArityValid false false mixed false variableMerge [] source.sequenceFlows)
+  named.all (fun profile => (checkedVariableChoiceProfile profile && checkedVariableMergeProfile profile) ==
+    (profile == nestedScopeDataProfileId)) &&
+  [false, true].all fun mixed => [false, true].all fun variableMerge =>
+    arity claim "ArchiveClaimFile" mixed variableMerge == (mixed && variableMerge) &&
+      arity (dispatchWith .manual) "PrintDispatchNote" mixed variableMerge == (mixed && variableMerge) &&
+      arity twin "ArchiveClaimFile" mixed variableMerge
+
 /-- Every executable check of this module, named for the driver's failure report. -/
 def passThroughImplicitSplitMergeConformanceChecks : List (String × Bool) := [
   ("retained_models_and_twins_are_admitted", retained_models_and_twins_are_admitted),
@@ -288,7 +307,8 @@ def passThroughImplicitSplitMergeConformanceChecks : List (String × Bool) := [
   ("merge_under_a_fork_is_refused", merge_under_a_fork_is_refused),
   ("root_call_beside_a_splitting_task_is_refused", root_call_beside_a_splitting_task_is_refused),
   ("sibling_regions_under_a_splitting_task_are_refused", sibling_regions_under_a_splitting_task_are_refused),
-  ("other_profiles_refuse_both_forms", other_profiles_refuse_both_forms)
+  ("other_profiles_refuse_both_forms", other_profiles_refuse_both_forms),
+  ("split_merge_arity_holds_for_the_nested_profile_alone", split_merge_arity_holds_for_the_nested_profile_alone)
 ]
 
 end BpmnSemantics.PassThroughImplicitSplitMergeConformance

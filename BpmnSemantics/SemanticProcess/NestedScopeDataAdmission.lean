@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.EffectDataAdmission
+import BpmnSemantics.SemanticProcess.CheckedPassThroughFlow
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Nested scope-data profile admission
@@ -259,8 +260,11 @@ def checkedVertex? (source : CheckedProcess) (node : CheckedNode) : Option Verte
   match node with
   | .noneStartEvent _ => return { id, scope := scope.value, kind := .start, outputs }
   | .noneEndEvent _ => return { id, scope := scope.value, kind := .finish, outputs }
+  -- PTSM-ADMIT-01: a pass-through node with several incoming flows lowers to a many-input merge, which is no serial
+  -- vertex, as an Exclusive merge is not; the re-entry account takes it as a joint before consulting this function.
   | .nonOperationalTask _ _ | .noneIntermediateThrowEvent _ =>
-      return { id, scope := scope.value, kind := .passThrough, outputs }
+      if CheckedPassThroughFlow.merges source.sequenceFlows node then none
+      else return { id, scope := scope.value, kind := .passThrough, outputs }
   | .userTask _ _ metadata =>
       if !metadataValid handlers metadata then none
       else return { id, scope := scope.value, kind := .human, outputs }
