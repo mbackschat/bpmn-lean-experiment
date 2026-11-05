@@ -83,6 +83,7 @@ Excluded, each refused at admission:
 - an implicit merge in a Sub-Process body or the called Process, whose bodies hold no Choice;
 - a pass-through node in a called Process, as today;
 - a root Call beside a root splitting node, as beside a root Parallel fork (`RPF-ADMIT-01`);
+- an Inclusive region on more than one branch of a splitting node, as of a Parallel fork (the profile exclusion `inclusive-regions-on-sibling-branches-of-one-fork`);
 - every other Activity kind, Start Event and Link target with several flows;
 - every form under any other profile.
 
@@ -197,14 +198,13 @@ Both models carry a source overlay and a mapped Service Task, as the profile's s
   - The reservation result runs one closure: *Print dispatch note* publishes one occurrence, and both User Tasks are armed (`PTSM-SPLIT-01`). Two journeys, one per completion order of the two User Tasks; the Process completes at the join.
   - A choice reading arms one User Task, and k activations publish two occurrences (wrong algorithm 4).
 - **Notation twins:** each model with its Manual Task swapped to an Abstract Task, and to a None Throw. Each twin is admitted at both levels and lowers to the same operation with the twin's origin, so each of the three node kinds is witnessed.
-- **Projection witnesses**, each admitted at both levels with its analysis agreeing across levels (wrong algorithm 5):
-  - (A) a splitting Task on a branch of an Inclusive region, before the region's join;
-  - (B) a root splitting Task with an Inclusive region on each branch.
+- **Projection witness**, admitted at both levels with its region analysis agreeing across levels (wrong algorithm 5): a splitting Task on a branch of an Inclusive region, before the region's join.
 - **Refused edits**, each asserted at the checked and Program levels separately (wrong algorithms 1 and 5):
   - *Archive claim file* given a second outgoing flow, so it both merges and splits;
   - one dispatch-note flow given a condition;
   - the dispatch branches reconverging at a Manual Task instead of the Parallel Gateway (a merge under a fork);
-  - a root Call Activity beside *Print dispatch note* in a root forking model (`RPF-ADMIT-01`).
+  - a root Call Activity beside *Print dispatch note* in a root forking model (`RPF-ADMIT-01`);
+  - a root splitting Task with an Inclusive region on each branch, refused as beside a Parallel fork by the rule that at most one branch of a fork holds a region.
 - **Profile control:** each model relabelled to the embedded completion and exact-shape profiles is refused per level and at profile admission, while its single-flow twin's admission is unchanged (wrong algorithm 2).
 - **Lowering:** in both languages *Archive claim file* lowers to a two-input `mergeExclusive` and *Print dispatch note* to a two-output `duplicate`, each with the node as origin and its places in canonical order.
 
@@ -212,7 +212,7 @@ Both models carry a source overlay and a mapped Service Task, as the profile's s
 
 Each oracle below asserts a refusal that this family turns into admission. None is deleted. Each refused edit keeps refusing under every other profile, and under this profile it either becomes a positive witness or is retargeted to a form that stays excluded, so that it still kills its mutation. Which of the two applies is settled by the witness, never by preference.
 
-- [`pass-through-task-source.test.ts`](../../packages/bpmn-source/test/pass-through-task-source.test.ts) "two outgoing flows" and "two incoming flows" edits of the document intake. The second-incoming edit is a root re-entry implicit merge, which this family admits. The second-outgoing edit enters an Exclusive Merge, a merge under a fork, which stays refused.
+- [`pass-through-task-source.test.ts`](../../packages/bpmn-source/test/pass-through-task-source.test.ts) "two outgoing flows" and "two incoming flows" edits of the document intake. The second-incoming edit is a root re-entry implicit merge, which this family admits. The second-outgoing edit makes the model both fork and choose, and the re-entry route refuses a forking model, so it stays refused, now killing a re-entry route that ignores a splitting node.
 - [`PassThroughTaskConformance`](../../BpmnSemantics/PassThroughTaskConformance.lean): `second_outgoing_flow_is_refused` and `second_incoming_flow_is_refused` over the `intakeWith` variants.
 - [`pass-through-parallel-branches-source.test.ts`](../../packages/bpmn-source/test/pass-through-parallel-branches-source.test.ts): "a pass-through Task with a second outgoing flow on a branch is refused".
 - The `PTT-ADMIT-01` row of the [pass-through Task evidence matrix](PASS-THROUGH-TASK-SPEC.md#rule-to-evidence-matrix), whose killing mutation names a two-outgoing Task.
@@ -222,7 +222,7 @@ Each oracle below asserts a refusal that this family turns into admission. None 
 
 | Rule | Positive and negative witness | Lanes | Killing mutation |
 |---|---|---|---|
-| `PTSM-ADMIT-01` | Both models, their notation twins and both projection witnesses admitted at both levels; the four refused edits per level | Source, core, Lean conformance checks, pipeline | Widen at one level only (1), or classify a several-flow node by its kind in any checked analysis (5) |
+| `PTSM-ADMIT-01` | Both models, their notation twins and the projection witness admitted at both levels; the five refused edits per level | Source, core, Lean conformance checks, pipeline | Widen at one level only (1), or classify a several-flow node by its kind in any checked analysis (5) |
 | `PTSM-MERGE-01` | Both claim journeys | Core, pipeline across Lean, core and Temporal; CIB probe | A merge that waits for all inputs (3), killed by a seeded pipeline mutation |
 | `PTSM-SPLIT-01` | Both dispatch orders | Core, pipeline across Lean, core and Temporal; CIB probe | Arm one branch only (4), killed by a seeded pipeline mutation |
 | `PTSM-PROFILE-01` | Both models and their twins under the other profiles | Core and Lean conformance checks | Widen for every profile (2) |
