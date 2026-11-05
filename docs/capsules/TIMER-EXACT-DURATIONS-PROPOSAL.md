@@ -120,6 +120,6 @@ Registration: the register entries, profile artifacts, scenarios, pipeline and i
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `7173770c` | `fork-turns-none` | `approve-with-required-edits` | `47c2ce30, 72394378` |
+| Proposal | `7173770c` | `fork-turns-none` | `approve-with-required-edits` | `47c2ce30, 72394378, e8b35aa9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
