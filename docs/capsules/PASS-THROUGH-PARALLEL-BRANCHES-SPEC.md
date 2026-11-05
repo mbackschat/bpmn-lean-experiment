@@ -88,7 +88,7 @@ The pair law joins the case analysis of `prepared_merge_transition_pair` in [`In
 
 So an End and regional completion remain singletons and execute unprepared, as today. Since the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md#representation-and-runtime-ownership), a data-declaring definition may hold a wait-free terminal branch, so its End can share a batch with a declared entry; that pair commits through `prepared_end_declared_entry_pair` (`DTB-COMMUTE-01`), regional completion stays a singleton by the last bullet, and a mapped invocation stays dependent on both a Merge input and an End.
 
-- Rejected alternative: proving `ordinaryEnd` and `regional` pair laws beside declared entries, so terminal branches could also be wait-free. No CIB model whose shape the profile otherwise admits needs that shape, so it stays outside this family as `PC-HUM-04`'s residual.
+- Rejected alternative: proving `ordinaryEnd` and `regional` pair laws beside declared entries, so terminal branches could also be wait-free. No CIB model whose shape the profile otherwise admits needs that shape, so it stays outside this family as `PC-HUM-04`'s residual. Superseded: the [data-declaring terminal branches account](DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md#representation-and-runtime-ownership) admitted that residual with the `ordinaryEnd` law alone (`DTB-COMMUTE-01`); no `regional` law was needed, since regional completion stays a singleton.
 
 - Rejected alternative: an admission rule that keeps a pass-through Task from ever sharing a closure with a frame-inserting entry. A fork into a declaring Sub-Process and a pass-through Task is the common shape, so the rule would refuse the class this family exists for.
 
@@ -187,7 +187,6 @@ Then `PC-HUM-04` is evidenced except two residual forms, a wait-free branch of a
 Nearest unsupported claims:
 
 - pass-through Tasks with several incoming or outgoing flows (`PC-CF-07`);
-- a wait-free branch of a terminal fork in a Sub-Process body, which needs `ordinaryEnd` and `regional` pair laws beside declared entries, until the [terminal forks account](TERMINAL-FORKS-SPEC.md#admission) admitted it in definitions without declared entries;
 - a forking model without an embedded Sub-Process, such as CIB's `threeTasksProcess`, until the [single-scope models account](SINGLE-SCOPE-MODELS-SPEC.md) admitted it;
 - forks whose pass-through Tasks exceed the closure limit of eight: a body fork of four pass-only branches is refused, and the office relocation's fork closure has one step of margin;
 - in called Processes or Multi-Instance bodies;

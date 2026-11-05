@@ -100,11 +100,11 @@ Deliverable: wait-free terminal branches admitted beside scope-local data in the
 
 Acceptance blockers: implementation of the approved [proposal](capsules/DATA-DECLARING-TERMINAL-BRANCHES-PROPOSAL.md), closure review and hosted `verify-complete`.
 
-Current result: proposal approved after corrections (receipt in the capsule); implemented under a reviewed Rule 2 declaration: the pair law `prepared_end_declared_entry_pair` builds, `TFK-DATA-01` is retired at both levels, and the expense claim is admitted (burst 8) with its CIB probe, source, runtime and Lean conformance witnesses green.
+Current result: implemented at `e7a97d0c` under a reviewed and post-checked Rule 2 declaration (re-applied after a reverted post-check violation) and mapped at `cd9cbb4c`; closure gates green there (local Lean library test and `BpmnConformance` under `LEAN_FULL_GATE=dtb-closure`, hosted `verify-complete` on PR 57); the cold closure review approved with required edits, applied in the correction commit.
 
 Effort budget: 6 hours from 2026-11-05 00:00 CET, ending 06:00.
 
-Next action: family closure lanes (full Lean library, `BpmnConformance`, both pipeline legs, CIB oracle), closure documents, then the cold closure review.
+Next action: correction audit by the same reviewer, then graduation (receipt, `PC-HUM-04` accepted) and landing on `main` through the branch flow.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the profile, the CIB probe, and approving proposal and closure reviews.
 

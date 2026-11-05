@@ -238,12 +238,14 @@ private def burst_of_eight_is_admitted_and_nine_refused : Bool :=
 
 /-- PTPB-WORK-01 refuses an empty branch. Though *Review invoice* declares scope-local data, DTB-ADMIT-01 admits a
 terminal branch of a plain Task alone (burst 5) and one through a nested wait-free fork straight to its End (burst 8);
-only PTPB-BURST-01 refuses the nested fork followed by a plain Task (burst 9). Each waiting twin is admitted. -/
+only PTPB-BURST-01 refuses the nested fork followed by a plain Task (burst 9, as the TypeScript twin measures it). Each
+waiting twin is admitted. -/
 private def empty_branch_and_burst_refuse_while_wait_free_terminal_branches_admit : Bool :=
   !admitted (settlementWith .emptyBranch) &&
     admitted (settlementWith (.terminal true)) && admitted (settlementWith (.terminal false)) &&
     admitted (settlementWith (.terminalNested true)) && !admitted (settlementWith (.terminalNested false)) &&
-    admitted (settlementWith .terminalNestedToEnd)
+    admitted (settlementWith .terminalNestedToEnd) && burst? (settlementWith (.terminal false)) == some 5 &&
+    burst? (settlementWith .terminalNestedToEnd) == some 8
 
 /-- PTPB-CALL-01: a Call that only a Manual Task separates from its body's Start is refused, while a pass-through Task
 between the body's first wait and its Call is admitted. -/

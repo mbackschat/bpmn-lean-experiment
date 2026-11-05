@@ -265,7 +265,8 @@ private def second_flows_are_refused : Bool :=
 /-- NIT-ADMIT-01 with DTB-ADMIT-01: a None Throw alone on a terminal branch is admitted (burst 8) as its User Task twin is,
 though *Set up account* declares scope-local data. -/
 private def wait_free_terminal_branch_is_admitted : Bool :=
-  admitted (onboardingWith (some true)) && admitted (onboardingWith (some false))
+  admitted (onboardingWith (some true)) && admitted (onboardingWith (some false)) &&
+    burst? (onboardingWith (some false)) == some 8
 
 /-- NIT-ADMIT-01: a Call that only a None Throw separates from its body's Start is refused. -/
 private def call_behind_only_a_none_throw_is_refused : Bool :=
