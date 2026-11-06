@@ -767,7 +767,9 @@ function hasSelectedEventRaceTopology(
     return false;
   }
   const configured = graph.flows.filter(({ sourceId }) => sourceId === gateway.id);
-  return configured.length === 2 &&
+  // TED-SITE-01: the race arm keeps its single PT1S lexeme, so an equal value such as PT01S is refused here.
+  return timer.durationLiteral === "PT1S" &&
+    configured.length === 2 &&
     configured.every(({ condition }) => condition === null) &&
     configured.filter(({ targetId }) => targetId === message.id).length === 1 &&
     configured.filter(({ targetId }) => targetId === timer.id).length === 1;

@@ -1,5 +1,5 @@
 /**
- * The one owner that turns an admitted timer duration lexeme into milliseconds.
+ * The owner that turns the one admitted lexeme of each fixed-lexeme Timer site into milliseconds.
  *
  * The checked graph retains the exact source lexeme rather than a normalized number so that Lean and
  * TypeScript cannot drift on how a duration is read. That protection holds only while a single owner

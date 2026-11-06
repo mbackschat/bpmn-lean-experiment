@@ -16,7 +16,7 @@ import type {
   CheckedNode,
   SemanticOperation,
 } from "@bpmn-lean/semantic-core";
-import { SemanticProfileId, isWellFormedSemanticProcessProgram } from "@bpmn-lean/semantic-core";
+import { SemanticProfileId } from "@bpmn-lean/semantic-core";
 import { verifyDefinitionArtifacts } from "../../../scripts/contract-artifacts.ts";
 import {
   compileSemanticProcessFixture,
@@ -680,7 +680,7 @@ test("keeps refusing every lexeme but PT1S at the race arm, the boundary and the
   ] as const) {
     const xml = new TextDecoder().decode(await readFile(new URL(`../../../scenarios/${path}`, import.meta.url)));
     assert.equal(xml.split(">PT1S<").length, 2, path);
-    for (const lexeme of ["PT2S", "PT01S"]) {
+    for (const lexeme of ["PT2S", "PT01S", "PT87660H"]) {
       const result = await compileBpmnToSemanticProcess({
         bytes: new TextEncoder().encode(xml.replace(">PT1S<", `>${lexeme}<`)),
         sourceId: "non-unit-site-timer",
@@ -689,9 +689,7 @@ test("keeps refusing every lexeme but PT1S at the race arm, the boundary and the
         sourceOverlay: null,
         limits,
       });
-      assert.ok(result.status === BpmnCompilationStatus.Rejected ||
-        (result.semanticProcess !== undefined && !isWellFormedSemanticProcessProgram(result.semanticProcess)),
-      `${path} ${lexeme}`);
+      assert.equal(result.status, BpmnCompilationStatus.Rejected, `${path} ${lexeme}`);
     }
   }
 });

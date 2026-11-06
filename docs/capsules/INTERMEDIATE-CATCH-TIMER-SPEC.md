@@ -57,7 +57,7 @@ The admitted document must contain exactly:
 - exactly two Sequence Flows forming the stated linear topology;
 - no parser warnings, extension elements, conditions, data, expressions other than that exact literal, or additional Flow Nodes.
 
-The profile rejects `timeDate`, `timeCycle`, empty TimerEventDefinitions, referenced EventDefinitions, alternative lexical spellings, zero or negative durations, fractional values, variables, and expression-language metadata. This is deliberate profile narrowing, not a claim that other valid BPMN forms are malformed.
+The profile rejects `timeDate`, `timeCycle`, empty TimerEventDefinitions, referenced EventDefinitions, lexemes outside that exact form (zero, negative, fractional, nominal, interval or above the maximum), variables, and expression-language metadata. This is deliberate profile narrowing, not a claim that other valid BPMN forms are malformed.
 
 ### Source normalization
 
@@ -71,7 +71,7 @@ type CheckedIntermediateCatchTimerEvent = Readonly<{
 }>;
 ```
 
-The source compiler validates the exact literal and lowers it to the semantic duration `1000` ms. The checked graph retains the literal so Lean can independently validate the only admitted normalization rather than trusting a TypeScript-computed number.
+The source compiler parses the lexeme with the exact-duration owner and lowers it to its milliseconds (`1000` for `PT1S`). The checked graph retains the lexeme so Lean normalizes it independently rather than trusting a TypeScript-computed number.
 
 The `bpmn-moddle` object and TimerEventDefinition expression remain private to `@bpmn-lean/bpmn-source`.
 
@@ -315,7 +315,7 @@ This specification remains valid only while all of the following stay green:
 
 This capsule excludes:
 
-- any duration literal other than exact `PT1S`;
+- any duration lexeme outside the exact `PT[nH][nM][nS]` form that [Timer exact durations](TIMER-EXACT-DURATIONS-PROPOSAL.md) admits;
 - expression evaluation or variables;
 - `timeDate`, `timeCycle`, calendar units, time zones, recurrence, and catch-up policy;
 - Timer Start Events, Boundary Timer Events, event subprocesses, and event-based gateways;
@@ -330,7 +330,7 @@ This capsule excludes:
 
 Reopen this account before admitting:
 
-- any second duration lexical form or expression language;
+- any duration lexical form beyond that exact form, or an expression language;
 - a competing semantic input whose order relative to a timer can change behavior;
 - more than one active timer occurrence;
 - cancellation, interruption, boundary attachment, repetition, or scope propagation;

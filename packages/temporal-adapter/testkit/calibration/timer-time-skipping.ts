@@ -44,8 +44,9 @@ function withDeadline<Value>(
   return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
 }
 
-// The retained scenario is a tracked answer-free document locked by the
-// contract gate, so its declared type is the current wire contract.
+// The registered scenario is locked by the contract gate. The PT15M fixture is that scenario with
+// its duration, identifiers and evidence references changed; no schema check reads it, so its
+// declared type holds only because it was derived from the registered scenario.
 async function compileScenario([directory, source]: readonly [string, string]) {
   const scenarioUrl = new URL(`../../../../${source}/scenario.json`, import.meta.url);
   const bpmnUrl = new URL(`../../../../${source}/process.bpmn`, import.meta.url);

@@ -47,7 +47,7 @@ An Intermediate Catch Timer is admitted exactly where it is today, with the same
 
 ## Stable rules
 
-- `TED-PARSE-01`: an admitted lexeme has exactly one millisecond value, the same in Lean and TypeScript; every admitted value lies in `1..315,576,000,000`. The mapping is not injective (`PT90M` and `PT1H30M` both give 5,400,000), a deliberate non-law.
+- `TED-PARSE-01`: an admitted lexeme has exactly one millisecond value, the same in Lean and TypeScript over the shared lexeme list; every listed admitted value lies in `1..315,576,000,000`. Both are checked over that list, not proved for every lexeme. The mapping is not injective (`PT90M` and `PT1H30M` both give 5,400,000), a deliberate non-law.
 - `TED-REFUSE-01`: zero, fractional, nominal, interval, date, repetition, above-maximum and malformed lexemes are refused at definition admission.
 - `TED-BOUND-01`: the maximum is the same constant in both parsers, so for every program that definition admission binds to its lowered checked source, an armed deadline stays a safe integer while logical time is below `2^53 − 1 − 315,576,000,000`. Beyond that, Lean `Nat` and the TypeScript arming range check disagree; that disagreement stays a harness failure, never a semantic outcome, as today.
 - `TED-ONE-01`: `PT1S` keeps 1000 ms, so every existing expected result is unchanged.
@@ -56,7 +56,7 @@ An Intermediate Catch Timer is admitted exactly where it is today, with the same
 
 ## Newly reachable waits and resumption
 
-None: the same Intermediate Catch waits are reached with other deadlines. They are ordinary durable timers that never defer Continue-As-New, so a long wait leaves Workflow-chain rollover unchanged.
+None: the same Intermediate Catch waits are reached with other deadlines. They are ordinary durable timers that never defer Continue-As-New, so a long wait leaves Workflow-chain rollover unchanged. A command arriving during the wait gets its outcome only after the timer fires (see the preflight).
 
 ## Separating witnesses
 
@@ -90,7 +90,7 @@ Evidence: [`exact_lowering_preserves_timer_start`](../../BpmnSemantics/TimerStar
 
 ## Temporal hosting and refinement preflight
 
-No new hosting mechanism. Durable ingress, wait and timer: the generic host path awaits the armed Intermediate Catch's durable Workflow timer inline ([`workflow-host-readiness.ts`](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts)), now with a longer duration, and the adapter keeps supplying the semantic deadline, not wall-clock arrival, as the firing time. No rollover check runs until the timer fires; that stays harmless for long waits because host admission admits no concurrent wait beside that timer ([`host-admission.ts`](../../packages/temporal-adapter/protocol/src/host-admission.ts)), so nothing can grow Event History meanwhile. The second hosting path, the subscription readiness scheduler of the repeatable-subscription profile, stays at `PT1S` in this increment. Effect, cancellation, lifecycle and projection: unchanged. The state relation is unchanged, because the wait still carries its logical deadline. Risk: replay of a long timer is unchanged Temporal behavior. Smallest refinement witness: the hosted time-skipping lane with one `PT15M` Intermediate Catch Timer, plus the `PT2S` pipeline case on the host clock. Host admission's race and boundary pins stay.
+No new hosting mechanism. Durable ingress, wait and timer: the generic host path awaits the armed Intermediate Catch's durable Workflow timer inline ([`workflow-host-readiness.ts`](../../packages/temporal-adapter/workflow/src/workflow-host-readiness.ts)), now with a longer duration, and the adapter keeps supplying the semantic deadline, not wall-clock arrival, as the firing time. No rollover check runs until the timer fires, yet ingress stays open: a Message delivery Signal or a User Task completion Update is admitted and queued ([`workflow-command-ingress.ts`](../../packages/temporal-adapter/workflow/src/workflow-command-ingress.ts)), and its outcome waits until the loop resumes after the timer, at worst the full `PT87660H`. Host admission admits no concurrent wait beside that timer ([`host-admission.ts`](../../packages/temporal-adapter/protocol/src/host-admission.ts)), so the core can accept no command during the wait and the delay changes no semantic outcome: it is host latency for a command the core rejects. The command capacity bounds ([`workflow-command-capacity.ts`](../../packages/temporal-adapter/workflow/src/workflow-command-capacity.ts)) cap the Event History these commands add, and a command beyond them gets its typed capacity refusal at ingress instead of a rollover. Removal condition: host this wait on the non-blocking durable timer owner once an increment admits a command the core can accept during it. The second hosting path, the subscription readiness scheduler of the repeatable-subscription profile, stays at `PT1S` in this increment. Effect, cancellation, lifecycle and projection: unchanged. The state relation is unchanged, because the wait still carries its logical deadline. Risk: replay of a long timer is unchanged Temporal behavior. Smallest refinement witness: the hosted time-skipping lane with one `PT15M` Intermediate Catch Timer, plus the `PT2S` pipeline case on the host clock. Host admission's race and boundary pins stay.
 
 ## Evidence and acceptance
 
