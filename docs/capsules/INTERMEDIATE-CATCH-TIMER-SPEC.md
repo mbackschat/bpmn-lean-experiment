@@ -52,7 +52,7 @@ The admitted document must contain exactly:
 - one executable private Process;
 - one none Start Event;
 - one Intermediate Catch Event with exactly one contained TimerEventDefinition;
-- exactly one `timeDuration` child whose trimmed text is the literal `PT1S`;
+- exactly one `timeDuration` child whose text is an exact `PT[nH][nM][nS]` duration from 1 ms to `PT87660H` ([Timer exact durations](TIMER-EXACT-DURATIONS-PROPOSAL.md); this spec's examples use `PT1S`);
 - one none End Event;
 - exactly two Sequence Flows forming the stated linear topology;
 - no parser warnings, extension elements, conditions, data, expressions other than that exact literal, or additional Flow Nodes.
@@ -67,7 +67,7 @@ The checked BPMN graph preserves the source-facing distinction:
 type CheckedIntermediateCatchTimerEvent = Readonly<{
   kind: "intermediateCatchTimerEvent";
   id: string;
-  durationLiteral: "PT1S";
+  durationLiteral: string; // an admitted exact-duration lexeme
 }>;
 ```
 
@@ -91,7 +91,7 @@ type AwaitTimerOperation = Readonly<{
   output: string;
   timer: {
     elementId: string;
-    durationMs: 1000;
+    durationMs: number; // positive, from the exact-duration owner
   };
 }>;
 ```

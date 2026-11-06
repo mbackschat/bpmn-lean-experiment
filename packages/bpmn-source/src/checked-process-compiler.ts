@@ -7,6 +7,7 @@ import {
   CheckedProcessKind,
   SemanticProfileId,
   compareCanonicalStrings,
+  parseExactTimerDuration,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -38,6 +39,7 @@ import {
   isAdmittedCheckedProcess,
 } from "./checked-process-admission.js";
 import {
+  intermediateCatchTimerDuration,
   isProjectableNodeType,
   projectCheckedNodes,
   projectCheckedSequenceFlows,
@@ -450,6 +452,24 @@ export function classifyProcess(
   return { kind: ProcessProjectionKind.Classified, classification, processId, scoped, sourceNodes, sourceFlows };
 }
 
+/**
+ * Names the first Intermediate Catch Timer whose duration lexeme the duration owner refuses, so the
+ * refusal states the lexeme and its class instead of the generic shape refusal.
+ */
+function refusedIntermediateCatchTimerDuration(
+  nodes: ReadonlyArray<Readonly<{ element: ElementRecord }>>,
+): string | undefined {
+  for (const { element } of nodes) {
+    if (element.$type !== bpmnTypes.intermediateCatchEventType) continue;
+    const lexeme = intermediateCatchTimerDuration(element);
+    const parsed = lexeme === undefined ? undefined : parseExactTimerDuration(lexeme);
+    if (parsed !== undefined && !parsed.admitted) {
+      return `Intermediate Catch Timer ${String(element.id)} duration "${lexeme}" is refused as ${parsed.refusal}.`;
+    }
+  }
+  return undefined;
+}
+
 /** Projects a classified Process root free of element-level refusals into its checked nodes, flows and ownership. */
 export function projectClassifiedProcess(
   classified: ClassifiedProcess,
@@ -493,7 +513,8 @@ export function projectClassifiedProcess(
     nodeScopes === undefined ||
     sequenceFlowScopes === undefined
   ) {
-    return refused("Every admitted node requires a supported plain shape, distinct ID, and gateway direction consistent with its arity.");
+    return refused(refusedIntermediateCatchTimerDuration(classified.sourceNodes) ??
+      "Every admitted node requires a supported plain shape, distinct ID, and gateway direction consistent with its arity.");
   }
   return {
     kind: ProcessProjectionKind.Projected,

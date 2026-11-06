@@ -1,0 +1,67 @@
+{
+  "kind": "scenario",
+  "id": "intermediate-catch-timer-alarm-debounce",
+  "profile": "bpmn-2.0.2-timer-user-task-composition-draft",
+  "bpmn": {
+    "id": "intermediate-catch-timer-alarm-debounce-process",
+    "relativePath": "scenarios/intermediate-catch-timer-alarm-debounce/process.bpmn",
+    "sha256": "50937bbf002828404205047721a607a38e2f3278cae6a8041ee27d431efe18e4",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-intermediate-catch-timer-alarm-debounce",
+      "processId": "Process_AlarmDebounce",
+      "instanceId": "DebounceInstance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "fireTimer",
+      "commandId": "fire-timer-sha256:6faf3af6d55045250e2039c59dbe7ab7c489378928a93c5eae9512eeae23aee2",
+      "timerId": {
+        "processInstanceId": "DebounceInstance_1",
+        "elementId": "TimerCatch_Debounce",
+        "activation": 1
+      },
+      "logicalTimeMs": 2000
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-UserTask_AcknowledgeAlarm",
+      "taskId": {
+        "processInstanceId": "DebounceInstance_1",
+        "elementId": "UserTask_AcknowledgeAlarm",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.5.4",
+      "BPMN 2.0.2 \u00a710.5.5",
+      "BPMN 2.0.2 \u00a710.7.3",
+      "BPMN 2.0.2 \u00a713.3.2",
+      "BPMN 2.0.2 \u00a713.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerCatchIntermediateEventJobHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java"
+    ]
+  }
+}

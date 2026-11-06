@@ -257,6 +257,10 @@ export const normativeArtifactCases = Object.freeze([
   }),
   Object.freeze({
     scenarioRelativePath:
+      "scenarios/intermediate-catch-timer-alarm-debounce/scenario.json",
+  }),
+  Object.freeze({
+    scenarioRelativePath:
       "scenarios/intermediate-catch-message/scenario.json",
   }),
   Object.freeze({

@@ -109,20 +109,36 @@ def eventRaceMessageArm (source : CheckedProcess)
         channel := .operationMessage ⟨""⟩ ⟨""⟩ ⟨""⟩
         output := ⟨""⟩ }
 
-/-- Milliseconds for one admitted duration lexeme.
+/-- Ten Julian years of exact time, the same maximum as TypeScript's `maxExactTimerDurationMs`. -/
+private def maxExactTimerDurationMs : Nat := 315576000000
 
-An unadmitted lexeme normalizes to `0` rather than failing, because checked admission has already
-rejected it; a total function keeps lowering free of an error path the profile cannot reach. `0` is
-not a silent result: every operation this feeds pins its own exact milliseconds, in program
-structural validation directly or, for the parallel Multi-Instance arm it delegates, in
-`ParallelMultiInstanceProfileAdmission`, so a lexeme this table forgets is refused rather than
-executing an instant deadline. The table also cannot drift from the TypeScript one unnoticed,
-because definition admission requires `lowerCheckedProcess` to equal the submitted program exactly
-and TypeScript derives its admitted lexemes from its own table rather than restating them. -/
+/-- Reads `[nH][nM][nS]` after `PT`: digits `n` of the pending component, whether it has any,
+the last unit taken (0 none, 1 H, 2 M, 3 S) and the running total. -/
+private def exactDurationGo : List Char → Nat → Bool → Nat → Nat → Option Nat
+  | [], _, digits, stage, total =>
+      if digits || stage = 0 || total = 0 || total > maxExactTimerDurationMs then none else some total
+  | c :: cs, n, digits, stage, total =>
+      if c.isDigit then exactDurationGo cs (n * 10 + (c.toNat - 48)) true stage total
+      else if !digits then none
+      else match c with
+        | 'H' => if stage < 1 then exactDurationGo cs 0 false 1 (total + n * 3600000) else none
+        | 'M' => if stage < 2 then exactDurationGo cs 0 false 2 (total + n * 60000) else none
+        | 'S' => if stage < 3 then exactDurationGo cs 0 false 3 (total + n * 1000) else none
+        | _ => none
+
+/-- An exact ISO 8601 duration `PT[nH][nM][nS]` in milliseconds, positive and at most the maximum;
+TypeScript's `parseExactTimerDuration` reads the same grammar (TED-PARSE-01). -/
+private def exactTimerDurationMs? (literal : String) : Option Nat :=
+  match literal.toList with
+  | 'P' :: 'T' :: rest => exactDurationGo rest 0 false 0 0
+  | _ => none
+
+/-- Milliseconds for one duration lexeme; a refused lexeme lowers to `0`, never a semantic result:
+the Intermediate Catch pin in program structural validation requires a positive value and every
+other Timer pin an exact one, so definition admission refuses it. Structural recursion keeps it
+kernel-reducible for the fixtures that decide a lowering. -/
 def normalizeTimerDuration (durationLiteral : String) : Nat :=
-  if durationLiteral = "PT1S" then 1000
-  else if durationLiteral = "PT5S" then 5000
-  else 0
+  (exactTimerDurationMs? durationLiteral).getD 0
 
 def normalizeBoundaryTimerExpression : CheckedBoundaryTimerExpression → Nat
   | .duration literal => normalizeTimerDuration literal
@@ -140,7 +156,8 @@ def eventRaceTimerArm (source : CheckedProcess)
   | some (flow, elementId, duration) =>
       { configurationOrigin := { elementId := flow.id }
         elementId
-        durationMs := normalizeTimerDuration duration
+        -- TED-SITE-01: a race arm keeps its single `PT1S` lexeme; every other lexeme lowers to 0.
+        durationMs := if duration = "PT1S" then normalizeTimerDuration duration else 0
         output := firstPlace (outgoingPlaces source elementId) }
   | none =>
       { configurationOrigin := { elementId := ⟨""⟩ }

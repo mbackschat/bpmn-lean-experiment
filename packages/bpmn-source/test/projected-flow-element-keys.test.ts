@@ -40,7 +40,7 @@ const consumers = [
   { source: "checked-element-projection.ts", anchor: "projectExclusiveMerge", elementName: "element", shape: "ExclusiveOrInclusiveGateway" },
   { source: "checked-element-projection.ts", anchor: "projectServiceTask", elementName: "element", shape: "GenericServiceTask" },
   { source: "configured-task-source.ts", anchor: "projectConfiguredTask", elementName: "element", shape: "ConfiguredTask" },
-  { source: "checked-element-projection.ts", anchor: "isExactPt1sTimerEvent", elementName: "element", shape: "IntermediateCatchEvent" },
+  { source: "checked-element-projection.ts", anchor: "intermediateCatchTimerDuration", elementName: "element", shape: "IntermediateCatchEvent" },
   { source: "checked-element-projection.ts", anchor: "isPlainFlowNode", elementName: "element", shape: "PlainNode" },
   { source: "checked-element-projection.ts", anchor: "projectUserTaskMetadata", elementName: "element", shape: "UserTaskMetadata" },
   { source: "checked-element-projection.ts", anchor: "isProjectableEmbeddedSubProcess", elementName: "element", shape: "EmbeddedSubProcess" },

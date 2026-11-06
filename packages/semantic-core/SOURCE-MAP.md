@@ -8,6 +8,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 |---|---|
 | [semantic-value-contract.ts](src/semantic-value-contract.ts) | Shared immutable value shapes carried by checked graphs and programs |
 | [contract.ts](src/contract.ts) | Scenario, stimulus, outcome, and public identity wire shapes |
+| [timer-duration-lexeme.ts](src/timer-duration-lexeme.ts) | The exact ISO 8601 Timer duration grammar, its maximum and refusal classes |
 | [wire.ts](src/wire.ts) | Exact non-normalized wire strings, rejecting lone UTF-16 surrogates |
 | [parallel-scope-population.ts](src/parallel-scope-population.ts) | Parallel Sub-Process membership validation and exact body retirement; runtime integration is owned by the [capsule](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md) |
 | [parallel-scope-runtime.ts](src/parallel-scope-runtime.ts) | Private atomic population entry, occurrence-addressed quiescent retirement and sibling cancellation; public execution remains unregistered |

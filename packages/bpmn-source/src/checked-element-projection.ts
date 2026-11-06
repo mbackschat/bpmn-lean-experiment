@@ -20,6 +20,7 @@ import {
   GatewayDirection,
   REPEATABLE_EVENT_SUBSCRIPTIONS_CHECKPOINT_PROFILE_ID,
   SemanticProfileId,
+  parseExactTimerDuration,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -187,18 +188,20 @@ export function projectCheckedNodes(
             ? { kind: CheckedNodeKind.UserTask, id, name }
             : undefined;
       }
-      case bpmnTypes.intermediateCatchEventType:
-        return isExactPt1sTimerEvent(element)
+      case bpmnTypes.intermediateCatchEventType: {
+        const durationLiteral = intermediateCatchTimerDuration(element);
+        return durationLiteral !== undefined && parseExactTimerDuration(durationLiteral).admitted
           ? {
               kind: CheckedNodeKind.IntermediateCatchTimerEvent,
               id,
-              durationLiteral: "PT1S",
+              durationLiteral,
             }
           : projectIntermediateCatchMessage(
               element,
               id,
               rootSelection.messageArtifacts,
             );
+      }
       case bpmnTypes.receiveTaskType:
         return projectReceiveTask(
           element,
@@ -460,21 +463,23 @@ function projectServiceTask(
   };
 }
 
-function isExactPt1sTimerEvent(element: ElementRecord): boolean {
+/** The admitted-shape `timeDuration` lexeme, or `undefined`; the duration owner decides the
+ * lexeme itself, so a refused one can be named rather than merged into a shape refusal. */
+export function intermediateCatchTimerDuration(element: ElementRecord): string | undefined {
   if (
     !hasOnlyProjectedFlowElementKeys(
       element,
       ProjectedFlowElementShape.IntermediateCatchEvent,
     )
   ) {
-    return false;
+    return undefined;
   }
   const eventDefinitions = asElementArray(element.eventDefinitions);
   if (
     eventDefinitions === undefined ||
     eventDefinitions.length !== 1
   ) {
-    return false;
+    return undefined;
   }
   const definition = eventDefinitions[0];
   if (
@@ -482,15 +487,15 @@ function isExactPt1sTimerEvent(element: ElementRecord): boolean {
     definition.$type !== bpmnTypes.timerEventDefinitionType ||
     !hasOnlyModelledKeys(definition, ["$type", "timeDuration"])
   ) {
-    return false;
+    return undefined;
   }
   const duration = asElement(definition.timeDuration);
   return (
     duration !== undefined &&
     duration.$type === bpmnTypes.formalExpressionType &&
     hasOnlyModelledKeys(duration, ["$type", "body"]) &&
-    duration.body === "PT1S"
-  );
+    typeof duration.body === "string"
+  ) ? duration.body : undefined;
 }
 
 function isPlainFlowNode(element: ElementRecord): boolean {

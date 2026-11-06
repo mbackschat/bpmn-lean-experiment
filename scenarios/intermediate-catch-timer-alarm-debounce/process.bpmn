@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_AlarmDebounce"
+  targetNamespace="https://bpmn-lean.local/scenarios/intermediate-catch-timer-alarm-debounce">
+  <bpmn:process id="Process_AlarmDebounce" name="Debounce an alarm before paging the operator" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_StartToTimer</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:intermediateCatchEvent id="TimerCatch_Debounce">
+      <bpmn:incoming>Flow_StartToTimer</bpmn:incoming>
+      <bpmn:outgoing>Flow_TimerToTask</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="UserTask_AcknowledgeAlarm" name="Acknowledge alarm">
+      <bpmn:incoming>Flow_TimerToTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_TaskToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_TaskToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToTimer" sourceRef="StartEvent_1" targetRef="TimerCatch_Debounce"/>
+    <bpmn:sequenceFlow id="Flow_TimerToTask" sourceRef="TimerCatch_Debounce" targetRef="UserTask_AcknowledgeAlarm"/>
+    <bpmn:sequenceFlow id="Flow_TaskToEnd" sourceRef="UserTask_AcknowledgeAlarm" targetRef="EndEvent_1"/>
+  </bpmn:process>
+</bpmn:definitions>

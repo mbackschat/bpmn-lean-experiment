@@ -261,7 +261,7 @@ export type AwaitEventRaceOperation = OperationBase &
     timer: {
       configurationOrigin: BpmnSequenceFlowOrigin;
       elementId: string;
-      durationMs: 1000;
+      durationMs: number;
       output: string;
     };
   }>;
@@ -657,7 +657,7 @@ export type SemanticOperation =
         output: string;
         timer: {
           elementId: string;
-          durationMs: 1000;
+          durationMs: number;
         };
       }>)
   | AwaitDataInputUserTaskOperation

@@ -9,6 +9,14 @@
  */
 
 /**
+ * The literal-typed table for the Timer sites that still admit one exact lexeme: boundary, Multi-
+ * Instance, Timer Start and repeatable cycle. The Intermediate Catch Timer and the race arm read the
+ * exact-duration grammar from `parseExactTimerDuration` in `@bpmn-lean/semantic-core` instead
+ * (docs/capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md); each excluded site moves there in its own
+ * increment, because longer deadlines change its hosting.
+ */
+
+/**
  * Every admitted lexeme with its millisecond value.
  *
  * The table is the exhaustive source: the lexeme union below is derived from it, so a lexeme cannot

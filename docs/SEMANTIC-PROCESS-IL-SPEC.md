@@ -295,7 +295,7 @@ type CheckedNode = DeepReadonly<
   | {
       kind: "intermediateCatchTimerEvent";
       id: string;
-      durationLiteral: "PT1S";
+      durationLiteral: string; // exact PT[nH][nM][nS], 1 ms to PT87660H
     }
   | {
       kind: "intermediateCatchMessageEvent";
@@ -560,7 +560,7 @@ type AwaitEventRaceOperation = OperationBase & DeepReadonly<{
   timer: {
     configurationOrigin: BpmnSequenceFlowOrigin;
     elementId: string;
-    durationMs: 1000;
+    durationMs: number; // program admission keeps 1000
     output: string;
   };
 }>;
@@ -668,7 +668,7 @@ type SemanticOperation = DeepReadonly<
       output: string;
       timer: {
         elementId: string;
-        durationMs: 1000;
+        durationMs: number; // positive
       };
     })
   | (OperationBase & {
@@ -913,7 +913,7 @@ The first lowering is total only over a valid `CheckedProcess` admitted by the b
 | User Task with one required scalar DataInput and one required scalar DataOutput mediated through distinct direct associations | `awaitDataInputOutputUserTask` carrying both task-neutral direct contracts on one operation so activation and completion share one Activity occurrence and input-bearing local scope |
 | User Task with one required scalar DataOutput written by one direct Data Output Association | `awaitDataOutputUserTask` carrying the association, source DataOutput, and target Property identities; the two are separate arms rather than one flagged arm because they constrain opposite ends of the occurrence |
 | exact collection-driven sequential Multi-Instance User Task with one interrupting outer-lifetime `PT5S` Timer | `awaitSequentialMultiInstanceUserTask` with the complete direct data role graph, exact task definition, normal output, boundary Timer arm, and fixed profile limits |
-| exact `PT1S` Intermediate Catch Timer Event | `awaitTimer` with `durationMs: 1000` |
+| exact-duration Intermediate Catch Timer Event | `awaitTimer` with the lexeme's positive `durationMs` ([Timer exact durations](capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md)) |
 | exact directly addressed payload-free Intermediate Catch Message Event | `awaitMessage` with Catch Event identity and resolved Interface/Operation/Message channel |
 | exact operation-addressed Intermediate Catch Message Event with one required direct payload output | `awaitPayloadMessage` with Catch Event identity, resolved Interface/Operation/Message channel, and the association, source DataOutput, and target Property identities |
 | exact context-backed correlated-payload Intermediate Catch Message Event at the semantic checkpoint | `awaitCorrelatedPayloadMessage` with Catch Event identity, resolved Interface/Operation/Message channel, CorrelationKey and CorrelationProperty identities, and exact payload/Process-property selectors |

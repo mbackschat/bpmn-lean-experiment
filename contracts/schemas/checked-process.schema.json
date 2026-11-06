@@ -1621,7 +1621,8 @@
               "$ref": "#/$defs/nonemptyString"
             },
             "durationLiteral": {
-              "const": "PT1S"
+              "type": "string",
+              "pattern": "^PT(?:[0-9]+H)?(?:[0-9]+M)?(?:[0-9]+S)?$"
             }
           }
         },

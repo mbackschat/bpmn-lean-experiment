@@ -3924,6 +3924,41 @@
       }
     },
     {
+      "id": "alarm-debounce-acknowledgement",
+      "title": "Debounce an alarm before paging",
+      "businessPurpose": "Wait an exact debounce window after a sensor alarm so that a transient spike pages no one, then open one operator acknowledgement.",
+      "cloneFamily": "timer-then-human-review",
+      "constructs": [
+        "endEvent",
+        "intermediateCatchEvent",
+        "process",
+        "sequenceFlow",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "timerWait",
+        "userTaskWait",
+        "userTaskCompletion"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/intermediate-catch-timer-alarm-debounce/process.bpmn",
+        "sha256": "50937bbf002828404205047721a607a38e2f3278cae6a8041ee27d431efe18e4",
+        "scenarioRelativePath": "scenarios/intermediate-catch-timer-alarm-debounce/scenario.json",
+        "license": "MIT"
+      },
+      "profile": "bpmn-2.0.2-timer-user-task-composition-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "intermediate-catch-timer-alarm-debounce",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "The alarm acknowledgement has no production browser journey that advances logical time and completes the task."
+      }
+    },
+    {
       "id": "cib-order-goods",
       "title": "CIB Seven order goods",
       "businessPurpose": null,

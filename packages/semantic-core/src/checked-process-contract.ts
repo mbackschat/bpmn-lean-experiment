@@ -327,7 +327,7 @@ export type CheckedNode =
   | DeepReadonly<{
       kind: CheckedNodeKind.IntermediateCatchTimerEvent;
       id: string;
-      durationLiteral: "PT1S";
+      durationLiteral: string;
     }>
   | DeepReadonly<{
       kind: CheckedNodeKind.IntermediateCatchMessageEvent;

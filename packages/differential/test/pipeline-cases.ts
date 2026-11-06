@@ -457,6 +457,32 @@ function timerUserTaskCompositionCase(): PipelineCase {
   });
 }
 
+// The host-clock case of the Timer exact durations increment: its Temporal target waits the real `PT2S`, so longer
+// exact durations run only in logical time (docs/capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md).
+function intermediateCatchTimerAlarmDebounceCase(): PipelineCase {
+  return Object.freeze({
+    id: "intermediate-catch-timer-alarm-debounce",
+    scenarioRelativePath:
+      "scenarios/intermediate-catch-timer-alarm-debounce/scenario.json",
+    bpmnRelativePath:
+      "scenarios/intermediate-catch-timer-alarm-debounce/process.bpmn",
+    workflowIdPrefix: "intermediate-catch-timer-alarm-debounce",
+    cib: null,
+    expectedWaitTraceLength: 3,
+    completionDelivery: TemporalCompletionDelivery.Ordered,
+    temporalRelation: TemporalCaseRelation.ExactSemantic,
+    executionSchedule: TemporalExecutionSchedule.Normal,
+    effectSchedules: null,
+    replaySelection: PipelineReplaySelection.Primary,
+    injectMutation: mutateOpenTimerDeadline,
+    expectedInjectedDisagreement: observationValueDisagreement(
+      "trace[2].openTimers[0].deadlineMs",
+      2000,
+      2001,
+    ),
+  });
+}
+
 function effectCase(): PipelineCase {
   return Object.freeze({
     id: "service-task-effect-success",
@@ -620,6 +646,7 @@ export const pipelineCases = Object.freeze([
   ...subprocessErrorPipelineCases,
   timerCase(),
   timerUserTaskCompositionCase(),
+  intermediateCatchTimerAlarmDebounceCase(),
   ...interchangeAdmissionPipelineCases,
   ...messagePipelineCases,
   ...messagePayloadCatchPipelineCases,

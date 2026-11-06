@@ -1,0 +1,57 @@
+{
+  "kind": "scenario",
+  "id": "intermediate-catch-timer-pt90m",
+  "profile": "cibseven-2.2.0-intermediate-catch-timer-draft",
+  "bpmn": {
+    "id": "intermediate-catch-timer-pt90m-process",
+    "relativePath": "packages/bpmn-source/test/fixtures/intermediate-catch-timer-durations/pt90m/process.bpmn",
+    "sha256": "1f7ec0d24b67c70a207060d196b4aa51d31a8ba6868e018d5f6d7d9c829e1e57",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-intermediate-catch-timer-pt90m",
+      "processId": "Process_IntermediateCatchTimerPT90M",
+      "instanceId": "Instance_1",
+      "initialVariables": []
+    },
+    {
+      "kind": "fireTimer",
+      "commandId": "fire-timer-sha256:7e005eba3c85e677c23926e816457e49ad3cb15618b082aa84583f4bf4f5f8bf",
+      "timerId": {
+        "processInstanceId": "Instance_1",
+        "elementId": "TimerCatch_PT90M",
+        "activation": 1
+      },
+      "logicalTimeMs": 5400000
+    }
+  ],
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.5.4",
+      "BPMN 2.0.2 \u00a710.5.5",
+      "BPMN 2.0.2 Table 10.89",
+      "BPMN 2.0.2 Table 10.101",
+      "BPMN 2.0.2 Table 10.122"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/TimerCatchIntermediateEventJobHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/calendar/DurationHelper.java"
+    ]
+  }
+}

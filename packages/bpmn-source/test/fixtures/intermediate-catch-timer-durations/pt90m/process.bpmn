@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_IntermediateCatchTimerPT90M"
+  targetNamespace="https://bpmn-lean.local/scenarios/intermediate-catch-timer-pt90m">
+  <bpmn:process id="Process_IntermediateCatchTimerPT90M" name="Wait PT90M" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_StartToTimer</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:intermediateCatchEvent id="TimerCatch_PT90M">
+      <bpmn:incoming>Flow_StartToTimer</bpmn:incoming>
+      <bpmn:outgoing>Flow_TimerToEnd</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT90M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_TimerToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToTimer" sourceRef="StartEvent_1" targetRef="TimerCatch_PT90M"/>
+    <bpmn:sequenceFlow id="Flow_TimerToEnd" sourceRef="TimerCatch_PT90M" targetRef="EndEvent_1"/>
+  </bpmn:process>
+</bpmn:definitions>

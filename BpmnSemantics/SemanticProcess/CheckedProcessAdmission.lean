@@ -344,8 +344,7 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
         nonempty normalOutputFlowId.value && nonempty boundaryTimer.outputFlowId.value
   | node@(.parallelMultiInstanceUserTask ..) =>
       parallelMultiInstanceCheckedNodeWellFormed flows node
-  | .intermediateCatchTimerEvent id durationLiteral =>
-      durationLiteral = "PT1S" &&
+  | .intermediateCatchTimerEvent id _ =>
         incomingCount flows id = 1 && outgoingCount flows id = 1
   | .intermediateCatchMessageEvent id channel =>
       (match channel with

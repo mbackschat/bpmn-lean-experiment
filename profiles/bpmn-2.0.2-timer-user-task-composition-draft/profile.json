@@ -23,6 +23,7 @@
       "none-start-event",
       "intermediate-catch-timer-event",
       "literal-time-duration-pt1s",
+      "exact-time-duration-pt-hms-up-to-pt87660h",
       "user-task",
       "user-task-discovery",
       "user-task-instance-completion",
@@ -35,6 +36,8 @@
       "CIB-AGR-0001",
       "CIB-AGR-0002",
       "CIB-AGR-0004",
+      "CIB-AGR-0021",
+      "CIB-LIM-0003",
       "CIB-OP-0001",
       "CIB-CFG-0001"
     ]
@@ -57,7 +60,7 @@
   },
   "excluded": [
     "cib-composition-compatibility-claim",
-    "duration-literals-other-than-PT1S",
+    "zero-fractional-nominal-interval-or-above-pt87660h-durations",
     "time-date",
     "time-cycle",
     "multiple-timers",

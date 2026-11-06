@@ -22,13 +22,13 @@ The counts below cover only entries recorded by this project, including the sepa
 
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
-| Normative agreement records | 18 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
+| Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
 | Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
 | CIB interpretations of BPMN gaps or inconsistencies | 3 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
 | CIB extension records | 20 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 9 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
-| Known CIB limitations within reviewed scope | 2 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
+| Known CIB limitations within reviewed scope | 3 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
 The current sequential User Task capsule has no recorded CIB deviation. That statement is bounded to its clauses, pinned environment, witnesses, and observation surface; it is not a general CIB conformance result.
 
@@ -304,6 +304,20 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** Abstract Tasks, Manual Tasks and None Throws of the nested scope-data profile with several incoming flows in the Process root of a re-entry graph or several unconditioned outgoing flows where a Parallel fork of that arity is admitted, never both; public task, job and history APIs. Merges under a fork, conditioned or default outgoing flows, every other Activity kind, Start Events and asynchronous or listened nodes stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
 
+### CIB-AGR-0021 — exact Intermediate Catch Timer durations
+
+**Status:** Selected by the [Intermediate Catch Timer](../profiles/cibseven-2.2.0-intermediate-catch-timer-draft/profile.json) and [Timer/User Task composition](../profiles/bpmn-2.0.2-timer-user-task-composition-draft/profile.json) profiles for the [Timer exact durations](capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md) account.
+
+**BPMN basis:** Clause 10.5.5 and Tables 10.101 and 10.122 make `timeDuration` the relative-duration Timer form; Clause 10.5.4 and Table 10.89 hold the token at the Intermediate Catch Timer until its trigger.
+
+**Pinned CIB observation:** `DurationHelper` at `834a9874` parses a non-repeating duration with `DatatypeFactory.newDuration` and adds it to the start time, so hours, minutes and seconds add exact elapsed time. With the controlled clock at epoch zero, `PT1H30M` and `PT90M` each create one timer job due at epoch plus 5,400,000 ms that is not executable before the clock advance, is executable once the clock is set to the due date, and completes the Process when executed.
+
+**Evidence:** the [`PT1H30M`](../packages/bpmn-source/test/fixtures/intermediate-catch-timer-durations/pt1h30m/scenario.json) and [`PT90M`](../packages/bpmn-source/test/fixtures/intermediate-catch-timer-durations/pt90m/scenario.json) scenarios through [`CibSevenIntermediateCatchTimerTest`](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenIntermediateCatchTimerTest.java).
+
+**Fidelity boundary:** the due date, ineligibility before the advance, eligibility at the due date and completion are engine-observed; ineligibility at 1 ms before the due date follows from the exact due date and is not separately observed. The logical deadline is adapter-derived as in `CIB-AGR-0004`.
+
+**Boundary:** an exact `PT[nH][nM][nS]` lexeme from 1 ms to `PT87660H` at the Intermediate Catch Timer only. The boundary, race-arm, Timer Start and repeatable-catch sites keep `CIB-AGR-0004`'s single literal; the refused forms are `CIB-LIM-0003`.
+
 ## Interpretation register
 
 An interpretation belongs here when BPMN is ambiguous, inconsistent, non-operational, or leaves several permitted behaviors and the pinned CIB engine supplies one concrete meaning. It is not labeled a deviation.
@@ -403,6 +417,16 @@ This remains a limitation rather than a confirmed deviation because the phase-ze
 **Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenMessageCorrelationPhaseZeroProbeTest.java), its [exact BPMN fixture](../runners/cibseven/src/test/resources/org/bpmnlean/cibseven/CibSevenMessageCorrelationPhaseZeroProbeTest.bpmn), and the pinned source paths above.
 
 **Boundary:** The finding covers one non-instantiating Intermediate Catch Message Event, one non-empty string property, one key, one retrieval expression, one Process subscription binding, two waiting Process instances, one ambiguous no-criterion call, and one successful Process-variable API criterion under `CIB-CFG-0001`. The fixture separates correlation selection only: it does not select Intermediate Catch Message compatibility, the fixture's expression language, Message payload mediation, initialization by a first Message, dynamic context updates, multiple keys or properties, Conversation execution, start-Message correlation, broadcast, local-variable or business-key criteria, or a general CIB correlation profile.
+
+### CIB-LIM-0003: zero, fractional, nominal, interval and over-maximum durations are refused
+
+**Status:** Profile limitation; not a deviation
+
+CIB accepts `timeDuration` text that the [Timer exact durations](capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md) profile refuses: zero (`PT0S`, due at once in CIB), fractional components (`PT1.5S`), nominal components (`P1D`, `P1W`, `P1M`, `P1Y`, `P0DT1S`), which CIB adds as calendar units in the engine's default zone, intervals with a start or end, and lexemes above `PT87660H`. These forms are conforming but deferred until `PC-TIMER-01` settles immediate-due hosting, precision, and the calendar and zone account. Source compilation names the lexeme and its refusal class.
+
+**Evidence:** `DurationHelper` at `834a9874`; the shared refused-lexeme list in [`timer-duration-lexeme.test.ts`](../packages/semantic-core/test/timer-duration-lexeme.test.ts) and [`SemanticProcessAdmissionConformance`](../BpmnSemantics/SemanticProcessAdmissionConformance.lean).
+
+**Boundary:** the Intermediate Catch Timer of the two profiles that select `CIB-AGR-0021`.
 
 ## Extension register
 

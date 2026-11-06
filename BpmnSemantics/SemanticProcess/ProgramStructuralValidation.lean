@@ -285,7 +285,7 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
         nonempty origin.elementId.value &&
         nonempty timer.elementId.value &&
         decide (origin.elementId = timer.elementId) &&
-        timer.durationMs = 1000 &&
+        0 < timer.durationMs &&
         placeExists places input &&
         placeExists places output
   | .awaitMessage id origin input output message =>

@@ -348,7 +348,9 @@ export function isWellFormedSemanticOperation(
         isRecord(value.timer) &&
         hasOnlyKeys(value.timer, ["elementId", "durationMs"]) &&
         value.timer.elementId === value.origin.elementId &&
-        value.timer.durationMs === 1000
+        typeof value.timer.durationMs === "number" &&
+        Number.isSafeInteger(value.timer.durationMs) &&
+        value.timer.durationMs > 0
       );
     case SemanticOperationKind.AwaitMessage:
       return (

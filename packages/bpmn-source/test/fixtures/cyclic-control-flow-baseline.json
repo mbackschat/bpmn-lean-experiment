@@ -60,7 +60,7 @@
       "semanticProfile": "cibseven-2.2.0-intermediate-catch-timer-draft",
       "profileRelativePath": "profiles/cibseven-2.2.0-intermediate-catch-timer-draft/profile.json",
       "sourceSha256": "b3389192ebed301b9756441dbbbe860ca489917793287cf6ce907a273ce919d5",
-      "profileSha256": "0cbea991907c25afd4e41e0e337b1a67eefce805677086e83e7edc8e5739090f",
+      "profileSha256": "849905396462486d2aaa5c83cb3811bbe4c6c311a8dec1df7f7e56a8b10ad413",
       "catalogKey": "scenarios/intermediate-catch-timer/process.bpmn::intermediate-catch-timer-pt1s-process::cibseven-2.2.0-intermediate-catch-timer-draft"
     },
     {
@@ -408,7 +408,7 @@
       "semanticProfile": "bpmn-2.0.2-timer-user-task-composition-draft",
       "profileRelativePath": "profiles/bpmn-2.0.2-timer-user-task-composition-draft/profile.json",
       "sourceSha256": "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2",
-      "profileSha256": "86119805bebbb349cf65d5c99bb0d8211d7f8c05d56bc8cf2304f672c2ca8cfb",
+      "profileSha256": "688fb2bc796024c889a4337bda4019c35f3c1202c17325d828f6579e58265a64",
       "catalogKey": "scenarios/timer-user-task-composition/process.bpmn::timer-user-task-composition-process::bpmn-2.0.2-timer-user-task-composition-draft"
     },
     {
@@ -540,7 +540,7 @@
       "semanticProfile": "cibseven-2.2.0-intermediate-catch-timer-draft",
       "profileRelativePath": "profiles/cibseven-2.2.0-intermediate-catch-timer-draft/profile.json",
       "sourceSha256": "b3389192ebed301b9756441dbbbe860ca489917793287cf6ce907a273ce919d5",
-      "profileSha256": "0cbea991907c25afd4e41e0e337b1a67eefce805677086e83e7edc8e5739090f",
+      "profileSha256": "849905396462486d2aaa5c83cb3811bbe4c6c311a8dec1df7f7e56a8b10ad413",
       "catalogKey": "scenarios/intermediate-catch-timer/process.bpmn::intermediate-catch-timer-pt1s-process::cibseven-2.2.0-intermediate-catch-timer-draft"
     },
     {
@@ -648,7 +648,7 @@
       "semanticProfile": "bpmn-2.0.2-timer-user-task-composition-draft",
       "profileRelativePath": "profiles/bpmn-2.0.2-timer-user-task-composition-draft/profile.json",
       "sourceSha256": "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2",
-      "profileSha256": "86119805bebbb349cf65d5c99bb0d8211d7f8c05d56bc8cf2304f672c2ca8cfb",
+      "profileSha256": "688fb2bc796024c889a4337bda4019c35f3c1202c17325d828f6579e58265a64",
       "catalogKey": "scenarios/timer-user-task-composition/process.bpmn::timer-user-task-composition-process::bpmn-2.0.2-timer-user-task-composition-draft"
     },
     {
@@ -3493,7 +3493,7 @@
       "semanticProfile": "cibseven-2.2.0-intermediate-catch-timer-draft",
       "profileRelativePath": "profiles/cibseven-2.2.0-intermediate-catch-timer-draft/profile.json",
       "sourceSha256": "b3389192ebed301b9756441dbbbe860ca489917793287cf6ce907a273ce919d5",
-      "profileSha256": "0cbea991907c25afd4e41e0e337b1a67eefce805677086e83e7edc8e5739090f",
+      "profileSha256": "849905396462486d2aaa5c83cb3811bbe4c6c311a8dec1df7f7e56a8b10ad413",
       "admission": {
         "status": "accepted",
         "source": {
@@ -6464,7 +6464,7 @@
       "semanticProfile": "bpmn-2.0.2-timer-user-task-composition-draft",
       "profileRelativePath": "profiles/bpmn-2.0.2-timer-user-task-composition-draft/profile.json",
       "sourceSha256": "8d608a6dd0a7b40824c7ff43cb71ac92518f8171abf164110c07bfc3061521b2",
-      "profileSha256": "86119805bebbb349cf65d5c99bb0d8211d7f8c05d56bc8cf2304f672c2ca8cfb",
+      "profileSha256": "688fb2bc796024c889a4337bda4019c35f3c1202c17325d828f6579e58265a64",
       "admission": {
         "status": "accepted",
         "source": {

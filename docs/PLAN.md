@@ -104,11 +104,11 @@ Deliverable: every exact ISO 8601 duration (`PT[nH][nM][nS]`, positive, at most 
 
 Acceptance blockers: a family proposal with the BPMN and CIB account, Temporal preflight and pre-measured structural guards, its cold design review, implementation, closure review and hosted `verify-complete`.
 
-Current result: proposal narrowed to increment 1 after its design review (parser private in `Lowering`, hosting split by mechanism).
+Current result: increment 1 implemented after four reverted Rule 2 runs; two frozen-baseline profile hashes re-frozen by owner decision.
 
 Effort budget: 8 hours from 2026-11-05 21:40 CET; at the limit, record the boundary and continue unless the evidence invalidates the path.
 
-Next action: obtain the correction audit of the [proposal](capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md) from its cold reviewer, then implement increment 1 within 4 hours.
+Next action: closure review, hosted `verify-complete`, fast-forward `main`; then the Kernel IL spike.
 
 Oracle: Lean, core and pipeline agreement on every scenario of the affected profiles, the CIB probe, and approving proposal and closure reviews.
 

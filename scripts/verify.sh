@@ -83,6 +83,7 @@ verify_pipeline() {
     node --test --test-concurrency=1 packages/differential/test/scenario-value-domain-lean-core.integration-test.ts
     node --test --test-concurrency=1 packages/differential/test/pipeline-publication-lean-core.integration-test.ts
     node --test --test-concurrency=1 packages/differential/test/exclusive-choice-without-default-lean-core.integration-test.ts
+    node --test --test-concurrency=1 packages/differential/test/intermediate-catch-timer-durations-lean-core.integration-test.ts
   fi
   env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
   git diff --check

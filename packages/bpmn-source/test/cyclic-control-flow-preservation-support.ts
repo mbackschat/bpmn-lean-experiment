@@ -28,8 +28,10 @@ const expectedRegistrationInventorySha256 =
   "7217befd4f27026c20dd6fc8b397d49e55c539497ed30f456e9cbfc55bebf9a5";
 const expectedCatalogInventorySha256 =
   "8cb8ec63e922a3cd8f0c3fa14fe1db34706a1a5c94bc4a956728d5f16ec19679";
+// Two profile hashes were re-frozen when Timer exact durations grew their profiles additively in place
+// (owner decisions 2026-10-14 and 2026-11-06); every projection stays frozen.
 const expectedFixtureSha256 =
-  "679f5a4323b027e93bf6d34d8054c7e877f4611f9aa7e9e2e896cc41dd880c55";
+  "f751da7f875b46dafbe5efba27c27f9f58cf86b321b0b28d0bc035340f84bd3f";
 const sha256Pattern = /^[0-9a-f]{64}$/u;
 const projectRoot = path.resolve(fileURLToPath(new URL("../../../", import.meta.url)));
 const fixtureUrl = new URL(

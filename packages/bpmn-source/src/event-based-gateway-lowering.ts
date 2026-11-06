@@ -3,6 +3,7 @@ import {
   SemanticOperationKind,
   SemanticOriginKind,
   compareCanonicalStrings,
+  normalizeExactTimerDurationMs,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
@@ -78,7 +79,9 @@ export function lowerEventRaceOperation(
         elementId: timerConfiguration.id,
       },
       elementId: timer.id,
-      durationMs: 1000,
+      // TED-SITE-01: a race arm keeps its single PT1S lexeme; every other lexeme, even an equal value
+      // such as PT01S, lowers to 0, which the race admission pin refuses.
+      durationMs: timer.durationLiteral === "PT1S" ? normalizeExactTimerDurationMs(timer.durationLiteral) : 0,
       output: onlyFlowPlace(source, timer.id, "outgoing"),
     },
   };

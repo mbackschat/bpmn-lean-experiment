@@ -16,7 +16,7 @@ import type {
   CheckedNode,
   SemanticOperation,
 } from "@bpmn-lean/semantic-core";
-import { SemanticProfileId } from "@bpmn-lean/semantic-core";
+import { SemanticProfileId, isWellFormedSemanticProcessProgram } from "@bpmn-lean/semantic-core";
 import { verifyDefinitionArtifacts } from "../../../scripts/contract-artifacts.ts";
 import {
   compileSemanticProcessFixture,
@@ -609,7 +609,7 @@ test("rejects Parallel Gateway directions that contradict arity or XSD lexical f
   }
 });
 
-test("rejects timer forms outside the exact PT1S literal profile", async () => {
+test("rejects timer forms outside the exact-duration profile", async () => {
   const bytes = await readFile(
     new URL(
       "../../../scenarios/intermediate-catch-timer/process.bpmn",
@@ -618,7 +618,7 @@ test("rejects timer forms outside the exact PT1S literal profile", async () => {
   );
   const xml = new TextDecoder().decode(bytes);
   for (const mutation of [
-    xml.replace("PT1S", "PT2S"),
+    xml.replace("PT1S", "PT0S"),
     xml.replace("timeDuration", "timeCycle"),
     xml.replace(
       "<bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT1S</bpmn:timeDuration>",
@@ -635,5 +635,63 @@ test("rejects timer forms outside the exact PT1S literal profile", async () => {
     });
 
     assert.equal(result.status, BpmnCompilationStatus.Rejected);
+  }
+});
+
+async function compileIntermediateCatchTimer(lexeme: string) {
+  const xml = new TextDecoder().decode(await readFile(
+    new URL("../../../scenarios/intermediate-catch-timer/process.bpmn", import.meta.url),
+  ));
+  return compileBpmnToSemanticProcess({
+    bytes: new TextEncoder().encode(xml.replace(">PT1S<", `>${lexeme}<`)),
+    sourceId: "exact-duration-timer",
+    expectedSha256: undefined,
+    semanticProfile: "cibseven-2.2.0-intermediate-catch-timer-draft",
+    sourceOverlay: null,
+    limits,
+  });
+}
+
+test("lowers every exact Intermediate Catch duration to its milliseconds", async () => {
+  for (const [lexeme, durationMs] of [["PT15M", 900_000], ["PT1H30M", 5_400_000], ["PT2H", 7_200_000]] as const) {
+    const result = await compileIntermediateCatchTimer(lexeme);
+    assert.equal(result.status, BpmnCompilationStatus.Accepted, lexeme);
+    const timers = result.semanticProcess?.operations.flatMap((operation) =>
+      operation.kind === SemanticOperationKind.AwaitTimer ? [operation.timer.durationMs] : []);
+    assert.deepEqual(timers, [durationMs], lexeme);
+  }
+});
+
+test("names a refused Intermediate Catch duration and its class", async () => {
+  for (const [lexeme, refusal] of [["PT0S", "zero"], ["P1D", "nominal"], ["PT87661H", "aboveMaximum"]] as const) {
+    const result = await compileIntermediateCatchTimer(lexeme);
+    assert.equal(result.status, BpmnCompilationStatus.Rejected, lexeme);
+    assert.ok(result.diagnostics.some(({ evidence }) => evidence.includes(`"${lexeme}"`) && evidence.includes(refusal)),
+      JSON.stringify(result.diagnostics));
+  }
+});
+
+// TED-SITE-01: these sites keep their single PT1S lexeme, so PT01S is refused although it equals PT1S.
+test("keeps refusing every lexeme but PT1S at the race arm, the boundary and the repeatable catch", async () => {
+  for (const [path, semanticProfile] of [
+    ["event-based-gateway-message-timer/process.bpmn", "bpmn-2.0.2-event-based-gateway-message-timer-draft"],
+    ["activity-boundary-timer/process.bpmn", "bpmn-2.0.2-activity-boundary-timer-draft"],
+    ["repeatable-event-subscriptions/catch-timer.bpmn", "bpmn-2.0.2-repeatable-event-subscriptions-draft"],
+  ] as const) {
+    const xml = new TextDecoder().decode(await readFile(new URL(`../../../scenarios/${path}`, import.meta.url)));
+    assert.equal(xml.split(">PT1S<").length, 2, path);
+    for (const lexeme of ["PT2S", "PT01S"]) {
+      const result = await compileBpmnToSemanticProcess({
+        bytes: new TextEncoder().encode(xml.replace(">PT1S<", `>${lexeme}<`)),
+        sourceId: "non-unit-site-timer",
+        expectedSha256: undefined,
+        semanticProfile,
+        sourceOverlay: null,
+        limits,
+      });
+      assert.ok(result.status === BpmnCompilationStatus.Rejected ||
+        (result.semanticProcess !== undefined && !isWellFormedSemanticProcessProgram(result.semanticProcess)),
+      `${path} ${lexeme}`);
+    }
   }
 });

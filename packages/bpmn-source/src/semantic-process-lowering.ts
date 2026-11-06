@@ -10,6 +10,7 @@ import {
   SemanticProcessCompilerId,
   SemanticProcessKind,
   compareCanonicalStrings,
+  normalizeExactTimerDurationMs,
 } from "@bpmn-lean/semantic-core";
 import type {
   BoundaryTimerArm,
@@ -307,7 +308,7 @@ function lowerNode(
         output: requireOnly(outgoing, node.id, "outgoing"),
         timer: {
           elementId: node.id,
-          durationMs: normalizeTimerDurationMs(node.durationLiteral),
+          durationMs: normalizeExactTimerDurationMs(node.durationLiteral),
         },
       });
     case CheckedNodeKind.IntermediateCatchMessageEvent:
