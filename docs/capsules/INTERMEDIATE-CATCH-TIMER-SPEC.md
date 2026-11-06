@@ -55,7 +55,7 @@ The admitted document must contain exactly:
 - exactly one `timeDuration` child whose text is an exact `PT[nH][nM][nS]` duration from 1 ms to `PT87660H` ([Timer exact durations](TIMER-EXACT-DURATIONS-PROPOSAL.md); this spec's examples use `PT1S`);
 - one none End Event;
 - exactly two Sequence Flows forming the stated linear topology;
-- no parser warnings, extension elements, conditions, data, expressions other than that exact literal, or additional Flow Nodes.
+- no parser warnings, extension elements, conditions, data, expressions other than that exact-duration lexeme, or additional Flow Nodes.
 
 The profile rejects `timeDate`, `timeCycle`, empty TimerEventDefinitions, referenced EventDefinitions, lexemes outside that exact form (zero, negative, fractional, nominal, interval or above the maximum), variables, and expression-language metadata. This is deliberate profile narrowing, not a claim that other valid BPMN forms are malformed.
 
