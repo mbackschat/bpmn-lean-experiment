@@ -98,18 +98,18 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Timer exact durations, batch 5 ([proposal](capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md)), increment 1: `PC-TIMER-01`'s duration clause at the Intermediate Catch Timer, whose durable timer never defers Continue-As-New; the managed-deadline sites, the Timer Start Schedule and the repeatable cycle follow as their own increments. Close call: `PC-TIMER-01` over `PC-ERROR-01` at equal reach, because Timer forms extend the existing deadline mechanism without a kernel representation change while Error routing needs scope-cancellation semantics. Batch 4 is blocked: its remaining control clauses need Kernel IL orthogonalization, and Script and Business Rule Tasks wait on a dependency decision.
+Current task: Kernel IL orthogonalization, batch 5, first family: the Activity host with flow lists, carrying the parked [Activity implicit split and merge](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) clauses (`PC-CF-07`, `PC-BASIC-01`, `PC-BASIC-02`). Close call: incremental over one reshape, because the spike (2026-11-06) put the per-constructor cost in exhaustive matches and case-split proofs (12 TypeScript switch files; 14 Lean files in the 233-job closure of the 11 exhaustive consumers, 4 proofs among them) while an appended constructor passed every `lean-fanout` bound; accessor laws come first. Timer exact durations increment 1 landed on 2026-11-06 (`dc7b97a5`).
 
-Deliverable: every exact ISO 8601 duration (`PT[nH][nM][nS]`, positive, at most `PT87660H`) admitted and executed at the Intermediate Catch Timer, landed on `main`.
+Deliverable: the three clauses admitted and executed through the Activity host, landed on `main`.
 
-Acceptance blockers: a family proposal with the BPMN and CIB account, Temporal preflight and pre-measured structural guards, its cold design review, implementation, closure review and hosted `verify-complete`.
+Acceptance blockers: a family proposal with capsule item 19's measurements, its cold design review, implementation, closure review and hosted `verify-complete`.
 
-Current result: increment 1 implemented and closure-approved; two frozen-baseline profile hashes re-frozen by owner decision.
+Current result: spike done; proposal not yet written.
 
-Effort budget: 8 hours from 2026-11-05 21:40 CET, about 7 spent; at the limit, record the boundary and continue unless the evidence invalidates the path.
+Effort budget: 12 hours from 2026-11-06 21:10 CET; at the limit, record the boundary and continue unless the evidence invalidates the path.
 
-Next action: land increment 1 on `main`, then the one-hour Kernel IL spike.
+Next action: write the family proposal.
 
-Oracle: Lean, core and pipeline agreement on every scenario of the affected profiles, the CIB probe, and approving proposal and closure reviews.
+Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every migrated operation, and approving proposal and closure reviews.
 
 Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
