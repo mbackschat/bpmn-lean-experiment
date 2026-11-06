@@ -198,7 +198,7 @@ Every Task with one incoming flow keeps its legacy lowering.
 
 ### Retirement of the dual representation
 
-The next Activity-host family that adds any feature to User, Service or Send Tasks is PLAN's "one switch". It lowers every such Task onto `activity` and deletes their legacy lowering. Until then the host-coverage census holds byte-identical the declarations of every legacy User Task constructor (`awaitUserTask` and its nine variants), of `awaitEffect`, and of the payload types the host shares with them, `UserTaskDefinition` and `EffectDefinition`, so no feature reaches either representation alone. A family adds a feature to User, Service or Send Tasks when it would change one of those declarations or lower a further BPMN variant of those Tasks: the split family and the deferred Timer increments that add boundary Timers on Tasks are such families, the scope host family is not. PLAN records this binding.
+The next Activity-host family that adds any feature to User, Service or Send Tasks is PLAN's "one switch". It lowers every such Task onto `activity` and deletes their legacy lowering. Until then the host-coverage census holds byte-identical the declarations of every legacy User Task constructor (`awaitUserTask` and its nine variants), of `awaitEffect`, and of the payload types the host shares with them, `UserTaskDefinition` and `EffectDefinition`, so no feature reaches either representation alone. A family adds a feature to User, Service or Send Tasks when it would change one of those declarations or lower a further BPMN variant of those Tasks: the split family and the deferred Timer increments that add boundary Timers on Tasks are such families, the scope host family is not. A behaviour-preserving edit of a frozen declaration is no feature: the selected hub fixes land before or with the representation commit, which sets the freeze baseline, and a later such edit re-baselines the census only as a reviewed Rule 2 bound change, never by counting as the switch. PLAN records this binding.
 
 The scope-bearing kinds need a host exit for their separate completion operation. Whether that is a work alternative with an exit operation or a second host operation is the scope host family's decision, not settled here.
 
@@ -386,6 +386,8 @@ No admitted model changes, by `ACTH-ONE-01`; previously refused models of this p
 - [`FlowNodeOccurrenceEffectProgramValidity`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceEffectProgramValidity.lean)
 - [`InternalCommutationCensus`](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean)
 - [`InternalCommutationCore`](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean), with explicit host arms only
+- [`InternalCommutationRuntimePreservation`](../../BpmnSemantics/SemanticProcess/InternalCommutationRuntimePreservation.lean), for one effect-wait declarer case; the case moves into a family-owned leaf if the edit would cross the owner's review target
+- [`InternalOperationOccurrence`](../../BpmnSemantics/SemanticProcess/InternalOperationOccurrence.lean), for one refused host case
 - [`SemanticProcessJson/Program`](../../BpmnSemantics/SemanticProcessJson/Program.lean)
 - [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean), for its dispatch only
 
