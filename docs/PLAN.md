@@ -104,11 +104,11 @@ Deliverable: `PC-CF-07`'s merge clause and `PC-BASIC-02` for ordered arrivals at
 
 Acceptance blockers: a family proposal with capsule item 19's measurements, its cold design review, implementation, closure review and hosted `verify-complete`.
 
-Current result: the third cold review approved with required edits; corrections await its audit.
+Current result: proposal approved (third cold review, correction audit green at `6aa03bf9`).
 
 Effort budget: 12 hours from 2026-11-06 21:10 CET; the estimate exceeds it, so at the limit record the boundary at the first green commit and continue unless the evidence invalidates the path.
 
-Next action: the reviewer's correction audit, then the full-library spike build under a Rule 2 cost declaration.
+Next action: the full-library spike build under its cost declaration, then the representation commit's Rule 2 declaration.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
 
