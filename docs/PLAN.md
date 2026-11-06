@@ -104,11 +104,11 @@ Deliverable: the three clauses admitted and executed through the Activity host, 
 
 Acceptance blockers: a family proposal with capsule item 19's measurements, its cold design review, implementation, closure review and hosted `verify-complete`.
 
-Current result: spike done; proposal not yet written.
+Current result: spike done; [family proposal](capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md) written.
 
 Effort budget: 12 hours from 2026-11-06 21:10 CET; at the limit, record the boundary and continue unless the evidence invalidates the path.
 
-Next action: write the family proposal.
+Next action: the proposal's cold design review, then the representation commit's Rule 2 declaration.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every migrated operation, and approving proposal and closure reviews.
 
