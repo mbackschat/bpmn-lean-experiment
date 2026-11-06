@@ -88,11 +88,14 @@ inductive ActivityWork where
   | userTask (task : UserTaskDefinition)
   | effect (effect : EffectDefinition)
 
+structure ActivityOutput where
+  place : ControlPlaceId
+
 structure ActivityHost where
   id : OperationId
   origin : BpmnElementOrigin
   inputs : List ControlPlaceId
-  outputs : List ControlPlaceId
+  outputs : List ActivityOutput
   work : ActivityWork
 
   -- appended last in `SemanticOperation`
@@ -103,7 +106,7 @@ structure ActivityHost where
 | (OperationBase & DeepReadonly<{
     kind: SemanticOperationKind.Activity;
     inputs: string[];
-    outputs: string[];
+    outputs: { place: string }[];
     // `task` and `effect` keep the exact shapes of the AwaitUserTask and AwaitEffect kinds.
     work:
       | { kind: "userTask"; task: Extract<SemanticOperation, { kind: SemanticOperationKind.AwaitUserTask }>["task"] }
@@ -111,7 +114,7 @@ structure ActivityHost where
   }>)
 ```
 
-The host's effect carries no `bpmnErrorRoute`: a boundary handler belongs to the host as a field, added by the stage that types boundary handlers. The effect's `inputMappings` and `outputMappings` are the host's data mapping until the data-mapping stage moves them onto the host, so no feature has two homes at once.
+Each output is a record so that the later per-flow facts, a condition, the default mark and the flow origin, become defaulted fields of one output rather than a list parallel to `outputs` with a length invariant; inputs stay places, since no planned feature attaches a fact to an incoming flow. The host's effect carries no `bpmnErrorRoute`: a boundary handler belongs to the host as a field, added by the stage that types boundary handlers. The effect's `inputMappings` and `outputMappings` are the host's data mapping until the data-mapping stage moves them onto the host, so no feature has two homes at once.
 
 ### Per-work accessors
 
@@ -135,7 +138,7 @@ Each planned feature has its place, and none needs another constructor:
 |---|---|
 | The split | `outputs` beyond one place |
 | An Activity without outgoing flows | An empty `outputs` |
-| Conditional and default outgoing flows | A field beside `outputs` |
+| Conditional and default outgoing flows | Defaulted fields of `ActivityOutput` |
 | Data mapping, the optional loop, typed boundary handlers | Host fields |
 | Receive, Script and Rule Tasks | Work alternatives with accessor rows |
 | Kind-keyed waits | A change to the wait records, not the host |
@@ -186,22 +189,22 @@ Admission excludes that case. Every admitted Program holding a host routes to th
 
 A User, Service or Send Task lowers to `activity` exactly when it is a merging Task, through a new family-owned leaf:
 
-- Lean: `ActivityHostLowering.lean` beside [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean), which has 11 lines of headroom. Its dispatch into the leaf must fit that headroom, or a dispatch block moves into the leaf first.
+- Lean: `ActivityHostLowering.lean` beside [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean). Its dispatch into the leaf stays within the owner's review target, or a dispatch block moves into the leaf first.
 - TypeScript: `activity-host-lowering.ts` beside the [source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts).
 
 Every Task with one incoming flow keeps its legacy lowering.
 
-[`LinkContraction`](../../BpmnSemantics/SemanticProcess/LinkContraction.lean) and [`link-contraction.ts`](../../packages/bpmn-source/src/link-contraction.ts) admit several throws per catch under the two arity flags, only when the catch's successor is a merging Task. They replace the `names.Nodup` refusal by "distinct names, or one name whose successor is a merging Task", so a chain of Links and every other successor stay refused.
+[`LinkContraction`](../../BpmnSemantics/SemanticProcess/LinkContraction.lean) and [`link-contraction.ts`](../../packages/bpmn-source/src/link-contraction.ts) keep their existing nested scope-data profile gate and relax two refusals for one case: `names.Nodup` and `throws.length == catches.length` admit several throws of one name exactly when that name's catch's successor is a User, Service or Send Task in the root scope (the Task becomes a merging Task only after contraction). Every other duplicated name, a chain of Links, and several throws into an already admitted merge (a pass-through Task or an Exclusive Merge) stay refused; `PC-BASIC-02` stays open on those successors, which this family leaves to its scope lock.
 
 ### Retirement of the dual representation
 
-The next Activity-host family that adds any feature to User, Service or Send Tasks is PLAN's "one switch". It lowers every such Task onto `activity` and deletes their legacy lowering. Until then no feature is added to `awaitUserTask` or `awaitEffect`, and the host-coverage census holds their declarations byte-identical. PLAN records this binding.
+The next Activity-host family that adds any feature to User, Service or Send Tasks is PLAN's "one switch". It lowers every such Task onto `activity` and deletes their legacy lowering. Until then the host-coverage census holds byte-identical the declarations of every legacy User Task constructor (`awaitUserTask` and its nine variants), of `awaitEffect`, and of the payload types the host shares with them, `UserTaskDefinition` and `EffectDefinition`, so no feature reaches either representation alone. A family adds a feature to User, Service or Send Tasks when it would change one of those declarations or lower a further BPMN variant of those Tasks: the split family and the deferred Timer increments that add boundary Timers on Tasks are such families, the scope host family is not. PLAN records this binding.
 
 The scope-bearing kinds need a host exit for their separate completion operation. Whether that is a work alternative with an exit operation or a second host operation is the scope host family's decision, not settled here.
 
 ### Measurements (capsule item 19), 2026-11-06
 
-**Why not lower onto existing operations.** A merge sharing the Task's origin publishes a step and a token position that CIB lacks, as the [AISM alternatives](ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#representation-and-runtime-ownership) record.
+**Why not lower onto existing operations.** A merge sharing the Task's origin publishes a step and a token position that CIB lacks, as the [AISM alternatives](ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#representation-and-runtime-ownership) record, and per-arrival copies of the Task's operation share one output place, break the single-producer rule and put several Program vertices on one checked node, as the same section records.
 
 **Blast radius.** The figures below are for the appended constructor, from spikes on a throwaway clone (git blob `e05c12a57a571d39fc1a84936c530a1866932d8c`). The spikes used positional arguments; a structure payload needs the same one arm per exhaustive site.
 
@@ -209,8 +212,9 @@ The scope-bearing kinds need a host exit for their separate completion operation
 |---|---|
 | Lean arms written by hand, closure of the 12 modules matching most operation constructors | 11 files, +64/−4 lines, 222 of 233 jobs built |
 | Second probe: the commutation, occurrence, Program JSON, publication and lifecycle targets, plus an explicit `internalArmInput?` arm | 190 of 259 jobs built in 150 s; `InternalCommutationCore`, `InternalCommutationRegion`, `InternalOperationOccurrenceDiscovery`, `SemanticProcessJson.Program`, `ScopeReentryAdmission` and `ScopeDataBurst` build unchanged |
-| Lean failures, both probes | Only the two wait Program-validity proofs (`FlowNodeOccurrenceUserTaskProgramValidity`, `FlowNodeOccurrenceEffectProgramValidity`), which need an arrival-uniqueness lemma; the remaining jobs of the second probe wait behind them, unmeasured |
-| Lean modules matching 20 or more operation constructors (static census) | 19, including [`SemanticProcessJson/Program`](../../BpmnSemantics/SemanticProcessJson/Program.lean) (45 lines of headroom), `Publication`, `TransitionRecord`, `FlowNodeOccurrenceLifecycle`, `Scenario` and `FlowNodeOccurrenceBoundaryStarts` |
+| Second probe completed, with the two wait Program-validity proofs stubbed (git blob `c3d715b0394e297c8e41e10b3bcf3bad524d44d7`) | All 259 jobs build after host arms in `FlowNodeOccurrenceLifecycle` (owner selection and occurrence delta) and `TransitionRecord` (published kind), and one host case each in `InternalCommutationRuntimePreservation` (compensation effect-wait disjointness, a declarer case, not a footprint, independence or batch law) and `InternalOperationOccurrence` (a refused host, a vacuous case); the two proofs need an arrival-uniqueness lemma |
+| Coverage of the probes | 226 of the 991 non-experiment modules that depend on `SemanticProcessContract`; the rest is unmeasured |
+| Lean modules matching 20 or more operation constructors (static census) | 19, including [`SemanticProcessJson/Program`](../../BpmnSemantics/SemanticProcessJson/Program.lean) (45 lines of headroom on 2026-11-06), `Publication`, `TransitionRecord`, `FlowNodeOccurrenceLifecycle`, `Scenario` and `FlowNodeOccurrenceBoundaryStarts` |
 | Lean production declarations naming `awaitUserTask` or `awaitEffect` | 324 in 129 files; 91 `def`s in 47 files also hold a wildcard arm (selector below) |
 | TypeScript exhaustive operation switches broken | 12 files |
 | TypeScript production sites naming `AwaitUserTask` or `AwaitEffect` | 195 in 50 files |
@@ -235,7 +239,7 @@ The following owners change, at both levels alike:
 
 - **Routing (`SRE-ROUTE-01`).** [`ScopeReentryAdmission`](../../BpmnSemantics/SemanticProcess/ScopeReentryAdmission.lean) and [`scope-reentry-admission.ts`](../../packages/semantic-core/src/scope-reentry-admission.ts) route a Program to the re-entry account when its root holds a merging Task. At the checked level that is `checkedReentry`; at the Program level it is `programReentry`, which matches a host. The joint predicates (`checkedJoint`, `operationJoint`) stay unchanged.
 - **Fork refusal.** `programRouted` and `checkedRouted` in [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean) already test the re-entry route first and refuse a forking Program on it. So routing a host there refuses every host under a fork, before the concurrent account's restrictions are consulted.
-- **Body refusal.** The re-entry admission refuses a merging Task or host outside the root scope, as it refuses a body Choice.
+- **Body refusal.** Routing counts only root-scope merging Tasks and hosts. A merging Task in a body stays refused by the existing structure: on the serial route by the serial walk's visit-once count, on the concurrent route by the one-input arity of a task vertex (`aritiesValid` in `StructuredParallelBodyAdmission`, `MergeRegion.userTask` in `MergeRegionAdmission`), and on the re-entry route by the serial walk of each body. The host arms of [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean) refuse explicitly, so its arrival count can never read a host as a waiting merge.
 - **Vertex projection.** `operationVertex?` in [`NestedScopeDataAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean) and its twin give a host the vertex of its work's legacy projection, with its one output. `checkedVertex?` already gives a merging Task its Task vertex, since it reads only outgoing flows.
 - **Service Task counts.** Every count such as the `CSE-ADMIT-01` bound counts a host with effect work as a Service Task, through the accessor's cardinality class.
 
@@ -280,7 +284,7 @@ None. A host arrival opens the existing User Task or effect wait with its single
 
 - a merging Task with two outgoing flows;
 - arrivals from two Parallel branches (wrong algorithm 7);
-- a merging Task inside a Sub-Process body;
+- a merging Task inside a Sub-Process body, and inside the body of a Sub-Process on one branch of a fork;
 - a merging Service Task whose mapped input is written on only one incoming path, with no Start binding for it (`SRE-AVAILABLE-01`, wrong algorithm 9);
 - several incoming flows at a Sub-Process, a Call Activity and a Receive Task, which stay refused;
 - two Link throws whose catch's successor is an Exclusive Gateway;
@@ -293,7 +297,7 @@ None. A host arrival opens the existing User Task or effect wait with its single
 - every existing scenario's Program is unchanged (`ACTH-ONE-01`);
 - the expert journey publishes one internal record per arrival, with kind `awaitUserTask` or `awaitEffect` (wrong algorithms 5 and 8);
 - a host with one input, with unsorted inputs or with two outputs is refused;
-- a host with two marked inputs is not prepared;
+- a host with two marked inputs is not prepared, which is the [census](../INTERNAL-COMMUTATION-PROPOSAL.md) singleton rule's executable counterexample: a hand-built forking Program that marks both inputs fails closed in the scheduler, not only at admission;
 - a host's footprint is `none`;
 - the publication validator refuses `"activity"` in structural mode.
 
@@ -301,6 +305,7 @@ None. A host arrival opens the existing User Task or effect wait with its single
 
 - **Link source test and conformance.** The second-throw refusal of the [Link source test](../../packages/bpmn-source/test/link-events-source.test.ts) and the two-throws edit of [`LinkEventsConformance`](../../BpmnSemantics/LinkEventsConformance.lean) are admitted when the successor is a merging Task; the refusal is re-attributed to other successors.
 - **Capability catalog disclosures.** The several-flow pins of the [capability catalog disclosures](../../scripts/capability-catalog-disclosures.test.ts) are rewritten for the widened class.
+- **Execution publication contract coverage.** [`execution-publication-contract-coverage`](../../scripts/execution-publication-contract-coverage.test.ts) partitions every member of the TypeScript `SemanticOperationKind` into fail-closed in completeness or published by the schema and the Lean encoder; the discriminant-only `Activity` is neither. The guard derives its operation set from `PublishedSemanticOperationKind` instead and additionally asserts that `activity` is absent from the publication schema and from Lean publication.
 - **Internal commutation census.** The family census of [internal commutation](../INTERNAL-COMMUTATION-PROPOSAL.md) gains one composite-family row for `activity`.
 - **Scope exclusions.** These exclusions are narrowed, and their owner passages amended at closure:
   - the [pass-through implicit split and merge](PASS-THROUGH-IMPLICIT-SPLIT-MERGE-SPEC.md#required-optional-and-excluded-scope) exclusion of other Activity kinds;
@@ -381,14 +386,14 @@ No admitted model changes, by `ACTH-ONE-01`; previously refused models of this p
 - [`FlowNodeOccurrenceEffectProgramValidity`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceEffectProgramValidity.lean)
 - [`InternalCommutationCensus`](../../BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean)
 - [`InternalCommutationCore`](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean), with explicit host arms only
-- [`SemanticProcessJson/Program`](../../BpmnSemantics/SemanticProcessJson/Program.lean), 45 lines of headroom
-- [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean), for its dispatch only, 11 lines of headroom
+- [`SemanticProcessJson/Program`](../../BpmnSemantics/SemanticProcessJson/Program.lean)
+- [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean), for its dispatch only
 
 **Lean admission owners:**
 
 - [`ScopeReentryAdmission`](../../BpmnSemantics/SemanticProcess/ScopeReentryAdmission.lean)
 - [`NestedScopeDataAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean)
-- [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean), 12 lines of headroom, for its counts only
+- [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean), for its counts and its refusing host arms
 - [`CheckedProcessAdmission`](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean)
 - [`LinkContraction`](../../BpmnSemantics/SemanticProcess/LinkContraction.lean)
 
@@ -400,9 +405,9 @@ No admitted model changes, by `ACTH-ONE-01`; previously refused models of this p
 - the [runtime](../../packages/semantic-core/src/semantic-process-runtime.ts)
 - the [profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts)
 - the [state](../../packages/semantic-core/src/semantic-process-state.ts)
-- the [scope re-entry](../../packages/semantic-core/src/scope-reentry-admission.ts), [nested scope-data](../../packages/semantic-core/src/nested-scope-data-admission.ts) and [nested scope-control](../../packages/semantic-core/src/nested-scope-control-admission.ts) admissions, the last with 16 lines of headroom
+- the [scope re-entry](../../packages/semantic-core/src/scope-reentry-admission.ts), [nested scope-data](../../packages/semantic-core/src/nested-scope-data-admission.ts) and [nested scope-control](../../packages/semantic-core/src/nested-scope-control-admission.ts) admissions
 - the [internal commutation census](../../packages/semantic-core/src/internal-commutation-census.ts)
-- the ordinary-arming [preparation](../../packages/semantic-core/src/internal-transition-ordinary-arming-preparation.ts) and [footprint](../../packages/semantic-core/src/internal-transition-footprint.ts), the latter with 12 lines of headroom, so its edit is the published-kind type alone
+- the ordinary-arming [preparation](../../packages/semantic-core/src/internal-transition-ordinary-arming-preparation.ts) and [footprint](../../packages/semantic-core/src/internal-transition-footprint.ts), whose edit is the published-kind type alone
 - the publication owners [`internal-occurrence-batch.ts`](../../packages/semantic-core/src/internal-occurrence-batch.ts), [`internal-operation-occurrence.ts`](../../packages/semantic-core/src/internal-operation-occurrence.ts), [`semantic-transition-trace.ts`](../../packages/semantic-core/src/semantic-transition-trace.ts) and [`flow-node-occurrence-publication-completeness.ts`](../../packages/semantic-core/src/flow-node-occurrence-publication-completeness.ts)
 - the [semantic process schema](../../contracts/schemas/semantic-process.schema.json)
 - [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts), its [publication program validation](../../packages/temporal-adapter/protocol/src/flow-node-occurrence-publication-program-validation.ts) and the [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts)
@@ -418,7 +423,6 @@ Growth that would cross an owner's 800-line review target moves into a family-ow
 - [`internal-commutation-census`](../../scripts/internal-commutation-census.test.ts)
 - [`call-forest-selection-census`](../../scripts/call-forest-selection-census.test.ts)
 - [`activity-occurrence-writer-census`](../../scripts/activity-occurrence-writer-census.test.ts)
-- [`execution-publication-contract-coverage`](../../scripts/execution-publication-contract-coverage.test.ts)
 - [`runtime-collection-removal-completeness`](../../scripts/runtime-collection-removal-completeness.test.ts)
 - [`lean-source-contracts`](../../scripts/lean-source-contracts.test.ts)
 - [`lean-import-boundaries`](../../scripts/lean-import-boundaries.test.ts)
@@ -436,7 +440,7 @@ It sits beside the [consumer census](../../scripts/semantic-operation-consumer-c
 - **Multiplicity-keyed sites.** These are listed by name and must name the host, though they never name `awaitUserTask`: `operationJoint`, `programReentry`, `checkedReentry`, `operationVertex?`, `internalArmInput?`, `prepareInternalArm?` and `semanticOperationInternalFamily`, with their TypeScript twins.
 - **TypeScript population.** Every production function naming `SemanticOperationKind.AwaitUserTask` or `AwaitEffect` must also name `SemanticOperationKind.Activity` or call the accessor leaf, found with the TypeScript compiler API. Measured: 195 sites in 50 files.
 - **Allowlist.** The allowlist names declarations, never files, each with a one-line reason. It is measured before the representation commit's review and stated in its Rule 2 declaration.
-- **Frozen legacy.** Every publication site derives `operationKind` through the accessor, and the declarations of `awaitUserTask` and `awaitEffect` stay byte-identical until retirement.
+- **Frozen legacy.** Every publication site derives `operationKind` through the accessor, and the declarations named under the [retirement rule](#retirement-of-the-dual-representation) stay byte-identical until retirement, checked against their text at the representation commit.
 
 This closes the wildcard and `default:` absorption that compilation cannot see.
 
@@ -454,9 +458,9 @@ Two commits, each under its own [Rule 2](../../CLAUDE.md#rule-2-declare-review-a
    No lowering emits a host, so every scenario is unchanged.
 2. **The widening**, estimated at 4 to 6 hours. It contains admission, routing, host lowering, Link contraction, the vertex projection, witnesses and registration.
 
-**Stop condition.** The second probe left 69 jobs unmeasured behind the two proofs. If making those proofs build exposes failures in more than eight further modules, or any failure in a commutation or batch law, work stops before the declaration. PLAN then re-decides between the incremental route and one reshape on the new measurement.
+**Stop condition.** Before the representation commit's Rule 2 declaration, the appended-constructor spike is built as the full library on the throwaway clone, under a declared cost limit, with every failing module repaired or stubbed until the build completes. Work stops and PLAN re-decides between the incremental route and one reshape when that build shows failures in more than 24 modules beyond the six already measured, any failure in a footprint, pair-independence or batch law, or any `lean-fanout` violation.
 
-PLAN's budget for the family is 12 hours. At its limit, work stops at the first commit's stop point, which is green on its own, and PLAN records the boundary.
+The estimate of 11 to 15 hours of implementation, plus reviews and the hosted check, exceeds PLAN's 12-hour family budget, which PLAN owns together with its at-limit rule. The first commit is green on its own, so the expected overrun has a natural boundary there.
 
 **Registration:**
 
