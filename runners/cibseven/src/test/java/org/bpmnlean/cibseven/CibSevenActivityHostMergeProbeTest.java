@@ -63,9 +63,10 @@ public final class CibSevenActivityHostMergeProbeTest {
 
     /** Runs the one open asynchronous continuation, which belongs to `element`. */
     void runJob(String instance, String element) {
-      var job = engine.getManagementService().createJobQuery().processInstanceId(instance).singleResult();
+      var jobs = engine.getManagementService().createJobQuery().processInstanceId(instance);
+      assertEquals(element, 1, jobs.count());
+      var job = jobs.activityId(element).singleResult();
       assertNotNull(element, job);
-      assertEquals(element, job.getActivityId());
       engine.getManagementService().executeJob(job.getId());
     }
 
