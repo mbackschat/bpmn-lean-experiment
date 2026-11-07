@@ -1,6 +1,6 @@
 /**
  * Per-work facts of the Activity host, the one place outside the step owner that dispatches on its work, per the
- * [Activity host proposal](../../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#per-work-accessors).
+ * [Activity host specification](../../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#per-work-accessors).
  * Transcribed independently by the Lean `ActivityHostWork` module.
  *
  * Every other consumer reads a host through these accessors or through the legacy function of its projection: a

@@ -2,7 +2,7 @@
  * ACTH-ADMIT-01: a User, Service or Send Task with two or more incoming flows lowers to one Activity host whose inputs
  * are those flows' places, which the caller passes sorted (ACTH-HOST-01), and whose one output is its outgoing flow. A Task with one
  * incoming flow keeps its legacy operation (ACTH-ONE-01), so this leaf is reached only for a merging Task. Owner: the
- * [Activity host proposal](../../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#lowering); the Lean twin is
+ * [Activity host specification](../../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#lowering); the Lean twin is
  * `ActivityHostLowering`.
  */
 import { SemanticOperationKind } from "@bpmn-lean/semantic-core";

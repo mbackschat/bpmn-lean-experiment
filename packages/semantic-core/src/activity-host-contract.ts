@@ -1,6 +1,6 @@
 /**
  * The payload of the Activity host operation, per the
- * [Activity host proposal](../../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#host-operation).
+ * [Activity host specification](../../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#host-operation).
  *
  * The host's work reuses the exact payload shapes of the legacy `AwaitUserTask` and `AwaitEffect` operations,
  * which the host-coverage census freezes until every such Task lowers onto the host, so neither representation can

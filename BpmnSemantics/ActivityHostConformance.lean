@@ -11,7 +11,7 @@ import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! # Activity host conformance
 
-Finite witnesses of the [Activity host proposal](../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#separating-witnesses).
+Finite witnesses of the [Activity host specification](../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#separating-witnesses).
 
 The host Program rules (ACTH-HOST-01) admit a host of two sorted distinct inputs and one output and refuse every other
 host, so a host never doubles a Task's legacy encoding; the host takes no arming input and belongs to the composite

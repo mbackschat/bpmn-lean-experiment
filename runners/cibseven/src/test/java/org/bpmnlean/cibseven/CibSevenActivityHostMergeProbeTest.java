@@ -17,7 +17,7 @@ import org.cibseven.bpm.engine.delegate.JavaDelegate;
 import org.junit.Test;
 
 /**
- * Calibrates the Activity host proposal's `CIB-AGR-0020` (`ACTH-MERGE-01`) on its claim review model and its Link twin.
+ * Calibrates the Activity host specification's `CIB-AGR-0020` (`ACTH-MERGE-01`) on its claim review model and its Link twin.
  * CIB Seven `2.2.0` enters a transition's destination without consulting its other incoming transitions
  * (`AbstractPvmAtomicOperationTransitionNotifyListenerTake.java:34-51`), so each token arriving at a User Task inserts
  * one task (`UserTaskActivityBehavior.java:54-62`) and each arriving at a Service Task invokes its delegate once

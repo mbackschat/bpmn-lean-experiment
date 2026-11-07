@@ -641,7 +641,7 @@ def candidateFlowNodeOccurrenceDeltaForOwnedOperation? (program : Program) (befo
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [] [completedEnd (.callActivity record.id)])
   -- ACTH-HOST-01: a host starts the legacy occurrence of its work. These arms repeat the legacy User Task and effect
-  -- arms only until the switch retires those operations (Activity host proposal, retirement of the dual representation).
+  -- arms only until the switch retires those operations (Activity host specification, retirement of the dual representation).
   | .activity host =>
       match host.userTask?, host.effect? with
       | some task, _ =>

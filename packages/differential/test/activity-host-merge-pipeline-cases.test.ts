@@ -1,5 +1,5 @@
 /**
- * Locks the registered claim review schedules against the Activity host proposal's separating witnesses without Lean
+ * Locks the registered claim review schedules against the Activity host specification's separating witnesses without Lean
  * or Temporal: the open work and Process variables after every command, the re-entry route, and every named seeded
  * mutation, each of which must move exactly the observation it names.
  *

@@ -401,7 +401,7 @@ def internalArmInput? : SemanticOperation → Option ControlPlaceId
   | .awaitPayloadMessage _ _ input _ _ _
   | .awaitCorrelatedPayloadMessage _ _ input _ _ _ _ _ _
   | .awaitTimer _ _ input _ _ | .awaitEffect _ _ input _ _ _ => some input
-  -- A host takes several inputs and is never batched (Activity host proposal, internal commutation).
+  -- A host takes several inputs and is never batched (Activity host specification, internal commutation).
   | .activity .. => none
   | _ => none
 

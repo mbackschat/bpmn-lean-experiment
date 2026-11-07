@@ -135,7 +135,7 @@ structure InclusiveDefaultBranch where
 
 /-- One outgoing flow's place of an Activity host. A structure rather than a bare place, so the later per-flow facts
 (a condition, the default mark, the flow origin) become defaulted fields of one output instead of a parallel list
-([Activity host proposal](../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#host-operation)). -/
+([Activity host specification](../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#host-operation)). -/
 structure ActivityOutput where
   place : ControlPlaceId
   deriving Repr, DecidableEq

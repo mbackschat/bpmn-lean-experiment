@@ -7,8 +7,8 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 /*
- * The host-coverage census of the Activity host proposal
- * (docs/capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#new-guard-the-host-coverage-census).
+ * The host-coverage census of the Activity host specification
+ * (docs/capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#new-guard-the-host-coverage-census).
  *
  * Compilation cannot see a wildcard arm or a non-exhaustive `kind` comparison that silently absorbs the appended
  * `activity` operation, so every declaration that decides something about User Task or effect operations without an

@@ -3,7 +3,7 @@ module
 public import BpmnSemantics.SemanticProcessContract
 
 /-! Per-work facts of the Activity host, the one place outside the step owner that dispatches on its work, per the
-[Activity host proposal](../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#per-work-accessors). A host arriving
+[Activity host specification](../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#per-work-accessors). A host arriving
 on one input behaves, waits and publishes exactly as the legacy operation of its work with that input. Transcribed
 independently by the TypeScript `activity-host-work` module. -/
 

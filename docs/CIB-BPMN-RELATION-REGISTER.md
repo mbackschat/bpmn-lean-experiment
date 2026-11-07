@@ -306,7 +306,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0020 — a User, Service or Send Task starts one occurrence per arriving token
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Activity host account](capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending. It is the waiting-Task instance of `CIB-AGR-0019` and admits several `CIB-AGR-0018` throws into such a Task.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Activity host account](capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending. It is the waiting-Task instance of `CIB-AGR-0019` and admits several `CIB-AGR-0018` throws into such a Task.
 
 **BPMN basis:** Clause 13.3.1 makes an Activity that is the target of several Sequence Flows participate in uncontrolled flow, enabled for each arriving token independently of the others, and the Activity notes of Clause 10.3 make a further arriving token create a separate instance of the Activity.
 

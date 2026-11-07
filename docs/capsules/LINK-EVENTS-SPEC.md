@@ -54,7 +54,7 @@ Optional: several pairs in one definition and in one scope.
 
 Excluded, each refused at admission:
 
-- two or more throws of one name, the multiple-sources clause on which `PC-BASIC-02` stays open, except where the name's catch leads to a merging User, Service or Send Task of the Process root, which the [Activity host account](ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#required-optional-and-excluded-scope) admits;
+- two or more throws of one name, the multiple-sources clause on which `PC-BASIC-02` stays open, except where the name's catch leads to a merging User, Service or Send Task of the Process root, which the [Activity host account](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#required-optional-and-excluded-scope) admits;
 - a throw without a catch, a catch without a throw, two catches of one name anywhere in the definition (CIB's resource-wide name space), and a pair split across scopes;
 - a catch with an incoming flow, which covers a catch after an Event-Based Gateway, and a throw with an outgoing flow;
 - a throw with two incoming flows, a catch with two outgoing flows, a conditioned catch outgoing flow, and a catch whose successor is a Link throw (a chain);

@@ -1,15 +1,15 @@
-# Activity host flow lists proposal
+# Activity host flow lists specification
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
 
 Can the nested scope-data profile admit a User, Service or Send Task with several incoming Sequence Flows (implicit merge) by lowering exactly those Tasks to one new orthogonal Activity host operation, appended beside the frozen legacy constructors, so that no admitted model's Program, state, command or publication changes?
 
-This is the first family of Kernel IL orthogonalization in [PLAN](../PLAN.md#scheduled-delivery-batches) and the first stage of its Activity host. The parked [Activity implicit split and merge proposal](ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) owns the BPMN account and the CIB classification this family reuses. Its representation widened six existing constructors to lists, reached 264 Lean files, and stopped on 67 `lean-fanout` violations (2026-11-05); this proposal replaces it for merging Tasks.
+This is the first family of Kernel IL orthogonalization in [PLAN](../PLAN.md#scheduled-delivery-batches) and the first stage of its Activity host. The parked [Activity implicit split and merge proposal](ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) owns the BPMN account and the CIB classification this family reuses. Its representation widened six existing constructors to lists, reached 264 Lean files, and stopped on 67 `lean-fanout` violations (2026-11-05); this account replaces it for merging Tasks.
 
 The selected clauses of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list):
 
@@ -326,7 +326,7 @@ None. A host arrival opens the existing User Task or effect wait with its single
 
 Lane shape: proved
 
-Evidence: the host arms of the existing theorems over all operations, including [`FlowNodeOccurrenceUserTaskProgramValidity`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceUserTaskProgramValidity.lean) and [`FlowNodeOccurrenceEffectProgramValidity`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceEffectProgramValidity.lean), and the conformance checks below; the obligations in detail:
+Evidence: the host arms of the existing theorems over all operations, among them evaluator soundness [`fire_sound`](../../BpmnSemantics/SemanticProcess/Transition.lean#fire_sound), whose host arm establishes dispatch over the shared arrival transformation, and the serial account's refusal [`operationAllowed_activity`](../../BpmnSemantics/SemanticProcess/SequentialScopeProgramAdmission.lean#operationAllowed_activity), including [`FlowNodeOccurrenceUserTaskProgramValidity`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceUserTaskProgramValidity.lean) and [`FlowNodeOccurrenceEffectProgramValidity`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceEffectProgramValidity.lean), and the conformance checks below; the obligations in detail:
 
 - Every existing theorem quantified over all operations is re-established for the host arm. The spikes located the first instances: control places, wait declarations and their declarers, structural validity, cardinalities and step soundness.
 - Because no pair test admits a host, no commutation or batch law changes.
@@ -422,7 +422,7 @@ No admitted model changes, by `ACTH-ONE-01`; previously refused models of this p
 
 Growth that would cross an owner's 800-line review target moves into a family-owned leaf before the edit, as the lowering and the accessors do from the start. No size exception is requested.
 
-**Guards the implementation must satisfy:**
+**Guards the implementation satisfies:**
 
 - [`lean-fanout`](../../scripts/lean-fanout.test.ts)
 - [`lean-module-cost`](../../scripts/lean-module-cost.test.ts)
@@ -440,10 +440,10 @@ Growth that would cross an owner's 800-line review target moves into a family-ow
 - the [frozen compiler baseline](../../packages/bpmn-source/test/cyclic-control-flow-preservation-support.ts)
 - the [Start capacity envelope test](../../packages/temporal-adapter/protocol/test/start-capacity-envelope.test.ts)
 
-**Bounds this family changed**, against the unchanged-bounds plan above:
+**Guard exceptions this account holds:**
 
-- `lean-fanout`, the interface bound of `ActivityHostWork`: 100 to 439 by owner decision (2026-11-07), 440 when re-measured under the owner's delegation, and 441 for the admission vertex projection that the per-work accessors above name but the 440 count missed; each rise was direction-reviewed, and its reason in [`lean-fanout-bounds.ts`](../../scripts/lean-fanout-bounds.ts) records why the leaf sits under its importers' cones.
-- Six files under owner-approved size exceptions grew by host proof arms, in nonblank lines: `SerialBusinessTaskLifecycleProofs` 833 to 865, `ParallelScopeRetirementProgress` 832 to 843, `ParallelScopeProgress` 803 to 811, `SequentialScopeRuntimeValidityProofs` 836 to 842, `ParallelScopeCommandReplay` 804 to 807 and `ParallelScopeParentAccounting` 837 to 839. Their exception rationale names only `import all` and `privateEquations` lines and is stale; PLAN holds it for the owner.
+- `lean-fanout`: the interface bound of `ActivityHostWork` is 441. Its reason in [`lean-fanout-bounds.ts`](../../scripts/lean-fanout-bounds.ts) records why the leaf sits under its importers' cones; Git at `a391eb3f` retains how it rose from 100.
+- Six files under owner-approved size exceptions hold host proof arms: `SerialBusinessTaskLifecycleProofs`, `ParallelScopeRetirementProgress`, `ParallelScopeProgress`, `SequentialScopeRuntimeValidityProofs`, `ParallelScopeCommandReplay` and `ParallelScopeParentAccounting`. Their exception rationale names only `import all` and `privateEquations` lines; PLAN holds its renewal for the owner.
 
 ### New guard: the host-coverage census
 
@@ -452,32 +452,14 @@ It sits beside the [consumer census](../../scripts/semantic-operation-consumer-c
 - **Lean population.** Every production Lean `def` (excluding `Experiments`, `*Conformance*` and `*Fixtures*`) whose body names `.awaitUserTask` or `.awaitEffect` and holds a wildcard arm (`| _ =>`, `| _,` or a trailing `| _`) must also name `.activity`. Measured 2026-11-06: 91 declarations in 47 files.
 - **Multiplicity-keyed sites.** These are listed by name and must name the host, though they never name `awaitUserTask`: `operationJoint`, `programReentry`, `checkedReentry`, `operationVertex?`, `internalArmInput?`, `prepareInternalArm?` and `semanticOperationInternalFamily`, with their TypeScript twins.
 - **TypeScript population.** Every production function naming `SemanticOperationKind.AwaitUserTask` or `AwaitEffect` must also name `SemanticOperationKind.Activity` or call the accessor leaf. Measured with the compiler API before the representation commit: 195 sites in 50 files. The scan in use reads column-zero `function` declarations only; arrow functions, `const` function values and methods are outside its reach (19 legacy-kind lines, 2026-11-07), so those readers rest on exhaustive switches and the core tests.
-- **Allowlist.** The allowlist names declarations, never files, each with a one-line reason. It is measured before the representation commit's review and stated in its Rule 2 declaration.
+- **Allowlist.** The allowlist names declarations, never files, each with a one-line reason.
 - **Frozen legacy.** Every publication site derives `operationKind` through the accessor. Every `SemanticOperation` constructor whose text mentions `UserTask` or `Effect`, and the two payload structures, stay byte-identical until retirement, and a new such constructor fails the guard. Lowering a further BPMN variant onto an unchanged legacy constructor, such as a new Service Task variant onto `awaitEffect`, is equally a feature that triggers the switch; the census cannot see it, so that family's proposal declares it.
 
 This closes the wildcard and `default:` absorption that compilation cannot see.
 
-### Cost and split
+### Registration
 
-Two commits, each under its own [Rule 2](../../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change) declaration. Each declaration is measured on a throwaway clone against every guard before review, and its cost is extrapolated from timed builds of the heaviest units once they build.
-
-1. **The representation**, estimated at 7 to 9 hours including two whole-library rebuilds. It contains:
-   - the host constructor and union member, and its explicit arms in every census declaration;
-   - the accessor leaf and the arrival-uniqueness lemma;
-   - the published-kind type and the validator;
-   - the commutation classification;
-   - the host Program rules and the host-coverage census.
-
-   No lowering emits a host, so every scenario is unchanged.
-2. **The widening**, estimated at 4 to 6 hours. It contains admission, routing, host lowering, Link contraction, the vertex projection, witnesses and registration.
-
-**Stop condition.** Before the representation commit's Rule 2 declaration, the appended-constructor spike is built as the full library on the throwaway clone, under a declared cost limit, with every failing module repaired or stubbed until the build completes. Work stops and PLAN re-decides between the incremental route and one reshape when that build shows failures in more than 24 modules beyond the six already measured, any failure in a footprint, pair-independence or batch law, or any `lean-fanout` violation.
-
-**The stop condition fired** on 2026-11-07: the full-library spike needed 32 one-line proof repairs, with no law failure, and `lean-fanout` reported the `ActivityHostWork` importer bound. The owner decided the 439 exception. The representation commit `be083b0e` (01:35) landed before PLAN recorded the re-decision (`f87cadba`, 01:38), against the order this condition required. The root agent re-decided the incremental route under the owner's delegation of 2026-11-07 ("DO NOT ASK ME AGAIN, JUST DECIDE"); PLAN holds it for owner confirmation.
-
-The estimate of 11 to 15 hours of implementation, plus reviews and the hosted check, exceeds PLAN's 12-hour family budget, which PLAN owns together with its at-limit rule. The first commit is green on its own, so the expected overrun has a natural boundary there.
-
-**Registration:**
+The family registers:
 
 - the register entry;
 - the profile artifact and README;
@@ -494,4 +476,4 @@ The estimate of 11 to 15 hours of implementation, plus reviews and the hosted ch
 |---|---|---|---|---|
 | Proposal | `03f570db` | `fork-turns-none` | `approve-with-required-edits` | `d9fda9f6, 6aa03bf9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `6f2846fc` | `fork-turns-none` | `approve-with-required-edits` | `16ff902a` |

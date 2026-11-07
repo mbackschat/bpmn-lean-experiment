@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcessContract
 
 /-! # Activity host lowering
 
-ACTH-ADMIT-01 of the [Activity host proposal](../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#lowering): a
+ACTH-ADMIT-01 of the [Activity host specification](../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#lowering): a
 User, Service or Send Task with two or more incoming flows lowers to one Activity host whose inputs are those flows'
 places in canonical order and whose one output is its outgoing flow. A Task with one incoming flow keeps its legacy
 lowering (ACTH-ONE-01), so `Lowering` dispatches here only for a merging Task. Transcribed independently by the
