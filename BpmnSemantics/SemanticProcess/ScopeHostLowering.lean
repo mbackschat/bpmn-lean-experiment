@@ -5,7 +5,7 @@ public import BpmnSemantics.SemanticProcessContract
 
 /-! # Scope host lowering
 
-SCPH-ONE-01 of the [scope host proposal](../../docs/capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#lowering): a None Start or
+SCPH-ONE-01 of the [scope host specification](../../docs/capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#lowering): a None Start or
 embedded Sub-Process lowers to a scope host or exit exactly when it has the several-flow form, so `Lowering` dispatches
 here only for a splitting root Start, a Sub-Process whose body Start splits and a splitting Sub-Process's completion;
 every one-flow node keeps its legacy lowering. Place lists are in canonical order, as flow lists are (SCPH-HOST-01). The

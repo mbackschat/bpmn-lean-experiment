@@ -8,7 +8,7 @@ import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! # Scope host conformance
 
-Finite witnesses of the [scope host proposal](../docs/capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#separating-witnesses).
+Finite witnesses of the [scope host specification](../docs/capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#separating-witnesses).
 
 The host Program rules (SCPH-HOST-01) admit a host of two or more sorted distinct entries, a `process` host without an
 input and a `subProcess` host with one, and an exit of two or more sorted distinct outputs, so neither doubles a legacy

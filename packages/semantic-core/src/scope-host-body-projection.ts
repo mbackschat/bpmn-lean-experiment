@@ -1,6 +1,6 @@
 /**
  * The scope host's place in the nested scope-control analysis, per the
- * [scope host proposal](../../../docs/capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#admission). Transcribed independently by
+ * [scope host specification](../../../docs/capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#admission). Transcribed independently by
  * the scope host part of the Lean `NestedScopeBranchWork`.
  *
  * Both projections hand the analysis raw bodies in which a splitting None Start or Sub-Process is a Start or task vertex

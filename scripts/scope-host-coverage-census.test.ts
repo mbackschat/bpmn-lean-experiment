@@ -16,7 +16,7 @@ import {
 
 /*
  * The host-coverage census of the scope host
- * (docs/capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#host-coverage-census-extended).
+ * (docs/capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#host-coverage-census-extended).
  *
  * Compilation cannot see a wildcard arm or a non-exhaustive `kind` comparison that silently absorbs the appended
  * `scope` and `scopeExit` operations. Every declaration that decides something about a None Start initiation, a scope

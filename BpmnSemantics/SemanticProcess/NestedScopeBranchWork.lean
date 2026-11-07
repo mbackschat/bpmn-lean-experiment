@@ -4,7 +4,7 @@ public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
 
 /-! The fork-branch cut of NSC-ADMIT-01 and the Call placement scan of CMCALL-ADMIT-01, as PTPB-WORK-01 and
 PTPB-CALL-01 of the [pass-through branch specification](../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#admission)
-relax them for pass vertices, and the terminal-fork relaxation of the [terminal forks specification](../../docs/capsules/TERMINAL-FORKS-SPEC.md#admission), and the placement and synthetic forks of the [scope host](../../docs/capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#admission) over raw bodies. `NestedScopeControl` consumes them in hidden bodies only, through a private import; the TypeScript twin of the scope host part is `scope-host-body-projection.ts`. -/
+relax them for pass vertices, and the terminal-fork relaxation of the [terminal forks specification](../../docs/capsules/TERMINAL-FORKS-SPEC.md#admission), and the placement and synthetic forks of the [scope host](../../docs/capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#admission) over raw bodies. `NestedScopeControl` consumes them in hidden bodies only, through a private import; the TypeScript twin of the scope host part is `scope-host-body-projection.ts`. -/
 
 public section
 

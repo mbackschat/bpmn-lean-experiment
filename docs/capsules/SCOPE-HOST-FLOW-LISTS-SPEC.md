@@ -1,8 +1,8 @@
-# Scope host flow lists proposal
+# Scope host flow lists specification
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -23,7 +23,7 @@ Close calls, 2026-11-07, each with its reason:
 
 - **The merges at Sub-Processes and Calls wait.** Admitted, they reach no CIB test model: the one Sub-Process with two incoming flows (`bpmn/event/error/reviewSalesLead`) is re-entered through an Error boundary, which this profile refuses, and no Call has several flows. The host carries an `inputs` list, so a later merge family adds admission and a Program rule, not a kernel change; a Call merge adds one `ScopeWork` alternative.
 - **Hosts stay outside fork regions.** A host enabled beside another internal operation needs a prepared footprint and re-established scope-creation pair and batch laws; the [Activity host](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#internal-commutation) already assigns every host footprint to the stage that admits concurrent arrivals. No CIB test model holds a body Start split at all.
-- **Two host operations until the switch, one feature record after it.** An embedded Sub-Process is not an `ActivityWork` alternative: its inputs sit on its entry and its outputs on its completion, so an Activity host carrying both would hold outputs no step of its own produces, or completion would look them up in the Program. The scope host therefore stays a separate entry operation with its exit. The orthogonal features both host kinds will need (loop, typed boundary handlers, per-flow conditions and default) are not added to either constructor. The switch introduces them once, as fields of one shared feature record that `ActivityHost` and `ScopeHost` both carry, so that no feature is baked into two constructors ([capsule item 19](README.md#required-capsule-structure)). This rests on the incremental route, whose re-decision after the Activity host's stop condition awaits owner confirmation in [PLAN](../PLAN.md#exact-resume-point); if the owner reverses it, this family stops before its representation commit.
+- **Two host operations until the switch, one feature record after it.** An embedded Sub-Process is not an `ActivityWork` alternative: its inputs sit on its entry and its outputs on its completion, so an Activity host carrying both would hold outputs no step of its own produces, or completion would look them up in the Program. The scope host therefore stays a separate entry operation with its exit. The orthogonal features both host kinds will need (loop, typed boundary handlers, per-flow conditions and default) are not added to either constructor. The switch introduces them once, as fields of one shared feature record that `ActivityHost` and `ScopeHost` both carry, so that no feature is baked into two constructors ([capsule item 19](README.md#required-capsule-structure)). This rests on the incremental route [PLAN](../PLAN.md#scheduled-delivery-batches) records.
 - **The split needs no wait-record stage.** Every split here is produced by an operation that reads its own places from the Program: initiation, scope entry and scope completion. No runtime record carries a scope's output ([`RuntimeState`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) has no such field), unlike the Task split, whose completion reads `output` from the User Task and effect wait records.
 
 **Batch rule.** Both rows are selected together. Every open clause that shares the mechanism, an operation entering or leaving a scope with a flow list, is selected or screened above or under [Excluded](#required-optional-and-excluded-scope).
@@ -351,6 +351,8 @@ Derived with `node scripts/what-binds.ts`; every owner that growth would push pa
 - **Lean step and admission owners:** `DeclaredScopeTransition`, `ScopeCompletion`, `CheckedProcessAdmission`, `CheckedPassThroughFlow`, `NestedScopeDataAdmission`, and `NestedScopeControlAdmission` for `operationVertex?`, `controlParentOutput?`, `programBodies`, `StructuredScopeData.splits` and `programRestrictionsHold`.
 - **TypeScript:** the [Program routing](../../packages/semantic-core/src/structured-scope-data-routing.ts), the [contract](../../packages/semantic-core/src/semantic-process-contract.ts), [runtime](../../packages/semantic-core/src/semantic-process-runtime.ts), [profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts), the nested scope-data and scope-control admissions, the [checked pass-through flow](../../packages/semantic-core/src/checked-pass-through-flow.ts), the [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts), the [source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts), the commutation census and [footprint](../../packages/semantic-core/src/internal-transition-footprint.ts), the publication owners, the [semantic process schema](../../contracts/schemas/semantic-process.schema.json), [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) and the [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts).
 
+The `ScopeHostConformance` row of the [module cost guard](../../scripts/lean-module-cost.test.ts) was measured on a throwaway measurement clone at commit `b7bb9b0b`, which is not in this repository's history; the row's `codeSha256` binds it to this code.
+
 **Guards the implementation satisfies:** [`lean-fanout`](../../scripts/lean-fanout.test.ts) (no new `import all` opener of a hub, no new importer of `ActivityHostWork` or `NestedScopeDataAdmission`), [`lean-module-cost`](../../scripts/lean-module-cost.test.ts), [`source-hygiene`](../../scripts/source-hygiene.test.ts), [`semantic-operation-consumer-census`](../../scripts/semantic-operation-consumer-census.test.ts), [`scope-host-coverage-census`](../../scripts/scope-host-coverage-census.test.ts) (below), [`internal-commutation-census`](../../scripts/internal-commutation-census.test.ts), [`contract-schema-coverage`](../../scripts/contract-schema-coverage.test.ts), [`start-operation-artifact-consistency`](../../scripts/start-operation-artifact-consistency.test.ts), the [frozen compiler baseline](../../packages/bpmn-source/test/cyclic-control-flow-preservation-support.ts) and the [Start capacity envelope test](../../packages/temporal-adapter/protocol/test/start-capacity-envelope.test.ts).
 
 ### Host-coverage census, extended
@@ -361,15 +363,9 @@ Derived with `node scripts/what-binds.ts`; every owner that growth would push pa
 
 The family registers the register entry, the profile artifact and README, scenarios and pipeline cases, the value-domain matrix, the corpus, About, the CIB probe and the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) cell of `BPMN-MECH-FLOW-01`.
 
-## Cost
-
-Two commits, each under its own [Rule 2](../../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change) declaration reviewed before any edit: the representation, both constructors with no admission change and every existing scenario unchanged; then the widening, admission, lowering, placement, host admission, witnesses and registration. Budget 12 hours from 2026-11-07 05:00 CET; the Activity host family took 7 h 47 min with one constructor. At the limit, work stops at the first commit's green stop point and PLAN records the boundary.
-
-Spent, 2026-11-07: the representation `4a8abd4b` at 09:16 and the widening `4f194d0f` at 10:32 CET, 5 h 32 min from the budget's start; the closure lanes at `4f194d0f` took 24 min, dominated by the hosted Temporal lane (560 s), with `BpmnConformance` 163 s and the pipeline 153 s on warm caches. The `ScopeHostConformance` row of the [module cost guard](../../scripts/lean-module-cost.test.ts) was measured on a throwaway measurement clone at commit `b7bb9b0b`, which is not in this repository's history; the guard binds the row to the target's code through its `codeSha256`.
-
 ## Epistemic closure
 
-- **Established at closure, if green:** the three split forms at singleton placements, Lean/core/Temporal agreement on every journey, CIB calibration at the probe's fidelity.
+- **Established at closure:** the three split forms at singleton placements, Lean/core/Temporal agreement on every journey, CIB calibration at the probe's fidelity.
 - **Nearest unsupported claims:** splits inside fork regions; host batch laws; the two open host laws; conditional Start flows; merges at scopes.
 - **Common-mode risk:** the TypeScript and Lean placement analyses are transcribed from one account, so a wrong fork-region definition passes both; the CIB probe, which runs a body split on the engine, is the independent lane for the split itself, not for placement.
 - **Nearest realistic counterexample:** a Sub-Process after a terminal fork's surviving branch, which `SCPH-SINGLE-01` must refuse.
@@ -380,4 +376,4 @@ Spent, 2026-11-07: the representation `4a8abd4b` at 09:16 and the widening `4f19
 |---|---|---|---|---|
 | Proposal | `cec35ffb` | `fork-turns-none` | `approve-with-required-edits` | `a925a8c9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `7d3998e6` | `fork-turns-none` | `approve-with-required-edits` | `ed1bf4b4` |

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 /*
  * The declaration scanner shared by the host-coverage censuses of the Activity host
  * (docs/capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#new-guard-the-host-coverage-census) and the scope host
- * (docs/capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#host-coverage-census-extended).
+ * (docs/capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#host-coverage-census-extended).
  */
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));

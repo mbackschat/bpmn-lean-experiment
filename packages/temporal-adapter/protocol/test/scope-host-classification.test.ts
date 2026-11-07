@@ -1,5 +1,5 @@
 /**
- * SCPH-HOST-01's hosting classification (the scope host proposal's wrong algorithm 9): Temporal host admission reads a
+ * SCPH-HOST-01's hosting classification (the scope host specification's wrong algorithm 9): Temporal host admission reads a
  * scope host with two or more entries, and an exit with two or more outputs, as a token split, so a host-driven wait
  * beside it falls to the concurrent analysis instead of passing as a passive initiation. Each refusal is a one-fact
  * change of the admitted legacy control.

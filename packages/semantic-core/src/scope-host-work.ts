@@ -1,6 +1,6 @@
 /**
  * Per-work facts of the scope host and exit, and the Program rule that each is its scope's sole entry or completion,
- * per the [scope host proposal](../../../docs/capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#per-work-accessors). The
+ * per the [scope host specification](../../../docs/capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#per-work-accessors). The
  * Lean `SemanticOperation.kind` and `ProgramStructuralValidation` transcribe them independently.
  *
  * No legacy projection exists: the host Program rules require two or more entries or outputs, so consumers that read

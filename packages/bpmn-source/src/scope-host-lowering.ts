@@ -3,7 +3,7 @@
  * form; every one-flow node keeps its legacy lowering, so this leaf is reached only for a splitting root Start, a
  * Sub-Process whose body Start splits, and a splitting Sub-Process's completion. The caller passes each place list
  * sorted, as flow lists are (SCPH-HOST-01). Owner: the
- * [scope host proposal](../../../docs/capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#lowering); the Lean twin is
+ * [scope host specification](../../../docs/capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#lowering); the Lean twin is
  * `ScopeHostLowering`.
  */
 import { ScopeWorkKind, SemanticOperationKind } from "@bpmn-lean/semantic-core";

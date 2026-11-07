@@ -1,5 +1,5 @@
 /**
- * The steps of the scope host and exit, per the [scope host proposal](../../../docs/capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#steps).
+ * The steps of the scope host and exit, per the [scope host specification](../../../docs/capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#steps).
  * Transcribed independently by the Lean `scopeHostState?` and `completeDeclaredScopeOutputs?`.
  *
  * Each step is its work's legacy step aimed at the first place of its list, followed by a split that puts one token,

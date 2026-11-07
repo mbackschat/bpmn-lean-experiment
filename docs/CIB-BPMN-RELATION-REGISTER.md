@@ -330,7 +330,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0022 — a None Start's start and an embedded Sub-Process's completion take every unconditioned outgoing flow in their one step
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [scope host account](capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending. It is the Start and Sub-Process instance of `CIB-AGR-0019`'s split.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [scope host account](capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#normative-basis-and-cib-classification), implemented and closure-reviewed. It is the Start and Sub-Process instance of `CIB-AGR-0019`'s split.
 
 **BPMN basis:** Clause 10.5.1 generates a token for each outgoing Sequence Flow of a triggered Start Event, which Clause 13.2 restates for the Process; Clause 13.3.1 gives every outgoing flow of a completing Activity a token, a parallel split; Clause 13.3.4 instantiates an embedded Sub-Process when a token arrives and completes it when no token remains inside.
 

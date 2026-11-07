@@ -15,7 +15,7 @@ import org.cibseven.bpm.engine.delegate.JavaDelegate;
 import org.junit.Test;
 
 /**
- * Calibrates the scope host proposal's `CIB-AGR-0022` (`SCPH-START-01`, `SCPH-EXIT-01`) on its employee onboarding
+ * Calibrates the scope host specification's `CIB-AGR-0022` (`SCPH-START-01`, `SCPH-EXIT-01`) on its employee onboarding
  * model. CIB Seven `2.2.0` leaves a None Start and a completed embedded Sub-Process through
  * `BpmnActivityBehavior#performOutgoingBehavior`, which takes every unconditioned transition in one
  * `leaveActivityViaTransitions` and creates no activity instance for the split. So after each split both successors

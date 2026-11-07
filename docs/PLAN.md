@@ -98,19 +98,19 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Kernel IL orthogonalization, batch 5, second family: the implicit split at None Starts and embedded Sub-Processes through an appended scope host and scope exit ([proposal](capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md)). Close call: the merges at Sub-Processes and Calls wait, because admitted they reach no CIB test model.
+Current task: Kernel IL orthogonalization, batch 5, second family: the implicit split at None Starts and embedded Sub-Processes through an appended scope host and scope exit ([specification](capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md)). Close call: the merges at Sub-Processes and Calls wait, because admitted they reach no CIB test model.
 
-Deliverable: `PC-BASIC-01`'s unconditioned multiple outgoing Start flows (root, and body Starts outside fork regions) and `PC-CF-07`'s unconditioned Sub-Process split outside fork regions, landed on `main`. Conditional and default Start flows stay open, bound to `PC-CF-07`'s conditional outgoing flows; the [proposal](capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#question-and-delivery-boundary) lists every residual.
+Deliverable: `PC-BASIC-01`'s unconditioned multiple outgoing Start flows (root, and body Starts outside fork regions) and `PC-CF-07`'s unconditioned Sub-Process split outside fork regions, landed on `main`. Conditional and default Start flows stay open, bound to `PC-CF-07`'s conditional outgoing flows; the [specification](capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#question-and-delivery-boundary) lists every residual.
 
-Acceptance blockers: the closure review and hosted `verify-complete`.
+Acceptance blockers: hosted `verify-complete`, then the fast-forward of `main`.
 
-Current result: proposal approved (audit `a925a8c9`); representation `4a8abd4b` and widening `4f194d0f` committed under checked Rule 2 declarations; every closure lane green at `4f194d0f` under receipts.
+Current result: graduated; closure approved with required edits, audit `ed1bf4b4`; closure lanes green at `4f194d0f`; corrections green on the fast, TypeScript, Lean driver (1369 of 1369) and model-corpus lanes.
 
 Owner items: confirm the incremental re-decision after the stop condition fired; renew six stale size-exception rationales.
 
 Effort budget: 12 hours from 2026-11-07 05:00 CET; at the limit record the boundary and continue unless the evidence invalidates the path.
 
-Next action: the cold closure review at the closure documentation commit, then graduation and the branch push flow.
+Next action: land through the branch push flow, then propose the wait-record stage.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
 
