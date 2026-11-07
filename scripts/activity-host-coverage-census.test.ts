@@ -66,7 +66,7 @@ const leanAllowlist: Readonly<Record<string, string>> = {
   "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessProgramAdmission.lean::taskPorts":
     "profile shape admits no host outside the nested scope-data profile (ACTH-PROFILE-01)",
   "BpmnSemantics/SemanticProcess/Lowering.lean::lowerNode":
-    "no lowering emits a host before the widening commit (ACTH-ONE-01)",
+    "emits a host only through the host lowering leaf, for a merging Task; every other Task keeps its legacy operation (ACTH-ONE-01)",
   "BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmission.lean::operationInputs":
     "profile shape admits no host outside the nested scope-data profile (ACTH-PROFILE-01)",
   "BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmission.lean::operationOrigin?":
@@ -80,15 +80,15 @@ const leanAllowlist: Readonly<Record<string, string>> = {
   "BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean::OperationAllowed":
     "profile shape admits no host outside the nested scope-data profile (ACTH-PROFILE-01)",
   "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::operationInputs":
-    "the nested scope-data accounts admit a host only with the re-entry routing of the widening commit; the wildcard refuses it until then (ACTH-ADMIT-01)",
+    "a Program holding a host routes to the re-entry account and the concurrent account refuses it, so this reader never sees a host (ACTH-ADMIT-01)",
   "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::operationVertex?":
-    "the nested scope-data accounts admit a host only with the re-entry routing of the widening commit; the wildcard refuses it until then (ACTH-ADMIT-01)",
+    "a Program holding a host routes to the re-entry account and the concurrent account refuses it, so this reader never sees a host (ACTH-ADMIT-01)",
   "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programBodies":
-    "the nested scope-data accounts admit a host only with the re-entry routing of the widening commit; the wildcard refuses it until then (ACTH-ADMIT-01)",
+    "a Program holding a host routes to the re-entry account and the concurrent account refuses it, so this reader never sees a host (ACTH-ADMIT-01)",
   "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programData":
-    "the nested scope-data accounts admit a host only with the re-entry routing of the widening commit; the wildcard refuses it until then (ACTH-ADMIT-01)",
+    "a Program holding a host routes to the re-entry account and the concurrent account refuses it, so this reader never sees a host (ACTH-ADMIT-01)",
   "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programModel":
-    "the nested scope-data accounts admit a host only with the re-entry routing of the widening commit; the wildcard refuses it until then (ACTH-ADMIT-01)",
+    "a Program holding a host routes to the re-entry account and the concurrent account refuses it, so this reader never sees a host (ACTH-ADMIT-01)",
   "BpmnSemantics/SemanticProcess/ParallelScopeData.lean::evaluateParallelScopeInputs?":
     "Multi-Instance bodies and their accounts never hold a host (ACTH-ADMIT-01 body refusal)",
   "BpmnSemantics/SemanticProcess/ParallelScopeData.lean::writeParallelScopeValues?":
@@ -182,9 +182,9 @@ const leanAllowlist: Readonly<Record<string, string>> = {
 /** TypeScript functions that compare or case on a legacy User Task or effect kind non-exhaustively, with the reason each may omit the host. */
 const typeScriptAllowlist: Readonly<Record<string, string>> = {
   "packages/bpmn-source/src/configured-task-lowering.ts::lowerConfiguredTask":
-    "no lowering emits a host before the widening commit (ACTH-ONE-01)",
+    "a configured Task (`CheckedNodeKind.ConfiguredTask`) is never a merging Task, so it keeps its legacy effect wait (ACTH-ADMIT-01)",
   "packages/bpmn-source/src/semantic-process-lowering.ts::lowerNode":
-    "no lowering emits a host before the widening commit (ACTH-ONE-01)",
+    "emits a host only through the host lowering leaf, for a merging Task; every other Task keeps its legacy operation (ACTH-ONE-01)",
   "packages/bpmn-source/src/user-task-metadata-source.ts::userTaskMetadataBindingValid":
     "source metadata binding precedes lowering and never sees an operation",
   "packages/semantic-core/src/compensation-activity-retention-state-validation.ts::targetOperationMatches":
@@ -295,6 +295,8 @@ const frozenLeanDeclarations: Readonly<Record<string, string>> = {
     "c4ee6970dff6976d0238d9c46d17d5c01eb0ce1ecbe2825637e8e8ad1198a897",
   "constructor awaitMonitoredUserTask":
     "a0cde0ae79a29c7cf8c1822aeca38bc8730cd224e361a40ecc9b91861a1f002b",
+  "constructor completeParallelMultiInstanceUserTask":
+    "3bb6b13f22ae141287e5a7bd83d73f2289fe3d46e597fa7bc4a2a64ba128dae1",
   "constructor awaitEffect":
     "5cfa154fa02f7697f8f2b3ad798d7b418570776e279603e7a1d4abc3bbdfca81",
   "structure UserTaskDefinition":
@@ -379,9 +381,14 @@ const key = ({ path: declarationPath, name }: Readonly<{ path: string; name: str
 function leanFrozenDigests(): Record<string, string> {
   const source = read("BpmnSemantics/SemanticProcessContract.lean");
   const digests: Record<string, string> = {};
-  const constructorBlock = source.slice(source.indexOf("inductive SemanticOperation where"));
-  for (const match of constructorBlock.matchAll(/^  \| (await\w*UserTask|awaitEffect)\b[^\n]*(?:\n {6,}[^\n]*)*/gmu)) {
-    digests[`constructor ${match[1]}`] = createHash("sha256").update(match[0]).digest("hex");
+  const start = source.indexOf("inductive SemanticOperation where");
+  const constructorBlock = source.slice(start, source.indexOf("\n\n", start));
+  // Keyed by what a constructor carries, not by a name list, so a new User Task or effect constructor (a bounded
+  // effect, say) fails here instead of growing the legacy representation beside the host.
+  for (const match of constructorBlock.matchAll(/^  \| (\w+)\b[^\n]*(?:\n {6,}[^\n]*)*/gmu)) {
+    if (/UserTask|Effect/u.test(match[0])) {
+      digests[`constructor ${match[1]}`] = createHash("sha256").update(match[0]).digest("hex");
+    }
   }
   for (const name of ["UserTaskDefinition", "EffectDefinition"]) {
     const match = source.match(new RegExp(`^structure ${name} where\\n(?: {2,}[^\\n]*\\n)*`, "mu"));

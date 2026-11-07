@@ -182,3 +182,40 @@ test("ACTH-ADMIT-01: two Link throws of one name whose catch leads to a Task mak
       '<intermediateThrowEvent id="ThrowTriaged" name="To expert"><linkEventDefinition name="ToExpert" /></intermediateThrowEvent>'),
     "ExpertNeeded"), "Link into a Choice");
 });
+
+test("ACTH-ADMIT-01: Link contraction admits repeated throws only into a merging Task", async () => {
+  // Mirrors the Lean contraction check at the checked level: the admitted Link twin, its catch retargeted.
+  const { checkedProcess } = await compile(linkTwin(await source(), "ObtainExpertOpinion"));
+  assert.ok(checkedProcess !== undefined);
+  assert.ok(contractLinks(checkedProcess) !== undefined, "into the merging Service Task");
+  const into = (target: string) => ({ ...checkedProcess, sequenceFlows: checkedProcess.sequenceFlows.map(flow =>
+    flow.id === "Flow_ExpertCaught" ? { ...flow, targetId: target } : flow) });
+  for (const target of ["ExpertNeeded", "Reopen", "ClaimDecided"]) {
+    assert.equal(contractLinks(into(target)), undefined, `into ${target}`);
+  }
+});
+
+test("ACTH-ADMIT-01: two Link throws into a pass-through Manual Task stay refused", async () => {
+  // A Manual Task merges as a pass-through node (PTSM-MERGE-01) with explicit flows, so this refusal is the Link rule's.
+  const xml = replaceOnce(await source(),
+    '<sequenceFlow id="Flow_OpinionReceived" sourceRef="ObtainExpertOpinion" targetRef="ReviewClaim" />',
+    '<sequenceFlow id="Flow_OpinionReceived" sourceRef="ObtainExpertOpinion" targetRef="ReviewClaim" />' +
+      '<manualTask id="PrepareQuestion" name="Prepare question" />' +
+      '<sequenceFlow id="Flow_Prepared" sourceRef="PrepareQuestion" targetRef="ObtainExpertOpinion" />');
+  // The explicit-flow twin, both flows retargeted to the Manual Task, is admitted, so the Link version's refusal can
+  // only come from the repeated-throw rule.
+  const explicit = replaceOnce(replaceOnce(xml,
+    '<sequenceFlow id="Flow_ToExpert" sourceRef="ExpertNeeded" targetRef="ObtainExpertOpinion">',
+    '<sequenceFlow id="Flow_ToExpert" sourceRef="ExpertNeeded" targetRef="PrepareQuestion">'),
+    '<sequenceFlow id="Flow_Reopen" sourceRef="Reopen" targetRef="ObtainExpertOpinion">',
+    '<sequenceFlow id="Flow_Reopen" sourceRef="Reopen" targetRef="PrepareQuestion">');
+  await admitted(explicit, "explicit-flow twin");
+  await refused(linkTwin(xml, "PrepareQuestion"), "Link throws into the Manual Task");
+});
+
+test("ACTH-PROFILE-01: every profile but the nested scope-data profile refuses the claim model", async () => {
+  const xml = await source();
+  for (const profile of Object.values(SemanticProfileId).filter(id => id !== SemanticProfileId.NestedEmbeddedScopeData)) {
+    await refused(xml, profile, profile);
+  }
+});

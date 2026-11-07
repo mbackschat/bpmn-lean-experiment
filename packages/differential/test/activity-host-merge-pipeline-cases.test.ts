@@ -8,7 +8,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { CanonicalObservationKind, CommandOutcome, ProcessStatus, ScenarioOutcomeKind, SemanticOperationKind,
-  SemanticProfileId, StimulusKind, VariableValueKind, concurrentStructuredScopeDataProgram, runScenario,
+  SemanticProfileId, SemanticTransitionKind, StimulusKind, VariableValueKind, applyStimulusWithTrace,
+  concurrentStructuredScopeDataProgram, initialState, runScenario,
   scopeReentryProgram, supportsSemanticProcessScenario } from "@bpmn-lean/semantic-core";
 import type { VariableBinding } from "@bpmn-lean/semantic-core";
 import { ComparisonKind, DifferentialTarget, compareTargetResults } from "@bpmn-lean/differential";
@@ -106,5 +107,35 @@ test("each registered seeded mutation moves exactly the observation it names and
     if (comparison.kind !== ComparisonKind.Disagreement) assert.fail("Seeded mutation escaped comparison");
     assert.deepEqual(comparison.disagreement, pipelineCase.expectedInjectedDisagreement, scenario.id);
     assert.throws(() => pipelineCase.injectMutation(mutated), /calibration requires/u, scenario.id);
+  }
+});
+
+// ACTH-MERGE-01 and ACTH-HOST-01 at the publication boundary: each command's committed internal records, written from
+// the account. A merge arrival is exactly one record under its work's legacy kind; no record has the host discriminant
+// and none stands for the merge (wrong algorithms 5 and 8).
+const opening = ["initiate:ClaimSubmitted", "awaitEffect:TriageClaim"];
+const closing = ["choose:Reopen", "reachNoneEnd:ClaimDecided", "completeScope:Process_ClaimReview"];
+const records = new Map<string, readonly (readonly string[])[]>([
+  ["claim-direct", [opening, ["choose:ExpertNeeded", "awaitUserTask:ReviewClaim"], ["awaitEffect:FetchReviewOutcome"], closing]],
+  ["claim-expert", [opening, ["choose:ExpertNeeded", "awaitEffect:ObtainExpertOpinion"], ["awaitUserTask:ReviewClaim"],
+    ["awaitEffect:FetchReviewOutcome"], closing]],
+  ["claim-direct-reopened", [opening, ["choose:ExpertNeeded", "awaitUserTask:ReviewClaim"], ["awaitEffect:FetchReviewOutcome"],
+    ["choose:Reopen", "awaitEffect:ObtainExpertOpinion"], ["awaitUserTask:ReviewClaim"], ["awaitEffect:FetchReviewOutcome"], closing]],
+]);
+
+test("each arrival publishes one internal record under its work's legacy kind and the merge publishes none", async () => {
+  for (const { scenario, semanticProcess: program } of await loadAndCompileCases(activityHostMergePipelineCases)) {
+    const expected = records.get(scenario.id.slice(prefix.length))!;
+    let state = structuredClone(initialState);
+    assert.equal(scenario.stimuli.length, expected.length, scenario.id);
+    scenario.stimuli.forEach((stimulus, position) => {
+      const trace = applyStimulusWithTrace(program, state, stimulus, 64);
+      assert.equal(trace.result.outcome, CommandOutcome.Committed, `${scenario.id} command ${position}`);
+      assert.deepEqual(trace.committedTransitions.flatMap(({ transition }) =>
+        transition.kind === SemanticTransitionKind.InternalOperation
+          ? [`${transition.operationKind}:${transition.origin.elementId}`] : []), expected[position],
+        `${scenario.id} command ${position}`);
+      state = trace.result.state;
+    });
   }
 });

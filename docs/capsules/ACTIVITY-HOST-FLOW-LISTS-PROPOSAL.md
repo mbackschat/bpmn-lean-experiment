@@ -29,7 +29,7 @@ Close calls, 2026-11-06, each with its measured reason:
   - The rejected alternative was completion reading the outputs from the Program by operation id. It would put a Program lookup into every completion path that the wait-record stage then removes again.
   - A merge needs no wait change: the host arrival opens the legacy wait with its single output. The split clause of `PC-CF-07` lands in the wait-record stage, which PLAN names.
 - **`PC-BASIC-01` and the Sub-Process and Call forms wait for the scope host.** Their operations start a Process or come in entry and exit pairs: `initiate`, `enterScope` with `completeScope`, and `invokeProcess` with `returnProcess`. Their inputs and outputs therefore live on different operations. Their host shape is that family's decision, measured there; PLAN names it.
-- **The incremental route over one reshape.** It is the route the owner direction of 2026-11-05 put to a measurement: "one orthogonal Activity constructor added beside frozen legacy constructors". The direction is quoted in PLAN's [scheduled delivery batches](../PLAN.md#scheduled-delivery-batches). That direction is this family's authority for a new constructor where [capsule item 19](README.md#required-capsule-structure) would otherwise add flow multiplicity as a field of the existing constructors. The [retirement rule](#representation-and-runtime-ownership) bounds how long the two representations coexist.
+- **The incremental route over one reshape.** It is the route the owner direction of 2026-11-05 put to a measurement: "one orthogonal Activity constructor added beside frozen legacy constructors". The owner direction of 2026-11-05 reads: "a one-hour spike first measures one orthogonal Activity constructor added beside frozen legacy constructors, then decides between that incremental route and one reshape" (PLAN at `01f8ed53`). That direction is this family's authority for a new constructor where [capsule item 19](README.md#required-capsule-structure) would otherwise add flow multiplicity as a field of the existing constructors. The [retirement rule](#representation-and-runtime-ownership) bounds how long the two representations coexist.
 
 Reach, from the [AISM selection](ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md#question-and-delivery-boundary): of the 1,864 deduplicated parsed CIB Seven test models, 17 files hold an Activity other than an Abstract or Manual Task with two or more incoming flows, 15 of them at a User or Service Task.
 
@@ -277,28 +277,28 @@ None. A host arrival opens the existing User Task or effect wait with its single
 - A *Reopen?* Choice re-enters *Obtain expert opinion*, so *Obtain expert opinion* merges too.
 - The cycle's only cuts are the two merging Tasks.
 - Journeys: direct, expert, and direct reopened once, so *Review claim* has two occurrences (wrong algorithm 6).
-- Each journey's burst equals the scheduler's step count (wrong algorithms 5 and 9).
+- Each command's committed internal records are written from the account: one record per arrival under its work's legacy kind and none for the merge (wrong algorithms 5, 8 and 9). The Lean conformance burst only agrees with the core's analysis and does not separate wrong algorithm 5.
 - Twins: *Review claim* as a Service Task and as a Send Task; a Link twin with two throws of one name.
 
 **Refused edits**, each at both levels:
 
 - a merging Task with two outgoing flows;
 - arrivals from two Parallel branches (wrong algorithm 7);
-- a merging Task inside a Sub-Process body, and inside the body of a Sub-Process on one branch of a fork;
+- a merging Task inside a Sub-Process body; the body of a Sub-Process on one branch of a fork has no separate witness and rests on this body refusal and the fork refusal;
 - a merging Service Task whose mapped input is written on only one incoming path, with no Start binding for it (`SRE-AVAILABLE-01`, wrong algorithm 9);
-- several incoming flows at a Sub-Process, a Call Activity and a Receive Task, which stay refused;
-- two Link throws whose catch's successor is an Exclusive Gateway;
+- several incoming flows at a Sub-Process and a Receive Task, which stay refused; a Call Activity has no separate witness and rests on the unchanged Call arity `1 -> 1` of the [re-entry account](SCOPE-REENTRY-SPEC.md#required-optional-and-excluded-scope);
+- two Link throws whose catch's successor is an Exclusive Gateway, a None End or a pass-through Manual Task, the last against its admitted explicit-flow twin, with the contraction refusal checked directly in both languages;
 - each model under the embedded completion profile.
 
-**Profile matrix.** The Task arity arm is checked over all four combinations of the two flags, in both languages (wrong algorithm 2).
+**Profile matrix.** Lean checks the Task arity arm over all four combinations of the two flags. TypeScript keys the arity on the profile, so its source test refuses the claim model under every other registered profile (wrong algorithm 2).
 
 **Kernel witnesses**, in both languages:
 
 - every existing scenario's Program is unchanged (`ACTH-ONE-01`);
-- the expert journey publishes one internal record per arrival, with kind `awaitUserTask` or `awaitEffect` (wrong algorithms 5 and 8);
+- every claim journey publishes one internal record per arrival, with kind `awaitUserTask` or `awaitEffect`, and none for the merge (wrong algorithms 5 and 8);
 - a host with one input, with unsorted inputs or with two outputs is refused;
 - a host with two marked inputs is not prepared, which is the [census](../INTERNAL-COMMUTATION-PROPOSAL.md) singleton rule's executable counterexample: a hand-built forking Program that marks both inputs fails closed in the scheduler, not only at admission;
-- a host's footprint is `none`;
+- a host's footprint is `none`, checked on the model's host rather than proved (see the Lean lane);
 - the publication validator refuses `"activity"` in structural mode.
 
 ## Oracles this family changes
@@ -326,11 +326,17 @@ None. A host arrival opens the existing User Task or effect wait with its single
 
 Lane shape: proved
 
-Evidence: the host arms of the existing theorems over all operations, the arrival-uniqueness lemma in [`FlowNodeOccurrenceUserTaskProgramValidity`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceUserTaskProgramValidity.lean) and [`FlowNodeOccurrenceEffectProgramValidity`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceEffectProgramValidity.lean), the `none`-footprint theorem beside [`InternalCommutationCore`](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean), and the conformance checks below; the obligations in detail:
+Evidence: the host arms of the existing theorems over all operations, including [`FlowNodeOccurrenceUserTaskProgramValidity`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceUserTaskProgramValidity.lean) and [`FlowNodeOccurrenceEffectProgramValidity`](../../BpmnSemantics/SemanticProcess/FlowNodeOccurrenceEffectProgramValidity.lean), and the conformance checks below; the obligations in detail:
 
 - Every existing theorem quantified over all operations is re-established for the host arm. The spikes located the first instances: control places, wait declarations and their declarers, structural validity, cardinalities and step soundness.
-- The two wait Program-validity proofs gain one arrival-uniqueness lemma: a host arrival equals the legacy arrival from its unique yielding input.
-- The host's `internalTransitionFootprint?` is `none`, stated as a theorem. Because no pair test admits it, no commutation or batch law changes.
+- Because no pair test admits a host, no commutation or batch law changes.
+
+**Unresolved boundary, deliberately open.** Two host laws are not proved:
+
+- arrival uniqueness: `activityArrivalState?` ([`Transition`](../../BpmnSemantics/SemanticProcess/Transition.lean)) equals the legacy firing of `ActivityHost.projection?` from its unique yielding input. The definition re-inlines the work match instead of composing `projection?`, so Lean holds two definitions of the legacy arrival connected by no law;
+- the `none` footprint: `internalTransitionFootprint?` of a host is `none` ([`InternalCommutationCore`](../../BpmnSemantics/SemanticProcess/InternalCommutationCore.lean)).
+
+Both would need `import all` of those hubs from a new owner, raising their hidden-edit fan-out bounds, so they are checked instead: `host_is_never_batched` on the model's host, and every journey executed by Lean in the pipeline. The switch family, which retires the legacy arrival, owns both laws.
 
 **Conformance checks.** Admission, routing and lowering agreement for hosts are checked by a new conformance module beside [`PassThroughImplicitSplitMergeConformance`](../../BpmnSemantics/PassThroughImplicitSplitMergeConformance.lean), including the checked and Program re-entry burst of the claim model.
 
@@ -416,7 +422,7 @@ No admitted model changes, by `ACTH-ONE-01`; previously refused models of this p
 
 Growth that would cross an owner's 800-line review target moves into a family-owned leaf before the edit, as the lowering and the accessors do from the start. No size exception is requested.
 
-**Guards the implementation must satisfy, with bounds unchanged:**
+**Guards the implementation must satisfy:**
 
 - [`lean-fanout`](../../scripts/lean-fanout.test.ts)
 - [`lean-module-cost`](../../scripts/lean-module-cost.test.ts)
@@ -434,15 +440,20 @@ Growth that would cross an owner's 800-line review target moves into a family-ow
 - the [frozen compiler baseline](../../packages/bpmn-source/test/cyclic-control-flow-preservation-support.ts)
 - the [Start capacity envelope test](../../packages/temporal-adapter/protocol/test/start-capacity-envelope.test.ts)
 
+**Bounds this family changed**, against the unchanged-bounds plan above:
+
+- `lean-fanout`, the interface bound of `ActivityHostWork`: 100 to 439 by owner decision (2026-11-07), 440 when re-measured under the owner's delegation, and 441 for the admission vertex projection that the per-work accessors above name but the 440 count missed; each rise was direction-reviewed, and its reason in [`lean-fanout-bounds.ts`](../../scripts/lean-fanout-bounds.ts) records why the leaf sits under its importers' cones.
+- Six files under owner-approved size exceptions grew by host proof arms, in nonblank lines: `SerialBusinessTaskLifecycleProofs` 833 to 865, `ParallelScopeRetirementProgress` 832 to 843, `ParallelScopeProgress` 803 to 811, `SequentialScopeRuntimeValidityProofs` 836 to 842, `ParallelScopeCommandReplay` 804 to 807 and `ParallelScopeParentAccounting` 837 to 839. Their exception rationale names only `import all` and `privateEquations` lines and is stale; PLAN holds it for the owner.
+
 ### New guard: the host-coverage census
 
 It sits beside the [consumer census](../../scripts/semantic-operation-consumer-census.test.ts) and works per declaration, not per file. It has five parts:
 
 - **Lean population.** Every production Lean `def` (excluding `Experiments`, `*Conformance*` and `*Fixtures*`) whose body names `.awaitUserTask` or `.awaitEffect` and holds a wildcard arm (`| _ =>`, `| _,` or a trailing `| _`) must also name `.activity`. Measured 2026-11-06: 91 declarations in 47 files.
 - **Multiplicity-keyed sites.** These are listed by name and must name the host, though they never name `awaitUserTask`: `operationJoint`, `programReentry`, `checkedReentry`, `operationVertex?`, `internalArmInput?`, `prepareInternalArm?` and `semanticOperationInternalFamily`, with their TypeScript twins.
-- **TypeScript population.** Every production function naming `SemanticOperationKind.AwaitUserTask` or `AwaitEffect` must also name `SemanticOperationKind.Activity` or call the accessor leaf, found with the TypeScript compiler API. Measured: 195 sites in 50 files.
+- **TypeScript population.** Every production function naming `SemanticOperationKind.AwaitUserTask` or `AwaitEffect` must also name `SemanticOperationKind.Activity` or call the accessor leaf. Measured: 195 sites in 50 files. The scan reads column-zero `function` declarations only; arrow functions, `const` function values and methods are outside its reach (19 legacy-kind lines, 2026-11-07), so those readers rest on exhaustive switches and the core tests.
 - **Allowlist.** The allowlist names declarations, never files, each with a one-line reason. It is measured before the representation commit's review and stated in its Rule 2 declaration.
-- **Frozen legacy.** Every publication site derives `operationKind` through the accessor, and the declarations named under the [retirement rule](#retirement-of-the-dual-representation) stay byte-identical until retirement, checked against their text at the representation commit.
+- **Frozen legacy.** Every publication site derives `operationKind` through the accessor. Every `SemanticOperation` constructor whose text mentions `UserTask` or `Effect`, and the two payload structures, stay byte-identical until retirement, and a new such constructor fails the guard. Lowering a further BPMN variant onto an unchanged legacy constructor, such as a new Service Task variant onto `awaitEffect`, is equally a feature that triggers the switch; the census cannot see it, so that family's proposal declares it.
 
 This closes the wildcard and `default:` absorption that compilation cannot see.
 
@@ -461,6 +472,8 @@ Two commits, each under its own [Rule 2](../../CLAUDE.md#rule-2-declare-review-a
 2. **The widening**, estimated at 4 to 6 hours. It contains admission, routing, host lowering, Link contraction, the vertex projection, witnesses and registration.
 
 **Stop condition.** Before the representation commit's Rule 2 declaration, the appended-constructor spike is built as the full library on the throwaway clone, under a declared cost limit, with every failing module repaired or stubbed until the build completes. Work stops and PLAN re-decides between the incremental route and one reshape when that build shows failures in more than 24 modules beyond the six already measured, any failure in a footprint, pair-independence or batch law, or any `lean-fanout` violation.
+
+**The stop condition fired** on 2026-11-07: the full-library spike needed 32 one-line proof repairs, with no law failure, and `lean-fanout` reported the `ActivityHostWork` importer bound. The owner decided the 439 exception. The representation commit `be083b0e` (01:35) landed before PLAN recorded the re-decision (`f87cadba`, 01:38), against the order this condition required. The root agent re-decided the incremental route under the owner's delegation of 2026-11-07 ("DO NOT ASK ME AGAIN, JUST DECIDE"); PLAN holds it for owner confirmation.
 
 The estimate of 11 to 15 hours of implementation, plus reviews and the hosted check, exceeds PLAN's 12-hour family budget, which PLAN owns together with its at-limit rule. The first commit is green on its own, so the expected overrun has a natural boundary there.
 

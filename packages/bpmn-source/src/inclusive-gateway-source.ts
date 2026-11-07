@@ -166,7 +166,8 @@ function derivePairedGatewayId(
 /**
  * LNK-ADMIT-01: the walk reads the scope as its Link-contracted twin, as admission does, so a pair on a region branch
  * pairs the join exactly as its explicit flow would. A name without exactly one throw and one catch in this scope, or a
- * pair breaking the flow rules, stays raw here and is refused by the contraction (`link-contraction.ts`).
+ * pair breaking the flow rules, stays raw here. The contraction (`link-contraction.ts`) refuses it, except several throws
+ * into a root merging Task (ACTH-ADMIT-01), which no region holds because a merging Task under a fork is refused.
  */
 function linkContractedScope(
   flows: ReadonlyArray<CheckedSequenceFlow>,

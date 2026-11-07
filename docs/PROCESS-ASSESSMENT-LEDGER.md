@@ -67,7 +67,7 @@ Dispositions are a closed set:
 Existing executable bounds were not enumerated before planning an atomic change, so an oracle, a module ceiling, and a registry obligation each surfaced mid-implementation.
 
 Instances
-: 25
+: 26
 
 Disposition
 : `executable guard`
@@ -86,6 +86,8 @@ Twenty-third instance, nested scope-data closure on 2026-10-18: a new cost-ledge
 Twenty-fourth instance, nested scope-control closure on 2026-10-21: the registration commit grew the pipeline catalog, the evidence-free registry and the differential tests without running the guards that bind them, so the warm-ceiling guard, the profile-authority guard and the gate-reachability guard first failed in the closure infrastructure gate. The guards held before acceptance; the cost was a closure delay, so the disposition stands and the registration step must run the infrastructure guards `what-binds` names for the registry paths.
 
 Twenty-fifth instance, Call variable mapping checkpoint on 2026-10-22: the implementation commit grew the model corpus, the capability catalog, the Lean import roots and the module-cost registry, and the corpus counts, capability union, import-boundary and module-cost guards first failed in the qualification run, as did the PLAN and runtime-map word limits. The guards held before the checkpoint commit, so the disposition stands; `what-binds` on the registry and corpus paths names these guards.
+
+Twenty-sixth instance, Activity host merges closure on 2026-11-07: three bound consumers surfaced only at the next boundary. The proposal's oracle list omitted the None End fan-in refusal the widening admitted, the 440 fan-out count missed the admission vertex importer the proposal itself names, and the widening carried a CIB probe that was first compiled in its closure lane. Each was caught before acceptance by the source test, the fan-out guard and the model-corpus lane, so the disposition stands; `what-binds` on the oracle and runner paths names these guards, and a probe is compiled in the commit that adds it.
 
 ### Finding 02
 
