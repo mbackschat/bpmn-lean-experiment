@@ -10,6 +10,7 @@ import {
   applyInternalOperationStep,
   initialState,
   isPublishedOperationKind,
+  projectOpenFlowNodeOccurrences,
   publishedOperationKind,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -111,4 +112,42 @@ test("ACTH-MERGE-01: two marked inputs leave the host unprepared rather than cho
 
 test("ACTH-HOST-01: a host carries no footprint, so it is never batched", () => {
   assert.equal(deriveInternalTransitionFootprint(program(host), running(["place:Flow_A"]), { operation: host, owner }), null);
+});
+
+const splitting = {
+  ...operationBase("Task_Review"),
+  kind: SemanticOperationKind.Activity,
+  inputs: ["place:Flow_A"],
+  outputs: [{ place: "place:Flow_B" }, { place: "place:Flow_Out" }],
+  work: { kind: ActivityWorkKind.UserTask, task: { elementId: "Task_Review", name: "Review claim" } },
+} as const satisfies SemanticOperation;
+
+test("ACSP-HOST-01: admits a host of one input and two sorted distinct outputs, and no other split shape", () => {
+  assert.equal(wellFormed(splitting), true);
+  assert.equal(wellFormed({ ...splitting, inputs: ["place:Flow_A", "place:Flow_B"] }), false, "many to many");
+  assert.equal(wellFormed({ ...splitting, outputs: [{ place: "place:Flow_Out" }, { place: "place:Flow_B" }] }), false,
+    "unsorted outputs");
+  assert.equal(wellFormed({ ...splitting, outputs: [{ place: "place:Flow_B" }, { place: "place:Flow_B" }] }), false,
+    "a repeated output");
+  assert.equal(wellFormed({ ...splitting, outputs: [] }), false, "no output");
+});
+
+test("ACSP-WAIT-01: a splitting arrival opens the legacy wait of its work carrying every output", () => {
+  const legacy = { ...legacyFrom("place:Flow_A"), output: "place:Flow_B" } as SemanticOperation;
+  const arrived = applyInternalOperationStep(program(splitting), splitting, running(["place:Flow_A"]));
+  const expected = applyInternalOperationStep(program(legacy), legacy, running(["place:Flow_A"]));
+  assert.ok(arrived !== null && expected !== null);
+  assert.deepEqual(arrived.operation, splitting);
+  const [wait] = expected.successor.userTaskWaits;
+  assert.ok(wait !== undefined);
+  assert.deepEqual(arrived.successor, {
+    ...expected.successor,
+    userTaskWaits: [{ ...wait, outputs: ["place:Flow_B", "place:Flow_Out"] }],
+  });
+  // ACSP-WAIT-01: the open-set projection recognizes the opened wait as the host's, not as a stray one.
+  assert.notEqual(projectOpenFlowNodeOccurrences(program(splitting), arrived.successor), null);
+  assert.equal(projectOpenFlowNodeOccurrences(program(splitting), {
+    ...arrived.successor,
+    userTaskWaits: [{ ...wait, outputs: ["place:Flow_B"] }],
+  }), null, "a wait carrying only the first output is no wait of the host");
 });

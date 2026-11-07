@@ -514,10 +514,14 @@ function operationVertex(program: SemanticProcessProgram, operation: SemanticOpe
         child: { scope: operation.childScopeId, entry, origin: operation.origin.elementId },
       };
     }
-    // ACTH-ADMIT-01: a host is the vertex of its work's legacy projection, its inputs being its several predecessors.
+    // ACTH-ADMIT-01, ACSP-HOST-01: a host is the vertex of its work's legacy projection, its inputs being its several
+    // predecessors and every output's consumer a successor.
     case SemanticOperationKind.Activity: {
       const settled = activityHostSettledProjection(operation);
-      return settled === null ? null : operationVertex(program, settled, handlers);
+      const vertex = settled === null ? null : operationVertex(program, settled, handlers);
+      const outputs = operation.outputs.map(({ place }) => following(place));
+      return vertex === null || outputs.some(output => output === null) ? null
+        : { ...vertex, outputs: outputs.flatMap(output => output ?? []) };
     }
     default: return null;
   }

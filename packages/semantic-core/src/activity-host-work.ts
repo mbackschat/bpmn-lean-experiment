@@ -45,51 +45,55 @@ export function publishedOperationKind(operation: SemanticOperation): PublishedS
 }
 
 /**
- * The legacy operation a host arrival on `input` equals. `null` when the host has no single output, which the host
- * Program rules refuse, so no admitted Program reaches it.
+ * The legacy operation of the host's work arriving on `input` and leaving by `output` (ACTH-HOST-01, ACSP-HOST-01),
+ * the Lean `ActivityHost.workAt`: the operation whose rules the work meets for every input and output.
  */
-export function activityHostProjection(host: ActivityHostOperation, input: string): ActivityHostProjection | null {
-  const [output, ...rest] = host.outputs;
-  if (output === undefined || rest.length > 0) {
-    return null;
-  }
+export function activityHostWorkAt(host: ActivityHostOperation, input: string, output: string): ActivityHostProjection {
   switch (host.work.kind) {
     case ActivityWorkKind.UserTask:
-      return {
-        id: host.id,
-        origin: host.origin,
-        kind: SemanticOperationKind.AwaitUserTask,
-        input,
-        output: output.place,
-        task: host.work.task,
-      };
+      return { id: host.id, origin: host.origin, kind: SemanticOperationKind.AwaitUserTask, input, output,
+        task: host.work.task };
     case ActivityWorkKind.Effect:
-      return {
-        id: host.id,
-        origin: host.origin,
-        kind: SemanticOperationKind.AwaitEffect,
-        input,
-        output: output.place,
-        effect: host.work.effect,
-        bpmnErrorRoute: null,
-      };
+      return { id: host.id, origin: host.origin, kind: SemanticOperationKind.AwaitEffect, input, output,
+        effect: host.work.effect, bpmnErrorRoute: null };
   }
 }
 
 /**
- * The legacy operation of a host whose arrival has already committed, for consumers that read only its work, origin
- * and output (the opened wait, its occurrence, its declarations), never which input it consumed.
+ * The legacy operation a merging host's arrival on `input` equals. `null` for a splitting host, whose arrival opens a
+ * wait on all its outputs and so equals no legacy operation.
+ */
+export function activityHostProjection(host: ActivityHostOperation, input: string): ActivityHostProjection | null {
+  const [output, ...rest] = host.outputs;
+  return output === undefined || rest.length > 0 ? null : activityHostWorkAt(host, input, output.place);
+}
+
+/**
+ * The legacy operation of a host whose arrival has already committed, for consumers that read only its work and
+ * origin (the opened wait's identity, its occurrence, its declarations), never which input it consumed. Its `output`
+ * is the first of possibly several: a consumer comparing outputs reads them through `settledWaitOutputs`.
  */
 export function activityHostSettledProjection(host: ActivityHostOperation): ActivityHostProjection | null {
   const [input] = host.inputs;
-  return input === undefined ? null : activityHostProjection(host, input);
+  const [output] = host.outputs;
+  return input === undefined || output === undefined ? null : activityHostWorkAt(host, input, output.place);
+}
+
+/**
+ * The outputs the wait opened by `programOperation` carries, given `output`, the output of its settled operation: all
+ * of a host's outputs (ACSP-WAIT-01), the single output of any legacy operation.
+ */
+export function settledWaitOutputs(programOperation: SemanticOperation, output: string): readonly string[] {
+  return programOperation.kind === SemanticOperationKind.Activity
+    ? programOperation.outputs.map(({ place }) => place)
+    : [output];
 }
 
 export type LegacySemanticOperation = Exclude<SemanticOperation, ActivityHostOperation>;
 
 /**
  * An operation as the consumers of a committed step read it: a host as its settled projection, every other operation
- * as itself. `null` only for a host the host Program rules refuse.
+ * as itself. `null` only for a host without inputs or outputs, which the host Program rules refuse.
  */
 export function settledOperation(operation: SemanticOperation): LegacySemanticOperation | null {
   return operation.kind === SemanticOperationKind.Activity ? activityHostSettledProjection(operation) : operation;

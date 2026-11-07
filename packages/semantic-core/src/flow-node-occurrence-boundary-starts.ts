@@ -4,7 +4,7 @@
  * The selected Program operation, its runtime owner, and the exact successor record must agree.
  * Current-open projection is a later oracle and is deliberately absent from this owner.
  */
-import { settledOperation } from "./activity-host-work.js";
+import { settledOperation, settledWaitOutputs } from "./activity-host-work.js";
 import type { OccurrenceId } from "./contract.js";
 import { VariableValueKind } from "./contract.js";
 import { parallelScopeBinding } from "./parallel-scope-runtime.js";
@@ -98,7 +98,7 @@ export function candidateLongLivedStarts(
       const wait = only(after.userTaskWaits.filter((candidate) =>
         candidate.id.elementId === operation.task.elementId &&
         candidate.id.activation === nextActivation(before.taskActivations, operation.task.elementId) &&
-        waitOutputsAre(candidate.outputs, [operation.output]) &&
+        waitOutputsAre(candidate.outputs, settledWaitOutputs(programOperation, operation.output)) &&
         candidate.name === operation.task.name &&
         sameJson(candidate.metadata, operation.task.metadata) &&
         sameScopeOccurrence(candidate.owner, owner)
@@ -167,7 +167,7 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.AwaitEffect: {
       const wait = only(after.effectWaits.filter((candidate) =>
         candidate.id.elementId === operation.effect.elementId &&
-        waitOutputsAre(candidate.outputs, [operation.output]) &&
+        waitOutputsAre(candidate.outputs, settledWaitOutputs(programOperation, operation.output)) &&
         sameJson(candidate.descriptor, operation.effect.descriptor) &&
         inputMappingSnapshotMatchesUnder(
           effectMappingValuePolicyForProgram(program),

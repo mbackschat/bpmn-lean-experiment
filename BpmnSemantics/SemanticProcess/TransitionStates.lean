@@ -31,6 +31,14 @@ def awaitUserTaskState? (state : RuntimeState) (input output : ControlPlaceId)
   let _ ← runningInstance? state
   pure (activateUserTask state owner.processInstanceId owner input output task)
 
+/-- ACSP-WAIT-01: a splitting Activity host's User Task arrival, the legacy arrival with an output list; its caller
+supplies the list's non-emptiness. -/
+def awaitUserTaskOutputsState? (state : RuntimeState) (input : ControlPlaceId) (outputs : List ControlPlaceId)
+    (nonempty : outputs ≠ []) (task : UserTaskDefinition) : Option RuntimeState := do
+  let owner ← onlyTokenOwner? state input
+  let _ ← runningInstance? state
+  pure (activateUserTaskOutputs state owner.processInstanceId owner input outputs nonempty task)
+
 def awaitTimerState? (state : RuntimeState) (input output : ControlPlaceId)
     (timer : TimerDefinition) : Option RuntimeState := do
   let owner ← onlyTokenOwner? state input
@@ -66,6 +74,18 @@ def awaitEffectState? (program : Program) (state : RuntimeState) (input output :
     ⟨owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount state effect.elementId + 1⟩
   if state.variables.activities.any (activityScopeMatches effectOwner) then none
   else pure (activateEffect state owner.processInstanceId owner input output effect route arguments)
+
+/-- ACSP-WAIT-01: a splitting Activity host's effect arrival, the legacy arrival with an output list. -/
+def awaitEffectOutputsState? (program : Program) (state : RuntimeState) (input : ControlPlaceId)
+    (outputs : List ControlPlaceId) (nonempty : outputs ≠ []) (effect : EffectDefinition)
+    (route : Option BpmnErrorRoute) : Option RuntimeState := do
+  let owner ← onlyTokenOwner? state input
+  let _ ← runningInstance? state
+  let arguments ← evaluateEffectInputs? program state owner effect.inputMappings
+  let effectOwner : EffectOccurrenceId :=
+    ⟨owner.processInstanceId, ⟨effect.elementId.value⟩, effectActivationCount state effect.elementId + 1⟩
+  if state.variables.activities.any (activityScopeMatches effectOwner) then none
+  else pure (activateEffectOutputs state owner.processInstanceId owner input outputs nonempty effect route arguments)
 
 def duplicateState? (state : RuntimeState) (input : ControlPlaceId)
     (outputs : List ControlPlaceId) : Option RuntimeState := do

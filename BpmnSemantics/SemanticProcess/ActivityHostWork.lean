@@ -52,6 +52,13 @@ def ActivityHost.projection? (host : ActivityHost) (input : ControlPlaceId) : Op
       | .effect effect => .awaitEffect host.id host.origin input output.place effect none)
   | _ => none
 
+/-- The legacy operation of the host's work between one input and one output. Work validity checks it for every pair,
+so a splitting host's work, which has no single-output projection, is checked once per output (ACSP-HOST-01). -/
+def ActivityHost.workAt (host : ActivityHost) (input output : ControlPlaceId) : SemanticOperation :=
+  match host.work with
+  | .userTask task => .awaitUserTask host.id host.origin input output task
+  | .effect effect => .awaitEffect host.id host.origin input output effect none
+
 /-! Laws of the per-work accessors. Bodies stay hidden, so a consumer proves through these and rebuilds only when an
 accessor's meaning changes. `dsimp` unfolds without realizing equation lemmas, so the module exports none
 ([build modularity spec](../../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules)). -/

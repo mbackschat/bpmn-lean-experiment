@@ -530,8 +530,10 @@ export function isWellFormedSemanticOperation(
 }
 
 /**
- * ACTH-HOST-01: two or more canonical inputs, exactly one output record, and work well formed as the legacy operation
- * of its kind, so a one-input host never doubles the legacy encoding of a Task.
+ * ACTH-HOST-01, ACSP-HOST-01: canonical inputs and output records, merging (two or more inputs, one output) or
+ * splitting (one input, two or more outputs), so a one-input one-output host never doubles the legacy encoding of a
+ * Task; the work is well formed as the legacy operation of its kind for every input and output. The Lean
+ * `ProgramStructuralValidation` arm and `activityHostWorkValid` transcribe it independently.
  */
 function isWellFormedActivityHost(
   value: Readonly<Record<string, unknown>>,
@@ -541,23 +543,28 @@ function isWellFormedActivityHost(
   semanticProfile: string,
 ): boolean {
   if (!hasOnlyKeys(value, ["id", "kind", "origin", "inputs", "outputs", "work"]) ||
-      !isManyPlaceReferences(value.inputs, placeIds) || !Array.isArray(value.outputs) ||
-      value.outputs.length !== 1 || !isRecord(value.work)) {
+      !isNonEmptyPlaceReferences(value.inputs, placeIds) || !Array.isArray(value.outputs) || !isRecord(value.work) ||
+      !value.outputs.every((output) => isRecord(output) && hasOnlyKeys(output, ["place"]))) {
     return false;
   }
-  const [output] = value.outputs as unknown[];
-  if (!isRecord(output) || !hasOnlyKeys(output, ["place"]) || !isPlaceReference(output.place, placeIds)) {
-    return false;
-  }
-  const base = { id: value.id, origin: value.origin, input: value.inputs[0], output: output.place };
+  const inputs = value.inputs;
+  const outputs = (value.outputs as Readonly<Record<string, unknown>>[]).map(({ place }) => place);
   const work = value.work;
-  const projected = work.kind === ActivityWorkKind.UserTask && hasOnlyKeys(work, ["kind", "task"])
-    ? { ...base, kind: SemanticOperationKind.AwaitUserTask, task: work.task }
-    : work.kind === ActivityWorkKind.Effect && hasOnlyKeys(work, ["kind", "effect"])
-      ? { ...base, kind: SemanticOperationKind.AwaitEffect, effect: work.effect, bpmnErrorRoute: null }
-      : null;
-  return projected !== null &&
-    isWellFormedSemanticOperation(projected, placeIds, placeOrigins, scopeOrigins, semanticProfile);
+  const merging = inputs.length > 1 && outputs.length === 1;
+  const splitting = inputs.length === 1 && outputs.length > 1;
+  if (!isNonEmptyPlaceReferences(outputs, placeIds) || !(merging || splitting)) {
+    return false;
+  }
+  return inputs.every((input) => outputs.every((output) => {
+    const base = { id: value.id, origin: value.origin, input, output };
+    const projected = work.kind === ActivityWorkKind.UserTask && hasOnlyKeys(work, ["kind", "task"])
+      ? { ...base, kind: SemanticOperationKind.AwaitUserTask, task: work.task }
+      : work.kind === ActivityWorkKind.Effect && hasOnlyKeys(work, ["kind", "effect"])
+        ? { ...base, kind: SemanticOperationKind.AwaitEffect, effect: work.effect, bpmnErrorRoute: null }
+        : null;
+    return projected !== null &&
+      isWellFormedSemanticOperation(projected, placeIds, placeOrigins, scopeOrigins, semanticProfile);
+  }));
 }
 
 /**

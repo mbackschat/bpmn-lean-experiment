@@ -1,5 +1,5 @@
 import { enterSequentialScope, completeSequentialScopeStep } from "./sequential-scope-runtime.js";
-import { activityHostProjection } from "./activity-host-work.js";
+import { activityHostProjection, activityHostWorkAt } from "./activity-host-work.js";
 import { applyScopeHostStep } from "./scope-host-step.js";
 import { CommandOutcome } from "./contract.js";
 import type { Stimulus } from "./contract.js";
@@ -81,6 +81,7 @@ import type {
   ScopeOccurrenceId,
 } from "./semantic-process-state.js";
 import {
+  createActivityWaitOutputs,
   createEffectWait,
   createTimerWait,
   createUserTaskWait,
@@ -451,6 +452,18 @@ function applyInternalOperationState(
       );
     }
     case SemanticOperationKind.Activity: {
+      // ACSP-WAIT-01: a splitting host arrives on its single input and opens one wait carrying all its outputs.
+      const [splitInput, ...otherInputs] = operation.inputs;
+      const [firstOutput, ...otherOutputs] = operation.outputs;
+      if (otherOutputs.length > 0) {
+        if (splitInput === undefined || otherInputs.length > 0 || firstOutput === undefined) return null;
+        return applyOwnedOperation(
+          onlyTokenOwner(state, splitInput),
+          (selected) => createActivityWaitOutputs(program, activityHostWorkAt(operation, splitInput, firstOutput.place),
+            operation.outputs.map(({ place }) => place), state, selected),
+          captureOwner,
+        );
+      }
       // ACTH-MERGE-01: the legacy arrival of the host's work from each input. The step commits only when exactly one
       // input yields, so two marked inputs leave it unprepared rather than choosing; admission keeps that unreachable.
       const arrivals = operation.inputs.flatMap((input) => {

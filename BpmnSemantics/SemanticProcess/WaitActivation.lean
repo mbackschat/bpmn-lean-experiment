@@ -52,6 +52,25 @@ def activateUserTask (state : RuntimeState) (instanceId : SemanticId)
         metadata := task.metadata } state.waits
     activations := setActivationCount state.activations task.id activation }
 
+/-- ACSP-WAIT-01: arms a User Task wait that marks every place of `outputs` on completion, the arrival of a splitting
+Activity host. Its one-element case is the legacy arming (`activateUserTaskOutputs_singleton`), so host and legacy
+arrivals cannot diverge. -/
+def activateUserTaskOutputs (state : RuntimeState) (instanceId : SemanticId)
+    (owner : ScopeOccurrenceId) (input : ControlPlaceId) (outputs : List ControlPlaceId) (nonempty : outputs ≠ [])
+    (task : UserTaskDefinition) : RuntimeState :=
+  let activation := activationCount state task.id + 1
+  { state with
+    tokens := removeToken state.tokens input owner
+    waits := insertUserTaskWait
+      { processInstanceId := instanceId, owner, task, activation, outputs, outputs_ne_nil := nonempty
+        metadata := task.metadata } state.waits
+    activations := setActivationCount state.activations task.id activation }
+
+private theorem activateUserTaskOutputs_singleton (state : RuntimeState) (instanceId : SemanticId)
+    (owner : ScopeOccurrenceId) (input output : ControlPlaceId) (task : UserTaskDefinition) :
+    activateUserTaskOutputs state instanceId owner input [output] (by simp) task =
+      activateUserTask state instanceId owner input output task := by rfl
+
 def activateTimer (state : RuntimeState) (instanceId : SemanticId)
     (owner : ScopeOccurrenceId) (input output : ControlPlaceId)
     (timer : TimerDefinition) : RuntimeState :=
@@ -154,6 +173,33 @@ def activateEffect (state : RuntimeState) (instanceId : SemanticId)
     variables := addActivityVariableScope state.variables effectOwner arguments
     effectActivations := setEffectActivationCount state.effectActivations
       effect.elementId activation }
+
+/-- ACSP-WAIT-01: arms an effect wait that marks every place of `outputs` on its result, the arrival of a splitting
+Activity host; `activateEffectOutputs_singleton` keeps the legacy arming its one-element case. -/
+def activateEffectOutputs (state : RuntimeState) (instanceId : SemanticId)
+    (owner : ScopeOccurrenceId) (input : ControlPlaceId) (outputs : List ControlPlaceId) (nonempty : outputs ≠ [])
+    (effect : EffectDefinition) (bpmnErrorRoute : Option BpmnErrorRoute) (arguments : List VariableBinding) :
+    RuntimeState :=
+  let activation := effectActivationCount state effect.elementId + 1
+  let effectOwner : EffectOccurrenceId :=
+    { processInstanceId := instanceId
+      elementId := ⟨effect.elementId.value⟩
+      activation }
+  { state with
+    tokens := removeToken state.tokens input owner
+    effectWaits := insertEffectWait
+      { processInstanceId := instanceId, owner, elementId := effect.elementId, activation
+        descriptor := effect.descriptor, arguments, outputMappings := effect.outputMappings, outputs
+        outputs_ne_nil := nonempty, bpmnErrorRoute, incidentAlreadyRetried := false } state.effectWaits
+    variables := addActivityVariableScope state.variables effectOwner arguments
+    effectActivations := setEffectActivationCount state.effectActivations
+      effect.elementId activation }
+
+private theorem activateEffectOutputs_singleton (state : RuntimeState) (instanceId : SemanticId)
+    (owner : ScopeOccurrenceId) (input output : ControlPlaceId) (effect : EffectDefinition)
+    (bpmnErrorRoute : Option BpmnErrorRoute) (arguments : List VariableBinding) :
+    activateEffectOutputs state instanceId owner input [output] (by simp) effect bpmnErrorRoute arguments =
+      activateEffect state instanceId owner input output effect bpmnErrorRoute arguments := by rfl
 
 /-- The shared bounded and monitored User Task arming root issues its Activity occurrence strictly
 above the predecessor Activity-element high-water mark. Sequential Multi-Instance entry reuses this

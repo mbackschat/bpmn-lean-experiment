@@ -5,7 +5,7 @@
  * exact long-lived occurrence identities. Boundary Timer deadlines and Process roots are validated
  * but deliberately excluded because neither is an executing BPMN flow node.
  */
-import { settledOperation, settledOperations } from "./activity-host-work.js";
+import { settledOperation, settledWaitOutputs } from "./activity-host-work.js";
 import type { OccurrenceId } from "./contract.js";
 import {
   ActivityBodyKind,
@@ -394,7 +394,7 @@ function waitMatchesUserTask(
     switch (operation.kind) {
       case SemanticOperationKind.AwaitUserTask:
         return operation.task.elementId === wait.id.elementId &&
-          waitOutputsAre(wait.outputs, [operation.output]) &&
+          waitOutputsAre(wait.outputs, settledWaitOutputs(programOperation, operation.output)) &&
           operation.task.name === wait.name &&
           sameJson(operation.task.metadata, wait.metadata);
       case SemanticOperationKind.AwaitDataInputUserTask:
@@ -614,20 +614,21 @@ function waitMatchesEffect(
   wait: RuntimeState["effectWaits"][number],
 ): boolean {
   return ownerExists(state, wait.owner) &&
-    only(settledOperations(program.operations).filter((operation) =>
-      operation.kind === SemanticOperationKind.AwaitEffect &&
-      operation.effect.elementId === wait.id.elementId &&
-      waitOutputsAre(wait.outputs, [operation.output]) &&
-      sameJson(operation.effect.descriptor, wait.descriptor) &&
-      inputMappingSnapshotMatchesUnder(
-        effectMappingValuePolicyForProgram(program),
-        operation.effect.inputMappings,
-        wait.arguments,
-      ) &&
-      sameJson(operation.effect.outputMappings, wait.outputMappings) &&
-      sameJson(operation.bpmnErrorRoute, wait.bpmnErrorRoute) &&
-      operationOwnedBy(program, operation, wait.owner)
-    )) !== undefined;
+    only(program.operations.filter((programOperation) => {
+      const operation = settledOperation(programOperation);
+      return operation?.kind === SemanticOperationKind.AwaitEffect &&
+        operation.effect.elementId === wait.id.elementId &&
+        waitOutputsAre(wait.outputs, settledWaitOutputs(programOperation, operation.output)) &&
+        sameJson(operation.effect.descriptor, wait.descriptor) &&
+        inputMappingSnapshotMatchesUnder(
+          effectMappingValuePolicyForProgram(program),
+          operation.effect.inputMappings,
+          wait.arguments,
+        ) &&
+        sameJson(operation.effect.outputMappings, wait.outputMappings) &&
+        sameJson(operation.bpmnErrorRoute, wait.bpmnErrorRoute) &&
+        operationOwnedBy(program, operation, wait.owner);
+    })) !== undefined;
 }
 
 function effectLocalScopesAreExact(state: RuntimeState): boolean {

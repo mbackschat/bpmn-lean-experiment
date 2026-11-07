@@ -230,18 +230,19 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
       callDataInterfaceValid data origin.elementId.value calledProcessId.value &&
       returnProcessOperationWellFormed program id origin calledProcessId calledRoot
         callerOutput
-  -- ACTH-HOST-01: at least two inputs, so a host never doubles a Task's legacy encoding, and one output in this
-  -- family; `activityHostWorkValid` checks the work against its legacy projection. The origin alignment repeats the
-  -- projection's so that consumers of this arm alone read the host's wait identity as its origin.
+  -- ACTH-HOST-01, ACSP-HOST-01: a merging host (two or more inputs, one output) or a splitting host (one input, two or
+  -- more outputs), so a host never doubles a Task's legacy encoding; `activityHostWorkValid` checks the work against
+  -- its legacy operation for every input and output. The origin alignment repeats the legacy operation's so that
+  -- consumers of this arm alone read the host's wait identity as its origin.
   | .activity host =>
       nonempty host.id.value && nonempty host.origin.elementId.value &&
         host.userTask?.all (fun task => decide (host.origin.elementId.value = task.id.value)) &&
         host.effect?.all (fun effect => decide (host.origin.elementId = effect.elementId)) &&
-        1 < host.inputs.length && sortedDistinctPlaceIds host.inputs &&
-        host.inputs.all (placeExists places) &&
-        (match host.outputs with
-          | [output] => placeExists places output.place
-          | _ => false)
+        ((1 < host.inputs.length && host.outputs.length == 1) ||
+          (host.inputs.length == 1 && 1 < host.outputs.length)) &&
+        sortedDistinctPlaceIds host.inputs && host.inputs.all (placeExists places) &&
+        sortedDistinctPlaceIds (host.outputs.map (·.place)) &&
+        host.outputs.all (fun output => placeExists places output.place)
   | .awaitUserTask id origin input output task =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
@@ -593,10 +594,12 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`operationWellFormed] (congruence := true)
 
-/-- A host's work satisfies the rules of its legacy projection from every input (ACTH-HOST-01). Kept beside
-`operationWellFormed` rather than in its host arm because the projection is no structural subterm of the host. -/
+/-- A host's work satisfies the rules of its legacy operation for every input and output (ACTH-HOST-01, ACSP-HOST-01).
+Kept beside `operationWellFormed` rather than in its host arm because the legacy operation is no structural subterm of
+the host. -/
 def activityHostWorkValid (program : Program) (places : List ControlPlace) : SemanticOperation → Bool
-  | .activity host => host.inputs.all fun input => (host.projection? input).all (operationWellFormed program places)
+  | .activity host => host.inputs.all fun input =>
+      host.outputs.all fun output => operationWellFormed program places (host.workAt input output.place)
   | _ => true
 
 def isInitiate : SemanticOperation → Bool

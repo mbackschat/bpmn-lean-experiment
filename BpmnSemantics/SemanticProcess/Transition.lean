@@ -34,9 +34,10 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
-/-- ACTH-HOST-01: a host arrival is the legacy arrival of its work's projection from the one input that yields a
-state. With several yielding inputs it is not prepared, a refusal rather than a choice; admission keeps every admitted
-host in a serial root graph, so at most one input is marked. -/
+/-- ACTH-HOST-01: a merging host arrival is the legacy arrival of its work's projection from the one input that yields
+a state. With several yielding inputs it is not prepared, a refusal rather than a choice; admission keeps every admitted
+host in a serial root graph, so at most one input is marked. A splitting host (ACSP-HOST-01) arrives as the legacy
+arrival with its whole output list. -/
 def activityArrivalState? (program : Program) (state : RuntimeState) (host : ActivityHost) :
     Option RuntimeState :=
   match host.outputs with
@@ -48,7 +49,18 @@ def activityArrivalState? (program : Program) (state : RuntimeState) (host : Act
       match arrivals with
       | [after] => some after
       | _ => none
-  | _ => none
+  | outputs =>
+      -- ACSP-HOST-01: a splitting host arrives from its one input and opens its work's wait with every output; the
+      -- arm decides the list's non-emptiness, so an empty host output list is refused here, not in the arrival.
+      match host.inputs with
+      | [input] =>
+          let places := outputs.map (·.place)
+          if nonempty : places ≠ [] then
+            match host.work with
+            | .userTask task => awaitUserTaskOutputsState? state input places nonempty task
+            | .effect effect => awaitEffectOutputsState? program state input places nonempty effect none
+          else none
+      | _ => none
 
 /-- SCPH-HOST-01: a scope host steps as its work's legacy operation with its entry list: a `process` host as
 `initiate` over every entry, a `subProcess` host as `enterScope` from its one input. Any other input list is refused. -/
