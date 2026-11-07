@@ -594,7 +594,7 @@ theorem analysis_read_obligation
 theorem projected_operation_allowed (program : Program) (operation : SemanticOperation)
     (vertex : Vertex) (projected : operationVertex? program operation = some vertex) :
     OperationAllowed operation := by
-  cases operation <;> simp_all [OperationAllowed, operationVertex?]
+  cases operation <;> first | (simp [OperationAllowed] at selected; done) | simp_all [OperationAllowed, operationVertex?]
 
 theorem program_analysis_operations_allowed
     (program : Program) (analysis : Analysis)
@@ -647,36 +647,36 @@ theorem admitted_completion_foreign_families_absent
   · unfold parallelMultiInstanceEntryForTask?
     rw [allowed_operations_filter_absent program _ allowed (by
       intro operation selected
-      cases operation <;> simp_all [OperationAllowed, ParallelMultiInstanceArm.ofOperation?])]
+      cases operation <;> first | (simp [OperationAllowed] at selected; done) | simp_all [OperationAllowed, ParallelMultiInstanceArm.ofOperation?])]
   · unfold sequentialMultiInstanceOperationForTask?
     rw [allowed_operations_filter_absent program _ allowed (by
       intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
+      cases operation <;> first | (simp [OperationAllowed] at selected; done) | simp_all [OperationAllowed])]
   · unfold isMessageMonitoredTaskDefinition messageMonitoredTaskDefinitions
     rw [allowed_operations_filterMap_absent program _ allowed (by
       intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
+      cases operation <;> first | (simp [OperationAllowed] at selected; done) | simp_all [OperationAllowed])]
     rfl
   · unfold isMessageBoundedTaskDefinition messageBoundedTaskOperations
     rw [allowed_operations_filterMap_absent program _ allowed (by
       intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
+      cases operation <;> first | (simp [OperationAllowed] at selected; done) | simp_all [OperationAllowed])]
     rfl
   · unfold isBoundedTaskDefinition boundedTaskOperations
     rw [allowed_operations_filterMap_absent program _ allowed (by
       intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
+      cases operation <;> first | (simp [OperationAllowed] at selected; done) | simp_all [OperationAllowed])]
     rfl
   · exact allowed_operations_filterMap_absent program _ allowed (by
       intro operation selected
-      cases operation <;> simp_all [OperationAllowed])
+      cases operation <;> first | (simp [OperationAllowed] at selected; done) | simp_all [OperationAllowed])
   · exact allowed_operations_filterMap_absent program _ allowed (by
       intro operation selected
-      cases operation <;> simp_all [OperationAllowed])
+      cases operation <;> first | (simp [OperationAllowed] at selected; done) | simp_all [OperationAllowed])
   · unfold isMonitoredTaskDefinition monitoredTaskOperations
     rw [allowed_operations_filterMap_absent program _ allowed (by
       intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
+      cases operation <;> first | (simp [OperationAllowed] at selected; done) | simp_all [OperationAllowed])]
     rfl
 
 theorem running_start_control_fields

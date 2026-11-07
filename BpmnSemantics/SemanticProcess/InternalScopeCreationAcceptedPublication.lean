@@ -79,6 +79,10 @@ theorem candidate_scope_start_agrees_with_projection (program : Program) (state 
     with_unfolding_all exact selected_process_agrees program owner _ candidateProcess process selected staticProcess
   subst candidateProcess
   cases operation <;> simp only [bind, Option.bind] at candidate <;> try contradiction
+  -- SCPH-HOST-01: a `subProcess` host's start is its child's, as for `enterScope`.
+  case' scope host stale =>
+    clear stale
+    obtain ⟨_, _, _, _, _ | _⟩ := host <;> simp only [bind, Option.bind] at candidate <;> try contradiction
   all_goals
     split at candidate
     · contradiction

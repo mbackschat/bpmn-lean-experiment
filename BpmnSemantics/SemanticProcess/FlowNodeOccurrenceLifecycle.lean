@@ -124,8 +124,8 @@ def sortFlowNodeOccurrenceEnds : List UnnumberedFlowNodeOccurrenceEnd → List U
 
 @[expose] def flowNodeSelectedOperationOwner? (state : RuntimeState) :
     SemanticOperation → Option ScopeOccurrenceId
-  | .initiate .. | .initiateMessage .. | .initiateTimer .. => rootScopeOccurrence? state
-  | .enterScope _ _ input _ _
+  | .initiate .. | .initiateMessage .. | .initiateTimer .. | .scope { work := .process, .. } => rootScopeOccurrence? state
+  | .scope { work := .subProcess _, inputs := [input], .. } | .enterScope _ _ input _ _
   | .enterSequentialMultiInstanceScope _ _ input _ _ _ _ _ _ _
   | .enterParallelMultiInstanceScope _ _ input _ _ _ _ _ _ _
   | .enterBoundedScope _ _ input _ _ _
@@ -167,9 +167,9 @@ def sortFlowNodeOccurrenceEnds : List UnnumberedFlowNodeOccurrenceEnd → List U
       | _ => none
   | .synchronizeSelected _ _ _ _ selectionKey => selectedJoinOwner? state selectionKey
   | .returnProcess id origin _ _ _ _ => uniqueReturnOwner? state id origin
-  | .completeParallelMultiInstanceUserTask .. | .completeParallelMultiInstanceScope .. => none
+  | .completeParallelMultiInstanceUserTask .. | .completeParallelMultiInstanceScope .. | .scope _ => none
   | .completeSequentialMultiInstanceScope _ origin _ => sequentialScopeFlowNodeOwner? state origin.elementId
-  | .completeScope _ _ scopeId _ | .completeEventSubProcess _ _ scopeId =>
+  | .completeScope _ _ scopeId _ | .completeEventSubProcess _ _ scopeId | .scopeExit { scopeId, .. } =>
       uniqueCompletingScopeOwner? state scopeId
 
 @[expose] def hostingInstanceId? (state : RuntimeState) : Option SemanticId :=
@@ -615,10 +615,10 @@ def candidateFlowNodeOccurrenceDeltaForOwnedOperation? (program : Program) (befo
     Option UnnumberedFlowNodeOccurrenceDelta := do
   let identityFor := candidateOperationFlowNodeIdentity? program operation owner owner
   match operation with
-  | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _ =>
+  | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _ | .scope { work := .process, origin, .. } =>
       pure (instantaneousFlowNodeOccurrenceDelta commandId transitionIndex [← identityFor origin.elementId])
   | .enterScope _ _ _ _ childScopeId | .enterBoundedScope _ _ _ _ childScopeId _
-  | .enterMonitoredScope _ _ _ _ childScopeId _ =>
+  | .enterMonitoredScope _ _ _ _ childScopeId _ | .scope { work := .subProcess childScopeId, .. } =>
       -- CEA-OCCUR-01: the entered child is the one absent before, so a live sibling of its definition under the
       -- same owner cannot make the selection ambiguous; without one this is the unique child, as before.
       let child ← match after.scopeOccurrences.filter fun occurrence =>
@@ -806,7 +806,7 @@ def candidateFlowNodeOccurrenceDeltaForOwnedOperation? (program : Program) (befo
         transitionIndex owner origin
       pure branch.2
   -- CEA-QUIESCE-01: completion is addressed by its owner, so the record never re-derives it by definition.
-  | .completeScope _ _ scopeId _ =>
+  | .completeScope _ _ scopeId _ | .scopeExit { scopeId, .. } =>
       match before.scopeOccurrences.filter fun occurrence =>
           decide (occurrence.id.definitionScopeId = scopeId && occurrence.id = owner) with
       | [{ id, parent := some _ }] => pure (canonicalFlowNodeOccurrenceDelta [] [completedEnd (.scope id)])

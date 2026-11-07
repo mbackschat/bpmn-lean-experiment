@@ -287,6 +287,10 @@ private theorem admitted_nonretirement_body (program : Program) (analysis : Para
       -- A host publishes its work's wait kind, never a scope completion (ACTH-HOST-01).
       unfold SemanticOperation.kind
       cases wait : (‹ActivityHost›).waitKind <;> simp [wait]
+    case scope =>
+      -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+      unfold SemanticOperation.kind
+      cases work : (‹ScopeHost›).work <;> simp [work]
     all_goals rfl
   have completionSelected : completion ∈ child.filter
       (fun operation => operation.kind == .completeParallelMultiInstanceScope) :=

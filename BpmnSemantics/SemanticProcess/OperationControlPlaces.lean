@@ -14,6 +14,8 @@ namespace BpmnSemantics.SemanticProcess
 
 def operationInputPlaces : SemanticOperation → List ControlPlaceId
   | .activity host => host.inputs
+  | .scope host => host.inputs
+  | .scopeExit _ => []
   | .initiate ..
   | .initiateMessage ..
   | .initiateTimer ..
@@ -58,6 +60,8 @@ def operationInputPlaces : SemanticOperation → List ControlPlaceId
 
 def operationOutputs : SemanticOperation → List ControlPlaceId
   | .activity host => host.outputs.map (·.place)
+  | .scope host => host.entries.map (·.place)
+  | .scopeExit exit => exit.outputs.map (·.place)
   | .initiate _ _ output
   | .invokeProcess _ _ _ _ _ output _ _
   | .returnProcess _ _ _ _ output _
@@ -130,6 +134,8 @@ def operationControlPlacesShareOwner : SemanticOperation → Bool
   | .invokeProcess ..
   | .returnProcess ..
   | .completeScope ..
+  -- SCPH-HOST-01: a `subProcess` host and an exit cross into the parent as `enterScope` and `completeScope` do.
+  | .scope { work := .subProcess _, .. } | .scopeExit ..
   | .throwError .. | .cancelTransaction .. => false
   | _ => true
 

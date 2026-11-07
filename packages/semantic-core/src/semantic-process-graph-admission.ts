@@ -1,6 +1,6 @@
 import type { InterruptingMessageEventSubProcess } from "./interrupting-message-event-subprocess-contract.js";
 import { publishedOperationKind } from "./activity-host-work.js";
-import { SemanticOperationKind } from "./semantic-process-contract.js";
+import { ScopeWorkKind, SemanticOperationKind } from "./semantic-process-contract.js";
 import type { CompensationEventSubProcessSnapshotTarget } from "./compensation-event-sub-process-snapshot-contract.js";
 import type { DefinitionScope } from "./semantic-value-contract.js";
 import type {
@@ -153,6 +153,7 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
     ...operationsOfKind(graph, SemanticOperationKind.Initiate),
     ...operationsOfKind(graph, SemanticOperationKind.InitiateMessage),
     ...operationsOfKind(graph, SemanticOperationKind.InitiateTimer),
+    ...operationsOfKind(graph, SemanticOperationKind.Scope).filter(({ work }) => work.kind === ScopeWorkKind.Process),
   ];
   const rootCompletions = operationsOfKind(
     graph,
@@ -189,6 +190,7 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
   ].flatMap((predecessor) => {
     const scopeId = operationScope.get(predecessor.id);
     const completion = [...operationsOfKind(graph, SemanticOperationKind.CompleteScope),
+      ...operationsOfKind(graph, SemanticOperationKind.ScopeExit),
       ...operationsOfKind(graph, SemanticOperationKind.CompleteEventSubProcess),
       ...operationsOfKind(graph, SemanticOperationKind.CompleteSequentialMultiInstanceScope),
       ...operationsOfKind(graph, SemanticOperationKind.CompleteParallelMultiInstanceScope)]
@@ -402,6 +404,21 @@ function operationRespectsScopes(
         operation.origin.elementId === declaration.elementId && scope?.parentScopeId === declaration.parentScopeId &&
         owner !== entryRootId && placeScope.get(declaration.childEntry) === owner;
     }
+    // SCPH-HOST-01: a host's and an exit's places lie where their legacy operations put them.
+    case SemanticOperationKind.Scope: {
+      const { work } = operation;
+      const entries = operation.entries.map(({ place }) => place);
+      return work.kind === ScopeWorkKind.Process
+        ? graph.definitionScopes.some(({ id, parentScopeId }) => id === owner && parentScopeId === null) &&
+          referencesOwnedBy([...operation.inputs, ...entries], owner)
+        : referencesOwnedBy(operation.inputs, owner) && referencesOwnedBy(entries, work.childScopeId) &&
+          graph.definitionScopes.some(({ id, parentScopeId }) => id === work.childScopeId && parentScopeId === owner);
+    }
+    case SemanticOperationKind.ScopeExit: {
+      const parent = graph.definitionScopes.find(({ id }) => id === owner)?.parentScopeId ?? null;
+      return operation.scopeId === owner && parent !== null &&
+        referencesOwnedBy(operation.outputs.map(({ place }) => place), parent);
+    }
     case SemanticOperationKind.CompleteScope: {
       const scope = graph.definitionScopes.find(({ id }) => id === owner);
       return operation.scopeId === owner &&
@@ -426,10 +443,10 @@ function hasOneCompletionStrategyPerScope(
   dormantHandlerScopeIds: ReadonlySet<string>,
   messageHandlers: ReadonlyArray<InterruptingMessageEventSubProcess>,
 ): boolean {
-  const completions = operationsOfKind(
-    graph,
-    SemanticOperationKind.CompleteScope,
-  );
+  const completions = [
+    ...operationsOfKind(graph, SemanticOperationKind.CompleteScope),
+    ...operationsOfKind(graph, SemanticOperationKind.ScopeExit),
+  ];
   // Every kind that creates a child scope occurrence counts as that scope's one entry. Reading only
   // the unbounded kind would leave a deadline-bearing child scope with no entry at all, which reads
   // as a malformed program rather than as the missing case it is.
@@ -439,6 +456,8 @@ function hasOneCompletionStrategyPerScope(
     ...operationsOfKind(graph, SemanticOperationKind.EnterScope),
     ...operationsOfKind(graph, SemanticOperationKind.EnterBoundedScope),
     ...operationsOfKind(graph, SemanticOperationKind.EnterMonitoredScope),
+    ...operationsOfKind(graph, SemanticOperationKind.Scope).flatMap(({ kind, work }) =>
+      work.kind === ScopeWorkKind.SubProcess ? [{ kind, childScopeId: work.childScopeId }] : []),
   ];
   const returns = operationsOfKind(graph, SemanticOperationKind.ReturnProcess);
   return graph.definitionScopes.every(({ id, parentScopeId }) => {
@@ -589,6 +608,7 @@ function operationInputs(
     case SemanticOperationKind.CompleteParallelMultiInstanceUserTask:
     case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.ReturnProcess:
+    case SemanticOperationKind.ScopeExit:
       return [];
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
     case SemanticOperationKind.EnterParallelMultiInstanceScope:
@@ -625,6 +645,7 @@ function operationInputs(
     case SemanticOperationKind.MergeExclusive:
     case SemanticOperationKind.SynchronizeSelected:
     case SemanticOperationKind.Activity:
+    case SemanticOperationKind.Scope:
       return operation.inputs;
   }
 }
@@ -651,7 +672,10 @@ function operationOutputs(
     case SemanticOperationKind.InitiateTimer:
       return operation.outputs;
     case SemanticOperationKind.Activity:
+    case SemanticOperationKind.ScopeExit:
       return operation.outputs.map(({ place }) => place);
+    case SemanticOperationKind.Scope:
+      return operation.entries.map(({ place }) => place);
     case SemanticOperationKind.AwaitEventRace:
       return [operation.message.output, operation.timer.output];
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:

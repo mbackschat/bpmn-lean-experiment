@@ -520,7 +520,10 @@ theorem prepared_bounded_scope_preserves_structural_program_validity
     apply filter_singleton_of_subpredicate program.operations _ _ _ singleton
     · intro candidate _ accepted
       split at accepted <;> try contradiction
-      cases candidate <;> simp only at accepted <;> try contradiction
+      cases candidate
+      -- A host's child is read through its work (SCPH-HOST-01).
+      case' scope host _ _ => obtain ⟨_, _, _, _, _ | _⟩ := host
+      all_goals simp only at accepted <;> try contradiction
       all_goals simp only [enteredChildScopeId?] at accepted ⊢
       all_goals simp only [Bool.and_eq_true, decide_eq_true_eq] at accepted ⊢
       all_goals exact decide_eq_true (congrArg some (accepted.1.trans (childDefinition.trans definitionMatch.1.1.symm)))

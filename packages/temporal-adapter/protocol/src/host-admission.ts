@@ -101,16 +101,16 @@ export function assessTemporalHostCapability(
     };
   }
   const canSplitTokens = program.operations.some(
-    (operation) => classifyHostOperation(publishedOperationKind(operation)) === HostOperationClass.TokenSplit,
+    (operation) => hostOperationClass(operation) === HostOperationClass.TokenSplit,
   );
   const hasHostDrivenWait = program.operations.some(
     (operation) =>
-      classifyHostOperation(publishedOperationKind(operation)) === HostOperationClass.HostDrivenWait,
+      hostOperationClass(operation) === HostOperationClass.HostDrivenWait,
   );
   const claimants = managedClasses.map((managed) => ({
     managed,
     operations: program.operations.filter(
-      (operation) => classifyHostOperation(publishedOperationKind(operation)) === managed.operationClass,
+      (operation) => hostOperationClass(operation) === managed.operationClass,
     ),
   }));
   // Each managed class owns one scheduler instance, so the host admits at most one managed
@@ -322,6 +322,21 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
     },
   },
 ];
+
+/**
+ * SCPH-HOST-01: a scope host or exit splits tokens across its list but publishes a passive kind, so it is classified
+ * from its list; reading its published kind would let a concurrent wait escape the concurrent analysis.
+ */
+function hostOperationClass(operation: SemanticOperation): HostOperationClass {
+  switch (operation.kind) {
+    case SemanticOperationKind.Scope:
+      return operation.entries.length > 1 ? HostOperationClass.TokenSplit : classifyHostOperation(publishedOperationKind(operation));
+    case SemanticOperationKind.ScopeExit:
+      return operation.outputs.length > 1 ? HostOperationClass.TokenSplit : classifyHostOperation(publishedOperationKind(operation));
+    default:
+      return classifyHostOperation(publishedOperationKind(operation));
+  }
+}
 
 /** ACTH-HOST-01: a host is admitted exactly as the legacy operation of its work, so classification reads its published kind. */
 function classifyHostOperation(

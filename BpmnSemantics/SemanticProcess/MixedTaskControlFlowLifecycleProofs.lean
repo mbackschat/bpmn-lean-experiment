@@ -58,7 +58,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! MTCF-PROGRESS-01 and MTCF-REPEAT-01 require one graph-indexed control unit with exact wait ownership and an actual Start-derived root frame, independent of any assumed serial traversal order. -/
 run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`MixedTaskControlFlow.OperationAllowed,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`isInitiate, `MixedTaskControlFlow.OperationAllowed,
   `MixedTaskControlFlow.operationInputs, `MixedTaskControlFlow.operationOutputs,
   `MixedTaskControlFlow.operationVertex?, `MixedTaskControlFlow.programOwnershipValid,
   `SerialBusinessTask.ForeignRuntimeEmpty, `SerialBusinessTask.IsSerialCompletion, `SerialBusinessTask.IssuanceFrame,
@@ -514,15 +514,14 @@ theorem firing_unique (program : Program) (analysis : Analysis) (state leftAfter
     exact (List.eq_of_mem_singleton l).trans (List.eq_of_mem_singleton r).symm
   by_cases pending : state.initiationPending = true
   · have initiation : ∀ operation after, operation ∈ program.operations → fire? program operation state = some after →
-        (match operation with | .initiate .. | .initiateMessage .. | .initiateTimer .. => true | _ => false) = true := by
+        isInitiate operation = true := by
       intro operation after member fired
       rcases phase operation after member fired with ⟨_, kind⟩ | ⟨token, single, _⟩ | ⟨done, _⟩
-      · cases operation <;> simp_all
+      · cases operation <;> simp_all [isInitiate]
       · obtain ⟨_, _, _, fields, _⟩ := position_with_offered_token program analysis state frontier token position (by simp [single])
         simp [frontierFields, pending] at fields
       · simp [pending] at done
-    have count : (program.operations.filter (fun operation => match operation with
-        | .initiate .. | .initiateMessage .. | .initiateTimer .. => true | _ => false)).length = 1 := by
+    have count : (program.operations.filter isInitiate).length = 1 := by
       simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
       exact of_decide_eq_true wellFormed.1.1.1.1.2
     exact singletonSame _ count (initiation left leftAfter leftMember leftFired) (initiation right rightAfter rightMember rightFired)

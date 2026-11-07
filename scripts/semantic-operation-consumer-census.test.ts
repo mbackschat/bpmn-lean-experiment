@@ -114,8 +114,9 @@ function leanOperationKinds(source: string): ReadonlySet<string> {
 
 function classifiedOperationKinds(source: string): ReadonlySet<string> {
   return new Set(
+    // A work-qualified variant (`scope.process`) classifies its base variant (SCPH-HOST-01).
     [...headingSection(source, "Complete operation-family census").matchAll(
-      /`([a-z][A-Za-z0-9]+)`/gu,
+      /`([a-z][A-Za-z0-9]+)(?:\.[a-z][A-Za-z0-9]+)?`/gu,
     )].flatMap((match) => match[1] === undefined ? [] : [match[1]]),
   );
 }

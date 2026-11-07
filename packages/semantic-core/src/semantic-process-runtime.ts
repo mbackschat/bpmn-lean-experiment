@@ -1,5 +1,6 @@
 import { enterSequentialScope, completeSequentialScopeStep } from "./sequential-scope-runtime.js";
 import { activityHostProjection } from "./activity-host-work.js";
+import { applyScopeHostStep } from "./scope-host-step.js";
 import { CommandOutcome } from "./contract.js";
 import type { Stimulus } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
@@ -466,6 +467,10 @@ function applyInternalOperationState(
       captureOwner(arrival.owner);
       return arrival.successor;
     }
+    case SemanticOperationKind.Scope:
+    case SemanticOperationKind.ScopeExit:
+      return applyScopeHostStep(operation, state, captureOwner,
+        (legacy, captureLegacy) => applyInternalOperationState(program, legacy, state, captureLegacy));
     case SemanticOperationKind.AwaitUserTask: {
       const taskOwner = onlyTokenOwner(state, operation.input);
       return applyOwnedOperation(

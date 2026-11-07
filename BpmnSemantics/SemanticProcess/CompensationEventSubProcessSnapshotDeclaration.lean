@@ -31,6 +31,8 @@ def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .enterScope _ _ _ _ childScopeId
   | .enterBoundedScope _ _ _ _ childScopeId _
   | .enterMonitoredScope _ _ _ _ childScopeId _ => some childScopeId
+  | .scope { work := .subProcess childScopeId, .. } => some childScopeId
+  | .scope { work := .process, .. } | .scopeExit .. => none
   | .initiate .. | .initiateMessage .. | .initiateTimer .. | .invokeProcess .. | .returnProcess .. | .awaitUserTask ..
   | .awaitDataInputUserTask ..
   | .awaitDataInputOutputUserTask ..
@@ -52,7 +54,7 @@ def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .completeScope .. | .completeEventSubProcess .. | .triggerCompensation .. | .cancelTransaction .. => none
 
 def completesScope (scopeId : DefinitionScopeId) : SemanticOperation → Bool
-  | .completeScope _ _ completedScopeId _ => completedScopeId == scopeId
+  | .completeScope _ _ completedScopeId _ | .scopeExit { scopeId := completedScopeId, .. } => completedScopeId == scopeId
   | _ => false
 
 def scopeHasOneEntry (program : Program) (scopeId : DefinitionScopeId) : Bool :=

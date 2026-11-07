@@ -71,6 +71,7 @@ def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .activity host =>
       (host.userTask?.map fun task => userTaskWaitDeclarationKey task.id).toList ++
         (host.effect?.map fun _ => effectWaitDeclarationKey host.origin.elementId).toList
+  | .scope _ | .scopeExit _ => []
   | .awaitDataInputUserTask _ _ _ _ taskId _ _
   | .awaitDataInputOutputUserTask _ _ _ _ taskId _ _ _
   | .awaitDataOutputUserTask _ _ _ _ taskId _ _ =>
@@ -149,8 +150,41 @@ def wellFormedBpmnErrorRoute (places : List ControlPlace)
         nonempty route.origin.sequenceFlowId.value &&
         placeExists places route.output
 
+/-- The operations that enter definition scope `child`, which a scope host requires to be itself alone. -/
+private def scopeEntryOperations (program : Program) (child : DefinitionScopeId) : List SemanticOperation :=
+  program.operations.filter fun
+    | .enterScope _ _ _ _ entered | .enterBoundedScope _ _ _ _ entered _ | .enterMonitoredScope _ _ _ _ entered _
+    | .enterSequentialMultiInstanceScope _ _ _ _ entered _ _ _ _ _
+    | .enterParallelMultiInstanceScope _ _ _ _ entered _ _ _ _ _
+    | .scope { work := .subProcess entered, .. } => entered == child
+    | _ => false
+
+/-- The operations that complete definition scope `scopeId`, which a scope exit requires to be itself alone. -/
+private def scopeCompletionOperations (program : Program) (scopeId : DefinitionScopeId) : List SemanticOperation :=
+  program.operations.filter fun
+    | .completeScope _ _ completed _ | .scopeExit { scopeId := completed, .. } => completed == scopeId
+    | _ => false
+
 def operationWellFormed (program : Program) (places : List ControlPlace) :
     SemanticOperation → Bool
+  -- SCPH-HOST-01: two or more sorted, distinct, existing entries, so a host never doubles a legacy encoding; a
+  -- `process` host takes no input, and a `subProcess` host one input and is the only entry of its child scope.
+  | .scope host =>
+      nonempty host.id.value && nonempty host.origin.elementId.value &&
+        1 < host.entries.length && sortedDistinctPlaceIds (host.entries.map (·.place)) &&
+        host.entries.all (fun entry => placeExists places entry.place) &&
+        (match host.work, host.inputs with
+          | .process, [] => true
+          | .subProcess child, [input] =>
+              nonempty child.value && placeExists places input && !host.entries.any (·.place == input) &&
+                (scopeEntryOperations program child).length == 1
+          | _, _ => false)
+  -- SCPH-HOST-01: two or more sorted, distinct, existing outputs, and the only completion of its scope.
+  | .scopeExit exit =>
+      nonempty exit.id.value && nonempty exit.origin.elementId.value && nonempty exit.scopeId.value &&
+        1 < exit.outputs.length && sortedDistinctPlaceIds (exit.outputs.map (·.place)) &&
+        exit.outputs.all (fun output => placeExists places output.place) &&
+        (scopeCompletionOperations program exit.scopeId).length == 1
   | operation@(.enterParallelMultiInstanceScope ..) | operation@(.completeParallelMultiInstanceScope ..) =>
       parallelScopeOperationWellFormed program operation
   | operation@(.enterSequentialMultiInstanceScope ..) | operation@(.completeSequentialMultiInstanceScope ..) =>
@@ -567,6 +601,7 @@ def activityHostWorkValid (program : Program) (places : List ControlPlace) : Sem
 
 def isInitiate : SemanticOperation → Bool
   | .initiate .. => true
+  | .scope { work := .process, .. } => true
   | .initiateMessage .. => true
   | .initiateTimer .. => true
   | _ => false

@@ -18,13 +18,14 @@ open BpmnSemantics
 def messageStartProfileId : ProfileId :=
   ⟨"bpmn-2.0.2-message-start-event-draft"⟩
 
-/-- The ordinary start command can select only the existing None Start operation family. -/
+/-- The ordinary start command can select only the None Start operation family: `initiate`, or the `process` host of a
+splitting None Start (SCPH-HOST-01). -/
 def ordinaryStartMatchesProgram (program : Program) : Bool :=
   match program.operations.filter fun operation =>
       match operation with
-      | .initiate .. | .initiateMessage .. | .initiateTimer .. => true
+      | .initiate .. | .initiateMessage .. | .initiateTimer .. | .scope { work := .process, .. } => true
       | _ => false with
-  | [.initiate ..] => true
+  | [.initiate ..] | [.scope _] => true
   | _ => false
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`ordinaryStartMatchesProgram]

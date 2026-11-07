@@ -55,19 +55,20 @@ private theorem admitted_initiations_eq (program : Program) (analysis : ProgramA
   dsimp only at graph
   split at graph <;> try contradiction
   rename_i start startsEq
-  have singleton : program.operations.filterMap (fun operation => match operation with
-      | .initiate id .. | .initiateMessage id .. | .initiateTimer id .. => some id | _ => none) = [start] := startsEq
+  have singleton : initiateIds program.operations = [start] := startsEq
   clear graph
   have selected (operation : SemanticOperation) (member : operation ∈ program.operations)
       (kind : operation.kind = .initiate) : operation.id = start := by
-    have included : operation.id ∈ program.operations.filterMap (fun current => match current with
-        | .initiate id .. | .initiateMessage id .. | .initiateTimer id .. => some id | _ => none) := by
+    have included : operation.id ∈ initiateIds program.operations := by
       apply List.mem_filterMap.mpr
       refine ⟨operation, member, ?_⟩
       cases operation
       case activity =>
         -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
         cases wait : (‹ActivityHost›).waitKind <;> simp [SemanticOperation.kind, wait] at kind
+      case scope =>
+        rcases analyzeProgram_operation_allowed program analysis admitted _ member with allowed | allowed <;>
+          simp [SequentialScopeProgram.operationAllowed_scope] at allowed
       all_goals simp_all [SemanticOperation.kind, SemanticOperation.id]
     rw [singleton] at included
     exact List.mem_singleton.mp included
@@ -102,6 +103,9 @@ private theorem admitted_entry_input (program : Program) (analysis : ProgramAnal
     case activity =>
       -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
       cases wait : (‹ActivityHost›).waitKind <;> simp [SemanticOperation.kind, wait] at kind
+    case scope =>
+      -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+      cases work : (‹ScopeHost›).work <;> simp [SemanticOperation.kind, work] at kind
     all_goals simp_all [SemanticOperation.kind, parallelScopeEntry?]
   obtain ⟨entry, decoded⟩ := parsed
   have included : entry ∈ program.operations.filterMap parallelScopeEntry? :=

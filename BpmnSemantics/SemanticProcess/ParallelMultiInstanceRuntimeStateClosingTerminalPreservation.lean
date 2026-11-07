@@ -375,7 +375,11 @@ private theorem parallelProfile_eventRaces_empty (program : Program) (state : Ru
   have operationMember := (List.mem_filter.mp filteredMember).1
   have excluded := parallelMultiInstanceProfile_has_no_event_race_operation program
     accountProfile capabilities operation operationMember
-  cases operation <;> simp_all
+  cases operation
+  -- Settle the scope host and exit by the filter alone: `simp_all` over every constructor exhausts the
+  -- declaration's heartbeat limit once they join.
+  case scope | scopeExit => simp at filteredMember
+  all_goals simp_all
 
 private theorem selectedRecord_ownerScope (program : Program) (arm : ParallelMultiInstanceArm)
     (ownerScope : DefinitionScopeId)

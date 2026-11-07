@@ -1,4 +1,5 @@
 import {
+  ScopeWorkKind,
   SemanticOperationKind,
   type SemanticOperation,
 } from "./semantic-process-contract.js";
@@ -53,6 +54,14 @@ export function semanticOperationInternalFamily(
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.InvokeProcess:
       return InternalOperationFamily.ScopeCreationAndCallInvocation;
+    // SCPH-HOST-01: a host joins its work's legacy family, and an exit the scope completions'.
+    case SemanticOperationKind.Scope:
+      switch (operation.work.kind) {
+        case ScopeWorkKind.Process:
+          return InternalOperationFamily.ProcessInitiation;
+        case ScopeWorkKind.SubProcess:
+          return InternalOperationFamily.ScopeCreationAndCallInvocation;
+      }
     case SemanticOperationKind.Duplicate:
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.Choose:
@@ -66,6 +75,7 @@ export function semanticOperationInternalFamily(
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:
     case SemanticOperationKind.CompleteParallelMultiInstanceScope:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.ScopeExit:
     case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.ThrowError:
     case SemanticOperationKind.TerminateScope:

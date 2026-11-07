@@ -50,6 +50,8 @@ structure ShapeCardinalities where
   /-- ACTH-HOST-01: Activity hosts, counted apart from the legacy Tasks as the TypeScript shape counts the `activity`
   kind, so that no exact profile shape admits a host in a Task's place. -/
   activityHosts : Nat := 0
+  scopeHosts : Nat := 0
+  scopeExits : Nat := 0
   duplicates : Nat := 0
   synchronizes : Nat := 0
   exclusiveMerges : Nat := 0
@@ -210,6 +212,8 @@ def addOperationCardinality (counts : ShapeCardinalities)
         { counts with monitoredUserTasks := counts.monitoredUserTasks + 1 }
     | .awaitEffect .. => { counts with effects := counts.effects + 1 }
     | .activity _ => { counts with activityHosts := counts.activityHosts + 1 }
+    | .scope _ => { counts with scopeHosts := counts.scopeHosts + 1 }
+    | .scopeExit _ => { counts with scopeExits := counts.scopeExits + 1 }
     | .duplicate .. => { counts with duplicates := counts.duplicates + 1 }
     | .synchronize .. =>
         { counts with synchronizes := counts.synchronizes + 1 }

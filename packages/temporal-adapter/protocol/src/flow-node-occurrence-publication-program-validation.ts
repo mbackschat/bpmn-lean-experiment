@@ -151,6 +151,8 @@ function internalOperationStarts(
     case SemanticOperationKind.EnterBoundedScope:
     case SemanticOperationKind.EnterMonitoredScope:
     case SemanticOperationKind.InvokeProcess:
+    // SCPH-HOST-01: a host starts at its origin as its work's `initiate` or `enterScope` does.
+    case SemanticOperationKind.Scope:
       return exactOrigin;
     case SemanticOperationKind.ThrowError:
       return exactOrigin || (
@@ -159,6 +161,7 @@ function internalOperationStarts(
       );
     case SemanticOperationKind.ReturnProcess:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.ScopeExit:
     case SemanticOperationKind.CompleteEventSubProcess:
       return false;
     case SemanticOperationKind.TriggerCompensation:
@@ -571,6 +574,8 @@ function operationPublishesNestedElement(
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.CompleteEventSubProcess:
     case SemanticOperationKind.TriggerCompensation:
+    case SemanticOperationKind.Scope:
+    case SemanticOperationKind.ScopeExit:
       return false;
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
     case SemanticOperationKind.CompleteSequentialMultiInstanceScope:

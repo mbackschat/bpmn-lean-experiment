@@ -505,6 +505,9 @@ export function deriveInternalTransitionFootprint(
     case SemanticOperationKind.CompleteEventSubProcess:
     // ACTH-HOST-01: a host is never batched; its footprint waits for concurrent arrivals.
     case SemanticOperationKind.Activity:
+    // SCPH-SINGLE-01: a scope host or exit fires with no other token live outside its input, so never in a batch.
+    case SemanticOperationKind.Scope:
+    case SemanticOperationKind.ScopeExit:
       return null;
     default:
       return assertNever(operation);

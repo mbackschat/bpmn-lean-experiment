@@ -341,7 +341,8 @@ def candidateScopeStart? (program : Program) (operation : SemanticOperation)
     | .enterSequentialMultiInstanceScope _ origin _ _ childScopeId _ _ _ _ _
     | .enterParallelMultiInstanceScope _ origin _ _ childScopeId _ _ _ _ _
     | .enterBoundedScope _ origin _ _ childScopeId _
-    | .enterMonitoredScope _ origin _ _ childScopeId _ =>
+    | .enterMonitoredScope _ origin _ _ childScopeId _
+    | .scope { origin, work := .subProcess childScopeId, .. } =>
         if occurrence.parent ≠ some owner || occurrence.id.definitionScopeId ≠ childScopeId ||
             occurrence.id.processInstanceId ≠ owner.processInstanceId || occurrence.id.activation = 0
           then none

@@ -176,6 +176,9 @@ function operationWaitDeclarations(
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.CompleteEventSubProcess:
+    // SCPH-HOST-01: a scope host or exit declares no wait.
+    case SemanticOperationKind.Scope:
+    case SemanticOperationKind.ScopeExit:
       return [];
     default:
       return assertNever(operation);

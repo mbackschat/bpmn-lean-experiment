@@ -318,6 +318,8 @@ private theorem replayed_retirement_le (program : Program) (before after : Runti
   case activity =>
     -- A host publishes its work's wait kind, never a scope completion (ACTH-HOST-01).
     cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
+  -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+  case scope => cases work : (‹ScopeHost›).work <;> simp [work] at metadata
   cases control : before.control <;> simp only [InternalCommutation.applyInternalOperationOccurrence?, control,
     resolved, bind, Option.bind_some] at applied <;> try contradiction
   simp only [key] at applied
@@ -555,17 +557,9 @@ private theorem sum_map_mono (values : List CommittedTransition) (left right : C
 
 private theorem unique_port_bound (ports : List ControlPlaceId) (unique : ports.Nodup) (place : ControlPlaceId) :
     (ports.filter (· == place)).length ≤ 1 := by
-  induction ports with
-  | nil => simp
-  | cons head tail ih =>
-    obtain ⟨absent, unique⟩ := List.nodup_cons.mp unique
-    by_cases same : head = place
-    · subst head
-      have empty : tail.filter (· == place) = [] := List.filter_eq_nil_iff.mpr (by
-        intro value member same
-        exact absent ((show value = place by simpa using same) ▸ member))
-      simp [empty]
-    · simpa [same] using ih unique
+  have count := unique.count (a := place)
+  rw [List.count_eq_countP, List.countP_eq_length_filter] at count
+  split at count <;> omega
 
 private theorem body_output_is_producer (program : Program) (operation : SemanticOperation)
     (member : operation ∈ program.operations) (place : ControlPlaceId)

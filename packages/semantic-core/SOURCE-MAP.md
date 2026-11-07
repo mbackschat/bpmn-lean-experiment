@@ -35,6 +35,8 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-contract.ts](src/semantic-process-contract.ts) | Immutable Semantic Process IL contract |
 | [activity-host-contract.ts](src/activity-host-contract.ts) | Activity host payload: one output record per outgoing flow and the work, reusing the legacy User Task and effect payloads |
 | [activity-host-work.ts](src/activity-host-work.ts) | Per-work Activity host accessors: published kind, legacy projection and settled reading |
+| [scope-host-work.ts](src/scope-host-work.ts) | Per-work scope host and exit facts: published kind, and the rule that each is its scope's sole entry or completion |
+| [scope-host-step.ts](src/scope-host-step.ts) | Scope host and exit steps: the work's legacy step toward the first listed place, then one token on every listed place |
 | [compensation-activity-retention-contract.ts](src/compensation-activity-retention-contract.ts) | Hidden boundary Compensation declaration, completion facts, retained-record, and refusal contracts |
 | [compensation-activity-retention-state-validation.ts](src/compensation-activity-retention-state-validation.ts) | Exact declaration and hidden-register validity plus canonical retained-record byte measurement |
 | [compensation-activity-retention.ts](src/compensation-activity-retention.ts) | Pure bounded eligibility classification, append-only retention, and root-register initialization |

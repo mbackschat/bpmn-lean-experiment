@@ -130,8 +130,9 @@ private theorem body_ports (program : Program) (analysis : ParallelScopeStart.Pr
   have allowed := ParallelScopeStart.analyzeProgram_operation_allowed program analysis admitted operation member
   cases operation <;> simp only [SemanticOperation.kind, List.mem_cons, List.not_mem_nil] at kind <;>
     try contradiction
-  -- The parallel-scope profile admits no host (ACTH-HOST-01).
+  -- The parallel-scope profile admits no host (ACTH-HOST-01, SCPH-HOST-01).
   case activity => simp [SequentialScopeProgram.operationAllowed] at allowed
+  case scope => simp [SequentialScopeProgram.operationAllowed] at allowed
   case awaitEffect id origin input output effect route =>
     cases route <;> simp [SequentialScopeProgram.operationAllowed] at allowed
     simp [bodyConsumedPorts, SequentialScopeControl.inputs, bodyProducedPorts, operationOutputs]
@@ -267,8 +268,9 @@ private theorem body_step_waits (program : Program) (before after : RuntimeState
   rename_i instanceId
   cases operation <;> simp only [SemanticOperation.kind, List.mem_cons, List.not_mem_nil] at ordinary <;> try contradiction
   all_goals simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied
-  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  -- A host is never applied by owning occurrence (ACTH-HOST-01, SCPH-SINGLE-01).
   case activity => simp at applied
+  case scope => simp at applied
   case awaitUserTask id origin input output task =>
     split at applied <;> try contradiction
     have activated : after = activateUserTask before record.owner.processInstanceId record.owner input output task := by
@@ -546,6 +548,9 @@ theorem initial_entry_body_replay_nonquiescent (program : Program)
           case activity =>
             -- A host publishes its work's wait kind, never a scope entry (ACTH-HOST-01).
             cases wait : (‹ActivityHost›).waitKind <;> simp [wait]
+          case scope =>
+            -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+            cases work : (‹ScopeHost›).work <;> simp [work]
           simp only [SequentialScopeControl.bodyVertex?] at producerEq
           contradiction
         have notEntry := nonentry_output_not_entry program analysis admitted producer (population producer producerMember)

@@ -73,14 +73,10 @@ open BpmnSemantics InternalCommutation ParallelScopeReplay
 private theorem any_filter_retained {α : Type} (items : List α) (keep test : α → Bool)
     (retained : ∀ item ∈ items, test item = true → keep item = true) :
     (items.filter keep).any test = items.any test := by
-  apply Bool.eq_iff_iff.mpr
-  constructor
-  · intro found
-    obtain ⟨item, present, matching⟩ := List.any_eq_true.mp found
-    exact List.any_eq_true.mpr ⟨item, (List.mem_filter.mp present).1, matching⟩
-  · intro found
-    obtain ⟨item, present, matching⟩ := List.any_eq_true.mp found
-    exact List.any_eq_true.mpr ⟨item, List.mem_filter.mpr ⟨present, retained item present matching⟩, matching⟩
+  rw [List.any_filter, Bool.eq_iff_iff]
+  simp only [List.any_eq_true, Bool.and_eq_true]
+  exact ⟨fun ⟨item, present, _, matching⟩ => ⟨item, present, matching⟩,
+    fun ⟨item, present, matching⟩ => ⟨item, present, retained item present matching, matching⟩⟩
 
 private theorem cancel_outside_quiescence (state : RuntimeState) (root owner : ScopeOccurrenceId)
     (noCalls : state.calledProcessOccurrences = [])
@@ -380,8 +376,8 @@ private theorem stable_operation_discovery (program : Program) (state : RuntimeS
     ∃ candidates, internalOperationOccurrences? program state operation.id = some candidates ∧
       operation.kind ∈ [SemanticOperationKind.initiate, .enterParallelMultiInstanceScope, .completeParallelMultiInstanceScope,
         .completeScope, .awaitUserTask, .awaitEffect, .duplicate, .synchronize, .reachNoneEnd] ∧
-      -- A host offers no owning occurrence, so a successful frontier never contains one (ACTH-HOST-01).
-      ∀ host, operation ≠ .activity host := by
+      -- No host or exit offers an owning occurrence, so a successful frontier holds none (ACTH-HOST-01, SCPH-SINGLE-01).
+      (∀ host, operation ≠ .activity host) ∧ (∀ host, operation ≠ .scope host) ∧ ∀ exit, operation ≠ .scopeExit exit := by
   have reflected := deriveInternalExecutionFrontier_empty_reflects program state (by simp [running]) empty successful operation member
   have ordinary : (ordinaryExecutionFrontier program state operation).preparationFailed = false := by
     cases operation <;> simpa [running, mergeExecutionFrontier, profile] using reflected.2
@@ -392,7 +388,7 @@ private theorem stable_operation_discovery (program : Program) (state : RuntimeS
     cases operation <;> simp only [internalOperationOccurrenceOffers?] at found <;> try contradiction
     all_goals
       obtain ⟨candidates, discovered, _⟩ := Option.bind_eq_some_iff.mp found
-      exact ⟨candidates, discovered, by simp [SemanticOperation.kind], fun _ => by simp⟩
+      exact ⟨candidates, discovered, by simp [SemanticOperation.kind], fun _ => by simp, fun _ => by simp, fun _ => by simp⟩
 
 private theorem stable_resolution_of_scope_subset (program : Program) (before after : RuntimeState)
     (profile : program.identity.semanticProfile.value = "cibseven-2.2.0-parallel-multi-instance-subprocess-draft")
@@ -535,9 +531,9 @@ theorem ParallelScopeRemainingFrame.body_discovery (program : Program) (stable b
     induction candidates <;> simp_all
   simp only [ordinaryExecutionFrontier, profile, beq_self_eq_true, ↓reduceIte]
   suffices offers : internalOperationOccurrenceOffers? program after operation = some [] by rw [offers]; rfl
-  obtain ⟨_, _, _, notHost⟩ := stable_operation_discovery program stable profile instanceId running empty successful operation member
+  obtain ⟨_, _, _, notHost, notScope, _⟩ := stable_operation_discovery program stable profile instanceId running empty successful operation member
   cases operation <;> simp [SemanticOperation.kind] at body
-  case activity => exact (notHost _ rfl).elim
+  case activity | scope => first | exact (notHost _ rfl).elim | exact (notScope _ rfl).elim
   all_goals
     simp only [internalOperationOccurrenceOffers?, discovery, bind, Option.bind_some]
     change (do let chunks ← candidates.mapM project; pure chunks.flatten) = some []
@@ -561,13 +557,13 @@ theorem ParallelScopeRemainingFrame.frontier_empty (program : Program) (stable b
     deriveInternalExecutionFrontier program after = {} := by
   apply deriveInternalExecutionFrontier_empty
   intro operation member
-  obtain ⟨_, _, supported, notHost⟩ := stable_operation_discovery program stable profile instanceId running empty successful operation member
+  obtain ⟨_, _, supported, notHost, notScope, notExit⟩ := stable_operation_discovery program stable profile instanceId running empty successful operation member
   have body := remaining.body_discovery program stable before after actor frame profile instanceId running empty successful operation member
   obtain ⟨candidates, discovery, resolves⟩ := remaining.occurrence_discovery program stable before after actor frame
     profile instanceId running empty successful operation member
   let selectedOperation := operation
   cases operation <;> simp [SemanticOperation.kind] at supported
-  case activity => exact (notHost _ rfl).elim
+  case activity | scope | scopeExit => first | exact (notHost _ rfl).elim | exact (notScope _ rfl).elim | exact (notExit _ rfl).elim
   all_goals first
   | solve | apply body; simp [SemanticOperation.kind]
   | have disabled : ∀ candidate ∈ candidates, applyInternalOperationOccurrence? program after candidate = none := by
@@ -649,6 +645,8 @@ theorem ParallelScopeRemainingFrame.nonretirement_exit_refused (program : Progra
     case activity =>
       -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
       cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at initiation
+    -- A `process` host publishes `initiate` but is never applied by owning occurrence (SCPH-SINGLE-01).
+    case scope => simp [applyInternalOperationOccurrence?, running, control, resolved] at applied
     rename_i id origin output
     simp only [applyInternalOperationOccurrence?, running, control, resolved, original, bind, Option.bind_some] at applied refused
     rw [roots] at applied
@@ -676,6 +674,8 @@ theorem ParallelScopeRemainingFrame.nonretirement_exit_refused (program : Progra
     case activity =>
       -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
       cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at completion
+    -- A scope host or exit is never applied by owning occurrence (SCPH-SINGLE-01).
+    case scope | scopeExit => simp [applyInternalOperationOccurrence?, running, control, resolved] at applied
     rename_i id origin scopeId parentOutput
     have allowed := ParallelScopeStart.analyzeProgram_operation_allowed program analysis analyzed _ declared
     have output : parentOutput = none := by
