@@ -64,7 +64,7 @@ Close calls, 2026-11-07, each with its measured reason:
 - a splitting Task in a called Process or a Multi-Instance, bounded, monitored or transaction body;
 - every form under any profile that lacks the arity flags named under [Admission](#admission).
 
-These bound admission only: the host's output records admit conditions and defaults, and an empty output list admits an Activity without outgoing flows, without reinterpreting an admitted model.
+These bound admission only: the host's output records admit conditions and defaults, and an empty host output list admits an Activity without outgoing flows, without reinterpreting an admitted model; the wait's non-emptiness field below is the one representation fact that family removes.
 
 ## Profile and public contract
 
@@ -82,10 +82,12 @@ Publication adds no kind. The host's arrival publishes its work's legacy kind as
 structure UserTaskWait where
   -- …unchanged fields…
   outputs : List ControlPlaceId   -- was `output : ControlPlaceId`
+  outputs_ne_nil : outputs ≠ [] := by simp
 
 structure EffectWait where
   -- …unchanged fields…
   outputs : List ControlPlaceId   -- was `output : ControlPlaceId`
+  outputs_ne_nil : outputs ≠ [] := by simp
 ```
 
 ```ts
@@ -93,7 +95,7 @@ export type SemanticUserTaskWait = DeepReadonly<{ /* … */ outputs: string[] }>
 export type SemanticEffectWait = DeepReadonly<{ /* … */ outputs: string[] }>;
 ```
 
-Every legacy operation opens its wait with the one-element list of its `output`, so every admitted model's state holds the same places as before. Completion of a User Task wait and the result of an effect wait put one token, owned by the wait's owner, on each element of `outputs` in the one completion step; for a one-element list that is the legacy marking. An effect incident retains the wait with its list. Timer and Message waits keep `output`: no catch splits in this family, and the shared catch trigger reshapes them.
+Every admitted wait continues somewhere, so the records carry that as a field: the default discharges it at every construction with a literal list, and the TypeScript continuation validator rejects an empty `outputs`. It is an admission fact, not BPMN meaning: an Activity without outgoing flows is valid BPMN (an implicit end), and its family removes the field and proves non-emptiness from its profiles' invariants at the consumers that need it, which today are 8 Lean proof modules (Transaction frontier, IMES phase framing, structured composition unit bound, sequential scope certificate, and parallel scope entry, progress, parent progress and command closure; 2026-11-07). Those consumers depend on a continuation existing, so removing the field now would move the same proof obligation forward for a form no profile admits. Every legacy operation opens its wait with the one-element list of its `output`, so every admitted model's state holds the same places as before. Completion of a User Task wait and the result of an effect wait put one token, owned by the wait's owner, on each element of `outputs` in the one completion step; for a one-element list that is the legacy marking. An effect incident retains the wait with its list. Timer and Message waits keep `output`: no catch splits in this family, and the shared catch trigger reshapes them.
 
 Readers of the field change with it. The continuation counts of [`ContinuationMarking`](../../BpmnSemantics/SemanticProcess/ContinuationMarking.lean) and its laws count a place once per occurrence in `outputs`, which [`ContinuationMarkingLaws`](../../BpmnSemantics/SemanticProcess/ContinuationMarkingLaws.lean) already states for a list (`ownedPortCount [wait.output]`).
 
@@ -128,7 +130,7 @@ A User, Service or Send Task of the admitted kinds lowers to `activity` exactly 
 |---|---|
 | Splitting Tasks inside fork regions | A prepared host footprint over `inputs` and `outputs` |
 | Conditional and default outgoing flows | Defaulted fields of `ActivityOutput`, read by completion over the wait's list |
-| An Activity without outgoing flows | An empty `outputs` on host and wait |
+| An Activity without outgoing flows | An empty `outputs` on the host; the wait drops `outputs_ne_nil` and its consumers take non-emptiness from profile invariants |
 | Splits at the variants | Their switch onto the host, with the shared feature record |
 | Kind-keyed waits | One wait record keyed by kind, carrying `outputs` |
 
