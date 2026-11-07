@@ -98,17 +98,17 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Kernel IL orthogonalization, batch 5, first family: the merge at User, Service and Send Tasks through an appended Activity host ([proposal](capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md)), from the parked [Activity implicit split and merge](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) clauses. Close call: incremental kept after the stop condition fired (32 one-line proof repairs, no law failure): the representation is green and the next host family is the switch. The split waits for the wait-record stage and `PC-BASIC-01` for the scope host, both scheduled below.
+Current task: Kernel IL orthogonalization, batch 5, first family: the merge at User, Service and Send Tasks through an appended Activity host ([proposal](capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md)), from the parked [Activity implicit split and merge](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) clauses. Close call: incremental kept after the stop condition fired (32 one-line proof repairs, no law failure). The split waits for the wait-record stage and `PC-BASIC-01` for the scope host, both scheduled below.
 
 Deliverable: `PC-CF-07`'s merge clause and `PC-BASIC-02` for ordered arrivals at User, Service and Send Tasks, landed on `main`.
 
-Acceptance blockers: the widening commit, the closure review and hosted `verify-complete`.
+Acceptance blockers: the closure review, graduation and hosted `verify-complete` on [#60](https://github.com/mbackschat/bpmn-lean-experiment/pull/60).
 
-Current result: representation commit `be083b0e` (Rule 2 checked, full library green); its `ActivityHostWork` fan-out bound 440 is the owner-decided exception (2026-11-07). Proof arms grew seven excepted files; one rationale is stale (owner).
+Current result: representation `be083b0e` and widening `3334f2a7`, each Rule 2 reviewed and checked; closure lanes green at `1425a0b8`, after fixing the never-compiled CIB probe. `ActivityHostWork` fan-out bound 441: the 440 count omitted the admission vertex projection the proposal names. The none-end fan-in refusal moved to the Sub-Process `AssessRequest`, an oracle the proposal's list missed. The control-flow map split its Gateway families into `ENGINE-GATEWAY-FAMILY`.
 
-Effort budget: 12 hours from 2026-11-06 21:10 CET; the estimate exceeds it, so at the limit record the boundary at the first green commit and continue unless the evidence invalidates the path.
+Effort budget: 12 hours from 2026-11-06 21:10 CET; at the limit record the boundary and continue unless the evidence invalidates the path.
 
-Next action: the widening commit (admission flags, re-entry routing, lowering, Link contraction, nested scope-data host vertices, registration).
+Next action: the cold closure review, then graduation to `-SPEC` and the branch flow.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
 
