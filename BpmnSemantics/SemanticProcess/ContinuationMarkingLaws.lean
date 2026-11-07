@@ -356,7 +356,7 @@ theorem effect_arm_balance (before : RuntimeState) (instanceId : SemanticId)
   omega
 
 /-- A summand never exceeds the sum of a natural-number list. -/
-theorem le_sum_of_mem_nat (values : List Nat) (value : Nat) (member : value ∈ values) :
+private theorem le_sum_of_mem_nat (values : List Nat) (value : Nat) (member : value ∈ values) :
     value ≤ values.sum := by
   induction values with
   | nil => contradiction

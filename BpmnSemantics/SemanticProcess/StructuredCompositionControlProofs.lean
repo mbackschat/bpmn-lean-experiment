@@ -44,7 +44,7 @@ def waitContinuationUnits (waits : List UserTaskWait) : Nat :=
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`waitContinuationUnits]
 
-theorem wait_outputs_length_pos (wait : UserTaskWait) : 0 < wait.outputs.length :=
+private theorem wait_outputs_length_pos (wait : UserTaskWait) : 0 < wait.outputs.length :=
   List.length_pos_iff.mpr wait.outputs_ne_nil
 
 @[simp] theorem waitContinuationUnits_nil : waitContinuationUnits [] = 0 := by
