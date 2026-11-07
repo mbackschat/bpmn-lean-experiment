@@ -11,11 +11,12 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
-  ActivityWorkKind, SemanticOperationKind, SemanticProfileId, concurrentStructuredScopeDataProgram,
-  isWellFormedSemanticProcessProgram, scopeReentryProgram, structuredScopeDataCheckedAnalysis,
-  structuredScopeDataCheckedStartNames, structuredScopeDataProgramAnalysis, structuredScopeDataProgramStartNames,
+  ActivityWorkKind, CheckedNodeKind, SemanticOperationKind, SemanticProfileId, StimulusKind, applyStimulus,
+  concurrentStructuredScopeDataProgram, initialState, isWellFormedSemanticProcessProgram, scopeReentryProgram,
+  structuredScopeDataCheckedAnalysis, structuredScopeDataCheckedStartNames, structuredScopeDataProgramAnalysis,
+  structuredScopeDataProgramStartNames,
 } from "@bpmn-lean/semantic-core";
-import type { SemanticProcessProgram } from "@bpmn-lean/semantic-core";
+import type { CheckedProcess, SemanticOperation, SemanticProcessProgram, Stimulus } from "@bpmn-lean/semantic-core";
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 
 const directory = new URL("../../../scenarios/activity-host-split/", import.meta.url);
@@ -170,4 +171,191 @@ test("ACSP-ADMIT-01: the overlay must bind the splitting Service Task's handler"
 
 test("ACSP-PROFILE-01: the embedded completion profile refuses the model", async () => {
   await refused(await source(), "embedded completion profile", SemanticProfileId.EmbeddedSubProcessCompletion);
+});
+
+const loweringModule = async () => await import(new URL("../dist/semantic-process-lowering.js", import.meta.url).href) as
+  { lowerCheckedProcess: (source: CheckedProcess) => SemanticProcessProgram };
+
+const byKey = <T>(key: (value: T) => string) => (left: T, right: T): number =>
+  key(left) < key(right) ? -1 : key(left) > key(right) ? 1 : 0;
+
+/** `source` with extra flows and None Ends, kept in the canonical id order the compiler produces. */
+function withEdits(source: CheckedProcess, ends: readonly Readonly<{ id: string; scopeOf: string }>[],
+  flows: readonly Readonly<{ id: string; from: string; to: string }>[]): CheckedProcess {
+  const scopeOf = (nodeId: string) => source.nodeScopes.find((entry) => entry.nodeId === nodeId)!.scopeId;
+  return { ...source,
+    nodes: [...source.nodes, ...ends.map(({ id }) => ({ kind: CheckedNodeKind.NoneEndEvent, id }) as const)]
+      .sort(byKey(({ id }) => id)),
+    nodeScopes: [...source.nodeScopes, ...ends.map(({ id, scopeOf: owner }) => ({ nodeId: id, scopeId: scopeOf(owner) }))]
+      .sort(byKey(({ nodeId }) => nodeId)),
+    sequenceFlows: [...source.sequenceFlows, ...flows.map(({ id, from, to }) =>
+      ({ id, sourceId: from, targetId: to, condition: null }))].sort(byKey(({ id }) => id)),
+    sequenceFlowScopes: [...source.sequenceFlowScopes, ...flows.map(({ id, from }) =>
+      ({ sequenceFlowId: id, scopeId: scopeOf(from) }))].sort(byKey(({ sequenceFlowId }) => sequenceFlowId)) };
+}
+
+/** `source` with one more flow from `from` to a fresh None End in `from`'s scope, so a one-flow Task splits. */
+const withTerminalFlow = (source: CheckedProcess, from: string): CheckedProcess =>
+  withEdits(source, [{ id: "Aside", scopeOf: from }], [{ id: "Flow_Aside", from, to: "Aside" }]);
+
+/** A retained model of another family under this profile and its own overlay. */
+async function retained(family: string, name: string) {
+  const at = new URL(`../../../scenarios/${family}/`, import.meta.url);
+  const xml = await readFile(new URL(`${name}.bpmn`, at), "utf8");
+  const bytes = await readFile(new URL(`${name}-overlay.json`, at));
+  const compileXml = async (text: string) => compileBpmnToSemanticProcess({ bytes: new TextEncoder().encode(text),
+    sourceId: name, expectedSha256: undefined, semanticProfile: SemanticProfileId.NestedEmbeddedScopeData,
+    sourceOverlay: { id: `${name}-handlers`, sha256: createHash("sha256").update(bytes).digest("hex"), bytes },
+    limits: semanticProcessTestLimits });
+  return { xml, compileXml };
+}
+
+// Wrong algorithm 9: a root Task split beside a root Call (RPF-ADMIT-01) and beside a root Choice (re-entry refusal) is
+// refused from the source, and its lowered Program alone, which holds the splitting host, is refused too, while each
+// unedited control is admitted at the Program level.
+test("ACSP-ADMIT-01: a root Task split beside a root Call or Choice is refused at both levels", async () => {
+  const { lowerCheckedProcess } = await loweringModule();
+  const cases = [
+    ["call-variable-mapping", "loan-application", "AcknowledgeApplication", "ApplicationDecided"],
+    ["scope-reentry", "claim-rework", "NotifyClaimant", "ClaimClosed"],
+  ] as const;
+  for (const [family, name, task, end] of cases) {
+    const retainedModel = await retained(family, name);
+    const control = await retainedModel.compileXml(retainedModel.xml);
+    assert.ok(control.status === BpmnCompilationStatus.Accepted, `${name} control`);
+    assert.notEqual(structuredScopeDataProgramAnalysis(control.semanticProcess), null, `${name} control Program`);
+    const closing = retainedModel.xml.match(new RegExp(`<endEvent id="${end}"[^>]*/>`, "u"))![0];
+    const edited = replaceOnce(retainedModel.xml, closing,
+      `<endEvent id="Aside_${task}" />${flow(`Flow_Aside_${task}`, task, `Aside_${task}`)}${closing}`);
+    assert.equal((await retainedModel.compileXml(edited)).status, BpmnCompilationStatus.Rejected, `${name}: ${task} split`);
+    const program = lowerCheckedProcess(withTerminalFlow(control.checkedProcess, task));
+    const host = only(program, task, SemanticOperationKind.Activity);
+    assert.ok(host.kind === SemanticOperationKind.Activity && host.outputs.length === 2, `${name}: ${task} lowers to a host`);
+    assert.equal(structuredScopeDataProgramAnalysis(program), null, `${name}: ${task} split, Program alone`);
+  }
+});
+
+// The refused edits that add a flow, on the lowered Program alone: a split on a split's branch (wrong algorithm 5) and a
+// Task that both merges and splits. The conditioned and default flows, the boundary events and the profile are
+// checked-level facts with no Program-level encoding beyond the refused source.
+test("ACSP-SINGLE-01, ACSP-HOST-01: the flow-adding refused edits are refused on the lowered Program alone", async () => {
+  const { lowerCheckedProcess } = await loweringModule();
+  const control = await compile(await source());
+  assert.ok(control.status === BpmnCompilationStatus.Accepted);
+  const nested = lowerCheckedProcess(withTerminalFlow(control.checkedProcess, "OrderAssessment"));
+  assert.equal(only(nested, "OrderAssessment", SemanticOperationKind.Activity).kind, SemanticOperationKind.Activity);
+  assert.equal(structuredScopeDataProgramAnalysis(nested), null, "split on a split's branch, Program alone");
+  const merging = lowerCheckedProcess(withEdits(control.checkedProcess, [],
+    [{ id: "Flow_Again", from: "InformCustomer", to: "ReviewClaim" }]));
+  assert.equal(isWellFormedSemanticProcessProgram(merging), false, "a host that both merges and splits");
+});
+
+// ACSP-SINGLE-01 on the runtime path: the lowered Program with a Task host on a Parallel branch is refused by Program
+// admission, whose well-formedness includes the concurrent analysis under this profile, so the start is rejected before
+// the scheduler runs (no ambiguous internal choice is reported), while the admitted twin, whose Task does not split,
+// commits. The scheduler's own fail-closed refusal is not reachable through the public entry and stays unwitnessed.
+test("ACSP-SINGLE-01: a splitting Task host placed on a Parallel branch is refused before it can run", async () => {
+  const { lowerCheckedProcess } = await loweringModule();
+  const twin = await compileUnbound(processOf('<startEvent id="Start" /><userTask id="Sibling" /><endEvent id="SiblingEnd" />' +
+    `<userTask id="T" /><endEvent id="End" />${fork}${flow("a", "Start", "Fork")}${flow("b", "Fork", "Sibling")}` +
+    `${flow("c", "Sibling", "SiblingEnd")}${flow("d", "Fork", "T")}${flow("e", "T", "End")}`));
+  assert.ok(twin.status === BpmnCompilationStatus.Accepted, JSON.stringify(twin.diagnostics));
+  const start: Stimulus = { kind: StimulusKind.StartProcess, commandId: "start", processId: "P", instanceId: "i",
+    initialVariables: [] };
+  assert.equal(applyStimulus(twin.semanticProcess, initialState, start).outcome, "committed", "admitted twin");
+  const program = lowerCheckedProcess(withTerminalFlow(twin.checkedProcess, "T"));
+  assert.equal(only(program, "T", SemanticOperationKind.Activity).kind, SemanticOperationKind.Activity);
+  const { profileAllowsProgramShape } = await import(new URL("../../semantic-core/dist/semantic-process-profile.js",
+    import.meta.url).href) as { profileAllowsProgramShape: (profile: string, operations: SemanticProcessProgram["operations"],
+      scopes: number) => boolean };
+  assert.equal(profileAllowsProgramShape(program.identity.semanticProfile, program.operations,
+    program.definitionScopes.length), true, "the operation shape alone is allowed");
+  assert.equal(structuredScopeDataProgramAnalysis(program), null, "the concurrent analysis refuses the placement");
+  assert.equal(isWellFormedSemanticProcessProgram(program), false, "so Program admission refuses it");
+  const { outcome, ambiguousInternalChoice } = applyStimulus(program, initialState, start);
+  assert.deepEqual({ outcome, ambiguousInternalChoice }, { outcome: "rejected", ambiguousInternalChoice: false },
+    "host on a branch");
+});
+
+// Wrong algorithm 7: a splitting host whose shape passes the host arm but whose work fails the legacy operation's own
+// validity at some output is refused at the operation level, so no consumer sees a host its settled projection would
+// drop. The operation level separates the work fact: the concurrent analysis, part of Program well-formedness under this
+// profile, refuses every metadata-bearing User Task host, well-formed or not.
+test("ACSP-HOST-01: a splitting host with ill-formed task metadata or a refused descriptor is refused", async () => {
+  const program = await admitted(await source(), model);
+  const { isWellFormedSemanticOperation } = await import(new URL(
+    "../../semantic-core/dist/semantic-process-operation-admission.js", import.meta.url).href) as {
+    isWellFormedSemanticOperation: (value: unknown, placeIds: ReadonlySet<string>,
+      placeOrigins: ReadonlyMap<string, string>, scopeOrigins: ReadonlyMap<string, string>, profile: string) => boolean };
+  const placeIds = new Set(program.controlPlaces.map(({ id }) => id));
+  const placeOrigins = new Map(program.controlPlaces.map(({ id, origin }) => [id, origin.elementId]));
+  const scopeOrigins = new Map(program.definitionScopes.map(({ id, originElementId }) => [id, originElementId]));
+  const valid = (operation: SemanticOperation) =>
+    isWellFormedSemanticOperation(operation, placeIds, placeOrigins, scopeOrigins, program.identity.semanticProfile);
+  const review = only(program, "ReviewClaim", SemanticOperationKind.Activity);
+  const register = only(program, "RegisterClaim", SemanticOperationKind.Activity);
+  assert.ok(review.kind === SemanticOperationKind.Activity && review.work.kind === ActivityWorkKind.UserTask);
+  assert.ok(register.kind === SemanticOperationKind.Activity && register.work.kind === ActivityWorkKind.Effect);
+  const task = review.work;
+  const effect = register.work;
+  const withCandidate = (candidate: string): SemanticOperation => ({ ...review, work: { ...task,
+    task: { ...task.task, metadata: { assignment: { candidates: [{ kind: "group", id: candidate }] } } } } });
+  assert.equal(valid(withCandidate("claims")), true, "well-formed task metadata");
+  assert.equal(valid(withCandidate("")), false, "ill-formed task metadata");
+  const withProtocol = (protocol: string): SemanticOperation => ({ ...register, work: { ...effect,
+    effect: { ...effect.effect, descriptor: { ...effect.effect.descriptor, protocol } } } });
+  assert.equal(valid(withProtocol(effect.effect.descriptor.protocol)), true, "the profile's effect protocol");
+  assert.equal(valid(withProtocol("urn:example:refused")), false, "a descriptor the profile refuses");
+});
+
+// Wrong algorithm 11: the concurrent Program analysis counts *Register claim*'s host as a Task and a Service Task of
+// *Intake*'s body, so the Task and Service Task bounds see it.
+test("ACSP-HOST-01: the Task and Service Task bounds count a splitting Service Task host", async () => {
+  const program = await admitted(await source(), model);
+  const { programBodies } = await import(new URL("../../semantic-core/dist/nested-scope-control-program-bodies.js",
+    import.meta.url).href) as { programBodies: (program: SemanticProcessProgram, data: unknown, structured: boolean) =>
+      ReadonlyMap<string, Readonly<{ tasks: readonly string[]; serviceTasks: readonly string[] }>> | null };
+  const handlers = new Set(program.operations.flatMap((operation) => operation.kind === SemanticOperationKind.AwaitEffect
+    ? [operation.effect.descriptor.operation] : operation.kind === SemanticOperationKind.Activity &&
+      operation.work.kind === ActivityWorkKind.Effect ? [operation.work.effect.descriptor.operation] : []));
+  const bodies = programBodies(program, { records: program.scopeLocalData ?? [], handlers }, true);
+  assert.ok(bodies !== null);
+  const register = only(program, "RegisterClaim", SemanticOperationKind.Activity).id;
+  const counted = [...bodies.values()].filter(({ tasks, serviceTasks }) =>
+    tasks.includes(register) && serviceTasks.includes(register));
+  assert.equal(counted.length, 1, "Register claim counts once as a Task and a Service Task");
+});
+
+/** `xml` under the profile with an overlay that binds no handler, as a model with no Service Task needs. */
+async function compileUnbound(xml: string) {
+  const bytes = new TextEncoder().encode(JSON.stringify({ kind: "bpmnSourceOverlay", id: "unbound",
+    semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, effectBindings: [], inertAttributes: [] }));
+  return compileBpmnToSemanticProcess({ bytes: new TextEncoder().encode(xml), sourceId: "unbound",
+    expectedSha256: undefined, semanticProfile: SemanticProfileId.NestedEmbeddedScopeData,
+    sourceOverlay: { id: "unbound", sha256: createHash("sha256").update(bytes).digest("hex"), bytes },
+    limits: semanticProcessTestLimits });
+}
+
+const processOf = (body: string): string => '<?xml version="1.0" encoding="UTF-8"?><definitions ' +
+  `xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="D" targetNamespace="urn:x"><process id="P" isExecutable="true">${body}</process></definitions>`;
+const fork = '<parallelGateway id="Fork" gatewayDirection="Diverging" />';
+const join = '<parallelGateway id="Join" gatewayDirection="Converging" />';
+
+// The data-free twin: CIB's `testTakeAllOutgoingFlowsFromNonScopeTask` shape, a User Task splitting to two User Tasks,
+// under an overlay that binds no handler, admitted or refused exactly as its explicit-fork twin is, both with a Join
+// and with two Ends, and refused alike in CIB's own shape, whose branches meet at one None End.
+test("ACSP-ADMIT-01: the data-free split is admitted exactly where its explicit-fork twin is", async () => {
+  const tail = (shape: "join" | "ends" | "oneEnd") => shape === "join"
+    ? `${join}<endEvent id="End" />${flow("j2", "T2", "Join")}${flow("j3", "T3", "Join")}${flow("j4", "Join", "End")}`
+    : shape === "ends" ? `<endEvent id="End2" /><endEvent id="End3" />${flow("e2", "T2", "End2")}${flow("e3", "T3", "End3")}`
+      : `<endEvent id="End" />${flow("e2", "T2", "End")}${flow("e3", "T3", "End")}`;
+  const tasks = '<startEvent id="Start" /><userTask id="T1" /><userTask id="T2" /><userTask id="T3" />';
+  for (const shape of ["join", "ends", "oneEnd"] as const) {
+    const split = await compileUnbound(processOf(`${tasks}${flow("s", "Start", "T1")}${flow("a", "T1", "T2")}` +
+      `${flow("b", "T1", "T3")}${tail(shape)}`));
+    const explicit = await compileUnbound(processOf(`${tasks}${fork}${flow("s", "Start", "T1")}${flow("f", "T1", "Fork")}` +
+      `${flow("a", "Fork", "T2")}${flow("b", "Fork", "T3")}${tail(shape)}`));
+    assert.equal(split.status, explicit.status, `${shape}: split and explicit fork agree`);
+    assert.equal(split.status, shape === "oneEnd" ? BpmnCompilationStatus.Rejected : BpmnCompilationStatus.Accepted, shape);
+  }
 });

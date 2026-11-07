@@ -251,11 +251,28 @@ private def task_arity_holds_for_the_nested_profile_alone : Bool :=
       arity "RegisterClaim" mixed variableMerge == (mixed && variableMerge) &&
       arity "DecideClaim" mixed variableMerge
 
+/-- ACSP-HOST-01, wrong algorithm 7: a splitting host whose shape passes the host arm is still refused when its work
+fails the legacy operation's own validity, ill-formed task metadata or an effect descriptor the profile refuses, while
+the same host with well-formed metadata or the profile's effect protocol is admitted. -/
+private def splitting_hosts_with_invalid_work_are_refused : Bool :=
+  let split := host ["Flow_In"] ["Flow_A", "Flow_B"]
+  let task (candidate : String) : ActivityHost :=
+    let metadata : UserTaskMetadata := { assignment := { candidates := [{ kind := .group, id := candidate }] } }
+    { split with work := .userTask { id := ⟨"ReviewClaim"⟩, name := some "Review claim", metadata := some metadata } }
+  let effect (protocol : String) : ActivityHost :=
+    let definition : EffectDefinition :=
+      { elementId := ⟨"ReviewClaim"⟩, descriptor := { protocol, operation := "reviewClaim" }, inputMappings := [],
+        outputMappings := [] }
+    { split with work := .effect definition }
+  hostValid (task "claims") && !hostValid (task "") && hostValid (effect activityProtocol) &&
+    !hostValid (effect "urn:example:refused-protocol")
+
 /-- Every executable check of this module, named for the driver's failure report. -/
 def activityHostSplitConformanceChecks : List (String × Bool) := [
   ("splitting_host_is_admitted", splitting_host_is_admitted),
   ("other_splitting_hosts_are_refused", other_splitting_hosts_are_refused),
   ("splitting_host_is_never_batched", splitting_host_is_never_batched),
+  ("splitting_hosts_with_invalid_work_are_refused", splitting_hosts_with_invalid_work_are_refused),
   ("intake_is_admitted_with_two_splitting_hosts", intake_is_admitted_with_two_splitting_hosts),
   ("start_names_agree", start_names_agree),
   ("splits_inside_fork_regions_are_refused", splits_inside_fork_regions_are_refused),
