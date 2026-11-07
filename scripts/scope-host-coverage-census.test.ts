@@ -217,7 +217,7 @@ const multiplicitySites: ReadonlyArray<Readonly<{ path: string; name: string; ex
   { path: "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean", name: "programBodies" },
   { path: "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean", name: "programRestrictionsHold" },
   { path: "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean", name: "splits" },
-  { path: "packages/semantic-core/src/nested-scope-control-admission.ts", name: "programBodies" },
+  { path: "packages/semantic-core/src/nested-scope-control-program-bodies.ts", name: "programBodies" },
   { path: "packages/semantic-core/src/structured-scope-data-routing.ts", name: "splitScope" },
   { path: "packages/semantic-core/src/internal-commutation-census.ts", name: "semanticOperationInternalFamily" },
   { path: "packages/temporal-adapter/protocol/src/host-admission.ts", name: "hostOperationClass" },
