@@ -332,9 +332,17 @@ test("routes the control-flow family artifacts to the control-flow family map be
     ["BpmnSemantics/SemanticProcess/ScopeReentryAdmission.lean", AreaId.EngineRuntimeProof],
     ["BpmnSemantics/NoneEndFanInConformance.lean", AreaId.EngineRuntimeProof],
     ["scenarios/none-end-fan-in/README.md", AreaId.AssuranceAdoption],
-    ["scenarios/exclusive-choice-arity/complaint-handling.bpmn", AreaId.AssuranceAdoption],
+    ["BpmnSemantics/ActivityHostConformance.lean", AreaId.EngineRuntimeProof],
+    ["scenarios/activity-host-merge/claim-review.bpmn", AreaId.AssuranceAdoption],
   ] as const) assert.deepEqual(routeImplementationPath(file), [owner, AreaId.EngineControlFlowFamily], file);
   assert.deepEqual(routeImplementationPath("BpmnSemantics/SemanticProcess/Lowering.lean"), [AreaId.EngineRuntimeProof]);
+});
+
+test("routes the Gateway family artifacts to the Gateway family map beside their tree owner", () => {
+  for (const [file, owner] of [
+    ["BpmnSemantics/RootParallelForksConformance.lean", AreaId.EngineRuntimeProof],
+    ["scenarios/exclusive-choice-arity/complaint-handling.bpmn", AreaId.AssuranceAdoption],
+  ] as const) assert.deepEqual(routeImplementationPath(file), [owner, AreaId.EngineGatewayFamily], file);
 });
 
 test("routes the nested scope-data artifacts to the data-flow family map beside their tree owner", () => {

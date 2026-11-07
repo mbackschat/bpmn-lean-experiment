@@ -13,6 +13,7 @@ export const AreaId = Object.freeze({
   EngineSemanticFamily: "ENGINE-SEMANTIC-FAMILY",
   EngineDataFamily: "ENGINE-DATA-FAMILY",
   EngineControlFlowFamily: "ENGINE-CONTROL-FLOW-FAMILY",
+  EngineGatewayFamily: "ENGINE-GATEWAY-FAMILY",
   EngineSemanticInvariant: "ENGINE-SEMANTIC-INVARIANT",
   TemporalHosting: "TEMPORAL-HOSTING",
   BpmPlatform: "BPM-PLATFORM",
@@ -405,9 +406,20 @@ function withNestedScopeDataOwner(file: string, routes: ReadonlyArray<AreaId>): 
  */
 function withControlFlowFamilyOwner(file: string, routes: ReadonlyArray<AreaId>): ReadonlyArray<AreaId> {
   const controlFlow =
-    /^BpmnSemantics\/(?:SemanticProcess\/(?:ScopeReentryAdmission|ScopeDataBurst)|(?:ScopeReentry|PassThroughTask|RootParallelForks|ExclusiveChoiceArity|NoneEndFanIn)Conformance)\.lean$/u.test(file) ||
-    /^scenarios\/(?:scope-reentry|pass-through-task|root-parallel-forks|exclusive-choice-arity|none-end-fan-in)\//u.test(file);
+    /^BpmnSemantics\/(?:SemanticProcess\/(?:ScopeReentryAdmission|ScopeDataBurst)|(?:ScopeReentry|PassThroughTask|NoneEndFanIn|ActivityHost)Conformance)\.lean$/u.test(file) ||
+    /^scenarios\/(?:scope-reentry|pass-through-task|none-end-fan-in|activity-host-merge)\//u.test(file);
   return controlFlow ? [...routes, AreaId.EngineControlFlowFamily] : routes;
+}
+
+/**
+ * Gateway family artifacts that grow a data-bearing profile, which the Gateway family map owns beside their top-level
+ * area, routed by path for the same reason as {@link withNestedScopeDataOwner}.
+ */
+function withGatewayFamilyOwner(file: string, routes: ReadonlyArray<AreaId>): ReadonlyArray<AreaId> {
+  const gateway =
+    /^BpmnSemantics\/(?:RootParallelForks|ExclusiveChoiceArity)Conformance\.lean$/u.test(file) ||
+    /^scenarios\/(?:root-parallel-forks|exclusive-choice-arity)\//u.test(file);
+  return gateway ? [...routes, AreaId.EngineGatewayFamily] : routes;
 }
 
 function packageRoutes(pathParts: ReadonlyArray<string>): ReadonlyArray<AreaId> {
@@ -509,9 +521,9 @@ export function routeImplementationPath(file: string, routing?: DocumentRouting)
     case "scripts":
       return [AreaId.AssuranceAdoption];
     case "scenarios":
-      return withControlFlowFamilyOwner(file, withNestedScopeDataOwner(file, [AreaId.AssuranceAdoption]));
+      return withGatewayFamilyOwner(file, withControlFlowFamilyOwner(file, withNestedScopeDataOwner(file, [AreaId.AssuranceAdoption])));
     case "BpmnSemantics":
-      return withControlFlowFamilyOwner(file, withNestedScopeDataOwner(file, [AreaId.EngineRuntimeProof]));
+      return withGatewayFamilyOwner(file, withControlFlowFamilyOwner(file, withNestedScopeDataOwner(file, [AreaId.EngineRuntimeProof])));
     case "contracts":
       return [AreaId.EngineContractsSource];
     case "profiles":

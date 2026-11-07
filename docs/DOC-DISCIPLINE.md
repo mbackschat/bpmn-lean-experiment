@@ -158,6 +158,8 @@ On 2026-10-18 the family map reached 3,998 words when the nested embedded scope-
 
 On 2026-11-02 the data-flow map reached 3,999 words when None End fan-in needed recording, and the same rule applied again. Control-flow families that grow a data-bearing profile (scope re-entry, pass-through Tasks, root Parallel forks, Exclusive choice arity and None End fan-in) moved to [`implementation-status-owner:ENGINE-CONTROL-FLOW-FAMILY`](ENGINE-CONTROL-FLOW-FAMILY-IMPLEMENTATION-MAP.md), which keeps the 4,000-word default.
 
+On 2026-11-07 the control-flow map reached 4,000 words when the Activity host merges needed recording, and the same rule applied again. Gateway families that grow a data-bearing profile (root Parallel forks, Exclusive choice arity, Exclusive Choice without a default and Inclusive Gateway regions) moved to [`implementation-status-owner:ENGINE-GATEWAY-FAMILY`](ENGINE-GATEWAY-FAMILY-IMPLEMENTATION-MAP.md), which keeps the 4,000-word default.
+
 ## Project document homes
 
 | Information | Owner role |
