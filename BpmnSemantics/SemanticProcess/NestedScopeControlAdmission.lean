@@ -106,11 +106,6 @@ structure BodyScan where
   entry : Closure
   resumptions : List (String × Closure)
 
-/-- Task vertices a scan armed: each has exactly its one input among the scan's arrivals. -/
-def armed (vertices : List Vertex) (closure : Closure) : List String :=
-  (vertices.filter fun vertex =>
-    vertex.kind == .task && closure.arrivals.count vertex.id == incomingCount vertices vertex.id).map (·.id)
-
 def scanBody (body : Body) : Option BodyScan := do
   let ordered ← structureOrder body.vertices
   if !branchesReachWorkOrEnd body.vertices then none
@@ -166,13 +161,6 @@ def regionTasks (bodies : List Body) (resume : String → String → Nat) (scope
   region.branches.flatMap (fun branch => (List.range branch.length).map fun index => last branch.length index 3) ++
     (List.range targetTasks).map (fun index => last targetTasks index leave) ++
     (List.range region.after.length).map fun index => last region.after.length index (resume scope region.vertex)
-
-def depthOf (parents : List (String × (String × String))) : Nat → String → Option Nat
-  | 0, _ => none
-  | fuel + 1, scope =>
-      match List.lookup scope parents with
-      | none => some 0
-      | some (owner, _) => (depthOf parents fuel owner).map (· + 1)
 
 /-- A called Process body is a serial chain of one to three User Task or Call vertices (CALLN-ADMIT-01,
 CSE-ADMIT-01); in a data-bearing model, of User Tasks only (CMCALL-ADMIT-01). -/
@@ -268,13 +256,6 @@ def invokesEachDefinitionOnce (scans : List BodyScan) (parents : List (String ×
   distinct (entryDefinitions scans invoked fuel root) &&
     scans.all fun scan => scan.resumptions.all fun (vertex, _) =>
       distinct (resumeDefinitions scans parents invoked fuel fuel scan.body.scope vertex)
-
-def reaches (vertices : List Vertex) : Nat → String → String → Bool
-  | 0, _, _ => false
-  | fuel + 1, source, target =>
-      match vertices.find? (·.id == source) with
-      | some vertex => vertex.outputs.any fun next => next == target || reaches vertices fuel next target
-      | none => false
 
 /-- The definitions containing a Call in the expanded call tree below `site`, the site's own included. -/
 def callBearing (expanded : List Body) (invoked : List (String × String)) (called : List (String × Body)) :
@@ -574,18 +555,6 @@ def callerOutput? (program : Program) (calledRoot : DefinitionScopeId) (returnOp
   | _ => none
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`callerOutput?]
-
-def isCallReturn : SemanticOperation → Bool
-  | .returnProcess .. => true
-  | _ => false
-
-/-- A scope's completion, legacy or exit (SCPH-EXIT-01); a body projects neither. -/
-private def completesScope : SemanticOperation → Bool
-  | .completeScope .. | .scopeExit .. => true
-  | _ => false
-
-/-- The lowered child Start is elided; this synthetic vertex stands for the child's entry place. -/
-def childStart (scope : String) : String := "start:" ++ scope
 
 def operationVertex? (program : Program) (data : Option Data) (scope : String) (operation : SemanticOperation) :
     Option (MergeRegion.RawVertex × Option String) := do

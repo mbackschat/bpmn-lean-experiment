@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
+public import BpmnSemantics.SemanticProcessContract
 
 /-! The fork-branch cut of NSC-ADMIT-01 and the Call placement scan of CMCALL-ADMIT-01, as PTPB-WORK-01 and
 PTPB-CALL-01 of the [pass-through branch specification](../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#admission)
@@ -135,5 +136,39 @@ def splitScopesPlaced (bodies : List (String × List MergeRegion.RawVertex × Li
         let splittingChild := splitsRaw vertex || (bodies.find? (·.1 == child)).any fun (_, childVertices, _) =>
           childVertices.any fun start => start.kind == .vertex .start && splitsRaw start
         !splittingChild || placedFrom bodies bodies.length child
+
+/-! Helpers of the nested analysis over vertex lists and operations, kept here so its owner stays within the size
+target. -/
+
+/-- Task vertices a scan armed: each has exactly its one input among the scan's arrivals. -/
+def armed (vertices : List Vertex) (closure : Closure) : List String :=
+  (vertices.filter fun vertex =>
+    vertex.kind == .task && closure.arrivals.count vertex.id == incomingCount vertices vertex.id).map (·.id)
+
+def depthOf (parents : List (String × (String × String))) : Nat → String → Option Nat
+  | 0, _ => none
+  | fuel + 1, scope =>
+      match List.lookup scope parents with
+      | none => some 0
+      | some (owner, _) => (depthOf parents fuel owner).map (· + 1)
+
+def reaches (vertices : List Vertex) : Nat → String → String → Bool
+  | 0, _, _ => false
+  | fuel + 1, source, target =>
+      match vertices.find? (·.id == source) with
+      | some vertex => vertex.outputs.any fun next => next == target || reaches vertices fuel next target
+      | none => false
+
+def isCallReturn : SemanticOperation → Bool
+  | .returnProcess .. => true
+  | _ => false
+
+/-- The lowered child Start is elided; this synthetic vertex stands for the child's entry place. -/
+def childStart (scope : String) : String := "start:" ++ scope
+
+/-- A scope's completion, legacy or exit (SCPH-EXIT-01); a body projects neither. -/
+def completesScope : SemanticOperation → Bool
+  | .completeScope .. | .scopeExit .. => true
+  | _ => false
 
 end BpmnSemantics.SemanticProcess.NestedScopeControl
