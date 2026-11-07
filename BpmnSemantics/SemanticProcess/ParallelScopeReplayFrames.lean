@@ -111,6 +111,9 @@ theorem replayed_retirement_execution (program : Program) (before after : Runtim
   case activity =>
     -- A host publishes its work's wait kind, never a scope transition (ACTH-HOST-01).
     cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
+  case scope =>
+    -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+    cases work : (‹ScopeHost›).work <;> simp [work] at metadata
   cases control : before.control <;> simp only [InternalCommutation.applyInternalOperationOccurrence?, control,
     resolved, bind, Option.bind_some] at applied <;> try contradiction
   simp only [key] at applied
@@ -314,6 +317,9 @@ theorem replayed_initiation_execution (program : Program) (before after : Runtim
   case activity =>
     -- A host publishes its work's wait kind, never a scope transition (ACTH-HOST-01).
     cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
+  case scope =>
+    -- A `process` host publishes `initiate` but is never applied by owning occurrence (SCPH-SINGLE-01).
+    cases control : before.control <;> simp [InternalCommutation.applyInternalOperationOccurrence?, control, resolved] at applied
   rename_i id origin output
   simp only [SemanticOperation.id] at key
   simp only [SemanticOperation.origin] at originEq
@@ -348,6 +354,12 @@ theorem replayed_scope_completion_execution (program : Program) (before after : 
   case activity =>
     -- A host publishes its work's wait kind, never a scope transition (ACTH-HOST-01).
     cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
+  case scope =>
+    -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+    cases work : (‹ScopeHost›).work <;> simp [work] at metadata
+  case scopeExit =>
+    -- An exit publishes `completeScope` but is never applied by owning occurrence (SCPH-SINGLE-01).
+    cases control : before.control <;> simp [InternalCommutation.applyInternalOperationOccurrence?, control, resolved] at applied
   rename_i id origin scopeId parentOutput
   simp only [SemanticOperation.id] at key
   simp only [SemanticOperation.origin] at originEq
@@ -381,6 +393,9 @@ theorem replayed_parallel_entry_execution (program : Program) (analysis : Parall
   case activity =>
     -- A host publishes its work's wait kind, never a scope transition (ACTH-HOST-01).
     cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
+  case scope =>
+    -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+    cases work : (‹ScopeHost›).work <;> simp [work] at metadata
   case enterParallelMultiInstanceScope id origin input childEntry childScope normalOutput collection item mappings condition ignored =>
     cases control : before.control <;> simp only [InternalCommutation.applyInternalOperationOccurrence?, control,
       resolved, bind, Option.bind_some] at applied <;> try contradiction

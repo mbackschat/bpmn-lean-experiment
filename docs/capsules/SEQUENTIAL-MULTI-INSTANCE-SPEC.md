@@ -85,10 +85,10 @@ The outer User Task has exactly one incoming and one normal outgoing Sequence Fl
 
 The Process start accepts exactly one canonical binding whose name is the input Process DataObjectReference ID and whose value is a `StringList`. Completion of the active inner review task accepts exactly one canonical String binding whose name is the scalar task DataOutput ID. Completion of the escalation task accepts an empty patch. Every other binding name, value kind, cardinality, ordering, or task association is rejected before state changes.
 
-The profile limits are inclusive and independently enforced at source-independent execution boundaries:
+The profile limits are inclusive and independently enforced at source-independent execution boundaries; the [Multi-Instance limits owner](../../packages/semantic-core/src/multi-instance-limits.ts) holds them for the sequential and parallel profiles alike:
 
 ```ts
-const sequentialMultiInstanceLimits = Object.freeze({
+const multiInstanceLimits = Object.freeze({
   maximumItems: 16,
   maximumItemUtf8Bytes: 512,
   maximumCanonicalCollectionUtf8Bytes: 8_192,

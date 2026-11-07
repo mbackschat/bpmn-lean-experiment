@@ -109,6 +109,7 @@ export * from "./checked-process-contract.js";
 export * from "./semantic-process-contract.js";
 export * from "./activity-host-contract.js";
 export { activityHostPublishedKind, isPublishedOperationKind, publishedOperationKind, settledOperation, settledOperations } from "./activity-host-work.js";
+export { scopeHostPublishedKind } from "./scope-host-work.js";
 export * from "./semantic-process-data.js";
 export * from "./process-interface-data.js";
 export {
@@ -126,6 +127,7 @@ export * from "./semantic-transition-trace.js";
 export * from "./simple-boolean-expression.js";
 export * from "./source-overlay-identity.js";
 export * from "./scenario.js";
+export * from "./multi-instance-limits.js";
 export * from "./sequential-multi-instance-contract.js";
 export * from "./parallel-multi-instance-contract.js";
 export * from "./sequential-multi-instance-admission.js";

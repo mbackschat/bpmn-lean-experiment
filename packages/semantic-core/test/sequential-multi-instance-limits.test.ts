@@ -26,7 +26,7 @@ import {
   VariableValueKind,
   applyInternalOperation,
   completeSequentialMultiInstanceIteration,
-  sequentialMultiInstanceLimits,
+  multiInstanceLimits,
   utf8ByteLength,
   type RuntimeState,
 } from "@bpmn-lean/semantic-core";
@@ -40,7 +40,7 @@ import {
 } from "./sequential-multi-instance-fixture.ts";
 
 const { maximumItems, maximumItemUtf8Bytes, maximumCanonicalCollectionUtf8Bytes } =
-  sequentialMultiInstanceLimits;
+  multiInstanceLimits;
 
 /**
  * Equal-length items of this size are the largest maximum-cardinality collection inside the canonical

@@ -832,7 +832,7 @@
         }
       }
     },
-    "sequentialMultiInstanceLimits": {
+    "multiInstanceLimits": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -1530,7 +1530,7 @@
           "properties": { "durationMs": { "const": 5000 } }
         },
         "limits": {
-          "$ref": "#/$defs/sequentialMultiInstanceLimits"
+          "$ref": "#/$defs/multiInstanceLimits"
         }
       }
     },
@@ -1590,7 +1590,7 @@
           "type": "object",
           "properties": { "durationMs": { "const": 5000 } }
         },
-        "limits": { "$ref": "#/$defs/sequentialMultiInstanceLimits" }
+        "limits": { "$ref": "#/$defs/multiInstanceLimits" }
       }
     },
     "completeParallelMultiInstanceUserTask": {
@@ -2777,10 +2777,122 @@
         }
       }
     },
+    "scopeWork": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "process"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "childScopeId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "subProcess"
+            },
+            "childScopeId": {
+              "$ref": "#/$defs/nonemptyString"
+            }
+          }
+        }
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "inputs",
+        "entries",
+        "work"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "scope"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "inputs": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonemptyString"
+          }
+        },
+        "entries": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/activityOutput"
+          }
+        },
+        "work": {
+          "$ref": "#/$defs/scopeWork"
+        }
+      }
+    },
+    "scopeExit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "scopeId",
+        "outputs"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "scopeExit"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "scopeId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/activityOutput"
+          }
+        }
+      }
+    },
     "operation": {
       "oneOf": [
         {
           "$ref": "#/$defs/activity"
+        },
+        {
+          "$ref": "#/$defs/scope"
+        },
+        {
+          "$ref": "#/$defs/scopeExit"
         },
         {
           "$ref": "#/$defs/initiate"

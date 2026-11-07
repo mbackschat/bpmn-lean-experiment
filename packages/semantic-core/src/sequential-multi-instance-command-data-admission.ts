@@ -10,7 +10,7 @@ import {
   type SemanticProcessProgram,
 } from "./semantic-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
-import { utf8ByteLength } from "./wire.js";
+import { multiInstanceCollectionWithinLimits } from "./multi-instance-limits.js";
 
 /** The one sequential Multi-Instance operation selected by the registered program shape. */
 export function sequentialMultiInstanceOperation(
@@ -21,19 +21,6 @@ export function sequentialMultiInstanceOperation(
       operation.kind === SemanticOperationKind.AwaitSequentialMultiInstanceUserTask,
   );
   return operations.length === 1 ? operations[0] : undefined;
-}
-
-/** Whether one ordered collection fits every bound carried by the admitted operation. */
-export function sequentialMultiInstanceCollectionWithinLimits(
-  operation: Pick<AwaitSequentialMultiInstanceUserTaskOperation, "limits">,
-  collection: ReadonlyArray<string>,
-): boolean {
-  const { maximumItems, maximumItemUtf8Bytes, maximumCanonicalCollectionUtf8Bytes } =
-    operation.limits;
-  return collection.length <= maximumItems &&
-    collection.every((item) => utf8ByteLength(item) <= maximumItemUtf8Bytes) &&
-    utf8ByteLength(JSON.stringify(collection)) <=
-      maximumCanonicalCollectionUtf8Bytes;
 }
 
 /** The exact Process-start collection, including its name, cardinality, kind, and value bounds. */
@@ -50,10 +37,7 @@ export function admittedSequentialMultiInstanceInputCollection(
   ) {
     return undefined;
   }
-  return sequentialMultiInstanceCollectionWithinLimits(
-      operation,
-      binding.value.value,
-    )
+  return multiInstanceCollectionWithinLimits(operation.limits, binding.value.value)
     ? binding.value.value
     : undefined;
 }
@@ -74,10 +58,7 @@ export function admittedSequentialMultiInstanceIterationResult(
     return undefined;
   }
   const result = binding.value.value;
-  return sequentialMultiInstanceCollectionWithinLimits(
-      operation,
-      [...outputSlots, result],
-    )
+  return multiInstanceCollectionWithinLimits(operation.limits, [...outputSlots, result])
     ? result
     : undefined;
 }

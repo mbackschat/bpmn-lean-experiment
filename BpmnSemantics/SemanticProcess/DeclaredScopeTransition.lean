@@ -55,6 +55,24 @@ def completeDeclaredScope? (program : Program) (state : RuntimeState) (scopeId :
         completeSelectedScope? program (← NestedScopeData.writeOutputs? program state scopeId) scopeId
           (some output)
 
+/-- SCPH-START-01: a `subProcess` scope host enters its child from its one input to its first entry as `enterScope`
+does, then splits that child-owned token over every entry in the same step, so the split is no step of its own. -/
+def enterDeclaredScopeEntries? (program : Program) (state : RuntimeState) (input : ControlPlaceId)
+    (entries : List ControlPlaceId) (childScopeId : DefinitionScopeId) : Option RuntimeState := do
+  let first ← entries.head?
+  let entered ← enterDeclaredScope? program state input first childScopeId
+  let child ← onlyTokenOwner? entered first
+  some (duplicateToken entered child first entries)
+
+/-- SCPH-EXIT-01: a scope exit completes its Sub-Process to its first output as `completeScope` does, then splits that
+parent-owned token over every output in the same step. -/
+def completeDeclaredScopeOutputs? (program : Program) (state : RuntimeState) (scopeId : DefinitionScopeId)
+    (outputs : List ControlPlaceId) : Option RuntimeState := do
+  let first ← outputs.head?
+  let completed ← completeDeclaredScope? program state scopeId (some first)
+  let parent ← onlyTokenOwner? completed first
+  some (duplicateToken completed parent first outputs)
+
 /-- CSD-INIT-01: a merge target's entry initializes the frame of the occurrence `enterConcurrentScopeState?`
 issues under `parent`, whose chain the inputs read. -/
 def enterDeclaredScopeOccurrence? (program : Program) (state : RuntimeState) (parent : ScopeOccurrenceId)

@@ -770,12 +770,9 @@ theorem admitted_start_unique (program : Program) (analysis : ParallelScopeStart
   dsimp only at graph
   split at graph <;> try contradiction
   rename_i start startsEq
-  have singleton : program.operations.filterMap (fun operation => match operation with
-      | .initiate id .. | .initiateMessage id .. | .initiateTimer id .. => some id | _ => none) = [start] := startsEq
-  have first : id ∈ program.operations.filterMap (fun operation => match operation with
-      | .initiate id .. | .initiateMessage id .. | .initiateTimer id .. => some id | _ => none) := List.mem_filterMap.mpr ⟨_, member, rfl⟩
-  have second : other ∈ program.operations.filterMap (fun operation => match operation with
-      | .initiate id .. | .initiateMessage id .. | .initiateTimer id .. => some id | _ => none) := List.mem_filterMap.mpr ⟨_, otherMember, rfl⟩
+  have singleton : initiateIds program.operations = [start] := startsEq
+  have first : id ∈ initiateIds program.operations := List.mem_filterMap.mpr ⟨_, member, rfl⟩
+  have second : other ∈ initiateIds program.operations := List.mem_filterMap.mpr ⟨_, otherMember, rfl⟩
   rw [singleton] at first second
   have same := same_declaration program analysis admitted _ _ member otherMember (by simpa [SemanticOperation.id] using (List.mem_singleton.mp first).trans (List.mem_singleton.mp second).symm)
   exact SemanticOperation.initiate.inj same |>.2.2

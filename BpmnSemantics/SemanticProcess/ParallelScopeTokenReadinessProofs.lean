@@ -88,8 +88,9 @@ theorem ordinary_operation_inputs_unit (program : Program) (before after : Runti
     simp only [applyInternalOperationOccurrence?, control, bind] at applied <;> try contradiction
   cases operation <;> simp only [SemanticOperation.kind, List.mem_cons] at kind <;> try contradiction
   all_goals simp only [resolved, Option.bind_some] at applied
-  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  -- A host is never applied by owning occurrence (ACTH-HOST-01, SCPH-SINGLE-01).
   case activity => simp at applied
+  case scope => simp at applied
   case awaitUserTask id origin input output task =>
     split at applied <;> try contradiction
     rename_i valid
@@ -222,6 +223,9 @@ private theorem token_operation_ports (program : Program) (operation : SemanticO
   case activity =>
     -- A host publishes its work's wait kind, never a token operation's (ACTH-HOST-01).
     cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at kind
+  case scope =>
+    -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+    cases work : (‹ScopeHost›).work <;> simp [work] at kind
   all_goals unfold operationWellFormed at valid
   all_goals simp only [Bool.and_eq_true] at valid
   case duplicate id origin input outputs =>

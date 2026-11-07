@@ -53,6 +53,8 @@ private theorem resolved_ordinary_port_declared (program : Program) (state : Run
     ∃ place ∈ program.controlPlaces, place.id = port := by
   have sameScope : operationControlPlacesShareOwner operation = true := by
     cases operation <;> simp only [SemanticOperation.kind, List.mem_cons] at kind <;> try contradiction
+    -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+    case scope => cases work : (‹ScopeHost›).work <;> simp [work] at kind
     all_goals rfl
   have portMember : port ∈ operationControlPlaces operation := by
     cases operation <;> simp only [SemanticOperation.kind, List.mem_cons] at kind <;> try contradiction
@@ -60,6 +62,8 @@ private theorem resolved_ordinary_port_declared (program : Program) (state : Run
       -- A host's body ports are empty, so `member` names one of its outputs (ACTH-HOST-01).
       unfold operationControlPlaces
       exact List.mem_append_right _ (by simpa [bodyConsumedPorts] using member)
+    -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+    case scope => cases work : (‹ScopeHost›).work <;> simp [work] at kind
     all_goals exact member
   obtain ⟨origin, selected⟩ := resolved_selectedInputOrigin program state candidate operation port wellFormed resolved sameScope portMember
   unfold selectedInputOrigin? at selected
@@ -231,6 +235,9 @@ private theorem reserved_member_ports (program : Program) (state : RuntimeState)
         case activity =>
           -- A host publishes its work's wait kind, never a token operation's (ACTH-HOST-01).
           cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at kind
+        case scope =>
+          -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+          cases work : (‹ScopeHost›).work <;> simp [work] at kind
         all_goals simp [InternalOccurrencePatch.operation, operation, SemanticOperation.kind]
         all_goals simp [operation, operationOutputs] at output
 

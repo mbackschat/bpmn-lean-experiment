@@ -126,7 +126,10 @@ private theorem parallel_entry_binding (program : Program) (occurrence : Runtime
   apply filter_singleton_of_subpredicate program.operations _ _ _ singleton
   · intro candidate _ accepted
     split at accepted <;> try contradiction
-    cases candidate <;> simp only at accepted <;> try contradiction
+    cases candidate
+    -- A host's child is read through its work (SCPH-HOST-01).
+    case' scope host _ _ => obtain ⟨_, _, _, _, _ | _⟩ := host
+    all_goals simp only at accepted <;> try contradiction
     all_goals apply decide_eq_true
     all_goals simp only [enteredChildScopeId?, Bool.and_eq_true, decide_eq_true_eq] at accepted ⊢
     all_goals exact congrArg some (accepted.1.trans scopeEq.symm)

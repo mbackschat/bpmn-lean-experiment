@@ -76,6 +76,8 @@ export const pipelineCaseIdRegistry = Object.freeze([
   "activity-host-merge-claim-direct",
   "activity-host-merge-claim-expert",
   "activity-host-merge-claim-direct-reopened",
+  "scope-host-split-onboarding-register-first",
+  "scope-host-split-onboarding-workstation-first",
   "single-scope-models-purchase-approval-first",
   "single-scope-models-purchase-budget-first",
   "single-scope-models-invoice-valid",

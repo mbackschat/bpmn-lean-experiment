@@ -84,7 +84,7 @@ Excluded, each refused at admission:
 - a pass-through node in a called Process, as today;
 - a root Call beside a root splitting node, as beside a root Parallel fork (`RPF-ADMIT-01`);
 - an Inclusive region on more than one branch of a splitting node, as of a Parallel fork (the profile exclusion `inclusive-regions-on-sibling-branches-of-one-fork`);
-- every other Activity kind, Start Event and Link target with several flows, except the merging User, Service and Send Tasks the [Activity host account](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#required-optional-and-excluded-scope) admits;
+- every other Activity kind, Start Event and Link target with several flows, except the merging User, Service and Send Tasks the [Activity host account](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#required-optional-and-excluded-scope) admits and the splitting None Starts and embedded Sub-Processes the [scope host account](SCOPE-HOST-FLOW-LISTS-SPEC.md#required-optional-and-excluded-scope) admits;
 - every form under any other profile.
 
 These bound admission only. A later merge under forks broadens the class with the same k-input lowering, and reinterprets no admitted model. The general Activity family widens the same projections to other node kinds. A node that both merges and splits needs the new operation shape named above, and no model admitted here has one.

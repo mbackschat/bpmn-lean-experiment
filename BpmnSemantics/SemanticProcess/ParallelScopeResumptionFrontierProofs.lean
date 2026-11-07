@@ -110,6 +110,9 @@ theorem InternalCommutation.ParallelScopeOwnerFrame.retirement_occurrences_uniqu
       case activity =>
         -- A host publishes its work's wait kind, never a scope completion (ACTH-HOST-01).
         cases wait : (‹ActivityHost›).waitKind <;> simp [SemanticOperation.kind, wait] at kind
+      case scope =>
+        -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+        cases work : (‹ScopeHost›).work <;> simp [SemanticOperation.kind, work] at kind
       all_goals simp [SemanticOperation.kind] at kind ⊢
     exact List.mem_singleton.mp included
   have same : leftOperation = rightOperation :=

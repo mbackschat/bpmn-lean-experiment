@@ -73,6 +73,8 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "only the retained models are measured clear of the untyped retained Run trace path",
     "each re-entry is a fresh activation whose locals initialize afresh from the enclosing values",
     "a completion addressed to an earlier activation is rejected unchanged",
+    "whose body None Start leaves on two or more unconditioned flows opens all of them when it is entered",
+    "one that itself leaves on two or more unconditioned flows, with no default, opens all of them when it completes",
     "A model with root-body Exclusive Gateways whose automatic burst from Start or any resumption exceeds eight steps is refused at admission",
     "a serial model of the profile has no such rule, so one whose completion closure exceeds eight steps is admitted and that completion rolls back on every attempt",
     "Exclusive Gateways inside a Sub-Process body or the called Process",

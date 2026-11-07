@@ -132,6 +132,20 @@ def operationRespectsScopes (program : Program)
                 | some parent, some output =>
                     placesOwnedBy program [output] parent
                 | _, _ => false
+      -- SCPH-HOST-01: a host's and an exit's places lie where their legacy operations put them.
+      | .scope { work := .process, inputs, entries, .. } =>
+          (firstDefinitionScope? program owner).any (·.parentScopeId.isNone) &&
+            placesOwnedBy program (inputs ++ entries.map (·.place)) owner
+      | .scope { work := .subProcess childScopeId, inputs, entries, .. } =>
+          placesOwnedBy program inputs owner &&
+            placesOwnedBy program (entries.map (·.place)) childScopeId &&
+            (firstDefinitionScope? program childScopeId).any fun scope =>
+              scope.parentScopeId == some owner
+      | .scopeExit { scopeId, outputs, .. } =>
+          scopeId = owner &&
+            match (firstDefinitionScope? program scopeId).bind (·.parentScopeId) with
+            | some parent => placesOwnedBy program (outputs.map (·.place)) parent
+            | none => false
       | .completeEventSubProcess id origin scopeId =>
           scopeId == owner && owner != entryRootId &&
             completeEventSubProcessOperationWellFormed program id origin scopeId
@@ -189,7 +203,8 @@ def completionId? (program : Program) (scopeId : DefinitionScopeId) :
     | .completeSequentialMultiInstanceScope id _ _ =>
         if operationScope? program id == some scopeId then some id else none
     | .completeScope id _ candidate _
-    | .completeEventSubProcess id _ candidate =>
+    | .completeEventSubProcess id _ candidate
+    | .scopeExit { id, scopeId := candidate, .. } =>
         if candidate = scopeId then some id else none
     | _ => none
 
@@ -274,7 +289,7 @@ def semanticOperationIsResumptionCut : SemanticOperation → Bool
   | .terminateScope ..
   | .completeScope ..
   | .completeEventSubProcess ..
-  | .triggerCompensation .. | .cancelTransaction .. => false
+  | .triggerCompensation .. | .cancelTransaction .. | .scope .. | .scopeExit .. => false
 
 /-- Independently classify Semantic Process graph edges removed after an `awaitUserTask` producer. -/
 def programEdgeIsResumptionContinuation (program : Program)
@@ -335,6 +350,7 @@ def initiateIds (operations : List SemanticOperation) :
     | .initiate id _ _ => some id
     | .initiateMessage id _ _ _ => some id
     | .initiateTimer id _ _ _ => some id
+    | .scope { id, work := .process, .. } => some id
     | _ => none
 
 def rootCompletionIds (program : Program) : List OperationId :=
@@ -521,7 +537,13 @@ theorem programGraphWellFormed_operationControlPlaceScope (program : Program)
               | none => simp at respects
               | some owner =>
                   have portOwned : placeScope? program place = some owner := by
-                    cases operation <;>
+                    cases operation
+                    -- SCPH-HOST-01: only a `process` host shares its owner, so its work is split first.
+                    case scope host =>
+                      obtain ⟨_, _, _, _, _ | _⟩ := host <;>
+                        simp_all [operationControlPlacesShareOwner, operationControlPlaces,
+                          operationInputPlaces, operationOutputs, placesOwnedBy] <;> grind
+                    all_goals
                       simp_all [operationControlPlacesShareOwner, operationControlPlaces,
                         operationInputPlaces, operationOutputs, placesOwnedBy] <;> grind
                   unfold operationScope? at operationOwnerEq

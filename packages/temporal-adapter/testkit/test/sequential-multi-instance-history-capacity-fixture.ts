@@ -13,7 +13,7 @@ import {
   admitProcessStart,
   applyInternalOperationStep,
   initialState,
-  sequentialMultiInstanceLimits,
+  multiInstanceLimits,
   utf8ByteLength,
 } from "@bpmn-lean/semantic-core";
 import type {
@@ -218,7 +218,7 @@ function maximumCanonicalCollection(): readonly string[] {
     ...Array.from({ length: 14 }, () => "x".repeat(509)),
     "x".repeat(505),
   ];
-  assert.equal(collection.length, sequentialMultiInstanceLimits.maximumItems);
+  assert.equal(collection.length, multiInstanceLimits.maximumItems);
   assert.equal(utf8ByteLength(JSON.stringify(collection)), 8_192);
   assert.equal(Math.max(...collection.map(utf8ByteLength)), 512);
   return collection;
@@ -240,7 +240,7 @@ function separator(
   const equal512 = Array.from({ length: 16 }, () => "x".repeat(512));
   assert.ok(
     utf8ByteLength(JSON.stringify(exact17)) <
-      sequentialMultiInstanceLimits.maximumCanonicalCollectionUtf8Bytes,
+      multiInstanceLimits.maximumCanonicalCollectionUtf8Bytes,
   );
   const exact17Start = {
     ...start,
@@ -270,10 +270,10 @@ function separator(
   requireTrue(exact16Admitted, "exact 16 collection was not admitted");
   requireTrue(exact17Refused, "exact 17 collection was not refused");
   return {
-    maximumItems: sequentialMultiInstanceLimits.maximumItems,
-    maximumItemUtf8Bytes: sequentialMultiInstanceLimits.maximumItemUtf8Bytes,
+    maximumItems: multiInstanceLimits.maximumItems,
+    maximumItemUtf8Bytes: multiInstanceLimits.maximumItemUtf8Bytes,
     maximumCanonicalCollectionUtf8Bytes:
-      sequentialMultiInstanceLimits.maximumCanonicalCollectionUtf8Bytes,
+      multiInstanceLimits.maximumCanonicalCollectionUtf8Bytes,
     canonicalMaximumCollectionBytes: utf8ByteLength(JSON.stringify(collection)),
     equal508CollectionBytes: utf8ByteLength(JSON.stringify(equal508)),
     equal512CollectionBytes: utf8ByteLength(JSON.stringify(equal512)),

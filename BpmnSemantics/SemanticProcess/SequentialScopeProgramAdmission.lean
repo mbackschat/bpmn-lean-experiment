@@ -40,6 +40,13 @@ run_meta privateEquations `BpmnSemantics.SemanticProcess.SequentialScopeProgram 
 theorem operationAllowed_activity (host : ActivityHost) : operationAllowed (.activity host) = false := by
   unfold operationAllowed; rfl
 
+/-- Nor a scope host or exit (SCPH-HOST-01). -/
+theorem operationAllowed_scope (host : ScopeHost) : operationAllowed (.scope host) = false := by
+  unfold operationAllowed; rfl
+
+theorem operationAllowed_scopeExit (exit : ScopeExit) : operationAllowed (.scopeExit exit) = false := by
+  unfold operationAllowed; rfl
+
 /-- Completion operations reuse their owning source element; every other admitted operation owns a distinct source node. -/
 def sourceNode? : SemanticOperation → Option String
   | .initiate _ origin _ | .enterSequentialMultiInstanceScope _ origin ..

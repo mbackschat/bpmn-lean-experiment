@@ -246,6 +246,12 @@ private theorem parent_completions_eq (program : Program) (analysis : ProgramAna
       case activity =>
         -- A host publishes its work's wait kind, never a scope completion (ACTH-HOST-01).
         cases wait : (‹ActivityHost›).waitKind <;> simp [SemanticOperation.kind, wait] at kind
+      case scope =>
+        -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+        cases work : (‹ScopeHost›).work <;> simp [SemanticOperation.kind, work] at kind
+      case scopeExit =>
+        rcases analyzeProgram_operation_allowed program analysis admitted _ declaration with allowed | allowed <;>
+          simp [SequentialScopeProgram.operationAllowed_scopeExit] at allowed
       all_goals simp [SemanticOperation.kind] at kind ⊢
     exact List.mem_singleton.mp included
   exact (completionEq left leftOperation leftResolved leftOwned leftKind).trans

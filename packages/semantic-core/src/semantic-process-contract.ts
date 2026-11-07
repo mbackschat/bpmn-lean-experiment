@@ -25,14 +25,11 @@ import type {
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
-import type {
-  SequentialMultiInstanceDataDefinition,
-  SequentialMultiInstanceLimits,
-} from "./sequential-multi-instance-contract.js";
+import type { MultiInstanceLimits } from "./multi-instance-limits.js";
+import type { SequentialMultiInstanceDataDefinition } from "./sequential-multi-instance-contract.js";
 import type {
   ParallelMultiInstanceCompletionCondition,
   ParallelMultiInstanceDataDefinition,
-  ParallelMultiInstanceLimits,
 } from "./parallel-multi-instance-contract.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type {
@@ -103,10 +100,27 @@ export enum SemanticOperationKind {
   CompleteEventSubProcess = "completeEventSubProcess",
   /** The Activity host (ACTH-HOST-01): a Program discriminant only, never published; its steps publish its work's kind. */
   Activity = "activity",
+  /** The scope host (SCPH-HOST-01): a Program discriminant only; its step publishes `initiate` or `enterScope`. */
+  Scope = "scope",
+  /** The scope exit (SCPH-EXIT-01): a Program discriminant only; its step publishes `completeScope`. */
+  ScopeExit = "scopeExit",
 }
 
-/** The operation kinds a publication may carry: every kind except the host's discriminant. */
-export type PublishedSemanticOperationKind = Exclude<SemanticOperationKind, SemanticOperationKind.Activity>;
+/** The operation kinds a publication may carry: every kind except the hosts' discriminants. */
+export type PublishedSemanticOperationKind = Exclude<
+  SemanticOperationKind,
+  SemanticOperationKind.Activity | SemanticOperationKind.Scope | SemanticOperationKind.ScopeExit
+>;
+
+/** The scope a scope host enters (SCPH-HOST-01): the root None Start's process or an embedded Sub-Process's. */
+export enum ScopeWorkKind {
+  Process = "process",
+  SubProcess = "subProcess",
+}
+
+export type ScopeWork = DeepReadonly<
+  { kind: ScopeWorkKind.Process } | { kind: ScopeWorkKind.SubProcess; childScopeId: string }
+>;
 
 export enum SemanticOriginKind {
   BpmnElement = "bpmnElement",
@@ -521,7 +535,7 @@ export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
     data: SequentialMultiInstanceDataDefinition;
     normalOutput: string;
     boundaryTimer: BoundaryTimerArm<5000>;
-    limits: SequentialMultiInstanceLimits;
+    limits: MultiInstanceLimits;
   }>;
 
 export type AwaitParallelMultiInstanceUserTaskOperation = OperationBase &
@@ -536,7 +550,7 @@ export type AwaitParallelMultiInstanceUserTaskOperation = OperationBase &
     completionCondition: ParallelMultiInstanceCompletionCondition;
     normalOutput: string;
     boundaryTimer: BoundaryTimerArm<5000>;
-    limits: ParallelMultiInstanceLimits;
+    limits: MultiInstanceLimits;
   }>;
 
 /** The command-addressed child-completion half paired to one parallel entry operation. */
@@ -756,6 +770,21 @@ export type SemanticOperation =
         inputs: string[];
         outputs: ActivityOutput[];
         work: ActivityWork;
+      }>)
+  | (OperationBase &
+      DeepReadonly<{
+        kind: SemanticOperationKind.Scope;
+        /** Empty for `process`, the Sub-Process's one incoming place otherwise. */
+        inputs: string[];
+        /** The outgoing places of the entered scope's None Start. */
+        entries: ActivityOutput[];
+        work: ScopeWork;
+      }>)
+  | (OperationBase &
+      DeepReadonly<{
+        kind: SemanticOperationKind.ScopeExit;
+        scopeId: string;
+        outputs: ActivityOutput[];
       }>);
 
 export type SemanticProcessProgram = DeepReadonly<{

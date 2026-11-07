@@ -1,6 +1,6 @@
 /** Capacity decision for the maximal admitted parallel Multi-Instance activation topology. */
 import {
-  parallelMultiInstanceLimits,
+  multiInstanceLimits,
 } from "@bpmn-lean/semantic-core";
 import {
   WorkflowChainBudgetKind,
@@ -153,13 +153,13 @@ export function requireParallelMultiInstanceHistoryCapacity(
     retainedParallelMultiInstanceHistoryMeasurement,
 ): ParallelMultiInstanceHistoryCapacity {
   if (
-    measurement.selectedMaximumItems !== parallelMultiInstanceLimits.maximumItems ||
+    measurement.selectedMaximumItems !== multiInstanceLimits.maximumItems ||
     measurement.maximumItemUtf8Bytes !==
-      parallelMultiInstanceLimits.maximumItemUtf8Bytes ||
+      multiInstanceLimits.maximumItemUtf8Bytes ||
     measurement.maximumCanonicalCollectionUtf8Bytes !==
-      parallelMultiInstanceLimits.maximumCanonicalCollectionUtf8Bytes ||
+      multiInstanceLimits.maximumCanonicalCollectionUtf8Bytes ||
     measurement.canonicalMaximumCollectionBytes !==
-      parallelMultiInstanceLimits.maximumCanonicalCollectionUtf8Bytes ||
+      multiInstanceLimits.maximumCanonicalCollectionUtf8Bytes ||
     measurement.exactLimitAdmitted !== true ||
     measurement.limitPlusOneRefusedWithoutMutation !== true
   ) {
@@ -222,13 +222,13 @@ export function requireParallelMultiInstanceServiceHistoryCapacity(
   }
   const separator = measurement.separator;
   if (
-    separator.selectedMaximumItems !== parallelMultiInstanceLimits.maximumItems ||
+    separator.selectedMaximumItems !== multiInstanceLimits.maximumItems ||
     separator.maximumItemUtf8Bytes !==
-      parallelMultiInstanceLimits.maximumItemUtf8Bytes ||
+      multiInstanceLimits.maximumItemUtf8Bytes ||
     separator.maximumCanonicalCollectionUtf8Bytes !==
-      parallelMultiInstanceLimits.maximumCanonicalCollectionUtf8Bytes ||
+      multiInstanceLimits.maximumCanonicalCollectionUtf8Bytes ||
     separator.canonicalMaximumCollectionBytes !==
-      parallelMultiInstanceLimits.maximumCanonicalCollectionUtf8Bytes ||
+      multiInstanceLimits.maximumCanonicalCollectionUtf8Bytes ||
     !separator.exactLimitAdmitted ||
     !separator.limitPlusOneRefusedWithoutMutation
   ) {

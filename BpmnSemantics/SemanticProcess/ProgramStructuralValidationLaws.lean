@@ -305,6 +305,7 @@ theorem operationWaitDeclarationKeys_eq (operation : SemanticOperation) :
       match host.work with
       | .userTask task => [userTaskWaitDeclarationKey task.id]
       | .effect _ => [effectWaitDeclarationKey host.origin.elementId]
+  | .scope _ | .scopeExit _ => []
   | .awaitDataInputUserTask _ _ _ _ taskId _ _
   | .awaitDataInputOutputUserTask _ _ _ _ taskId _ _ _
   | .awaitDataOutputUserTask _ _ _ _ taskId _ _ =>

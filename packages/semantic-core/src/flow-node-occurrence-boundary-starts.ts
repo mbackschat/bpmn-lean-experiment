@@ -16,7 +16,7 @@ import { sameMessageChannel } from "./message-channel.js";
 import { inputMappingSnapshotMatchesUnder } from "./semantic-process-data.js";
 import { effectMappingValuePolicyForProgram } from "./effect-mapping-value-policy.js";
 import { sequentialScopeBindingForEntry } from "./sequential-scope-binding.js";
-import { SemanticOperationKind } from "./semantic-process-contract.js";
+import { ScopeWorkKind, SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   SemanticOperation,
   SemanticProcessProgram,
@@ -48,6 +48,36 @@ import {
 const WaitAnchorKind = "wait" as SemanticFlowNodeOccurrenceAnchorKind.Wait;
 const ScopeAnchorKind = "scope" as SemanticFlowNodeOccurrenceAnchorKind.Scope;
 const CallAnchorKind = "callActivity" as SemanticFlowNodeOccurrenceAnchorKind.CallActivity;
+
+/** The start of the child scope an entry created under `owner`, or `null` when no unique fresh child exists. */
+function enteredChildStart(
+  program: SemanticProcessProgram,
+  before: RuntimeState,
+  after: RuntimeState,
+  childScopeId: string,
+  elementId: string,
+  owner: ScopeOccurrenceId,
+  processId: string,
+): UnnumberedFlowNodeOccurrenceStart[] | null {
+  const definition = only(program.definitionScopes.filter(({ id, originElementId }) =>
+    id === childScopeId && originElementId === elementId
+  ));
+  // CEA-OCCUR-01: the entered child is the one absent before, so a live sibling of its definition under the same
+  // parent cannot make the selection ambiguous; without a sibling this is the unique child, as before.
+  const child = only(after.scopeOccurrences.filter(({ id, parent }) =>
+    id.definitionScopeId === childScopeId &&
+    parent !== null &&
+    sameScopeOccurrence(parent, owner) &&
+    !before.scopeOccurrences.some((existing) => sameScopeOccurrence(existing.id, id))
+  ));
+  return definition === undefined || child === undefined ||
+      child.id.processInstanceId !== owner.processInstanceId || !validScopeId(child.id) ? null : [{
+    anchor: { kind: ScopeAnchorKind, id: child.id },
+    processId,
+    elementId,
+    owner,
+  }];
+}
 
 /** Constructs every long-lived start created by one selected internal operation. */
 export function candidateLongLivedStarts(
@@ -153,26 +183,13 @@ export function candidateLongLivedStarts(
       return eventRaceStarts(program, after, operation, owner, processId);
     case SemanticOperationKind.EnterScope:
     case SemanticOperationKind.EnterMonitoredScope:
-    case SemanticOperationKind.EnterBoundedScope: {
-      const definition = only(program.definitionScopes.filter(({ id, originElementId }) =>
-        id === operation.childScopeId && originElementId === operation.origin.elementId
-      ));
-      // CEA-OCCUR-01: the entered child is the one absent before, so a live sibling of its definition under the same
-      // parent cannot make the selection ambiguous; without a sibling this is the unique child, as before.
-      const child = only(after.scopeOccurrences.filter(({ id, parent }) =>
-        id.definitionScopeId === operation.childScopeId &&
-        parent !== null &&
-        sameScopeOccurrence(parent, owner) &&
-        !before.scopeOccurrences.some((existing) => sameScopeOccurrence(existing.id, id))
-      ));
-      return definition === undefined || child === undefined ||
-          child.id.processInstanceId !== owner.processInstanceId || !validScopeId(child.id) ? null : [{
-        anchor: { kind: ScopeAnchorKind, id: child.id },
-        processId,
-        elementId: operation.origin.elementId,
-        owner,
-      }];
-    }
+    case SemanticOperationKind.EnterBoundedScope:
+      return enteredChildStart(program, before, after, operation.childScopeId, operation.origin.elementId, owner,
+        processId);
+    case SemanticOperationKind.Scope:
+      // SCPH-HOST-01: a `subProcess` host starts the child its legacy `enterScope` starts; the root's start is none.
+      return operation.work.kind === ScopeWorkKind.Process ? [] : enteredChildStart(program, before, after,
+        operation.work.childScopeId, operation.origin.elementId, owner, processId);
     case SemanticOperationKind.InvokeProcess: {
       const record = only(after.calledProcessOccurrences.filter((candidate) =>
         candidate.id.elementId === operation.origin.elementId &&
@@ -206,6 +223,7 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.TerminateScope:
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.ScopeExit:
     case SemanticOperationKind.CompleteEventSubProcess:
       return [];
     case SemanticOperationKind.EnterSequentialMultiInstanceScope: {

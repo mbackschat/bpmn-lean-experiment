@@ -50,6 +50,15 @@ def activityArrivalState? (program : Program) (state : RuntimeState) (host : Act
       | _ => none
   | _ => none
 
+/-- SCPH-HOST-01: a scope host steps as its work's legacy operation with its entry list: a `process` host as
+`initiate` over every entry, a `subProcess` host as `enterScope` from its one input. Any other input list is refused. -/
+def scopeHostState? (program : Program) (state : RuntimeState) (host : ScopeHost) : Option RuntimeState :=
+  match host.work, host.inputs with
+  | .process, [] => initiateTriggeredStartState? state (host.entries.map (·.place))
+  | .subProcess childScopeId, [input] =>
+      enterDeclaredScopeEntries? program state input (host.entries.map (·.place)) childScopeId
+  | _, _ => none
+
 /-- Declarative transition relation for one explicitly selected Semantic Process operation.
 
 The arms are not uniform in what they claim, and the difference decides what may be cited as
@@ -165,6 +174,12 @@ inductive OperationStep (program : Program) :
   | activity (host : ActivityHost) (before after : RuntimeState)
       (transition : activityArrivalState? program before host = some after) :
       OperationStep program (.activity host) before after
+  | scope (host : ScopeHost) (before after : RuntimeState)
+      (transition : scopeHostState? program before host = some after) :
+      OperationStep program (.scope host) before after
+  | scopeExit (exit : ScopeExit) (before after : RuntimeState)
+      (transition : completeDeclaredScopeOutputs? program before exit.scopeId (exit.outputs.map (·.place)) = some after) :
+      OperationStep program (.scopeExit exit) before after
   | awaitUserTask (id origin input output task) (before after : RuntimeState)
       (transition : awaitUserTaskState? before input output task = some after) :
       OperationStep program (.awaitUserTask id origin input output task) before after
@@ -363,6 +378,8 @@ def fireWithoutCompensationSnapshots? (program : Program)
   | .awaitUserTask _ _ input output task =>
       awaitUserTaskState? state input output task
   | .activity host => activityArrivalState? program state host
+  | .scope host => scopeHostState? program state host
+  | .scopeExit exit => completeDeclaredScopeOutputs? program state exit.scopeId (exit.outputs.map (·.place))
   | .awaitDataInputUserTask _ _ input output taskId taskName directInput =>
       activateDataInputUserTask? state input output taskId taskName directInput
   | .awaitDataInputOutputUserTask _ _ input output taskId taskName directInput _ =>
@@ -542,6 +559,10 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
         exact False.elim (by simp [fireWithoutCompensationSnapshots?] at result)
     | case activity =>
         exact .activity _ before after result
+    | case scope =>
+        exact .scope _ before after result
+    | case scopeExit =>
+        exact .scopeExit _ before after result
 
 /-- Evaluate one exact Program operation through the closed snapshot-aware attempt boundary. -/
 def attemptInternalOperation (program : Program) (operation : SemanticOperation)

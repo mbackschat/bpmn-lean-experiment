@@ -5,7 +5,7 @@ import {
   SemanticOperationKind,
   SemanticOriginKind,
   isWellFormedAwaitSequentialMultiInstanceUserTaskOperation,
-  sequentialMultiInstanceLimits,
+  multiInstanceLimits,
 } from "@bpmn-lean/semantic-core";
 
 const places = new Set(["place:input", "place:normal", "place:boundary"]);
@@ -53,7 +53,7 @@ const operation = Object.freeze({
       elementId: "Flow_Boundary",
     },
   },
-  limits: sequentialMultiInstanceLimits,
+  limits: multiInstanceLimits,
 });
 
 test("admits one exact immutable sequential Multi-Instance definition", () => {

@@ -34,8 +34,8 @@ import {
   admittedParallelMultiInstanceChildResult,
   admittedParallelMultiInstanceCompletionPolicy,
   admittedParallelMultiInstanceInputCollection,
-  parallelMultiInstanceCollectionWithinLimits,
 } from "./parallel-multi-instance-command-data-admission.js";
+import { multiInstanceCollectionWithinLimits } from "./multi-instance-limits.js";
 import {
   ParallelMultiInstanceCompletionPolicy,
 } from "./parallel-multi-instance-contract.js";
@@ -338,7 +338,7 @@ export function completeParallelMultiInstanceChild(
     );
     if (
       remaining === 0 &&
-      !parallelMultiInstanceCollectionWithinLimits(pair.entry, completedResults)
+      !multiInstanceCollectionWithinLimits(pair.entry.limits, completedResults)
     ) {
       return null;
     }

@@ -24,7 +24,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! SPC-CONTINUE-01 follows the actual evaluator from a committed start through internal steps and accepted or rejected User Task completions. Admission excludes foreign operation families; the control-unit bound is derived at start and preserved across those transitions. -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`ParallelScopeCommand.stimulusAdmitted,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`isInitiate, `ParallelScopeCommand.stimulusAdmitted,
   `ParallelScopeStart.analyzeProgram, `StructuredComposition.OperationAllowed, `activateDataInputOutputUserTask?,
   `activateUserTask, `admitStimulus, `awaitUserTaskState?, `boundedScopeDefinitionForChild?, `chooseState?,
   `compensationTargetDeclaredForFamily, `completeBoundedScope?, `completeDataInputOutputUserTask?,
@@ -843,18 +843,16 @@ theorem admitted_program_has_initiation
     (program : Program) (analysis : Analysis) (wellFormed : programWellFormed program = true)
     (analyzed : programAnalysis program = some analysis) :
     ∃ id origin output, SemanticOperation.initiate id origin output ∈ program.operations := by
-  have count : (program.operations.filter (fun operation => match operation with
-      | .initiate .. | .initiateMessage .. | .initiateTimer .. => true | _ => false)).length = 1 := by
+  have count : (program.operations.filter isInitiate).length = 1 := by
     simp only [programWellFormed, Bool.and_eq_true] at wellFormed
     exact of_decide_eq_true wellFormed.1.1.1.1.2
   obtain ⟨operation, singleton⟩ := List.length_eq_one_iff.mp count
-  have selected : operation ∈ program.operations.filter (fun operation => match operation with
-      | .initiate .. | .initiateMessage .. | .initiateTimer .. => true | _ => false) := by rw [singleton]; simp
+  have selected : operation ∈ program.operations.filter isInitiate := by rw [singleton]; simp
   obtain ⟨member, kind⟩ := List.mem_filter.mp selected
   have allowed := program_analysis_operations_allowed program analysis analyzed operation member
   cases operation <;> simp only [OperationAllowed] at allowed
   all_goals try contradiction
-  all_goals simp only at kind
+  all_goals simp only [isInitiate] at kind
   all_goals try contradiction
   exact ⟨_, _, _, member⟩
 

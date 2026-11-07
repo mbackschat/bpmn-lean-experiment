@@ -239,6 +239,17 @@ private def decodeActivityWork (json : Json) : Except String ActivityWork := do
       pure (.effect (← decodeEffectDefinition (← field json "effect")))
   | other => throw s!"unsupported Activity host work kind {other}"
 
+/-- Decode the scope a scope host enters (SCPH-HOST-01). -/
+private def decodeScopeWork (json : Json) : Except String ScopeWork := do
+  match ← stringField json "kind" with
+  | "process" =>
+      requireObjectShape json ["kind"]
+      pure .process
+  | "subProcess" =>
+      requireObjectShape json ["childScopeId", "kind"]
+      pure (.subProcess ⟨← decodeNonemptyStringField json "childScopeId"⟩)
+  | other => throw s!"unsupported scope host work kind {other}"
+
 def decodeSimpleBooleanExpression (json : Json) :
     Except String SimpleBooleanExpression := do
   match ← stringField json "kind" with
@@ -611,6 +622,19 @@ def decodeOperation (json : Json) :
           inputs := ← decodePlaceIdArray (← field json "inputs")
           outputs := ← decodeArray decodeActivityOutput (← field json "outputs")
           work := ← decodeActivityWork (← field json "work") })
+  | "scope" =>
+      requireObjectShape json ["entries", "id", "inputs", "kind", "origin", "work"]
+      pure (.scope
+        { id, origin
+          inputs := ← decodePlaceIdArray (← field json "inputs")
+          entries := ← decodeArray decodeActivityOutput (← field json "entries")
+          work := ← decodeScopeWork (← field json "work") })
+  | "scopeExit" =>
+      requireObjectShape json ["id", "kind", "origin", "outputs", "scopeId"]
+      pure (.scopeExit
+        { id, origin
+          scopeId := ⟨← decodeNonemptyStringField json "scopeId"⟩
+          outputs := ← decodeArray decodeActivityOutput (← field json "outputs") })
   | "awaitEffect" =>
       requireObjectShape json
         ["bpmnErrorRoute", "effect", "id", "input", "kind", "origin",

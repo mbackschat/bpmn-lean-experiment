@@ -35,6 +35,7 @@ def userTaskWaitValid (program : Program) (state : RuntimeState)
       -- ACTH-HOST-01: a host's opened wait is its projection's.
       | .activity host => host.userTask?.any fun task =>
           host.outputs = [⟨wait.output⟩] && task = wait.task && wait.metadata = task.metadata
+      | .scope .. | .scopeExit .. => false
       | .awaitDataInputUserTask _ _ _ output taskId taskName _
       | .awaitDataInputOutputUserTask _ _ _ output taskId taskName _ _
       | .awaitDataOutputUserTask _ _ _ output taskId taskName _ =>

@@ -660,7 +660,7 @@ type SemanticOperation = DeepReadonly<
       data: SequentialMultiInstanceDataDefinition;
       normalOutput: string;
       boundaryTimer: BoundaryTimerArm<5000>;
-      limits: SequentialMultiInstanceLimits;
+      limits: MultiInstanceLimits;
     })
   | (OperationBase & {
       kind: "awaitTimer";

@@ -107,6 +107,11 @@ test("strictly decodes representation-free client transport without claiming Pro
   // ACTH-HOST-01: the host's discriminant is no published kind, even where no Program binds the transition.
   const hostDiscriminant = structuredClone(valid);
   hostDiscriminant.page.batches[0]!.transitions[1]!.transition.operationKind = "activity";
+  // SCPH-HOST-01: neither is the scope host's or exit's.
+  const scopeDiscriminant = structuredClone(valid);
+  scopeDiscriminant.page.batches[0]!.transitions[1]!.transition.operationKind = "scope";
+  const exitDiscriminant = structuredClone(valid);
+  exitDiscriminant.page.batches[0]!.transitions[1]!.transition.operationKind = "scopeExit";
   const otherDefinition = structuredClone(valid);
   otherDefinition.page.definition.sourceId = "Other_Source";
   for (const malformed of [
@@ -118,6 +123,8 @@ test("strictly decodes representation-free client transport without claiming Pro
     { ...valid, page: { ...valid.page, pageThroughRevision: 1 } },
     unknownOperation,
     hostDiscriminant,
+    scopeDiscriminant,
+    exitDiscriminant,
   ]) {
     assert.throws(
       () => requireExecutionPublicationTransportResult(malformed, transportContext),

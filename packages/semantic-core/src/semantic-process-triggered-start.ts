@@ -8,7 +8,7 @@ import { sameMessageChannel } from "./message-channel.js";
 import { cloneVariableBinding } from "./variable-value.js";
 import { applyInternalInitiationPatch } from "./internal-transition-initiation-patch.js";
 import { armEventSubProcessMessageSubscriptions } from "./interrupting-message-event-subprocess-runtime.js";
-import { SemanticOperationKind } from "./semantic-process-contract.js";
+import { ScopeWorkKind, SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
 import { SemanticProfileId } from "./semantic-process-profile.js";
 import {
@@ -33,10 +33,12 @@ export function processStartMatchesProgram(
   program: SemanticProcessProgram,
 ): boolean {
   const initiations = program.operations.filter(
-    ({ kind }) =>
-      kind === SemanticOperationKind.Initiate ||
-      kind === SemanticOperationKind.InitiateMessage ||
-      kind === SemanticOperationKind.InitiateTimer,
+    (operation) =>
+      operation.kind === SemanticOperationKind.Initiate ||
+      operation.kind === SemanticOperationKind.InitiateMessage ||
+      operation.kind === SemanticOperationKind.InitiateTimer ||
+      // SCPH-HOST-01: a `process` host is a splitting None Start's initiation.
+      (operation.kind === SemanticOperationKind.Scope && operation.work.kind === ScopeWorkKind.Process),
   );
   const initiation = initiations[0];
   if (
@@ -48,7 +50,7 @@ export function processStartMatchesProgram(
   }
   switch (stimulus.kind) {
     case StimulusKind.StartProcess:
-      return initiation.kind === SemanticOperationKind.Initiate;
+      return initiation.kind === SemanticOperationKind.Initiate || initiation.kind === SemanticOperationKind.Scope;
     case StimulusKind.TriggerMessageStart:
       return initiation.kind === SemanticOperationKind.InitiateMessage &&
         stimulus.startEventId === initiation.origin.elementId &&

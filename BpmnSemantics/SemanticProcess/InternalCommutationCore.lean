@@ -403,6 +403,8 @@ def internalArmInput? : SemanticOperation → Option ControlPlaceId
   | .awaitTimer _ _ input _ _ | .awaitEffect _ _ input _ _ _ => some input
   -- A host takes several inputs and is never batched (Activity host specification, internal commutation).
   | .activity .. => none
+  -- SCPH-SINGLE-01: a scope host or exit is never batched.
+  | .scope .. | .scopeExit .. => none
   | _ => none
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalArmInput?]
@@ -495,7 +497,7 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
     | _ => none
   let write : InternalArmingWrite ← match operation with
     -- A host has no arming input above, so it never reaches here; named so no arm can absorb it.
-    | .activity .. => none
+    | .activity .. | .scope .. | .scopeExit .. => none
     | .awaitUserTask _ _ _ output task =>
         let next := activationCount state task.id + 1
         some (.userTask

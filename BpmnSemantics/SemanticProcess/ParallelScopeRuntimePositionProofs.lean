@@ -239,8 +239,9 @@ private theorem body_position (program : Program) (analysis : ProgramAnalysis)
       (tokens ▸ removeToken_sublist before.tokens input candidate.owner)
   cases operation <;> simp [SemanticOperation.kind] at body
   all_goals simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied
-  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  -- A host is never applied by owning occurrence (ACTH-HOST-01, SCPH-SINGLE-01).
   case activity => simp at applied
+  case scope => simp at applied
   case awaitUserTask id origin input output task =>
     have applied := (Option.ite_none_left_eq_some.mp applied).2
     cases parallel : hasParallelScopeDefinition program candidate.owner with

@@ -4,8 +4,8 @@ import {
 import {
   ParallelMultiInstanceCompletionPolicy,
   parallelMultiInstanceCompletionPolicyBinding,
-  parallelMultiInstanceLimits,
 } from "./parallel-multi-instance-contract.js";
+import { multiInstanceLimits } from "./multi-instance-limits.js";
 import {
   SemanticOperationKind,
 } from "./semantic-process-contract.js";
@@ -136,10 +136,10 @@ function hasExactLimits(value: unknown): boolean {
       "maximumItemUtf8Bytes",
       "maximumCanonicalCollectionUtf8Bytes",
     ]) &&
-    value.maximumItems === parallelMultiInstanceLimits.maximumItems &&
-    value.maximumItemUtf8Bytes === parallelMultiInstanceLimits.maximumItemUtf8Bytes &&
+    value.maximumItems === multiInstanceLimits.maximumItems &&
+    value.maximumItemUtf8Bytes === multiInstanceLimits.maximumItemUtf8Bytes &&
     value.maximumCanonicalCollectionUtf8Bytes ===
-      parallelMultiInstanceLimits.maximumCanonicalCollectionUtf8Bytes;
+      multiInstanceLimits.maximumCanonicalCollectionUtf8Bytes;
 }
 
 function isPlaceReference(

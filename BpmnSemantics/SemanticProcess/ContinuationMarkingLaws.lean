@@ -362,6 +362,7 @@ theorem fire_body_port_accounting
           ownedPortCount (bodyProducedPorts operation) owner queried place)) ∧
       after.scopeActivations = before.scopeActivations := by
   cases operation <;> simp [SemanticOperation.kind] at bodyOperation
+  case scope host => rcases host with ⟨_, _, _, _, _ | _⟩ <;> simp [SemanticOperation.kind] at bodyOperation
   case activity => simp [bodyConsumedPorts] at nonempty
   all_goals simp only [fire?, absent] at fired
   case awaitUserTask id origin input output task =>
@@ -484,6 +485,7 @@ theorem applyInternalOperationOccurrence_continuation_balance
       continuationMarking before queried place + ownedPortCount (bodyProducedPorts operation) candidate.owner queried place := by
   cases control : before.control <;> try { simp [applyInternalOperationOccurrence?, control] at applied }
   cases operation <;> simp [SemanticOperation.kind] at bodyOperation
+  case scope host => rcases host with ⟨_, _, _, _, _ | _⟩ <;> simp [SemanticOperation.kind] at bodyOperation
   all_goals simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied
   -- A host is never applied by owning occurrence (ACTH-HOST-01).
   case activity => simp at applied

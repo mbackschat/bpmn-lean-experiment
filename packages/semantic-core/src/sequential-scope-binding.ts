@@ -5,7 +5,7 @@ import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { EnterSequentialMultiInstanceScopeOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import { ControlStateKind, sameScopeOccurrence } from "./semantic-process-state.js";
 import type { RuntimeState, RuntimeScopeOccurrence, ScopeOccurrenceId, ScopeVariableScope } from "./semantic-process-state.js";
-import { sequentialMultiInstanceLimits } from "./sequential-multi-instance-contract.js";
+import { multiInstanceLimits } from "./multi-instance-limits.js";
 import type { SequentialScopeController } from "./sequential-scope-controller.js";
 
 export type SequentialScopeBinding = Readonly<{
@@ -35,7 +35,7 @@ export function sequentialScopeBindingForEntry(entry: EnterSequentialMultiInstan
   if (bodies.length !== 1 || body === undefined || body.parent === null || !sameScopeOccurrence(body.parent, activity.owner) ||
       !state.scopeOccurrences.some(({ id }) => sameScopeOccurrence(id, activity.owner)) ||
       controllers.length !== 1 || controller === undefined || locals === undefined ||
-      !Number.isSafeInteger(controller.total) || controller.total > sequentialMultiInstanceLimits.maximumItems ||
+      !Number.isSafeInteger(controller.total) || controller.total > multiInstanceLimits.maximumItems ||
       !Number.isSafeInteger(controller.completed) || controller.completed < 0 || controller.completed >= controller.total) return undefined;
   return { entry, activity, controller, body, locals };
 }

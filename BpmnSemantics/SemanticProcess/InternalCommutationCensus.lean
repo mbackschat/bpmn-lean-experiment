@@ -24,6 +24,9 @@ inductive InternalOperationFamily where
   deriving Repr, DecidableEq
 
 def semanticOperationInternalFamily : SemanticOperation → InternalOperationFamily
+  | .scope { work := .process, .. } => .processInitiation
+  | .scope { work := .subProcess .., .. } => .scopeCreationAndCallInvocation
+  | .scopeExit .. => .scopeReturnCompletionAndInterruption
   -- The host takes several inputs, which the ordinary family's one-input arming contract cannot carry.
   | .activity .. => .compositeWaitAndActivityArming
   | .initiate _ _ _

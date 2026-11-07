@@ -76,6 +76,21 @@ def checkedNodeScopeId? (source : CheckedProcess) (nodeId : NodeId) :
   (source.nodeScopes.find? fun ownership =>
     decide (ownership.nodeId = nodeId)).map (·.scopeId)
 
+def isEntryRootScope (source : CheckedProcess)
+    (scopeId : DefinitionScopeId) : Bool :=
+  source.definitionScopes.any fun scope =>
+    decide (scope.id = scopeId && scope.parentScopeId.isNone &&
+      scope.originElementId.value = source.processId.value)
+
+/-- The None Start of `childScopeId`, whose outgoing flows are the entries of that scope. -/
+def checkedChildStartId (source : CheckedProcess)
+    (childScopeId : DefinitionScopeId) : NodeId :=
+  (source.nodes.findSome? fun node =>
+    match node, checkedNodeScopeId? source node.id with
+    | .noneStartEvent id, some scopeId =>
+        if scopeId = childScopeId then some id else none
+    | _, _ => none).getD ⟨""⟩
+
 def checkedSequenceFlowScopeId? (source : CheckedProcess)
     (flowId : SequenceFlowId) :
     Option DefinitionScopeId :=

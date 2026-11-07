@@ -7,6 +7,7 @@
  * host arriving on one input behaves, waits and publishes exactly as the legacy operation of its work with that input.
  */
 import { ActivityWorkKind } from "./activity-host-contract.js";
+import { scopeHostPublishedKind } from "./scope-host-work.js";
 import {
   type PublishedSemanticOperationKind,
   type SemanticOperation,
@@ -32,7 +33,15 @@ export function activityHostPublishedKind(host: ActivityHostOperation): Publishe
 
 /** The kind a publication carries for an operation's step. */
 export function publishedOperationKind(operation: SemanticOperation): PublishedSemanticOperationKind {
-  return operation.kind === SemanticOperationKind.Activity ? activityHostPublishedKind(operation) : operation.kind;
+  switch (operation.kind) {
+    case SemanticOperationKind.Activity:
+      return activityHostPublishedKind(operation);
+    case SemanticOperationKind.Scope:
+    case SemanticOperationKind.ScopeExit:
+      return scopeHostPublishedKind(operation);
+    default:
+      return operation.kind;
+  }
 }
 
 /**
@@ -86,9 +95,10 @@ export function settledOperation(operation: SemanticOperation): LegacySemanticOp
   return operation.kind === SemanticOperationKind.Activity ? activityHostSettledProjection(operation) : operation;
 }
 
-/** Whether a wire value names a published operation kind; the host's discriminant never does (ACTH-HOST-01). */
+/** Whether a wire value names a published operation kind; no host's discriminant does (ACTH-HOST-01, SCPH-HOST-01). */
 export function isPublishedOperationKind(value: unknown): value is PublishedSemanticOperationKind {
   return typeof value === "string" && value !== SemanticOperationKind.Activity &&
+    value !== SemanticOperationKind.Scope && value !== SemanticOperationKind.ScopeExit &&
     (Object.values(SemanticOperationKind) as string[]).includes(value);
 }
 

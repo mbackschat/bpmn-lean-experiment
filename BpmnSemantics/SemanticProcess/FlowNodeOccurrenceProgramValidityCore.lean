@@ -70,7 +70,8 @@ def scopeOperationBindingValid (program : Program) (occurrence : RuntimeScopeOcc
         | .enterSequentialMultiInstanceScope _ origin _ _ childScopeId _ _ _ _ _
         | .enterParallelMultiInstanceScope _ origin _ _ childScopeId _ _ _ _ _
         | .enterBoundedScope _ origin _ _ childScopeId _
-        | .enterMonitoredScope _ origin _ _ childScopeId _ =>
+        | .enterMonitoredScope _ origin _ _ childScopeId _
+        | .scope { origin, work := .subProcess childScopeId, .. } =>
             childScopeId = occurrence.id.definitionScopeId &&
               origin.elementId = definition.originElementId
         | _ => false).length = 1

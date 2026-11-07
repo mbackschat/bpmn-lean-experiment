@@ -24,7 +24,7 @@ import type {
   UnnumberedFlowNodeOccurrenceEnd,
   UnnumberedFlowNodeOccurrenceStart,
 } from "./flow-node-occurrence-lifecycle.js";
-import { SemanticOperationKind } from "./semantic-process-contract.js";
+import { ScopeWorkKind, SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   SemanticOperation,
   SemanticProcessProgram,
@@ -275,6 +275,13 @@ function internalDelta(
           operation.childScopeId,
         ),
       ]);
+    case SemanticOperationKind.Scope:
+      // SCPH-HOST-01: each work's publication is its legacy kind's.
+      return operation.work.kind === ScopeWorkKind.Process
+        ? lifecycleDelta([], [], [operationInstant], commandId, transitionIndex)
+        : lifecycleDelta([
+          requireScopeStart(supplied, processId, operation.origin.elementId, owner, operation.work.childScopeId),
+        ]);
     case SemanticOperationKind.InvokeProcess:
       return lifecycleDelta([
         requireCallStart(supplied, processId, operation.origin.elementId, owner),
@@ -286,7 +293,8 @@ function internalDelta(
       ]);
     }
     case SemanticOperationKind.CompleteEventSubProcess:
-    case SemanticOperationKind.CompleteScope: {
+    case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.ScopeExit: {
       const definition = uniqueDefinition(program, operation.scopeId);
       if (definition === null) failCompleteness();
       if (definition.parentScopeId === null) return lifecycleDelta();

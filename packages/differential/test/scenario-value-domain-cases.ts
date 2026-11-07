@@ -152,7 +152,7 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     "data-declaring-terminal-branches-expense-claim",
     "single-scope-models-purchase-approval-first", "send-task-claim-assessed-first", "terminal-forks-offboarding-equipment-first",
     "terminal-forks-office-move", "inclusive-gateway-regions-account-residency-only",
-    "inclusive-gateway-regions-account-standard-only"]) {
+    "inclusive-gateway-regions-account-standard-only", "scope-host-split-onboarding-register-first"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addConcurrentStructuredScopeDataCases(context, add);

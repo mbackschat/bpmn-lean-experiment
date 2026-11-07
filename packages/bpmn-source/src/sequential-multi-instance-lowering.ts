@@ -2,7 +2,7 @@ import {
   CheckedNodeKind,
   SemanticOperationKind,
   SemanticOriginKind,
-  sequentialMultiInstanceLimits,
+  multiInstanceLimits,
 } from "@bpmn-lean/semantic-core";
 import type {
   AwaitSequentialMultiInstanceUserTaskOperation,
@@ -60,7 +60,7 @@ export function lowerSequentialMultiInstanceUserTask(
         elementId: node.boundaryTimer.outputFlowId,
       },
     },
-    limits: sequentialMultiInstanceLimits,
+    limits: multiInstanceLimits,
   };
 }
 

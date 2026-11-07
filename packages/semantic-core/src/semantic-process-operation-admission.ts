@@ -9,7 +9,7 @@ import {
   MappingExpressionKind,
   MessageChannelKind,
 } from "./semantic-value-contract.js";
-import { SemanticOperationKind, SemanticOriginKind } from "./semantic-process-contract.js";
+import { ScopeWorkKind, SemanticOperationKind, SemanticOriginKind } from "./semantic-process-contract.js";
 import type { SemanticOperation } from "./semantic-process-contract.js";
 import {
   isWellFormedChooseOperation,
@@ -241,6 +241,9 @@ export function isWellFormedSemanticOperation(
   switch (value.kind) {
     case SemanticOperationKind.Activity:
       return isWellFormedActivityHost(value, placeIds, placeOrigins, scopeOrigins, semanticProfile);
+    case SemanticOperationKind.Scope:
+    case SemanticOperationKind.ScopeExit:
+      return isWellFormedScopeHost(value, placeIds, scopeOrigins);
     case SemanticOperationKind.Initiate:
       return (
         hasOnlyKeys(value, ["id", "kind", "origin", "output"]) &&
@@ -555,6 +558,34 @@ function isWellFormedActivityHost(
       : null;
   return projected !== null &&
     isWellFormedSemanticOperation(projected, placeIds, placeOrigins, scopeOrigins, semanticProfile);
+}
+
+/**
+ * SCPH-HOST-01: two or more sorted, distinct, existing places, so a host or exit never doubles a legacy encoding; a
+ * `process` host takes no input and a `subProcess` host one input outside its entries. The Lean
+ * `ProgramStructuralValidation.operationWellFormed` transcribes it independently.
+ */
+function isWellFormedScopeHost(
+  value: Readonly<Record<string, unknown>>,
+  placeIds: ReadonlySet<string>,
+  scopeOrigins: ReadonlyMap<string, string>,
+): boolean {
+  const places = (list: unknown): string[] | null => Array.isArray(list) &&
+      list.every((item) => isRecord(item) && hasOnlyKeys(item, ["place"])) &&
+      isManyPlaceReferences(list.map(({ place }) => place), placeIds) ? list.map(({ place }) => place) : null;
+  if (value.kind === SemanticOperationKind.ScopeExit) {
+    return hasOnlyKeys(value, ["id", "kind", "origin", "scopeId", "outputs"]) && isNonEmptyString(value.scopeId) &&
+      scopeOrigins.has(value.scopeId) && places(value.outputs) !== null;
+  }
+  const entries = places(value.entries);
+  const { work, inputs } = value;
+  if (!hasOnlyKeys(value, ["id", "kind", "origin", "inputs", "entries", "work"]) || entries === null ||
+      !isRecord(work) || !Array.isArray(inputs)) return false;
+  if (work.kind === ScopeWorkKind.Process) return hasOnlyKeys(work, ["kind"]) && inputs.length === 0;
+  const [input, ...others] = inputs;
+  return work.kind === ScopeWorkKind.SubProcess && hasOnlyKeys(work, ["kind", "childScopeId"]) &&
+    isNonEmptyString(work.childScopeId) && scopeOrigins.has(work.childScopeId) && others.length === 0 &&
+    isPlaceReference(input, placeIds) && !entries.includes(input);
 }
 
 function isWellFormedThrowError(

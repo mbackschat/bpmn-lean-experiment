@@ -92,6 +92,7 @@ theorem applyInternalOperationOccurrence_body_wait_declarations
     | _ => simp [applyInternalOperationOccurrence?, control] at applied
   obtain ⟨instanceId, running⟩ := running
   cases operation <;> simp [SemanticOperation.kind] at body
+  case scope host => rcases host with ⟨_, _, _, _, _ | _⟩ <;> simp [SemanticOperation.kind] at body
   all_goals simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied
   -- A host is never applied by owning occurrence (ACTH-HOST-01).
   case activity => simp at applied

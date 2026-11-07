@@ -158,6 +158,32 @@ structure ActivityHost where
   work : ActivityWork
   deriving Repr, DecidableEq
 
+/-- The scope a scope host enters (SCPH-HOST-01). Its published kind is the legacy operation of the same work: the
+root None Start's `initiate`, or an embedded Sub-Process's `enterScope`. -/
+inductive ScopeWork where
+  | process
+  | subProcess (childScopeId : DefinitionScopeId)
+  deriving Repr, DecidableEq
+
+/-- Entering a scope with its flow lists (SCPH-HOST-01): `entries` are the outgoing places of the entered scope's None
+Start. One structure payload, so a later feature is a defaulted field or a work alternative and consumers read fields by
+name, as on the Activity host. -/
+structure ScopeHost where
+  id : OperationId
+  origin : BpmnElementOrigin
+  inputs : List ControlPlaceId
+  entries : List ActivityOutput
+  work : ScopeWork
+  deriving Repr, DecidableEq
+
+/-- An embedded Sub-Process's completion with its outgoing flow list (SCPH-EXIT-01). -/
+structure ScopeExit where
+  id : OperationId
+  origin : BpmnElementOrigin
+  scopeId : DefinitionScopeId
+  outputs : List ActivityOutput
+  deriving Repr, DecidableEq
+
 inductive SemanticOperation where
   | initiate
       (id : OperationId)
@@ -426,6 +452,8 @@ inductive SemanticOperation where
       (input output : ControlPlaceId)
       (boundaryEventElementId : NodeId)
   | activity (host : ActivityHost)
+  | scope (host : ScopeHost)
+  | scopeExit (exit : ScopeExit)
   deriving Repr, DecidableEq
 
 @[no_expose] def SemanticOperation.id : SemanticOperation → OperationId
@@ -472,6 +500,8 @@ inductive SemanticOperation where
   | .triggerCompensation id _ _ _ _
   | .cancelTransaction id _ _ _ _ _ => id
   | .activity host => host.id
+  | .scope host => host.id
+  | .scopeExit exit => exit.id
 
 @[no_expose] def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .initiate _ origin _
@@ -517,6 +547,8 @@ inductive SemanticOperation where
   | .triggerCompensation _ origin _ _ _
   | .cancelTransaction _ origin _ _ _ _ => origin
   | .activity host => host.origin
+  | .scope host => host.origin
+  | .scopeExit exit => exit.origin
 
 structure OperationScopeOwnership where
   operationId : OperationId

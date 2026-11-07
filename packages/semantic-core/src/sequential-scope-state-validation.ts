@@ -5,8 +5,7 @@ import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { EnterSequentialMultiInstanceScopeOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import { sequentialScopeBindingForEntry, sequentialScopeBindingForOwner } from "./sequential-scope-binding.js";
-import { sequentialMultiInstanceCollectionWithinLimits } from "./sequential-multi-instance-command-data-admission.js";
-import { sequentialMultiInstanceLimits } from "./sequential-multi-instance-contract.js";
+import { multiInstanceCollectionWithinLimits, multiInstanceLimits } from "./multi-instance-limits.js";
 import { nestedScopeFramesValid } from "./nested-scope-data.js";
 
 /** SMIS-IDENTITY-01 and SMIS-ENTER-01 bind both directions and retain the captured collection index. */
@@ -28,7 +27,7 @@ export function sequentialScopeStateValid(program: SemanticProcessProgram, state
     const collections = state.variables.process.bindings.filter(({ name }) => name === entry.collectionName);
     const collection = collections[0]?.value;
     return binding !== undefined && collections.length === 1 && collection?.kind === VariableValueKind.StringList &&
-      sequentialMultiInstanceCollectionWithinLimits({ limits: sequentialMultiInstanceLimits }, collection.value) &&
+      multiInstanceCollectionWithinLimits(multiInstanceLimits, collection.value) &&
       binding.controller.total === collection.value.length &&
       collection.value[binding.controller.completed] === binding.controller.currentItem;
   });

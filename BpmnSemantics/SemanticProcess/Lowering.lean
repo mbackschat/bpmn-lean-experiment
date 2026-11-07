@@ -5,6 +5,7 @@ public import BpmnSemantics.SemanticProcess.ErrorDefinition
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLowering
 public import BpmnSemantics.SemanticProcess.ConfiguredTaskLowering
 import BpmnSemantics.SemanticProcess.ActivityHostLowering
+import BpmnSemantics.SemanticProcess.ScopeHostLowering
 public import BpmnSemantics.SemanticProcess.TimerStartLowering
 public import BpmnSemantics.SemanticProcess.TerminateEndLowering
 public import BpmnSemantics.SemanticProcess.CompensationSourceLowering
@@ -166,23 +167,12 @@ def eventRaceTimerArm (source : CheckedProcess)
         durationMs := 0
         output := ⟨""⟩ }
 
-def isEntryRootScope (source : CheckedProcess)
-    (scopeId : DefinitionScopeId) : Bool :=
-  source.definitionScopes.any fun scope =>
-    decide (scope.id = scopeId && scope.parentScopeId.isNone &&
-      scope.originElementId.value = source.processId.value)
-
 def returnProcessOperationId (id : NodeId) : OperationId :=
   ⟨"operation:return-process:" ++ id.value⟩
 
 def childEntryPlace (source : CheckedProcess)
     (childScopeId : DefinitionScopeId) : ControlPlaceId :=
-  let startId := (source.nodes.findSome? fun node =>
-    match node, checkedNodeScopeId? source node.id with
-    | .noneStartEvent id, some scopeId =>
-        if scopeId = childScopeId then some id else none
-    | _, _ => none).getD ⟨""⟩
-  firstPlace (outgoingPlaces source startId)
+  firstPlace (outgoingPlaces source (checkedChildStartId source childScopeId))
 
 def lowerBpmnErrorRoute
     (route : Option CheckedBpmnErrorRoute) : Option BpmnErrorRoute :=
@@ -268,13 +258,15 @@ def lowerNode (source : CheckedProcess) :
   | .noneStartEvent id =>
       match checkedNodeScopeId? source id with
       | some scopeId =>
-          if isEntryRootScope source scopeId then
+          if !isEntryRootScope source scopeId then none
+          else if 2 ≤ (outgoingPlaces source id).length then
+            some (lowerProcessHost id (canonicalControlPlaceOrder (outgoingPlaces source id)), scopeId)
+          else
             some
               (.initiate
                 (nodeOperationId id)
                 { elementId := id }
                 (firstPlace (outgoingPlaces source id)), scopeId)
-          else none
       | none => none
   | .messageStartEvent id channel =>
       match checkedNodeScopeId? source id with
@@ -311,6 +303,10 @@ def lowerNode (source : CheckedProcess) :
       if checkedMessageEventSubProcessElement source id then none
       else do
         let scopeId ← checkedNodeScopeId? source id
+        let entries := outgoingPlaces source (checkedChildStartId source childScopeId)
+        if 2 ≤ entries.length then
+          return (lowerSubProcessHost id (firstPlace (incomingPlaces source id)) (canonicalControlPlaceOrder entries)
+            childScopeId, scopeId)
         match timerBoundaryFor source id with
         | some (timerId, interruption, durationLiteral, outputFlowId) =>
             pure
@@ -716,6 +712,8 @@ def lowerOrdinaryScopeCompletions (source : CheckedProcess)
               (firstPlace (outgoingPlaces source callId)) data, scope.id)
           else none
       | _ => none
+  else if scope.parentScopeId.isSome && 2 ≤ (outgoingPlaces source scope.originElementId).length then
+    [(lowerScopeExit scope (canonicalControlPlaceOrder (outgoingPlaces source scope.originElementId)), scope.id)]
   else
     let parentOutput := scope.parentScopeId.map fun _ =>
       firstPlace (outgoingPlaces source scope.originElementId)

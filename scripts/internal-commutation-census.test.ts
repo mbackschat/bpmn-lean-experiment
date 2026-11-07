@@ -84,7 +84,7 @@ function proposalOperationFamilies(source: string): Map<string, string> {
     if (!line.startsWith("|") || line.includes("---")) continue;
     const [family, variants] = tableCells(line);
     if (family === "Operation family" || variants === undefined) continue;
-    for (const match of variants.matchAll(/`([a-z][A-Za-z0-9]+)`/gu)) {
+    for (const match of variants.matchAll(/`([a-z][A-Za-z0-9]+(?:\.[a-z][A-Za-z0-9]+)?)`/gu)) {
       assert.ok(match[1] !== undefined);
       addUnique(families, match[1], familyIdentifier(family ?? ""), "operation census");
     }
@@ -178,9 +178,20 @@ function typescriptOperationClassifications(source: string): Map<string, string>
   const kindValues = typescriptEnum(source, "export enum InternalOperationFamily");
   const classifications = new Map<string, string>();
   const pending: string[] = [];
+  let workBase: string | undefined;
   for (const line of braceSpan(source, "switch (operation.kind)").split("\n")) {
     const operation = /^\s*case SemanticOperationKind\.([A-Z][A-Za-z0-9]+):/u.exec(line)?.[1];
-    if (operation !== undefined) pending.push(operation);
+    if (operation !== undefined) {
+      pending.push(operation);
+      workBase = operation;
+    }
+    // A host classified by its work names one qualified member per nested work case (SCPH-HOST-01).
+    const work = /^\s*case ScopeWorkKind\.([A-Z][A-Za-z0-9]+):/u.exec(line)?.[1];
+    if (work !== undefined) {
+      assert.ok(workBase !== undefined, `work case without an operation: ${work}`);
+      if (pending.at(-1) === workBase) pending.pop();
+      pending.push(`${workBase}.${work}`);
+    }
     const familyMember = /^\s*return InternalOperationFamily\.([A-Z][A-Za-z0-9]+);/u.exec(line)?.[1];
     if (familyMember === undefined) continue;
     const family = kindValues.get(familyMember);
@@ -199,8 +210,8 @@ function leanOperationClassifications(source: string): Map<string, string> {
   const classifications = new Map<string, string>();
   const pending: string[] = [];
   for (const line of source.slice(start, end === -1 ? source.length : end).split("\n")) {
-    const operation = /^\s*\| \.([a-z][A-Za-z0-9]+)/u.exec(line)?.[1];
-    if (operation !== undefined) pending.push(operation);
+    const operation = /^\s*\| \.([a-z][A-Za-z0-9]+)(?: \{ work := \.([a-z][A-Za-z0-9]+))?/u.exec(line);
+    if (operation?.[1] !== undefined) pending.push(operation[2] === undefined ? operation[1] : `${operation[1]}.${operation[2]}`);
     const family = /=> \.([a-z][A-Za-z0-9]+)$/u.exec(line)?.[1];
     if (family === undefined) continue;
     for (const member of pending.splice(0)) addUnique(classifications, member, family, "Lean operation classifier");
@@ -241,6 +252,21 @@ function leanStateClassifications(source: string): Map<string, string> {
   return classifications;
 }
 
+function baseVariant(variant: string): string {
+  return variant.split(".")[0] ?? variant;
+}
+
+/** The wire name of a TypeScript classifier member, `Scope.Process` read as `scope.process`. */
+function typescriptVariant(member: string, kinds: ReadonlyMap<string, string>, works: ReadonlyMap<string, string>): string {
+  const [kind, work] = member.split(".");
+  const value = kinds.get(kind ?? "");
+  assert.ok(value !== undefined, `unknown TypeScript operation kind: ${member}`);
+  if (work === undefined) return value;
+  const workValue = works.get(work);
+  assert.ok(workValue !== undefined, `unknown scope work: ${member}`);
+  return `${value}.${workValue}`;
+}
+
 function setDifference(left: Iterable<string>, right: ReadonlySet<string>): string[] {
   return [...left].filter((value) => !right.has(value)).sort();
 }
@@ -248,12 +274,15 @@ function setDifference(left: Iterable<string>, right: ReadonlySet<string>): stri
 function censusFindings(sources: CensusSources): string[] {
   const findings: string[] = [];
   const proposalOperations = proposalOperationFamilies(sources.proposal);
-  const proposalOperationSet = new Set(proposalOperations.keys());
+  // A work-qualified variant (`scope.process`) is present as its base variant and classified per work.
+  const proposalOperationSet = new Set([...proposalOperations.keys()].map(baseVariant));
   const typescriptKinds = typescriptEnum(sources.typescriptOperations, "export enum SemanticOperationKind");
+  const workKinds = typescriptEnum(sources.typescriptOperations, "export enum ScopeWorkKind");
   const typescriptKindSet = new Set(typescriptKinds.values());
   const leanOperations = leanInductive(sources.leanOperations, "SemanticOperation");
-  const typescriptClassifications = typescriptOperationClassifications(sources.typescriptCensus);
-  const classifiedTypescriptKinds = new Set([...typescriptClassifications.keys()].map((member) => typescriptKinds.get(member)).filter((value): value is string => value !== undefined));
+  const typescriptClassifications = new Map([...typescriptOperationClassifications(sources.typescriptCensus)]
+    .map(([member, family]) => [typescriptVariant(member, typescriptKinds, workKinds), family] as const));
+  const classifiedTypescriptKinds = new Set([...typescriptClassifications.keys()].map(baseVariant));
   const leanClassifications = leanOperationClassifications(sources.leanCensus);
 
   for (const value of setDifference(typescriptKindSet, proposalOperationSet)) findings.push(`TypeScript operation absent from proposal census: ${value}`);
@@ -261,16 +290,13 @@ function censusFindings(sources: CensusSources): string[] {
   for (const value of setDifference(leanOperations, proposalOperationSet)) findings.push(`Lean operation absent from proposal census: ${value}`);
   for (const value of setDifference(proposalOperationSet, leanOperations)) findings.push(`proposal operation absent from Lean: ${value}`);
   for (const value of setDifference(typescriptKindSet, classifiedTypescriptKinds)) findings.push(`TypeScript operation is unclassified: ${value}`);
-  for (const value of setDifference(leanOperations, new Set(leanClassifications.keys()))) findings.push(`Lean operation is unclassified: ${value}`);
-  for (const [member, value] of typescriptKinds) {
-    const expected = proposalOperations.get(value);
-    const actual = typescriptClassifications.get(member);
-    if (expected !== undefined && actual !== expected) findings.push(`TypeScript operation family drift: ${value} -> ${expected}`);
-  }
+  for (const value of setDifference(leanOperations, new Set([...leanClassifications.keys()].map(baseVariant)))) findings.push(`Lean operation is unclassified: ${value}`);
   for (const [value, expected] of proposalOperations) {
-    const actual = leanClassifications.get(value);
-    if (leanOperations.has(value) && actual !== expected) findings.push(`Lean operation family drift: ${value} -> ${expected}`);
+    if (typescriptKindSet.has(baseVariant(value)) && typescriptClassifications.get(value) !== expected) findings.push(`TypeScript operation family drift: ${value} -> ${expected}`);
+    if (leanOperations.has(baseVariant(value)) && leanClassifications.get(value) !== expected) findings.push(`Lean operation family drift: ${value} -> ${expected}`);
   }
+  for (const value of setDifference(typescriptClassifications.keys(), new Set(proposalOperations.keys()))) findings.push(`TypeScript classification absent from proposal census: ${value}`);
+  for (const value of setDifference(leanClassifications.keys(), new Set(proposalOperations.keys()))) findings.push(`Lean classification absent from proposal census: ${value}`);
 
   const proposalStates = proposalStateFields(sources.proposal);
   const typescriptStates = topLevelTypeFields(sources.typescriptState, "export type RuntimeState = DeepReadonly<{");
@@ -332,4 +358,20 @@ test("rejects a cross-language operation or state mapping mismatch", () => {
   assert.ok(operationFindings.includes("proposal operation absent from Lean: awaitTimer"));
   const stateMutation = sources.typescriptCensus.replace('timerWaits: { leanField: "timerWaits",', 'timerWaits: { leanField: "messageWaits",');
   assert.ok(censusFindings({ ...sources, typescriptCensus: stateMutation }).includes("cross-language RuntimeState mapping drift: timerWaits -> timerWaits"));
+});
+
+test("rejects a scope host classified against its work in either language", () => {
+  const sources = liveSources();
+  const leanMutation = sources.leanCensus.replace(
+    "| .scope { work := .process, .. } => .processInitiation",
+    "| .scope { work := .process, .. } => .scopeCreationAndCallInvocation",
+  );
+  assert.notEqual(leanMutation, sources.leanCensus);
+  assert.ok(censusFindings({ ...sources, leanCensus: leanMutation }).includes("Lean operation family drift: scope.process -> processInitiation"));
+  const typescriptMutation = sources.typescriptCensus.replace(
+    "case ScopeWorkKind.SubProcess:\n          return InternalOperationFamily.ScopeCreationAndCallInvocation;",
+    "case ScopeWorkKind.SubProcess:\n          return InternalOperationFamily.ProcessInitiation;",
+  );
+  assert.notEqual(typescriptMutation, sources.typescriptCensus);
+  assert.ok(censusFindings({ ...sources, typescriptCensus: typescriptMutation }).includes("TypeScript operation family drift: scope.subProcess -> scopeCreationAndCallInvocation"));
 });

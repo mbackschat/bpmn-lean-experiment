@@ -14,7 +14,7 @@ import {
   ActivityHandlerKind,
 } from "./activity-occurrence.js";
 import type { DeepReadonly } from "./deep-readonly.js";
-import { SemanticOperationKind } from "./semantic-process-contract.js";
+import { ScopeWorkKind, SemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   SemanticOperation,
   SemanticProcessProgram,
@@ -460,6 +460,12 @@ function internalLifecycle(
       const starts = candidateLongLivedStarts(program, before, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }
+    case SemanticOperationKind.Scope: {
+      // SCPH-HOST-01: each work publishes the lifecycle of its legacy kind.
+      if (operation.work.kind === ScopeWorkKind.Process) return instantOnly();
+      const starts = candidateLongLivedStarts(program, before, after, operation, owner);
+      return starts === null ? null : pieces(starts);
+    }
     case SemanticOperationKind.ReturnProcess: {
       const record = only(before.calledProcessOccurrences.filter((candidate) => candidate.returnOperationId === operation.id));
       return record === undefined ? null : pieces([], [{
@@ -468,7 +474,8 @@ function internalLifecycle(
       }]);
     }
     case SemanticOperationKind.CompleteEventSubProcess:
-    case SemanticOperationKind.CompleteScope: {
+    case SemanticOperationKind.CompleteScope:
+    case SemanticOperationKind.ScopeExit: {
       const occurrence = only(before.scopeOccurrences.filter(({ id }) => sameScopeOccurrence(id, owner)));
       return occurrence?.parent === null ? pieces() : pieces([], [{
         anchor: { kind: SemanticFlowNodeOccurrenceAnchorKind.Scope, id: owner },

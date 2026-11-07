@@ -17,6 +17,7 @@ import {
 import type { ActivityOccurrence } from "./activity-occurrence.js";
 import { sameMessageChannel } from "./message-channel.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
+import { enteredChildScopeId } from "./scope-host-work.js";
 import type {
   SemanticOperation,
   SemanticProcessProgram,
@@ -296,12 +297,7 @@ function projectEmbeddedScopes(
       id === occurrence.id.definitionScopeId
     ));
     const operation = only(program.operations.filter((candidate) =>
-      (candidate.kind === SemanticOperationKind.EnterScope ||
-        candidate.kind === SemanticOperationKind.EnterSequentialMultiInstanceScope ||
-        candidate.kind === SemanticOperationKind.EnterParallelMultiInstanceScope ||
-        candidate.kind === SemanticOperationKind.EnterBoundedScope ||
-        candidate.kind === SemanticOperationKind.EnterMonitoredScope) &&
-      candidate.childScopeId === occurrence.id.definitionScopeId &&
+      enteredChildScopeId(candidate) === occurrence.id.definitionScopeId &&
       candidate.origin.elementId === definition?.originElementId &&
       operationOwnedBy(program, candidate, parent)
     ));
@@ -462,6 +458,9 @@ function waitMatchesUserTask(
       case SemanticOperationKind.ReachNoneEnd:
       case SemanticOperationKind.CompleteScope:
       case SemanticOperationKind.CompleteEventSubProcess:
+      // SCPH-HOST-01: a scope host or exit declares no wait.
+      case SemanticOperationKind.Scope:
+      case SemanticOperationKind.ScopeExit:
         return false;
       default:
         return assertNeverOperation(operation);

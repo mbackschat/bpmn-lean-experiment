@@ -141,6 +141,9 @@ theorem parallelScope_entered_retirement_dispatch (program : Program)
   case activity =>
     -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
     cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
+  case scope =>
+    -- A scope host publishes only `initiate` or `enterScope` (SCPH-HOST-01).
+    cases work : (‹ScopeHost›).work <;> simp [work] at metadata
   rename_i id origin input childEntry childScope output collection item mappings condition ignored
   cases control : before.control <;> simp only [applyInternalOperationOccurrence?, control,
     resolved, bind, Option.bind_some] at applied <;> try contradiction
@@ -329,6 +332,9 @@ theorem parallelScope_start_occurrence_initiates (program : Program)
     case activity =>
       -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
       cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at operationKind
+    case scope =>
+      -- A `process` host publishes `initiate` but is never applied by owning occurrence (SCPH-SINGLE-01).
+      simp [applyInternalOperationOccurrence?, running, resolved] at applied
     rename_i id origin declaredOutput
     refine ⟨id, origin, declaredOutput, member, ?_⟩
     simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied

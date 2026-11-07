@@ -50,6 +50,7 @@ import {
 import {
   isWellFormedSemanticOperation,
 } from "./semantic-process-operation-admission.js";
+import { scopeHostsAreSole } from "./scope-host-work.js";
 import { inclusiveOperationsArePaired } from "./inclusive-gateway-admission.js";
 import {
   profileAllowsProgramShape,
@@ -324,6 +325,7 @@ export function isWellFormedSemanticProcessProgram(
     }
     checkedOperations.push(operation);
   }
+  if (!scopeHostsAreSole(checkedOperations)) return false;
   const program = value as unknown as SemanticProcessProgram;
   if (identity.semanticProfile === SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID && !sequentialScopeProgramAdmitted(program)) return false;
   if ((identity.semanticProfile === MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID || identity.semanticProfile === MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID) && !mixedTaskControlProgramGraph(program)) return false;

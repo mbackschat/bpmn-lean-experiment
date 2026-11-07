@@ -59,6 +59,7 @@ def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .awaitCorrelatedPayloadMessage _ _ _ _ message _ _ _ _ => { messages := [message] }
   | .awaitEffect _ _ _ _ effect _ => { effects := [effect] }
   | .activity host => { tasks := host.userTask?.toList, effects := host.effect?.toList }
+  | .scope _ | .scopeExit _ => {}
   | .awaitEventRace _ _ _ message timer =>
       { messages :=
           [{ elementId := message.elementId, channel := message.channel }]

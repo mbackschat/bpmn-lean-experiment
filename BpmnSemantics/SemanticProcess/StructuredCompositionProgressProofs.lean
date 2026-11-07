@@ -46,7 +46,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id, `origin]
 run_meta privateEquations `BpmnSemantics.SemanticProcessJson #[`isSafeWireNat, `maxSafeWireNat]
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CheckedSequenceFlow.toControlPlace,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`isInitiate, `CheckedSequenceFlow.toControlPlace,
   `InternalCommutation.InternalMergeSelection.alternative, `InternalCommutation.InternalMergeSelection.apply,
   `InternalCommutation.InternalMergeSelection.tokens, `InternalCommutation.PreparedInternalTransition.Prepared,
   `InternalCommutation.PreparedInternalTransition.apply, `InternalCommutation.applyPreparedInternalTransition?,
@@ -499,14 +499,13 @@ theorem admitted_enabled_operation_is_unique
     exact (List.eq_of_mem_singleton l).trans (List.eq_of_mem_singleton r).symm
   by_cases pending : state.initiationPending = true
   · have initiation : ∀ operation after, operation ∈ program.operations → fire? program operation state = some after →
-        (match operation with | .initiate .. | .initiateMessage .. | .initiateTimer .. => true | _ => false) = true := by
+        isInitiate operation = true := by
       intro operation after member fired
       rcases phase operation after member fired with ⟨_, kind⟩ | ⟨token, single, _⟩ | ⟨done, _⟩
-      · cases operation <;> simp_all
+      · cases operation <;> simp_all [isInitiate]
       · simp [ControlUnitBound, pending, single] at bounded
       · simp [pending] at done
-    have count : (program.operations.filter (fun operation => match operation with
-        | .initiate .. | .initiateMessage .. | .initiateTimer .. => true | _ => false)).length = 1 := by
+    have count : (program.operations.filter isInitiate).length = 1 := by
       simp only [programWellFormed_eq, Bool.and_eq_true] at wellFormed
       exact of_decide_eq_true wellFormed.1.1.1.1.2
     exact singletonSame _ count (initiation left leftAfter leftMember leftFired) (initiation right rightAfter rightMember rightFired)

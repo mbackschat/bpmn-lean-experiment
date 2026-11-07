@@ -52,7 +52,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 Discovery helpers also require the ordinary profile domain: InternalExecutionFrontier dispatches by identity, whereas programAnalysis checks structure. -/
 run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`InternalCommutation.ordinaryExecutionFrontier,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`isInitiate, `InternalCommutation.ordinaryExecutionFrontier,
   `InternalCommutation.selectInternalEnd?, `SerialBusinessTask.ForeignRuntimeEmpty,
   `SerialBusinessTask.IsSerialCompletion, `SerialBusinessTask.IssuanceFrame, `SerialBusinessTask.OperationAllowed,
   `SerialBusinessTask.RootFrame, `SerialBusinessTask.RootLifecycle, `SerialBusinessTask.frontierFields,
@@ -486,15 +486,14 @@ theorem serial_firing_unique (program : Program) (analysis : Analysis) (state le
     exact (List.eq_of_mem_singleton l).trans (List.eq_of_mem_singleton r).symm
   by_cases pending : state.initiationPending = true
   · have initiation : ∀ operation after, operation ∈ program.operations → fire? program operation state = some after →
-        (match operation with | .initiate .. | .initiateMessage .. | .initiateTimer .. => true | _ => false) = true := by
+        isInitiate operation = true := by
       intro operation after member fired
       rcases phase operation after member fired with ⟨_, kind⟩ | ⟨token, single, _⟩ | ⟨done, _⟩
-      · cases operation <;> simp_all
+      · cases operation <;> simp_all [isInitiate]
       · obtain ⟨_, _, _, position, _⟩ := indexed
         cases position <;> simp_all [frontierFields]
       · simp [pending] at done
-    have count : (program.operations.filter (fun operation => match operation with
-        | .initiate .. | .initiateMessage .. | .initiateTimer .. => true | _ => false)).length = 1 := by
+    have count : (program.operations.filter isInitiate).length = 1 := by
       simp only [programWellFormed, Bool.and_eq_true] at wellFormed
       exact of_decide_eq_true wellFormed.1.1.1.1.2
     exact singletonSame _ count (initiation left leftAfter leftMember leftFired) (initiation right rightAfter rightMember rightFired)

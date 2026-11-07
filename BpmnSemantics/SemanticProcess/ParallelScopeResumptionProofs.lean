@@ -492,6 +492,9 @@ theorem ParallelScopeOwnerFrame.nonretirement_exit_refused (program : Program)
     case activity =>
       -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
       cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at initiation
+    case scope =>
+      -- A `process` host publishes `initiate` but is never applied by owning occurrence (SCPH-SINGLE-01).
+      simp [applyInternalOperationOccurrence?, running, frame.control, resolved] at applied
     rename_i id origin output
     simp only [applyInternalOperationOccurrence?, running, frame.control, resolved, stableResolved, bind, Option.bind_some] at applied refused
     rw [frame.scopes] at applied
@@ -521,6 +524,9 @@ theorem ParallelScopeOwnerFrame.nonretirement_exit_refused (program : Program)
     case activity =>
       -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
       cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at completion
+    -- A scope host or exit is never applied by owning occurrence (SCPH-SINGLE-01).
+    case scope => simp [applyInternalOperationOccurrence?, running, frame.control, resolved] at applied
+    case scopeExit => simp [applyInternalOperationOccurrence?, running, frame.control, resolved] at applied
     rename_i id origin scopeId parentOutput
     have allowed := ParallelScopeStart.analyzeProgram_operation_allowed program analysis analyzed _ declared
     have output : parentOutput = none := by

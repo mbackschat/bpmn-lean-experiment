@@ -508,7 +508,10 @@ private theorem smis_entry_static_binding (program : Program) (entry : Sequentia
         apply filter_singleton_of_subpredicate program.operations _ _ _ singleton
         · intro candidate _ accepted
           split at accepted <;> try contradiction
-          cases candidate <;> simp only at accepted <;> try contradiction
+          cases candidate
+          -- A host's child is read through its work (SCPH-HOST-01).
+          case' scope host _ _ => obtain ⟨_, _, _, _, _ | _⟩ := host
+          all_goals simp only at accepted <;> try contradiction
           all_goals apply decide_eq_true
           all_goals simp only [enteredChildScopeId?, Bool.and_eq_true, decide_eq_true_eq] at accepted ⊢
           all_goals exact congrArg some (accepted.1.trans definitionId.symm)
@@ -664,6 +667,9 @@ theorem sequentialScope_body_operation_ports (program : Program) (operation : Se
       ∀ port ∈ bodyConsumedPorts operation,
         program.controlPlaceScopes.filter (fun ownership => decide (ownership.controlPlaceId = port)) =
           [{ controlPlaceId := port, scopeId := scope }] := by
+  -- A scope host publishes `initiate` or `enterScope`, no body kind (SCPH-HOST-01).
+  have notScope : ∀ host, operation ≠ .scope host := by
+    rintro ⟨_, _, _, _, _ | _⟩ rfl <;> simp [SemanticOperation.kind] at kind
   have operations : (program.operations.map (·.id)).Nodup := by
     apply List.Pairwise.of_map (S := (· ≠ ·)) OperationId.value
       (fun _ _ different same => different (congrArg OperationId.value same))
@@ -676,12 +682,12 @@ theorem sequentialScope_body_operation_ports (program : Program) (operation : Se
     exact strictlySortedStrings_nodup _ (programWellFormed_controlPlaceIdsSorted program valid)
   have structural := List.all_eq_true.mp (programWellFormed_operations program valid) operation member
   have shared : operationControlPlacesShareOwner operation = true := by
-    cases operation <;> (try exact (notHost _ rfl).elim) <;> simp_all [SemanticOperation.kind, operationControlPlacesShareOwner]
+    cases operation <;> (try exact (notHost _ rfl).elim) <;> (try exact (notScope _ rfl).elim) <;> simp_all [SemanticOperation.kind, operationControlPlacesShareOwner]
   have included : ∀ port ∈ bodyConsumedPorts operation, port ∈ operationControlPlaces operation := by
     intro port selectedPort
     unfold operationControlPlaces
     apply List.mem_append_left
-    cases operation <;> (try exact (notHost _ rfl).elim) <;> simp only [SemanticOperation.kind] at kind <;> try simp at kind
+    cases operation <;> (try exact (notHost _ rfl).elim) <;> (try exact (notScope _ rfl).elim) <;> simp only [SemanticOperation.kind] at kind <;> try simp at kind
     all_goals exact selectedPort
   have ports : ∀ port ∈ bodyConsumedPorts operation,
       program.controlPlaceScopes.filter (fun ownership => decide (ownership.controlPlaceId = port)) =
@@ -700,7 +706,7 @@ theorem sequentialScope_body_operation_ports (program : Program) (operation : Se
       simpa [selectedOwner] using matchedFacts.2
     simpa [same] using portScope
   refine ⟨?_, ?_, ports⟩
-  all_goals cases operation <;> (try exact (notHost _ rfl).elim) <;> simp_all [SemanticOperation.kind, bodyConsumedPorts]
+  all_goals cases operation <;> (try exact (notHost _ rfl).elim) <;> (try exact (notScope _ rfl).elim) <;> simp_all [SemanticOperation.kind, bodyConsumedPorts]
   all_goals rename_i id origin inputs output
   · have size : inputs.length ≥ 2 := by
       unfold operationWellFormed at structural

@@ -12,8 +12,7 @@ import { addToken, compareScopeOccurrenceIds, ControlStateKind, nextActivation, 
   removeToken, sameScopeOccurrence, setActivationCount } from "./semantic-process-state.js";
 import type { RuntimeScopeOccurrence, RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
 import type { VariableMapping } from "./semantic-value-contract.js";
-import { sequentialMultiInstanceCollectionWithinLimits } from "./sequential-multi-instance-command-data-admission.js";
-import { sequentialMultiInstanceLimits } from "./sequential-multi-instance-contract.js";
+import { multiInstanceCollectionWithinLimits, multiInstanceLimits } from "./multi-instance-limits.js";
 
 /** Immutable paired-entry facts from PMIS-ENTER-01; no membership is duplicated here. */
 export type ParallelScopeEntry = Readonly<{
@@ -72,7 +71,7 @@ export function enterParallelScope(entry: ParallelScopeEntry, state: RuntimeStat
   const collections = state.variables.process.bindings.filter(({ name }) => name === entry.collectionName);
   const collection = collections[0]?.value;
   if (collections.length !== 1 || collection?.kind !== VariableValueKind.StringList ||
-      !sequentialMultiInstanceCollectionWithinLimits({ limits: sequentialMultiInstanceLimits }, collection.value)) return null;
+      !multiInstanceCollectionWithinLimits(multiInstanceLimits, collection.value)) return null;
   const consumed = removeToken(state.controlTokens, entry.input, parent);
   if (collection.value.length === 0) return { ...state, controlTokens: addToken(consumed, entry.normalOutput, parent) };
   const activation = nextActivation(state.activityActivations, entry.elementId);

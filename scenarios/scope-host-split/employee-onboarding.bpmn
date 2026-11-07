@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_EmployeeOnboarding" targetNamespace="urn:bpmn-lean:employee-onboarding">
+  <process id="Process_EmployeeOnboarding" name="Onboard a new employee" isExecutable="true">
+    <startEvent id="HireConfirmed" name="Hire confirmed" />
+    <serviceTask id="RegisterHire" name="Register hire"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${registerHire}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="hire">${hireSummary}</camunda:inputParameter>
+          <camunda:outputParameter name="employeeNumber">${employeeNumber}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="PrepareWorkstation" name="Prepare workstation" />
+    <parallelGateway id="StartPrepared" name="Start prepared" gatewayDirection="Converging" />
+    <subProcess id="IssueEquipment" name="Issue equipment">
+      <startEvent id="EquipmentRequested" name="Equipment requested" />
+      <userTask id="IssueBadge" name="Issue badge" />
+      <userTask id="IssueLaptop" name="Issue laptop" />
+      <parallelGateway id="EquipmentReady" name="Equipment ready" gatewayDirection="Converging" />
+      <endEvent id="EquipmentIssued" name="Equipment issued" />
+      <sequenceFlow id="Flow_ToBadge" sourceRef="EquipmentRequested" targetRef="IssueBadge" />
+      <sequenceFlow id="Flow_ToLaptop" sourceRef="EquipmentRequested" targetRef="IssueLaptop" />
+      <sequenceFlow id="Flow_BadgeIssued" sourceRef="IssueBadge" targetRef="EquipmentReady" />
+      <sequenceFlow id="Flow_LaptopIssued" sourceRef="IssueLaptop" targetRef="EquipmentReady" />
+      <sequenceFlow id="Flow_EquipmentReady" sourceRef="EquipmentReady" targetRef="EquipmentIssued" />
+    </subProcess>
+    <userTask id="ConfirmItAccess" name="Confirm IT access" />
+    <endEvent id="AccessConfirmed" name="Access confirmed" />
+    <endEvent id="NotifyFacilities" name="Notify facilities" />
+    <sequenceFlow id="Flow_ToRegister" sourceRef="HireConfirmed" targetRef="RegisterHire" />
+    <sequenceFlow id="Flow_ToWorkstation" sourceRef="HireConfirmed" targetRef="PrepareWorkstation" />
+    <sequenceFlow id="Flow_Registered" sourceRef="RegisterHire" targetRef="StartPrepared" />
+    <sequenceFlow id="Flow_WorkstationPrepared" sourceRef="PrepareWorkstation" targetRef="StartPrepared" />
+    <sequenceFlow id="Flow_ToEquipment" sourceRef="StartPrepared" targetRef="IssueEquipment" />
+    <sequenceFlow id="Flow_ToItAccess" sourceRef="IssueEquipment" targetRef="ConfirmItAccess" />
+    <sequenceFlow id="Flow_ToFacilities" sourceRef="IssueEquipment" targetRef="NotifyFacilities" />
+    <sequenceFlow id="Flow_ItAccessConfirmed" sourceRef="ConfirmItAccess" targetRef="AccessConfirmed" />
+  </process>
+</definitions>

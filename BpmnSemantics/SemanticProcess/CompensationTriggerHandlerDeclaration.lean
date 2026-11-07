@@ -110,6 +110,8 @@ def declaredTargetCountsMatch (program : Program)
 def operationOriginElementId : SemanticOperation → Option NodeId
   | .triggerCompensation .. => none
   | .activity host => some host.origin.elementId
+  | .scope host => some host.origin.elementId
+  | .scopeExit exit => some exit.origin.elementId
   | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _
   | .enterSequentialMultiInstanceScope _ origin _ _ _ _ _ _ _ _
   | .enterParallelMultiInstanceScope _ origin _ _ _ _ _ _ _ _

@@ -66,6 +66,12 @@ inductive SemanticOperationKind where
   deriving Repr, DecidableEq
 
 def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
+  -- SCPH-HOST-01: a host or exit publishes the legacy discriminant of its work, as an Activity host does.
+  | .scope host =>
+      match host.work with
+      | .process => .initiate
+      | .subProcess _ => .enterScope
+  | .scopeExit .. => .completeScope
   | .initiate .. => .initiate
   | .initiateMessage .. => .initiateMessage
   | .initiateTimer .. => .initiateTimer
