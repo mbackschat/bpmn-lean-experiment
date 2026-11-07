@@ -102,15 +102,15 @@ Current task: Kernel IL orthogonalization, batch 5, third family: the implicit s
 
 Deliverable: `PC-CF-07`'s unconditioned split at User, Service and Send Tasks outside fork regions, landed on `main`; the [proposal](capsules/ACTIVITY-HOST-SPLIT-PROPOSAL.md#question-and-delivery-boundary) lists every residual.
 
-Acceptance blockers: the proposal's correction audit, then the representation, admission, evidence and closure.
+Acceptance blockers: the representation, admission, evidence and closure.
 
-Current result: proposal review `approve-with-required-edits` at `c70abb14`; corrections committed for audit.
+Current result: proposal approved with required edits at `c70abb14`, audit `d1c55a0f`.
 
 Owner items: confirm the incremental re-decision after the stop condition fired; renew six stale size-exception rationales.
 
 Effort budget: 12 hours from 2026-11-07 13:30 CET; at the limit record the boundary and continue unless the evidence invalidates the path.
 
-Next action: the correction audit, then the representation commit under a reviewed Rule 2 declaration.
+Next action: the representation commit under a reviewed Rule 2 declaration.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
 

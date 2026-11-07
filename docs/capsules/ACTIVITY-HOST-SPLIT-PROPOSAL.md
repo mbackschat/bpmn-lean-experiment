@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved
 
 ## Question and delivery boundary
 
@@ -330,6 +330,6 @@ Effort budget: 12 hours from 2026-11-07 13:30 CET, for proposal review, represen
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `c70abb14` | `fork-turns-none` | `approve-with-required-edits` | `d1c55a0f` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
