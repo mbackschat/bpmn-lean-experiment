@@ -158,7 +158,7 @@ None at runtime. The admission projections' synthetic `fork` vertex after a vert
 | `lean-fanout` and `source-hygiene` on the Lean and TypeScript spike | pass (66 of 66) |
 | The rejected switch: every plain Task onto the host, every profile | 392 of 2,354 `bpmn-source` tests fail; `semantic-core` 1 of 1,871 |
 
-**Coverage and stop condition.** The Lean probe stopped at its first-order failures; the static count above bounds the dependents, since every one reads the records through a field the compiler names. The representation commit's Rule 2 declaration sets its limits from that count: at most 90 Lean files and 1,000 added and 1,000 removed Lean lines, at most 40 TypeScript files; it stops, writing nothing further, when a repair would need a new `import all` opener, a raised fan-out or heartbeat bound, or a size exception, or when a limit is reached.
+**Coverage and stop condition.** The Lean probe stopped at its first-order failures; the static count above bounds the dependents, since every one reads the records through a field the compiler names. The representation commit's Rule 2 declaration sets its limits from that count: at most 90 Lean files and 1,000 added and 1,000 removed Lean lines, and a TypeScript file limit set from a spike type check across the production and test projects, which the declaration records; it stops, writing nothing further, when a repair would need a new `import all` opener, a raised fan-out or heartbeat bound, or a size exception, or when a limit is reached.
 
 **Hubs touched**, each named with its reason ([Lean build efficiency](../../CLAUDE.md#lean-build-efficiency)):
 
@@ -229,7 +229,7 @@ Each split's completion publishes once and opens both successors in the same com
 - *Order assessment* made to split while it lies on a branch of *Review claim*'s split (wrong algorithm 5);
 - *Intake* placed on a branch of a root Parallel fork while *Register claim* splits in its body, the ancestor-scope part of `ACSP-SINGLE-01`;
 - the overlay without *Register claim*'s handler, refused, and the Service Task bound counting *Register claim* (wrong algorithm 11);
-- a splitting host whose work is malformed (a User Task host with a missing task element), refused by the host Program rules in both languages (wrong algorithm 7);
+- a splitting host that passes the host arm and fails only work validity, refused in both languages: a User Task host with ill-formed task metadata, and an effect host with a descriptor its profile refuses (wrong algorithm 7);
 - a conditioned and a default outgoing flow of *Review claim*;
 - a second incoming flow at *Review claim* while it splits;
 - a Message boundary event on *Review claim*, and a BPMN Error route on *Register claim*, each while it splits;
