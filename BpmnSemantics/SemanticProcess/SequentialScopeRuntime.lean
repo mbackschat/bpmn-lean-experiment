@@ -186,7 +186,7 @@ def completeSequentialScopeEffect? (program : Program) (state : RuntimeState)
     some { state with
       effectWaits := state.effectWaits.erase wait
       variables
-      tokens := addToken state.tokens wait.output wait.owner }
+      tokens := addTokens state.tokens wait.outputs wait.owner }
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`completeSequentialScopeEffect?]
 
@@ -203,7 +203,7 @@ def completeSequentialScopeUserTask? (program : Program) (state : RuntimeState)
     some { state with
       waits := state.waits.erase wait
       variables
-      tokens := addToken state.tokens wait.output wait.owner }
+      tokens := addTokens state.tokens wait.outputs wait.owner }
 
 /-- Entry distinguishes a zero-item continuation from generating its first body. -/
 inductive SequentialScopeEntryResult where

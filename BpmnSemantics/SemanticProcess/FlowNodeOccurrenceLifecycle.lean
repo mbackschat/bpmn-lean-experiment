@@ -744,7 +744,7 @@ def candidateFlowNodeOccurrenceDeltaForOwnedOperation? (program : Program) (befo
         boundary.elementId + 1
       let taskWait ← match after.waits.filter fun wait => decide
           (wait.owner = owner && wait.task.id = task.id && wait.task.name = task.name &&
-            wait.output = task.output && wait.activation = taskActivation) with
+            wait.outputs = [task.output] && wait.activation = taskActivation) with
         | [wait] => some wait
         | _ => none
       let messageWait ← match after.messageWaits.filter fun wait => decide

@@ -29,6 +29,7 @@ import {
   sequentialMultiInstanceOperationFor,
 } from "./semantic-process-sequential-multi-instance-runtime.js";
 import type { SequentialMultiInstanceController } from "./sequential-multi-instance-controller.js";
+import { waitOutputsAre } from "./semantic-process-state.js";
 
 export type SequentialMultiInstanceBinding = Readonly<{
   controller: SequentialMultiInstanceController;
@@ -80,7 +81,7 @@ export function sequentialMultiInstanceBindingForController(
     taskWait.id.elementId !== operation.task.elementId ||
     taskWait.name !== operation.task.name ||
     taskWait.metadata !== undefined ||
-    taskWait.output !== operation.normalOutput ||
+    !waitOutputsAre(taskWait.outputs, [operation.normalOutput]) ||
     !sameOwner(taskWait.owner, record.owner) ||
     record.attachedHandlers.length !== 1 ||
     timerWaits.length !== 1 ||

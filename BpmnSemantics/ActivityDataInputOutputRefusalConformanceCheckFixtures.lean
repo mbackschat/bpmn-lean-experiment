@@ -41,7 +41,7 @@ def wrongClaimScopeOwner : ScopeOccurrenceId :=
 def wrongOutputActive : RuntimeState :=
   { active with
     waits := active.waits.map fun wait =>
-      { wait with output := ⟨"place:Flow_ClaimReceived_Assess"⟩ } }
+      { wait with outputs := [⟨"place:Flow_ClaimReceived_Assess"⟩], outputs_ne_nil := by simp } }
 
 def wrongStaticScopeActive : RuntimeState :=
   { active with

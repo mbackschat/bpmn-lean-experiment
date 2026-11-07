@@ -22,6 +22,7 @@ import type {
   SemanticUserTaskWait,
 } from "./semantic-process-state.js";
 import { utf8ByteLength } from "./wire.js";
+import { waitOutputsAre } from "./semantic-process-state.js";
 
 export type ParallelMultiInstanceBinding = Readonly<{
   controller: ParallelMultiInstanceController;
@@ -114,7 +115,7 @@ export function parallelMultiInstanceBindingForController(
       sameOccurrenceId(wait.id, pending[index]) &&
       wait.name === operation.task.name &&
       wait.metadata === undefined &&
-      wait.output === operation.normalOutput &&
+      waitOutputsAre(wait.outputs, [operation.normalOutput]) &&
       sameOwner(wait.owner, record.owner)
     ) ||
     !allTaskIdsUnique ||

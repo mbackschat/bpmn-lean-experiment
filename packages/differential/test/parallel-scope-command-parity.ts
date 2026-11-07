@@ -16,8 +16,8 @@ import { runLeanDriver } from "./semantic-differential-targets.ts";
 export const owner = (id: ScopeOccurrenceId) => [id.processInstanceId, id.definitionScopeId, id.activation];
 export const prefix = (before: RuntimeState, state: RuntimeState) => ({
   tokens: state.controlTokens.flatMap(token => Array.from({ length: token.multiplicity }, () => [token.placeId, owner(token.owner)])),
-  tasks: state.userTaskWaits.map(wait => [owner(wait.owner), wait.id.elementId, wait.id.activation, wait.output]),
-  effects: state.effectWaits.map(wait => [owner(wait.owner), wait.id.elementId, wait.id.activation, wait.output, wait.arguments]),
+  tasks: state.userTaskWaits.map(wait => [owner(wait.owner), wait.id.elementId, wait.id.activation, wait.outputs]),
+  effects: state.effectWaits.map(wait => [owner(wait.owner), wait.id.elementId, wait.id.activation, wait.outputs, wait.arguments]),
   taskCounters: state.taskActivations.map(row => [row.elementId, row.count]),
   effectCounters: state.effectActivations.map(row => [row.elementId, row.count]),
   endOccurrences: state.endOccurrences,

@@ -33,9 +33,9 @@ def prefixJson (before state : RuntimeState) : Json :=
     ("endOccurrences", toJson state.endOccurrences),
     ("tokens", toJson (state.tokens.map fun token => toJson [toJson token.placeId.value, ownerJson token.owner])),
     ("tasks", toJson (waits.map fun wait => toJson [ownerJson wait.owner, toJson wait.task.id.value,
-      toJson wait.activation, toJson wait.output.value])),
+      toJson wait.activation, toJson (wait.outputs.map (·.value))])),
     ("effects", toJson (effects.map fun wait => toJson [ownerJson wait.owner, toJson wait.elementId.value,
-      toJson wait.activation, toJson wait.output.value, bindingsJson wait.arguments])),
+      toJson wait.activation, toJson (wait.outputs.map (·.value)), bindingsJson wait.arguments])),
     ("taskCounters", toJson (state.activations.map fun row => toJson [toJson row.taskId.value, toJson row.count])),
     ("effectCounters", toJson (state.effectActivations.map fun row => toJson [toJson row.elementId.value, toJson row.count])),
     ("effectFrames", toJson (state.variables.activities.filterMap fun frame => match frame.owner with
@@ -343,13 +343,13 @@ def completePrivateStateJson? (program : Program) (state : RuntimeState) : Optio
     ("userTaskWaits", toJson (waits.map fun wait => Json.mkObj [
       ("id", stateOccurrenceIdJson ⟨wait.processInstanceId, ⟨wait.task.id.value⟩, wait.activation⟩),
       ("owner", stateScopeIdJson wait.owner), ("name", toJson wait.task.name),
-      ("metadata", toJson (wait.metadata.map encodeUserTaskMetadata)), ("output", toJson wait.output.value)])),
+      ("metadata", toJson (wait.metadata.map encodeUserTaskMetadata)), ("outputs", toJson (wait.outputs.map (·.value)))])),
     ("effectWaits", toJson (effects.map fun wait => Json.mkObj [
       ("id", stateOccurrenceIdJson ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩),
       ("owner", stateScopeIdJson wait.owner),
       ("descriptor", Json.mkObj [("protocol", toJson wait.descriptor.protocol), ("operation", toJson wait.descriptor.operation)]),
       ("arguments", bindingsJson wait.arguments), ("outputMappings", toJson (wait.outputMappings.map stateMappingJson)),
-      ("bpmnErrorRoute", Json.null), ("output", toJson wait.output.value), ("incidentAlreadyRetried", toJson wait.incidentAlreadyRetried)])),
+      ("bpmnErrorRoute", Json.null), ("outputs", toJson (wait.outputs.map (·.value))), ("incidentAlreadyRetried", toJson wait.incidentAlreadyRetried)])),
     ("activityOccurrences", toJson activities),
     ("parallelScopeControllers", toJson (state.parallelScopeControllers.map fun controller => Json.mkObj [
       ("id", stateActivityIdJson controller.id), ("total", toJson controller.total), ("completed", toJson controller.completed)])),

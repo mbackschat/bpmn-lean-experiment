@@ -80,7 +80,7 @@ test("arming atomically creates the Activity body and its Message handler", () =
     id: taskId,
     owner,
     name: "Review application",
-    output: "place:Flow_Normal",
+    outputs: ["place:Flow_Normal"],
   }]);
   assert.deepEqual(state.messageWaits, [{
     id: subscriptionId,

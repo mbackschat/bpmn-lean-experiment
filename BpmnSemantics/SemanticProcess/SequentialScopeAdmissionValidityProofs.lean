@@ -607,8 +607,8 @@ theorem sequentialScope_ingress_output_ports (program : Program) (state : Runtim
     (flow : flowNodeOccurrenceWaitProgramValidity program state = true)
     (domain : ∀ operation ∈ program.operations, operation.kind ≠ .awaitParallelMultiInstanceUserTask) :
     ∀ port owner,
-      (∃ wait ∈ state.waits, wait.output = port ∧ wait.owner = owner) ∨
-      (∃ wait ∈ state.effectWaits, wait.output = port ∧ wait.owner = owner) →
+      (∃ wait ∈ state.waits, port ∈ wait.outputs ∧ wait.owner = owner) ∨
+      (∃ wait ∈ state.effectWaits, port ∈ wait.outputs ∧ wait.owner = owner) →
       (∃ place, program.controlPlaces.filter (fun candidate => decide (candidate.id = port)) = [place]) ∧
       program.controlPlaceScopes.filter (fun ownership => decide (ownership.controlPlaceId = port)) =
         [{ controlPlaceId := port, scopeId := owner.definitionScopeId }] := by
@@ -644,13 +644,13 @@ theorem sequentialScope_ingress_output_ports (program : Program) (state : Runtim
       simpa using owned
     exact ⟨⟨place, census⟩, by simpa only [same] using portScope⟩
   intro port owner selected
-  rcases selected with ⟨wait, member, rfl, rfl⟩ | ⟨wait, member, rfl, rfl⟩
+  rcases selected with ⟨wait, member, selected, rfl⟩ | ⟨wait, member, selected, rfl⟩
   · obtain ⟨_, operation, member, owned, shared, included⟩ :=
       flowNodeOccurrenceUserTaskProgramValidity_output_binding program state wait humans member userDomain
-    exact declared operation wait.output wait.owner member owned shared included
+    exact declared operation port wait.owner member owned shared (included port selected)
   · obtain ⟨_, operation, member, owned, shared, included⟩ :=
       flowNodeOccurrenceEffectProgramValidity_output_binding program state wait effects member
-    exact declared operation wait.output wait.owner member owned shared included
+    exact declared operation port wait.owner member owned shared (included port selected)
 
 
 /-- Structural admission identifies every consumed body port with the selected child definition scope. -/

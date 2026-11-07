@@ -40,8 +40,10 @@ structure UserTaskWait where
   owner : ScopeOccurrenceId
   task : UserTaskDefinition
   activation : Nat
-  output : ControlPlaceId
+  outputs : List ControlPlaceId
   metadata : Option UserTaskMetadata := none
+  /-- ACSP-WAIT-01: completion always continues somewhere; an Activity without outgoing flows is not admitted. -/
+  outputs_ne_nil : outputs ≠ [] := by simp
   deriving Repr, DecidableEq
 
 structure TimerWait where
@@ -77,9 +79,11 @@ structure EffectWait where
   descriptor : EffectDescriptor
   arguments : List VariableBinding
   outputMappings : List VariableMapping
-  output : ControlPlaceId
+  outputs : List ControlPlaceId
   bpmnErrorRoute : Option BpmnErrorRoute
   incidentAlreadyRetried : Bool := false
+  /-- ACSP-WAIT-01, as for `UserTaskWait`. -/
+  outputs_ne_nil : outputs ≠ [] := by simp
   deriving Repr, DecidableEq
 
 /-- Private incident state retains the complete suspended effect wait. -/

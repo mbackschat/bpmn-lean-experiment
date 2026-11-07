@@ -61,7 +61,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 This module owns exact representative execution and finite reviewed-choice schedules for the selected cyclic fixture. It proves no general termination, fairness, arbitrary-cycle, or concurrent-arrival claim.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeUserTask, `cyclicInitialPostMergeState,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeUserTask, `addTokens, `cyclicInitialPostMergeState,
   `cyclicMergeInputs, `cyclicMergeOperation, `cyclicPostCompletionState, `cyclicPostStartState, `cyclicRepeatChoices,
   `cyclicVariables, `cyclicWait, `cyclicWaitingState, `runChoices, `singletonWaitingState, `taskIdNamesWait, `addToken,
   `canonicalInsertBy, `mergeProcessVariableBindings]
@@ -172,7 +172,7 @@ theorem representative_review_completion_is_exact
       tokens :=
         [{ placeId := ⟨"place:Flow_Review_Choice"⟩, owner := cyclicOwner }] }
   · simp [completeUserTask, taskIdNamesWait, cyclicWaitingState, cyclicWait,
-      singletonWaitingState, initialState, addToken, canonicalInsertBy]
+      singletonWaitingState, initialState, addTokens, addToken, canonicalInsertBy]
   · cases previousRoute <;>
       simp [cyclicRoutePatch, cyclicWaitingState, cyclicPostCompletionState,
         cyclicVariables, singletonWaitingState, initialState,

@@ -136,7 +136,7 @@ test("family validity rejects independent interface, association, task-local and
     }],
     ["wrong wait scope", { ...before, userTaskWaits: [{ ...wait, owner: { ...wait.owner, definitionScopeId: "wrong" } }] }],
     ["wrong wait activation owner", { ...before, userTaskWaits: [{ ...wait, owner: { ...wait.owner, activation: 2 } }] }],
-    ["wrong wait output", { ...before, userTaskWaits: [{ ...wait, output: "wrong" }] }],
+    ["wrong wait output", { ...before, userTaskWaits: [{ ...wait, outputs: ["wrong"] }] }],
     ["zero live-task counter", { ...before, taskActivations: [] }],
     ["duplicate task counter", { ...before, taskActivations: [...before.taskActivations, ...before.taskActivations] }],
     ["missing request", callerBindings(before.variables.process.bindings.filter(({ name }) => name !== "Request"))],

@@ -43,7 +43,7 @@ theorem message_bounded_arming_atomic_frames (state : RuntimeState)
         { processInstanceId := instanceId, owner,
           task := { id := task.id, name := task.name },
           activation := activationCount state task.id + 1,
-          output := task.output, metadata := none } state.waits ∧
+          outputs := [task.output], metadata := none } state.waits ∧
       after.messageWaits = insertMessageWait
         { processInstanceId := instanceId, owner,
           elementId := boundaryMessage.elementId,

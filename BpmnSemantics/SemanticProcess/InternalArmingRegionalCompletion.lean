@@ -115,7 +115,7 @@ theorem arming_return_removal_commutes (program : Program) (state : RuntimeState
       let task : UserTaskWait :=
         { processInstanceId := owner.processInstanceId, owner
           task := { id := contract.taskId, name := contract.taskName }
-          activation := activationCount state contract.taskId + 1, output := contract.output }
+          activation := activationCount state contract.taskId + 1, outputs := [contract.output] }
       have taskKept : (!removed.contains owner.processInstanceId) = true := by
         simpa only [PreparedInternalArming.scopeFramePatch, makeInternalDataArmingPatch, Bool.not_eq_true'] using outside
       have taskFilter := filter_canonicalInsertBy_retained userTaskWaitBefore userTaskWaitBefore_compose

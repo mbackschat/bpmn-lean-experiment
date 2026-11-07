@@ -55,6 +55,20 @@ theorem addTokens_perm (tokens : List ControlToken) (places : List ControlPlaceI
       exact (addToken_perm (addTokens tokens rest owner) place owner).trans
         (ih.cons { placeId := place, owner })
 
+/-- Producing tokens for one owner leaves every other owner's count at a place unchanged. -/
+theorem addTokens_foreign_filter_length (tokens : List ControlToken) (places : List ControlPlaceId)
+    (owner foreign : ScopeOccurrenceId) (different : owner ≠ foreign) (place : ControlPlaceId) :
+    ((addTokens tokens places owner).filter fun token => token.placeId == place && token.owner == foreign).length =
+      (tokens.filter fun token => token.placeId == place && token.owner == foreign).length := by
+  have count := ((addTokens_perm tokens places owner).filter
+    (fun token => token.placeId == place && token.owner == foreign)).length_eq
+  have produced : (places.map fun candidate => ({ placeId := candidate, owner } : ControlToken)).filter
+      (fun token => token.placeId == place && token.owner == foreign) = [] :=
+    List.filter_eq_nil_iff.mpr (fun token member selected => by
+      obtain ⟨_, _, rfl⟩ := List.mem_map.mp member
+      simp [different] at selected)
+  simpa [List.filter_append, produced] using count
+
 theorem addTokens_place_multiplicity (tokens : List ControlToken)
     (places : List ControlPlaceId) (owner : ScopeOccurrenceId) (query : ControlPlaceId) :
     ((addTokens tokens places owner).filter fun token => decide (token.placeId = query)).length =

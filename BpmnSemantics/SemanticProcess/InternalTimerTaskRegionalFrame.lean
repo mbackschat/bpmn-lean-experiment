@@ -196,7 +196,7 @@ theorem timer_task_cancellation_commutes (program : Program) (state : RuntimeSta
   have taskFrame := filter_canonicalInsertBy_retained userTaskWaitBefore userTaskWaitBefore_compose
     (fun wait => !cancelled wait.owner)
     { processInstanceId := owner.processInstanceId, owner, task := { id := contract.task.id, name := contract.task.name },
-      activation := activationCount state contract.task.id + 1, output := contract.task.output }
+      activation := activationCount state contract.task.id + 1, outputs := [contract.task.output] }
     state.waits taskOrder (by simp [outside])
   have timerFrame := filter_canonicalInsertBy_retained timerWaitBefore regional_timerWaitBefore_compose
     (fun wait => !cancelled wait.owner &&

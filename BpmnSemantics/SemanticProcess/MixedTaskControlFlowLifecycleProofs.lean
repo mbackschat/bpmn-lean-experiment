@@ -58,7 +58,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! MTCF-PROGRESS-01 and MTCF-REPEAT-01 require one graph-indexed control unit with exact wait ownership and an actual Start-derived root frame, independent of any assumed serial traversal order. -/
 run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`isInitiate, `MixedTaskControlFlow.OperationAllowed,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addTokens, `isInitiate, `MixedTaskControlFlow.OperationAllowed,
   `MixedTaskControlFlow.operationInputs, `MixedTaskControlFlow.operationOutputs,
   `MixedTaskControlFlow.operationVertex?, `MixedTaskControlFlow.programOwnershipValid,
   `SerialBusinessTask.ForeignRuntimeEmpty, `SerialBusinessTask.IsSerialCompletion, `SerialBusinessTask.IssuanceFrame,
@@ -99,24 +99,26 @@ inductive Position (program : Program) (analysis : Analysis) (state : RuntimeSta
       (consumer : consumer? program token.placeId = some vertex.id)
       (bound : DeclaredToken program token) : Position program analysis state (some vertex)
   | human (vertex : Vertex) (member : vertex ∈ analysis.vertices) (wait : UserTaskWait)
-      (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
+      (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
       (fields : frontierFields state = (false, [], [wait], [], []))
-      (declared : .awaitUserTask id origin input wait.output wait.task ∈ program.operations)
-      (projected : operationVertex? program (.awaitUserTask id origin input wait.output wait.task) = some vertex)
+      (declared : .awaitUserTask id origin input output wait.task ∈ program.operations)
+      (projected : operationVertex? program (.awaitUserTask id origin input output wait.task) = some vertex)
       (metadata : wait.metadata = wait.task.metadata)
-      (owned : operationOwningScope? program id = some wait.owner.definitionScopeId) :
+      (owned : operationOwningScope? program id = some wait.owner.definitionScopeId)
+      (waitOutputs : wait.outputs = [output]) :
       Position program analysis state (some vertex)
   | effect (vertex : Vertex) (member : vertex ∈ analysis.vertices) (wait : EffectWait)
-      (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId) (effect : EffectDefinition)
+      (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId) (effect : EffectDefinition)
       (fields : frontierFields state = (false, [], [], [wait],
         [{ owner := .effectOccurrence ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩,
            bindings := wait.arguments }]))
-      (declared : .awaitEffect id origin input wait.output effect wait.bpmnErrorRoute ∈ program.operations)
-      (projected : operationVertex? program (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute) = some vertex)
+      (declared : .awaitEffect id origin input output effect wait.bpmnErrorRoute ∈ program.operations)
+      (projected : operationVertex? program (.awaitEffect id origin input output effect wait.bpmnErrorRoute) = some vertex)
       (element : effect.elementId = wait.elementId) (descriptor : effect.descriptor = wait.descriptor)
       (outputs : effect.outputMappings = wait.outputMappings)
       (snapshot : inputSnapshotMatches effect.inputMappings wait.arguments = true)
-      (owned : operationOwningScope? program id = some wait.owner.definitionScopeId) :
+      (owned : operationOwningScope? program id = some wait.owner.definitionScopeId)
+      (waitOutputs : wait.outputs = [output]) :
       Position program analysis state (some vertex)
   | finished (fields : frontierFields state = (false, [], [], [], [])) :
       Position program analysis state none
@@ -262,11 +264,11 @@ theorem position_frame (program : Program) (analysis : Analysis) (frontier : Opt
   cases position with
   | pending vertex member start kind fields => exact .pending vertex member start kind (same.trans fields)
   | token vertex member token fields consumer bound => exact .token vertex member token (same.trans fields) consumer bound
-  | human vertex member wait id origin input fields declared projected metadata owned =>
-      exact .human vertex member wait id origin input (same.trans fields) declared projected metadata owned
-  | effect vertex member wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
-      exact .effect vertex member wait id origin input effect (same.trans fields) declared projected
-        element descriptor outputs snapshot owned
+  | human vertex member wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
+      exact .human vertex member wait id origin input declaredOutput (same.trans fields) declared projected metadata owned waitOutputs
+  | effect vertex member wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot owned waitOutputs =>
+      exact .effect vertex member wait id origin input declaredOutput effect (same.trans fields) declared projected
+        element descriptor outputs snapshot owned waitOutputs
   | finished fields => exact .finished (same.trans fields)
 
 theorem admitted_start_id (vertices : List Vertex) (analysis : Analysis)
@@ -312,13 +314,13 @@ theorem human_completion_preserves_position (program : Program) (analysis : Anal
     | token vertex member token fields consumer bound =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.1] at live
-    | effect vertex member wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
+    | effect vertex member wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot owned waitOutputs =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.1] at live
     | finished fields =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.1] at live
-    | human vertex member wait id origin input fields declared projected metadata owned =>
+    | human vertex member wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         have same : selected = wait := by simpa [fields.2.2.1] using live
         subst selected
@@ -331,15 +333,16 @@ theorem human_completion_preserves_position (program : Program) (analysis : Anal
         cases Option.some.inj completed
         refine ⟨?_, ?_⟩
         · refine ⟨?_, ?_, effectsOwned, Or.inl runningLife, foreign, ?_⟩ <;>
-            simp [fields.2.2.1, fields.2.1, root.1, addToken, canonicalInsertBy, IssuanceFrame] <;>
+            simp [fields.2.2.1, fields.2.1, root.1, waitOutputs, addTokens, addToken, canonicalInsertBy,
+              IssuanceFrame] <;>
             exact ⟨issued.1, issued.2.1, issued.2.2.1, issued.2.2.2.2⟩
         refine ⟨some next, ?_, ?_, ?_⟩
-        · apply Position.token next nextMember ⟨wait.output, wait.owner⟩
+        · apply Position.token next nextMember ⟨declaredOutput, wait.owner⟩
           · simp [frontierFields, fields.1, fields.2.1, fields.2.2.1, fields.2.2.2.1,
-              fields.2.2.2.2, addToken, canonicalInsertBy]
+              fields.2.2.2.2, waitOutputs, addTokens, addToken, canonicalInsertBy]
           · simpa [named] using consumer
-          · exact SerialBusinessTask.owned_operation_port program (.awaitUserTask id origin input wait.output wait.task) wait.output wait.owner
-              wellFormed declared rfl (by change wait.output ∈ [input, wait.output]; simp) owned
+          · exact SerialBusinessTask.owned_operation_port program (.awaitUserTask id origin input declaredOutput wait.task) declaredOutput wait.owner
+              wellFormed declared rfl (by change declaredOutput ∈ [input, declaredOutput]; simp) owned
         · change InputsAvailable analysis.vertices next.id _
           rw [named]
           exact human_patch_preserves_available analysis.vertices vertex nextId before.variables.process.bindings patch member edge kind available
@@ -356,7 +359,7 @@ theorem effect_completion_preserves_position (program : Program) (analysis : Ana
   obtain ⟨tokensOwned, humansOwned, effectsOwned, life, foreign, issued⟩ := framed
   obtain ⟨frontier, position, available, canonical⟩ := indexed
   have graph := program_analysis_graph program analysis analyzed
-  obtain ⟨selected, scope, patch, bindings, output, occurrence, owned, _, selectedOutput, mapped, successor⟩ :=
+  obtain ⟨selected, scope, patch, bindings, selectedOutputs, occurrence, owned, _, selectedOutput, mapped, successor⟩ :=
     business_completion_facts (SerialBusinessTask.programHandlers program) before after effectId result completed
   subst after
   have live : selected ∈ before.effectWaits := (List.mem_filter.mp
@@ -374,13 +377,13 @@ theorem effect_completion_preserves_position (program : Program) (analysis : Ana
   | token vertex member token fields consumer bound =>
       simp only [frontierFields, Prod.mk.injEq] at fields
       simp [fields.2.2.2.1] at live
-  | human vertex member wait id origin input fields declared projected metadata owned =>
+  | human vertex member wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
       simp only [frontierFields, Prod.mk.injEq] at fields
       simp [fields.2.2.2.1] at live
   | finished fields =>
       simp only [frontierFields, Prod.mk.injEq] at fields
       simp [fields.2.2.2.1] at live
-  | effect vertex member wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
+  | effect vertex member wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot owned waitOutputs =>
       simp only [frontierFields, Prod.mk.injEq] at fields
       have same : selected = wait := by simpa [fields.2.2.2.1] using live
       subst selected
@@ -390,22 +393,24 @@ theorem effect_completion_preserves_position (program : Program) (analysis : Ana
         cases matched : activityScopeMatches effectId
             { owner := .effectOccurrence ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩,
               bindings := wait.arguments } <;> simp_all
-      have data := service_projection_data program vertex id origin input wait.output effect wait.bpmnErrorRoute projected
+      have data := service_projection_data program vertex id origin input declaredOutput effect wait.bpmnErrorRoute projected
       have mappings := data.2.1
       have targets : vertex.writes = wait.outputMappings.map (·.target) := by simpa [outputs] using data.2.2.2
-      have outputMember := selected_effect_output_declared wait result output id origin input effect selectedOutput
+      obtain ⟨output, single, outputMember⟩ := selected_effect_output_declared wait result selectedOutputs id origin input
+        declaredOutput effect waitOutputs selectedOutput
+      subst single
       obtain ⟨nextId, edge, consumer⟩ := operation_output_consumer program
-        (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute) vertex output projected outputMember
+        (.awaitEffect id origin input declaredOutput effect wait.bpmnErrorRoute) vertex output projected outputMember
       obtain ⟨next, nextMember, named⟩ := output_has_vertex analysis.vertices analysis graph vertex member nextId edge
       refine ⟨?_, ?_⟩
       · refine ⟨?_, humansOwned, ?_, Or.inl runningLife, foreign, issued⟩ <;>
-          simp [fields.2.2.2.1, fields.2.1, root.1, addToken, canonicalInsertBy]
+          simp [fields.2.2.2.1, fields.2.1, root.1, addTokens, addToken, canonicalInsertBy]
       refine ⟨some next, ?_, ?_, ?_⟩
       · apply Position.token next nextMember ⟨output, wait.owner⟩
         · simp [frontierFields, fields.1, fields.2.1, fields.2.2.1, fields.2.2.2.1,
-            fields.2.2.2.2, localMatch, addToken, canonicalInsertBy]
+            fields.2.2.2.2, localMatch, addTokens, addToken, canonicalInsertBy]
         · simpa [named] using consumer
-        · apply SerialBusinessTask.owned_operation_port program (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute) output wait.owner
+        · apply SerialBusinessTask.owned_operation_port program (.awaitEffect id origin input declaredOutput effect wait.bpmnErrorRoute) output wait.owner
             wellFormed declared rfl ?_ owned
           cases routeEq : wait.bpmnErrorRoute <;> simp_all [operationControlPlaces, operationOutputs, SemanticProcess.operationOutputs]
       · change InputsAvailable analysis.vertices next.id bindings
@@ -586,8 +591,8 @@ theorem position_guard (program : Program) (analysis : Analysis) (state : Runtim
       intro selected present
       cases position with
       | pending vertex included start kind fields => simp_all [frontierFields]
-      | human vertex included wait id origin input fields declared projected metadata owned => simp_all [frontierFields]
-      | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot owned => simp_all [frontierFields]
+      | human vertex included wait id origin input declaredOutput fields declared projected metadata owned waitOutputs => simp_all [frontierFields]
+      | effect vertex included wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot owned waitOutputs => simp_all [frontierFields]
       | finished fields => simp_all [frontierFields]
       | token vertex included token fields consumer bound =>
         simp only [frontierFields, Prod.mk.injEq] at fields
@@ -666,9 +671,9 @@ theorem position_wait_guards (program : Program) (analysis : Analysis) (state : 
   | token vertex included token fields consumer bound =>
       simp_all [serialRuntimeAssociationsValid, waitDeclarationsValid, frontierFields, ForeignRuntimeEmpty]
   | finished fields => simp_all [serialRuntimeAssociationsValid, waitDeclarationsValid, frontierFields, ForeignRuntimeEmpty]
-  | human vertex included wait id origin input fields declared projected metadata owned =>
-      have census := SerialBusinessTask.human_wait_census program wait id origin input wellFormed declared metadata
-      have unique := programWellFormed_waitDeclarer program (.awaitUserTask id origin input wait.output wait.task)
+  | human vertex included wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
+      have census := SerialBusinessTask.human_wait_census program wait id origin input declaredOutput wellFormed declared metadata waitOutputs
+      have unique := programWellFormed_waitDeclarer program (.awaitUserTask id origin input declaredOutput wait.task)
         (userTaskWaitDeclarationKey wait.task.id) wellFormed declared
         (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
       simp only [frontierFields, Prod.mk.injEq] at fields
@@ -678,12 +683,13 @@ theorem position_wait_guards (program : Program) (analysis : Analysis) (state : 
           userTaskWaitDeclarers_eq_keyFilter, declaredByExactlyOneOwnedOperation, SemanticOperation.id]
         with_unfolding_all exact congrArg List.length census
       · simp_all
-  | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
-      have admitted := analyzed_effect_route_admitted program analysis id origin input wait.output effect wait.bpmnErrorRoute analyzed declared
-      have census := business_effect_wait_census program wait id origin input effect
+  | effect vertex included wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot owned waitOutputs =>
+      have admitted := analyzed_effect_route_admitted program analysis id origin input declaredOutput effect wait.bpmnErrorRoute analyzed declared
+      have census := business_effect_wait_census program wait id origin input declaredOutput effect
         (program.identity.semanticProfile == mixedTaskBusinessErrorProfileId) wellFormed declared element descriptor outputs admitted snapshot
-      have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input wait.output effect wait.bpmnErrorRoute declared
-      have unique := programWellFormed_waitDeclarer program (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute)
+        waitOutputs
+      have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input declaredOutput effect wait.bpmnErrorRoute declared
+      have unique := programWellFormed_waitDeclarer program (.awaitEffect id origin input declaredOutput effect wait.bpmnErrorRoute)
         (effectWaitDeclarationKey wait.elementId) wellFormed declared
         (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligned, element])
       simp only [frontierFields, Prod.mk.injEq] at fields

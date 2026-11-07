@@ -94,7 +94,7 @@ def completeSerialEffectUnder? (policy : EffectMappingValuePolicy) (program : Pr
       return { state with
         effectWaits := state.effectWaits.erase wait
         variables
-        tokens := addToken state.tokens wait.output wait.owner }
+        tokens := addTokens state.tokens wait.outputs wait.owner }
   | _ => none
 
 theorem completeSerialActivityScopeUnder?_scalar (handlers : List String) (variables : ScopedVariables)
@@ -131,7 +131,7 @@ def runtimeAssociationsValid (program : Program) (state : RuntimeState) : Bool :
       wait.processInstanceId == wait.owner.processInstanceId &&
       (program.operations.filter (fun operation => match operation with
         | .awaitEffect _ _ _ output effect none => effect.elementId == wait.elementId &&
-            effect.descriptor == wait.descriptor && output == wait.output &&
+            effect.descriptor == wait.descriptor && [output] == wait.outputs &&
             effect.outputMappings == wait.outputMappings && wait.bpmnErrorRoute.isNone &&
             inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings
               wait.arguments

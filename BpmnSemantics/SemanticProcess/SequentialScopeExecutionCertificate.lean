@@ -70,10 +70,10 @@ def sequentialScopeTaskWaitingCount (state : RuntimeState) (owner : ScopeOccurre
     (operation : SemanticOperation) : Nat :=
   match operation with
   | .awaitUserTask _ _ _ output task =>
-      (state.waits.filter fun wait => decide (wait.owner = owner && wait.task = task && wait.output = output)).length
+      (state.waits.filter fun wait => decide (wait.owner = owner && wait.task = task && wait.outputs = [output])).length
   | .awaitEffect _ _ _ output effect _ =>
       (state.effectWaits.filter fun wait => decide
-        (wait.owner = owner && wait.elementId = effect.elementId && wait.output = output)).length
+        (wait.owner = owner && wait.elementId = effect.elementId && wait.outputs = [output])).length
   | _ => 0
 
 def sequentialScopeTaskCompletedCount (fired : List SemanticOperation) (state : RuntimeState)
@@ -178,6 +178,26 @@ private theorem smis_parent_port_arities (operations : List SemanticOperation)
       simp only [List.map_cons, List.sum_cons, List.filter_cons]
       split <;> simp_all <;> omega
 
+private theorem user_units_eq_zero (waits : List UserTaskWait)
+    (zero : (waits.map (·.outputs.length)).sum = 0) : waits = [] := by
+  cases waits with
+  | nil => rfl
+  | cons first rest =>
+      have nonempty := first.outputs_ne_nil
+      cases outputs : first.outputs with
+      | nil => exact absurd outputs nonempty
+      | cons => simp [outputs] at zero
+
+private theorem effect_units_eq_zero (waits : List EffectWait)
+    (zero : (waits.map (·.outputs.length)).sum = 0) : waits = [] := by
+  cases waits with
+  | nil => rfl
+  | cons first rest =>
+      have nonempty := first.outputs_ne_nil
+      cases outputs : first.outputs with
+      | nil => exact absurd outputs nonempty
+      | cons => simp [outputs] at zero
+
 /-- The before-phase parent spine has one Start credit; blocked waits and raw tokens share that credit under the per-port certificate. -/
 theorem sequentialScope_before_parent_credit_bound (program : Program) (entry : SequentialScopeEntry)
     (root : DefinitionScope) (state : RuntimeState) (hosting : SemanticId)
@@ -185,12 +205,12 @@ theorem sequentialScope_before_parent_credit_bound (program : Program) (entry : 
     (certificate : SequentialScopeExecutionCertificateCore program entry root state hosting .before parentFired) :
     let parent : ScopeOccurrenceId := ⟨hosting, root.id, 1⟩
     (state.tokens.filter (fun token => token.owner == parent)).length +
-      (state.waits.filter (fun wait => wait.owner == parent)).length +
-      (state.effectWaits.filter (fun wait => wait.owner == parent)).length ≤ 1 := by
+      ((state.waits.filter (fun wait => wait.owner == parent)).map (·.outputs.length)).sum +
+      ((state.effectWaits.filter (fun wait => wait.owner == parent)).map (·.outputs.length)).sum ≤ 1 := by
   let parent : ScopeOccurrenceId := ⟨hosting, root.id, 1⟩
   rcases certificate with ⟨_, _, _, _, provenance, _, unitStart, balance, _, _⟩
-  let ports := (state.tokens.map (·.placeId) ++ state.waits.map (·.output) ++
-    state.effectWaits.map (·.output) ++ parentFired.flatMap bodyConsumedPorts ++
+  let ports := (state.tokens.map (·.placeId) ++ state.waits.flatMap (·.outputs) ++
+    state.effectWaits.flatMap (·.outputs) ++ parentFired.flatMap bodyConsumedPorts ++
     parentFired.flatMap sequentialScopeParentProducedPorts).eraseDups
   have unique : ports.Nodup := localControl_eraseDups_nodup _
   have consumed : ∀ operation ∈ parentFired, ∀ port ∈ bodyConsumedPorts operation, port ∈ ports := by
@@ -204,10 +224,10 @@ theorem sequentialScope_before_parent_credit_bound (program : Program) (entry : 
   have population := ContinuationMarkingLaws.continuationMarking_sum ports state parent unique
     (by intro token member _; simp only [ports, List.mem_eraseDups, List.mem_append, List.mem_map];
         grind)
-    (by intro wait member _; simp only [ports, List.mem_eraseDups, List.mem_append, List.mem_map];
-        grind)
-    (by intro wait member _; simp only [ports, List.mem_eraseDups, List.mem_append, List.mem_map];
-        grind)
+    (by intro wait member _ output selected
+        simp only [ports, List.mem_eraseDups, List.mem_append, List.mem_flatMap]; grind)
+    (by intro wait member _ output selected
+        simp only [ports, List.mem_eraseDups, List.mem_append, List.mem_flatMap]; grind)
   have summed := congrArg (fun f : ControlPlaceId → Nat => (ports.map f).sum)
     (funext fun place => balance place)
   change (ports.map (fun place => continuationMarking state parent place +
@@ -260,10 +280,10 @@ theorem sequentialScope_before_entry_no_work (program : Program) (entry : Sequen
       ({placeId := entry.input, owner := parent} : ControlToken) ∈
         state.tokens.filter (fun candidate => candidate.owner == parent))
   change (state.tokens.filter (fun token => token.owner == parent)).length +
-    (state.waits.filter (fun wait => wait.owner == parent)).length +
-    (state.effectWaits.filter (fun wait => wait.owner == parent)).length ≤ 1 at credit
+    ((state.waits.filter (fun wait => wait.owner == parent)).map (·.outputs.length)).sum +
+    ((state.effectWaits.filter (fun wait => wait.owner == parent)).map (·.outputs.length)).sum ≤ 1 at credit
   rw [userFilter, effectFilter] at credit
-  exact ⟨List.length_eq_zero_iff.mp (by omega), List.length_eq_zero_iff.mp (by omega), activities⟩
+  exact ⟨user_units_eq_zero _ (by omega), effect_units_eq_zero _ (by omega), activities⟩
 
 /-- A held body's actual completion has no residual Human/effect work: live owners are either its quiescent body or its zero-credit parent. -/
 theorem sequentialScope_held_completion_no_work (program : Program) (entry : SequentialScopeEntry)
@@ -297,12 +317,11 @@ theorem sequentialScope_held_completion_no_work (program : Program) (entry : Seq
   · apply List.eq_nil_iff_forall_not_mem.mpr
     intro wait member
     rcases liveCases wait.owner (List.all_eq_true.mp users wait member) with parentOwner | bodyOwner
-    · have present : wait ∈ before.waits.filter (fun candidate => candidate.owner == parent && candidate.output == wait.output) :=
-        List.mem_filter.mpr ⟨member, by simp [parentOwner]⟩
-      have positive := List.length_pos_of_mem present
-      have empty := zero wait.output
-      simp only [continuationMarking] at empty
-      change _ + (before.waits.filter (fun candidate => candidate.owner == parent && candidate.output == wait.output)).length + _ = 0 at empty
+    · obtain ⟨output, selected⟩ := List.exists_mem_of_ne_nil wait.outputs wait.outputs_ne_nil
+      have positive := ContinuationMarkingLaws.continuationMarking_pos_of_wait before wait member output selected
+      rw [parentOwner] at positive
+      have empty := zero output
+      dsimp only [parent] at positive
       omega
     · have present : before.waits.any (fun candidate => candidate.owner == binding.body.id) = true :=
         List.any_eq_true.mpr ⟨wait, member, by simp [bodyOwner]⟩
@@ -310,12 +329,11 @@ theorem sequentialScope_held_completion_no_work (program : Program) (entry : Seq
   · apply List.eq_nil_iff_forall_not_mem.mpr
     intro wait member
     rcases liveCases wait.owner (List.all_eq_true.mp effects wait member) with parentOwner | bodyOwner
-    · have present : wait ∈ before.effectWaits.filter (fun candidate => candidate.owner == parent && candidate.output == wait.output) :=
-        List.mem_filter.mpr ⟨member, by simp [parentOwner]⟩
-      have positive := List.length_pos_of_mem present
-      have empty := zero wait.output
-      simp only [continuationMarking] at empty
-      change _ + _ + (before.effectWaits.filter (fun candidate => candidate.owner == parent && candidate.output == wait.output)).length = 0 at empty
+    · obtain ⟨output, selected⟩ := List.exists_mem_of_ne_nil wait.outputs wait.outputs_ne_nil
+      have positive := ContinuationMarkingLaws.continuationMarking_pos_of_effectWait before wait member output selected
+      rw [parentOwner] at positive
+      have empty := zero output
+      dsimp only [parent] at positive
       omega
     · have present : before.effectWaits.any (fun candidate => candidate.owner == binding.body.id) = true :=
         List.any_eq_true.mpr ⟨wait, member, by simp [bodyOwner]⟩

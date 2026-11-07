@@ -170,7 +170,7 @@ def extraEffectWait : EffectWait :=
     descriptor := ServiceTaskEffectConformance.descriptor
     arguments := [{ name := "local", value := .string "open" }]
     outputMappings := []
-    output := ⟨"place:ExtraEffectOutput"⟩
+    outputs := [⟨"place:ExtraEffectOutput"⟩]
     bpmnErrorRoute := none }
 
 /-- The separating state combines a valid suspended incident with every represented owner family and a two-level derived called tree. -/
@@ -191,7 +191,7 @@ def cancellationCounterexampleState : RuntimeState :=
          owner := childOwner
          task := { id := ⟨"CancellationTask"⟩, name := none }
          activation := 1
-         output := ⟨"place:CancellationTaskOutput"⟩ }]
+         outputs := [⟨"place:CancellationTaskOutput"⟩] }]
     messageWaits :=
       [{ processInstanceId := nestedCalledInstanceId
          owner := nestedCalledChildOwner
@@ -400,7 +400,7 @@ def orphanLiveRegionState : RuntimeState :=
          owner := orphanOwner
          task := { id := ⟨"OrphanTask"⟩, name := none }
          activation := 1
-         output := ⟨"place:OrphanTaskOutput"⟩ }] }
+         outputs := [⟨"place:OrphanTaskOutput"⟩] }] }
 
 def residualActivityState : RuntimeState :=
   { incidentState with

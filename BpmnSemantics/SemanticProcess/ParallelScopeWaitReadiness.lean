@@ -66,7 +66,7 @@ private theorem native_human_reservation_valid (before : RuntimeState) (owner : 
     owner := owner
     task := task
     activation := activationCount before task.id + 1
-    output := output
+    outputs := [output]
     metadata := task.metadata }
   let issued := { before with activations := setActivationCount before.activations task.id wait.activation }
   have issuedValid := occurrenceReservationStateValid_setActivationCount before task.id wait.activation valid nonempty safe (by dsimp [wait]; omega)
@@ -101,7 +101,7 @@ private theorem native_effect_reservation_valid (before : RuntimeState) (owner :
     descriptor := effect.descriptor
     arguments := arguments
     outputMappings := effect.outputMappings
-    output := output
+    outputs := [output]
     bpmnErrorRoute := route }
   let issued := { before with effectActivations := setEffectActivationCount before.effectActivations effect.elementId wait.activation }
   have issuedValid := occurrenceReservationStateValid_setEffectActivationCount before effect.elementId wait.activation valid nonempty safe (by dsimp [wait]; omega)

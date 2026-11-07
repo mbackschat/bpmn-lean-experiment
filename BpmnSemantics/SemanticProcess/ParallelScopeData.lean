@@ -105,7 +105,7 @@ def completeParallelScopeEffect? (program : Program) (state : RuntimeState)
     some { state with
       variables := { variables with activities := variables.activities.filter fun scope => !activityScopeMatches effectId scope }
       effectWaits := state.effectWaits.erase wait
-      tokens := addToken state.tokens wait.output wait.owner }
+      tokens := addTokens state.tokens wait.outputs wait.owner }
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`completeParallelScopeEffect?]
 
@@ -116,7 +116,7 @@ def completeParallelScopeUserTask? (program : Program) (state : RuntimeState)
   if wait.processInstanceId != wait.owner.processInstanceId then none
   else
     let variables ← writeParallelScopeValues? program state wait.owner values .userTask
-    some { state with waits := state.waits.erase wait, variables, tokens := addToken state.tokens wait.output wait.owner }
+    some { state with waits := state.waits.erase wait, variables, tokens := addTokens state.tokens wait.outputs wait.owner }
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeParallelScopeEffect?,
   `completeParallelScopeUserTask?]

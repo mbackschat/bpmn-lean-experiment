@@ -15,12 +15,14 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+/-- The places a result continues to: every output of the wait on success (ACSP-WAIT-01), the matching route's
+one output on a BPMN Error. -/
 def effectResultOutput (wait : EffectWait) :
-    EffectExecutionResult → Option ControlPlaceId
-  | .success _ => some wait.output
+    EffectExecutionResult → Option (List ControlPlaceId)
+  | .success _ => some wait.outputs
   | .bpmnError code _ _ =>
       match wait.bpmnErrorRoute with
-      | some route => if route.code = code then some route.output else none
+      | some route => if route.code = code then some [route.output] else none
       | none => none
 
 /-- Declarative account of one successful effect-result transition. It exposes occurrence matching and mapping validation as separate premises rather than defining validity through the executable transition. -/
@@ -33,18 +35,18 @@ inductive EffectCompletionStep :
       (result : EffectExecutionResult)
       (wait : EffectWait)
       (variables : ScopedVariables)
-      (output : ControlPlaceId)
+      (outputs : List ControlPlaceId)
       (occurrence :
         state.effectWaits.find? (effectIdNamesWait effectId) = some wait)
       (mapping :
         completeActivityVariableScope state.variables effectId
           wait.outputMappings result = some variables)
-      (route : effectResultOutput wait result = some output) :
+      (route : effectResultOutput wait result = some outputs) :
       EffectCompletionStep state effectId result
         { state with
           effectWaits := state.effectWaits.erase wait
           variables
-          tokens := addToken state.tokens output wait.owner }
+          tokens := addTokens state.tokens outputs wait.owner }
 
 def completeEffect (state : RuntimeState) (effectId : EffectOccurrenceId)
     (result : EffectExecutionResult) : Option RuntimeState :=
@@ -57,12 +59,12 @@ def completeEffect (state : RuntimeState) (effectId : EffectOccurrenceId)
       | some variables =>
           match effectResultOutput wait result with
           | none => none
-          | some output =>
+          | some outputs =>
               some
                 { state with
                   effectWaits := state.effectWaits.erase wait
                   variables
-                  tokens := addToken state.tokens output wait.owner }
+                  tokens := addTokens state.tokens outputs wait.owner }
 
 /-- Every successful executable effect completion is permitted by the separately stated effect-result relation. -/
 theorem completeEffect_sound
@@ -80,9 +82,9 @@ theorem completeEffect_sound
     · rename_i variables mapping
       split at success
       · contradiction
-      · rename_i output route
+      · rename_i outputs route
         cases success
-        exact .commit state effectId result wait variables output
+        exact .commit state effectId result wait variables outputs
           occurrence mapping route
 
 /-- SBT-REFUSE-01 checks root ownership and the complete declaration/wait/local join before ingress. -/
@@ -101,19 +103,19 @@ def serialRuntimeAssociationsValid (program : Program) (state : RuntimeState)
     state.waits.all (fun wait => ownerValid wait.owner &&
       wait.processInstanceId == wait.owner.processInstanceId &&
       (program.operations.filter (fun operation => match operation with
-        | .awaitUserTask _ _ _ output task => task == wait.task && output == wait.output &&
+        | .awaitUserTask _ _ _ output task => task == wait.task && [output] == wait.outputs &&
             wait.metadata == task.metadata
         | _ => false)).length == 1) &&
     state.effectWaits.all (fun wait => ownerValid wait.owner &&
       wait.processInstanceId == wait.owner.processInstanceId &&
       (program.operations.filter (fun operation => match operation with
         | .awaitEffect _ _ _ output effect none => effect.elementId == wait.elementId &&
-            effect.descriptor == wait.descriptor && output == wait.output &&
+            effect.descriptor == wait.descriptor && [output] == wait.outputs &&
             effect.outputMappings == wait.outputMappings && wait.bpmnErrorRoute.isNone &&
             inputSnapshotMatches effect.inputMappings wait.arguments
         | .awaitEffect _ _ _ output effect (some route) => businessError &&
             effect.elementId == wait.elementId && effect.descriptor == wait.descriptor &&
-            output == wait.output && effect.outputMappings == wait.outputMappings &&
+            [output] == wait.outputs && effect.outputMappings == wait.outputMappings &&
             wait.bpmnErrorRoute == some route &&
             inputSnapshotMatches effect.inputMappings wait.arguments
         | _ => false)).length == 1 &&
@@ -170,7 +172,7 @@ def completeSerialEffect? (program : Program) (state : RuntimeState)
       return { state with
         effectWaits := state.effectWaits.erase wait
         variables
-        tokens := addToken state.tokens wait.output wait.owner }
+        tokens := addTokens state.tokens wait.outputs wait.owner }
   | _ => none
 
 /-- MBERR-MAP-01 combines exact local-result mapping with the active occurrence's attached route. -/
@@ -178,7 +180,7 @@ def completeBusinessEffect? (handlers : List String) (state : RuntimeState)
     (effectId : EffectOccurrenceId) (result : EffectExecutionResult) : Option RuntimeState := do
   match state.effectWaits.filter (effectIdNamesWait effectId) with
   | [wait] =>
-      let output ← effectResultOutput wait result
+      let outputs ← effectResultOutput wait result
       let patch := match result with
         | .success patch | .bpmnError _ _ patch => patch
       let variables ← completeSerialActivityScope? handlers state.variables effectId
@@ -186,7 +188,7 @@ def completeBusinessEffect? (handlers : List String) (state : RuntimeState)
       return { state with
         effectWaits := state.effectWaits.erase wait
         variables
-        tokens := addToken state.tokens output wait.owner }
+        tokens := addTokens state.tokens outputs wait.owner }
   | _ => none
 
 end BpmnSemantics.SemanticProcess

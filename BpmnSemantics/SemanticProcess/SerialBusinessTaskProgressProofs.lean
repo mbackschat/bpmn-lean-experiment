@@ -52,7 +52,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 Discovery helpers also require the ordinary profile domain: InternalExecutionFrontier dispatches by identity, whereas programAnalysis checks structure. -/
 run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`isInitiate, `InternalCommutation.ordinaryExecutionFrontier,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addTokens, `isInitiate, `InternalCommutation.ordinaryExecutionFrontier,
   `InternalCommutation.selectInternalEnd?, `SerialBusinessTask.ForeignRuntimeEmpty,
   `SerialBusinessTask.IsSerialCompletion, `SerialBusinessTask.IssuanceFrame, `SerialBusinessTask.OperationAllowed,
   `SerialBusinessTask.RootFrame, `SerialBusinessTask.RootLifecycle, `SerialBusinessTask.frontierFields,
@@ -228,13 +228,14 @@ theorem fire_preserves_suffix_with_depth (program : Program) (analysis : Analysi
         split <;> omega⟩
       apply OrderedPosition.human vertex rest
         { processInstanceId := owner.processInstanceId, owner, task, activation := activationCount before task.id + 1,
-          output, metadata := task.metadata } id origin input
+          outputs := [output], metadata := task.metadata } id origin input output
       · simp [frontierFields, activateUserTask, fields.1, fields.2.1, fields.2.2.1,
           fields.2.2.2.1, fields.2.2.2.2, inputEq, ownerEq, removeToken, insertUserTaskWait]
       · exact member
       · exact projected
       · rfl
       · simpa [ownerEq, SemanticOperation.id] using owned
+      · rfl
   case awaitEffect id origin input output effect route =>
     cases route with
     | some route => contradiction
@@ -267,8 +268,8 @@ theorem fire_preserves_suffix_with_depth (program : Program) (analysis : Analysi
           apply OrderedPosition.effect vertex rest
             { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
               activation := effectActivationCount before effect.elementId + 1, descriptor := effect.descriptor,
-              arguments, outputMappings := effect.outputMappings, output, bpmnErrorRoute := none }
-            id origin input effect
+              arguments, outputMappings := effect.outputMappings, outputs := [output], bpmnErrorRoute := none }
+            id origin input output effect
           · simp [frontierFields, activateEffect, evaluated, fields.1, fields.2.1, fields.2.2.1,
               fields.2.2.2.1, fields.2.2.2.2, inputEq, ownerEq, removeToken, insertEffectWait,
               canonicalInsertBy, addActivityVariableScope, insertActivityVariableScope]
@@ -280,6 +281,7 @@ theorem fire_preserves_suffix_with_depth (program : Program) (analysis : Analysi
           · exact evaluateEnclosingInputMappings_snapshot _ _ _ evaluated
           · rfl
           · simpa [ownerEq, SemanticOperation.id] using owned
+          · rfl
   case reachNoneEnd id origin input =>
     cases step with
     | reachNoneEnd _ _ _ _ _ active =>
@@ -355,13 +357,13 @@ theorem effect_completion_preserves_ordered_suffix (program : Program) (analysis
     | token vertex rest token fields consumer bound =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.2.1] at live
-    | human vertex rest wait id origin input fields declared projected metadata owned =>
+    | human vertex rest wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.2.1] at live
     | finished fields =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.2.1] at live
-    | effect vertex rest wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
+    | effect vertex rest wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot route owned waitOutputs =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         have same : selected = wait := by simpa [fields.2.2.2.1] using live
         subst selected
@@ -379,14 +381,14 @@ theorem effect_completion_preserves_ordered_suffix (program : Program) (analysis
         obtain ⟨next, more, restEq, named, _⟩ := chain_output_selects_next vertex rest nextId links nextOutput
         refine ⟨?_, ?_⟩
         · refine ⟨?_, humansOwned, ?_, Or.inl runningLife, foreign, issued⟩ <;>
-            simp [fields.2.2.2.1, fields.2.1, root.1, addToken, canonicalInsertBy]
+            simp [fields.2.2.2.1, fields.2.1, root.1, waitOutputs, addTokens, addToken, canonicalInsertBy]
         refine ⟨earlier ++ [vertex], rest, by simpa [List.append_assoc] using orderEq, ?_, ?_, ?_⟩
         · rw [restEq]
-          apply OrderedPosition.token next more ⟨wait.output, wait.owner⟩
+          apply OrderedPosition.token next more ⟨declaredOutput, wait.owner⟩
           · simp [frontierFields, fields.1, fields.2.1, fields.2.2.1, fields.2.2.2.1,
-              fields.2.2.2.2, localMatch, addToken, canonicalInsertBy]
+              fields.2.2.2.2, localMatch, waitOutputs, addTokens, addToken, canonicalInsertBy]
           · simpa [named] using consumer
-          · exact owned_operation_port program (.awaitEffect id origin input wait.output effect none) wait.output wait.owner
+          · exact owned_operation_port program (.awaitEffect id origin input declaredOutput effect none) declaredOutput wait.owner
               wellFormed declared rfl (by simp [operationControlPlaces, operationOutputs]) owned
         · exact successful_result_advances_available_suffix (programHandlers program) wait.outputMappings
             before.variables.process.bindings patch bindings vertex rest targets available mapped
@@ -587,10 +589,10 @@ theorem serial_position_progress (program : Program) (analysis : Analysis) (stat
   have life := framed.2.2.2.1
   rcases life with ⟨running, scopes⟩ | ⟨completed, _⟩
   · cases position with
-    | human vertex rest wait id origin input fields member projected metadata owned =>
+    | human vertex rest wait id origin input declaredOutput fields member projected metadata owned waitOutputs =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         exact Or.inl (by simp [fields.2.2.1])
-    | effect vertex rest wait id origin input effect fields member projected element descriptor outputs snapshot route owned =>
+    | effect vertex rest wait id origin input declaredOutput effect fields member projected element descriptor outputs snapshot route owned waitOutputs =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         exact Or.inr (Or.inl (by simp [fields.2.2.2.1]))
     | pending fields =>

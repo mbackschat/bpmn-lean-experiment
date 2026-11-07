@@ -37,6 +37,7 @@ import {
   ControlStateKind,
   sameOccurrence,
   sameScopeOccurrence,
+  waitOutputsAre,
 } from "./semantic-process-state.js";
 import type {
   RuntimeScopeOccurrence,
@@ -393,20 +394,20 @@ function waitMatchesUserTask(
     switch (operation.kind) {
       case SemanticOperationKind.AwaitUserTask:
         return operation.task.elementId === wait.id.elementId &&
-          operation.output === wait.output &&
+          waitOutputsAre(wait.outputs, [operation.output]) &&
           operation.task.name === wait.name &&
           sameJson(operation.task.metadata, wait.metadata);
       case SemanticOperationKind.AwaitDataInputUserTask:
       case SemanticOperationKind.AwaitDataInputOutputUserTask:
       case SemanticOperationKind.AwaitDataOutputUserTask:
         return operation.task.elementId === wait.id.elementId &&
-          operation.output === wait.output &&
+          waitOutputsAre(wait.outputs, [operation.output]) &&
           operation.task.name === wait.name &&
           wait.metadata === undefined;
       case SemanticOperationKind.AwaitBoundedUserTask:
       case SemanticOperationKind.AwaitMonitoredUserTask:
         return operation.task.elementId === wait.id.elementId &&
-          operation.task.output === wait.output &&
+          waitOutputsAre(wait.outputs, [operation.task.output]) &&
           operation.task.name === wait.name &&
           wait.metadata === undefined;
       case SemanticOperationKind.AwaitMessageMonitoredUserTask:
@@ -555,7 +556,7 @@ function messageBoundedRecordIsExact(
     sameOccurrence(wait.id, bodyTask) &&
     wait.id.elementId === operation.task.elementId &&
     wait.name === operation.task.name &&
-    wait.output === operation.task.output &&
+    waitOutputsAre(wait.outputs, [operation.task.output]) &&
     wait.metadata === undefined &&
     sameScopeOccurrence(wait.owner, record.owner)
   ));
@@ -616,7 +617,7 @@ function waitMatchesEffect(
     only(settledOperations(program.operations).filter((operation) =>
       operation.kind === SemanticOperationKind.AwaitEffect &&
       operation.effect.elementId === wait.id.elementId &&
-      operation.output === wait.output &&
+      waitOutputsAre(wait.outputs, [operation.output]) &&
       sameJson(operation.effect.descriptor, wait.descriptor) &&
       inputMappingSnapshotMatchesUnder(
         effectMappingValuePolicyForProgram(program),

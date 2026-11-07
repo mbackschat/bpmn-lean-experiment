@@ -49,11 +49,11 @@ theorem SequentialScopeBodyPortAccounting.user_completion (program : Program)
       after = { before with
         waits := before.waits.erase wait
         variables := variables
-        tokens := addToken before.tokens wait.output wait.owner } ∧
+        tokens := addTokens before.tokens wait.outputs wait.owner } ∧
       SequentialScopeBodyPortAccounting entry body fired after ∧
       (∀ queried place, ContinuationMarkingLaws.tokenCount after.tokens queried place =
         ContinuationMarkingLaws.tokenCount before.tokens queried place +
-          ownedPortCount [wait.output] wait.owner queried place) := by
+          ownedPortCount wait.outputs wait.owner queried place) := by
   obtain ⟨wait, variables, unique, rfl⟩ := sequentialScope_user_completion_frame program before after taskId values completed
   have present : wait ∈ before.waits := (List.mem_filter.mp
     (show wait ∈ sequentialScopeTaskWaits before taskId from by rw [unique]; simp)).1
@@ -72,11 +72,11 @@ theorem SequentialScopeBodyPortAccounting.effect_completion (program : Program)
       after = { before with
         effectWaits := before.effectWaits.erase wait
         variables := variables
-        tokens := addToken before.tokens wait.output wait.owner } ∧
+        tokens := addTokens before.tokens wait.outputs wait.owner } ∧
       SequentialScopeBodyPortAccounting entry body fired after ∧
       (∀ queried place, ContinuationMarkingLaws.tokenCount after.tokens queried place =
         ContinuationMarkingLaws.tokenCount before.tokens queried place +
-          ownedPortCount [wait.output] wait.owner queried place) := by
+          ownedPortCount wait.outputs wait.owner queried place) := by
   obtain ⟨wait, variables, unique, rfl⟩ := sequentialScope_effect_completion_frame program before after effectId result completed
   have present : wait ∈ before.effectWaits := (List.mem_filter.mp
     (show wait ∈ before.effectWaits.filter (effectIdNamesWait effectId) from by rw [unique]; simp)).1

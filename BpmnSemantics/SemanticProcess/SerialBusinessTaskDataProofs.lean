@@ -776,16 +776,16 @@ theorem root_completion_shape (before after : RuntimeState) (owner : ScopeOccurr
   · simp [completeScopeState?, scopes] at completed
 
 theorem human_wait_census (program : Program) (wait : UserTaskWait)
-    (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
     (wellFormed : programWellFormed program = true)
-    (member : .awaitUserTask id origin input wait.output wait.task ∈ program.operations)
-    (metadata : wait.metadata = wait.task.metadata) :
+    (member : .awaitUserTask id origin input output wait.task ∈ program.operations)
+    (metadata : wait.metadata = wait.task.metadata) (waitOutputs : wait.outputs = [output]) :
     program.operations.filter (fun operation => match operation with
-      | .awaitUserTask _ _ _ output task => task == wait.task && output == wait.output && wait.metadata == task.metadata
-      | _ => false) = [.awaitUserTask id origin input wait.output wait.task] := by
+      | .awaitUserTask _ _ _ output task => task == wait.task && [output] == wait.outputs && wait.metadata == task.metadata
+      | _ => false) = [.awaitUserTask id origin input output wait.task] := by
   apply refined_unique_filter program.operations
     (fun operation => operationDeclaresWaitKey operation (userTaskWaitDeclarationKey wait.task.id)) _
-    (.awaitUserTask id origin input wait.output wait.task)
+    (.awaitUserTask id origin input output wait.task)
   · exact programWellFormed_waitDeclarer program _ _ wellFormed member
       (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
   · intro operation _ selected
@@ -793,25 +793,25 @@ theorem human_wait_census (program : Program) (wait : UserTaskWait)
     case awaitUserTask id origin input output task =>
       simp only [Bool.and_eq_true, beq_iff_eq] at selected
       simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, selected.1.1]
-  · simp [metadata]
+  · simp [metadata, waitOutputs]
 
 theorem effect_wait_census (program : Program) (wait : EffectWait)
-    (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId) (effect : EffectDefinition)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId) (effect : EffectDefinition)
     (wellFormed : programWellFormed program = true)
-    (member : .awaitEffect id origin input wait.output effect none ∈ program.operations)
+    (member : .awaitEffect id origin input output effect none ∈ program.operations)
     (element : effect.elementId = wait.elementId) (descriptor : effect.descriptor = wait.descriptor)
     (outputs : effect.outputMappings = wait.outputMappings) (route : wait.bpmnErrorRoute = none)
-    (snapshot : inputSnapshotMatches effect.inputMappings wait.arguments = true) :
+    (snapshot : inputSnapshotMatches effect.inputMappings wait.arguments = true) (waitOutputs : wait.outputs = [output]) :
     program.operations.filter (fun operation => match operation with
       | .awaitEffect _ _ _ output effect none => effect.elementId == wait.elementId &&
-          effect.descriptor == wait.descriptor && output == wait.output &&
+          effect.descriptor == wait.descriptor && [output] == wait.outputs &&
           effect.outputMappings == wait.outputMappings && wait.bpmnErrorRoute.isNone &&
           inputSnapshotMatches effect.inputMappings wait.arguments
-      | _ => false) = [.awaitEffect id origin input wait.output effect none] := by
-  have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input wait.output effect none member
+      | _ => false) = [.awaitEffect id origin input output effect none] := by
+  have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input output effect none member
   apply refined_unique_filter program.operations
     (fun operation => operationDeclaresWaitKey operation (effectWaitDeclarationKey wait.elementId)) _
-    (.awaitEffect id origin input wait.output effect none)
+    (.awaitEffect id origin input output effect none)
   · exact programWellFormed_waitDeclarer program _ _ wellFormed member
       (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligned, element])
   · intro operation included selected
@@ -823,7 +823,7 @@ theorem effect_wait_census (program : Program) (wait : EffectWait)
           have aligns := programWellFormed_awaitEffect_elements_align program wellFormed id origin input output effect none included
           simp only [Bool.and_eq_true, beq_iff_eq] at selected
           simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligns, selected.1.1.1.1.1]
-  · simp [element, descriptor, outputs, route, snapshot]
+  · simp [element, descriptor, outputs, route, snapshot, waitOutputs]
 
 theorem canonical_present_binding_evaluable (handlers : List String) (context : List VariableBinding)
     (name : String) (canonical : bindingsValid handlers context = true)

@@ -72,9 +72,22 @@ private theorem any_addToken (tokens : List ControlToken) (output : ControlPlace
     cases present : tokens.all (fun token => !predicate token) <;>
       rfl
 
-/-- A same-owner wait withdrawal and continuation token preserve every other owner's quiescence. -/
+private theorem any_const_false {α : Type} (values : List α) : values.any (fun _ => false) = false := by
+  induction values <;> simp_all
+
+private theorem any_addTokens (tokens : List ControlToken) (outputs : List ControlPlaceId)
+    (owner : ScopeOccurrenceId) (predicate : ControlToken → Bool) :
+    (addTokens tokens outputs owner).any predicate =
+      ((outputs.map fun output => ({ placeId := output, owner } : ControlToken)) ++ tokens).any predicate := by
+  apply Bool.eq_iff_iff.mpr
+  simp only [List.any_eq_true]
+  exact ⟨fun ⟨token, member, selected⟩ => ⟨token, (addTokens_perm tokens outputs owner).mem_iff.mp member, selected⟩,
+    fun ⟨token, member, selected⟩ => ⟨token, (addTokens_perm tokens outputs owner).mem_iff.mpr member, selected⟩⟩
+
+/-- A same-owner wait withdrawal and its continuation tokens preserve every other owner's quiescence. -/
 theorem scopeQuiescent_owner_local_wait_token_exchange
-    (before : RuntimeState) (owner : ScopeOccurrenceId) (output : ControlPlaceId)
+    (before : RuntimeState) (owner : ScopeOccurrenceId) (outputs : List ControlPlaceId)
+    (nonempty : outputs ≠ [])
     (variables : ScopedVariables) (human : Option UserTaskWait) (effect : Option EffectWait)
     (humanOwned : ∀ wait, human = some wait → wait.owner = owner)
     (effectOwned : ∀ wait, effect = some wait → wait.owner = owner) :
@@ -82,34 +95,35 @@ theorem scopeQuiescent_owner_local_wait_token_exchange
       waits := match human with | none => before.waits | some wait => before.waits.erase wait
       effectWaits := match effect with | none => before.effectWaits | some wait => before.effectWaits.erase wait
       variables
-      tokens := addToken before.tokens output owner }
+      tokens := addTokens before.tokens outputs owner }
     scopeQuiescent after owner = false ∧
       ∀ sibling, owner ≠ sibling → scopeQuiescent after sibling = scopeQuiescent before sibling := by
   dsimp only
   constructor
-  · simp [scopeQuiescent, any_addToken]
+  · obtain ⟨first, rest, rfl⟩ := List.exists_cons_of_ne_nil nonempty
+    simp [scopeQuiescent, any_addTokens]
   · intro sibling different
     have rejected : (owner == sibling) = false := by simpa using different
     cases human with
     | none =>
         cases effect with
-        | none => simp [scopeQuiescent, any_addToken, rejected]
+        | none => simp [scopeQuiescent, any_addTokens, any_const_false, Function.comp_def, rejected]
         | some wait =>
             have owned := effectOwned wait rfl
             have effects := any_erase_unmatched before.effectWaits wait
               (fun candidate => candidate.owner == sibling) (by simp [owned, rejected])
-            simp [scopeQuiescent, any_addToken, effects, rejected]
+            simp [scopeQuiescent, any_addTokens, any_const_false, Function.comp_def, effects, rejected]
     | some wait =>
         have owned := humanOwned wait rfl
         have humans := any_erase_unmatched before.waits wait
           (fun candidate => candidate.owner == sibling) (by simp [owned, rejected])
         cases effect with
-        | none => simp [scopeQuiescent, any_addToken, humans, rejected]
+        | none => simp [scopeQuiescent, any_addTokens, any_const_false, Function.comp_def, humans, rejected]
         | some effectWait =>
             have effectOwner := effectOwned effectWait rfl
             have effects := any_erase_unmatched before.effectWaits effectWait
               (fun candidate => candidate.owner == sibling) (by simp [effectOwner, rejected])
-            simp [scopeQuiescent, any_addToken, humans, effects, rejected]
+            simp [scopeQuiescent, any_addTokens, any_const_false, Function.comp_def, humans, effects, rejected]
 
 /-- Actual Human completion withdraws the uniquely addressed body wait; its continuation still blocks retirement. -/
 theorem completeParallelScopeUserTask_quiescence_locality
@@ -123,7 +137,7 @@ theorem completeParallelScopeUserTask_quiescence_locality
   split at completed <;> try contradiction
   obtain ⟨variables, _, completed⟩ := Option.bind_eq_some_iff.mp completed
   cases Option.some.inj completed
-  exact scopeQuiescent_owner_local_wait_token_exchange before wait.owner wait.output variables (some wait) none
+  exact scopeQuiescent_owner_local_wait_token_exchange before wait.owner wait.outputs wait.outputs_ne_nil variables (some wait) none
     (by intro candidate same; cases Option.some.inj same; rfl)
     (by intro candidate same; cases same)
 
@@ -143,7 +157,7 @@ theorem completeParallelScopeEffect_quiescence_locality
   obtain ⟨projected, _, completed⟩ := Option.bind_eq_some_iff.mp completed
   obtain ⟨variables, _, completed⟩ := Option.bind_eq_some_iff.mp completed
   cases Option.some.inj completed
-  exact scopeQuiescent_owner_local_wait_token_exchange before wait.owner wait.output
+  exact scopeQuiescent_owner_local_wait_token_exchange before wait.owner wait.outputs wait.outputs_ne_nil
     { variables with activities := variables.activities.filter fun scope => !activityScopeMatches id scope }
     none (some wait) (by intro candidate same; cases same)
     (by intro candidate same; cases Option.some.inj same; rfl)
@@ -190,11 +204,10 @@ theorem TokenPatch.scopeQuiescent_frame (before : RuntimeState) (patch : TokenPa
 namespace InternalCommutation
 
 private theorem added_foreign_token_count (before : RuntimeState) (owner : ScopeOccurrenceId)
-    (output place : ControlPlaceId) (foreign : ScopeOccurrenceId) (outside : owner ≠ foreign) :
-    ((addToken before.tokens output owner).filter fun token => token.placeId == place && token.owner == foreign).length =
+    (outputs : List ControlPlaceId) (place : ControlPlaceId) (foreign : ScopeOccurrenceId) (outside : owner ≠ foreign) :
+    ((addTokens before.tokens outputs owner).filter fun token => token.placeId == place && token.owner == foreign).length =
       (before.tokens.filter fun token => token.placeId == place && token.owner == foreign).length := by
-  simpa [outside] using addToken_filter_length before.tokens output owner
-    (fun token => token.placeId == place && token.owner == foreign)
+  exact addTokens_foreign_filter_length before.tokens outputs owner foreign outside place
 
 private theorem removed_foreign_token_count (before : RuntimeState) (owner : ScopeOccurrenceId)
     (input place : ControlPlaceId) (foreign : ScopeOccurrenceId) (outside : owner ≠ foreign) :
@@ -229,7 +242,7 @@ theorem completeParallelScopeUserTask_token_offer_frame
   cases Option.some.inj completed
   exact applyInternalOperationOccurrence_token_offer_read_frame program before _ candidate operation
     resolved tokenOperation rfl rfl
-    (fun place => added_foreign_token_count before wait.owner wait.output place candidate.owner outside)
+    (fun place => added_foreign_token_count before wait.owner wait.outputs place candidate.owner outside)
 
 /-- A stable actual frontier's foreign token absence survives successful Human completion. -/
 theorem completeParallelScopeUserTask_foreign_token_absence
@@ -272,7 +285,7 @@ theorem completeParallelScopeEffect_token_offer_frame
   cases Option.some.inj completed
   exact applyInternalOperationOccurrence_token_offer_read_frame program before _ candidate operation
     resolved tokenOperation rfl rfl
-    (fun place => added_foreign_token_count before wait.owner wait.output place candidate.owner outside)
+    (fun place => added_foreign_token_count before wait.owner wait.outputs place candidate.owner outside)
   case h_2 =>
     rename_i patch missingResult impossible
     exact False.elim (impossible patch rfl)
@@ -296,7 +309,7 @@ private theorem activateUserTask_quiescence_frame (program : Program) (before : 
       scopeQuiescent before sibling := by
   let patch := singletonArmingPatch program before operation owner input (.userTask
     { processInstanceId := owner.processInstanceId, owner, task, activation := activationCount before task.id + 1,
-      output, metadata := task.metadata })
+      outputs := [output], metadata := task.metadata })
   exact arming_quiescent_frame before patch sibling rfl outside
 
 private theorem activateEffect_quiescence_frame (program : Program) (before : RuntimeState)
@@ -308,7 +321,7 @@ private theorem activateEffect_quiescence_frame (program : Program) (before : Ru
   let patch := singletonArmingPatch program before operation owner input (.effect
     { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
       activation := effectActivationCount before effect.elementId + 1, descriptor := effect.descriptor,
-      arguments, outputMappings := effect.outputMappings, output, bpmnErrorRoute := route } arguments)
+      arguments, outputMappings := effect.outputMappings, outputs := [output], bpmnErrorRoute := route } arguments)
   exact arming_quiescent_frame before patch sibling rfl outside
 
 /-- A stable actual frontier's foreign token absence survives successful Service completion. -/
@@ -684,7 +697,7 @@ theorem completeParallelScopeUserTask_foreign_body_refusal
   cases Option.some.inj completed
   exact stable_frontier_body_refusal_of_token_frame program before _ profile candidate operation resolved bodyKind
     empty successful rfl rfl
-    (fun place => added_foreign_token_count before wait.owner wait.output place candidate.owner outside)
+    (fun place => added_foreign_token_count before wait.owner wait.outputs place candidate.owner outside)
 
 /-- Successful Service ingress has the same foreign-body exclusion even when its output mapping changes shared Process data. -/
 theorem completeParallelScopeEffect_foreign_body_refusal
@@ -710,7 +723,7 @@ theorem completeParallelScopeEffect_foreign_body_refusal
   cases Option.some.inj completed
   exact stable_frontier_body_refusal_of_token_frame program before _ profile candidate operation resolved bodyKind
     empty successful rfl rfl
-    (fun place => added_foreign_token_count before wait.owner wait.output place candidate.owner outside)
+    (fun place => added_foreign_token_count before wait.owner wait.outputs place candidate.owner outside)
   case h_2 =>
     rename_i patch missingResult impossible
     exact False.elim (impossible patch rfl)
@@ -791,7 +804,7 @@ theorem parallelScopeCommand_task_preserves_nonquiescence (program : Program) (b
     rename_i actual found
     cases Option.some.inj applied
     cases Option.some.inj completed
-    have locality := scopeQuiescent_owner_local_wait_token_exchange before actual.owner actual.output before.variables
+    have locality := scopeQuiescent_owner_local_wait_token_exchange before actual.owner actual.outputs actual.outputs_ne_nil before.variables
       (some actual) none (by intro candidate same; cases Option.some.inj same; rfl) (by intro candidate same; cases same)
     simpa only [scopeQuiescent] using quiescence_locality_preserves before _ actual.owner owner locality blocked
 
@@ -810,7 +823,7 @@ theorem parallelScopeCommand_effect_preserves_nonquiescence (program : Program) 
     obtain ⟨variables, _, completed⟩ := Option.bind_eq_some_iff.mp completed
     cases Option.some.inj completed
     exact quiescence_locality_preserves before _ wait.owner owner
-      (scopeQuiescent_owner_local_wait_token_exchange before wait.owner wait.output variables none (some wait)
+      (scopeQuiescent_owner_local_wait_token_exchange before wait.owner wait.outputs wait.outputs_ne_nil variables none (some wait)
         (by intro candidate same; cases same) (by intro candidate same; cases Option.some.inj same; rfl)) blocked
 
 /-- Real PMIS admission preserves nonquiescence for either completion kind, including rejection and unchanged-state outcomes. -/

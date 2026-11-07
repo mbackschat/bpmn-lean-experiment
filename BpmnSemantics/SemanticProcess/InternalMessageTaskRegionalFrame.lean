@@ -215,7 +215,7 @@ theorem message_task_cancellation_commutes (program : Program) (state : RuntimeS
   have taskFrame := filter_canonicalInsertBy_retained userTaskWaitBefore userTaskWaitBefore_compose
     (fun wait => !cancelled wait.owner)
     { processInstanceId := instanceId, owner, task := { id := contract.task.id, name := contract.task.name },
-      activation := activationCount state contract.task.id + 1, output := contract.task.output }
+      activation := activationCount state contract.task.id + 1, outputs := [contract.task.output] }
     state.waits taskOrder (by simp [outside])
   have messageFrame := filter_canonicalInsertBy_retained messageWaitBefore regional_messageWaitBefore_compose
     (fun wait => !cancelled wait.owner &&

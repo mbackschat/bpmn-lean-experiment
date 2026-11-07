@@ -281,7 +281,7 @@ test("rejects Boolean effect success and BPMN Error patches with exact state pre
           sequenceFlowId: "Flow_TaskToEnd",
         },
       },
-      output: "place:Flow_TaskToEnd",
+      outputs: ["place:Flow_TaskToEnd"],
       incidentAlreadyRetried: false,
     }],
     variables: {

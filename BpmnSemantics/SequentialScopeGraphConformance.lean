@@ -360,14 +360,14 @@ theorem delayed_join_actual_completions_exchange_blocked_credit_and_retain_scope
           continuationMarking delayedJoinStarted.state queried place ∧
         ContinuationMarkingLaws.tokenCount serviceAfter.tokens queried place =
           ContinuationMarkingLaws.tokenCount delayedJoinStarted.state.tokens queried place +
-            ownedPortCount [wait.output] wait.owner queried place) ∧
+            ownedPortCount wait.outputs wait.owner queried place) ∧
       serviceAfter.scopeActivations = delayedJoinStarted.state.scopeActivations) ∧
     (∃ wait, sequentialScopeTaskWaits delayedJoinArrived.state ⟨⟨"instance"⟩, ⟨"Review"⟩, 1⟩ = [wait] ∧
       (∀ queried place, continuationMarking humanAfter queried place =
           continuationMarking delayedJoinArrived.state queried place ∧
         ContinuationMarkingLaws.tokenCount humanAfter.tokens queried place =
           ContinuationMarkingLaws.tokenCount delayedJoinArrived.state.tokens queried place +
-            ownedPortCount [wait.output] wait.owner queried place) ∧
+            ownedPortCount wait.outputs wait.owner queried place) ∧
       humanAfter.scopeActivations = delayedJoinArrived.state.scopeActivations) := by
   have service : completeSequentialScopeEffect? delayedJoinProgram delayedJoinStarted.state
       ⟨⟨"instance"⟩, ⟨"Validate"⟩, 1⟩ (.success [⟨"result", .null⟩]) =

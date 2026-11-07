@@ -142,4 +142,25 @@ theorem runtimePositionValid_addToken (program : Program) (expectedInstanceId : 
         rw [tokenValidFrame]
         exact tokens token member
 
+/-- Producing several owned tokens preserves position validity when every produced place is declared and owned. -/
+theorem runtimePositionValid_addTokens (program : Program) (instanceId : SemanticId)
+    (state : RuntimeState) (places : List ControlPlaceId) (owner : ScopeOccurrenceId)
+    (valid : runtimePositionValid program instanceId state = true)
+    (live : exactLiveOccurrence state owner = true)
+    (declared : ∀ place ∈ places, ∃ declaration,
+      program.controlPlaces.filter (fun candidate => decide (candidate.id = place)) = [declaration])
+    (owned : ∀ place ∈ places, program.controlPlaceScopes.filter (fun ownership =>
+      decide (ownership.controlPlaceId = place)) =
+        [{ controlPlaceId := place, scopeId := owner.definitionScopeId }]) :
+    runtimePositionValid program instanceId
+      { state with tokens := addTokens state.tokens places owner } = true := by
+  induction places with
+  | nil => exact valid
+  | cons first rest ih =>
+      have restValid := ih (fun place member => declared place (by simp [member]))
+        (fun place member => owned place (by simp [member]))
+      exact runtimePositionValid_addToken program instanceId
+        { state with tokens := addTokens state.tokens rest owner } first owner restValid live
+        (declared first (by simp)) (owned first (by simp))
+
 end BpmnSemantics.SemanticProcess

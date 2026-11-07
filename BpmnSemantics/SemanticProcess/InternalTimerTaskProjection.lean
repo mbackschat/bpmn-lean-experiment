@@ -121,7 +121,7 @@ theorem prepared_timer_task_projectWaits_insert
     { processInstanceId := owner.processInstanceId, owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   let after := applyInternalTimerTaskPatch state selected
   intro beforeWaits beforeProjected
   obtain ⟨tasks, messages, timers, effects, incidents, tasksEq, messagesEq, timersEq,
@@ -174,7 +174,7 @@ theorem prepared_timer_task_preserves_messageBoundedProjectionValid
     { processInstanceId := owner.processInstanceId, owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   unfold messageBoundedProjectionValid at valid ⊢
   simp only [List.all_eq_true] at valid ⊢
   intro candidate member

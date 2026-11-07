@@ -34,7 +34,7 @@ for (const { count, program, start } of (await parallelCommandInputs({ parentPre
       assert.equal(prefix.initiationPending, expectedPort === null, "pending initiation has no issued parent credit");
       const coordinates = [
         ...prefix.controlTokens.map(token => ({ owner: token.owner, port: token.placeId, count: token.multiplicity })),
-        ...[...prefix.userTaskWaits, ...prefix.effectWaits].map(wait => ({ owner: wait.owner, port: wait.output, count: 1 })),
+        ...[...prefix.userTaskWaits, ...prefix.effectWaits].flatMap(wait => wait.outputs.map(port => ({ owner: wait.owner, port, count: 1 }))),
       ];
       for (const coordinate of coordinates) assert.ok(Number.isSafeInteger(coordinate.count) && coordinate.count > 0);
       assert.equal(coordinates.reduce((total, coordinate) => total + coordinate.count, 0),
@@ -84,7 +84,7 @@ for (const { count, program, start } of (await parallelCommandInputs({ parentPre
           if (prefix.userTaskWaits.length === 1) {
             const wait = prefix.userTaskWaits[0]!;
             const foreign = { ...prefix, userTaskWaits: [{ ...wait, owner: { ...wait.owner, activation: wait.owner.activation + 1 } }] };
-            const wrongPort = { ...prefix, userTaskWaits: [{ ...wait, output: initiation.output }] };
+            const wrongPort = { ...prefix, userTaskWaits: [{ ...wait, outputs: [initiation.output] }] };
             assert.notDeepEqual(foreign, prefix);
             assert.notDeepEqual(wrongPort, prefix);
             assert.throws(() => credit(foreign, port), /credit belongs to exact root/);
@@ -120,7 +120,7 @@ for (const { count, program, start } of (await parallelCommandInputs({ parentPre
     assert.equal(state.userTaskWaits.length, 1);
     assert.equal(state.userTaskWaits[0]!.id.elementId, "ApproveBatch");
     beforeEntry();
-    assert.equal(state.userTaskWaits[0]!.output, service.input, "approval wait owns the validation input credit");
+    assert.deepEqual(state.userTaskWaits[0]!.outputs, [service.input], "approval wait owns the validation input credit");
     const approval = { kind: StimulusKind.CompleteUserTaskInstance, commandId: "approve-batch",
       taskId: state.userTaskWaits[0]!.id, submittedValues: [] } as const;
     for (const value of [{ kind: VariableValueKind.StringList, value: [] },
@@ -132,7 +132,7 @@ for (const { count, program, start } of (await parallelCommandInputs({ parentPre
     assert.equal(state.effectWaits.length, 1);
     assert.equal(state.effectWaits[0]!.id.elementId, "ValidateBatch");
     beforeEntry();
-    assert.equal(state.effectWaits[0]!.output, entry.input, "validation wait owns the exact entry input credit");
+    assert.deepEqual(state.effectWaits[0]!.outputs, [entry.input], "validation wait owns the exact entry input credit");
     refuse({ ...approval, commandId: "stale-approval" });
     for (const kind of [SemanticOperationKind.AwaitUserTask, SemanticOperationKind.AwaitEffect]) {
       const traceIndex = traces.findIndex(trace => trace.committedTransitions.some(record =>

@@ -132,14 +132,14 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
     (declared : operation ∈ program.operations)
     (declaration : UnboundedUserTaskWaitDeclaration
       { processInstanceId := instanceId, owner, task := { id := taskId, name := taskName },
-        activation := activationCount before taskId + 1, output } operation)
+        activation := activationCount before taskId + 1, outputs := [output] } operation)
     (inputMember : input ∈ operationControlPlaces operation) :
     runtimeStateWellFormed program expectedInstanceId
       { before with
         tokens := removeToken before.tokens input owner
         waits := insertUserTaskWait
           { processInstanceId := instanceId, owner, task := { id := taskId, name := taskName },
-            activation := activationCount before taskId + 1, output } before.waits
+            activation := activationCount before taskId + 1, outputs := [output] } before.waits
         activations := setActivationCount before.activations taskId (activationCount before taskId + 1)
         activityOccurrences := insertActivityOccurrence
           (dataInputOutputActivityRecord before instanceId owner taskId) before.activityOccurrences
@@ -149,7 +149,7 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
           (dataInputOutputActivityOwner before instanceId taskId) bindings } = true := by
   let insertedWait : UserTaskWait :=
     { processInstanceId := instanceId, owner, task := { id := taskId, name := taskName },
-      activation := activationCount before taskId + 1, output }
+      activation := activationCount before taskId + 1, outputs := [output] }
   let record := dataInputOutputActivityRecord before instanceId owner taskId
   let activityOwner := dataInputOutputActivityOwner before instanceId taskId
   let successor : RuntimeState :=
@@ -656,7 +656,7 @@ theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed_general
               [{ name := directInput.targetDataInputId, value := binding.value }]
               (.awaitDataInputOutputUserTask id origin input output taskId taskName directInput
                 directOutput) wellFormed running owned declared
-              (.dataInputOutput id origin input directInput directOutput rfl rfl) (by left)
+              (.dataInputOutput id origin input output directInput directOutput rfl rfl rfl) (by left)
 
 theorem dataInputOutputActivationStep_preserves_runtimeStateWellFormed
     (program : Program) (expectedInstanceId : SemanticId)

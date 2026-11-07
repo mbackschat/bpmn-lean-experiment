@@ -254,7 +254,7 @@ def prepareReservedOccurrenceArm? (program : Program) (state : RuntimeState)
           owner := owner
           task := task
           activation := activation
-          output := output
+          outputs := [output]
           metadata := task.metadata })
     | .awaitEffect _ _ _ output effect route => do
         let arguments ← if hasParallelScopeDefinition program owner then
@@ -268,7 +268,7 @@ def prepareReservedOccurrenceArm? (program : Program) (state : RuntimeState)
           descriptor := effect.descriptor
           arguments := arguments
           outputMappings := effect.outputMappings
-          output := output
+          outputs := [output]
           bpmnErrorRoute := route } arguments)
     | _ => none
   if origin.elementId.value != write.elementId.value ||
@@ -670,7 +670,7 @@ theorem applyInternalOperationOccurrence_body_effect
               owner := candidate.owner
               task := task
               activation := activationCount before task.id + 1
-              output := output
+              outputs := [output]
               metadata := task.metadata })
         exact Or.inl ⟨patch, rfl, rfl, rfl⟩
     | true =>
@@ -683,7 +683,7 @@ theorem applyInternalOperationOccurrence_body_effect
               owner := candidate.owner
               task := task
               activation := activationCount before task.id + 1
-              output := output
+              outputs := [output]
               metadata := task.metadata })
         exact Or.inl ⟨patch, rfl, rfl, rfl⟩
   case awaitEffect id origin input output effect route =>
@@ -702,7 +702,7 @@ theorem applyInternalOperationOccurrence_body_effect
             descriptor := effect.descriptor
             arguments := arguments
             outputMappings := effect.outputMappings
-            output := output
+            outputs := [output]
             bpmnErrorRoute := route } arguments)
       exact Or.inl ⟨patch, rfl, rfl, rfl⟩
   case duplicate id origin input outputs =>

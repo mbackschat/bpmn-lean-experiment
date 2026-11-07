@@ -229,7 +229,7 @@ theorem ParallelScopeInternalPrefixReachable.service_reserved_above_counter (pro
     descriptor := effect.descriptor
     arguments := arguments
     outputMappings := effect.outputMappings
-    output := output
+    outputs := [output]
     bpmnErrorRoute := route }
   have available := effect_write_available_above_counter state wait arguments valid (by dsimp [wait]; omega)
   have allowed := List.all_eq_true.mp (ParallelScopeStart.analyzeProgram_incidence_admission program analysis analyzed).2.2 operation declared

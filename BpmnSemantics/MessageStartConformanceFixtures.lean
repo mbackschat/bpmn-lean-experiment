@@ -199,7 +199,7 @@ def exactWait : UserTaskWait :=
     owner := rootOwner instanceId
     task := { id := ⟨taskNodeId.value⟩, name := some "Approve" }
     activation := 1
-    output := taskOutput }
+    outputs := [taskOutput] }
 
 def waitingState : RuntimeState :=
   { admittedState with

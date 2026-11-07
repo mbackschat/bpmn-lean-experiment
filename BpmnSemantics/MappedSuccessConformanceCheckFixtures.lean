@@ -109,7 +109,7 @@ def effectWait : EffectWait :=
     descriptor
     arguments
     outputMappings
-    output := ⟨"place:Flow_MappedSuccessToEnd"⟩
+    outputs := [⟨"place:Flow_MappedSuccessToEnd"⟩]
     bpmnErrorRoute := none }
 
 def waitingState : RuntimeState :=
@@ -295,7 +295,7 @@ def source_overlay_identity_mismatch_is_unsupported : Bool := decide <|
 def writeLocalPatchToProcessScope (state : RuntimeState) : RuntimeState :=
   { state with
     effectWaits := []
-    tokens := addToken state.tokens effectWait.output effectWait.owner
+    tokens := addTokens state.tokens effectWait.outputs effectWait.owner
     variables :=
       { process :=
           { bindings :=

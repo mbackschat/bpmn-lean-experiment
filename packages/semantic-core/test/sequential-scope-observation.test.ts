@@ -37,11 +37,11 @@ function waiting(): RuntimeState {
   const state = entered();
   const owner = body(state);
   return { ...state, controlTokens: [], userTaskWaits: [
-    { id: id("Zulu"), owner, name: null, output: "end" },
-    { id: id("Alpha"), owner, name: null, output: "end" },
-    { id: id("Other"), owner: parent, name: null, output: "parent-end" },
+    { id: id("Zulu"), owner, name: null, outputs: ["end"] },
+    { id: id("Alpha"), owner, name: null, outputs: ["end"] },
+    { id: id("Other"), owner: parent, name: null, outputs: ["parent-end"] },
   ], effectWaits: [{ id: id("Validate"), owner, descriptor: { protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation: "validateInvoice" },
-    arguments: [], outputMappings: [], output: "end", bpmnErrorRoute: null, incidentAlreadyRetried: false }] };
+    arguments: [], outputMappings: [], outputs: ["end"], bpmnErrorRoute: null, incidentAlreadyRetried: false }] };
 }
 
 test("private Sub-Process progress publishes only exact current-body interactions and committed locals", () => {

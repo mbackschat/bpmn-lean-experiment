@@ -29,7 +29,7 @@ def messageBoundedProjectionPairMatches (program : Program)
           record.activityElementId.value = task.id.value &&
           taskWait.processInstanceId = record.processInstanceId && taskWait.owner = record.owner &&
           taskWait.task.id = task.id && taskWait.task.name = task.name &&
-          taskWait.task.metadata = none && taskWait.metadata = none && taskWait.output = task.output &&
+          taskWait.task.metadata = none && taskWait.metadata = none && taskWait.outputs = [task.output] &&
           record.body = .userTask
             { processInstanceId := taskWait.processInstanceId
               elementId := ⟨taskWait.task.id.value⟩

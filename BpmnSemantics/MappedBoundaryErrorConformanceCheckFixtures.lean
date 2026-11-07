@@ -129,7 +129,7 @@ def effectWait : EffectWait :=
       [{ name := "requestValue"
          value := .string "example-input" }]
     outputMappings
-    output := ⟨"place:Flow_MappedBoundaryEffectToEnd"⟩
+    outputs := [⟨"place:Flow_MappedBoundaryEffectToEnd"⟩]
     bpmnErrorRoute := some route }
 
 def waitingState : RuntimeState :=

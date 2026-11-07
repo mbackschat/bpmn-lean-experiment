@@ -68,7 +68,7 @@ theorem prepared_message_task_candidate_pair
   let inserted := makeInternalMessageTaskPatch program state contract owner instanceId processId inputOrigin
   let task : UserTaskWait :=
     { processInstanceId := instanceId, owner, task := { id := contract.task.id, name := contract.task.name }
-      activation := activationCount state contract.task.id + 1, output := contract.task.output }
+      activation := activationCount state contract.task.id + 1, outputs := [contract.task.output] }
   have taskFresh : ∀ old ∈ state.waits, userTaskWaitKeyMatches task old = false := by
     intro old member
     have fresh := armingPatch_key_fresh_of_anchor_absent state patch.arm absent
@@ -77,7 +77,7 @@ theorem prepared_message_task_candidate_pair
   have ownerIds := flowNodeOccurrenceProgramValidity_wait_owner_ids program state occurrencesValid
   have taskFiltered : (insertUserTaskWait task state.waits).filter (fun old => decide
       (old.owner = owner && old.task.id = contract.task.id && old.task.name = contract.task.name &&
-        old.output = contract.task.output && old.activation = activationForTask state contract.task.id + 1)) = [task] := by
+        old.outputs = [contract.task.output] && old.activation = activationForTask state contract.task.id + 1)) = [task] := by
     rw [insertUserTaskWait_eq_canonicalInsertBy]
     apply filter_canonicalInsertBy_eq_singleton
     · simp [task, activationForTask_eq_activationCount]

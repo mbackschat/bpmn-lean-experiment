@@ -94,7 +94,7 @@ theorem timerTask_return_removal_commutes (program : Program) (state : RuntimeSt
     (fun wait => !removed.contains wait.owner.processInstanceId)
     { processInstanceId := owner.processInstanceId, owner,
       task := { id := contract.task.id, name := contract.task.name },
-      activation := activationCount state contract.task.id + 1, output := contract.task.output }
+      activation := activationCount state contract.task.id + 1, outputs := [contract.task.output] }
     state.waits taskOrder kept
   have timerFilter := filter_canonicalInsertBy_retained timerWaitBefore regional_timerWaitBefore_compose
     (fun wait => !removed.contains wait.owner.processInstanceId) patch.timer state.timerWaits timerOrder kept

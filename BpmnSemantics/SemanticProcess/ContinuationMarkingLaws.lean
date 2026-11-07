@@ -22,12 +22,29 @@ namespace BpmnSemantics.SemanticProcess
 open BpmnSemantics
 open InternalCommutation
 
-private theorem erased_filter_count {α : Type} [DecidableEq α]
-    (values : List α) (removed : α) (predicate : α → Bool) (present : removed ∈ values) :
-    ((values.erase removed).filter predicate).length + (if predicate removed then 1 else 0) =
-      (values.filter predicate).length := by
-  have population := ((List.perm_cons_erase present).filter predicate).length_eq
-  cases selected : predicate removed <;> simpa [selected, Nat.add_comm] using population.symm
+private theorem erased_sum {α : Type} [DecidableEq α]
+    (values : List α) (removed : α) (weight : α → Nat) (present : removed ∈ values) :
+    ((values.erase removed).map weight).sum + weight removed = (values.map weight).sum := by
+  have population := ((List.perm_cons_erase present).map weight).sum_nat
+  simp only [List.map_cons, List.sum_cons] at population
+  omega
+
+/-- Canonical insertion adds exactly the inserted value's weight to a summed collection. -/
+theorem sum_map_canonicalInsertBy {α : Type} (before : α → α → Bool) (weight : α → Nat)
+    (value : α) (values : List α) :
+    ((canonicalInsertBy before value values).map weight).sum = weight value + (values.map weight).sum := by
+  have perm := filter_canonicalInsertBy_perm before (fun _ => true) value values rfl
+  rw [List.filter_eq_self.mpr (fun _ _ => rfl), List.filter_eq_self.mpr (fun _ _ => rfl)] at perm
+  simpa using (perm.map weight).sum_nat
+
+private theorem addTokens_filter_count (tokens : List ControlToken) (outputs : List ControlPlaceId)
+    (owner queried : ScopeOccurrenceId) (place : ControlPlaceId) :
+    ((addTokens tokens outputs owner).filter (fun token => token.owner == queried && token.placeId == place)).length =
+      (tokens.filter (fun token => token.owner == queried && token.placeId == place)).length +
+        ownedPortCount outputs owner queried place := by
+  have count := ((addTokens_perm tokens outputs owner).filter
+    (fun token => token.owner == queried && token.placeId == place)).length_eq
+  simpa [ownedPortCount, List.filter_append, List.filter_map, Function.comp_def, Nat.add_comm] using count
 
 /-- PMIS-DATA-01 preserves marking when a live Human wait becomes its owned output token. -/
 theorem human_continuation_exchange (before : RuntimeState) (wait : UserTaskWait)
@@ -36,16 +53,12 @@ theorem human_continuation_exchange (before : RuntimeState) (wait : UserTaskWait
     continuationMarking { before with
       waits := before.waits.erase wait
       variables
-      tokens := addToken before.tokens wait.output wait.owner } owner place =
+      tokens := addTokens before.tokens wait.outputs wait.owner } owner place =
       continuationMarking before owner place := by
-  have tokens := length_filter_canonicalInsertBy controlTokenBefore
-    (fun token : ControlToken => token.owner == owner && token.placeId == place)
-    { placeId := wait.output, owner := wait.owner } before.tokens
-  have waits := erased_filter_count before.waits wait
-    (fun wait => wait.owner == owner && wait.output == place) present
+  have tokens := addTokens_filter_count before.tokens wait.outputs wait.owner owner place
+  have waits := erased_sum before.waits wait
+    (fun wait => ownedPortCount wait.outputs wait.owner owner place) present
   simp only [continuationMarking]
-  dsimp only at tokens waits ⊢
-  unfold addToken
   rw [tokens]
   omega
 
@@ -56,16 +69,12 @@ theorem effect_continuation_exchange (before : RuntimeState) (wait : EffectWait)
     continuationMarking { before with
       effectWaits := before.effectWaits.erase wait
       variables
-      tokens := addToken before.tokens wait.output wait.owner } owner place =
+      tokens := addTokens before.tokens wait.outputs wait.owner } owner place =
       continuationMarking before owner place := by
-  have tokens := length_filter_canonicalInsertBy controlTokenBefore
-    (fun token : ControlToken => token.owner == owner && token.placeId == place)
-    { placeId := wait.output, owner := wait.owner } before.tokens
-  have waits := erased_filter_count before.effectWaits wait
-    (fun wait => wait.owner == owner && wait.output == place) present
+  have tokens := addTokens_filter_count before.tokens wait.outputs wait.owner owner place
+  have waits := erased_sum before.effectWaits wait
+    (fun wait => ownedPortCount wait.outputs wait.owner owner place) present
   simp only [continuationMarking]
-  dsimp only at tokens waits ⊢
-  unfold addToken
   rw [tokens]
   omega
 
@@ -150,26 +159,68 @@ theorem ownedPortCount_sum (ports outputs : List ControlPlaceId) (owner : ScopeO
   simpa [ownedPortCount, all] using sum_filter_ports ports outputs id (fun _ => true) unique
     (fun port member _ => supported port member)
 
+/-- Discarding values never raises their summed weight. -/
+theorem sum_map_le_of_sublist {α : Type} {smaller larger : List α} (weight : α → Nat)
+    (sub : smaller.Sublist larger) : (smaller.map weight).sum ≤ (larger.map weight).sum := by
+  induction sub with
+  | slnil => exact Nat.le_refl _
+  | cons value _ ih => simp only [List.map_cons, List.sum_cons]; omega
+  | cons_cons value _ ih => simp only [List.map_cons, List.sum_cons]; omega
+
+/-- Filtering out only weightless values keeps the summed weight. -/
+theorem sum_map_filter_of_dropped_zero {α : Type} (values : List α) (keep : α → Bool) (weight : α → Nat)
+    (dropped : ∀ value ∈ values, keep value = false → weight value = 0) :
+    ((values.filter keep).map weight).sum = (values.map weight).sum := by
+  induction values with
+  | nil => rfl
+  | cons first rest ih =>
+      have tail := ih (fun value member => dropped value (by simp [member]))
+      cases kept : keep first
+      · simp [List.filter_cons, kept, tail, dropped first (by simp) kept]
+      · simp [List.filter_cons, kept, tail]
+
+/-- Summing supported ports counts every output of each owned value once. -/
+private theorem sum_ports_outputs {α : Type} (ports : List ControlPlaceId) (values : List α)
+    (outputs : α → List ControlPlaceId) (valueOwner : α → ScopeOccurrenceId) (owner : ScopeOccurrenceId)
+    (unique : ports.Nodup)
+    (supported : ∀ value ∈ values, valueOwner value = owner → ∀ port ∈ outputs value, port ∈ ports) :
+    (ports.map (fun place => (values.map fun value =>
+        ownedPortCount (outputs value) (valueOwner value) owner place).sum)).sum =
+      ((values.filter fun value => valueOwner value == owner).map fun value => (outputs value).length).sum := by
+  induction values with
+  | nil => simp [sum_map_zero]
+  | cons first rest ih =>
+      have tail := ih (fun value member => supported value (by simp [member]))
+      simp only [List.map_cons, List.sum_cons]
+      rw [sum_map_add, tail]
+      by_cases same : valueOwner first = owner
+      · have once := ownedPortCount_sum ports (outputs first) owner unique (supported first (by simp) same)
+        rw [same, once]
+        simp [List.filter_cons, same]
+      · have zero : (ports.map fun place => ownedPortCount (outputs first) (valueOwner first) owner place) =
+            ports.map (fun _ => 0) :=
+          List.map_congr_left (fun place _ => ownedPortCount_foreign _ _ _ _ same)
+        rw [zero, sum_map_zero]
+        simp [List.filter_cons, same]
+
 /-- Exact declared-port support makes total continuation credit the raw-token plus blocked-wait population of this owner. -/
 theorem continuationMarking_sum (ports : List ControlPlaceId) (state : RuntimeState)
     (owner : ScopeOccurrenceId) (unique : ports.Nodup)
     (tokens : ∀ token ∈ state.tokens, token.owner = owner → token.placeId ∈ ports)
-    (users : ∀ wait ∈ state.waits, wait.owner = owner → wait.output ∈ ports)
-    (effects : ∀ wait ∈ state.effectWaits, wait.owner = owner → wait.output ∈ ports) :
+    (users : ∀ wait ∈ state.waits, wait.owner = owner → ∀ output ∈ wait.outputs, output ∈ ports)
+    (effects : ∀ wait ∈ state.effectWaits, wait.owner = owner → ∀ output ∈ wait.outputs, output ∈ ports) :
     (ports.map (continuationMarking state owner)).sum =
       (state.tokens.filter (fun token => token.owner == owner)).length +
-      (state.waits.filter (fun wait => wait.owner == owner)).length +
-      (state.effectWaits.filter (fun wait => wait.owner == owner)).length := by
+      ((state.waits.filter (fun wait => wait.owner == owner)).map (·.outputs.length)).sum +
+      ((state.effectWaits.filter (fun wait => wait.owner == owner)).map (·.outputs.length)).sum := by
   have tokenCounts := sum_filter_ports ports state.tokens (·.placeId) (fun token => token.owner == owner) unique
     (fun token member same => tokens token member (by simpa using same))
-  have userCounts := sum_filter_ports ports state.waits (·.output) (fun wait => wait.owner == owner) unique
-    (fun wait member same => users wait member (by simpa using same))
-  have effectCounts := sum_filter_ports ports state.effectWaits (·.output) (fun wait => wait.owner == owner) unique
-    (fun wait member same => effects wait member (by simpa using same))
+  have userCounts := sum_ports_outputs ports state.waits (·.outputs) (·.owner) owner unique users
+  have effectCounts := sum_ports_outputs ports state.effectWaits (·.outputs) (·.owner) owner unique effects
   change (ports.map (fun place =>
     (state.tokens.filter (fun token => token.owner == owner && token.placeId == place)).length +
-    (state.waits.filter (fun wait => wait.owner == owner && wait.output == place)).length +
-    (state.effectWaits.filter (fun wait => wait.owner == owner && wait.output == place)).length)).sum = _
+    (state.waits.map fun wait => ownedPortCount wait.outputs wait.owner owner place).sum +
+    (state.effectWaits.map fun wait => ownedPortCount wait.outputs wait.owner owner place).sum)).sum = _
   rw [sum_map_add, sum_map_add, tokenCounts, userCounts, effectCounts]
 
 theorem remove_balance (tokens : List ControlToken) (input : ControlPlaceId)
@@ -275,15 +326,15 @@ theorem user_arm_balance (before : RuntimeState) (instanceId : SemanticId)
       ownedPortCount [input] owner queried place =
       continuationMarking before queried place + ownedPortCount [output] owner queried place := by
   have removed := remove_balance before.tokens input owner queried place present
-  have inserted := length_filter_insertUserTaskWait
-    (fun wait => wait.owner == queried && wait.output == place)
+  have inserted := sum_map_canonicalInsertBy userTaskWaitBefore
+    (fun wait => ownedPortCount wait.outputs wait.owner queried place)
     { processInstanceId := instanceId, owner, task, activation := activationCount before task.id + 1,
-      output, metadata := task.metadata } before.waits
-  simp only [continuationMarking, activateUserTask]
-  dsimp only at inserted ⊢
-  unfold ownedPortCount tokenCount at *
-  cases selected : (owner == queried && output == place) <;>
-    simp [selected] at inserted ⊢ <;> omega
+      outputs := [output], metadata := task.metadata } before.waits
+  simp only [continuationMarking, activateUserTask, insertUserTaskWait_eq_canonicalInsertBy]
+  rw [inserted]
+  unfold tokenCount at removed
+  dsimp only
+  omega
 
 theorem effect_arm_balance (before : RuntimeState) (instanceId : SemanticId)
     (owner queried : ScopeOccurrenceId) (input output place : ControlPlaceId)
@@ -293,16 +344,52 @@ theorem effect_arm_balance (before : RuntimeState) (instanceId : SemanticId)
       ownedPortCount [input] owner queried place =
       continuationMarking before queried place + ownedPortCount [output] owner queried place := by
   have removed := remove_balance before.tokens input owner queried place present
-  have inserted := length_filter_canonicalInsertBy effectWaitBefore
-    (fun wait : EffectWait => wait.owner == queried && wait.output == place)
+  have inserted := sum_map_canonicalInsertBy effectWaitBefore
+    (fun wait : EffectWait => ownedPortCount wait.outputs wait.owner queried place)
     { processInstanceId := instanceId, owner, elementId := effect.elementId,
       activation := effectActivationCount before effect.elementId + 1, descriptor := effect.descriptor,
-      arguments, outputMappings := effect.outputMappings, output, bpmnErrorRoute := route } before.effectWaits
+      arguments, outputMappings := effect.outputMappings, outputs := [output], bpmnErrorRoute := route } before.effectWaits
   simp only [continuationMarking, activateEffect, insertEffectWait]
-  dsimp only at inserted ⊢
-  unfold ownedPortCount tokenCount at *
-  cases selected : (owner == queried && output == place) <;>
-    simp [selected] at inserted ⊢ <;> omega
+  rw [inserted]
+  unfold tokenCount at removed
+  dsimp only
+  omega
+
+/-- A summand never exceeds the sum of a natural-number list. -/
+theorem le_sum_of_mem_nat (values : List Nat) (value : Nat) (member : value ∈ values) :
+    value ≤ values.sum := by
+  induction values with
+  | nil => contradiction
+  | cons first rest ih =>
+      rcases List.mem_cons.mp member with rfl | tail
+      · simp
+      · have := ih tail
+        simp only [List.sum_cons]
+        omega
+
+/-- A live User Task wait credits its owner at each output it will mark. -/
+theorem continuationMarking_pos_of_wait (state : RuntimeState) (wait : UserTaskWait)
+    (member : wait ∈ state.waits) (output : ControlPlaceId) (selected : output ∈ wait.outputs) :
+    0 < continuationMarking state wait.owner output := by
+  have counted : 0 < ownedPortCount wait.outputs wait.owner wait.owner output := by
+    unfold ownedPortCount
+    exact List.length_pos_of_mem (List.mem_filter.mpr ⟨selected, by simp⟩)
+  have bounded := le_sum_of_mem_nat _ _ (List.mem_map_of_mem
+    (f := fun candidate => ownedPortCount candidate.outputs candidate.owner wait.owner output) member)
+  unfold continuationMarking
+  omega
+
+/-- A live effect wait credits its owner at each output it will mark. -/
+theorem continuationMarking_pos_of_effectWait (state : RuntimeState) (wait : EffectWait)
+    (member : wait ∈ state.effectWaits) (output : ControlPlaceId) (selected : output ∈ wait.outputs) :
+    0 < continuationMarking state wait.owner output := by
+  have counted : 0 < ownedPortCount wait.outputs wait.owner wait.owner output := by
+    unfold ownedPortCount
+    exact List.length_pos_of_mem (List.mem_filter.mpr ⟨selected, by simp⟩)
+  have bounded := le_sum_of_mem_nat _ _ (List.mem_map_of_mem
+    (f := fun candidate => ownedPortCount candidate.outputs candidate.owner wait.owner output) member)
+  unfold continuationMarking
+  omega
 
 end ContinuationMarkingLaws
 
@@ -315,13 +402,12 @@ theorem human_port_exchange (before : RuntimeState) (wait : UserTaskWait)
     continuationMarking { before with
       waits := before.waits.erase wait
       variables
-      tokens := addToken before.tokens wait.output wait.owner } owner place =
+      tokens := addTokens before.tokens wait.outputs wait.owner } owner place =
       continuationMarking before owner place ∧
-    tokenCount (addToken before.tokens wait.output wait.owner) owner place =
-      tokenCount before.tokens owner place + ownedPortCount [wait.output] wait.owner owner place := by
+    tokenCount (addTokens before.tokens wait.outputs wait.owner) owner place =
+      tokenCount before.tokens owner place + ownedPortCount wait.outputs wait.owner owner place := by
   refine ⟨human_continuation_exchange before wait variables present owner place, ?_⟩
-  simpa only [addTokens, List.foldr_cons, List.foldr_nil] using
-    add_many_count before.tokens [wait.output] wait.owner owner place
+  exact add_many_count before.tokens wait.outputs wait.owner owner place
 
 /-- SMIS-DATA-01 and PMIS-DATA-01 release blocked Service credit only at the selected wait's owned output. -/
 theorem effect_port_exchange (before : RuntimeState) (wait : EffectWait)
@@ -330,13 +416,12 @@ theorem effect_port_exchange (before : RuntimeState) (wait : EffectWait)
     continuationMarking { before with
       effectWaits := before.effectWaits.erase wait
       variables
-      tokens := addToken before.tokens wait.output wait.owner } owner place =
+      tokens := addTokens before.tokens wait.outputs wait.owner } owner place =
       continuationMarking before owner place ∧
-    tokenCount (addToken before.tokens wait.output wait.owner) owner place =
-      tokenCount before.tokens owner place + ownedPortCount [wait.output] wait.owner owner place := by
+    tokenCount (addTokens before.tokens wait.outputs wait.owner) owner place =
+      tokenCount before.tokens owner place + ownedPortCount wait.outputs wait.owner owner place := by
   refine ⟨effect_continuation_exchange before wait variables present owner place, ?_⟩
-  simpa only [addTokens, List.foldr_cons, List.foldr_nil] using
-    add_many_count before.tokens [wait.output] wait.owner owner place
+  exact add_many_count before.tokens wait.outputs wait.owner owner place
 
 /-- Ordinary body accounting also retains the Scope counter population used by reachable-history freshness. -/
 theorem fire_body_port_accounting

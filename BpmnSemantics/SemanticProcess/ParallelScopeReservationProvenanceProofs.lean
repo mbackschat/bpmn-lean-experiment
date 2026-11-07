@@ -220,7 +220,7 @@ def collisionTask : UserTaskDefinition := ⟨⟨"shared"⟩, none, none⟩
 def timerCollisionState : RuntimeState := { initialState with
   timerWaits := [⟨⟨"instance"⟩, collisionOwner, ⟨"shared"⟩, 1, 0, ⟨"output"⟩⟩] }
 def humanCollisionState : RuntimeState := { initialState with
-  waits := [⟨⟨"instance"⟩, collisionOwner, collisionTask, 1, ⟨"output"⟩, none⟩]
+  waits := [{ processInstanceId := ⟨"instance"⟩, owner := collisionOwner, task := collisionTask, activation := 1, outputs := [⟨"output"⟩], metadata := none }]
   activations := [⟨⟨"shared"⟩, 1⟩] }
 
 /-- Reservation validity alone admits a Timer anchor that collides with raw Human issuance; this deliberately makes no Start-reachability claim. -/

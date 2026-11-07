@@ -219,7 +219,7 @@ theorem ordinary_completion_preserves_input_positions
     RuntimeInputPositions program vertices analysis after := by
   obtain ⟨id, origin, input, output, task, member, taskKey⟩ :=
     ordinary_completion_admission_has_declaration program taskId bindings profile accepted
-  obtain ⟨wait, live, next, key, waits, tokens, place⟩ := ordinary_completion_has_exact_continuation
+  obtain ⟨wait, live, key, waits, tokens⟩ := ordinary_completion_has_exact_continuation
     before after taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation bounded completed
   have declares : operationDeclaresWaitKey (.awaitUserTask id origin input output task)
       (userTaskWaitDeclarationKey wait.task.id) = true := by
@@ -239,11 +239,14 @@ theorem ordinary_completion_preserves_input_positions
     · simpa [← shape] using inputs
     · intro name written
       simp [← shape] at written
+  have produced : after.tokens = [{ placeId := output, owner := wait.owner }] := by
+    rw [tokens, matched.2]
+    simpa using addTokens_perm [] [output] wait.owner
   constructor
   · intro token live
-    have same : token = next := by simpa [tokens] using live
+    have same : token = { placeId := output, owner := wait.owner } := by simpa [produced] using live
     subst token
-    exact ⟨target, by simpa [place, matched.2] using consumer, supplied⟩
+    exact ⟨target, by simpa using consumer, supplied⟩
   · simp [waits]
 
 theorem process_merge_preserves_input_positions
@@ -469,7 +472,7 @@ theorem arming_frame_decreases_runtime_burst_rank
     (program : Program) (vertices : List Vertex) (analysis : Analysis) (before after : RuntimeState)
     (token : ControlToken) (analyzed : programAnalysis program = some analysis)
     (graph : analyze vertices = some analysis) (positions : RuntimeInputPositions program vertices analysis before)
-    (single : before.tokens = [token]) (tokens : after.tokens = []) (waits : after.waits.length = 1)
+    (single : before.tokens = [token]) (tokens : after.tokens = []) (waits : waitContinuationUnits after.waits = 1)
     (pendingBefore : before.initiationPending = false) (pendingAfter : after.initiationPending = false) :
     runtimeBurstRank program analysis after < runtimeBurstRank program analysis before := by
   obtain ⟨current, consumer, _⟩ := positions.1 token (by simp [single])
@@ -717,7 +720,7 @@ theorem ordinary_completion_within_burst_bound
     runtimeBurstRank program analysis after ≤ analysis.maximumBurst := by
   obtain ⟨id, origin, input, output, task, member, taskKey⟩ :=
     ordinary_completion_admission_has_declaration program taskId bindings profile accepted
-  obtain ⟨wait, live, next, key, _, tokens, place⟩ := ordinary_completion_has_exact_continuation
+  obtain ⟨wait, live, key, _, tokens⟩ := ordinary_completion_has_exact_continuation
     before after taskId.processInstanceId ⟨taskId.elementId.value⟩ taskId.activation bounded completed
   have declares : operationDeclaresWaitKey (.awaitUserTask id origin input output task)
       (userTaskWaitDeclarationKey wait.task.id) = true := by
@@ -728,8 +731,11 @@ theorem ordinary_completion_within_burst_bound
     program analysis _ analyzed member rfl
   simp [operationVertex?, bind, Option.bind_eq_some_iff] at projected
   obtain ⟨_, target, consumer, shape⟩ := projected
-  exact continuation_frame_within_burst_bound program vertices analysis after source next target graph included
-    (by simp [← shape]) (by simp [← shape]) tokens (by simpa [place, matched.2] using consumer)
+  have produced : after.tokens = [{ placeId := output, owner := wait.owner }] := by
+    rw [tokens, matched.2]
+    simpa using addTokens_perm [] [output] wait.owner
+  exact continuation_frame_within_burst_bound program vertices analysis after source _ target graph included
+    (by simp [← shape]) (by simp [← shape]) produced (by simpa using consumer)
     (ordinary_completion_preserves_control_unit_bound before after taskId.processInstanceId
       ⟨taskId.elementId.value⟩ taskId.activation bounded completed)
 

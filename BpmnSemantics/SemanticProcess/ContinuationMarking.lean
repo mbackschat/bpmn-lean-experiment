@@ -10,12 +10,27 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+def ownedPortCount (ports : List ControlPlaceId) (owner queried : ScopeOccurrenceId)
+    (place : ControlPlaceId) : Nat :=
+  (ports.filter (fun port => owner == queried && port == place)).length
+
+/-- A collection with no value owned by `queried` contributes no continuation credit there. -/
+theorem ownedPortCount_sum_absent {α : Type} (values : List α) (outputs : α → List ControlPlaceId)
+    (owner : α → ScopeOccurrenceId) (queried : ScopeOccurrenceId) (place : ControlPlaceId)
+    (absent : ∀ value ∈ values, owner value ≠ queried) :
+    (values.map fun value => ownedPortCount (outputs value) (owner value) queried place).sum = 0 := by
+  refine List.sum_eq_zero_iff_forall_eq_nat.mpr fun count member => ?_
+  obtain ⟨value, present, rfl⟩ := List.mem_map.mp member
+  show (List.filter _ _).length = 0
+  simp [absent value present]
+
 /-- PMIS-DATA-01 treats a blocked continuation and its emitted token as the same
-owner/place marking; this proof abstraction does not assert token enabledness. -/
+owner/place marking; this proof abstraction does not assert token enabledness. A wait credits
+each of its outputs once, so a splitting wait (ACSP-WAIT-01) credits every outgoing place. -/
 def continuationMarking (state : RuntimeState) (owner : ScopeOccurrenceId) (place : ControlPlaceId) : Nat :=
   (state.tokens.filter (fun token => token.owner == owner && token.placeId == place)).length +
-    (state.waits.filter (fun wait => wait.owner == owner && wait.output == place)).length +
-    (state.effectWaits.filter (fun wait => wait.owner == owner && wait.output == place)).length
+    (state.waits.map fun wait => ownedPortCount wait.outputs wait.owner owner place).sum +
+    (state.effectWaits.map fun wait => ownedPortCount wait.outputs wait.owner owner place).sum
 
 def bodyConsumedPorts : SemanticOperation → List ControlPlaceId
   | .awaitUserTask _ _ input .. | .awaitEffect _ _ input ..
@@ -29,9 +44,5 @@ def bodyProducedPorts : SemanticOperation → List ControlPlaceId
     .synchronize _ _ _ output => [output]
   | .duplicate _ _ _ outputs => outputs
   | _ => []
-
-def ownedPortCount (ports : List ControlPlaceId) (owner queried : ScopeOccurrenceId)
-    (place : ControlPlaceId) : Nat :=
-  (ports.filter (fun port => owner == queried && port == place)).length
 
 end BpmnSemantics.SemanticProcess

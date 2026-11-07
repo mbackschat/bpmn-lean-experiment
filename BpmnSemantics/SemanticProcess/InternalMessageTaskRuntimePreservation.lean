@@ -317,7 +317,7 @@ theorem prepared_message_task_preserves_multiInstance
     { processInstanceId := instanceId, owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   let taskState : RuntimeState :=
     { state with
       waits := insertUserTaskWait wait state.waits
@@ -440,7 +440,7 @@ theorem prepared_message_task_preserves_runtime
   have executionAfter : compensationExecutionStateValid program after = true := by
     let task : UserTaskWait :=
       { processInstanceId := instanceId, owner, task := { id := contract.task.id, name := contract.task.name }
-        activation := activationCount state contract.task.id + 1, output := contract.task.output }
+        activation := activationCount state contract.task.id + 1, outputs := [contract.task.output] }
     let armed := activateUserTask state instanceId owner contract.input contract.task.output
       { id := contract.task.id, name := contract.task.name }
     have armedValid := compensationExecutionStateValid_activateUserTask program state instanceId

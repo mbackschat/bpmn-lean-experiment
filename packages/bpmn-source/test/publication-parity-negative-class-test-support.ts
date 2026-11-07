@@ -229,7 +229,7 @@ export function projectWellFormednessRejections(
     }),
     duplicateWaitIdentity: refuses({
       ...reached,
-      userTaskWaits: [userTaskWait, { ...userTaskWait, output: `${userTaskWait.output}:copy` }],
+      userTaskWaits: [userTaskWait, { ...userTaskWait, outputs: userTaskWait.outputs.map(output => `${output}:copy`) }],
     }),
     undeclaredWaitIdentity: refuses({
       ...reached,

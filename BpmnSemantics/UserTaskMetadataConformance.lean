@@ -226,8 +226,8 @@ theorem strict_json_rejects_nonexact_metadata_shapes :
 def completionReady (bindings : List VariableBinding) : RuntimeState :=
   { BooleanProcessDataConformance.waitingState with
     waits := []
-    tokens := addToken BooleanProcessDataConformance.waitingState.tokens
-      SequentialUserTask.exactWait.output SequentialUserTask.exactWait.owner
+    tokens := addTokens BooleanProcessDataConformance.waitingState.tokens
+      SequentialUserTask.exactWait.outputs SequentialUserTask.exactWait.owner
     variables := { BooleanProcessDataConformance.waitingState.variables with process := { bindings } } }
 
 def completionEndOperation : SemanticOperation :=
@@ -389,8 +389,8 @@ theorem completion_is_metadata_irrelevant
   let successor : RuntimeState :=
     { BooleanProcessDataConformance.waitingState with
       waits := []
-      tokens := addToken BooleanProcessDataConformance.waitingState.tokens
-        SequentialUserTask.exactWait.output SequentialUserTask.exactWait.owner }
+      tokens := addTokens BooleanProcessDataConformance.waitingState.tokens
+        SequentialUserTask.exactWait.outputs SequentialUserTask.exactWait.owner }
   apply user_task_completion_with_same_successor_is_equal
     (successor := successor)
     (rightStorage := by rfl)

@@ -300,7 +300,7 @@ test("active wait projection orders by semantic kind before element ID", () => {
         arguments: [],
         outputMappings: [],
         bpmnErrorRoute: null,
-        output: "place:Flow_EffectToEnd",
+        outputs: ["place:Flow_EffectToEnd"],
         incidentAlreadyRetried: false,
       },
     ],
@@ -407,7 +407,7 @@ function wait(elementId: string, name: string): SemanticUserTaskWait {
     id: taskId(elementId),
     owner,
     name,
-    output: `place:Flow_${elementId === "UserTask_A" ? "A" : "B"}ToJoin`,
+    outputs: [`place:Flow_${elementId === "UserTask_A" ? "A" : "B"}ToJoin`],
   };
 }
 

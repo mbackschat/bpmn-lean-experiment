@@ -32,7 +32,7 @@ def incidentState (elementId : String) : RuntimeState :=
              descriptor := compensationDescriptor
              arguments := []
              outputMappings := []
-             output := ⟨"place:done"⟩
+             outputs := [⟨"place:done"⟩]
              bpmnErrorRoute := none } }] }
 
 def event_subprocess_handler_rejects_incident_collision_without_ordinary_waits : Bool := decide <|

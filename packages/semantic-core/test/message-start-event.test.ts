@@ -207,7 +207,7 @@ test("admits an exact operation-addressed Message start and closes at one User T
     },
     owner: rootScopeOccurrence(program.processId, trigger.instanceId),
     name: "Review order",
-    output: "place:Flow_TaskToEnd",
+    outputs: ["place:Flow_TaskToEnd"],
   }]);
 });
 

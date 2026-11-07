@@ -27,6 +27,7 @@ import {
   addToken,
   sameOccurrence,
   setActivationCount,
+  addTokens,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -93,9 +94,9 @@ export function completeOrdinaryUserTask(
   if (variables === null) return null;
   return {
     ...staged,
-    controlTokens: addToken(
+    controlTokens: addTokens(
       staged.controlTokens,
-      wait.output,
+      wait.outputs,
       wait.owner,
     ),
     userTaskWaits: staged.userTaskWaits.filter(

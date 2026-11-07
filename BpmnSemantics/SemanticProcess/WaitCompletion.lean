@@ -27,7 +27,7 @@ def completeUserTask (state : RuntimeState) (processInstanceId : SemanticId)
       some
         { state with
           waits := state.waits.erase wait
-          tokens := addToken state.tokens wait.output wait.owner }
+          tokens := addTokens state.tokens wait.outputs wait.owner }
 
 def timerDefinitionMatches (program : Program) (wait : TimerWait) : Bool :=
   program.operations.any fun
@@ -55,7 +55,7 @@ def SelectedMonitoredTaskBinding (program : Program) (state : RuntimeState)
   pair.origin.elementId = pair.record.activityElementId ∧
   pair.record.activityElementId.value = pair.arm.id.value ∧
   pair.task.task = { id := pair.arm.id, name := pair.arm.name } ∧
-  pair.task.metadata = none ∧ pair.task.output = pair.arm.output ∧
+  pair.task.metadata = none ∧ pair.task.outputs = [pair.arm.output] ∧
   pair.task.owner = pair.record.owner ∧
   pair.task.processInstanceId = pair.record.processInstanceId ∧
   pair.record.owner.processInstanceId = pair.record.processInstanceId ∧

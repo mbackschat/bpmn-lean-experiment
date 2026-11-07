@@ -158,8 +158,8 @@ theorem flowNodeOccurrenceBoundaryTimerBound_insertOrdinaryUserTask (program : P
       { state with waits := insertUserTaskWait wait state.waits } timer =
         flowNodeOccurrenceBoundaryTimerBound program state timer := by
   exact flowNodeOccurrenceBoundaryTimerBound_insertUnboundedUserTask program state _ wait
-    (anchor := { wait with output, metadata := wait.task.metadata })
-    (.ordinary id origin input rfl) unique timer
+    (anchor := { wait with outputs := [output], outputs_ne_nil := by simp, metadata := wait.task.metadata })
+    (.ordinary id origin input output rfl rfl) unique timer
 
 private theorem filter_insertActivityOccurrence_of_rejected
     (predicate : ActivityOccurrence → Bool) (record : ActivityOccurrence)
@@ -441,10 +441,10 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertUnboundedUserTask (program :
 
 theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
-    (input : ControlPlaceId) (wait : UserTaskWait)
+    (input output : ControlPlaceId) (wait : UserTaskWait) (outputs : wait.outputs = [output])
     (prior : flowNodeOccurrenceWaitProgramValidity program state = true)
     (declarers : userTaskWaitDeclarers program wait.task.id =
-      [.awaitUserTask id origin input wait.output wait.task])
+      [.awaitUserTask id origin input output wait.task])
     (declared : declaredByExactlyOneOwnedOperation program
       (userTaskWaitDeclarers program wait.task.id) wait.owner = true)
     (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
@@ -455,8 +455,8 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask (program : 
     flowNodeOccurrenceWaitProgramValidity program
       { state with waits := insertUserTaskWait wait state.waits } = true := by
   exact flowNodeOccurrenceWaitProgramValidity_insertUnboundedUserTask program state _ wait
-    (.ordinary id origin input metadata) prior declarers declared live ownerProcess taskId positive
-    processOwner
+    (.ordinary id origin input output outputs metadata) prior declarers declared live ownerProcess taskId
+    positive processOwner
 
 theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryMessage (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
@@ -776,11 +776,11 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryTimer (program : Pro
 
 theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryEffect (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
-    (input : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute)
-    (wait : EffectWait) (bindings : List VariableBinding)
+    (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute)
+    (wait : EffectWait) (outputs : wait.outputs = [output]) (bindings : List VariableBinding)
     (prior : flowNodeOccurrenceWaitProgramValidity program state = true)
     (declarers : effectWaitDeclarers program wait.elementId =
-      [.awaitEffect id origin input wait.output effect route])
+      [.awaitEffect id origin input output effect route])
     (declared : declaredByExactlyOneOwnedOperation program
       (effectWaitDeclarers program wait.elementId) wait.owner = true)
     (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
@@ -825,7 +825,7 @@ theorem flowNodeOccurrenceWaitProgramValidity_insertOrdinaryEffect (program : Pr
   · simpa [timerWaitValid, boundaryTimerOperationMatches, occurrenceOwnerValid,
       flowNodeOccurrenceOwnerLiveUnique, after] using timers
   · exact flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect program state id origin
-      input effect route wait bindings effects declarers declared live processId elementId positive
+      input output effect route wait outputs bindings effects declarers declared live processId elementId positive
       processOwner originElement effectElement descriptor arguments outputMappings routeEq bindingsEq
       aligned freshWaits freshIncidents freshActivities
 

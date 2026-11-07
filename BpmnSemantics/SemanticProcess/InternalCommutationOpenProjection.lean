@@ -619,7 +619,7 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
         programValid selection.1
     let wait : UserTaskWait :=
       { processInstanceId := owner.processInstanceId, owner, task,
-        activation := activationCount state task.id + 1, output, metadata := task.metadata }
+        activation := activationCount state task.id + 1, outputs := [output], metadata := task.metadata }
     have filtered : (insertUserTaskWait wait state.waits).filter (fun old =>
         decide (old.owner = owner) && decide (old.task.id = task.id) &&
           decide (old.activation = activationForTask state task.id + 1)) = [wait] := by
@@ -725,7 +725,7 @@ private theorem prepared_arm_candidate_singleton (program : Program) (state : Ru
         activation := effectActivationCount state effect.elementId + 1,
         descriptor := effect.descriptor,
         arguments := (evaluateEffectInputs? program state owner effect.inputMappings).getD [],
-        outputMappings := effect.outputMappings, output, bpmnErrorRoute := route }
+        outputMappings := effect.outputMappings, outputs := [output], bpmnErrorRoute := route }
     have filtered : (insertEffectWait wait state.effectWaits).filter (fun old =>
         decide (old.owner = owner) && decide (old.elementId = effect.elementId) &&
           decide (old.activation = activationForNode

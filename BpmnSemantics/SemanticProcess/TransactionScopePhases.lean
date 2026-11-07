@@ -557,8 +557,10 @@ theorem transaction_scope_task_completion (p : Program) (roles : TransactionAdmi
     transaction_ordinary_completion_from_waiting p before after taskId emptyTokens completed
   refine ⟨shape.of_scopes_eq scopes, ?_, ?_, transaction_task_completion_preserves_calls p before after taskId completed⟩
   · intro token present
-    simp only [tokens, List.mem_singleton] at present
-    subst token
+    rw [tokens] at present
+    have produced := (addTokens_perm [] wait.outputs wait.owner).mem_iff.mp present
+    simp only [List.append_nil, List.mem_map] at produced
+    obtain ⟨_, _, rfl⟩ := produced
     exact waitsOwned wait (List.mem_of_find?_eq_some selected)
   · intro other present
     rw [waits] at present

@@ -147,19 +147,23 @@ theorem transaction_task_output_is_continuation (p : Program) (roles : Transacti
 theorem transaction_wait_completion_enters_linear_continuation
     (p : Program) (roles : TransactionAdmittedRoles p) (before after : RuntimeState)
     (taskId : UserTaskInstanceId) (emptyTokens : before.tokens = [])
-    (waitOutputs : ∀ wait ∈ before.waits, TransactionContinuationPlace roles wait.output)
+    (waitOutputs : ∀ wait ∈ before.waits, ∃ output, wait.outputs = [output] ∧ TransactionContinuationPlace roles output)
     (completed : completeOrdinaryUserTaskWithCompensation? completeUserTask p before taskId = some after) :
     after.tokens.length = 1 ∧
       (∀ token ∈ after.tokens, TransactionContinuationPlace roles token.placeId) ∧
-      (∀ wait ∈ after.waits, TransactionContinuationPlace roles wait.output) := by
+      (∀ wait ∈ after.waits, ∃ output, wait.outputs = [output] ∧ TransactionContinuationPlace roles output) := by
   obtain ⟨wait, selected, tokens, waits, _⟩ :=
     transaction_ordinary_completion_from_waiting p before after taskId emptyTokens completed
   have present : wait ∈ before.waits := List.mem_of_find?_eq_some selected
+  obtain ⟨output, single, continuation⟩ := waitOutputs wait present
+  have tokens : after.tokens = [{ placeId := output, owner := wait.owner }] := by
+    rw [tokens, single]
+    simpa using (addTokens_perm [] [output] wait.owner)
   refine ⟨by simp [tokens], ?_, ?_⟩
   · intro token member
     simp only [tokens, List.mem_singleton] at member
     subst token
-    exact waitOutputs wait present
+    exact continuation
   · intro other member
     rw [waits] at member
     exact waitOutputs other (List.mem_of_mem_erase member)
@@ -193,7 +197,7 @@ structure TransactionContinuationState {p : Program} (roles : TransactionAdmitte
   consumed : state.initiationPending = false
   tokenBound : state.tokens.length ≤ 1
   tokenPlaces : ∀ token ∈ state.tokens, TransactionContinuationPlace roles token.placeId
-  waitOutputs : ∀ wait ∈ state.waits, TransactionContinuationPlace roles wait.output
+  waitOutputs : ∀ wait ∈ state.waits, ∃ output, wait.outputs = [output] ∧ TransactionContinuationPlace roles output
 
 /-- Both actual initial orders establish the continuation predicate rather than assuming it. -/
 theorem transaction_both_arms_enter_continuation (p : Program) (roles : TransactionAdmittedRoles p)
@@ -205,17 +209,17 @@ theorem transaction_both_arms_enter_continuation (p : Program) (roles : Transact
   have consumers := transaction_initial_heads_consumers p roles heads
   have armOutputs (head : TransactionInitialTask) (member : head.operation ∈ p.operations)
       (state : RuntimeState)
-      (previous : ∀ wait ∈ state.waits, TransactionContinuationPlace roles wait.output) :
+      (previous : ∀ wait ∈ state.waits, ∃ output, wait.outputs = [output] ∧ TransactionContinuationPlace roles output) :
       ∀ wait ∈ (head.arm instanceId (transactionChildOwner roles instanceId) state).waits,
-        TransactionContinuationPlace roles wait.output := by
+        ∃ output, wait.outputs = [output] ∧ TransactionContinuationPlace roles output := by
     intro wait present
     have selected := (mem_insertUserTaskWait _ wait state.waits).mp present
     rcases selected with same | present
     · subst wait
-      exact transaction_task_output_is_continuation p roles head.id head.origin head.input head.output head.task member
+      exact ⟨head.output, rfl, transaction_task_output_is_continuation p roles head.id head.origin head.input head.output head.task member⟩
     · exact previous wait present
   have initialOutputs : ∀ wait ∈ (transactionSplitState roles instanceId variables).waits,
-      TransactionContinuationPlace roles wait.output := by
+      ∃ output, wait.outputs = [output] ∧ TransactionContinuationPlace roles output := by
     intro wait member
     change wait ∈ [] at member
     contradiction
@@ -243,7 +247,7 @@ theorem transaction_continuation_task_arming (p : Program) (roles : TransactionA
     have selected := (mem_insertUserTaskWait _ wait state.waits).mp present
     rcases selected with same | previous
     · subst wait
-      exact transaction_task_output_is_continuation p roles id origin input output task member
+      exact ⟨output, rfl, transaction_task_output_is_continuation p roles id origin input output task member⟩
     · exact phase.waitOutputs wait previous
 
 theorem transaction_continuation_task_attempt (p : Program) (roles : TransactionAdmittedRoles p)

@@ -103,7 +103,7 @@ export function deriveInternalOrdinaryArmingPatch(
           ...(operation.task.metadata === undefined
             ? {}
             : { metadata: operation.task.metadata }),
-          output: operation.output,
+          outputs: [operation.output],
         },
       };
     }
@@ -176,7 +176,7 @@ export function deriveInternalOrdinaryArmingPatch(
           arguments: arguments_,
           outputMappings: operation.effect.outputMappings,
           bpmnErrorRoute: operation.bpmnErrorRoute,
-          output: operation.output,
+          outputs: [operation.output],
           incidentAlreadyRetried: false,
         },
       };

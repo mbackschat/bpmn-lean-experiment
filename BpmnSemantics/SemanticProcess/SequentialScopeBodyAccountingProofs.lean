@@ -62,13 +62,18 @@ private theorem sequentialScope_missing_owner_marking (program : Program) (hosti
     apply List.filter_eq_nil_iff.mpr
     intro value member selected
     exact different (key value) (live value member) (eq_of_beq (Bool.and_eq_true_iff.mp selected).1)
+  have emptySum {α : Type} (values : List α) (key : α → ScopeOccurrenceId) (ports : α → List ControlPlaceId)
+      (live : ∀ value ∈ values, exactLiveOccurrence state (key value) = true) (place : ControlPlaceId) :
+      (values.map fun value => ownedPortCount (ports value) (key value) owner place).sum = 0 :=
+    ownedPortCount_sum_absent values ports key owner place
+      (fun value member same => different (key value) (live value member) same)
   simp only [waitOwnersLive, Bool.and_eq_true] at waits
   intro place
   rw [continuationMarking,
     empty state.tokens (·.owner) (·.placeId)
       (fun token member => runtimePositionValid_token_owner_live program hosting hosting state token position running member),
-    empty state.waits (·.owner) (·.output) (List.all_eq_true.mp waits.1.1.1.1.1.1.1.1),
-    empty state.effectWaits (·.owner) (·.output) (List.all_eq_true.mp waits.1.1.1.1.1.2)]
+    emptySum state.waits (·.owner) (·.outputs) (List.all_eq_true.mp waits.1.1.1.1.1.1.1.1),
+    emptySum state.effectWaits (·.owner) (·.outputs) (List.all_eq_true.mp waits.1.1.1.1.1.2)]
   rfl
 
 private theorem sequentialScope_entry_credit (port : ControlPlaceId) (child : ScopeOccurrenceId)
@@ -86,8 +91,10 @@ private theorem sequentialScope_entry_credit (port : ControlPlaceId) (child : Sc
   rw [inserted]
   change (if (child == child && port == place) = true then 1 else 0) +
     (before.tokens.filter (fun token => token.owner == child && token.placeId == place)).length +
-    (before.waits.filter (fun wait => wait.owner == child && wait.output == place)).length +
-    (before.effectWaits.filter (fun wait => wait.owner == child && wait.output == place)).length =
+    (before.waits.map fun wait =>
+      (wait.outputs.filter fun candidate => wait.owner == child && candidate == place).length).sum +
+    (before.effectWaits.map fun wait =>
+      (wait.outputs.filter fun candidate => wait.owner == child && candidate == place).length).sum =
     (if (child == child && port == place) = true then [port] else []).length
   split <;> simp only [List.length_cons, List.length_nil] <;> omega
 
@@ -178,11 +185,11 @@ theorem sequentialScope_first_entry_port_accounting (program : Program) (hosting
         rw [ownedPortCount_foreign _ parent child place different, Nat.add_zero] at removed
         change ContinuationMarkingLaws.tokenCount
             (removeToken (addToken before.tokens entry.childEntry child) entry.input parent) child place +
-            (before.waits.filter (fun wait => wait.owner == child && wait.output == place)).length +
-            (before.effectWaits.filter (fun wait => wait.owner == child && wait.output == place)).length =
+            (before.waits.map fun wait => ownedPortCount wait.outputs wait.owner child place).sum +
+            (before.effectWaits.map fun wait => ownedPortCount wait.outputs wait.owner child place).sum =
           ContinuationMarkingLaws.tokenCount (addToken before.tokens entry.childEntry child) child place +
-            (before.waits.filter (fun wait => wait.owner == child && wait.output == place)).length +
-            (before.effectWaits.filter (fun wait => wait.owner == child && wait.output == place)).length
+            (before.waits.map fun wait => ownedPortCount wait.outputs wait.owner child place).sum +
+            (before.effectWaits.map fun wait => ownedPortCount wait.outputs wait.owner child place).sum
         rw [removed]
 
 /-- SMIS-END-01's current-body census and quiescence exclude enabled and blocked credit across the repeated definition. -/
@@ -208,13 +215,20 @@ theorem sequentialScope_quiescent_definition_marking (program : Program) (hostin
     have forbidden := List.any_eq_false.mp none value member
     rw [(Bool.and_eq_true_iff.mp selected).1] at forbidden
     contradiction
+  have emptySum {α : Type} (values : List α) (key : α → ScopeOccurrenceId) (ports : α → List ControlPlaceId)
+      (none : values.any (fun value => key value == binding.body.id) = false) (place : ControlPlaceId) :
+      (values.map fun value => ownedPortCount (ports value) (key value) binding.body.id place).sum = 0 :=
+    ownedPortCount_sum_absent values ports key binding.body.id place
+      (fun value member same => by
+        have forbidden := List.any_eq_false.mp none value member
+        simp [same] at forbidden)
   have zeroCurrent : ∀ place, continuationMarking before binding.body.id place = 0 := by
     have facts := quiet
     simp only [scopeQuiescent, Bool.and_eq_true, Bool.not_eq_true', and_assoc] at facts
     intro place
     rw [continuationMarking, empty before.tokens (·.owner) (·.placeId) (by grind) place,
-      empty before.waits (·.owner) (·.output) (by grind) place,
-      empty before.effectWaits (·.owner) (·.output) (by grind) place]
+      emptySum before.waits (·.owner) (·.outputs) (by grind) place,
+      emptySum before.effectWaits (·.owner) (·.outputs) (by grind) place]
     rfl
   intro owner owned place
   by_cases same : owner = binding.body.id
@@ -514,8 +528,8 @@ theorem sequentialScope_completion_port_accounting (program : Program) (hosting 
         ContinuationMarkingLaws.tokenCount] at added
       change (addToken before.tokens entry.childEntry child |>.filter
           (fun token => token.owner == binding.body.id && token.placeId == place)).length +
-          (before.waits.filter (fun wait => wait.owner == binding.body.id && wait.output == place)).length +
-          (before.effectWaits.filter (fun wait => wait.owner == binding.body.id && wait.output == place)).length = 0
+          (before.waits.map fun wait => ownedPortCount wait.outputs wait.owner binding.body.id place).sum +
+          (before.effectWaits.map fun wait => ownedPortCount wait.outputs wait.owner binding.body.id place).sum = 0
       rw [added]
       exact oldZero place
 
@@ -720,8 +734,8 @@ theorem sequentialScope_next_parent_credit (entry : SequentialScopeEntry) (befor
     rw [ownedPortCount_foreign _ _ _ _ different] at added
     simpa [continuationMarking, addTokens, ContinuationMarkingLaws.tokenCount, scopeActivationCount] using
       congrArg (fun count => count +
-        (before.waits.filter (fun wait => wait.owner == binding.activity.owner && wait.output == place)).length +
-        (before.effectWaits.filter (fun wait => wait.owner == binding.activity.owner && wait.output == place)).length) added
+        (before.waits.map fun wait => ownedPortCount wait.outputs wait.owner binding.activity.owner place).sum +
+        (before.effectWaits.map fun wait => ownedPortCount wait.outputs wait.owner binding.activity.owner place).sum) added
 
 
 /-- The shared actual body outcome retains lifecycle identity and the Scope data frame, including Service arming. -/

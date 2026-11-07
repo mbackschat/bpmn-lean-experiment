@@ -89,7 +89,7 @@ def makeInternalTimerTaskPatch (program : Program) (state : RuntimeState)
             owner
             task := { id := contract.task.id, name := contract.task.name }
             activation := taskActivation
-            output := contract.task.output } }
+            outputs := [contract.task.output] } }
     timer :=
       { processInstanceId := owner.processInstanceId
         owner

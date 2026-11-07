@@ -41,6 +41,8 @@ import {
   addToken,
   sameOccurrence,
   sameScopeOccurrence,
+  addTokens,
+  waitOutputsAre,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -119,9 +121,9 @@ export function completeDataInputOutputUserTask(
   if (disposed === null) return null;
   return {
     ...state,
-    controlTokens: addToken(
+    controlTokens: addTokens(
       state.controlTokens,
-      selected.wait.output,
+      selected.wait.outputs,
       selected.wait.owner,
     ),
     userTaskWaits: state.userTaskWaits.filter(
@@ -172,7 +174,7 @@ function dataInputOutputTaskFor(
       wait.id.processInstanceId !== wait.owner.processInstanceId ||
       record.id.processInstanceId !== wait.owner.processInstanceId ||
       record.id.activityElementId !== definition.task.elementId ||
-      wait.name !== definition.task.name || wait.output !== definition.output ||
+      wait.name !== definition.task.name || !waitOutputsAre(wait.outputs, [definition.output]) ||
       scopeBindings.length !== 1 || scopeBindings[0]?.scopeId !== wait.owner.definitionScopeId
     ? undefined
     : { definition, record, wait };

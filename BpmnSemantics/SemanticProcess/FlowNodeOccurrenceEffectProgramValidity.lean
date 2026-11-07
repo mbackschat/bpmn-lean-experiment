@@ -35,14 +35,14 @@ def effectWaitValid (program : Program) (state : RuntimeState)
           effect.elementId = wait.elementId && effect.descriptor = wait.descriptor &&
             inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings
               wait.arguments = true &&
-            effect.outputMappings = wait.outputMappings && output = wait.output &&
+            effect.outputMappings = wait.outputMappings && wait.outputs = [output] &&
             route = wait.bpmnErrorRoute
       -- ACTH-HOST-01: a host's opened wait is its projection's, which carries no BPMN Error route.
       | .activity host => host.origin.elementId = wait.elementId && host.effect?.any fun effect =>
           effect.elementId = wait.elementId && effect.descriptor = wait.descriptor &&
             inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings
               wait.arguments = true &&
-            effect.outputMappings = wait.outputMappings && host.outputs = [⟨wait.output⟩] &&
+            effect.outputMappings = wait.outputMappings && host.outputs.map (·.place) = wait.outputs &&
             wait.bpmnErrorRoute.isNone
       | _ => false).length = 1
 
@@ -82,10 +82,10 @@ theorem flowNodeOccurrenceEffectProgramValidity_declaration (program : Program)
       ((∃ id origin input output effect route,
         SemanticOperation.awaitEffect id origin input output effect route ∈ program.operations ∧
         operationOwnedBy program (.awaitEffect id origin input output effect route) wait.owner = true ∧
-        effect.outputMappings = wait.outputMappings ∧ output = wait.output) ∨
+        effect.outputMappings = wait.outputMappings ∧ wait.outputs = [output]) ∨
       ∃ host effect, SemanticOperation.activity host ∈ program.operations ∧
         operationOwnedBy program (.activity host) wait.owner = true ∧ host.work = .effect effect ∧
-        effect.outputMappings = wait.outputMappings ∧ host.outputs = [⟨wait.output⟩]) := by
+        effect.outputMappings = wait.outputMappings ∧ host.outputs.map (·.place) = wait.outputs) := by
   have checked := List.all_eq_true.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp valid).1).1 wait member
   simp only [effectWaitValid, Bool.and_eq_true, decide_eq_true_eq] at checked
   have live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true := by
@@ -117,7 +117,8 @@ theorem flowNodeOccurrenceEffectProgramValidity_output_binding (program : Progra
     (member : wait ∈ state.effectWaits) :
     flowNodeOccurrenceOwnerLiveUnique state wait.owner = true ∧
       ∃ operation ∈ program.operations, operationOwnedBy program operation wait.owner = true ∧
-        operationControlPlacesShareOwner operation = true ∧ wait.output ∈ operationControlPlaces operation := by
+        operationControlPlacesShareOwner operation = true ∧
+          ∀ output ∈ wait.outputs, output ∈ operationControlPlaces operation := by
   obtain ⟨live, declaration⟩ := flowNodeOccurrenceEffectProgramValidity_declaration program state wait valid member
   rcases declaration with ⟨id, origin, input, output, effect, route, declared, owned, _, sameOutput⟩ |
     ⟨host, _, declared, owned, _, _, sameOutputs⟩
@@ -125,6 +126,7 @@ theorem flowNodeOccurrenceEffectProgramValidity_output_binding (program : Progra
     simp [operationControlPlacesShareOwner, operationControlPlaces, operationOutputs, sameOutput]
   · refine ⟨live, .activity host, declared, owned, ?_⟩
     simp [operationControlPlacesShareOwner, operationControlPlaces, operationOutputs, sameOutputs]
+    exact fun _ member => Or.inr member
 
 theorem flowNodeOccurrenceEffectProgramValidity_frame (program : Program)
     (before after : RuntimeState)
@@ -319,11 +321,11 @@ private theorem effectLocalScopesExact_insert (state : RuntimeState) (inserted :
 Effect-family Program correspondence. -/
 theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
-    (input : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute)
-    (wait : EffectWait) (bindings : List VariableBinding)
+    (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute)
+    (wait : EffectWait) (outputs : wait.outputs = [output]) (bindings : List VariableBinding)
     (prior : flowNodeOccurrenceEffectProgramValidity program state = true)
     (declarers : effectWaitDeclarers program wait.elementId =
-      [.awaitEffect id origin input wait.output effect route])
+      [.awaitEffect id origin input output effect route])
     (declared : declaredByExactlyOneOwnedOperation program
       (effectWaitDeclarers program wait.elementId) wait.owner = true)
     (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
@@ -361,7 +363,7 @@ theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : 
       variables := addActivityVariableScope state.variables
         (effectWaitOccurrenceId wait) bindings }
   have owned := operationOwnedBy_of_exact_declaration program
-    (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute) wait.owner _ declarers
+    (.awaitEffect id origin input output effect wait.bpmnErrorRoute) wait.owner _ declarers
       declared
   have operationCount :
       (program.operations.filter fun operation =>
@@ -370,13 +372,13 @@ theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : 
             candidate.elementId = wait.elementId && candidate.descriptor = wait.descriptor &&
               inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) candidate.inputMappings
                 wait.arguments = true &&
-              candidate.outputMappings = wait.outputMappings && output = wait.output &&
+              candidate.outputMappings = wait.outputMappings && wait.outputs = [output] &&
               candidateRoute = wait.bpmnErrorRoute
         | .activity host => host.origin.elementId = wait.elementId && host.effect?.any fun candidate =>
             candidate.elementId = wait.elementId && candidate.descriptor = wait.descriptor &&
               inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) candidate.inputMappings
                 wait.arguments = true &&
-              candidate.outputMappings = wait.outputMappings && host.outputs = [⟨wait.output⟩] &&
+              candidate.outputMappings = wait.outputMappings && host.outputs.map (·.place) = wait.outputs &&
               wait.bpmnErrorRoute.isNone
         | _ => false).length = 1 := by
     calc
@@ -386,13 +388,13 @@ theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : 
         apply List.filter_congr
         intro operation member
         have only : operation ∈ effectWaitDeclarers program wait.elementId ↔
-            operation = .awaitEffect id origin input wait.output effect wait.bpmnErrorRoute := by
+            operation = .awaitEffect id origin input output effect wait.bpmnErrorRoute := by
           rw [declarers]
           simp
         by_cases familyMember : operation ∈ effectWaitDeclarers program wait.elementId
         · have operationEq := only.mp familyMember
           subst operation
-          simp [owned, originElement, effectElement, descriptor, arguments, outputMappings]
+          simp [owned, originElement, effectElement, descriptor, arguments, outputMappings, outputs]
         · cases operation with
           | awaitEffect candidateId candidateOrigin candidateInput candidateOutput candidateEffect
               candidateRoute =>

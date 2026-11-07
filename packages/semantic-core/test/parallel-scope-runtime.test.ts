@@ -186,9 +186,9 @@ test("pending human and effect work blocks retirement; early cancellation remove
   const id = { processInstanceId: parent.processInstanceId, elementId: "Validate", activation: 1 };
   const effect = { id, owner: body(6), descriptor: {
     protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation: "urn:bpmn-lean:effect-operation:mapped-success-v1" },
-    arguments: [], outputMappings: [], bpmnErrorRoute: null, output: "end", incidentAlreadyRetried: false };
+    arguments: [], outputMappings: [], bpmnErrorRoute: null, outputs: ["end"], incidentAlreadyRetried: false };
   for (const busy of [
-    { ...state, controlTokens: [], userTaskWaits: [{ id, owner: body(5), name: null, output: "end" }] },
+    { ...state, controlTokens: [], userTaskWaits: [{ id, owner: body(5), name: null, outputs: ["end"] }] },
     { ...state, controlTokens: [], effectWaits: [{ ...effect, owner: body(5) }] },
   ]) assert.equal(completeParallelScope(entry, busy, body(5)), null);
   const before = { ...state, controlTokens: [], effectWaits: [effect], variables: { ...state.variables,

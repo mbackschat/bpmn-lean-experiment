@@ -58,15 +58,15 @@ theorem prepared_message_task_preserves_userTask_program_validity
     { processInstanceId := instanceId, owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   have declaration : UserTaskWaitDeclaration wait contract.operation := by
     cases kind : contract.kind
     · simpa [InternalMessageTaskContract.operation, kind, wait] using
         UserTaskWaitDeclaration.messageBounded (wait := wait) contract.operationId contract.origin
-          contract.input contract.message rfl rfl
+          contract.input contract.task.output contract.message rfl rfl rfl
     · simpa [InternalMessageTaskContract.operation, kind, wait] using
         UserTaskWaitDeclaration.messageMonitored (wait := wait) contract.operationId contract.origin
-          contract.input contract.message rfl rfl
+          contract.input contract.task.output contract.message rfl rfl rfl
   have declarers : userTaskWaitDeclarers program contract.task.id = [contract.operation] := by
     simpa [uniqueFamilyDeclarer?] using taskDeclarer
   have declared := declaredByExactlyOneOwnedOperation_of_exactSelection program
@@ -97,7 +97,7 @@ theorem prepared_message_task_preserves_activity_work
     { processInstanceId := instanceId, owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   let taskState : RuntimeState := { state with waits := insertUserTaskWait wait state.waits }
   let after := applyInternalMessageTaskPatch state selected
   have taskFresh : ∀ old ∈ state.waits,
@@ -176,7 +176,7 @@ theorem prepared_message_task_old_records_reject_new_task
       { processInstanceId := instanceId, owner
         task := { id := contract.task.id, name := contract.task.name }
         activation := activationCount state contract.task.id + 1
-        output := contract.task.output } = true)
+        outputs := [contract.task.output] } = true)
   have conflict : regionalActivityAssociationsConflict old
       (makeInternalMessageTaskPatch program state contract owner instanceId processId inputOrigin).record = true := by
     simp [regionalActivityAssociationsConflict, body, same, makeInternalMessageTaskPatch,
@@ -203,7 +203,7 @@ theorem prepared_message_task_preserves_existing_timer_match
     { processInstanceId := instanceId, owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   exact boundaryTimerOperationMatches_insert_disjoint_task_record program state wait selected.record
     timer operation (bodies wait rfl) (by
       simp [selected, makeInternalMessageTaskPatch, recordAttaches, ActivityOccurrence.timerHandlerOccurrences])

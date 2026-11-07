@@ -170,7 +170,7 @@ test("start closes at one structured effect intent without producing output", ()
       arguments: [],
       outputMappings: [],
       bpmnErrorRoute: null,
-      output: "place:Flow_ServiceToEnd",
+      outputs: ["place:Flow_ServiceToEnd"],
       incidentAlreadyRetried: false,
     },
   ]);

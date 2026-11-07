@@ -35,10 +35,10 @@ def TaskLifetimeShape (program : Program) (state : RuntimeState) : Prop :=
     state.control = .running wait.processInstanceId ∧ wait.processInstanceId = wait.owner.processInstanceId ∧
     match operation with
     | .awaitUserTask _ _ _ output task =>
-      wait.task = task ∧ wait.output = output ∧ wait.metadata = task.metadata ∧
+      wait.task = task ∧ wait.outputs = [output] ∧ wait.metadata = task.metadata ∧
         state.activityOccurrences = [] ∧ state.variables.activities = []
     | .awaitDataInputOutputUserTask _ _ _ output taskId taskName directInput _ =>
-      wait.task = { id := taskId, name := taskName } ∧ wait.output = output ∧ wait.metadata = none ∧
+      wait.task = { id := taskId, name := taskName } ∧ wait.outputs = [output] ∧ wait.metadata = none ∧
       ∃ activityActivation binding,
         binding.name = directInput.targetDataInputId ∧
         variableValueAdmitted activityDataInputOutputUserTaskProfileId .processStart binding.value = true ∧
@@ -141,7 +141,7 @@ theorem ordinary_arming_preserves_task_lifetime_shape
       owner := root
       task
       activation := activationCount before task.id + 1
-      output
+      outputs := [output]
       metadata := task.metadata }, .awaitUserTask id origin input output task, ?_⟩
     simp [activateUserTask, noWait, noRecords, noScopes, insertUserTaskWait, member,
       runningEq, rootEq, instanceEq]
@@ -182,7 +182,7 @@ theorem data_arming_preserves_task_lifetime_shape
         owner := root
         task := { id := taskId, name := taskName }
         activation := activationCount before taskId + 1
-        output }, .awaitDataInputOutputUserTask id origin input output taskId taskName directInput directOutput, ?_⟩
+        outputs := [output] }, .awaitDataInputOutputUserTask id origin input output taskId taskName directInput directOutput, ?_⟩
       simp only [noWait, noRecords, noScopes, insertUserTaskWait, insertActivityOccurrence,
         addActivityOccurrenceVariableScope, insertActivityVariableScope]
       refine ⟨True.intro, member, by simpa [rootEq, instanceEq] using runningEq, True.intro, True.intro, True.intro, True.intro,
@@ -333,7 +333,7 @@ theorem ordinary_completion_clears_task_lifetime
     TaskLifetimeShape program after := by
   obtain ⟨id, origin, input, output, task, declared, key⟩ :=
     ordinary_completion_admission_has_declaration program taskId bindings profile accepted
-  obtain ⟨liveWait, live, _, sameKey, noWait, _⟩ :=
+  obtain ⟨liveWait, live, sameKey, noWait, _⟩ :=
     ordinary_completion_has_exact_continuation before after taskId.processInstanceId
       ⟨taskId.elementId.value⟩ taskId.activation bounded completed
   have noLifetime : before.activityOccurrences = [] ∧ before.variables.activities = [] := by

@@ -155,7 +155,7 @@ test("effect incident association cannot consume an equal-coordinate Activity ow
     arguments: [],
     outputMappings: [],
     bpmnErrorRoute: null,
-    output: "place:done",
+    outputs: ["place:done"],
     incidentAlreadyRetried: false,
   } as const;
   const state: RuntimeState = {

@@ -143,7 +143,7 @@ theorem sequentialScope_user_completion_frame (program : Program) (before after 
       after = { before with
         waits := before.waits.erase wait
         variables := variables
-        tokens := addToken before.tokens wait.output wait.owner } := by
+        tokens := addTokens before.tokens wait.outputs wait.owner } := by
   obtain ⟨wait, variables, selected, _, frame⟩ :=
     sequentialScope_user_completion_data_frame program before after taskId values completed
   exact ⟨wait, variables, selected, frame⟩
@@ -156,7 +156,7 @@ theorem sequentialScope_effect_completion_frame (program : Program) (before afte
       after = { before with
         effectWaits := before.effectWaits.erase wait
         variables := variables
-        tokens := addToken before.tokens wait.output wait.owner } := by
+        tokens := addTokens before.tokens wait.outputs wait.owner } := by
   obtain ⟨wait, _, variables, selected, _, _, frame⟩ :=
     sequentialScope_effect_completion_data_frame program before after effectId result completed
   exact ⟨wait, { variables with
@@ -618,8 +618,8 @@ theorem sequentialScope_ingress_full_validity (program : Program) (hosting : Sem
       before.effectWaits.map fun wait =>
         (⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩ : OccurrenceId)).Nodup)
     (ports : ∀ port owner,
-      (∃ wait ∈ before.waits, wait.output = port ∧ wait.owner = owner) ∨
-      (∃ wait ∈ before.effectWaits, wait.output = port ∧ wait.owner = owner) →
+      (∃ wait ∈ before.waits, port ∈ wait.outputs ∧ wait.owner = owner) ∨
+      (∃ wait ∈ before.effectWaits, port ∈ wait.outputs ∧ wait.owner = owner) →
       (∃ place, program.controlPlaces.filter (fun candidate => decide (candidate.id = port)) = [place]) ∧
       program.controlPlaceScopes.filter (fun ownership => decide (ownership.controlPlaceId = port)) =
         [{ controlPlaceId := port, scopeId := owner.definitionScopeId }])
@@ -654,17 +654,19 @@ theorem sequentialScope_ingress_full_validity (program : Program) (hosting : Sem
     have member : wait ∈ before.waits := by
       have present : wait ∈ sequentialScopeTaskWaits before taskId := by rw [selected]; simp
       exact (List.mem_filter.mp present).1
-    have port := ports wait.output wait.owner (Or.inl ⟨wait, member, rfl, rfl⟩)
+    have port := fun place (selected : place ∈ wait.outputs) =>
+      ports place wait.owner (Or.inl ⟨wait, member, selected, rfl⟩)
     have live := List.all_eq_true.mp owners.1 wait member
-    have added := runtimePositionValid_addToken program hosting before wait.output wait.owner position live port.1 port.2
+    have added := runtimePositionValid_addTokens program hosting before wait.outputs wait.owner position live
+      (fun place selected => (port place selected).1) (fun place selected => (port place selected).2)
     have activityFrame := sequentialScope_write_activity_frame program before wait.owner values .userTask variables written
     subst after
     have stateValid : sequentialScopeStateValid program { before with variables := variables } = true := by
       with_unfolding_all exact afterInvariant.associations
     have valid := smis_ingress_runtime_assembly program hosting before
-      (addToken before.tokens wait.output wait.owner) (before.waits.erase wait) before.effectWaits variables wellFormed running
+      (addTokens before.tokens wait.outputs wait.owner) (before.waits.erase wait) before.effectWaits variables wellFormed running
       List.erase_sublist (List.Sublist.refl _) (by rw [activityFrame]; exact List.Sublist.refl _) added
-      (orderedBy_addToken _ _ _ tokenOrder) stateValid shape empty excluded taskDomain
+      (orderedBy_addTokens _ _ _ tokenOrder) stateValid shape empty excluded taskDomain
     have waitValid := ParallelScopeCommand.human_disposal_valid program before wait variables activityFrame waits empty.1 empty.2.1
     have nextFlow := flowNodeOccurrenceProgramValidity_of_wait_frame program before _ flow waitValid rfl rfl rfl rfl rfl
     exact ⟨valid, smis_ingress_projection program hosting before _ (by with_unfolding_all exact added)
@@ -675,19 +677,21 @@ theorem sequentialScope_ingress_full_validity (program : Program) (hosting : Sem
     have member : wait ∈ before.effectWaits := by
       have present : wait ∈ before.effectWaits.filter (effectIdNamesWait effectId) := by rw [selected]; simp
       exact (List.mem_filter.mp present).1
-    have port := ports wait.output wait.owner (Or.inr ⟨wait, member, rfl, rfl⟩)
+    have port := fun place (selected : place ∈ wait.outputs) =>
+      ports place wait.owner (Or.inr ⟨wait, member, selected, rfl⟩)
     have live := List.all_eq_true.mp owners.2.2.2.1 wait member
-    have added := runtimePositionValid_addToken program hosting before wait.output wait.owner position live port.1 port.2
+    have added := runtimePositionValid_addTokens program hosting before wait.outputs wait.owner position live
+      (fun place selected => (port place selected).1) (fun place selected => (port place selected).2)
     have activityFrame := sequentialScope_write_activity_frame program before wait.owner values .serviceTask variables written
     subst after
     have stateValid : sequentialScopeStateValid program { before with variables := variables } = true := by
       with_unfolding_all exact afterInvariant.associations
     have valid := smis_ingress_runtime_assembly program hosting before
-      (addToken before.tokens wait.output wait.owner) before.waits (before.effectWaits.erase wait)
+      (addTokens before.tokens wait.outputs wait.owner) before.waits (before.effectWaits.erase wait)
       { variables with activities := variables.activities.filter (fun scope => !activityScopeMatches effectId scope) }
       wellFormed running
       (List.Sublist.refl _) List.erase_sublist (by rw [activityFrame]; exact List.filter_sublist)
-      added (orderedBy_addToken _ _ _ tokenOrder) stateValid shape empty excluded taskDomain
+      added (orderedBy_addTokens _ _ _ tokenOrder) stateValid shape empty excluded taskDomain
     have waitValid := ParallelScopeCommand.service_disposal_valid program before wait member variables activityFrame
       waits empty.1 empty.2.1 empty.2.2.1
     rw [identity] at afterInvariant valid ⊢

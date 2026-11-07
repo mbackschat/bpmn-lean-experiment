@@ -172,7 +172,7 @@ def ownedTaskId : OccurrenceId :=
 
 def ownedTaskWait (owner : ScopeOccurrenceId) : UserTaskWait :=
   { processInstanceId := instanceId, task := { id := ⟨"Task"⟩, name := none }
-    activation := 1, owner, output := ⟨"out"⟩ }
+    activation := 1, owner, outputs := [⟨"out"⟩] }
 
 def ownershipState (body : ActivityBody) (waits : List UserTaskWait) : RuntimeState :=
   { initialState with

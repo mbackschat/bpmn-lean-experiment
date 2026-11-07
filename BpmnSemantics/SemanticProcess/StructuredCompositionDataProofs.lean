@@ -510,9 +510,9 @@ theorem declared_completion_transports_input_obligations
 
 /-- A wait retains the declaration that supplied its task identity and continuation. -/
 def WaitMatchesOperation (wait : UserTaskWait) : SemanticOperation → Prop
-  | .awaitUserTask _ _ _ output task => wait.task.id = task.id ∧ wait.output = output
+  | .awaitUserTask _ _ _ output task => wait.task.id = task.id ∧ wait.outputs = [output]
   | .awaitDataInputOutputUserTask _ _ _ output taskId .. =>
-      wait.task.id = taskId ∧ wait.output = output
+      wait.task.id = taskId ∧ wait.outputs = [output]
   | _ => False
 
 /-- Token obligations apply before the consuming operation; wait obligations apply before its output write. -/

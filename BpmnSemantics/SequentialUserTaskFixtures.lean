@@ -57,7 +57,7 @@ def exactWait : UserTaskWait :=
       { id := ⟨"UserTask_Approve"⟩
         name := some "Approve" }
     activation := 1
-    output := ⟨"place:Flow_TaskToEnd"⟩ }
+    outputs := [⟨"place:Flow_TaskToEnd"⟩] }
 
 def afterStartState : RuntimeState :=
   { (runningProgramStartState? program ⟨"Instance_1"⟩ initialBindings).getD

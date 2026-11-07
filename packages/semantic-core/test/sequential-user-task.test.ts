@@ -78,7 +78,7 @@ test("start closes at one stable User Task wait", async () => {
         },
         owner,
         name: "Approve",
-        output: "place:Flow_TaskToEnd",
+        outputs: ["place:Flow_TaskToEnd"],
       },
     ],
     messageWaits: [],

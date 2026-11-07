@@ -292,7 +292,7 @@ def sequentialMultiInstanceControllerProgramBindingValid (program : Program)
                   | [wait], [timerId] =>
                       wait.owner == record.owner && wait.task.id == task.id &&
                         wait.task.name == task.name && wait.metadata == none &&
-                        wait.output == normalOutput &&
+                        wait.outputs == [normalOutput] &&
                         timerId.processInstanceId == record.processInstanceId &&
                         timerId.elementId.value == boundaryTimer.elementId.value &&
                         match state.timerWaits.filter (timerIdNamesWait timerId) with

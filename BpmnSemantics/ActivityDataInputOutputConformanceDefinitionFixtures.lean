@@ -160,7 +160,7 @@ def active : RuntimeState :=
          owner := claimScopeOwner
          task := { id := ⟨"UserTask_AssessClaim"⟩, name := some "Assess claim", metadata := none }
          activation := 1
-         output := ⟨"place:Flow_AssessClaim_Recorded"⟩
+         outputs := [⟨"place:Flow_AssessClaim_Recorded"⟩]
          metadata := none }]
     activityOccurrences :=
       [{ processInstanceId := claimInstanceId

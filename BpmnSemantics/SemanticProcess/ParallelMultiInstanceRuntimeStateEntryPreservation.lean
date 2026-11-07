@@ -677,7 +677,7 @@ theorem sharedParallelEntry_preserves_runtimeStateWellFormed (program : Program)
       have regionShape : regionWaits.all (fun wait =>
           wait.owner == record.owner && wait.task.id == arm.taskId &&
             wait.task.name == arm.taskName && wait.metadata == none &&
-            wait.output == arm.normalOutput) = true := by
+            wait.outputs == [arm.normalOutput]) = true := by
         rw [List.all_eq_true]
         intro wait member
         have generated := regionPerm.mem_iff.mp member

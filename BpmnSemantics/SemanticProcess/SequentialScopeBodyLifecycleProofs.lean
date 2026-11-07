@@ -376,7 +376,7 @@ theorem sequentialScope_user_completion_data_frame (program : Program) (before a
       writeSequentialScopeValues? program before wait.owner values .userTask = some variables ∧
       after = { before with
         waits := before.waits.erase wait, variables := variables,
-        tokens := addToken before.tokens wait.output wait.owner } := by
+        tokens := addTokens before.tokens wait.outputs wait.owner } := by
   unfold completeSequentialScopeUserTask? at completed
   generalize selected : sequentialScopeTaskWaits before taskId = waits at completed
   cases waits with
@@ -402,7 +402,7 @@ theorem sequentialScope_effect_completion_data_frame (program : Program) (before
         effectWaits := before.effectWaits.erase wait,
         variables := { variables with
           activities := variables.activities.filter (fun scope => !activityScopeMatches effectId scope) },
-        tokens := addToken before.tokens wait.output wait.owner } := by
+        tokens := addTokens before.tokens wait.outputs wait.owner } := by
   unfold completeSequentialScopeEffect? at completed
   generalize selected : before.effectWaits.filter (effectIdNamesWait effectId) = waits at completed
   cases waits with

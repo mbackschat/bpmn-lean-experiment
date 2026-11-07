@@ -326,7 +326,7 @@ test("regional termination removes every child owner while retaining the child r
         },
         owner: root.id,
         name: "Parent task",
-        output: "place:ParentTaskOutput",
+        outputs: ["place:ParentTaskOutput"],
       },
     ],
     messageWaits: [{
@@ -362,7 +362,7 @@ test("regional termination removes every child owner while retaining the child r
         arguments: [],
         outputMappings: [],
         bpmnErrorRoute: null,
-        output: "place:SyntheticChildEffectOutput",
+        outputs: ["place:SyntheticChildEffectOutput"],
         incidentAlreadyRetried: false,
       },
       {
@@ -372,7 +372,7 @@ test("regional termination removes every child owner while retaining the child r
         arguments: [],
         outputMappings: [],
         bpmnErrorRoute: null,
-        output: "place:SyntheticParentEffectOutput",
+        outputs: ["place:SyntheticParentEffectOutput"],
         incidentAlreadyRetried: false,
       },
     ],
@@ -501,7 +501,7 @@ test("the same no-output operation terminates a root occurrence through complete
       },
       owner: root,
       name: "Root sibling",
-      output: "place:SyntheticRootSiblingOutput",
+      outputs: ["place:SyntheticRootSiblingOutput"],
     }],
   };
   const rootTermination = {

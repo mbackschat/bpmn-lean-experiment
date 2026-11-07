@@ -25,6 +25,7 @@ import {
   nextActivation,
   sameOccurrence,
   sameScopeOccurrence,
+  waitOutputsAre,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -97,7 +98,7 @@ export function candidateLongLivedStarts(
       const wait = only(after.userTaskWaits.filter((candidate) =>
         candidate.id.elementId === operation.task.elementId &&
         candidate.id.activation === nextActivation(before.taskActivations, operation.task.elementId) &&
-        candidate.output === operation.output &&
+        waitOutputsAre(candidate.outputs, [operation.output]) &&
         candidate.name === operation.task.name &&
         sameJson(candidate.metadata, operation.task.metadata) &&
         sameScopeOccurrence(candidate.owner, owner)
@@ -109,7 +110,7 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.AwaitDataOutputUserTask: {
       const wait = only(after.userTaskWaits.filter((candidate) =>
         candidate.id.elementId === operation.task.elementId &&
-        candidate.output === operation.output &&
+        waitOutputsAre(candidate.outputs, [operation.output]) &&
         candidate.name === operation.task.name &&
         candidate.metadata === undefined &&
         sameScopeOccurrence(candidate.owner, owner)
@@ -128,7 +129,7 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.AwaitMonitoredUserTask: {
       const wait = only(after.userTaskWaits.filter((candidate) =>
         candidate.id.elementId === operation.task.elementId &&
-        candidate.output === operation.task.output &&
+        waitOutputsAre(candidate.outputs, [operation.task.output]) &&
         candidate.name === operation.task.name &&
         candidate.metadata === undefined &&
         sameScopeOccurrence(candidate.owner, owner)
@@ -166,7 +167,7 @@ export function candidateLongLivedStarts(
     case SemanticOperationKind.AwaitEffect: {
       const wait = only(after.effectWaits.filter((candidate) =>
         candidate.id.elementId === operation.effect.elementId &&
-        candidate.output === operation.output &&
+        waitOutputsAre(candidate.outputs, [operation.output]) &&
         sameJson(candidate.descriptor, operation.effect.descriptor) &&
         inputMappingSnapshotMatchesUnder(
           effectMappingValuePolicyForProgram(program),
@@ -333,7 +334,7 @@ function messageBoundedUserTaskStarts(
     sameOccurrence(candidate.id, bodyTask) &&
     candidate.id.elementId === operation.task.elementId &&
     candidate.name === operation.task.name &&
-    candidate.output === operation.task.output &&
+    waitOutputsAre(candidate.outputs, [operation.task.output]) &&
     candidate.metadata === undefined &&
     sameScopeOccurrence(candidate.owner, owner)
   ));

@@ -81,7 +81,8 @@ export type SemanticUserTaskWait = DeepReadonly<{
   owner: ScopeOccurrenceId;
   name: string | null;
   metadata?: UserTaskMetadata;
-  output: string;
+  /** ACSP-WAIT-01: every place completion continues to; never empty. */
+  outputs: string[];
 }>;
 
 export type SemanticTimerWait = DeepReadonly<{
@@ -105,7 +106,8 @@ export type SemanticEffectWait = DeepReadonly<{
   arguments: VariableBinding[];
   outputMappings: VariableMapping[];
   bpmnErrorRoute: BpmnErrorRoute | null;
-  output: string;
+  /** ACSP-WAIT-01, as for `SemanticUserTaskWait`. */
+  outputs: string[];
   incidentAlreadyRetried: boolean;
 }>;
 
@@ -286,6 +288,20 @@ export function addToken(
     ),
     { placeId, owner, multiplicity: current + 1 },
   ].sort(compareTokenPlaces);
+}
+
+/** One token per place, in the wait's order; the multiset is order-independent (ACSP-WAIT-01). */
+export function addTokens(
+  tokens: ReadonlyArray<ControlPlaceTokens>,
+  placeIds: ReadonlyArray<string>,
+  owner: ScopeOccurrenceId,
+): ReadonlyArray<ControlPlaceTokens> {
+  return placeIds.reduce((current, placeId) => addToken(current, placeId, owner), tokens);
+}
+
+/** Whether a wait's outputs are exactly `expected`, in order. */
+export function waitOutputsAre(outputs: ReadonlyArray<string>, expected: ReadonlyArray<string>): boolean {
+  return outputs.length === expected.length && outputs.every((output, index) => output === expected[index]);
 }
 
 export function removeToken(

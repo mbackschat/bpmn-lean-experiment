@@ -203,8 +203,8 @@ private theorem issued_parent_marking (entry : ParallelScopeEntry) (parent : Sco
       have added := add_many_count before.tokens [entry.childEntry] child parent place
       rw [ownedPortCount_foreign _ child parent place foreign, Nat.add_zero] at added
       simpa only [continuationMarking, addTokens, List.foldr_cons, List.foldr_nil, tokenCount, child] using
-        congrArg (fun count => count + (before.waits.filter fun wait => wait.owner == parent && wait.output == place).length +
-          (before.effectWaits.filter fun wait => wait.owner == parent && wait.output == place).length) added
+        congrArg (fun count => count + (before.waits.map fun wait => ownedPortCount wait.outputs wait.owner parent place).sum +
+          (before.effectWaits.map fun wait => ownedPortCount wait.outputs wait.owner parent place).sum) added
 
 /-- Actual clean entry consumes the parent input and retains exactly one normal continuation, including empty collections. -/
 theorem enterParallelScope_parent_continuation_balance (entry : ParallelScopeEntry)
@@ -242,7 +242,7 @@ theorem enterParallelScope_parent_continuation_balance (entry : ParallelScopeEnt
         List.filter_cons, List.filter_nil, beq_self_eq_true, Bool.true_and]
       simp only [continuationMarking] at marking ⊢
       unfold tokenCount ownedPortCount at removed
-      unfold ownedPortCount
+      unfold ownedPortCount at marking ⊢
       cases output : (entry.normalOutput == place) <;> simp [output] at * <;> omega
 
 /-- Regional cancellation only discards continuations, so PMIS-END-01 cannot fund another body firing. -/
@@ -254,8 +254,8 @@ theorem cancelScopeSubtree_continuationMarking_le (before : RuntimeState)
   apply Nat.add_le_add
   · apply Nat.add_le_add
     · exact (List.filter_sublist.filter _).length_le
-    · exact (List.filter_sublist.filter _).length_le
-  · exact (List.filter_sublist.filter _).length_le
+    · exact sum_map_le_of_sublist _ List.filter_sublist
+  · exact sum_map_le_of_sublist _ List.filter_sublist
 
 /-- Discard-only accounting composes across every sibling withdrawn by PMIS-END-01 early completion. -/
 theorem cancelScopeSubtree_fold_continuationMarking_le (targets : List ParallelScopeIteration)
@@ -275,8 +275,8 @@ private theorem addToken_foreign_continuationMarking (state : RuntimeState)
   have added := add_many_count state.tokens [output] owner queried place
   rw [ownedPortCount_foreign _ owner queried place different, Nat.add_zero] at added
   simpa only [continuationMarking, addTokens, List.foldr_cons, List.foldr_nil, tokenCount] using
-    congrArg (fun count => count + (state.waits.filter fun wait => wait.owner == queried && wait.output == place).length +
-      (state.effectWaits.filter fun wait => wait.owner == queried && wait.output == place).length) added
+    congrArg (fun count => count + (state.waits.map fun wait => ownedPortCount wait.outputs wait.owner queried place).sum +
+      (state.effectWaits.map fun wait => ownedPortCount wait.outputs wait.owner queried place).sum) added
 
 /-- PMIS-END-01 only discards continuations outside the bound parent's exact owner;
 remaining, natural and early retirement cannot supply another body's flow budget. -/
@@ -334,12 +334,27 @@ private theorem cancel_parent_marking (before : RuntimeState) (parent target : S
   have calls := calledInstanceClosure_no_calls before target noCalls
   have census := (cancelScopeSubtree_outside_owner_census before target parent noCalls (outside _)).1
   refine ⟨?_, ?_, ?_⟩
-  · unfold continuationMarking
+  · have outsideOwner : occurrenceInSubtree before.scopeOccurrences target parent = false := outside _
+    have dropped (owner : ScopeOccurrenceId) (outputs : List ControlPlaceId)
+        (removed : (!occurrenceInSubtree before.scopeOccurrences target owner) = false) :
+        ownedPortCount outputs owner parent place = 0 := by
+      apply ownedPortCount_foreign
+      intro same
+      rw [same, outsideOwner] at removed
+      contradiction
+    unfold continuationMarking
     simp only [cancelScopeSubtree, scopeCancellationOwner, calls, List.contains_nil, Bool.or_false, List.filter_filter]
-    have outsideOwner : occurrenceInSubtree before.scopeOccurrences target parent = false := outside _
-    congr 2 <;> first | apply congrArg List.length | skip
-    all_goals apply List.filter_congr <;> intro value _
-    all_goals by_cases same : value.owner = parent <;> simp [same, outsideOwner]
+    rw [sum_map_filter_of_dropped_zero before.waits _
+        (fun wait : UserTaskWait => ownedPortCount wait.outputs wait.owner parent place)
+        (fun wait _ removed => dropped wait.owner wait.outputs removed),
+      sum_map_filter_of_dropped_zero before.effectWaits _
+        (fun wait : EffectWait => ownedPortCount wait.outputs wait.owner parent place)
+        (fun wait _ removed => dropped wait.owner wait.outputs removed)]
+    congr 2
+    apply congrArg List.length
+    apply List.filter_congr
+    intro value _
+    by_cases same : value.owner = parent <;> simp [same, outsideOwner]
   · change before.calledProcessOccurrences.filter _ = []
     rw [noCalls]
     rfl
@@ -520,8 +535,8 @@ theorem completeParallelScope_parent_continuation_marking (entry : ParallelScope
       cases output : (entry.normalOutput == place) <;> simp [output, addTokens] at * <;> omega
 
 def armingContinuationPorts : InternalArmingWrite → List ControlPlaceId
-  | .userTask wait => [wait.output]
-  | .effect wait _ => [wait.output]
+  | .userTask wait => wait.outputs
+  | .effect wait _ => wait.outputs
   | .message _ | .timer _ => []
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`armingContinuationPorts]
@@ -535,19 +550,22 @@ private theorem arming_patch_balance (before : RuntimeState) (patch : InternalAr
   have removed := remove_balance before.tokens patch.input patch.owner queried place present
   cases write : patch.write with
   | userTask wait =>
-    have inserted := length_filter_insertUserTaskWait (fun wait => wait.owner == queried && wait.output == place) wait before.waits
+    have inserted := sum_map_canonicalInsertBy userTaskWaitBefore
+      (fun wait => ownedPortCount wait.outputs wait.owner queried place) wait before.waits
     simp only [write, InternalArmingWrite.owner] at owned
-    simp only [applyInternalArmingPatch, write, armingContinuationPorts, continuationMarking]
-    unfold ownedPortCount tokenCount at *
-    rw [owned] at inserted
-    cases selected : (patch.owner == queried && wait.output == place) <;> simp [selected] at inserted ⊢ <;> omega
+    simp only [applyInternalArmingPatch, write, armingContinuationPorts, continuationMarking,
+      insertUserTaskWait_eq_canonicalInsertBy]
+    rw [inserted, owned]
+    unfold tokenCount at removed
+    omega
   | effect wait bindings =>
-    have inserted := length_filter_canonicalInsertBy effectWaitBefore (fun wait : EffectWait => wait.owner == queried && wait.output == place) wait before.effectWaits
+    have inserted := sum_map_canonicalInsertBy effectWaitBefore
+      (fun wait : EffectWait => ownedPortCount wait.outputs wait.owner queried place) wait before.effectWaits
     simp only [write, InternalArmingWrite.owner] at owned
     simp only [applyInternalArmingPatch, write, armingContinuationPorts, continuationMarking, insertEffectWait]
-    unfold ownedPortCount tokenCount at *
-    rw [owned] at inserted
-    cases selected : (patch.owner == queried && wait.output == place) <;> simp [selected] at inserted ⊢ <;> omega
+    rw [inserted, owned]
+    unfold tokenCount at removed
+    omega
   | message wait | timer wait =>
     simp only [applyInternalArmingPatch, write, armingContinuationPorts, continuationMarking, ownedPortCount, List.filter_nil, List.length_nil, Nat.add_zero]
     unfold tokenCount ownedPortCount at removed

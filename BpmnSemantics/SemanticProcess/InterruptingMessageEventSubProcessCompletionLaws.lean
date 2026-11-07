@@ -12,7 +12,7 @@ import all BpmnSemantics.SemanticProcess.RuntimeState
 disposal from ordinary-child continuation and passive listening from work that prevents completion. -/
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`completeEventSubProcessState?,
-  `messageEventSubProcessRunningPhaseValid, `scopeQuiescent, `canonicalInsertBy]
+  `messageEventSubProcessRunningPhaseValid, `scopeQuiescent, `canonicalInsertBy, `addTokens]
 
 public section
 
@@ -139,6 +139,19 @@ private theorem any_insert_token (tokens : List ControlToken) (place : ControlPl
       simp only [canonicalInsertBy]
       split <;> simp_all [Bool.or_left_comm]
 
+private theorem any_insert_tokens (tokens : List ControlToken) (places : List ControlPlaceId)
+    (owner root : ScopeOccurrenceId) (nonempty : places ≠ []) :
+    (addTokens tokens places owner).any (·.owner == root) =
+      ((owner == root) || tokens.any (·.owner == root)) := by
+  induction places with
+  | nil => exact absurd rfl nonempty
+  | cons place rest ih =>
+      simp only [addTokens, List.foldr_cons] at ih ⊢
+      rw [any_insert_token]
+      cases rest with
+      | nil => rfl
+      | cons _ _ => rw [ih (by simp)]; simp [Bool.or_left_comm]
+
 /-- Raw Task completion exchanges a wait for a token at the same owner, preserving the
 IMES phase guard before the command boundary performs Activity cleanup. -/
 theorem message_handler_phase_wait_token_exchange (program : Program)
@@ -148,15 +161,15 @@ theorem message_handler_phase_wait_token_exchange (program : Program)
     interruptingMessageEventSubProcessStateValid program
       { before with
         waits := before.waits.erase wait
-        tokens := addToken before.tokens wait.output wait.owner } =
+        tokens := addTokens before.tokens wait.outputs wait.owner } =
       interruptingMessageEventSubProcessStateValid program before := by
     have work (root : ScopeOccurrenceId) :
-        (before.initiationPending || (addToken before.tokens wait.output wait.owner).any (·.owner == root) ||
+        (before.initiationPending || (addTokens before.tokens wait.outputs wait.owner).any (·.owner == root) ||
           (before.waits.erase wait).any (·.owner == root) || before.activityOccurrences.any (·.owner == root)) =
         (before.initiationPending || before.tokens.any (·.owner == root) ||
           before.waits.any (·.owner == root) || before.activityOccurrences.any (·.owner == root)) := by
       have waits := (List.perm_cons_erase member).any_eq (f := fun candidate => candidate.owner == root)
-      rw [any_insert_token, waits]
+      rw [any_insert_tokens _ _ _ _ wait.outputs_ne_nil, waits]
       simp [Bool.or_assoc, Bool.or_left_comm, Bool.or_comm]
     unfold interruptingMessageEventSubProcessStateValid
     split

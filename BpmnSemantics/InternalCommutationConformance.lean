@@ -456,7 +456,7 @@ def incidentAnchorWait : EffectWait :=
     descriptor := sharedEffectDefinition.descriptor
     arguments := []
     outputMappings := []
-    output := ⟨"place:incident-anchor-effect-output"⟩
+    outputs := [⟨"place:incident-anchor-effect-output"⟩]
     bpmnErrorRoute := none }
 
 def incidentAnchorState : RuntimeState :=

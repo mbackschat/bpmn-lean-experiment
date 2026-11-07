@@ -282,7 +282,7 @@ private theorem body_step_waits (program : Program) (before after : RuntimeState
     rw [activated]
     have inserted := length_filter_insertUserTaskWait (fun wait => wait.owner == owner)
       { processInstanceId := record.owner.processInstanceId, owner := record.owner, task, activation := activationCount before task.id + 1,
-        output, metadata := task.metadata } before.waits
+        outputs := [output], metadata := task.metadata } before.waits
     simp only [taskWaitCount, activateUserTask, taskArmCharge, ← kind]
     cases owned : (record.owner == owner) <;> simp [owned, SemanticOperation.kind] at inserted ⊢ <;> omega
   case awaitEffect id origin input output effect route =>
@@ -295,7 +295,7 @@ private theorem body_step_waits (program : Program) (before after : RuntimeState
       have inserted := length_filter_canonicalInsertBy effectWaitBefore (fun wait : EffectWait => wait.owner == owner)
         { processInstanceId := record.owner.processInstanceId, owner := record.owner, elementId := effect.elementId,
           activation := effectActivationCount before effect.elementId + 1, descriptor := effect.descriptor,
-          arguments, outputMappings := effect.outputMappings, output, bpmnErrorRoute := route } before.effectWaits
+          arguments, outputMappings := effect.outputMappings, outputs := [output], bpmnErrorRoute := route } before.effectWaits
       simp only [taskWaitCount, activateEffect, insertEffectWait, taskArmCharge, ← kind]
       cases owned : (record.owner == owner) <;> simp [owned, SemanticOperation.kind] at inserted ⊢ <;> omega
   case duplicate | synchronize | reachNoneEnd =>
@@ -355,8 +355,8 @@ private theorem quiet_marking (state : RuntimeState) (owner : ScopeOccurrenceId)
   · intro port
     simp only [continuationMarking,
       empty state.tokens (·.owner) tokenAbsent (fun token => token.owner == owner && token.placeId == port) (by intro value selected; exact eq_of_beq (Bool.and_eq_true_iff.mp selected).1),
-      empty state.waits (·.owner) humanAbsent (fun wait => wait.owner == owner && wait.output == port) (by intro value selected; exact eq_of_beq (Bool.and_eq_true_iff.mp selected).1),
-      empty state.effectWaits (·.owner) effectAbsent (fun wait => wait.owner == owner && wait.output == port) (by intro value selected; exact eq_of_beq (Bool.and_eq_true_iff.mp selected).1),
+      ownedPortCount_sum_absent state.waits (·.outputs) (·.owner) owner port humanAbsent,
+      ownedPortCount_sum_absent state.effectWaits (·.outputs) (·.owner) owner port effectAbsent,
       List.length_nil, Nat.zero_add]
 
 private theorem predecessor_rank (ordered : List String) (unique : ordered.Nodup)

@@ -68,7 +68,7 @@ theorem prepared_data_arm_candidate_singleton
   let wait : UserTaskWait :=
     { processInstanceId := owner.processInstanceId, owner,
       task := { id := contract.taskId, name := contract.taskName },
-      activation := activationCount state contract.taskId + 1, output := contract.output }
+      activation := activationCount state contract.taskId + 1, outputs := [contract.output] }
   have missing : userTaskWaitOccurrence wait ∉ openWaitAnchors state := by
     simpa [openWaitAnchorAbsent, List.contains_eq_mem, makeInternalDataArmingPatch,
       InternalArmingWrite.occurrence, wait] using absent

@@ -503,12 +503,12 @@ function isControlToken(value: unknown): boolean {
 
 function isUserTaskWait(value: unknown): boolean {
   const keys = isRecord(value) && Object.hasOwn(value, "metadata")
-    ? ["id", "owner", "name", "metadata", "output"]
-    : ["id", "owner", "name", "output"];
+    ? ["id", "owner", "name", "metadata", "outputs"]
+    : ["id", "owner", "name", "outputs"];
   return isRecord(value) && hasOnlyKeys(value, keys) && isOccurrenceId(value.id) &&
     isScopeId(value.owner) && (value.name === null || isWireString(value.name)) &&
     (!Object.hasOwn(value, "metadata") || isUserTaskMetadata(value.metadata)) &&
-    isNonemptyString(value.output);
+    isWaitOutputs(value.outputs);
 }
 
 function isMessageWait(value: unknown): boolean {
@@ -531,12 +531,12 @@ function isTimerWait(value: unknown): boolean {
 function isEffectWait(value: unknown): boolean {
   return isRecord(value) && hasOnlyKeys(value, [
     "id", "owner", "descriptor", "arguments", "outputMappings",
-    "bpmnErrorRoute", "output", "incidentAlreadyRetried",
+    "bpmnErrorRoute", "outputs", "incidentAlreadyRetried",
   ]) && isOccurrenceId(value.id) && isScopeId(value.owner) &&
     isEffectDescriptor(value.descriptor) && isVariablePatch(value.arguments) &&
     isList(value.outputMappings, isVariableMapping) &&
     (value.bpmnErrorRoute === null || isBpmnErrorRoute(value.bpmnErrorRoute)) &&
-    isNonemptyString(value.output) && typeof value.incidentAlreadyRetried === "boolean";
+    isWaitOutputs(value.outputs) && typeof value.incidentAlreadyRetried === "boolean";
 }
 
 function isEffectIncident(value: unknown): boolean {
@@ -656,6 +656,12 @@ function isList(
   predicate: (candidate: unknown) => boolean,
 ): value is ReadonlyArray<unknown> {
   return Array.isArray(value) && value.every(predicate);
+}
+
+/** A User Task or effect wait marks every listed output on completion; the
+ * semantic core admits no wait without one, so an empty list is corrupt state. */
+function isWaitOutputs(value: unknown): boolean {
+  return isList(value, isNonemptyString) && value.length > 0;
 }
 
 function isSafeInteger(value: unknown, minimum: number): value is number {

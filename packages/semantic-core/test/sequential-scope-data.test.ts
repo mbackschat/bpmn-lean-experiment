@@ -101,7 +101,7 @@ test("ordinary human completion applies body-local writes and the Process condit
   const state = running();
   const owner = body(state);
   const taskId = { processInstanceId: owner.processInstanceId, elementId: "Review", activation: 1 };
-  const waiting: RuntimeState = { ...state, controlTokens: [], userTaskWaits: [{ id: taskId, owner, name: null, output: "body-end" }] };
+  const waiting: RuntimeState = { ...state, controlTokens: [], userTaskWaits: [{ id: taskId, owner, name: null, outputs: ["body-end"] }] };
   const submittedValues: readonly VariableBinding[] = [
     { name: "status", value: { kind: Value.String, value: "approved" } },
     { name: "stop", value: { kind: Value.Boolean, value: true } },

@@ -56,7 +56,7 @@ private theorem prepared_message_task_pair_separate
         { processInstanceId := instanceId, owner
           task := { id := contract.task.id, name := contract.task.name }
           activation := activationCount state contract.task.id + 1
-          output := contract.task.output } old = true := by
+          outputs := [contract.task.output] } old = true := by
       simp [recordBodyNamesWait, activityBodyTask?, identities.1, taskIdNamesWait]
     rw [bodyFresh old member] at names
     contradiction
@@ -70,7 +70,7 @@ private theorem prepared_message_task_pair_separate
         { processInstanceId := instanceId, owner
           task := { id := contract.task.id, name := contract.task.name }
           activation := activationCount state contract.task.id + 1
-          output := contract.task.output } old = true := by
+          outputs := [contract.task.output] } old = true := by
       have process := congrArg OccurrenceId.processInstanceId identity
       have element := congrArg (fun id => id.elementId.value) identity
       have activation := congrArg OccurrenceId.activation identity
@@ -254,7 +254,7 @@ theorem prepared_message_task_preserves_message_pairing
     _, _, _, _, _, patchEq⟩ := prepareInternalMessageTaskContract_facts program state contract patch prepared
   let task : UserTaskWait :=
     { processInstanceId := instanceId, owner, task := { id := contract.task.id, name := contract.task.name }
-      activation := activationCount state contract.task.id + 1, output := contract.task.output }
+      activation := activationCount state contract.task.id + 1, outputs := [contract.task.output] }
   have written : patch.arm.write = .userTask task := by rw [patchEq]; rfl
   have separate := prepared_message_task_pair_separate program state contract patch task prepared written
   have declarers : userTaskWaitDeclarers program contract.task.id = [contract.operation] := by

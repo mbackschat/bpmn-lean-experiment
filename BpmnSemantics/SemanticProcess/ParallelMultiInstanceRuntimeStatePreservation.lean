@@ -46,7 +46,7 @@ def parallelEntryChildWait (arm : ParallelMultiInstanceArm)
     owner
     task := { id := arm.taskId, name := arm.taskName }
     activation := slot.taskId.activation
-    output := arm.normalOutput
+    outputs := [arm.normalOutput]
     metadata := none }
 
 def parallelEntryWaitTaskId (wait : UserTaskWait) : UserTaskInstanceId :=
@@ -489,7 +489,7 @@ theorem pendingParallelChildWaits_unique_from (arm : ParallelMultiInstanceArm)
           owner
           task := { id := arm.taskId, name := arm.taskName }
           activation := taskId.activation
-          output := arm.normalOutput
+          outputs := [arm.normalOutput]
           metadata := none }
       have fresh : ∀ old ∈ waits,
           userTaskWaitKeyMatches inserted old = false ∧
@@ -548,7 +548,7 @@ theorem mem_pendingParallelChildWaits_activation_bound (arm : ParallelMultiInsta
           owner
           task := { id := arm.taskId, name := arm.taskName }
           activation := taskId.activation
-          output := arm.normalOutput
+          outputs := [arm.normalOutput]
           metadata := none }
       change candidate ∈ insertParallelChildWaits arm owner
         (pendingParallelSlotsFrom processInstanceId arm.taskId highWater rest (index + 1))
@@ -628,7 +628,7 @@ theorem sequential_controllers_absent (program : Program) (state : RuntimeState)
                         | [wait], [timerId] =>
                             wait.owner == record.owner && wait.task.id == task.id &&
                               wait.task.name == task.name && wait.metadata == none &&
-                              wait.output == normalOutput &&
+                              wait.outputs == [normalOutput] &&
                               timerId.processInstanceId == record.processInstanceId &&
                               timerId.elementId.value == boundaryTimer.elementId.value &&
                               match state.timerWaits.filter (timerIdNamesWait timerId) with

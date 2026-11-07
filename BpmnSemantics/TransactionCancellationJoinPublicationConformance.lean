@@ -19,7 +19,7 @@ def joinedCheckpoint : RuntimeState :=
     scopeOccurrences := [{ id := rootOwner, parent := none }]
     waits := [{ processInstanceId := instanceId, owner := rootOwner
                 task := { id := ⟨"Acknowledge"⟩, name := none }
-                activation := 1, output := ⟨"place:Acknowledge_End"⟩ }]
+                activation := 1, outputs := [⟨"place:Acknowledge_End"⟩] }]
     compensationTriggers := [
       { id := occurrence "operation:Cancel", owner := childOwner
         output := ⟨"place:Cancel_Acknowledge"⟩, lifecycle := .succeeded

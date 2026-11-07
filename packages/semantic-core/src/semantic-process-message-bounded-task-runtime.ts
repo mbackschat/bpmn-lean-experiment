@@ -34,6 +34,7 @@ import {
   sameOccurrence,
   sameScopeOccurrence,
   setActivationCount,
+  waitOutputsAre,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -122,7 +123,7 @@ export function selectMessageActivityArming(
     id: taskId,
     owner,
     name: operation.task.name,
-    output: operation.task.output,
+    outputs: [operation.task.output],
   };
   const messageWait: SemanticMessageWait = {
     id: messageId,
@@ -294,11 +295,11 @@ function messageBoundaryPairForRecord(
     return undefined;
   }
   const bodyTask = record.body.task;
-  const task = only(state.userTaskWaits.filter(({ id, owner, name, output }) =>
+  const task = only(state.userTaskWaits.filter(({ id, owner, name, outputs }) =>
     sameOccurrence(id, bodyTask) &&
     sameScopeOccurrence(owner, record.owner) &&
     name === definition.task.name &&
-    output === definition.task.output
+    waitOutputsAre(outputs, [definition.task.output])
   ));
   const message = only(state.messageWaits.filter(({ id, owner, channel, output }) =>
     sameOccurrence(id, handler.occurrence) &&

@@ -47,7 +47,7 @@ theorem human_disposal_valid (program : Program) (before : RuntimeState)
     (messages : before.messageWaits = []) (timers : before.timerWaits = []) :
     flowNodeOccurrenceWaitProgramValidity program { before with
       waits := before.waits.erase wait, variables,
-      tokens := addToken before.tokens wait.output wait.owner } = true := by
+      tokens := addTokens before.tokens wait.outputs wait.owner } = true := by
   simp only [flowNodeOccurrenceWaitProgramValidity, messages, timers, List.all_nil,
     Bool.and_true, Bool.and_eq_true] at prior ⊢
   refine ⟨?_, ?_⟩
@@ -56,7 +56,7 @@ theorem human_disposal_valid (program : Program) (before : RuntimeState)
     intro retained member
     with_unfolding_all exact List.all_eq_true.mp prior.1 retained (List.erase_sublist.subset member)
   · exact (flowNodeOccurrenceEffectProgramValidity_frame program before
-      { before with waits := before.waits.erase wait, variables := variables, tokens := addToken before.tokens wait.output wait.owner }
+      { before with waits := before.waits.erase wait, variables := variables, tokens := addTokens before.tokens wait.outputs wait.owner }
       rfl rfl rfl activities).trans prior.2
 
 private theorem matching_effect_identity (left right : EffectOccurrenceId)
@@ -74,7 +74,7 @@ private theorem effect_disposal_valid (program : Program) (before : RuntimeState
       effectWaits := before.effectWaits.erase wait,
       variables := { variables with activities := variables.activities.filter (fun frame =>
         !activityScopeMatches (effectWaitOccurrenceId wait) frame) },
-      tokens := addToken before.tokens wait.output wait.owner } = true := by
+      tokens := addTokens before.tokens wait.outputs wait.owner } = true := by
   have original := prior
   simp only [flowNodeOccurrenceEffectProgramValidity, Bool.and_eq_true] at prior ⊢
   refine ⟨⟨?_, ?_⟩, ?_⟩
@@ -189,7 +189,7 @@ theorem service_disposal_valid (program : Program) (before : RuntimeState)
       effectWaits := before.effectWaits.erase wait,
       variables := { variables with activities := variables.activities.filter (fun frame =>
         !activityScopeMatches (effectWaitOccurrenceId wait) frame) },
-      tokens := addToken before.tokens wait.output wait.owner } = true := by
+      tokens := addTokens before.tokens wait.outputs wait.owner } = true := by
   simp only [flowNodeOccurrenceWaitProgramValidity, messages, timers, List.all_nil,
     Bool.and_true, Bool.and_eq_true] at prior ⊢
   refine ⟨?_, effect_disposal_valid program before wait member variables activities prior.2 incidents⟩

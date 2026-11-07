@@ -75,7 +75,7 @@ def activateDataInputUserTask? (state : RuntimeState) (input output : ControlPla
           owner
           task := { id := taskId, name := taskName }
           activation := taskActivation
-          output
+          outputs := [output]
           metadata := none } state.waits
       activations := setActivationCount state.activations taskId taskActivation
       activityOccurrences := insertActivityOccurrence
@@ -134,7 +134,7 @@ def completeDataInputUserTask? (program : Program) (state : RuntimeState)
     pure
       { state with
         waits := state.waits.erase task
-        tokens := addToken state.tokens task.output task.owner
+        tokens := addTokens state.tokens task.outputs task.owner
         activityOccurrences := state.activityOccurrences.filter fun candidate =>
           !sameActivityOccurrence candidate record
         variables }

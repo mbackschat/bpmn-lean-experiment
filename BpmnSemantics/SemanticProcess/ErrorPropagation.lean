@@ -107,12 +107,12 @@ def syntheticState : RuntimeState :=
           owner := childId
           task := { id := ⟨"ChildTask"⟩, name := some "Child" }
           activation := 1
-          output := ⟨"place:ChildTaskOutput"⟩ }
+          outputs := [⟨"place:ChildTaskOutput"⟩] }
       , { processInstanceId := instanceId
           owner := rootId
           task := { id := ⟨"RootTask"⟩, name := some "Root" }
           activation := 1
-          output := ⟨"place:RootTaskOutput"⟩ } ]
+          outputs := [⟨"place:RootTaskOutput"⟩] } ]
     messageWaits :=
       [ { processInstanceId := instanceId
           owner := childId
@@ -136,7 +136,7 @@ def syntheticState : RuntimeState :=
           descriptor := { protocol := "synthetic", operation := "synthetic" }
           arguments := []
           outputMappings := []
-          output := ⟨"place:EffectOutput"⟩
+          outputs := [⟨"place:EffectOutput"⟩]
           bpmnErrorRoute := none } ]
     variables :=
       { process := { bindings := [] }
@@ -156,7 +156,7 @@ def syntheticInterrupted : RuntimeState :=
     scopeOccurrences := [{ id := rootId, parent := none }]
     tokens := [{ placeId := ⟨"place:BoundaryToRecover"⟩, owner := rootId },
       { placeId := ⟨"place:RootWork"⟩, owner := rootId }]
-    waits := [{ processInstanceId := instanceId, owner := rootId, task := { id := ⟨"RootTask"⟩, name := some "Root" }, activation := 1, output := ⟨"place:RootTaskOutput"⟩ }]
+    waits := [{ processInstanceId := instanceId, owner := rootId, task := { id := ⟨"RootTask"⟩, name := some "Root" }, activation := 1, outputs := [⟨"place:RootTaskOutput"⟩] }]
     activations := [{ taskId := ⟨"HistoryTask"⟩, count := 7 }]
     messageActivations := [{ elementId := ⟨"HistoryMessage"⟩, count := 5 }]
     timerActivations := [{ elementId := ⟨"HistoryTimer"⟩, count := 4 }]

@@ -31,27 +31,27 @@ def userTaskWaitValid (program : Program) (state : RuntimeState)
       if !operationOwnedBy program operation wait.owner then false
       else match operation with
       | .awaitUserTask _ _ _ output task =>
-          output = wait.output && task = wait.task && wait.metadata = task.metadata
+          wait.outputs = [output] && task = wait.task && wait.metadata = task.metadata
       -- ACTH-HOST-01: a host's opened wait is its projection's.
       | .activity host => host.userTask?.any fun task =>
-          host.outputs = [⟨wait.output⟩] && task = wait.task && wait.metadata = task.metadata
+          host.outputs.map (·.place) = wait.outputs && task = wait.task && wait.metadata = task.metadata
       | .scope .. | .scopeExit .. => false
       | .awaitDataInputUserTask _ _ _ output taskId taskName _
       | .awaitDataInputOutputUserTask _ _ _ output taskId taskName _ _
       | .awaitDataOutputUserTask _ _ _ output taskId taskName _ =>
-          taskId = wait.task.id && taskName = wait.task.name && output = wait.output &&
+          taskId = wait.task.id && taskName = wait.task.name && wait.outputs = [output] &&
             wait.task.metadata.isNone && wait.metadata.isNone
       | .awaitBoundedUserTask _ _ _ task _
       | .awaitMessageBoundedUserTask _ _ _ task _
       | .awaitMessageMonitoredUserTask _ _ _ task _
       | .awaitMonitoredUserTask _ _ _ task _ =>
-          task.id = wait.task.id && task.name = wait.task.name && task.output = wait.output &&
+          task.id = wait.task.id && task.name = wait.task.name && wait.outputs = [task.output] &&
             wait.task.metadata.isNone && wait.metadata.isNone
       | .awaitSequentialMultiInstanceUserTask _ _ _ task _ normalOutput _ _ =>
-          task.id = wait.task.id && task.name = wait.task.name && normalOutput = wait.output &&
+          task.id = wait.task.id && task.name = wait.task.name && wait.outputs = [normalOutput] &&
             wait.task.metadata.isNone && wait.metadata.isNone
       | .awaitParallelMultiInstanceUserTask _ _ _ taskId taskName _ normalOutput _ _ _ =>
-          taskId = wait.task.id && taskName = wait.task.name && normalOutput = wait.output &&
+          taskId = wait.task.id && taskName = wait.task.name && wait.outputs = [normalOutput] &&
             wait.task.metadata.isNone && wait.metadata.isNone
       | .initiate .. | .initiateMessage .. | .initiateTimer ..
       | .enterScope .. | .enterBoundedScope .. | .enterMonitoredScope .. | .invokeProcess .. | .returnProcess ..
@@ -86,7 +86,8 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_output_binding (program : Prog
     (domain : UserTaskDirectContinuationDomain program) :
     flowNodeOccurrenceOwnerLiveUnique state wait.owner = true ∧
       ∃ operation ∈ program.operations, operationOwnedBy program operation wait.owner = true ∧
-        operationControlPlacesShareOwner operation = true ∧ wait.output ∈ operationControlPlaces operation := by
+        operationControlPlacesShareOwner operation = true ∧
+          ∀ output ∈ wait.outputs, output ∈ operationControlPlaces operation := by
   have checked := List.all_eq_true.mp valid wait member
   simp only [userTaskWaitValid, Bool.and_eq_true, decide_eq_true_eq] at checked
   have live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true := by
@@ -113,8 +114,10 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_output_binding (program : Prog
     | userTask task =>
         simp only [ActivityHost.userTask?_eq, work, Option.any_some, Bool.and_eq_true, decide_eq_true_eq] at matched
         simp [operationControlPlacesShareOwner, operationControlPlaces, operationOutputs, matched.1.1]
+        exact fun _ member => Or.inr member
   all_goals simp_all only [operationControlPlacesShareOwner, operationControlPlaces,
     operationOutputs, List.mem_append, List.mem_cons, List.not_mem_nil, and_true, or_true, true_or, or_false]
+  all_goals simp
 
 theorem flowNodeOccurrenceUserTaskProgramValidity_frame (program : Program)
     (before after : RuntimeState)
@@ -141,25 +144,26 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_wait_owner_ids (program : Prog
 
 /-- The four unbounded declaring families share one public User Task anchor; data arms carry no metadata. -/
 inductive UnboundedUserTaskWaitDeclaration (wait : UserTaskWait) : SemanticOperation → Prop
-  | ordinary (id origin input) (metadata : wait.metadata = wait.task.metadata) :
+  | ordinary (id origin input output) (outputs : wait.outputs = [output])
+      (metadata : wait.metadata = wait.task.metadata) :
       UnboundedUserTaskWaitDeclaration wait
-        (.awaitUserTask id origin input wait.output wait.task)
+        (.awaitUserTask id origin input output wait.task)
   /-- ACTH-HOST-01: a host opens exactly the ordinary wait of its projection. -/
   | host (host : ActivityHost) (task : host.work = .userTask wait.task)
-      (outputs : host.outputs = [⟨wait.output⟩]) (metadata : wait.metadata = wait.task.metadata) :
+      (outputs : host.outputs.map (·.place) = wait.outputs) (metadata : wait.metadata = wait.task.metadata) :
       UnboundedUserTaskWaitDeclaration wait (.activity host)
-  | dataInput (id origin input directInput)
+  | dataInput (id origin input output directInput) (outputs : wait.outputs = [output])
       (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
       UnboundedUserTaskWaitDeclaration wait
-        (.awaitDataInputUserTask id origin input wait.output wait.task.id wait.task.name directInput)
-  | dataOutput (id origin input directOutput)
+        (.awaitDataInputUserTask id origin input output wait.task.id wait.task.name directInput)
+  | dataOutput (id origin input output directOutput) (outputs : wait.outputs = [output])
       (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
       UnboundedUserTaskWaitDeclaration wait
-        (.awaitDataOutputUserTask id origin input wait.output wait.task.id wait.task.name directOutput)
-  | dataInputOutput (id origin input directInput directOutput)
+        (.awaitDataOutputUserTask id origin input output wait.task.id wait.task.name directOutput)
+  | dataInputOutput (id origin input output directInput directOutput) (outputs : wait.outputs = [output])
       (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
       UnboundedUserTaskWaitDeclaration wait
-        (.awaitDataInputOutputUserTask id origin input wait.output wait.task.id wait.task.name
+        (.awaitDataInputOutputUserTask id origin input output wait.task.id wait.task.name
           directInput directOutput)
 
 /-- User Task projection checks its declaration independently of attached handlers. Handler
@@ -167,26 +171,26 @@ association remains a separate obligation of the Timer and Message projection va
 inductive UserTaskWaitDeclaration (wait : UserTaskWait) : SemanticOperation → Prop
   | unbounded {operation} (declaration : UnboundedUserTaskWaitDeclaration wait operation) :
       UserTaskWaitDeclaration wait operation
-  | bounded (id origin input timer)
+  | bounded (id origin input output timer) (outputs : wait.outputs = [output])
       (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
       UserTaskWaitDeclaration wait
         (.awaitBoundedUserTask id origin input
-          { id := wait.task.id, name := wait.task.name, output := wait.output } timer)
-  | monitored (id origin input timer)
+          { id := wait.task.id, name := wait.task.name, output } timer)
+  | monitored (id origin input output timer) (outputs : wait.outputs = [output])
       (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
       UserTaskWaitDeclaration wait
         (.awaitMonitoredUserTask id origin input
-          { id := wait.task.id, name := wait.task.name, output := wait.output } timer)
-  | messageBounded (id origin input message)
+          { id := wait.task.id, name := wait.task.name, output } timer)
+  | messageBounded (id origin input output message) (outputs : wait.outputs = [output])
       (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
       UserTaskWaitDeclaration wait
         (.awaitMessageBoundedUserTask id origin input
-          { id := wait.task.id, name := wait.task.name, output := wait.output } message)
-  | messageMonitored (id origin input message)
+          { id := wait.task.id, name := wait.task.name, output } message)
+  | messageMonitored (id origin input output message) (outputs : wait.outputs = [output])
       (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
       UserTaskWaitDeclaration wait
         (.awaitMessageMonitoredUserTask id origin input
-          { id := wait.task.id, name := wait.task.name, output := wait.output } message)
+          { id := wait.task.id, name := wait.task.name, output } message)
 
 theorem flowNodeOccurrenceUserTaskProgramValidity_insertUserTask (program : Program)
     (state : RuntimeState) (operation : SemanticOperation) (wait : UserTaskWait)
@@ -335,10 +339,10 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_insertUnboundedUserTask (progr
 
 theorem flowNodeOccurrenceUserTaskProgramValidity_insertOrdinaryUserTask (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
-    (input : ControlPlaceId) (wait : UserTaskWait)
+    (input output : ControlPlaceId) (wait : UserTaskWait) (outputs : wait.outputs = [output])
     (prior : flowNodeOccurrenceUserTaskProgramValidity program state = true)
     (declarers : userTaskWaitDeclarers program wait.task.id =
-      [.awaitUserTask id origin input wait.output wait.task])
+      [.awaitUserTask id origin input output wait.task])
     (declared : declaredByExactlyOneOwnedOperation program
       (userTaskWaitDeclarers program wait.task.id) wait.owner = true)
     (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
@@ -349,7 +353,7 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_insertOrdinaryUserTask (progra
     flowNodeOccurrenceUserTaskProgramValidity program
       { state with waits := insertUserTaskWait wait state.waits } = true := by
   exact flowNodeOccurrenceUserTaskProgramValidity_insertUnboundedUserTask program state _ wait
-    (.ordinary id origin input metadata) prior declarers declared live ownerProcess taskId positive
+    (.ordinary id origin input output outputs metadata) prior declarers declared live ownerProcess taskId positive
     processOwner
 
 end BpmnSemantics.SemanticProcess

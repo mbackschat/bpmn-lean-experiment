@@ -87,7 +87,7 @@ def completedRegister : CompensationActivityRetention := ⟨childOwner, 2, [reco
 
 def liveWait : UserTaskWait :=
   { processInstanceId := instanceId, owner := childOwner
-    task := { id := ⟨"A"⟩, name := none }, activation := 1, output := ⟨"task-out"⟩ }
+    task := { id := ⟨"A"⟩, name := none }, activation := 1, outputs := [⟨"task-out"⟩] }
 
 def beforeCompletion : RuntimeState := { liveChild with waits := [liveWait] }
 def afterRetention : RuntimeState :=

@@ -48,6 +48,7 @@ import {
   removeToken,
   sameOccurrence,
   setActivationCount,
+  addTokens,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -109,7 +110,7 @@ export function armDataOutputUserTask(
     id: taskId,
     owner,
     name: operation.task.name,
-    output: operation.output,
+    outputs: [operation.output],
   };
   return {
     ...state,
@@ -184,9 +185,9 @@ export function completeDataOutputUserTask(
   }
   return {
     ...state,
-    controlTokens: addToken(
+    controlTokens: addTokens(
       state.controlTokens,
-      selected.wait.output,
+      selected.wait.outputs,
       selected.wait.owner,
     ),
     userTaskWaits: state.userTaskWaits.filter(

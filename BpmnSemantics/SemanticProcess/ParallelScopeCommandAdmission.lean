@@ -108,10 +108,10 @@ private theorem human_disposal_reservation (before : RuntimeState) (wait : UserT
     (valid : InternalCommutation.occurrenceReservationStateValid before = true)
     (noCompensation : before.compensationHandlerEffectWaits = []) :
     InternalCommutation.occurrenceReservationStateValid { before with
-      waits := before.waits.erase wait, variables, tokens := addToken before.tokens wait.output wait.owner } = true ∧
+      waits := before.waits.erase wait, variables, tokens := addTokens before.tokens wait.outputs wait.owner } = true ∧
       ({ before with
         waits := before.waits.erase wait, variables,
-        tokens := addToken before.tokens wait.output wait.owner } : RuntimeState).compensationHandlerEffectWaits = [] := by
+        tokens := addTokens before.tokens wait.outputs wait.owner } : RuntimeState).compensationHandlerEffectWaits = [] := by
   refine ⟨InternalCommutation.occurrenceReservationStateValid_restrict before _ valid rfl rfl
     List.erase_sublist (List.Sublist.refl _) (List.Sublist.refl _) (List.Sublist.refl _)
     (List.Sublist.refl _) (List.Sublist.refl _) ?_, noCompensation⟩
@@ -123,10 +123,10 @@ private theorem effect_disposal_reservation (before : RuntimeState) (wait : Effe
     (valid : InternalCommutation.occurrenceReservationStateValid before = true)
     (noCompensation : before.compensationHandlerEffectWaits = []) :
     InternalCommutation.occurrenceReservationStateValid { before with
-      effectWaits := before.effectWaits.erase wait, variables, tokens := addToken before.tokens wait.output wait.owner } = true ∧
+      effectWaits := before.effectWaits.erase wait, variables, tokens := addTokens before.tokens wait.outputs wait.owner } = true ∧
       ({ before with
         effectWaits := before.effectWaits.erase wait, variables,
-        tokens := addToken before.tokens wait.output wait.owner } : RuntimeState).compensationHandlerEffectWaits = [] := by
+        tokens := addTokens before.tokens wait.outputs wait.owner } : RuntimeState).compensationHandlerEffectWaits = [] := by
   exact ⟨InternalCommutation.occurrenceReservationStateValid_restrict before _ valid rfl rfl
     (List.Sublist.refl _) (List.Sublist.refl _) (List.Sublist.refl _) List.erase_sublist
     (List.Sublist.refl _) (List.Sublist.refl _) activities, noCompensation⟩

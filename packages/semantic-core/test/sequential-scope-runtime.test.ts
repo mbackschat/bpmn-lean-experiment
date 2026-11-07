@@ -169,10 +169,10 @@ test("a finished branch cannot retire a body with an owned human or effect wait"
   const child = entered.variables.scopes[0]?.owner;
   assert.ok(child);
   const id = { processInstanceId: parent.processInstanceId, elementId: "Remaining", activation: 1 };
-  const human: RuntimeState = { ...entered, controlTokens: [], userTaskWaits: [{ id, owner: child, name: null, output: "end" }] };
+  const human: RuntimeState = { ...entered, controlTokens: [], userTaskWaits: [{ id, owner: child, name: null, outputs: ["end"] }] };
   const effect: RuntimeState = { ...entered, controlTokens: [], effectWaits: [{ id, owner: child,
     descriptor: { protocol: "urn:bpmn-lean:effect-protocol:activity-v1", operation: "urn:bpmn-lean:effect-operation:mapped-success-v1" },
-    arguments: [], outputMappings: [], bpmnErrorRoute: null, output: "end", incidentAlreadyRetried: false }] };
+    arguments: [], outputMappings: [], bpmnErrorRoute: null, outputs: ["end"], incidentAlreadyRetried: false }] };
   for (const before of [human, effect]) {
     const saved = structuredClone(before);
     assert.equal(finish(operation, before), null);

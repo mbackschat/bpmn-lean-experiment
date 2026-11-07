@@ -8,7 +8,7 @@ import { matchesActivityLocalDataOwner } from "./local-data-owner.js";
 import { calledProcessAssociationsAreValid } from "./semantic-process-call-runtime.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { AwaitDataInputOutputUserTaskOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
-import { ControlStateKind, sameOccurrence, sameScopeOccurrence } from "./semantic-process-state.js";
+import { ControlStateKind, sameOccurrence, sameScopeOccurrence, waitOutputsAre } from "./semantic-process-state.js";
 import type { CalledProcessOccurrence, RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
 import { CALL_ACTIVITY_DATA_BOUNDARIES_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
 import { isVariablePatch } from "./variable-value.js";
@@ -100,7 +100,7 @@ function taskDataJoins(
       (task.directInput.source.kind !== "property" || call === undefined) &&
       bindings.length === 1 && bindings[0]?.scopeId === expectedOwner.definitionScopeId &&
       wait.id.processInstanceId === expectedOwner.processInstanceId && wait.id.activation === 1 &&
-      wait.name === task.task.name && wait.output === task.output &&
+      wait.name === task.task.name && waitOutputsAre(wait.outputs, [task.output]) &&
       activity.operationId === task.id && activity.attachedHandlers.length === 0 &&
       sameActivityOccurrence(activity.id, { processInstanceId: expectedOwner.processInstanceId, activityElementId: task.task.elementId, activation: 1 }) &&
       selectedCounter(state.taskActivations, task.task.elementId) === 1 && selectedCounter(state.activityActivations, task.task.elementId) === 1 &&

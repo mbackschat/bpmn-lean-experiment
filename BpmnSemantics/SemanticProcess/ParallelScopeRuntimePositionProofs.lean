@@ -594,11 +594,13 @@ private theorem human_completion_position (program : Program) (analysis : Progra
     cases operation <;> simp only <;> try trivial
     simp [SequentialScopeProgram.operationAllowed] at allowed
   have restored (wait : UserTaskWait) (member : wait ∈ before.waits) :
-      runtimePositionValid program hosting { before with tokens := addToken before.tokens wait.output wait.owner } = true := by
+      runtimePositionValid program hosting { before with tokens := addTokens before.tokens wait.outputs wait.owner } = true := by
     obtain ⟨live, operation, declared, owned, sameScope, port⟩ :=
       flowNodeOccurrenceUserTaskProgramValidity_output_binding program before wait userValid member domain
-    have binding := owned_port_binding program analysis admitted operation declared wait.owner owned sameScope wait.output port
-    exact runtimePositionValid_addToken program hosting before wait.output wait.owner position live binding.1 binding.2
+    have binding (place : ControlPlaceId) (present : place ∈ wait.outputs) :=
+      owned_port_binding program analysis admitted operation declared wait.owner owned sameScope place (port place present)
+    exact runtimePositionValid_addTokens program hosting before wait.outputs wait.owner position live
+      (fun place present => (binding place present).1) (fun place present => (binding place present).2)
   unfold ParallelScopeCommand.completeTask? at completed
   split at completed <;> try contradiction
   split at completed
@@ -630,11 +632,13 @@ private theorem effect_completion_position (program : Program) (analysis : Progr
     simp only [flowNodeOccurrenceProgramValidity, flowNodeOccurrenceWaitProgramValidity, Bool.and_eq_true] at valid
     exact valid.1.1.2.2
   have restored (wait : EffectWait) (member : wait ∈ before.effectWaits) :
-      runtimePositionValid program hosting { before with tokens := addToken before.tokens wait.output wait.owner } = true := by
+      runtimePositionValid program hosting { before with tokens := addTokens before.tokens wait.outputs wait.owner } = true := by
     obtain ⟨live, operation, declared, owned, sameScope, port⟩ :=
       flowNodeOccurrenceEffectProgramValidity_output_binding program before wait effectValid member
-    have binding := owned_port_binding program analysis admitted operation declared wait.owner owned sameScope wait.output port
-    exact runtimePositionValid_addToken program hosting before wait.output wait.owner position live binding.1 binding.2
+    have binding (place : ControlPlaceId) (present : place ∈ wait.outputs) :=
+      owned_port_binding program analysis admitted operation declared wait.owner owned sameScope place (port place present)
+    exact runtimePositionValid_addTokens program hosting before wait.outputs wait.owner position live
+      (fun place present => (binding place present).1) (fun place present => (binding place present).2)
   unfold ParallelScopeCommand.completeEffect? at completed
   split at completed <;> try contradiction
   rename_i candidates wait census

@@ -60,12 +60,12 @@ theorem dataArming_unbounded_declaration (contract : InternalDataArmingContract)
     UnboundedUserTaskWaitDeclaration
       { processInstanceId := instanceId, owner,
         task := { id := contract.taskId, name := contract.taskName }, activation,
-        output := contract.output } contract.operation := by
+        outputs := [contract.output] } contract.operation := by
   unfold InternalDataArmingContract.operation
   cases contract.data with
-  | input association => exact .dataInput _ _ _ association rfl rfl
-  | output association => exact .dataOutput _ _ _ association rfl rfl
-  | inputOutput input output => exact .dataInputOutput _ _ _ input output rfl rfl
+  | input association => exact .dataInput _ _ _ _ association rfl rfl rfl
+  | output association => exact .dataOutput _ _ _ _ association rfl rfl rfl
+  | inputOutput input output => exact .dataInputOutput _ _ _ _ input output rfl rfl rfl
 
 theorem prepared_data_arm_preserves_runtime
     (program : Program) (state : RuntimeState) (contract : InternalDataArmingContract)
@@ -120,7 +120,7 @@ theorem prepared_data_arm_boundaryTimer_frame
   let wait : UserTaskWait :=
     { processInstanceId := owner.processInstanceId, owner,
       task := { id := contract.taskId, name := contract.taskName },
-      activation := activationCount state contract.taskId + 1, output := contract.output }
+      activation := activationCount state contract.taskId + 1, outputs := [contract.output] }
   have declaration : UnboundedUserTaskWaitDeclaration wait contract.operation :=
     dataArming_unbounded_declaration contract _ _ _
   have declarers : userTaskWaitDeclarers program wait.task.id = [contract.operation] := by
@@ -157,7 +157,7 @@ theorem prepared_data_arm_preserves_messageBoundedProjectionValid
   let wait : UserTaskWait :=
     { processInstanceId := owner.processInstanceId, owner,
       task := { id := contract.taskId, name := contract.taskName },
-      activation := activationCount state contract.taskId + 1, output := contract.output }
+      activation := activationCount state contract.taskId + 1, outputs := [contract.output] }
   let record := dataInputOutputActivityRecord state owner.processInstanceId owner contract.taskId
   unfold messageBoundedProjectionValid at valid ⊢
   simp only [List.all_eq_true] at valid ⊢
@@ -211,7 +211,7 @@ theorem prepared_data_arm_projectWaits_insert
   let wait : UserTaskWait :=
     { processInstanceId := owner.processInstanceId, owner,
       task := { id := contract.taskId, name := contract.taskName },
-      activation := activationCount state contract.taskId + 1, output := contract.output }
+      activation := activationCount state contract.taskId + 1, outputs := [contract.output] }
   let after := applyInternalDataArmingPatch state
     (makeInternalDataArmingPatch program state contract owner inputOrigin source)
   intro beforeWaits beforeProjected
@@ -259,7 +259,7 @@ theorem prepared_data_arm_preserves_flowNodeOccurrenceProgramValidity
   let wait : UserTaskWait :=
     { processInstanceId := owner.processInstanceId, owner,
       task := { id := contract.taskId, name := contract.taskName },
-      activation := activationCount state contract.taskId + 1, output := contract.output }
+      activation := activationCount state contract.taskId + 1, outputs := [contract.output] }
   let record := dataInputOutputActivityRecord state owner.processInstanceId owner contract.taskId
   let after := applyInternalDataArmingPatch state
     (makeInternalDataArmingPatch program state contract owner inputOrigin source)

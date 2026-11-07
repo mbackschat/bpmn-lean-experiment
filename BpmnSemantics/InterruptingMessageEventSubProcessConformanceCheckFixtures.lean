@@ -407,7 +407,7 @@ def family_validity_refuses_listener_on_predecessor_profile : Bool := decide <|
 def ordinaryTaskOwner : ScopeOccurrenceId := ⟨⟨"instance"⟩, ⟨"scope:InvoiceProcess"⟩, 1⟩
 def ordinaryTaskWait : UserTaskWait := {
   processInstanceId := ⟨"instance"⟩, owner := ordinaryTaskOwner
-  task := { id := ⟨"Notify"⟩, name := none }, activation := 1, output := ⟨"place:d"⟩ }
+  task := { id := ⟨"Notify"⟩, name := none }, activation := 1, outputs := [⟨"place:d"⟩] }
 def ordinaryTaskWithForeignListener : RuntimeState := {
   initialState with
   control := .running ⟨"instance"⟩

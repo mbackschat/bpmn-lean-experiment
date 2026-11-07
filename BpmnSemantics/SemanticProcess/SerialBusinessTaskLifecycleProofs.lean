@@ -50,7 +50,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 /-! SBT-RESULT-01 and SBT-REFUSE-01 expose actual atomic completion and predecessor-preserving refusal. The unified reachable invariant uses the exact root lifetime, foreign-state absence and issuance frame preserved by these real transitions. -/
 run_meta privateEquations `BpmnSemantics.SemanticProcess.SemanticOperation #[`id]
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.ForeignRuntimeEmpty,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addTokens, `SerialBusinessTask.ForeignRuntimeEmpty,
   `SerialBusinessTask.IssuanceFrame, `SerialBusinessTask.OperationAllowed, `SerialBusinessTask.frontierFields,
   `SerialBusinessTask.operationVertex?, `SerialBusinessTask.scalar, `admitStimulus, `boundedScopeDefinitionForChild?,
   `compensationTargetDeclaredForFamily, `completeBoundedScope?, `completeOrdinaryUserTaskWithCompensation?,
@@ -86,7 +86,7 @@ inductive SerialEffectCompletionStep (program : Program) :
           variables := { state.variables with
             process := { bindings }
             activities := state.variables.activities.filter (fun activity => !activityScopeMatches effectId activity) }
-          tokens := addToken state.tokens wait.output wait.owner }
+          tokens := addTokens state.tokens wait.outputs wait.owner }
 
 /-- Successful completion exposes unique occurrence/local ownership, a complete validated mapping, cleanup and the exact continuation place. -/
 theorem completeSerialEffect_sound (program : Program) (before after : RuntimeState)
@@ -527,25 +527,27 @@ inductive OrderedPosition (program : Program) (ordered : List Vertex) (state : R
       (bound : DeclaredToken program token) :
       OrderedPosition program ordered state (vertex :: rest)
   | human (vertex : Vertex) (rest : List Vertex) (wait : UserTaskWait)
-      (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
+      (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
       (fields : frontierFields state = (false, [], [wait], [], []))
-      (declared : .awaitUserTask id origin input wait.output wait.task ∈ program.operations)
-      (projected : operationVertex? program (.awaitUserTask id origin input wait.output wait.task) = some vertex)
+      (declared : .awaitUserTask id origin input output wait.task ∈ program.operations)
+      (projected : operationVertex? program (.awaitUserTask id origin input output wait.task) = some vertex)
       (metadata : wait.metadata = wait.task.metadata)
-      (owned : operationOwningScope? program id = some wait.owner.definitionScopeId) :
+      (owned : operationOwningScope? program id = some wait.owner.definitionScopeId)
+      (waitOutputs : wait.outputs = [output]) :
       OrderedPosition program ordered state (vertex :: rest)
   | effect (vertex : Vertex) (rest : List Vertex) (wait : EffectWait)
-      (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId) (effect : EffectDefinition)
+      (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId) (effect : EffectDefinition)
       (fields : frontierFields state = (false, [], [], [wait],
         [{ owner := .effectOccurrence ⟨wait.processInstanceId, ⟨wait.elementId.value⟩, wait.activation⟩,
            bindings := wait.arguments }]))
-      (declared : .awaitEffect id origin input wait.output effect none ∈ program.operations)
-      (projected : operationVertex? program (.awaitEffect id origin input wait.output effect none) = some vertex)
+      (declared : .awaitEffect id origin input output effect none ∈ program.operations)
+      (projected : operationVertex? program (.awaitEffect id origin input output effect none) = some vertex)
       (element : effect.elementId = wait.elementId) (descriptor : effect.descriptor = wait.descriptor)
       (outputs : effect.outputMappings = wait.outputMappings)
       (snapshot : inputSnapshotMatches effect.inputMappings wait.arguments = true)
       (route : wait.bpmnErrorRoute = none)
-      (owned : operationOwningScope? program id = some wait.owner.definitionScopeId) :
+      (owned : operationOwningScope? program id = some wait.owner.definitionScopeId)
+      (waitOutputs : wait.outputs = [output]) :
       OrderedPosition program ordered state (vertex :: rest)
   | finished (fields : frontierFields state = (false, [], [], [], [])) :
       OrderedPosition program ordered state []
@@ -618,8 +620,8 @@ theorem ordered_suffix_position_guard (program : Program) (analysis : Analysis) 
       intro selected present
       cases position with
       | pending fields => simp_all [frontierFields]
-      | human vertex rest wait id origin input fields declared projected metadata owned => simp_all [frontierFields]
-      | effect vertex rest wait id origin input effect fields declared projected element descriptor outputs snapshot route owned => simp_all [frontierFields]
+      | human vertex rest wait id origin input declaredOutput fields declared projected metadata owned waitOutputs => simp_all [frontierFields]
+      | effect vertex rest wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot route owned waitOutputs => simp_all [frontierFields]
       | finished fields => simp_all [frontierFields]
       | token vertex rest token fields consumer bound =>
         simp only [frontierFields, Prod.mk.injEq] at fields
@@ -722,9 +724,9 @@ theorem position_with_pending_is_initial (program : Program) (ordered remaining 
   | pending fields => exact ⟨rfl, fields⟩
   | token vertex rest token fields consumer bound =>
       simp only [frontierFields, Prod.mk.injEq] at fields; simp_all
-  | human vertex rest wait id origin input fields declared projected metadata owned =>
+  | human vertex rest wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
       simp only [frontierFields, Prod.mk.injEq] at fields; simp_all
-  | effect vertex rest wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
+  | effect vertex rest wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot route owned waitOutputs =>
       simp only [frontierFields, Prod.mk.injEq] at fields; simp_all
   | finished fields =>
       simp only [frontierFields, Prod.mk.injEq] at fields; simp_all
@@ -747,10 +749,10 @@ theorem position_with_token_has_current_head (program : Program) (ordered remain
       · simp [onlyTokenOwner?, tokenOwners, parts.2.1, matching] at found
         exact ⟨vertex, rest, token, rfl, fields, matching, found.symm, by simpa [matching] using consumer, bound⟩
       · simp [onlyTokenOwner?, tokenOwners, parts.2.1, matching] at found
-  | human vertex rest wait id origin input fields declared projected metadata owned =>
+  | human vertex rest wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
       simp only [frontierFields, Prod.mk.injEq] at fields
       simp [onlyTokenOwner?, tokenOwners, fields.2.1] at found
-  | effect vertex rest wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
+  | effect vertex rest wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot route owned waitOutputs =>
       simp only [frontierFields, Prod.mk.injEq] at fields
       simp [onlyTokenOwner?, tokenOwners, fields.2.1] at found
   | finished fields =>
@@ -763,10 +765,10 @@ theorem position_frame (program : Program) (ordered remaining : List Vertex)
   cases position with
   | pending fields => exact .pending (same.trans fields)
   | token vertex rest token fields consumer bound => exact .token vertex rest token (same.trans fields) consumer bound
-  | human vertex rest wait id origin input fields declared projected metadata owned =>
-      exact .human vertex rest wait id origin input (same.trans fields) declared projected metadata owned
-  | effect vertex rest wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
-      exact .effect vertex rest wait id origin input effect (same.trans fields) declared projected element descriptor outputs snapshot route owned
+  | human vertex rest wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
+      exact .human vertex rest wait id origin input declaredOutput (same.trans fields) declared projected metadata owned waitOutputs
+  | effect vertex rest wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot route owned waitOutputs =>
+      exact .effect vertex rest wait id origin input declaredOutput effect (same.trans fields) declared projected element descriptor outputs snapshot route owned waitOutputs
   | finished fields => exact .finished (same.trans fields)
 
 /-- Actual human completion advances exactly its declared output; supplied data preserves every remaining obligation. -/
@@ -803,13 +805,13 @@ theorem human_completion_preserves_ordered_suffix (program : Program) (analysis 
     | token vertex rest token fields consumer bound =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.1] at live
-    | effect vertex rest wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
+    | effect vertex rest wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot route owned waitOutputs =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.1] at live
     | finished fields =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         simp [fields.2.2.1] at live
-    | human vertex rest wait id origin input fields declared projected metadata owned =>
+    | human vertex rest wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         have same : selected = wait := by simpa [fields.2.2.1] using live
         subst selected
@@ -821,15 +823,15 @@ theorem human_completion_preserves_ordered_suffix (program : Program) (analysis 
         cases Option.some.inj completed
         refine ⟨?_, ?_⟩
         · refine ⟨?_, ?_, effectsOwned, Or.inl runningLife, foreign, ?_⟩ <;>
-            simp [fields.2.2.1, fields.2.1, root.1, addToken, canonicalInsertBy, IssuanceFrame] <;>
+            simp [fields.2.2.1, fields.2.1, root.1, waitOutputs, addTokens, addToken, canonicalInsertBy, IssuanceFrame] <;>
             exact ⟨issued.1, issued.2.1, issued.2.2.1, issued.2.2.2.2⟩
         refine ⟨earlier ++ [vertex], rest, by simpa [List.append_assoc] using orderEq, ?_, ?_, ?_⟩
         · rw [restEq]
-          apply OrderedPosition.token next more ⟨wait.output, wait.owner⟩
+          apply OrderedPosition.token next more ⟨declaredOutput, wait.owner⟩
           · simp [frontierFields, fields.1, fields.2.1, fields.2.2.1, fields.2.2.2.1,
-              fields.2.2.2.2, addToken, canonicalInsertBy]
+              fields.2.2.2.2, waitOutputs, addTokens, addToken, canonicalInsertBy]
           · simpa [named] using consumer
-          · exact owned_operation_port program (.awaitUserTask id origin input wait.output wait.task) wait.output wait.owner
+          · exact owned_operation_port program (.awaitUserTask id origin input declaredOutput wait.task) declaredOutput wait.owner
               wellFormed declared rfl (by simp [operationControlPlaces, operationOutputs]) owned
         · exact human_merge_advances_available_suffix before.variables.process.bindings patch vertex rest noWrites available
         · exact bindings_merge_valid _ _ _
@@ -852,9 +854,9 @@ theorem ordered_suffix_wait_guards (program : Program) (analysis : Analysis) (st
   | token vertex rest token fields consumer bound =>
       simp_all [serialRuntimeAssociationsValid, waitDeclarationsValid, frontierFields, ForeignRuntimeEmpty]
   | finished fields => simp_all [serialRuntimeAssociationsValid, waitDeclarationsValid, frontierFields, ForeignRuntimeEmpty]
-  | human vertex rest wait id origin input fields declared projected metadata owned =>
-      have census := human_wait_census program wait id origin input wellFormed declared metadata
-      have unique := programWellFormed_waitDeclarer program (.awaitUserTask id origin input wait.output wait.task)
+  | human vertex rest wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
+      have census := human_wait_census program wait id origin input declaredOutput wellFormed declared metadata waitOutputs
+      have unique := programWellFormed_waitDeclarer program (.awaitUserTask id origin input declaredOutput wait.task)
         (userTaskWaitDeclarationKey wait.task.id) wellFormed declared
         (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq])
       simp only [frontierFields, Prod.mk.injEq] at fields
@@ -864,10 +866,10 @@ theorem ordered_suffix_wait_guards (program : Program) (analysis : Analysis) (st
           userTaskWaitDeclarers_eq_keyFilter, declaredByExactlyOneOwnedOperation, SemanticOperation.id]
         with_unfolding_all exact congrArg List.length census
       · simp_all
-  | effect vertex rest wait id origin input effect fields declared projected element descriptor outputs snapshot route owned =>
-      have census := effect_wait_census program wait id origin input effect wellFormed declared element descriptor outputs route snapshot
-      have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input wait.output effect none declared
-      have unique := programWellFormed_waitDeclarer program (.awaitEffect id origin input wait.output effect none)
+  | effect vertex rest wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot route owned waitOutputs =>
+      have census := effect_wait_census program wait id origin input declaredOutput effect wellFormed declared element descriptor outputs route snapshot waitOutputs
+      have aligned := programWellFormed_awaitEffect_elements_align program wellFormed id origin input declaredOutput effect none declared
+      have unique := programWellFormed_waitDeclarer program (.awaitEffect id origin input declaredOutput effect none)
         (effectWaitDeclarationKey wait.elementId) wellFormed declared
         (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligned, element])
       simp only [frontierFields, Prod.mk.injEq] at fields

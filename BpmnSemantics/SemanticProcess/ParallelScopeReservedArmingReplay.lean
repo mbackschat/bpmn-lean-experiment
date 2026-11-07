@@ -43,14 +43,14 @@ def ReservedArmWriteShape (program : Program) (before : RuntimeState) (runtimeId
     (write : InternalCommutation.InternalArmingWrite) : Prop :=
   match operation with
   | .awaitUserTask _ _ _ output task => write = .userTask {
-      processInstanceId := runtimeId, owner, task, activation, output, metadata := task.metadata }
+      processInstanceId := runtimeId, owner, task, activation, outputs := [output], metadata := task.metadata }
   | .awaitEffect _ _ _ output effect route => ∃ arguments,
       (if hasParallelScopeDefinition program owner then evaluateParallelScopeInputs? program before owner effect.inputMappings
         else evaluateEffectInputs? program before owner effect.inputMappings) = some arguments ∧
       write = .effect {
         processInstanceId := runtimeId, owner, elementId := effect.elementId, activation,
         descriptor := effect.descriptor, arguments, outputMappings := effect.outputMappings,
-        output, bpmnErrorRoute := route } arguments
+        outputs := [output], bpmnErrorRoute := route } arguments
   | _ => False
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.ParallelScopeReplay #[`ReservedArmWriteShape]

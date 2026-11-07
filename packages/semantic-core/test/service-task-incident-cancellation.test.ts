@@ -305,7 +305,7 @@ test("refuses ambiguous roots, mismatched callers, outside incidents, and pendin
           activation: 1,
         },
         name: "Orphan task",
-        output: "place:orphan-output",
+        outputs: ["place:orphan-output"],
       }],
     },
     { ...incident, initiationPending: true },
@@ -484,7 +484,7 @@ function richIncidentState(incident: RuntimeState): RuntimeState {
       },
       owner: root.id,
       name: "Root task",
-      output: "place:root-task-output",
+      outputs: ["place:root-task-output"],
     }],
     messageWaits: [{
       id: {
@@ -518,7 +518,7 @@ function richIncidentState(incident: RuntimeState): RuntimeState {
       arguments: [],
       outputMappings: [],
       bpmnErrorRoute: null,
-      output: "place:root-effect-output",
+      outputs: ["place:root-effect-output"],
       incidentAlreadyRetried: false,
     }, {
       id: calledEffectId,
@@ -527,7 +527,7 @@ function richIncidentState(incident: RuntimeState): RuntimeState {
       arguments: [],
       outputMappings: [],
       bpmnErrorRoute: null,
-      output: "place:called-effect-output",
+      outputs: ["place:called-effect-output"],
       incidentAlreadyRetried: false,
     }],
     selectedBranchSets: [{

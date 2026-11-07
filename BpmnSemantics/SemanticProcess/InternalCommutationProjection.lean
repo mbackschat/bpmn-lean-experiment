@@ -106,7 +106,7 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
        rename_i id origin input output task instanceId selection
        let wait : UserTaskWait :=
          { processInstanceId := owner.processInstanceId, owner, task,
-           activation := activationCount state task.id + 1, output, metadata := task.metadata }
+           activation := activationCount state task.id + 1, outputs := [output], metadata := task.metadata }
        let currentPatch : InternalArmingPatch :=
          { operation := .awaitUserTask id origin input output task,
            definition := program.identity, processId := program.processId, origin,
@@ -409,7 +409,7 @@ theorem prepared_arm_projectWaits_insert (program : Program) (state : RuntimeSta
       { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
         activation := effectActivationCount state effect.elementId + 1,
         descriptor := effect.descriptor, arguments := bindings,
-        outputMappings := effect.outputMappings, output, bpmnErrorRoute := route }
+        outputMappings := effect.outputMappings, outputs := [output], bpmnErrorRoute := route }
     let currentPatch : InternalArmingPatch :=
       { operation := .awaitEffect id origin input output effect route,
         definition := program.identity, processId := program.processId, origin,
@@ -560,7 +560,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
     rename_i id origin input output task instanceId selection
     let wait : UserTaskWait :=
       { processInstanceId := owner.processInstanceId, owner, task,
-        activation := activationCount state task.id + 1, output, metadata := task.metadata }
+        activation := activationCount state task.id + 1, outputs := [output], metadata := task.metadata }
     have declarers : userTaskWaitDeclarers program task.id =
         [.awaitUserTask id origin input output task] := by
       exact of_decide_eq_true unique.1.1
@@ -577,7 +577,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
     have elementId := programWellFormed_internalArm_element_nonempty program
       (.awaitUserTask id origin input output task) programAdmitted operationMember
     have referenceValid := flowNodeOccurrenceProgramValidity_insertOrdinaryUserTask program state
-      id origin input wait valid declarers declared live processId
+      id origin input output wait rfl valid declarers declared live processId
         (by simpa [wait] using elementId) (by simp [wait]) rfl rfl
     apply flowNodeOccurrenceProgramValidity_from_reference program state
       { state with waits := insertUserTaskWait wait state.waits } _ valid referenceValid
@@ -676,7 +676,7 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
       { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
         activation := effectActivationCount state effect.elementId + 1,
         descriptor := effect.descriptor, arguments := bindings,
-        outputMappings := effect.outputMappings, output, bpmnErrorRoute := route }
+        outputMappings := effect.outputMappings, outputs := [output], bpmnErrorRoute := route }
     have declarers : effectWaitDeclarers program effect.elementId =
         [.awaitEffect id origin input output effect route] := by
       exact of_decide_eq_true absent.1.1
@@ -725,8 +725,8 @@ theorem prepared_arm_preserves_flowNodeOccurrenceProgramValidity (program : Prog
       | none => exact False.elim (unique evaluatedEq)
       | some values => simp [bindings, evaluatedEq]
     have referenceValid := flowNodeOccurrenceProgramValidity_insertOrdinaryEffect program state id
-      origin input effect
-        route wait bindings valid declarers declared live processId
+      origin input output effect
+        route wait rfl bindings valid declarers declared live processId
         (by simpa [wait] using elementId) (by simp [wait]) rfl originElement rfl rfl
         (evaluateEffectInputs_snapshotUnder _ _ _ _ _ arguments) rfl rfl rfl
         (fun candidateId candidateOrigin candidateInput candidateOutput candidateEffect

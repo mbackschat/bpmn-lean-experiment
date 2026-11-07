@@ -152,9 +152,9 @@ theorem parallelScope_activateHuman_wait_program_validity
     owner := candidate.owner
     task := task
     activation := activationCount before task.id + 1
-    output := output
+    outputs := [output]
     metadata := task.metadata }
-  exact flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask program before id origin input wait valid
+  exact flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask program before id origin input output wait rfl valid
     declarers declared (by simpa [flowNodeOccurrenceOwnerLiveUnique, exactLiveOccurrence] using live) named
     (by simpa [wait] using element)
     (by simp [wait]) rfl rfl
@@ -192,7 +192,7 @@ theorem parallelScope_activateEffect_wait_program_validity
     descriptor := effect.descriptor
     arguments := arguments
     outputMappings := effect.outputMappings
-    output := output
+    outputs := [output]
     bpmnErrorRoute := route }
   have missing : effectWaitOccurrence wait ∉ openWaitAnchors before := by
     simpa [openWaitAnchorAbsent, List.contains_eq_mem, wait, effectWaitOccurrence] using fresh
@@ -218,7 +218,7 @@ theorem parallelScope_activateEffect_wait_program_validity
     intro activity member
     have rejected := List.all_eq_true.mp rejectedAll activity member
     simpa [effectWaitOccurrenceId, effectWaitOccurrence] using rejected
-  exact flowNodeOccurrenceWaitProgramValidity_insertOrdinaryEffect program before id origin input effect route wait arguments
+  exact flowNodeOccurrenceWaitProgramValidity_insertOrdinaryEffect program before id origin input output effect route wait rfl arguments
     valid declarers declared (by simpa [flowNodeOccurrenceOwnerLiveUnique, exactLiveOccurrence] using live) named
     (by simpa [wait] using element)
     (by simp [wait]) rfl aligned rfl rfl snapshot rfl rfl rfl

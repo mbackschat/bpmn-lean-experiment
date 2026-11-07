@@ -221,7 +221,7 @@ test("refuses hidden Activity identity and either occupied public wait anchor", 
         id,
         owner: prepared.owner,
         name: "foreign anchor",
-        output: "place:foreign",
+        outputs: ["place:foreign"],
       }],
     };
     assert.equal(deriveInternalActivityArmingPreparation(

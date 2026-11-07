@@ -61,7 +61,7 @@ theorem dataArming_cancellation_commutes (program : Program) (state : RuntimeSta
   let wait : UserTaskWait :=
     { processInstanceId := owner.processInstanceId, owner,
       task := { id := contract.taskId, name := contract.taskName },
-      activation := activationCount state contract.taskId + 1, output := contract.output }
+      activation := activationCount state contract.taskId + 1, outputs := [contract.output] }
   let scope : ActivityVariableScope :=
     { owner := .activityOccurrence (activityOwnerForRecord record),
       bindings := source }

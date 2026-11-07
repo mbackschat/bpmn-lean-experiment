@@ -66,7 +66,7 @@ export function deriveInternalDataArmingPatch(
   return {
     owner,
     input: operation.input,
-    wait: { id: taskId, owner, name: operation.task.name, output: operation.output },
+    wait: { id: taskId, owner, name: operation.task.name, outputs: [operation.output] },
     record: {
       id: activityId, owner, operationId: operation.id,
       body: { kind: ActivityBodyKind.UserTask, task: taskId }, attachedHandlers: [],

@@ -183,7 +183,7 @@ def cyclicWait (activation : Nat) : UserTaskWait :=
     owner := cyclicOwner
     task := { id := ⟨"Review"⟩, name := some "Review request" }
     activation
-    output := ⟨"place:Flow_Review_Choice"⟩ }
+    outputs := [⟨"place:Flow_Review_Choice"⟩] }
 
 def cyclicVariables (route : Option String) : ScopedVariables :=
   match route with

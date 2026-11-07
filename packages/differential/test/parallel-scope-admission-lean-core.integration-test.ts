@@ -469,8 +469,8 @@ test("Lean and TypeScript agree on mixed fork/join/End closure and fuel refusal"
         const root = admitted.scopeOccurrences[0]!.id;
         const bodies = Array.from({ length: count }, (_, index) => ({ processInstanceId: start.instanceId,
           definitionScopeId: "body", activation: index + 1 }));
-        assert.deepEqual(state.userTaskWaits.map(wait => [wait.id.elementId, wait.owner, wait.id.activation, wait.output]),
-          bodies.map(body => ["Hold", body, body.activation, "later"]), "the waiting branch preserves every body's exact live occurrence");
+        assert.deepEqual(state.userTaskWaits.map(wait => [wait.id.elementId, wait.owner, wait.id.activation, wait.outputs]),
+          bodies.map(body => ["Hold", body, body.activation, ["later"]]), "the waiting branch preserves every body's exact live occurrence");
         assert.deepEqual(state.effectWaits, []);
         assert.deepEqual(state.taskActivations, [{ elementId: "Hold", count }]);
         assert.deepEqual(state.effectActivations, []);

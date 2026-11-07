@@ -112,8 +112,8 @@ theorem preparedArm_boundaryTimer_frame (program : Program) (state : RuntimeStat
           change flowNodeOccurrenceBoundaryTimerBound program
             { state with waits := insertUserTaskWait wait state.waits } timer = _
           exact flowNodeOccurrenceBoundaryTimerBound_insertUnboundedUserTask program state _ wait
-            (anchor := { wait with task, output, metadata := task.metadata })
-            (.ordinary id origin input rfl) declarers timer
+            (anchor := { wait with task, outputs := [output], outputs_ne_nil := by simp, metadata := task.metadata })
+            (.ordinary id origin input output rfl rfl) declarers timer
       | _ => simp_all [internalArmInput?]
   | message wait | timer wait | effect wait bindings =>
       simp only [flowNodeOccurrenceBoundaryTimerBound, applyInternalArmingPatch, write]

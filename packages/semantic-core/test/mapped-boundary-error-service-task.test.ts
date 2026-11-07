@@ -258,7 +258,7 @@ test("applies the validated null patch and opens only the boundary route", () =>
       },
       owner: rootScopeOccurrence(program.processId, "Instance_1"),
       name: "Review Mapped Error",
-      output: "place:Flow_ReviewMappedErrorToEnd",
+      outputs: ["place:Flow_ReviewMappedErrorToEnd"],
     },
   ]);
   assert.deepEqual(caught.state.variables, {

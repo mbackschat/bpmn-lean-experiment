@@ -84,7 +84,7 @@ test("does not publish cancellation for an orphan live scope outside the root", 
       },
       owner: orphanOwner,
       name: "Orphan task",
-      output: "place:orphan-output",
+      outputs: ["place:orphan-output"],
     }],
   };
 

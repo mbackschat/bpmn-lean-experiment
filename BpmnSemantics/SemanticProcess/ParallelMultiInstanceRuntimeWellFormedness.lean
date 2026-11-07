@@ -78,7 +78,7 @@ def parallelControllerProgramBindingValid (program : Program) (state : RuntimeSt
                 waits.all fun wait =>
                   wait.owner == record.owner && wait.task.id == arm.taskId &&
                     wait.task.name == arm.taskName && wait.metadata == none &&
-                    wait.output == arm.normalOutput &&
+                    wait.outputs == [arm.normalOutput] &&
                 match record.timerHandlerOccurrences with
                 | [timer] =>
                     match state.timerWaits.filter (timerIdNamesWait timer) with
@@ -163,7 +163,7 @@ theorem parallelMultiInstanceProgramBindingsValid_singleton (program : Program)
     (childWaitBindings : childWaits.all (fun wait =>
       wait.owner == record.owner && wait.task.id == arm.taskId &&
         wait.task.name == arm.taskName && wait.metadata == none &&
-        wait.output == arm.normalOutput) = true)
+        wait.outputs == [arm.normalOutput]) = true)
     (attachedTimer : record.timerHandlerOccurrences = [timer])
     (matchingTimerWait : state.timerWaits.filter (timerIdNamesWait timer) = [timerWait])
     (timerOwner : timerWait.owner = record.owner)
@@ -210,7 +210,7 @@ theorem parallelMultiInstanceProgramBindingsValid_singleton (program : Program)
     have childBindingsProp : ∀ wait ∈ childWaits,
         (((wait.owner = record.owner ∧ wait.task.id = arm.taskId) ∧
           wait.task.name = arm.taskName) ∧ wait.metadata = none) ∧
-          wait.output = arm.normalOutput := by
+          wait.outputs = [arm.normalOutput] := by
       intro wait waitMember
       have binding := List.all_eq_true.mp childWaitBindings wait waitMember
       simpa only [Bool.and_eq_true, beq_iff_eq] using binding
@@ -354,7 +354,7 @@ theorem parallelMultiInstanceProgramBindingsValid_controller_facts
                                             candidate.task.id == arm.taskId &&
                                             candidate.task.name == arm.taskName &&
                                             candidate.metadata == none &&
-                                            candidate.output == arm.normalOutput) = true := by
+                                            candidate.outputs == [arm.normalOutput]) = true := by
                                         apply List.all_eq_true.mpr
                                         intro candidate candidateMember
                                         have binding := (waitBindings candidate candidateMember).1

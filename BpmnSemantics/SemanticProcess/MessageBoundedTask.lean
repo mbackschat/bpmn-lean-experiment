@@ -38,7 +38,7 @@ def activateMessageBoundedUserTask (state : RuntimeState) (instanceId : Semantic
         owner
         task := { id := task.id, name := task.name }
         activation := taskActivation
-        output := task.output
+        outputs := [task.output]
         metadata := none } state.waits
     messageWaits := insertMessageWait
       { processInstanceId := instanceId
@@ -208,7 +208,7 @@ def messageBoundedPairForSubscription? (program : Program) (state : RuntimeState
   let task ← state.waits.find? fun candidate =>
     taskIdNamesWait body candidate &&
       decide (candidate.task.id = operation.2.1.id) &&
-      decide (candidate.output = operation.2.1.output) &&
+      decide (candidate.outputs = [operation.2.1.output]) &&
       decide (candidate.owner = record.owner)
   if message.channel ≠ operation.2.2.channel ||
       message.output ≠ operation.2.2.output then none else
@@ -292,7 +292,7 @@ private theorem messageBoundedPairForSubscription_pairing (program : Program)
                     cases taskFound : state.waits.find? (fun candidate =>
                         taskIdNamesWait body candidate &&
                           decide (candidate.task.id = operation.2.1.id) &&
-                          decide (candidate.output = operation.2.1.output) &&
+                          decide (candidate.outputs = [operation.2.1.output]) &&
                           decide (candidate.owner = record.owner)) with
                     | none =>
                         simp [msgFound, opFound, recFound, sole, bodyFound, taskFound] at found

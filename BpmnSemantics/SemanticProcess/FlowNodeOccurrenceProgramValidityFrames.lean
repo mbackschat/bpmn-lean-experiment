@@ -47,10 +47,10 @@ theorem flowNodeOccurrenceProgramValidity_from_reference (program : Program)
 
 theorem flowNodeOccurrenceProgramValidity_insertOrdinaryUserTask (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
-    (input : ControlPlaceId) (wait : UserTaskWait)
+    (input output : ControlPlaceId) (wait : UserTaskWait) (outputs : wait.outputs = [output])
     (prior : flowNodeOccurrenceProgramValidity program state = true)
     (declarers : userTaskWaitDeclarers program wait.task.id =
-      [.awaitUserTask id origin input wait.output wait.task])
+      [.awaitUserTask id origin input output wait.task])
     (declared : declaredByExactlyOneOwnedOperation program
       (userTaskWaitDeclarers program wait.task.id) wait.owner = true)
     (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
@@ -63,7 +63,7 @@ theorem flowNodeOccurrenceProgramValidity_insertOrdinaryUserTask (program : Prog
   let after : RuntimeState := { state with waits := insertUserTaskWait wait state.waits }
   apply flowNodeOccurrenceProgramValidity_of_wait_frame program state after prior
   · exact flowNodeOccurrenceWaitProgramValidity_insertOrdinaryUserTask program state id origin input
-      wait (waitProgramValidity_of_programValidity program state prior) declarers declared live
+      output wait outputs (waitProgramValidity_of_programValidity program state prior) declarers declared live
       ownerProcess taskId positive processOwner metadata
   all_goals rfl
 
@@ -166,11 +166,11 @@ theorem flowNodeOccurrenceProgramValidity_insertOrdinaryTimer (program : Program
 
 theorem flowNodeOccurrenceProgramValidity_insertOrdinaryEffect (program : Program)
     (state : RuntimeState) (id : OperationId) (origin : BpmnElementOrigin)
-    (input : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute)
-    (wait : EffectWait) (bindings : List VariableBinding)
+    (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute)
+    (wait : EffectWait) (outputs : wait.outputs = [output]) (bindings : List VariableBinding)
     (prior : flowNodeOccurrenceProgramValidity program state = true)
     (declarers : effectWaitDeclarers program wait.elementId =
-      [.awaitEffect id origin input wait.output effect route])
+      [.awaitEffect id origin input output effect route])
     (declared : declaredByExactlyOneOwnedOperation program
       (effectWaitDeclarers program wait.elementId) wait.owner = true)
     (live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true)
@@ -207,7 +207,7 @@ theorem flowNodeOccurrenceProgramValidity_insertOrdinaryEffect (program : Progra
         (effectWaitOccurrenceId wait) bindings }
   apply flowNodeOccurrenceProgramValidity_of_wait_frame program state after prior
   · exact flowNodeOccurrenceWaitProgramValidity_insertOrdinaryEffect program state id origin input
-      effect route wait bindings (waitProgramValidity_of_programValidity program state prior)
+      output effect route wait outputs bindings (waitProgramValidity_of_programValidity program state prior)
       declarers declared live processId elementId positive processOwner originElement effectElement
       descriptor arguments outputMappings routeEq bindingsEq aligned freshWaits freshIncidents
       freshActivities

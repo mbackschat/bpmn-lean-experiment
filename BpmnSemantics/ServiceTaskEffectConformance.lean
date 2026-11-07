@@ -171,7 +171,7 @@ def effectWait : EffectWait :=
     descriptor
     arguments := []
     outputMappings := []
-    output := ⟨"place:Flow_ServiceToEnd"⟩
+    outputs := [⟨"place:Flow_ServiceToEnd"⟩]
     bpmnErrorRoute := none }
 
 def scenario : Scenario :=

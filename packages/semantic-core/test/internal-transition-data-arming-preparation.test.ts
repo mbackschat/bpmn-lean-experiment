@@ -144,7 +144,7 @@ test("composed preparation copies input into one joined lifetime with distinct c
   assert.deepEqual(after, {
     ...before,
     controlTokens: [before.controlTokens[1]],
-    userTaskWaits: [{ id: taskId, owner, name: "Coverage", output: leftOperation.output }],
+    userTaskWaits: [{ id: taskId, owner, name: "Coverage", outputs: [leftOperation.output] }],
     taskActivations: [{ elementId: leftOperation.task.elementId, count: 3 }],
     activityActivations: [{ elementId: leftOperation.task.elementId, count: 8 }],
     activityOccurrences: [{

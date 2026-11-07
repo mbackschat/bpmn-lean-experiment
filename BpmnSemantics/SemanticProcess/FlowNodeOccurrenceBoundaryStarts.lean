@@ -193,14 +193,14 @@ def candidateUserTaskStart? (program : Program) (operation : SemanticOperation)
   else
     match operation with
     | .awaitUserTask _ _ _ output task =>
-        if wait.task ≠ task || wait.output ≠ output || wait.metadata ≠ task.metadata then none
+        if wait.task ≠ task || wait.outputs ≠ [output] || wait.metadata ≠ task.metadata then none
         else
           candidateWaitStart? program operation owner wait.processInstanceId
             (⟨wait.task.id.value⟩ : NodeId) wait.activation
     | .awaitDataInputUserTask _ _ _ output taskId taskName _
     | .awaitDataInputOutputUserTask _ _ _ output taskId taskName _ _
     | .awaitDataOutputUserTask _ _ _ output taskId taskName _ =>
-        if wait.task.id ≠ taskId || wait.task.name ≠ taskName || wait.output ≠ output ||
+        if wait.task.id ≠ taskId || wait.task.name ≠ taskName || wait.outputs ≠ [output] ||
             wait.task.metadata.isSome || wait.metadata.isSome then none
         else
           candidateWaitStart? program operation owner wait.processInstanceId
@@ -209,27 +209,27 @@ def candidateUserTaskStart? (program : Program) (operation : SemanticOperation)
     | .activity host =>
         match host.userTask? with
         | some task =>
-            if wait.task ≠ task || host.outputs ≠ [⟨wait.output⟩] || wait.metadata ≠ task.metadata then none
+            if wait.task ≠ task || host.outputs.map (·.place) ≠ wait.outputs || wait.metadata ≠ task.metadata then none
             else
               candidateWaitStart? program operation owner wait.processInstanceId
                 (⟨wait.task.id.value⟩ : NodeId) wait.activation
         | none => none
     | .awaitBoundedUserTask _ _ _ task _ | .awaitMonitoredUserTask _ _ _ task _
     | .awaitMessageBoundedUserTask _ _ _ task _ | .awaitMessageMonitoredUserTask _ _ _ task _ =>
-        if wait.task.id ≠ task.id || wait.task.name ≠ task.name || wait.output ≠ task.output ||
+        if wait.task.id ≠ task.id || wait.task.name ≠ task.name || wait.outputs ≠ [task.output] ||
             wait.task.metadata.isSome || wait.metadata.isSome then none
         else
           candidateWaitStart? program operation owner wait.processInstanceId
             (⟨wait.task.id.value⟩ : NodeId) wait.activation
     | .awaitSequentialMultiInstanceUserTask _ _ _ task _ normalOutput _ _ =>
         if wait.task.id ≠ task.id || wait.task.name ≠ task.name ||
-            wait.output ≠ normalOutput || wait.task.metadata.isSome || wait.metadata.isSome then none
+            wait.outputs ≠ [normalOutput] || wait.task.metadata.isSome || wait.metadata.isSome then none
         else
           candidateWaitStart? program operation owner wait.processInstanceId
             (⟨wait.task.id.value⟩ : NodeId) wait.activation
     | .awaitParallelMultiInstanceUserTask _ _ _ taskId taskName _ normalOutput _ _ _ =>
         if wait.task.id ≠ taskId || wait.task.name ≠ taskName ||
-            wait.output ≠ normalOutput || wait.task.metadata.isSome || wait.metadata.isSome then none
+            wait.outputs ≠ [normalOutput] || wait.task.metadata.isSome || wait.metadata.isSome then none
         else
           candidateWaitStart? program operation owner wait.processInstanceId
             (⟨wait.task.id.value⟩ : NodeId) wait.activation
@@ -312,7 +312,7 @@ def candidateEffectStart? (program : Program) (operation : SemanticOperation)
     | .awaitEffect _ _ _ output effect route =>
         if wait.elementId ≠ effect.elementId || wait.descriptor ≠ effect.descriptor ||
             !inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings wait.arguments ||
-            wait.outputMappings ≠ effect.outputMappings || wait.output ≠ output ||
+            wait.outputMappings ≠ effect.outputMappings || wait.outputs ≠ [output] ||
             wait.bpmnErrorRoute ≠ route then none
         else
           candidateWaitStart? program operation owner wait.processInstanceId wait.elementId
@@ -323,7 +323,7 @@ def candidateEffectStart? (program : Program) (operation : SemanticOperation)
         | some effect =>
             if wait.elementId ≠ effect.elementId || wait.descriptor ≠ effect.descriptor ||
                 !inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings wait.arguments ||
-                wait.outputMappings ≠ effect.outputMappings || host.outputs ≠ [⟨wait.output⟩] ||
+                wait.outputMappings ≠ effect.outputMappings || host.outputs.map (·.place) ≠ wait.outputs ||
                 wait.bpmnErrorRoute.isSome then none
             else
               candidateWaitStart? program operation owner wait.processInstanceId wait.elementId

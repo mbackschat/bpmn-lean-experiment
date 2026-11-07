@@ -429,7 +429,7 @@ def zeroSubjectWakeWait : UserTaskWait :=
     owner := rootOwner
     task := { id := ⟨"C"⟩, name := none }
     activation := 1
-    output := ⟨"place:trigger"⟩ }
+    outputs := [⟨"place:trigger"⟩] }
 
 def zeroSubjectWakeState : RuntimeState :=
   { initialState with
@@ -477,7 +477,7 @@ def effectCollisionState : RuntimeState :=
          descriptor := compensationDescriptor
          arguments := []
          outputMappings := []
-         output := ⟨"place:done"⟩
+         outputs := [⟨"place:done"⟩]
          bpmnErrorRoute := none }] }
 
 def secondPendingHandlerA : CompensationHandlerExecution :=

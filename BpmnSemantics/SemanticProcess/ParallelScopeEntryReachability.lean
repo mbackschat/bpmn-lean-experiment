@@ -180,22 +180,18 @@ theorem ParallelScopeParentHistory.live_owners (program : Program) (entry : Para
     have owned : wait.owner = parent := by
       by_cases same : wait.owner = parent
       · exact same
-      have selected : wait ∈ state.waits.filter (fun current => current.owner == wait.owner && current.output == wait.output) := by simp [member]
-      have positive : 0 < (state.waits.filter (fun current => current.owner == wait.owner && current.output == wait.output)).length :=
-        List.length_pos_iff.mpr (by intro empty; simp [empty] at selected)
-      have zero := fresh wait.owner same wait.output
-      simp only [continuationMarking] at zero
+      obtain ⟨output, selected⟩ := List.exists_mem_of_ne_nil wait.outputs wait.outputs_ne_nil
+      have positive := ContinuationMarkingLaws.continuationMarking_pos_of_wait state wait member output selected
+      have zero := fresh wait.owner same output
       omega
     exact ⟨⟨parent, none⟩, rootPresent, owned.symm⟩
   · intro wait member
     have owned : wait.owner = parent := by
       by_cases same : wait.owner = parent
       · exact same
-      have selected : wait ∈ state.effectWaits.filter (fun current => current.owner == wait.owner && current.output == wait.output) := by simp [member]
-      have positive : 0 < (state.effectWaits.filter (fun current => current.owner == wait.owner && current.output == wait.output)).length :=
-        List.length_pos_iff.mpr (by intro empty; simp [empty] at selected)
-      have zero := fresh wait.owner same wait.output
-      simp only [continuationMarking] at zero
+      obtain ⟨output, selected⟩ := List.exists_mem_of_ne_nil wait.outputs wait.outputs_ne_nil
+      have positive := ContinuationMarkingLaws.continuationMarking_pos_of_effectWait state wait member output selected
+      have zero := fresh wait.owner same output
       omega
     exact ⟨⟨parent, none⟩, rootPresent, owned.symm⟩
 

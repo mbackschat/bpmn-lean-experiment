@@ -250,7 +250,7 @@ theorem retry_preserves_complete_suspended_effect_and_runtime_context :
       retriedWait.arguments = effectWait.arguments ∧
       retriedWait.outputMappings = effectWait.outputMappings ∧
       retriedWait.bpmnErrorRoute = effectWait.bpmnErrorRoute ∧
-      retriedWait.output = effectWait.output ∧
+            retriedWait.outputs = effectWait.outputs ∧
       retriedState.variables = incidentState.variables ∧
       retriedState.logicalTimeMs = incidentState.logicalTimeMs ∧
       retriedState.activations = incidentState.activations ∧

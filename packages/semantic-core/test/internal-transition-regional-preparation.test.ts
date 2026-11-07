@@ -349,7 +349,7 @@ for (const entry of [cases[3], cases[4]]) {
     const makeEffect = (elementId: string): RuntimeState["effectWaits"][number] => ({
       id: { processInstanceId: root.id.processInstanceId, elementId, activation: 1 }, owner: root.id,
       descriptor: { protocol: "regional-mask", operation: "regional-mask" },
-      arguments: [], outputMappings: [], bpmnErrorRoute: null, output: "unused", incidentAlreadyRetried: false,
+      arguments: [], outputMappings: [], bpmnErrorRoute: null, outputs: ["unused"], incidentAlreadyRetried: false,
     });
     const open = makeEffect("OpenEffect");
     const incident = makeEffect("IncidentEffect");

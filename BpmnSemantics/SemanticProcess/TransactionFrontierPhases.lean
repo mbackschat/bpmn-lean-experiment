@@ -235,7 +235,7 @@ theorem transaction_task_arming_keeps_scope_blocked
     TransactionScopeBarrier (activateUserTask state instanceId owner input output task) owner := by
   let wait : UserTaskWait :=
     { processInstanceId := instanceId, owner, task, activation := activationCount state task.id + 1,
-      output, metadata := task.metadata }
+      outputs := [output], metadata := task.metadata }
   apply TransactionScopeBarrier.task wait
   · exact (mem_insertUserTaskWait wait wait state.waits).mpr (Or.inl rfl)
   · rfl
@@ -264,8 +264,10 @@ theorem transaction_selected_task_completion_keeps_scope_blocked
     TransactionScopeBarrier after wait.owner := by
   simp only [completeUserTask, selected, Option.some.injEq] at completed
   subst after
-  apply TransactionScopeBarrier.token { placeId := wait.output, owner := wait.owner }
-  · exact (addToken_perm before.tokens wait.output wait.owner).mem_iff.mpr List.mem_cons_self
+  obtain ⟨place, member⟩ := List.exists_mem_of_ne_nil wait.outputs wait.outputs_ne_nil
+  apply TransactionScopeBarrier.token { placeId := place, owner := wait.owner }
+  · exact (addTokens_perm before.tokens wait.outputs wait.owner).mem_iff.mpr
+      (List.mem_append_left _ (List.mem_map_of_mem member))
   · rfl
 
 /-- Completing one branch cannot remove the other branch's distinct waiting occurrence. -/
@@ -312,7 +314,7 @@ theorem transaction_ordinary_completion_from_waiting
     (completed : completeOrdinaryUserTaskWithCompensation? completeUserTask program before taskId =
       some after) :
     ∃ wait, matchingOrdinaryUserTaskWait? before taskId = some wait ∧
-      after.tokens = [{ placeId := wait.output, owner := wait.owner }] ∧
+      after.tokens = addTokens [] wait.outputs wait.owner ∧
       after.waits = before.waits.erase wait ∧ after.scopeOccurrences = before.scopeOccurrences ∧
       after.compensationTriggers = before.compensationTriggers ∧
       after.control = before.control ∧ after.initiationPending = before.initiationPending := by
@@ -329,7 +331,7 @@ theorem transaction_ordinary_completion_from_waiting
     simp only [completeUserTask, found, Option.some.injEq] at completed
     subst after
     refine ⟨wait, matched, ?_, ?_, ?_, ?_, ?_, ?_⟩
-    · simp [frame.1, emptyTokens, addToken, canonicalInsertBy]
+    · simp [frame.1, emptyTokens]
     · exact congrArg (fun waits => waits.erase wait) frame.2.1
     · exact frame.2.2.1
     · exact frame.2.2.2.1

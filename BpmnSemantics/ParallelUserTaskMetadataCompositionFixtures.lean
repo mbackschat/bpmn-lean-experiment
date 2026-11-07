@@ -142,7 +142,7 @@ def contentWait : UserTaskWait :=
     owner := rootScopeOccurrenceId instanceId processId
     task := contentTask
     activation := 1
-    output := ⟨"place:Flow_ContentToJoin"⟩
+    outputs := [⟨"place:Flow_ContentToJoin"⟩]
     metadata := some contentMetadata }
 
 def riskWait : UserTaskWait :=
@@ -150,7 +150,7 @@ def riskWait : UserTaskWait :=
     owner := rootScopeOccurrenceId instanceId processId
     task := riskTask
     activation := 1
-    output := ⟨"place:Flow_RiskToJoin"⟩
+    outputs := [⟨"place:Flow_RiskToJoin"⟩]
     metadata := some riskMetadata }
 
 def contentFirst : StimulusResult :=

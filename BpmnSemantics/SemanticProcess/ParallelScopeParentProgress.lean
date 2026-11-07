@@ -55,18 +55,18 @@ theorem continuationMarking_positive_nonquiescent (state : RuntimeState)
     intro token member selected
     have same : token.owner = owner := (by simpa only [Bool.and_eq_true, beq_iff_eq] using selected : token.owner = owner ∧ token.placeId = place).1
     exact (quiescent_scope_has_no_token state owner quiet token member) same
-  have emptyHuman : state.waits.filter (fun wait => wait.owner == owner && wait.output == place) = [] := by
-    apply List.filter_eq_nil_iff.mpr
-    intro wait member selected
-    have present : (state.waits.any fun current => current.owner == owner) = true :=
-      List.any_eq_true.mpr ⟨wait, member, (by simpa only [Bool.and_eq_true] using selected : (wait.owner == owner) = true ∧ (wait.output == place) = true).1⟩
-    simp [scopeQuiescent, present] at quiet
-  have emptyEffect : state.effectWaits.filter (fun wait => wait.owner == owner && wait.output == place) = [] := by
-    apply List.filter_eq_nil_iff.mpr
-    intro wait member selected
-    have present : (state.effectWaits.any fun current => current.owner == owner) = true :=
-      List.any_eq_true.mpr ⟨wait, member, (by simpa only [Bool.and_eq_true] using selected : (wait.owner == owner) = true ∧ (wait.output == place) = true).1⟩
-    simp [scopeQuiescent, present] at quiet
+  have emptyHuman : (state.waits.map fun wait => ownedPortCount wait.outputs wait.owner owner place).sum = 0 :=
+    ownedPortCount_sum_absent state.waits (·.outputs) (·.owner) owner place
+      (fun wait member same => by
+        have present : (state.waits.any fun current => current.owner == owner) = true :=
+          List.any_eq_true.mpr ⟨wait, member, by simp [same]⟩
+        simp [scopeQuiescent, present] at quiet)
+  have emptyEffect : (state.effectWaits.map fun wait => ownedPortCount wait.outputs wait.owner owner place).sum = 0 :=
+    ownedPortCount_sum_absent state.effectWaits (·.outputs) (·.owner) owner place
+      (fun wait member same => by
+        have present : (state.effectWaits.any fun current => current.owner == owner) = true :=
+          List.any_eq_true.mpr ⟨wait, member, by simp [same]⟩
+        simp [scopeQuiescent, present] at quiet)
   simp [continuationMarking, emptyTokens, emptyHuman, emptyEffect] at positive
 
 /-- Actual root completion cannot consume a state carrying the spine's one continuation credit. -/
@@ -406,10 +406,9 @@ theorem ParallelScopeParentHistory.cursor (program : Program) (analysis : Progra
   | @human before after parents id values wait selected ordinary applied ih =>
     rcases ih with ⟨pending, zero⟩ | ⟨pending, operations, port, path, declared, population, trace, credit⟩
     · have member : wait ∈ before.waits := (List.mem_filter.mp (selected.symm ▸ (show wait ∈ [wait] from by simp))).1
-      have present : wait ∈ before.waits.filter (fun current => current.owner == wait.owner && current.output == wait.output) := by simp [member]
-      have positive := List.length_pos_of_mem present
-      have noCredit := zero wait.owner wait.output
-      simp only [continuationMarking] at noCredit
+      obtain ⟨output, chosen⟩ := List.exists_mem_of_ne_nil wait.outputs wait.outputs_ne_nil
+      have positive := ContinuationMarkingLaws.continuationMarking_pos_of_wait before wait member output chosen
+      have noCredit := zero wait.owner output
       omega
     · right
       refine ⟨(task_pending program before after id values applied).trans pending, operations, port, path, declared, population, trace, ?_⟩
@@ -419,10 +418,9 @@ theorem ParallelScopeParentHistory.cursor (program : Program) (analysis : Progra
   | @service before after parents id values wait selected ordinary applied ih =>
     rcases ih with ⟨pending, zero⟩ | ⟨pending, operations, port, path, declared, population, trace, credit⟩
     · have member : wait ∈ before.effectWaits := (List.mem_filter.mp (selected.symm ▸ (show wait ∈ [wait] from by simp))).1
-      have present : wait ∈ before.effectWaits.filter (fun current => current.owner == wait.owner && current.output == wait.output) := by simp [member]
-      have positive := List.length_pos_of_mem present
-      have noCredit := zero wait.owner wait.output
-      simp only [continuationMarking] at noCredit
+      obtain ⟨output, chosen⟩ := List.exists_mem_of_ne_nil wait.outputs wait.outputs_ne_nil
+      have positive := ContinuationMarkingLaws.continuationMarking_pos_of_effectWait before wait member output chosen
+      have noCredit := zero wait.owner output
       omega
     · right
       refine ⟨(effect_pending program before after id (.success values) applied).trans pending, operations, port, path, declared, population, trace, ?_⟩

@@ -108,7 +108,7 @@ def projectionEntered : RuntimeState :=
     variables := { initialState.variables with scopes := [{ owner := projectionBody, bindings := [⟨"status", .null⟩] }] } }
 def projectionTask (name : String) (owner : ScopeOccurrenceId) : UserTaskWait :=
   { processInstanceId := projectionParent.processInstanceId, owner,
-    task := { id := ⟨name⟩, name := none }, activation := 1, output := ⟨"body-out"⟩ }
+    task := { id := ⟨name⟩, name := none }, activation := 1, outputs := [⟨"body-out"⟩] }
 
 def controllerValidationState : RuntimeState :=
   { projectionEntered with variables := { projectionEntered.variables with
@@ -134,7 +134,7 @@ def repeated_scope_state_requires_exact_controller_ownership : Bool := decide <|
 def projectionEffect (name : String) (owner : ScopeOccurrenceId) : EffectWait :=
   { processInstanceId := projectionParent.processInstanceId, owner, elementId := ⟨name⟩,
     activation := 1, descriptor := ⟨"test", "validateInvoice"⟩, arguments := [], outputMappings := [],
-    output := ⟨"body-out"⟩, bpmnErrorRoute := none }
+    outputs := [⟨"body-out"⟩], bpmnErrorRoute := none }
 def projectionWaiting : RuntimeState :=
   { projectionEntered with
     tokens := [], waits := [projectionTask "Zulu" projectionBody,

@@ -38,8 +38,37 @@ public section
 
 namespace BpmnSemantics.SemanticProcess.StructuredComposition
 
+/-- A wait holds one continuation unit per output it marks on completion. -/
+def waitContinuationUnits (waits : List UserTaskWait) : Nat :=
+  (waits.map (·.outputs.length)).sum
+
+run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`waitContinuationUnits]
+
+theorem wait_outputs_length_pos (wait : UserTaskWait) : 0 < wait.outputs.length :=
+  List.length_pos_iff.mpr wait.outputs_ne_nil
+
+@[simp] theorem waitContinuationUnits_nil : waitContinuationUnits [] = 0 := by
+  simp [waitContinuationUnits]
+
+@[simp] theorem waitContinuationUnits_cons (wait : UserTaskWait) (rest : List UserTaskWait) :
+    waitContinuationUnits (wait :: rest) = wait.outputs.length + waitContinuationUnits rest := by
+  simp [waitContinuationUnits]
+
+@[simp] theorem waitContinuationUnits_eq_zero (waits : List UserTaskWait) :
+    waitContinuationUnits waits = 0 ↔ waits = [] := by
+  cases waits with
+  | nil => simp
+  | cons wait rest =>
+      have := wait_outputs_length_pos wait
+      simp only [waitContinuationUnits_cons, reduceCtorEq, iff_false]
+      omega
+
+private theorem addTokens_length (tokens : List ControlToken) (places : List ControlPlaceId)
+    (owner : ScopeOccurrenceId) : (addTokens tokens places owner).length = places.length + tokens.length := by
+  simpa using (addTokens_perm tokens places owner).length_eq
+
 def ControlUnitBound (state : RuntimeState) : Prop :=
-  state.tokens.length + state.waits.length + (if state.initiationPending then 1 else 0) ≤ 1
+  state.tokens.length + waitContinuationUnits state.waits + (if state.initiationPending then 1 else 0) ≤ 1
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`ControlUnitBound]
 
@@ -54,9 +83,9 @@ theorem enabled_token_under_bound_is_single
       | false =>
         simp [ControlUnitBound, tokens, pending] at bounded
         have emptyRest : rest.length = 0 := by omega
-        have emptyWaits : state.waits.length = 0 := by omega
+        have emptyWaits : waitContinuationUnits state.waits = 0 := by omega
         exact ⟨token, by simp [List.eq_nil_of_length_eq_zero emptyRest],
-          List.eq_nil_of_length_eq_zero emptyWaits, rfl⟩
+          (waitContinuationUnits_eq_zero _).mp emptyWaits, rfl⟩
       | true => simp [ControlUnitBound, tokens, pending] at bounded
 
 theorem live_token_under_bound_is_single
@@ -70,7 +99,7 @@ theorem live_token_under_bound_is_single
       | false =>
           simp [ControlUnitBound, tokens, pending] at bounded
           have noRest : rest = [] := List.eq_nil_of_length_eq_zero (by omega)
-          have noWaits : state.waits = [] := List.eq_nil_of_length_eq_zero (by omega)
+          have noWaits : state.waits = [] := (waitContinuationUnits_eq_zero _).mp (by omega)
           have same : token = first := by simpa [tokens, noRest] using member
           exact ⟨by simp [noRest, same], noWaits, rfl⟩
       | true => simp [ControlUnitBound, tokens, pending] at bounded
@@ -164,9 +193,9 @@ theorem data_arming_replaces_single_token_with_single_wait
     (fired : fire? program
       (.awaitDataInputOutputUserTask id origin input output taskId taskName directInput directOutput)
       before = some after) :
-    after.tokens = [] ∧ after.waits.length = 1 ∧
+    after.tokens = [] ∧ waitContinuationUnits after.waits = 1 ∧
       after.initiationPending = before.initiationPending ∧ token.placeId = input ∧
-      ∀ wait ∈ after.waits, wait.task.id = taskId ∧ wait.output = output := by
+      ∀ wait ∈ after.waits, wait.task.id = taskId ∧ wait.outputs = [output] := by
   have step := fire_sound program _ before after fired
   cases step with
   | awaitDataInputOutputUserTask _ _ _ _ _ _ _ _ _ _ activated =>
@@ -184,9 +213,9 @@ theorem ordinary_arming_replaces_single_token_with_single_wait
     (task : UserTaskDefinition)
     (single : before.tokens = [token]) (noWait : before.waits = [])
     (fired : fire? program (.awaitUserTask id origin input output task) before = some after) :
-    after.tokens = [] ∧ after.waits.length = 1 ∧
+    after.tokens = [] ∧ waitContinuationUnits after.waits = 1 ∧
       after.initiationPending = before.initiationPending ∧ token.placeId = input ∧
-      ∀ wait ∈ after.waits, wait.task.id = task.id ∧ wait.output = output := by
+      ∀ wait ∈ after.waits, wait.task.id = task.id ∧ wait.outputs = [output] := by
   have step := fire_sound program _ before after fired
   cases step with
   | awaitUserTask _ _ _ _ _ _ _ activated =>
@@ -357,7 +386,19 @@ theorem admitted_fire_preserves_control_unit_bound
       · cases Option.some.inj active
         rfl
       · contradiction
-    simpa [ControlUnitBound, count, pending] using bounded
+    have waits : after.waits = before.waits := by
+      have absent := fire_isSome_snapshotDeclaration_is_absent program _ before (congrArg Option.isSome fired)
+      have active := fired
+      rw [fire_mergeExclusive_withoutSnapshotDeclaration _ _ _ _ _ _ absent] at active
+      unfold mergeExclusiveState? at active
+      split at active
+      · cases Option.some.inj active
+        rfl
+      · contradiction
+    have tokens : after.tokens.length = before.tokens.length := by
+      rw [waits] at count
+      omega
+    simpa [ControlUnitBound, tokens, waits, pending] using bounded
   case reachNoneEnd id origin input =>
     have absent := fire_isSome_snapshotDeclaration_is_absent program _ before (congrArg Option.isSome fired)
     have active := fired
@@ -386,11 +427,12 @@ theorem live_wait_under_bound_is_single
       cases pending : state.initiationPending with
       | false =>
           simp [ControlUnitBound, waits, pending] at bounded
-          have noRest : rest = [] := List.eq_nil_of_length_eq_zero (by omega)
+          have := wait_outputs_length_pos first
+          have noRest : rest = [] := (waitContinuationUnits_eq_zero rest).mp (by omega)
           have noTokens : state.tokens = [] := List.eq_nil_of_length_eq_zero (by omega)
           have same : wait = first := by simpa [waits, noRest] using member
           exact ⟨by simp [noRest, same], noTokens, rfl⟩
-      | true => simp [ControlUnitBound, waits, pending] at bounded
+      | true => simp [ControlUnitBound, waits, pending, first.outputs_ne_nil] at bounded
 
 theorem ordinary_completion_preserves_control_unit_bound
     (before after : RuntimeState) (instanceId : SemanticId)
@@ -405,7 +447,9 @@ theorem ordinary_completion_preserves_control_unit_bound
     obtain ⟨single, noTokens, pending⟩ := live_wait_under_bound_is_single before wait bounded
       (List.mem_of_find?_eq_some found)
     cases Option.some.inj completed
-    simp [ControlUnitBound, single, noTokens, pending, addToken, canonicalInsertBy]
+    have units : wait.outputs.length ≤ 1 := by
+      simpa [ControlUnitBound, single, noTokens, pending] using bounded
+    simpa [ControlUnitBound, single, noTokens, pending, addTokens_length] using units
 
 theorem data_completion_preserves_control_unit_bound
     (program : Program) (before after : RuntimeState) (instanceId : SemanticId)
@@ -424,7 +468,9 @@ theorem data_completion_preserves_control_unit_bound
     split at completed
     · obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
       cases Option.some.inj completed
-      simp [ControlUnitBound, single, noTokens, pending, addToken, canonicalInsertBy]
+      have units : wait.outputs.length ≤ 1 := by
+        simpa [ControlUnitBound, single, noTokens, pending] using bounded
+      simpa [ControlUnitBound, single, noTokens, pending, addTokens_length] using units
     · contradiction
   · contradiction
 
@@ -528,8 +574,8 @@ theorem ordinary_completion_has_exact_continuation
     (before after : RuntimeState) (instanceId : SemanticId) (taskId : TaskDefinitionId) (activation : Nat)
     (bounded : ControlUnitBound before)
     (completed : completeUserTask before instanceId taskId activation = some after) :
-    ∃ wait ∈ before.waits, ∃ next, wait.task.id = taskId ∧ after.waits = [] ∧
-      after.tokens = [next] ∧ next.placeId = wait.output := by
+    ∃ wait ∈ before.waits, wait.task.id = taskId ∧ after.waits = [] ∧
+      after.tokens = addTokens [] wait.outputs wait.owner := by
   unfold completeUserTask at completed
   split at completed
   · contradiction
@@ -540,8 +586,8 @@ theorem ordinary_completion_has_exact_continuation
     simp only [taskIdNamesWait, Bool.and_eq_true, beq_iff_eq] at matched
     have sameTask : wait.task.id = taskId := congrArg TaskDefinitionId.mk matched.1.2.symm
     cases Option.some.inj completed
-    refine ⟨wait, live, { placeId := wait.output, owner := wait.owner }, sameTask, ?_⟩
-    simp [single, noTokens, addToken, canonicalInsertBy]
+    refine ⟨wait, live, sameTask, ?_⟩
+    simp [single, noTokens]
 
 theorem data_completion_has_exact_continuation
     (program : Program) (before after : RuntimeState) (instanceId : SemanticId)
@@ -557,7 +603,7 @@ theorem data_completion_has_exact_continuation
   obtain ⟨single, noTokens, _⟩ := live_wait_under_bound_is_single before wait bounded key.1
   split at completed
   · rename_i accepted
-    have output : wait.output = contract.output := by
+    have output : wait.outputs = [contract.output] := by
       simp only [dataInputOutputRuntimeJoinValid, Bool.and_eq_true, decide_eq_true_eq] at accepted
       exact accepted.1.1.1.1.1.1
     simp only [Option.bind_eq_some_iff] at completed
@@ -565,8 +611,11 @@ theorem data_completion_has_exact_continuation
     split at completed
     · obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
       cases Option.some.inj completed
-      refine ⟨contract, wait, { placeId := wait.output, owner := wait.owner }, declared, key.1, key.2.2.1, ?_⟩
-      simp [single, noTokens, addToken, canonicalInsertBy, output]
+      refine ⟨contract, wait, { placeId := contract.output, owner := wait.owner }, declared, key.1, key.2.2.1, ?_⟩
+      have produced : addTokens [] [contract.output] wait.owner =
+          [{ placeId := contract.output, owner := wait.owner }] := by
+        simpa using addTokens_perm [] [contract.output] wait.owner
+      simp [single, noTokens, output, produced]
     · contradiction
   · contradiction
 
@@ -657,6 +706,16 @@ def RootOwnedControl (owner : ScopeOccurrenceId) (state : RuntimeState) : Prop :
     (∀ wait ∈ state.waits, wait.owner = owner)
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.StructuredComposition #[`RootOwnedControl]
+
+private theorem completed_tokens_root_owned (tokens : List ControlToken) (wait : UserTaskWait)
+    (owner : ScopeOccurrenceId) (same : wait.owner = owner) (owned : ∀ token ∈ tokens, token.owner = owner) :
+    ∀ token ∈ addTokens tokens wait.outputs wait.owner, token.owner = owner := by
+  intro token member
+  have produced := (addTokens_perm tokens wait.outputs wait.owner).mem_iff.mp member
+  simp only [List.mem_append, List.mem_map] at produced
+  rcases produced with ⟨_, _, rfl⟩ | previous
+  · exact same
+  · exact owned token previous
 
 theorem selected_token_has_root_owner (state : RuntimeState) (owner selected : ScopeOccurrenceId)
     (input : ControlPlaceId) (owned : RootOwnedControl owner state) (bounded : ControlUnitBound state)
@@ -781,8 +840,8 @@ theorem ordinary_completion_preserves_root_ownership
   · rename_i wait found
     have same := owned.2.2 wait (List.mem_of_find?_eq_some found)
     cases Option.some.inj completed
-    simp only [RootOwnedControl, addToken, mem_canonicalInsertBy, forall_eq_or_imp]
-    exact ⟨owned.1, ⟨same, owned.2.1⟩, fun wait member => owned.2.2 wait (List.mem_of_mem_erase member)⟩
+    exact ⟨owned.1, completed_tokens_root_owned before.tokens wait owner same owned.2.1,
+      fun wait member => owned.2.2 wait (List.mem_of_mem_erase member)⟩
 
 theorem data_completion_preserves_root_ownership
     (program : Program) (before after : RuntimeState) (instanceId : SemanticId) (taskId : TaskDefinitionId)
@@ -799,8 +858,8 @@ theorem data_completion_preserves_root_ownership
     split at completed
     · obtain ⟨_, _, completed⟩ := Option.bind_eq_some_iff.mp completed
       cases Option.some.inj completed
-      simp only [RootOwnedControl, addToken, mem_canonicalInsertBy, forall_eq_or_imp]
-      exact ⟨owned.1, ⟨same, owned.2.1⟩, fun wait member => owned.2.2 wait (List.mem_of_mem_erase member)⟩
+      exact ⟨owned.1, completed_tokens_root_owned before.tokens wait owner same owned.2.1,
+        fun wait member => owned.2.2 wait (List.mem_of_mem_erase member)⟩
     · contradiction
   · contradiction
 

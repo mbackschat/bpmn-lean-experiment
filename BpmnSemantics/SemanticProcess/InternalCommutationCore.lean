@@ -502,7 +502,7 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
         let next := activationCount state task.id + 1
         some (.userTask
           { processInstanceId := owner.processInstanceId, owner, task, activation := next,
-            output, metadata := task.metadata })
+            outputs := [output], metadata := task.metadata })
     | .awaitMessage _ _ _ output message =>
         let next := messageActivationCount state message.elementId + 1
         some (.message
@@ -542,7 +542,7 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
         some (.effect
             { processInstanceId := owner.processInstanceId, owner,
               elementId := effect.elementId, activation := next, descriptor := effect.descriptor,
-              arguments := bindings, outputMappings := effect.outputMappings, output,
+              arguments := bindings, outputMappings := effect.outputMappings, outputs := [output],
               bpmnErrorRoute := route }
             bindings)
     | _ => none

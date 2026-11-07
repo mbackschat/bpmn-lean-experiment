@@ -122,12 +122,12 @@ def mixedWaitProjectionState : RuntimeState :=
           owner
           task := { id := ⟨"Z_UserTask"⟩, name := some "Z" }
           activation := 1
-          output := ⟨"place:user-output"⟩ }
+          outputs := [⟨"place:user-output"⟩] }
       , { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
           owner
           task := { id := ⟨"B_UserTask"⟩, name := some "B" }
           activation := 1
-          output := ⟨"place:user-b-output"⟩ } ]
+          outputs := [⟨"place:user-b-output"⟩] } ]
     messageWaits :=
       [ { processInstanceId := ⟨"Instance_ProjectionOrder"⟩
           owner
@@ -154,7 +154,7 @@ def mixedWaitProjectionState : RuntimeState :=
               operation := "urn:bpmn-lean:effect-operation:probe-v1" }
           arguments := []
           outputMappings := []
-          output := ⟨"place:effect-output"⟩
+          outputs := [⟨"place:effect-output"⟩]
           bpmnErrorRoute := none } ] }
 
 /-- This four-kind lock makes a global element-ID sort disagree with semantic-kind order and reverses the two User Task definitions so the projection must also sort by element ID within a kind. -/

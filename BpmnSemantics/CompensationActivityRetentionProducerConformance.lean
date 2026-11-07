@@ -141,7 +141,7 @@ def ordinaryWait (activation : Nat) : UserTaskWait :=
       { id := ⟨target.activityElementId.value⟩
         name := some "Approve" }
     activation
-    output := ⟨"place:Flow_TaskToEnd"⟩ }
+    outputs := [⟨"place:Flow_TaskToEnd"⟩] }
 
 def ordinaryWaitingState : RuntimeState :=
   { startState with

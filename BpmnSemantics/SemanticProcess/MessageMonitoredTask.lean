@@ -80,7 +80,7 @@ def MessageMonitoredDefinitionBinding (program : Program) (pair : MessageMonitor
   pair.definition.origin.elementId = pair.record.activityElementId ∧
   pair.record.activityElementId.value = pair.definition.task.id.value ∧
   pair.task.task = { id := pair.definition.task.id, name := pair.definition.task.name } ∧
-  pair.task.metadata = none ∧ pair.task.output = pair.definition.task.output ∧
+  pair.task.metadata = none ∧ pair.task.outputs = [pair.definition.task.output] ∧
   pair.message.elementId = pair.definition.boundary.elementId ∧
   pair.message.channel = pair.definition.boundary.channel ∧
   pair.message.output = pair.definition.boundary.output ∧

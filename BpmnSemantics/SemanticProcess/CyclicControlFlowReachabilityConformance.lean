@@ -77,7 +77,7 @@ import all BpmnSemantics.SemanticProcess.Data
 This module owns reflexive-transitive selected-program reachability and arbitrary automatic internal-closure traces. Representative schedule facts remain in `CyclicControlFlowExecutionConformance`.
 -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`CyclicReviewPatch.apply, `CyclicReviewPatch.bindings,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addTokens, `CyclicReviewPatch.apply, `CyclicReviewPatch.bindings,
   `CyclicRouteValue.bindings, `CyclicRouteValue.output, `chooseState?, `completeUserTask, `cyclicActiveUnitCount,
   `cyclicAdmittedStartState, `cyclicChoiceOperation, `cyclicCompletedWithBindings, `cyclicDifferentOwnerState,
   `cyclicInitialPostMergeState, `cyclicPatchReviewState, `cyclicPostChooseWithBindings,
@@ -210,7 +210,7 @@ private theorem exact_review_completion_before_patch
         some (cyclicPostCompletionWithBindings activation route) := by
   simp [taskIdNamesWait, completeUserTask, cyclicWaitingWithBindings,
     cyclicPostCompletionWithBindings, cyclicWait, cyclicScopedVariables,
-    singletonWaitingState, initialState, addToken, canonicalInsertBy]
+    singletonWaitingState, initialState, addTokens, addToken, canonicalInsertBy]
 
 private theorem exact_review_patch
     (activation : Nat) (route : CyclicRouteValue)
@@ -261,7 +261,7 @@ private theorem selected_action_preserves_shape
               simpa [taskIdNamesWait, completeUserTask, cyclicWaitingWithBindings,
                 cyclicPostCompletionWithBindings, cyclicWait,
                 cyclicScopedVariables, singletonWaitingState, initialState,
-                addToken, canonicalInsertBy] using completion
+                addTokens, addToken, canonicalInsertBy] using completion
             subst raw
             have afterExact : after = cyclicPostCompletionWithBindings
                 currentActivation (patch.apply route) := by

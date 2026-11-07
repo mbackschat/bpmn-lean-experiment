@@ -249,7 +249,7 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
       let successor : RuntimeState :=
         { before with
           waits := before.waits.erase task
-          tokens := addToken before.tokens task.output task.owner
+          tokens := addTokens before.tokens task.outputs task.owner
           activityOccurrences := before.activityOccurrences.filter fun candidate =>
             !sameActivityOccurrence candidate record
           variables :=
@@ -333,8 +333,8 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
         let framed : RuntimeState := { successor with tokens := before.tokens }
         have framedPosition : runtimePositionValid program expectedInstanceId framed = true := position
         have framedOwnerLive : exactLiveOccurrence framed task.owner = true := ownerLive
-        have added := runtimePositionValid_addToken program expectedInstanceId framed
-          contract.output task.owner framedPosition framedOwnerLive ⟨declaredOutput, outputDeclared⟩
+        have added := runtimePositionValid_addTokens program expectedInstanceId framed
+          [contract.output] task.owner framedPosition framedOwnerLive (by simpa using ⟨declaredOutput, outputDeclared⟩)
           (by simpa [ownerScopeEq] using outputOwner)
         simpa [framed, successor, outputEq] using added
       have processFrame := removeActivityOccurrenceVariableScope_preserves_process removed
@@ -424,7 +424,7 @@ theorem dataInputOutputCompletionStep_preserves_runtimeStateWellFormed
           timerOrder⟩, effectOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
           effectActivationOrder⟩, activityVariableOrder⟩, selectionOrder⟩, raceOrder⟩,
           callOrder⟩, activityOrder⟩, sequentialOrder⟩, parallelOrder⟩ := order
-        refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨orderedBy_addToken _ task.output task.owner tokenOrder, activityCounterOrder⟩, ?_⟩, activationOrder⟩, messageOrder⟩, timerOrder⟩,
+        refine ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨orderedBy_addTokens _ task.outputs task.owner tokenOrder, activityCounterOrder⟩, ?_⟩, activationOrder⟩, messageOrder⟩, timerOrder⟩,
           effectOrder⟩, messageActivationOrder⟩, timerActivationOrder⟩,
           effectActivationOrder⟩, ?_⟩, selectionOrder⟩, raceOrder⟩, callOrder⟩,
           ?_⟩, sequentialOrder⟩, parallelOrder⟩

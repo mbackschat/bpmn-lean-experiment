@@ -140,7 +140,7 @@ def initialTaskPatch (p : Program) (roles : TransactionAdmittedRoles p)
         owner := transactionChildOwner roles instanceId
         task := head.task
         activation := 1
-        output := head.output
+        outputs := [head.output]
         metadata := head.task.metadata } }
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess #[`initialTaskPatch]

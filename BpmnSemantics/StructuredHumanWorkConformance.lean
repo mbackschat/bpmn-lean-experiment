@@ -172,7 +172,7 @@ def exactWait : UserTaskWait :=
         name := some "Review exception"
         metadata := some assignmentOnlyMetadata }
     activation := 1
-    output := ⟨"place:Flow_ReviewToResolution"⟩
+    outputs := [⟨"place:Flow_ReviewToResolution"⟩]
     metadata := some assignmentOnlyMetadata }
 
 def waitingState : RuntimeState := singletonWaitingState exactWait

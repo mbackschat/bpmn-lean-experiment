@@ -107,7 +107,7 @@ for (const [taskId, recoveryId] of [["Validate", "CorrectData"], ["Authorize", "
     const other = waiting(taskId === "Validate" ? "Authorize" : "Validate").effectWaits[0]!;
     for (const [label, invalid] of [
       ["attached route", { ...state, effectWaits: [{ ...wait, bpmnErrorRoute: other.bpmnErrorRoute }] }],
-      ["normal continuation", { ...state, effectWaits: [{ ...wait, output: other.output }] }],
+      ["normal continuation", { ...state, effectWaits: [{ ...wait, outputs: other.outputs }] }],
       ["result target", { ...state, effectWaits: [{ ...wait,
         outputMappings: wait.outputMappings.map(mapping => ({ ...mapping, target: "request" })) }] }],
       ["missing locals", { ...state, variables: { ...state.variables, activities: [] } }],

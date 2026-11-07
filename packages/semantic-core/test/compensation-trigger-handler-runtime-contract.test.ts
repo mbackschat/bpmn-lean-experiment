@@ -194,7 +194,7 @@ for (const collection of ["effectWaits", "effectIncidents"] as const) {
         arguments: [],
         outputMappings: [],
         bpmnErrorRoute: null,
-        output: "place:Ordinary_Out",
+        outputs: ["place:Ordinary_Out"],
         incidentAlreadyRetried: false,
       } as const satisfies SemanticEffectWait;
       const state = {

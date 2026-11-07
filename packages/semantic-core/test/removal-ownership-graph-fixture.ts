@@ -81,7 +81,7 @@ function effectWait(label: OwnerLabel) {
     arguments: [],
     outputMappings: [],
     bpmnErrorRoute: null,
-    output: place(owners[label]),
+    outputs: [place(owners[label])],
     incidentAlreadyRetried: false,
   } as const;
 }
@@ -108,7 +108,7 @@ export function ownershipGraphState(): RuntimeState {
     scopeOccurrences: scopeOccurrences(),
     controlTokens: each((label) => ({ placeId: "place:in", owner: owners[label], multiplicity: 1 })),
     userTaskWaits: each((label) => ({
-      id: occurrence(label, "UserTask"), owner: owners[label], name: null, output: place(owners[label]),
+      id: occurrence(label, "UserTask"), owner: owners[label], name: null, outputs: [place(owners[label])],
     })),
     messageWaits: each((label) => ({
       id: occurrence(label, "Message"), owner: owners[label],

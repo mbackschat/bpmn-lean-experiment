@@ -313,13 +313,14 @@ theorem fire_preserves_position_with_depth (program : Program) (analysis : Analy
           simp [activateUserTask, parts.2.1, parts.2.2.1, parts.2.2.2.1, inputEq, ownerEq, root, removeToken, insertUserTaskWait]
       · apply Position.human vertex included
           { processInstanceId := owner.processInstanceId, owner, task, activation := activationCount before task.id + 1,
-            output, metadata := task.metadata } id origin input
+            outputs := [output], metadata := task.metadata } id origin input output
         · simp [frontierFields, activateUserTask, parts.1, parts.2.1, parts.2.2.1,
             parts.2.2.2.1, parts.2.2.2.2, inputEq, ownerEq, removeToken, insertUserTaskWait]
         · exact member
         · exact projected
         · rfl
         · simpa [ownerEq, SemanticOperation.id] using owned
+        · rfl
       · simpa [positionDepth, activateUserTask, parts.2.2.1, parts.2.2.2.1, insertUserTaskWait]
           using admitted_rank_positive analysis.vertices analysis accepted vertex included
   case awaitEffect id origin input output effect route =>
@@ -349,8 +350,8 @@ theorem fire_preserves_position_with_depth (program : Program) (analysis : Analy
         · apply Position.effect vertex included
             { processInstanceId := owner.processInstanceId, owner, elementId := effect.elementId,
               activation := effectActivationCount before effect.elementId + 1, descriptor := effect.descriptor,
-              arguments, outputMappings := effect.outputMappings, output, bpmnErrorRoute := route }
-            id origin input effect
+              arguments, outputMappings := effect.outputMappings, outputs := [output], bpmnErrorRoute := route }
+            id origin input output effect
           · simp [frontierFields, activateEffect, evaluated, parts.1, parts.2.1, parts.2.2.1,
               parts.2.2.2.1, parts.2.2.2.2, inputEq, ownerEq, removeToken, insertEffectWait,
               canonicalInsertBy, addActivityVariableScope, insertActivityVariableScope]
@@ -361,6 +362,7 @@ theorem fire_preserves_position_with_depth (program : Program) (analysis : Analy
           · rfl
           · exact evaluateEnclosingInputMappings_snapshot _ _ _ evaluated
           · simpa [ownerEq, SemanticOperation.id] using owned
+          · rfl
         · simpa [positionDepth, activateEffect, parts.2.2.1, parts.2.2.2.1, insertEffectWait, canonicalInsertBy]
             using admitted_rank_positive analysis.vertices analysis accepted vertex included
   case reachNoneEnd id origin input =>
@@ -406,9 +408,9 @@ theorem fire_preserves_position_with_depth (program : Program) (analysis : Analy
               simp [frontierFields, pending] at fields
           | token vertex included token fields consumer bound =>
               simp [frontierFields, noTokens] at fields
-          | human vertex included wait id origin input fields declared projected metadata owned =>
+          | human vertex included wait id origin input declaredOutput fields declared projected metadata owned waitOutputs =>
               simp [frontierFields, noHumans] at fields
-          | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
+          | effect vertex included wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot owned waitOutputs =>
               simp [frontierFields, noEffects] at fields
           | finished fields => rfl
         subst frontier
@@ -430,10 +432,10 @@ theorem position_progress (program : Program) (analysis : Analysis) (state : Run
   have life := framed.2.2.2.1
   rcases life with ⟨running, scopes⟩ | ⟨completed, _⟩
   · cases position with
-    | human vertex included wait id origin input fields member projected metadata owned =>
+    | human vertex included wait id origin input declaredOutput fields member projected metadata owned waitOutputs =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         exact Or.inl (by simp [fields.2.2.1])
-    | effect vertex included wait id origin input effect fields member projected element descriptor outputs snapshot owned =>
+    | effect vertex included wait id origin input declaredOutput effect fields member projected element descriptor outputs snapshot owned waitOutputs =>
         simp only [frontierFields, Prod.mk.injEq] at fields
         exact Or.inr (Or.inl (by simp [fields.2.2.2.1]))
     | pending vertex included start kind fields =>
@@ -669,8 +671,8 @@ theorem settled_position_depth_zero (program : Program) (analysis : Analysis) (s
     · cases position with
       | pending vertex included start kind fields => simp [frontierFields, pending] at fields
       | token vertex included token fields consumer bound => simp [frontierFields, tokens] at fields
-      | human vertex included wait id origin input fields declared projected metadata owned => simp [frontierFields, humans] at fields
-      | effect vertex included wait id origin input effect fields declared projected element descriptor outputs snapshot owned =>
+      | human vertex included wait id origin input declaredOutput fields declared projected metadata owned waitOutputs => simp [frontierFields, humans] at fields
+      | effect vertex included wait id origin input declaredOutput effect fields declared projected element descriptor outputs snapshot owned waitOutputs =>
           simp [frontierFields, effects] at fields
       | finished fields => simp [positionDepth, humans, effects, completed]
 

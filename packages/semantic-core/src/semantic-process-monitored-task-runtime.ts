@@ -35,6 +35,7 @@ import {
   ControlStateKind,
   sameOccurrence,
   sameScopeOccurrence,
+  waitOutputsAre,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -241,7 +242,7 @@ function monitoredTaskForRecord(
   const tasks = state.userTaskWaits.filter(({ id }) => sameOccurrence(id, body));
   const task = tasks.length === 1 ? tasks[0] : undefined;
   if (task === undefined || task.id.elementId !== definition.task.elementId ||
-      !sameScopeOccurrence(task.owner, record.owner) || task.output !== definition.task.output ||
+      !sameScopeOccurrence(task.owner, record.owner) || !waitOutputsAre(task.outputs, [definition.task.output]) ||
       task.name !== definition.task.name) {
     return undefined;
   }

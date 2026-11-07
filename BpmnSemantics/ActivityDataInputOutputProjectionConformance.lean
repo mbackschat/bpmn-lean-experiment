@@ -61,7 +61,7 @@ def allThreeDataOperationsProjectTheirExactLiveTask : Bool := decide <|
 
 def wrongOutput : RuntimeState :=
   { active with waits := active.waits.map fun wait =>
-      { wait with output := ⟨"place:Flow_ClaimReceived_Assess"⟩ } }
+      { wait with outputs := [⟨"place:Flow_ClaimReceived_Assess"⟩], outputs_ne_nil := by simp } }
 
 def wrongName : RuntimeState :=
   { active with waits := active.waits.map fun wait =>

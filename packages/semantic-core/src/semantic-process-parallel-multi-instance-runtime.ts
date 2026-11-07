@@ -172,7 +172,7 @@ export function selectParallelMultiInstanceEntry(
     id,
     owner,
     name: operation.task.name,
-    output: operation.normalOutput,
+    outputs: [operation.normalOutput],
   }));
   const timerWait: RuntimeState["timerWaits"][number] = {
     id: timerId,

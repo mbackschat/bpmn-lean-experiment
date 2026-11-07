@@ -104,7 +104,7 @@ theorem sequentialScope_effect_completion (program : Program) (state : RuntimeSt
     completeSequentialScopeEffect? program state effectId (.success patch) = some { state with
       effectWaits := state.effectWaits.erase wait
       variables
-      tokens := addToken state.tokens wait.output wait.owner } := by
+      tokens := addTokens state.tokens wait.outputs wait.owner } := by
   simp [completeSequentialScopeEffect?, unique, owned, unrouted, written]
 
 /-- Failed scoped result validation cannot release a continuation or consume its wait. -/
@@ -125,7 +125,7 @@ theorem sequentialScope_user_completion (program : Program) (state : RuntimeStat
     completeSequentialScopeUserTask? program state taskId values = some { state with
       waits := state.waits.erase wait
       variables
-      tokens := addToken state.tokens wait.output wait.owner } := by
+      tokens := addTokens state.tokens wait.outputs wait.owner } := by
   simp [completeSequentialScopeUserTask?, unique, owned, written]
 
 /-- A stale body or protected human write cannot consume the selected wait. -/

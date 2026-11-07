@@ -41,7 +41,7 @@ theorem completeEffect_data_free_frame
           variables :=
             { state.variables with
               activities := state.variables.activities.filter fun scope => !activityScopeMatches effectId scope }
-          tokens := addToken state.tokens wait.output wait.owner } := by
+          tokens := addTokens state.tokens wait.outputs wait.owner } := by
   unfold completeEffect at success
   rw [found] at success
   simp only at success

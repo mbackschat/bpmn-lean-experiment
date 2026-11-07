@@ -81,7 +81,7 @@ def siblingWait : UserTaskWait :=
     owner := childOwner
     task := { id := ⟨"Sibling"⟩, name := some "Sibling" }
     activation := 1
-    output := ⟨"place:SiblingToEnd"⟩ }
+    outputs := [⟨"place:SiblingToEnd"⟩] }
 
 def cancelledActivity : ActivityOccurrence :=
   { processInstanceId := instanceId
@@ -170,7 +170,7 @@ def nestedCounterexampleState : RuntimeState :=
           owner := rootOwner
           task := { id := ⟨"Outer"⟩, name := some "Outer" }
           activation := 1
-          output := ⟨"place:OuterToEnd"⟩ } ]
+          outputs := [⟨"place:OuterToEnd"⟩] } ]
     messageWaits :=
       [{ processInstanceId := instanceId
          owner := childOwner
@@ -193,7 +193,7 @@ def nestedCounterexampleState : RuntimeState :=
          descriptor := { protocol := "synthetic", operation := "synthetic" }
          arguments := []
          outputMappings := []
-         output := ⟨"place:EffectOutput"⟩
+         outputs := [⟨"place:EffectOutput"⟩]
          bpmnErrorRoute := none }]
     selectedBranchSets :=
       [{ owner := childOwner
@@ -360,7 +360,7 @@ def nestedTerminatedState : RuntimeState :=
     control := .running instanceId
     scopeOccurrences := [{ id := childOwner, parent := some rootOwner }, { id := rootOwner, parent := none }]
     tokens := [{ placeId := ⟨"place:RootWork"⟩, owner := rootOwner }]
-    waits := [{ processInstanceId := instanceId, owner := rootOwner, task := { id := ⟨"Outer"⟩, name := some "Outer" }, activation := 1, output := ⟨"place:OuterToEnd"⟩ }]
+    waits := [{ processInstanceId := instanceId, owner := rootOwner, task := { id := ⟨"Outer"⟩, name := some "Outer" }, activation := 1, outputs := [⟨"place:OuterToEnd"⟩] }]
     variables := { emptyScopedVariables with
       process := { bindings := [{ name := "preserved", value := .string "yes" }] } }
     activations := [{ taskId := ⟨"HistoryTask"⟩, count := 7 }]
@@ -399,7 +399,7 @@ theorem selected_subtree_inventory_is_exact :
          owner := rootOwner
          task := { id := ⟨"Outer"⟩, name := some "Outer" }
          activation := 1
-         output := ⟨"place:OuterToEnd"⟩ }] ∧
+         outputs := [⟨"place:OuterToEnd"⟩] }] ∧
     nestedTerminatedState.messageWaits = [] ∧
     nestedTerminatedState.timerWaits = [] ∧
     nestedTerminatedState.effectWaits = [] ∧

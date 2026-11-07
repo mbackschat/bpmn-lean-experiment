@@ -71,7 +71,7 @@ def lowerWait
     owner := rootScopeOccurrenceId wait.processInstanceId source.processId
     task := { id := ⟨wait.taskNodeId.value⟩, name := wait.name }
     activation := wait.activation
-    output := flowControlPlaceId wait.output }
+    outputs := [flowControlPlaceId wait.output] }
 
 def lowerActivation
     (activation : CheckedSourceSemantics.SourceTaskActivation) :

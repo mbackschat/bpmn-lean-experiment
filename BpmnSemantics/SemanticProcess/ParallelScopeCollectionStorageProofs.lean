@@ -433,7 +433,7 @@ private theorem human_disposal_storage (before : RuntimeState) (wait : UserTaskW
     (storage : committedStateCollectionAdmitted before = true) :
     committedStateCollectionAdmitted { before with
       waits := before.waits.erase wait, variables := variables,
-      tokens := addToken before.tokens wait.output wait.owner } = true := by
+      tokens := addTokens before.tokens wait.outputs wait.owner } = true := by
   obtain ⟨ordered, keys⟩ := (storage_iff before).mp storage
   have stageOrder := canonicalCollectionOrder_of_removal before
     { before with waits := before.waits.erase wait, variables }
@@ -449,15 +449,15 @@ private theorem human_disposal_storage (before : RuntimeState) (wait : UserTaskW
     simp only [uniqueCollectionKeys, waitIdentitiesUnique, activityIdentitiesUnique, Bool.and_eq_true, activities] at keys ⊢
     simp_all only [and_true]
   exact token_storage { before with waits := before.waits.erase wait, variables }
-    (addToken before.tokens wait.output wait.owner) ((storage_iff _).mpr ⟨stageOrder, stageKeys⟩)
-    (orderedBy_addToken _ _ _ (canonicalCollectionOrder_tokens before ordered))
+    (addTokens before.tokens wait.outputs wait.owner) ((storage_iff _).mpr ⟨stageOrder, stageKeys⟩)
+    (orderedBy_addTokens _ _ _ (canonicalCollectionOrder_tokens before ordered))
 
 private theorem effect_disposal_storage (before : RuntimeState) (wait : EffectWait) (variables : ScopedVariables)
     (activities : variables.activities.Sublist before.variables.activities)
     (storage : committedStateCollectionAdmitted before = true) :
     committedStateCollectionAdmitted { before with
       effectWaits := before.effectWaits.erase wait, variables := variables,
-      tokens := addToken before.tokens wait.output wait.owner } = true := by
+      tokens := addTokens before.tokens wait.outputs wait.owner } = true := by
   obtain ⟨ordered, keys⟩ := (storage_iff before).mp storage
   have stageOrder := canonicalCollectionOrder_of_removal before
     { before with effectWaits := before.effectWaits.erase wait, variables }
@@ -477,8 +477,8 @@ private theorem effect_disposal_storage (before : RuntimeState) (wait : EffectWa
     simp only [uniqueCollectionKeys, waitIdentitiesUnique, activityIdentitiesUnique, Bool.and_eq_true, decide_eq_true_eq] at keys ⊢
     simp_all only [and_true]
   exact token_storage { before with effectWaits := before.effectWaits.erase wait, variables }
-    (addToken before.tokens wait.output wait.owner) ((storage_iff _).mpr ⟨stageOrder, stageKeys⟩)
-    (orderedBy_addToken _ _ _ (canonicalCollectionOrder_tokens before ordered))
+    (addTokens before.tokens wait.outputs wait.owner) ((storage_iff _).mpr ⟨stageOrder, stageKeys⟩)
+    (orderedBy_addTokens _ _ _ (canonicalCollectionOrder_tokens before ordered))
 
 private theorem human_completion_storage (program : Program) (before after : RuntimeState)
     (id : UserTaskInstanceId) (values : List VariableBinding)

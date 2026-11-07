@@ -208,8 +208,7 @@ theorem completeParallelScopeUserTask_owner_frame (program : Program) (before af
   cases Option.some.inj completed
   refine ⟨rfl, rfl, ?_, ?_, rfl, bound, population⟩
   · intro owner different place
-    simpa [different.symm] using addToken_filter_length before.tokens wait.output wait.owner
-      (fun token => token.placeId == place && token.owner == owner)
+    exact addTokens_foreign_filter_length before.tokens wait.outputs wait.owner owner (Ne.symm different) place
   · intro owner different blocked
     exact (locality.2 owner different.symm).trans blocked
 
@@ -233,8 +232,7 @@ theorem completeParallelScopeEffect_owner_frame (program : Program) (before afte
   cases Option.some.inj completed
   refine ⟨rfl, rfl, ?_, ?_, rfl, bound, population⟩
   · intro owner different place
-    simpa [different.symm] using addToken_filter_length before.tokens wait.output wait.owner
-      (fun token => token.placeId == place && token.owner == owner)
+    exact addTokens_foreign_filter_length before.tokens wait.outputs wait.owner owner (Ne.symm different) place
   · intro owner different blocked
     exact (locality.2 owner different.symm).trans blocked
   case h_2 =>

@@ -98,7 +98,7 @@ def effectWait (name : String) : EffectWait :=
         operation := "invoiceValidator" }
     arguments := []
     outputMappings := [{ target := "decision", expression := .localVariable "result" }]
-    output := ⟨"normal:" ++ name⟩
+    outputs := [⟨"normal:" ++ name⟩]
     bpmnErrorRoute := some
       { code := "REVIEW"
         output := ⟨"error:" ++ name⟩

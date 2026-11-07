@@ -62,7 +62,7 @@ def notifyWait : RuntimeState :=
                 owner := { processInstanceId := ⟨"invoice-1"⟩
                            definitionScopeId := ⟨"scope:InvoiceProcess"⟩, activation := 1 }
                 task := { id := ⟨"Notify"⟩, name := none }, activation := 1
-                output := ⟨"place:d"⟩, metadata := none }] }
+                outputs := [⟨"place:d"⟩], metadata := none }] }
 
 def ordinary_completion_accepts_empty_patch : Bool := decide <|
     (admitStimulus serialProgram notifyWait
@@ -101,7 +101,7 @@ def assessId : UserTaskInstanceId :=
 /-- The absent Activity/input lifetime also separates the raw wait fallback from ADIO-ATOMIC-01 admission. -/
 def assessWait : RuntimeState :=
   { notifyWait with waits := notifyWait.waits.map fun wait =>
-      { wait with task := { id := ⟨"Assess"⟩, name := none }, output := ⟨"place:b"⟩ } }
+      { wait with task := { id := ⟨"Assess"⟩, name := none }, outputs := [⟨"place:b"⟩], outputs_ne_nil := by simp } }
 
 def propertyNamedOutput : VariableBinding :=
   { name := "Decision", value := .string "accepted" }

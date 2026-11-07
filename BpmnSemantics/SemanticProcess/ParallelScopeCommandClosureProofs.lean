@@ -479,12 +479,8 @@ private theorem committed_completion_credit (program : Program) (analysis : Prog
         simp only [List.any_cons, List.any_nil, Bool.or_false, beq_eq_false_iff_ne] at routed
         exact Ne.symm routed
       have member : wait ∈ state.waits := (List.mem_filter.mp (chosen.symm ▸ List.mem_singleton_self wait)).1
-      have present : wait ∈ state.waits.filter (fun current => current.owner == wait.owner && current.output == wait.output) := by simp [member]
-      have positive : 0 < (state.waits.filter (fun current => current.owner == wait.owner && current.output == wait.output)).length :=
-        List.length_pos_iff.mpr (by intro empty; simp [empty] at present)
-      refine Or.inr ⟨wait.owner, wait.output, foreignScope, ?_⟩
-      simp only [continuationMarking]
-      omega
+      obtain ⟨output, selected⟩ := List.exists_mem_of_ne_nil wait.outputs wait.outputs_ne_nil
+      exact Or.inr ⟨wait.owner, output, foreignScope, ContinuationMarkingLaws.continuationMarking_pos_of_wait state wait member output selected⟩
   case completeEffect commandId id result =>
     cases result <;> simp only at completion <;> try contradiction
     rename_i values
@@ -505,12 +501,8 @@ private theorem committed_completion_credit (program : Program) (analysis : Prog
         simp only [List.any_cons, List.any_nil, Bool.or_false, beq_eq_false_iff_ne] at routed
         exact Ne.symm routed
       have member : wait ∈ state.effectWaits := (List.mem_filter.mp (chosen.symm ▸ List.mem_singleton_self wait)).1
-      have present : wait ∈ state.effectWaits.filter (fun current => current.owner == wait.owner && current.output == wait.output) := by simp [member]
-      have positive : 0 < (state.effectWaits.filter (fun current => current.owner == wait.owner && current.output == wait.output)).length :=
-        List.length_pos_iff.mpr (by intro empty; simp [empty] at present)
-      refine Or.inr ⟨wait.owner, wait.output, foreignScope, ?_⟩
-      simp only [continuationMarking]
-      omega
+      obtain ⟨output, selected⟩ := List.exists_mem_of_ne_nil wait.outputs wait.outputs_ne_nil
+      exact Or.inr ⟨wait.owner, output, foreignScope, ContinuationMarkingLaws.continuationMarking_pos_of_effectWait state wait member output selected⟩
 
 /-- PMIS-SELECT-01 derives complete selection for every committed Human/Service completion from its actual reachable command boundary. -/
 theorem ParallelScopeCommandBoundaryReachable.completion_selection_total

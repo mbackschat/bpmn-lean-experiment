@@ -70,7 +70,7 @@ theorem prepared_timer_task_candidate_singleton
     { processInstanceId := owner.processInstanceId, owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   have fresh : ∀ old ∈ state.waits, userTaskWaitKeyMatches wait old = false := by
     intro old member
     exact (armingPatch_key_fresh_of_anchor_absent state patch.arm absent old member).1

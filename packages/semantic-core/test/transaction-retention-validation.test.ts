@@ -49,7 +49,7 @@ const wait = {
   id: { processInstanceId: activity.processInstanceId, elementId: activity.activityElementId, activation: 1 },
   owner: childOwner,
   name: null,
-  output: "place:Reserve_Prepare",
+  outputs: ["place:Reserve_Prepare"],
 };
 const beforeEntry: RuntimeState = {
   ...initialState,

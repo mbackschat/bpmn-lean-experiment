@@ -185,14 +185,8 @@ private theorem marking_zero_of_foreign_work (state : RuntimeState) (owner : Sco
     apply List.filter_eq_nil_iff.mpr
     intro token member matching
     exact tokens token member (by simpa using (Bool.and_eq_true_iff.mp matching).1)
-  have humanEmpty : state.waits.filter (fun wait => wait.owner == owner && wait.output == port) = [] := by
-    apply List.filter_eq_nil_iff.mpr
-    intro wait member matching
-    exact humans wait member (by simpa using (Bool.and_eq_true_iff.mp matching).1)
-  have effectEmpty : state.effectWaits.filter (fun wait => wait.owner == owner && wait.output == port) = [] := by
-    apply List.filter_eq_nil_iff.mpr
-    intro wait member matching
-    exact effects wait member (by simpa using (Bool.and_eq_true_iff.mp matching).1)
+  have humanEmpty := ownedPortCount_sum_absent state.waits (·.outputs) (·.owner) owner port humans
+  have effectEmpty := ownedPortCount_sum_absent state.effectWaits (·.outputs) (·.owner) owner port effects
   simp only [continuationMarking, tokenEmpty, humanEmpty, effectEmpty, List.length_nil, Nat.zero_add]
 
 /-- Actual entry's absent-child guard supplies issuance freshness when every token

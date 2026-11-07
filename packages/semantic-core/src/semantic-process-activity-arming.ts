@@ -85,7 +85,7 @@ export function selectActivityArming(
       id: taskId,
       owner,
       name: operation.task.name,
-      output: operation.task.output,
+      outputs: [operation.task.output],
     },
     timerWait: {
       id: timerId,

@@ -26,7 +26,7 @@ meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! MBERR-CATCH-01, MBERR-MAP-01 and MBERR-PROGRESS-01 derive attached Error completion and bounded resumption from an actual committed Start. Route selection belongs to the current wait; shared Error codes supply no authority to select another Service Task's continuation. -/
 
-run_meta privateEquations `BpmnSemantics.SemanticProcess #[`SerialBusinessTask.frontierFields,
+run_meta privateEquations `BpmnSemantics.SemanticProcess #[`addTokens, `SerialBusinessTask.frontierFields,
   `completeBusinessEffect?, `completeSerialActivityScope?, `dispatchStimulus, `effectIdNamesWait, `effectResultOutput,
   `activityScopeMatches, `addToken, `canonicalInsertBy, `localDataOwnerMatches]
 
@@ -107,7 +107,7 @@ theorem reached_attached_business_error_commits (program : Program) (analysis : 
   have completed : completeBusinessEffect? (SerialBusinessTask.programHandlers program) reached effectId
       (.bpmnError route.code message patch) = some after := by
     simp [completeBusinessEffect?, occurrence, effectResultOutput, attached,
-      completeSerialActivityScope?, owned, mapped, after, fields.1, addToken, canonicalInsertBy]
+      completeSerialActivityScope?, owned, mapped, after, fields.1, addTokens, addToken, canonicalInsertBy]
   have ownerRuntime : runtimeStateWellFormed program owner.processInstanceId reached = true := by
     simpa [instanceEq] using runtime
   have guarded := indexed_completion_guard program analysis reached owner

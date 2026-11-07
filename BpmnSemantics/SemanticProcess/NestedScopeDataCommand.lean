@@ -122,7 +122,7 @@ def completeEffect? (program : Program) (state : RuntimeState) (effectId : Effec
     some { state with
       effectWaits := state.effectWaits.erase wait
       variables
-      tokens := addToken state.tokens wait.output wait.owner }
+      tokens := addTokens state.tokens wait.outputs wait.owner }
 
 theorem completeEffect?_without_success (program : Program) (state : RuntimeState)
     (effectId : EffectOccurrenceId) (result : EffectExecutionResult)

@@ -243,7 +243,7 @@ def parallelChildWait (arm : ParallelMultiInstanceArm) (owner : ScopeOccurrenceI
     owner
     task := { id := arm.taskId, name := arm.taskName }
     activation := taskId.activation
-    output := arm.normalOutput
+    outputs := [arm.normalOutput]
     metadata := none }
 
 def insertParallelChildWaits (arm : ParallelMultiInstanceArm) (owner : ScopeOccurrenceId) :
@@ -293,7 +293,7 @@ def parallelRegionValid (arm : ParallelMultiInstanceArm) (state : RuntimeState)
     regionWaits.all fun wait =>
       wait.owner == record.owner && wait.task.id == arm.taskId &&
         wait.task.name == arm.taskName && wait.metadata == none &&
-        wait.output == arm.normalOutput &&
+        wait.outputs == [arm.normalOutput] &&
     match record.timerHandlerOccurrences, regionTimers with
     | [timer], [wait] =>
         timerIdNamesWait timer wait && wait.output == arm.boundaryTimer.output

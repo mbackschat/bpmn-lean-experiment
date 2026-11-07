@@ -133,6 +133,7 @@ import {
   addToken,
   ControlStateKind,
   sameOccurrence,
+  addTokens,
 } from "./semantic-process-state.js";
 import type { RuntimeState } from "./semantic-process-state.js";
 import { isGateAdmissibleRuntimeState } from "./runtime-state-well-formedness.js";
@@ -491,9 +492,9 @@ function admitValidated(
         outcome: CommandOutcome.Committed,
         state: {
           ...state,
-          controlTokens: addToken(
+          controlTokens: addTokens(
             state.controlTokens,
-            route?.output ?? wait.output,
+            route === null ? wait.outputs : [route.output],
             wait.owner,
           ),
           effectWaits: state.effectWaits.filter(

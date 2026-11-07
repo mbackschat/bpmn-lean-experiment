@@ -30,6 +30,7 @@ import type {
 import {
   sameOccurrence,
   sameScopeOccurrence,
+  waitOutputsAre,
 } from "./semantic-process-state.js";
 import type {
   RuntimeState,
@@ -259,7 +260,7 @@ export function sequentialMultiInstanceTaskWaitMatches(
     wait.id,
   );
   return operation.task.elementId === wait.id.elementId &&
-    operation.normalOutput === wait.output &&
+    waitOutputsAre(wait.outputs, [operation.normalOutput]) &&
     operation.task.name === wait.name &&
     wait.metadata === undefined &&
     record !== undefined &&

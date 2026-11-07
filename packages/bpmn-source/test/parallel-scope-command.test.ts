@@ -502,26 +502,26 @@ for (const early of [false, true]) test(
         assert.ok(wait);
         const predecessor = program.operations.find(operation =>
           (operation.kind === SemanticOperationKind.AwaitUserTask || operation.kind === SemanticOperationKind.AwaitEffect) &&
-          operation.origin.elementId === id.elementId && operation.output === wait.output);
+          operation.origin.elementId === id.elementId && wait.outputs.length === 1 && operation.output === wait.outputs[0]);
         assert.ok(predecessor);
         const nextElement = id.elementId === "Review" ? "Validate" : "Confirm";
         const successor = program.operations.find(operation =>
           (operation.kind === SemanticOperationKind.AwaitUserTask || operation.kind === SemanticOperationKind.AwaitEffect) &&
-          operation.origin.elementId === nextElement && operation.input === wait.output);
+          operation.origin.elementId === nextElement && operation.input === wait.outputs[0]);
         assert.ok(successor, "the actual wait output is the next operation's connecting input");
         const count = (history: readonly TracedCommandResult[], operationId: string) => history.flatMap(trace => trace.committedTransitions)
           .filter(record => record.transition.kind === SemanticTransitionKind.InternalOperation && record.transition.operationId === operationId &&
             sameScopeOccurrence(record.transition.owner, wait.owner)).length;
         assert.deepEqual([count([traced], predecessor.id), count([traced], successor.id)], [0, 1], "command suffix has consumption without new production");
         assert.deepEqual([count(traces, predecessor.id), count(traces, successor.id)], [1, 1], "lifetime history contains the earlier production");
-        const port = continuationKey(wait.owner, wait.output);
+        const port = continuationKey(wait.owner, wait.outputs[0]!);
         const marking = continuationMarking(program, state);
         assert.equal(marking.tokens.get(port) ?? 0, 0, "the pre-command credit is blocked in its exact wait");
         const requireCredit = (blocked: ReadonlyMap<string, number>) => assert.equal(blocked.get(port), 1, "connecting port has lifetime credit");
         requireCredit(marking.blocked);
         const entry = program.operations.find(operation => operation.kind === SemanticOperationKind.EnterParallelMultiInstanceScope);
         assert.ok(entry?.kind === SemanticOperationKind.EnterParallelMultiInstanceScope);
-        assert.notEqual(entry.childEntry, wait.output);
+        assert.equal(wait.outputs.includes(entry.childEntry), false);
         assert.throws(() => requireCredit(new Map([[continuationKey(wait.owner, entry.childEntry), 1]])), /lifetime credit/);
         checkedCredits.add(`${id.elementId}→${nextElement}`);
       }
@@ -563,7 +563,7 @@ function continuationMarking(program: SemanticProcessProgram, state: RuntimeStat
   for (const token of state.controlTokens)
     changeMarking(tokens, continuationKey(token.owner, token.placeId), token.multiplicity, "token multiplicity");
   for (const wait of [...state.userTaskWaits, ...state.effectWaits])
-    changeMarking(blocked, continuationKey(wait.owner, wait.output), 1, "blocked continuation multiplicity");
+    for (const output of wait.outputs) changeMarking(blocked, continuationKey(wait.owner, output), 1, "blocked continuation multiplicity");
   const pending = new Map<string, number>();
   for (const activity of state.activityOccurrences) {
     const entry = program.operations.find(operation => operation.id === activity.operationId);
@@ -586,9 +586,11 @@ function assertContinuationBoundary(program: SemanticProcessProgram, before: Run
       wait.id.elementId === id.elementId && wait.id.activation === id.activation);
     assert.equal(selected.length, 1, "external completion identifies one actual wait");
     const wait = selected[0]!;
-    const key = continuationKey(wait.owner, wait.output);
-    changeMarking(expected.blocked, key, -1, "completed wait exists");
-    changeMarking(expected.tokens, key, 1, "completed wait becomes a token");
+    for (const output of wait.outputs) {
+      const key = continuationKey(wait.owner, output);
+      changeMarking(expected.blocked, key, -1, "completed wait exists");
+      changeMarking(expected.tokens, key, 1, "completed wait becomes a token");
+    }
   } else {
     const declarations = program.operations.filter(operation => operation.id === transition.operationId);
     assert.equal(declarations.length, 1, "exact internal declarer");
@@ -642,7 +644,7 @@ function assertContinuationBoundary(program: SemanticProcessProgram, before: Run
         for (const token of before.controlTokens.filter(token => sameScopeOccurrence(token.owner, iteration.scope)))
           changeMarking(expected.tokens, continuationKey(token.owner, token.placeId), -token.multiplicity, "cancelled token removal");
         for (const wait of [...before.userTaskWaits, ...before.effectWaits].filter(wait => sameScopeOccurrence(wait.owner, iteration.scope)))
-          changeMarking(expected.blocked, continuationKey(wait.owner, wait.output), -1, "cancelled wait removal");
+          for (const output of wait.outputs) changeMarking(expected.blocked, continuationKey(wait.owner, output), -1, "cancelled wait removal");
         assert.equal(after.scopeOccurrences.some(scope => sameScopeOccurrence(scope.id, iteration.scope)), false, "retired body removed");
       }
       if (closing) {

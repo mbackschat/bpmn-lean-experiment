@@ -105,7 +105,7 @@ structure ParallelControllerProgramBindingFacts (program : Program) (state : Run
     childWaits.all (fun wait =>
       wait.owner == record.owner && wait.task.id == arm.taskId &&
         wait.task.name == arm.taskName && wait.metadata == none &&
-        wait.output == arm.normalOutput) = true ∧
+        wait.outputs == [arm.normalOutput]) = true ∧
     record.timerHandlerOccurrences = [timer] ∧
     state.timerWaits.filter (timerIdNamesWait timer) = [timerWait] ∧
     timerWait.owner = record.owner ∧

@@ -211,7 +211,7 @@ test("refuses latent child state, hidden ownership, and an occupied deadline anc
         id: prepared.deadline.id,
         owner: prepared.parent,
         name: "foreign deadline anchor",
-        output: "place:foreign",
+        outputs: ["place:foreign"],
       }],
     },
   ];

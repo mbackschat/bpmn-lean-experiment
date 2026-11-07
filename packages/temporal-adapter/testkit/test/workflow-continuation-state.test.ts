@@ -140,7 +140,7 @@ const userTaskWait = {
   id: { processInstanceId: instanceId, elementId: "UserTask_1", activation: 1 },
   owner,
   name: "Approve",
-  output: "Place_Flow_Fired",
+  outputs: ["Place_Flow_Fired"],
 } as const;
 
 const resumable = {

@@ -60,15 +60,15 @@ theorem prepared_timer_task_preserves_userTask_program_validity
       owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   have declaration : UserTaskWaitDeclaration wait contract.operation := by
     cases kind : contract.kind
     · simpa [InternalTimerTaskContract.operation, kind, wait] using
         UserTaskWaitDeclaration.bounded (wait := wait) contract.operationId contract.origin
-          contract.input contract.timer rfl rfl
+          contract.input contract.task.output contract.timer rfl rfl rfl
     · simpa [InternalTimerTaskContract.operation, kind, wait] using
         UserTaskWaitDeclaration.monitored (wait := wait) contract.operationId contract.origin
-          contract.input contract.timer rfl rfl
+          contract.input contract.task.output contract.timer rfl rfl rfl
   have declarers : userTaskWaitDeclarers program contract.task.id = [contract.operation] := by
     simpa [uniqueFamilyDeclarer?] using taskDeclarer
   have declared := declaredByExactlyOneOwnedOperation_of_exactSelection program
@@ -100,7 +100,7 @@ theorem prepared_timer_task_preserves_activity_work
       owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   let taskState : RuntimeState := { state with waits := insertUserTaskWait wait state.waits }
   let after := applyInternalTimerTaskPatch state selected
   have taskFresh : ∀ old ∈ state.waits,
@@ -231,7 +231,7 @@ theorem prepared_timer_task_old_records_reject_new_task
       { processInstanceId := owner.processInstanceId, owner
         task := { id := contract.task.id, name := contract.task.name }
         activation := activationCount state contract.task.id + 1
-        output := contract.task.output } = true)
+        outputs := [contract.task.output] } = true)
   have conflict : regionalActivityAssociationsConflict old
       (makeInternalTimerTaskPatch program state contract owner instanceId processId inputOrigin).record = true := by
     simp [regionalActivityAssociationsConflict, body, same, makeInternalTimerTaskPatch,
@@ -259,7 +259,7 @@ theorem prepared_timer_task_preserves_existing_timer_match
     { processInstanceId := owner.processInstanceId, owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   have unattached : recordAttaches selected.record (timerWaitOccurrence timer) = false := by
     apply Bool.eq_false_iff.mpr
     intro matched
@@ -312,7 +312,7 @@ theorem prepared_timer_task_new_timer_binding
     { processInstanceId := owner.processInstanceId, owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   have taskFresh := armingPatch_key_fresh_of_anchor_absent state selected.arm taskAbsent
   have taskCount : ((insertUserTaskWait wait state.waits).filter fun host =>
       decide (host.owner = owner && host.task.id = contract.task.id) &&

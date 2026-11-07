@@ -161,7 +161,7 @@ theorem prepared_message_task_projectWaits_insert
     { processInstanceId := instanceId, owner
       task := { id := contract.task.id, name := contract.task.name }
       activation := activationCount state contract.task.id + 1
-      output := contract.task.output }
+      outputs := [contract.task.output] }
   let after := applyInternalMessageTaskPatch state selected
   intro beforeWaits beforeProjected
   obtain ⟨tasks, messages, timers, effects, incidents, tasksEq, messagesEq, timersEq,

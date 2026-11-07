@@ -6,7 +6,7 @@ import { selectScopeVariables } from "./scope-variable-data.js";
 import { evaluateInputMappings, projectActivityVariableScopeResult } from "./semantic-process-data.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticProcessProgram } from "./semantic-process-contract.js";
-import { addToken, sameOccurrence, sameScopeOccurrence } from "./semantic-process-state.js";
+import { addToken, sameOccurrence, sameScopeOccurrence, addTokens } from "./semantic-process-state.js";
 import type { RuntimeState, ScopedVariables, ScopeOccurrenceId } from "./semantic-process-state.js";
 import { MappingExpressionKind } from "./semantic-value-contract.js";
 import type { VariableMapping } from "./semantic-value-contract.js";
@@ -72,5 +72,5 @@ export function completeParallelScopeEffect(program: Pick<SemanticProcessProgram
     projected.outputs, MultiInstanceScopeWriteKind.ServiceTask);
   return variables === null ? null : { ...state, variables,
     effectWaits: state.effectWaits.filter(candidate => candidate !== wait),
-    controlTokens: addToken(state.controlTokens, wait.output, wait.owner) };
+    controlTokens: addTokens(state.controlTokens, wait.outputs, wait.owner) };
 }

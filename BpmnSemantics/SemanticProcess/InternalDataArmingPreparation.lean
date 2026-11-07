@@ -175,7 +175,7 @@ def makeInternalDataArmingPatch (program : Program) (state : RuntimeState)
             owner
             task := { id := contract.taskId, name := contract.taskName }
             activation := activationCount state contract.taskId + 1
-            output := contract.output } }
+            outputs := [contract.output] } }
     record := dataInputOutputActivityRecord state owner.processInstanceId owner contract.taskId
     bindings }
 

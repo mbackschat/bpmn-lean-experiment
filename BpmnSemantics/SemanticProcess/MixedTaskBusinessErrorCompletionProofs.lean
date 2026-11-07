@@ -60,7 +60,7 @@ theorem valid_business_error_maps_and_establishes_continuation_data
           variables := { before.variables with
             process := { bindings }
             activities := before.variables.activities.filter (fun scope => !activityScopeMatches effectId scope) }
-          tokens := addToken before.tokens route.output wait.owner } ∧
+          tokens := addTokens before.tokens [route.output] wait.owner } ∧
       InputsAvailable vertices target bindings ∧ SerialBusinessTask.bindingsValid handlers bindings = true := by
   obtain ⟨bindings, mapped, available, canonical⟩ := valid_service_patch_establishes_continuation_data
     vertices vertex target handlers sources inputs wait.outputMappings before.variables.process.bindings patch
@@ -82,22 +82,22 @@ theorem business_completion_facts (handlers : List String) (before after : Runti
     (effectId : EffectOccurrenceId) (result : EffectExecutionResult)
     (completed : completeBusinessEffect? handlers before effectId result = some after) :
     ∃ (wait : EffectWait) (localScope : ActivityVariableScope)
-      (patch bindings : List VariableBinding) (output : ControlPlaceId),
+      (patch bindings : List VariableBinding) (outputs : List ControlPlaceId),
       before.effectWaits.filter (effectIdNamesWait effectId) = [wait] ∧
       before.variables.activities.filter (activityScopeMatches effectId) = [localScope] ∧
       (result = .success patch ∨ ∃ code message, result = .bpmnError code message patch) ∧
-      effectResultOutput wait result = some output ∧
+      effectResultOutput wait result = some outputs ∧
       serialEffectPatch? handlers wait.outputMappings before.variables.process.bindings patch = some bindings ∧
       after = { before with
         effectWaits := before.effectWaits.erase wait
         variables := { before.variables with
           process := { bindings }
           activities := before.variables.activities.filter (fun scope => !activityScopeMatches effectId scope) }
-        tokens := addToken before.tokens output wait.owner } := by
+        tokens := addTokens before.tokens outputs wait.owner } := by
   unfold completeBusinessEffect? at completed
   split at completed
   · rename_i wait occurrence
-    obtain ⟨output, selected, completed⟩ := Option.bind_eq_some_iff.mp completed
+    obtain ⟨outputs, selected, completed⟩ := Option.bind_eq_some_iff.mp completed
     obtain ⟨variables, mapped, completed⟩ := Option.bind_eq_some_iff.mp completed
     let patch := match result with
       | .success patch | .bpmnError _ _ patch => patch
@@ -114,7 +114,7 @@ theorem business_completion_facts (handlers : List String) (before after : Runti
             simp only [completeSerialActivityScope?, owned] at mapped
             obtain ⟨bindings, mapping, mapped⟩ := Option.bind_eq_some_iff.mp mapped
             cases mapped
-            exact ⟨wait, localScope, patch, bindings, output, occurrence, rfl,
+            exact ⟨wait, localScope, patch, bindings, outputs, occurrence, rfl,
               resultPatch, selected, mapping, (Option.some.inj completed).symm⟩
   · contradiction
 
@@ -158,30 +158,31 @@ theorem analyzed_effect_route_admitted (program : Program) (analysis : Analysis)
 
 /-- MBERR-CATCH-01 retains the full route-sensitive ingress census, including old-profile refusal. -/
 theorem business_effect_wait_census (program : Program) (wait : EffectWait)
-    (id : OperationId) (origin : BpmnElementOrigin) (input : ControlPlaceId)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
     (effect : EffectDefinition) (enabled : Bool)
     (wellFormed : programWellFormed program = true)
-    (member : .awaitEffect id origin input wait.output effect wait.bpmnErrorRoute ∈ program.operations)
+    (member : .awaitEffect id origin input output effect wait.bpmnErrorRoute ∈ program.operations)
     (element : effect.elementId = wait.elementId) (descriptor : effect.descriptor = wait.descriptor)
     (outputs : effect.outputMappings = wait.outputMappings)
     (admitted : (wait.bpmnErrorRoute.isNone || enabled) = true)
-    (snapshot : inputSnapshotMatches effect.inputMappings wait.arguments = true) :
+    (snapshot : inputSnapshotMatches effect.inputMappings wait.arguments = true)
+    (waitOutputs : wait.outputs = [output]) :
     program.operations.filter (fun operation => match operation with
       | .awaitEffect _ _ _ output effect none => effect.elementId == wait.elementId &&
-          effect.descriptor == wait.descriptor && output == wait.output &&
+          effect.descriptor == wait.descriptor && [output] == wait.outputs &&
           effect.outputMappings == wait.outputMappings && wait.bpmnErrorRoute.isNone &&
           inputSnapshotMatches effect.inputMappings wait.arguments
       | .awaitEffect _ _ _ output effect (some route) => enabled &&
           effect.elementId == wait.elementId && effect.descriptor == wait.descriptor &&
-          output == wait.output && effect.outputMappings == wait.outputMappings &&
+          [output] == wait.outputs && effect.outputMappings == wait.outputMappings &&
           wait.bpmnErrorRoute == some route &&
           inputSnapshotMatches effect.inputMappings wait.arguments
-      | _ => false) = [.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute] := by
+      | _ => false) = [.awaitEffect id origin input output effect wait.bpmnErrorRoute] := by
   have aligned := programWellFormed_awaitEffect_elements_align program wellFormed
-    id origin input wait.output effect wait.bpmnErrorRoute member
+    id origin input output effect wait.bpmnErrorRoute member
   apply SerialBusinessTask.refined_unique_filter program.operations
     (fun operation => operationDeclaresWaitKey operation (effectWaitDeclarationKey wait.elementId)) _
-    (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute)
+    (.awaitEffect id origin input output effect wait.bpmnErrorRoute)
   · exact programWellFormed_waitDeclarer program _ _ wellFormed member
       (by simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligned, element])
   · intro operation included selected
@@ -197,20 +198,23 @@ theorem business_effect_wait_census (program : Program) (wait : EffectWait)
           simp only [Bool.and_eq_true, beq_iff_eq] at selected
           simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, aligns, selected.1.1.1.1.1.2]
   · cases attached : wait.bpmnErrorRoute with
-    | none => simp [element, descriptor, outputs, snapshot]
+    | none => simp [element, descriptor, outputs, snapshot, waitOutputs]
     | some route =>
         have enabledTrue : enabled = true := by simpa [attached] using admitted
-        simp [enabledTrue, element, descriptor, outputs, snapshot]
+        simp [enabledTrue, element, descriptor, outputs, snapshot, waitOutputs]
 
+/-- A single-output effect wait selects exactly one declared output, its normal one or its routed one. -/
 theorem selected_effect_output_declared (wait : EffectWait) (result : EffectExecutionResult)
-    (output : ControlPlaceId) (id : OperationId) (origin : BpmnElementOrigin)
-    (input : ControlPlaceId) (effect : EffectDefinition)
-    (selected : effectResultOutput wait result = some output) :
-    output ∈ operationOutputs (.awaitEffect id origin input wait.output effect wait.bpmnErrorRoute) := by
+    (outputs : List ControlPlaceId) (id : OperationId) (origin : BpmnElementOrigin)
+    (input output : ControlPlaceId) (effect : EffectDefinition) (waitOutputs : wait.outputs = [output])
+    (selected : effectResultOutput wait result = some outputs) :
+    ∃ selectedOutput, outputs = [selectedOutput] ∧
+      selectedOutput ∈ operationOutputs (.awaitEffect id origin input output effect wait.bpmnErrorRoute) := by
   cases result with
   | success patch =>
       simp only [effectResultOutput, Option.some.injEq] at selected
-      subst output
+      subst outputs
+      refine ⟨output, waitOutputs, ?_⟩
       cases attached : wait.bpmnErrorRoute <;> simp [operationOutputs]
   | bpmnError code message patch =>
       cases attached : wait.bpmnErrorRoute with
@@ -219,7 +223,7 @@ theorem selected_effect_output_declared (wait : EffectWait) (result : EffectExec
           simp only [effectResultOutput, attached] at selected
           split at selected
           · cases selected
-            simp [operationOutputs]
+            exact ⟨route.output, rfl, by simp [operationOutputs]⟩
           · contradiction
 
 theorem effect_activation_issuance_with_route (state : RuntimeState) (instanceId : SemanticId)

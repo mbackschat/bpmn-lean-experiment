@@ -374,7 +374,7 @@ test("regional interruption removes every child runtime owner and preserves root
         },
         owner: root.id,
         name: "Root task",
-        output: "place:SyntheticRootOutput",
+        outputs: ["place:SyntheticRootOutput"],
       },
     ],
     messageWaits: [{
@@ -409,7 +409,7 @@ test("regional interruption removes every child runtime owner and preserves root
       arguments: [],
       outputMappings: [],
       bpmnErrorRoute: null,
-      output: "place:SyntheticEffectOutput",
+      outputs: ["place:SyntheticEffectOutput"],
       incidentAlreadyRetried: false,
     }],
     variables: {

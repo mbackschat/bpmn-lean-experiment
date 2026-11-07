@@ -48,7 +48,7 @@ def activateUserTask (state : RuntimeState) (instanceId : SemanticId)
         owner
         task
         activation
-        output
+        outputs := [output]
         metadata := task.metadata } state.waits
     activations := setActivationCount state.activations task.id activation }
 
@@ -84,7 +84,7 @@ def activateBoundedUserTask (state : RuntimeState) (instanceId : SemanticId)
         owner
         task := { id := task.id, name := task.name }
         activation := taskActivation
-        output := task.output
+        outputs := [task.output]
         metadata := none } state.waits
     timerWaits := insertTimerWait
       { processInstanceId := instanceId
@@ -148,7 +148,7 @@ def activateEffect (state : RuntimeState) (instanceId : SemanticId)
         descriptor := effect.descriptor
         arguments
         outputMappings := effect.outputMappings
-        output
+        outputs := [output]
         bpmnErrorRoute
         incidentAlreadyRetried := false } state.effectWaits
     variables := addActivityVariableScope state.variables effectOwner arguments
