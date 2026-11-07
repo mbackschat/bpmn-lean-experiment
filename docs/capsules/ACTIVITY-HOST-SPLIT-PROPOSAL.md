@@ -21,7 +21,7 @@ The selected clause of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGE
 
 Close calls, 2026-11-07, each with its measured reason:
 
-- **The split is not the switch.** The [retirement rule](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#retirement-of-the-dual-representation) named the split family as PLAN's "one switch", which lowers every User, Service and Send Task onto `activity`. Measured on a throwaway clone of `d62d89d9`, lowering every User Task and every unrouted Service and Send Task onto the host fails 392 of the 2,354 `bpmn-source` tests across about 60 test files, every profile's admission among them, before any Lean, Temporal or pipeline evidence; the variants (data mapping, Multi-Instance, boundary handlers) have no host field yet. The split is an arity form like the merge, which the host carries by its lists, and the [scope host](SCOPE-HOST-FLOW-LISTS-SPEC.md#question-and-delivery-boundary) records that the switch is where the shared feature record (loop, typed boundary handlers, per-flow conditions) enters. This family therefore amends the retirement rule: an arity form lowered onto the host alone (a merge, a split) is not a feature; the switch is the first family that adds a feature field to the host or lowers a further variant onto an unchanged legacy constructor, such as a boundary Timer on a Task. The freeze keeps the legacy declarations fixed, so deferring the switch adds no cost to it. Rejected: the switch first, at a multiple of this family's cost with no further clause; a defaulted `extraOutputs` field beside `output`, which every reader of `output` would silently ignore, among them the continuation counts of [`ContinuationMarking`](../../BpmnSemantics/SemanticProcess/ContinuationMarking.lean).
+- **The split precedes the switch, by owner direction (2026-11-07).** The [retirement rule](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#retirement-of-the-dual-representation) and PLAN's batch-5 text made the split family PLAN's "one switch", which lowers every User, Service and Send Task onto `activity`. The owner chose a bounded amendment (2026-11-07): the Task split is the last host-only arity form of the Activity host; the switch is scheduled as the next Kernel IL family after this one; later Timer increments still wait for the switch. The double check presented with the choice: it serves the deliverable-first direction and the incremental route PLAN records; the strongest objection is one more host-only branch the switch must fold back; the best alternative, the split as the switch, re-lowers every plain Task, and a spike of that lowering alone on a throwaway clone of `d62d89d9` failed 392 of the 2,354 `bpmn-source` tests across about 60 test files, every profile's admission among them, without the variant fields the real switch also needs, so its full cost is unmeasured and larger; a measured switch cost close to this family's would reverse the choice. The freeze keeps the legacy declarations fixed in the meantime. Rejected besides: a defaulted `extraOutputs` field beside `output`, which every reader of `output` would silently ignore, among them the continuation counts of [`ContinuationMarking`](../../BpmnSemantics/SemanticProcess/ContinuationMarking.lean).
 - **The wait records carry the list.** The rejected alternative is completion reading its outputs from the Program by operation id, which puts a Program lookup into every completion path. Kind-keyed waits, PLAN's later reshape of the same records, keeps the list as a field.
 - **Splitting Tasks stay outside fork regions**, as the scope host's splits do: the host's arrival has no prepared footprint ([internal commutation](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#internal-commutation)), so enabled beside a sibling it fails closed.
 
@@ -31,7 +31,7 @@ Close calls, 2026-11-07, each with its measured reason:
 
 ## Normative basis and CIB classification
 
-**BPMN.** Clause 13.3.1 (reading copy line 12286): an Activity with several outgoing Sequence Flows gives "all of them" a token "when the **Activity** transitions to the _Completed_ state", a parallel split.
+**BPMN.** Clause 13.3.1 (reading copy line 12294): an Activity with several outgoing Sequence Flows gives "all of them" a token "when the **Activity** transitions to the _Completed_ state", a parallel split.
 
 **CIB Seven** at `5a45b47`:
 
@@ -55,7 +55,10 @@ Close calls, 2026-11-07, each with its measured reason:
 
 - a splitting Task inside a fork region, including on a branch of a Parallel fork, an implicit split or an Inclusive region;
 - a Task with several incoming and several outgoing flows: a merge routes to the re-entry account, which refuses a forking Program;
-- splits at the variants, at Receive, Script and Rule Tasks, at Call Activities and at catch Events;
+- splits at the variants, which have no host field until the switch;
+- splits at Receive Tasks and catch Events, whose `MessageWait` and `TimerWait` keep one `output` until the shared catch trigger reshapes them;
+- splits at Script and Business Rule Tasks, which this profile does not admit at all (their runtime dependency awaits an owner decision);
+- a splitting Call Activity, whose outgoing flows leave its `returnProcess`, a scope host form;
 - conditional or default outgoing flows of a Task, an inclusive split in CIB;
 - an Activity without outgoing flows;
 - a splitting Task in a called Process or a Multi-Instance, bounded, monitored or transaction body;
@@ -105,9 +108,15 @@ Both lists stay strictly sorted by control-place id, every named place exists, a
 
 ### Steps
 
-A host arrival opens its work's wait as the legacy arrival does, with the host's `outputs` as the wait's list. The legacy arrival functions take the output list as a parameter, which a legacy operation passes as its one-element list, so the host and the legacy operation share one arrival function rather than the host patching a legacy wait. A merging host's arrival keeps its rule (exactly one marked input). `OperationStep`'s `activity` arm is unchanged in shape.
+A host arrival opens its work's wait as the legacy arrival does, with the host's `outputs` as the wait's list. Two list-taking arrival functions, `awaitUserTaskOutputsState?` and `awaitEffectOutputsState?`, are added beside `awaitUserTaskState?` and `awaitEffectState?` in [`TransitionStates`](../../BpmnSemantics/SemanticProcess/TransitionStates.lean) and their TypeScript twins; the legacy functions keep their signatures as one-element wrappers (a hidden body edit), so their 24 Lean consumer files, mostly proofs, are not edited, and the host and the legacy operation still share one arrival function. A merging host's arrival keeps its rule (exactly one marked input). `OperationStep`'s `activity` arm is unchanged in shape.
 
-The per-work accessor `ActivityHost.projection?` keeps its one-output meaning; for a splitting host it is `none`. Every consumer that reads a host through its settled projection ([`activity-host-work.ts`](../../packages/semantic-core/src/activity-host-work.ts): `settledOperation`, `settledOperations`; 11 TypeScript production files, 2026-11-07) handles a splitting host explicitly, reading its work and origin through the accessors and its outputs from the host or the wait; the census population includes those call sites.
+The per-work accessor `ActivityHost.projection?` keeps its one-output meaning and is `none` for a splitting host. Its readers would otherwise pass or drop a splitting host silently, so each is named and changed:
+
+- **Work validity.** `activityHostWorkValid` ([`ProgramStructuralValidation`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean)) reads `projection?` from every input, and `none` passes vacuously. A new accessor `ActivityHost.workAt input output` gives the legacy operation for one input and one output, and work validity checks it for every pair, so a splitting host's work is checked once per output. The TypeScript `isWellFormedActivityHost` does the same.
+- **Program vertex.** `operationVertex?` in [`NestedScopeDataAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean) and its twin read the host's work through `workAt` with its first input and give the vertex every output's consumer.
+- **Settled projections.** Every TypeScript caller of `settledOperation` and `settledOperations` ([`activity-host-work.ts`](../../packages/semantic-core/src/activity-host-work.ts); 11 production files, 2026-11-07, among them [`semantic-process-profile.ts`](../../packages/semantic-core/src/semantic-process-profile.ts)'s `settledOperations(...).every`) handles a splitting host explicitly, reading its work and origin through the accessors and its outputs from the host or the wait.
+
+The census population includes the Lean `projection?` readers and the TypeScript settled-projection call sites.
 
 ### Lowering
 
@@ -125,7 +134,7 @@ A User, Service or Send Task of the admitted kinds lowers to `activity` exactly 
 
 ### Retirement of the dual representation
 
-The [Activity host retirement rule](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#retirement-of-the-dual-representation) is amended at closure: an arity form lowered onto the host alone, a merge or a split, adds no feature; the next family that adds a feature field to the host, lowers a further variant of User, Service or Send Tasks onto an unchanged legacy constructor, or changes a frozen declaration is the switch. The host-coverage census keeps the legacy declarations byte-identical; the wait records are not among them.
+The [Activity host retirement rule](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#retirement-of-the-dual-representation) is amended at closure, by the owner direction above: the Task split is the Activity host's last host-only arity form; the next Activity-host family is the switch, and so is any family that adds a feature field to the host, lowers a further variant of User, Service or Send Tasks onto an unchanged legacy constructor, or changes a frozen declaration. That is the rule the [scope host](SCOPE-HOST-FLOW-LISTS-SPEC.md#retirement-of-the-dual-representation) already has, under which its further arity forms (the scope merges) are switch triggers; the Activity host takes the split as its one admitted exception. PLAN records the scheduled switch. The host-coverage census keeps the legacy declarations byte-identical; the wait records are not among them.
 
 ### Runtime-only and synthetic constructs
 
@@ -144,10 +153,18 @@ None at runtime. The admission projections' synthetic `fork` vertex after a vert
 | TypeScript, `output` → `outputs` in both wait records | 32 type errors in 19 `semantic-core` production files, each a construction (`output: x`) or a read |
 | Lean, the same change, building the 239 modules naming either record or the wait collections | 7 modules fail first-order (`ContinuationMarking`, `WaitActivation`, `EffectCompletion`, `ActivityDataInput`, `ActivityDataOutput`, `ParallelMultiInstanceTransition`, `ParallelMultiInstanceProgramBindingFacts`), 24 errors, before 546 dependent jobs were blocked |
 | Lean production files naming `UserTaskWait` or `EffectWait` | 192 |
+| Lean reads of a wait's `output` (static, `wait.output`, `w.output`, `(·.output)`) | 409 sites in 79 files, 39 of them proof or law files; 66 of those lines name Timer or Message waits, whose field is unchanged |
+| Lean consumers of `awaitUserTaskState?` and `awaitEffectState?` | 24 files, left unedited by the wrappers above |
 | `lean-fanout` and `source-hygiene` on the Lean and TypeScript spike | pass (66 of 66) |
 | The rejected switch: every plain Task onto the host, every profile | 392 of 2,354 `bpmn-source` tests fail; `semantic-core` 1 of 1,871 |
 
-**Coverage and stop condition.** The Lean probe stopped at its first-order failures, so the dependent modules are unmeasured; every one of them reads the records through a field the compiler names. The representation commit's Rule 2 declaration extrapolates its limits from a completed probe and stops, writing nothing further, when a repair would need a new `import all` opener, a raised fan-out or heartbeat bound, or a size exception, or when the Lean files touched exceed twice the extrapolated count.
+**Coverage and stop condition.** The Lean probe stopped at its first-order failures; the static count above bounds the dependents, since every one reads the records through a field the compiler names. The representation commit's Rule 2 declaration sets its limits from that count: at most 90 Lean files and 1,000 added and 1,000 removed Lean lines, at most 40 TypeScript files; it stops, writing nothing further, when a repair would need a new `import all` opener, a raised fan-out or heartbeat bound, or a size exception, or when a limit is reached.
+
+**Hubs touched**, each named with its reason ([Lean build efficiency](../../CLAUDE.md#lean-build-efficiency)):
+
+- `RuntimeState`, an interface edit of a declared kernel type module (the two fields), unavoidable for a runtime-state field change, with the module's whole cone rebuilding once, in the representation commit;
+- `ProgramStructuralValidation`, a hidden body edit of a closed-world function (the host rules and `activityHostWorkValid`), which rebuilds its `import all` importers and the global fixtures that reduce it;
+- `TransitionStates`, two new declarations beside hidden legacy bodies, an interface edit whose cone `lean-fanout` reports in the representation's declaration.
 
 ## Admission
 
@@ -163,6 +180,7 @@ The checked and Program analyses classify a splitting Task as its lowered host f
   - the concurrent account's refusal of every host, the [Program routing](../../packages/semantic-core/src/structured-scope-data-routing.ts) refusal and [`scopeReentryProgram`](../../packages/semantic-core/src/scope-reentry-admission.ts) and their Lean twins apply to merging hosts only.
 
   A model with a splitting Task therefore routes to the concurrent account at both levels, and a model that also merges at a Task is refused there, since a merge routes to the re-entry account, which refuses a forking Program.
+- **Concurrent Program analysis.** The analysis behind `programModel` in [`nested-scope-control-admission.ts`](../../packages/semantic-core/src/nested-scope-control-admission.ts) and its Lean twin in `NestedScopeControlAdmission` read Task kinds directly: the Task and Service Task lists behind the 32-Service-Task and 128-wait bounds, the effect presence that requires a source overlay, the handler set the overlay must bind, the data accesses of effects, and the Program operation alphabet, which excludes `Activity`. Each reads a host through the accessors (wait kind, cardinality class, the work's effect), so a splitting Service Task host counts as a Service Task and needs its handler (wrong algorithm 11).
 
 **Nearest wrong algorithms**, each with a separating witness below:
 
@@ -175,7 +193,8 @@ The checked and Program analyses classify a splitting Task as its lowered host f
 7. a consumer that drops a splitting host because its settled projection is `none`;
 8. a one-flow Task lowered onto the host;
 9. a splitting host routed as a merge, so its model goes to the re-entry account or the concurrent account refuses it;
-10. a splitting host classified as passive by Temporal host admission.
+10. a splitting host classified as passive by Temporal host admission;
+11. a splitting Service Task host left out of the Task and Service Task bounds, the handler set or the data accesses of the concurrent Program analysis.
 
 ## Stable rules
 
@@ -197,15 +216,20 @@ None of a new shape. A split reaches the wait sets a Parallel fork after the sam
 
 **Insurance claim intake**, one whole model with a source overlay and a mapped Service Task:
 
-- User Task *Review claim* splits into a mapped Service Task *Order assessment* and a User Task *Inform customer*, which a Parallel join meets, then User Task *Decide claim* → End.
-- Service Task *Register claim*, before *Review claim*, splits into User Task *Archive documents* → End and a None End *Notify broker*, a terminal branch.
+- Start → embedded Sub-Process *Intake*, whose body is: body Start → mapped Service Task *Register claim*, which splits into User Task *Archive documents* → body End and Send Task *Notify broker* → body End, two terminal branches; *Intake* completes when both have ended.
+- *Intake* → User Task *Review claim*, which splits into a mapped Service Task *Order assessment* and a User Task *Inform customer*, which a Parallel join meets, then User Task *Decide claim* → End.
 - Journeys: each completion order after each split.
+
+The model covers a root split, a split in a Sub-Process body, a Service Task and a User Task host, and with *Notify broker* a Send Task as a successor; a Send Task twin of *Register claim* covers a splitting Send Task.
 
 Each split's completion publishes once and opens both successors in the same command (wrong algorithms 3 and 4).
 
 **Refused edits**, at both levels unless stated:
 
-- *Review claim* moved onto a branch of the *Register claim* split (wrong algorithm 5);
+- *Order assessment* made to split while it lies on a branch of *Review claim*'s split (wrong algorithm 5);
+- *Intake* placed on a branch of a root Parallel fork while *Register claim* splits in its body, the ancestor-scope part of `ACSP-SINGLE-01`;
+- the overlay without *Register claim*'s handler, refused, and the Service Task bound counting *Register claim* (wrong algorithm 11);
+- a splitting host whose work is malformed (a User Task host with a missing task element), refused by the host Program rules in both languages (wrong algorithm 7);
 - a conditioned and a default outgoing flow of *Review claim*;
 - a second incoming flow at *Review claim* while it splits;
 - a Message boundary event on *Review claim*, and a BPMN Error route on *Register claim*, each while it splits;
@@ -223,7 +247,8 @@ Each split's completion publishes once and opens both successors in the same com
 - a host with one input and one output, with two inputs and two outputs, and with unsorted outputs, each refused;
 - a lowered Program with a splitting host on a Parallel branch fails closed in the scheduler (wrong algorithm 5), in TypeScript;
 - the onboarding of each settled-projection call site, by the census (wrong algorithm 7);
-- Temporal host admission classifies a host with two or more outputs as a token split (wrong algorithm 10).
+- Temporal host admission classifies a host with two or more outputs as a token split and as its work's host-driven wait (wrong algorithm 10);
+- a two-element effect wait carried across a forced Continue-As-New, which [`workflow-continuation.ts`](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) validates by string key, outside the compiler's reach.
 
 ## Oracles this family changes
 
@@ -249,7 +274,7 @@ Each split's completion publishes once and opens both successors in the same com
 
 Lane shape: proved
 
-Evidence: evaluator soundness [`fire_sound`](../../BpmnSemantics/SemanticProcess/Transition.lean#fire_sound) keeps its `activity` arm, whose step is the declared `OperationStep` (dispatch only); the existing completion and continuation-marking laws are restated over the wait's list and stay proved, so a legacy wait's one-element list is covered by the same theorems.
+Evidence: evaluator soundness [`fire_sound`](../../BpmnSemantics/SemanticProcess/Transition.lean#fire_sound) keeps its `activity` arm, whose step is the declared `OperationStep` (dispatch only). The continuation laws [`human_continuation_exchange`](../../BpmnSemantics/SemanticProcess/ContinuationMarkingLaws.lean), `effect_continuation_exchange`, `human_port_exchange` and `effect_port_exchange` of `ContinuationMarkingLaws` are restated over the wait's list and stay proved, so a legacy wait's one-element list is covered by the same theorems.
 
 **Deliberately open, checked instead:** the host's arrival agreeing with its work's legacy arrival when the host is read as a one-output operation, kept as the switch family's obligation as for the merging host; the `none` footprint; and `ACSP-SINGLE-01` as a theorem, which the finite placement checks and the scheduler counterexample witness instead. If a restated law needs a new `import all` opener of a hub without hidden-edit headroom, it joins this open boundary rather than raising a bound.
 
@@ -261,7 +286,7 @@ No new transition family: arrival and completion remain the steps they are.
 
 No new hosting mechanism: ingress (User Task completion, effect result), waits, timers, cancellation and lifecycle are the existing ones, and forks after a Task use the hosting a Parallel fork after the same Task uses. Effect delivery, retries and incidents read the wait's list where they read `output` today; an incident's retained wait keeps the list, so a resolved incident's result still marks every output.
 
-[Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) classifies an Activity host with two or more outputs as a token split, so the claim model's effect wait is admitted only through the concurrent analysis. Runtime state carries the list across Continue-As-New, a pre-release replacement under the [pre-release evolution policy](../PROJECT-DESIGN.md#pre-release-evolution-policy).
+[Host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) classifies an Activity host with two or more outputs both as a token split and as its work's host-driven wait (`hasHostDrivenWait`), so the claim model's effect wait is admitted only through the concurrent analysis and the host's own wait still counts as host-driven. Runtime state carries the list across Continue-As-New, a pre-release replacement under the [pre-release evolution policy](../PROJECT-DESIGN.md#pre-release-evolution-policy); its validators read `outputs` by string key and gain the two-element witness above.
 
 The preserved relation stays equality of hosted committed state and publications with the core's. Smallest refinement witness: the hosted pipeline over every journey, plus one forced Continue-As-New while *Order assessment* and *Inform customer* are both pending after the split.
 
@@ -279,7 +304,7 @@ A runtime-state change: the User Task and effect wait records' `output` becomes 
 
 ### Owners this implementation grows
 
-Derived with `node scripts/what-binds.ts`; every owner that growth would push past the review target moves a cohesive block into an existing or family-owned module before the edit. No size exception and no bound change is requested.
+Derived with `node scripts/what-binds.ts`; every owner that growth would push past the review target moves a cohesive block into an existing or family-owned module before the edit. No size exception and no bound change is requested. The owners at or near their review target are `NestedScopeControlAdmission`, `Lowering`, [`nested-scope-control-admission.ts`](../../packages/semantic-core/src/nested-scope-control-admission.ts), [`semantic-process-operation-admission.ts`](../../packages/semantic-core/src/semantic-process-operation-admission.ts) and [`semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts); before an arm would push one of them past its target, the representation's Rule 2 declaration names the block that moves into an existing module of its import closure and that move's `lean-fanout` result, so no new module enters a hub's cone.
 
 - **Lean:** [`RuntimeState`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) for the field, the readers the compiler names (first-order [`ContinuationMarking`](../../BpmnSemantics/SemanticProcess/ContinuationMarking.lean), [`WaitActivation`](../../BpmnSemantics/SemanticProcess/WaitActivation.lean), [`EffectCompletion`](../../BpmnSemantics/SemanticProcess/EffectCompletion.lean) and the data-input, data-output and parallel Multi-Instance step owners), [`ProgramStructuralValidation`](../../BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean) for the host rules, [`ActivityHostWork`](../../BpmnSemantics/SemanticProcess/ActivityHostWork.lean), [`ActivityHostLowering`](../../BpmnSemantics/SemanticProcess/ActivityHostLowering.lean), [`Lowering`](../../BpmnSemantics/SemanticProcess/Lowering.lean) for its dispatch, [`CheckedProcessAdmission`](../../BpmnSemantics/SemanticProcess/CheckedProcessAdmission.lean), [`CheckedPassThroughFlow`](../../BpmnSemantics/SemanticProcess/CheckedPassThroughFlow.lean), [`NestedScopeBranchWork`](../../BpmnSemantics/SemanticProcess/NestedScopeBranchWork.lean), [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean) and [`ScopeReentryAdmission`](../../BpmnSemantics/SemanticProcess/ScopeReentryAdmission.lean).
 - **TypeScript:** the [runtime state](../../packages/semantic-core/src/semantic-process-state.ts) and its 19 first-order readers, the [operation admission](../../packages/semantic-core/src/semantic-process-operation-admission.ts), the [Activity host accessors](../../packages/semantic-core/src/activity-host-work.ts) and their settled-projection call sites, the [source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts) and [host lowering](../../packages/bpmn-source/src/activity-host-lowering.ts), the [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts), the [checked pass-through flow](../../packages/semantic-core/src/checked-pass-through-flow.ts), the [scope-control admission](../../packages/semantic-core/src/nested-scope-control-admission.ts), the [re-entry admission](../../packages/semantic-core/src/scope-reentry-admission.ts), the [Program routing](../../packages/semantic-core/src/structured-scope-data-routing.ts), [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) and the [workflow continuation](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts).
@@ -292,7 +317,7 @@ The family registers the register entry, the profile artifact and README, scenar
 
 ## Cost
 
-Effort budget: 12 hours from 2026-11-07 13:30 CET, for proposal review, representation, widening and closure; at the limit the boundary is recorded and the family continues unless the evidence invalidates the path.
+Effort budget: 12 hours from 2026-11-07 13:30 CET, for proposal review, representation, widening and closure; at the limit the boundary is recorded and the family continues unless the evidence invalidates the path. Expected stop point at the limit: the representation commit (wait lists and the host rules) landed green on the branch, with admission widening and the Temporal and CIB evidence after it.
 
 ## Epistemic closure
 
