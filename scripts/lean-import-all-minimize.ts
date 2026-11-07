@@ -489,7 +489,9 @@ async function main(): Promise<void> {
     startWorker: (directory) => ({
       exited: exit(spawn("./scripts/lake.sh", ["env", "bash", "-c", workerScript(directory, parallel, deadline, leanArgs)], { stdio: "inherit" })),
     }),
-    build: (modules) => exit(spawn("./scripts/lake.sh", ["build", ...modules], { stdio: "inherit" })),
+    // A sweep's level lists exceed the wrapper's 16-target cap, so the run declares the batch that owns it, or itself.
+    build: (modules) => exit(spawn("./scripts/lake.sh", ["build", ...modules],
+      { stdio: "inherit", env: { ...process.env, LEAN_FULL_GATE: process.env.LEAN_FULL_GATE ?? "lean-import-all-minimize" } })),
   };
   process.stdout.write(`${await minimizeImportAlls(".", worktreeLeanSourceFiles(), files, host,
     { parallel, maxCompiles, search: inheritedOnly === -1 ? "every line" : "inherited lines" },

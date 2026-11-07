@@ -61,8 +61,15 @@ fi
 # Lean batch that owns it; full builds started as consumer discovery or "still red?" probes are
 # Finding 75 in docs/PROCESS-ASSESSMENT-LEDGER.md. Classification fails closed: only a
 # `BpmnSemantics.` submodule or a declared `lean_exe` is narrow, so package, facet and umbrella
-# spellings count as full. A permitted invocation prints nothing, because retained Lean memory
-# receipts hash the build output.
+# spellings count as full. A target list longer than 16 needs the same declaration, so an enumerated
+# reverse closure (877 modules, 1434 s, run as consumer discovery on 2026-11-07) cannot pass as
+# focused; the cap refuses lists, it does not measure the rebuild set. It admits the largest maintained
+# invocation (11 targets in scripts/verify.sh) and refuses enumerating a hub's direct importers (106 to
+# 661 per hub), both measured 2026-11-07. It does not stop consecutive builds of 16 or fewer targets,
+# a deep single target, or a build started through the `env` subcommand, which this classification
+# never sees. A permitted
+# invocation prints nothing, because retained Lean memory receipts hash the build output.
+wide_build_targets=16
 full_gate_required=false
 if [ "${1:-}" = "test" ]; then
   full_gate_required=true
@@ -86,13 +93,13 @@ elif [ "${1:-}" = "build" ]; then
     esac
     narrow_targets=$((narrow_targets + 1))
   done
-  if [ "$narrow_targets" -eq 0 ]; then
+  if [ "$narrow_targets" -eq 0 ] || [ "$narrow_targets" -gt "$wide_build_targets" ]; then
     full_gate_required=true
   fi
 fi
 if [ "$full_gate_required" = true ] &&
   ! printf '%s' "${LEAN_FULL_GATE:-}" | grep -Eqx '[A-Za-z0-9][A-Za-z0-9_.:/-]{0,127}'; then
-  echo "LEAN_BUILD_REFUSED a full-library build requires LEAN_FULL_GATE=<gate-or-batch-id>; during development build only the changed modules and their direct importers" >&2
+  echo "LEAN_BUILD_REFUSED a full-library build, or one naming more than $wide_build_targets targets, requires LEAN_FULL_GATE=<gate-or-batch-id>; during development build only the changed modules and the direct importers the TESTING-SPEC Lean row selects" >&2
   exit 64
 fi
 

@@ -16,7 +16,8 @@ const lakeWrapperPath = fileURLToPath(new URL("./lake.sh", import.meta.url));
  * named targets' import closure. Full builds started as consumer discovery or as "is it still red"
  * probes recur as [Finding 75](../docs/PROCESS-ASSESSMENT-LEDGER.md#finding-75), which a self-assessment
  * question alone did not stop. Classification is fail-closed: only a `BpmnSemantics.` submodule or a
- * declared `lean_exe` is narrow, so a package, facet or umbrella spelling cannot slip past as focused.
+ * declared `lean_exe` is narrow, so a package, facet or umbrella spelling cannot slip past as focused,
+ * and more than 16 narrow targets are a wide build, so enumerating a reverse closure cannot either.
  * The pass-through stays silent because retained memory receipts hash the build output.
  */
 test("the Lean wrapper requires a declared gate for every full-library build", async () => {
@@ -63,6 +64,17 @@ test("the Lean wrapper requires a declared gate for every full-library build", a
       const allowed = run(args, gate);
       assert.equal(allowed.status, 0, `${args.join(" ")}: ${allowed.stderr}`);
       assert.equal(allowed.stdout, `${args.join(" ")}\n`);
+      assert.equal(allowed.stderr, "", "a permitted invocation must add no output");
+    }
+    const submodules = (count: number) =>
+      ["build", ...Array.from({ length: count }, (_, index) => `BpmnSemantics.Module${index}`)];
+    const enumerated = run(submodules(17));
+    assert.equal(enumerated.status, 64, `17 narrow targets: ${enumerated.stdout}${enumerated.stderr}`);
+    assert.equal(enumerated.stdout, "", "an enumerated wide build reached Lake");
+    assert.match(enumerated.stderr, /LEAN_BUILD_REFUSED .*16 .*LEAN_FULL_GATE/u);
+    for (const [args, gate] of [[submodules(16), undefined], [submodules(17), "effect-data-shared-batch"]] as const) {
+      const allowed = run(args, gate);
+      assert.equal(allowed.status, 0, `${args.length - 1} targets: ${allowed.stderr}`);
       assert.equal(allowed.stderr, "", "a permitted invocation must add no output");
     }
     const umbrella = run(["build", "BpmnSemantics"], "effect-data-shared-batch");
