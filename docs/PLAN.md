@@ -98,19 +98,19 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Kernel IL orthogonalization, batch 5, first family: the merge at User, Service and Send Tasks through an appended Activity host ([specification](capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md)). The split waits for the wait-record stage and `PC-BASIC-01` for the scope host, both scheduled below.
+Current task: Kernel IL orthogonalization, batch 5, second family: the implicit split at None Starts and embedded Sub-Processes through an appended scope host and scope exit ([proposal](capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md)). Close call: the merges at Sub-Processes and Calls wait, because admitted they reach no CIB test model.
 
-Deliverable: `PC-CF-07`'s merge clause and `PC-BASIC-02` for ordered arrivals at User, Service and Send Tasks, landed on `main`.
+Deliverable: `PC-BASIC-01`'s multiple outgoing Start flows (root, and body Starts outside fork regions) and `PC-CF-07`'s Sub-Process split outside fork regions, landed on `main`.
 
-Acceptance blockers: hosted `verify-complete` on [#60](https://github.com/mbackschat/bpmn-lean-experiment/pull/60).
+Acceptance blockers: the cold proposal review.
 
-Current result: representation `be083b0e` and widening `3334f2a7` (Rule 2 checked); closure lanes green at `1425a0b8` after fixing the never-compiled CIB probe; closure review approved after one audited round (`16ff902a`); graduated. `ActivityHostWork` fan-out bound 441 (the 440 count missed the admission vertex). The none-end fan-in refusal moved to `AssessRequest`, an oracle the proposal missed.
+Current result: the Activity host family landed at `401a1164` (7 h 47 min). The scope host spike passes `lean-fanout` unchanged; one owner needs a block moved before its arms.
 
 Owner items: confirm the incremental re-decision after the stop condition fired; renew six stale size-exception rationales.
 
-Effort budget: 12 hours from 2026-11-06 21:10 CET; at the limit record the boundary and continue unless the evidence invalidates the path.
+Effort budget: 12 hours from 2026-11-07 05:00 CET; at the limit record the boundary and continue unless the evidence invalidates the path.
 
-Next action: fast-forward `main` on green `verify-complete`, then propose the scope host family (Sub-Process, Call and Start flow lists, carrying `PC-BASIC-01`).
+Next action: the representation commit under Rule 2 once the proposal review approves.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
 
