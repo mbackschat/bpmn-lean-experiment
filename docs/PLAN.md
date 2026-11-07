@@ -102,15 +102,15 @@ Current task: Kernel IL orthogonalization, batch 5, second family: the implicit 
 
 Deliverable: `PC-BASIC-01`'s unconditioned multiple outgoing Start flows (root, and body Starts outside fork regions) and `PC-CF-07`'s unconditioned Sub-Process split outside fork regions, landed on `main`. Conditional and default Start flows stay open, bound to `PC-CF-07`'s conditional outgoing flows; the [proposal](capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#question-and-delivery-boundary) lists every residual.
 
-Acceptance blockers: the representation and widening commits, the closure review and hosted `verify-complete`.
+Acceptance blockers: the closure review and hosted `verify-complete`.
 
-Current result: proposal approved, audit `a925a8c9`; Activity host landed at `401a1164` (7 h 47 min). The scope host spike passes `lean-fanout` unchanged; three owners at their review target need blocks moved before their arms.
+Current result: proposal approved (audit `a925a8c9`); representation `4a8abd4b` and widening `4f194d0f` committed under checked Rule 2 declarations; every closure lane green at `4f194d0f` under receipts.
 
 Owner items: confirm the incremental re-decision after the stop condition fired; renew six stale size-exception rationales.
 
 Effort budget: 12 hours from 2026-11-07 05:00 CET; at the limit record the boundary and continue unless the evidence invalidates the path.
 
-Next action: the representation commit under its Rule 2 declaration.
+Next action: the cold closure review at the closure documentation commit, then graduation and the branch push flow.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
 
