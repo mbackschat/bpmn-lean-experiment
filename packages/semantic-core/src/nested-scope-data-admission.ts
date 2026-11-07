@@ -1,5 +1,5 @@
 import { sameCallDataInterface, variableMappingsValid } from "./call-data-admission.js";
-import { settledOperations } from "./activity-host-work.js";
+import { activityHostSettledProjection, settledOperations } from "./activity-host-work.js";
 import { CallDataKind } from "./call-data-contract.js";
 import type { VariableMappingCallData } from "./call-data-contract.js";
 import { checkedNodeMerges } from "./checked-pass-through-flow.js";
@@ -514,6 +514,11 @@ function operationVertex(program: SemanticProcessProgram, operation: SemanticOpe
         child: { scope: operation.childScopeId, entry, origin: operation.origin.elementId },
       };
     }
+    // ACTH-ADMIT-01: a host is the vertex of its work's legacy projection, its inputs being its several predecessors.
+    case SemanticOperationKind.Activity: {
+      const settled = activityHostSettledProjection(operation);
+      return settled === null ? null : operationVertex(program, settled, handlers);
+    }
     default: return null;
   }
 }
@@ -628,8 +633,8 @@ const programOperationKinds: ReadonlySet<SemanticOperationKind> = new Set([
   SemanticOperationKind.Initiate, SemanticOperationKind.EnterScope, SemanticOperationKind.AwaitUserTask,
   SemanticOperationKind.AwaitEffect, SemanticOperationKind.CompleteScope, SemanticOperationKind.ReachNoneEnd,
   SemanticOperationKind.InvokeProcess, SemanticOperationKind.ReturnProcess,
-  // SRE-ADMIT-01: root Choices and Merges, which only the re-entry route admits.
-  SemanticOperationKind.Choose, SemanticOperationKind.MergeExclusive,
+  // SRE-ADMIT-01: root Choices and Merges, which only the re-entry route admits; ACTH-ADMIT-01: root hosts likewise.
+  SemanticOperationKind.Choose, SemanticOperationKind.MergeExclusive, SemanticOperationKind.Activity,
 ]);
 
 const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([

@@ -27,3 +27,13 @@ export function checkedNodeForks(node: CheckedNode, flows: readonly CheckedSeque
   return ((node.kind === CheckedNodeKind.ParallelGateway || node.kind === CheckedNodeKind.InclusiveGateway) &&
     node.direction === GatewayDirection.Diverging) || checkedNodeSplits(node, flows);
 }
+
+/**
+ * ACTH-ADMIT-01: a User or Service Task with two or more incoming flows, which lowers to one Activity host over those
+ * flows. Routing counts it as the re-entry account's merge and the concurrent account refuses it, as both do the
+ * Program's host.
+ */
+export function checkedNodeMergingTask(node: CheckedNode, flows: readonly CheckedSequenceFlow[]): boolean {
+  return (node.kind === CheckedNodeKind.UserTask || node.kind === CheckedNodeKind.ServiceTask) &&
+    flows.filter(({ targetId }) => targetId === node.id).length >= 2;
+}

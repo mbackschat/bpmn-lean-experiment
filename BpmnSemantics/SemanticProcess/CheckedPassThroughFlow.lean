@@ -28,4 +28,11 @@ def forks (flows : List CheckedSequenceFlow) : CheckedNode → Bool
   | .parallelGateway _ .diverging | .inclusiveGatewayDiverging .. => true
   | node => splits flows node
 
+/-- ACTH-ADMIT-01: a User or Service Task with two or more incoming flows, which lowers to one Activity host over those
+flows. Routing counts it as the re-entry account's merge and the concurrent account refuses it, as both do the
+Program's host. -/
+def mergingTask (flows : List CheckedSequenceFlow) : CheckedNode → Bool
+  | .userTask id .. | .serviceTask id .. => 2 ≤ (flows.filter (·.targetId == id)).length
+  | _ => false
+
 end BpmnSemantics.SemanticProcess.CheckedPassThroughFlow

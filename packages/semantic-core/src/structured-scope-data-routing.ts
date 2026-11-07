@@ -7,7 +7,7 @@
 import { CallDataKind } from "./call-data-contract.js";
 import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { CheckedNode, CheckedProcess, CheckedSequenceFlow } from "./checked-process-contract.js";
-import { checkedNodeForks, checkedNodeMerges } from "./checked-pass-through-flow.js";
+import { checkedNodeForks, checkedNodeMerges, checkedNodeMergingTask } from "./checked-pass-through-flow.js";
 import {
   nestedScopeControlCheckedShape, nestedScopeControlCheckedStartNameRule, nestedScopeControlProgramShape,
   nestedScopeControlProgramStartNameRule,
@@ -61,8 +61,9 @@ function programRestrictionsHold(program: SemanticProcessProgram): boolean {
   const inRoot = (kind: SemanticOperationKind): boolean =>
     program.operations.some(operation => operation.kind === kind && scopeOf.get(operation.id) === root);
   return program.identity.sourceOverlay !== null && root !== undefined &&
-    // PTPB-ADMIT-01: a one-input merge is a lowered pass-through Task, not a merge region.
-    !program.operations.some(operation => operation.kind === SemanticOperationKind.MergeExclusive && operation.inputs.length >= 2) &&
+    // PTPB-ADMIT-01: a one-input merge is a lowered pass-through Task, not a merge region; a host always merges.
+    !program.operations.some(operation => operation.kind === SemanticOperationKind.Activity ||
+      (operation.kind === SemanticOperationKind.MergeExclusive && operation.inputs.length >= 2)) &&
     !((inRoot(SemanticOperationKind.Duplicate) || inRoot(SemanticOperationKind.SelectMany)) &&
       inRoot(SemanticOperationKind.InvokeProcess)) &&
     calledProcessesAdmitted(program.operations.flatMap(operation =>
@@ -74,8 +75,10 @@ function checkedRestrictionsHold(source: CheckedProcess): boolean {
   const scopeOf = new Map(source.nodeScopes.map(({ nodeId, scopeId }) => [nodeId, scopeId]));
   const rootNodes = source.nodes.filter(({ id }) => scopeOf.get(id) === root);
   return source.identity.sourceOverlay !== null && root !== undefined &&
-    // PTSM-ADMIT-01: a pass-through node with several incoming flows is a merge, as its lowered many-input merge is.
-    !source.nodes.some(node => node.kind === CheckedNodeKind.ExclusiveMerge || checkedNodeMerges(node, source.sequenceFlows)) &&
+    // PTSM-ADMIT-01 and ACTH-ADMIT-01: a pass-through node or Task with several incoming flows is a merge, as its
+    // lowered many-input merge or host is.
+    !source.nodes.some(node => node.kind === CheckedNodeKind.ExclusiveMerge || checkedNodeMerges(node, source.sequenceFlows) ||
+      checkedNodeMergingTask(node, source.sequenceFlows)) &&
     !(forks(rootNodes, source.sequenceFlows) && rootNodes.some(({ kind }) => kind === CheckedNodeKind.CallActivity)) &&
     calledProcessesAdmitted(source.nodes.flatMap(node => node.kind === CheckedNodeKind.CallActivity ? [node] : []));
 }

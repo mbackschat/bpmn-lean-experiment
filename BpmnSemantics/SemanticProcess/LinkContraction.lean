@@ -47,6 +47,20 @@ private def pairValid (source : CheckedProcess) (throwIds : List NodeId) (throwE
     throwScope.isSome && throwScope == checkedNodeScopeId? source catchEvent.1 &&
     entryRoot.any (·.originElementId.value == source.processId.value)
 
+/-- ACTH-ADMIT-01: several throws of one name are admitted exactly when that name's catch leads to a User, Service or
+Send Task in the Process root, which becomes a merging Task once contracted. Every other repeated name, including one
+whose catch leads to an already admitted merge, stays refused. -/
+private def repeatedThrowsAdmitted (source : CheckedProcess) (names : List String) (catches : List (NodeId × String)) :
+    Bool :=
+  let root := (source.definitionScopes.find? fun scope =>
+    scope.parentScopeId.isNone && scope.originElementId.value == source.processId.value).map (·.id)
+  catches.all fun (catchId, name) =>
+    names.count name < 2 ||
+      match (source.sequenceFlows.find? (·.sourceId == catchId)).bind fun flow =>
+          source.nodes.find? (·.id == flow.targetId) with
+      | some (.userTask id ..) | some (.serviceTask id ..) => root.isSome && checkedNodeScopeId? source id == root
+      | _ => false
+
 /-- The raw identity rules the contracted graph can no longer show for its removed elements. -/
 private def rawIdentityValid (source : CheckedProcess) : Bool :=
   let nodeIds := source.nodes.map (·.id.value)
@@ -72,8 +86,8 @@ def contractLinks? (source : CheckedProcess) : Option CheckedProcess :=
     let valid :=
       source.identity.semanticProfile == nestedScopeDataProfileId &&
         rawIdentityValid source &&
-        names.Nodup && catchNames.Nodup &&
-        pairs.length == throws.length && throws.length == catches.length &&
+        catchNames.Nodup && pairs.length == throws.length && catchNames.all names.contains &&
+        repeatedThrowsAdmitted source names catches &&
         pairs.all fun (throwEvent, catchEvent) => pairValid source throwIds throwEvent catchEvent
     if !valid then none
     else

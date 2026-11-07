@@ -1,6 +1,7 @@
 import { isDeclaredMessageEventSubProcess, lowerInterruptingMessageEventSubProcessDeclarations, lowerMessageEventSubProcessCompletion } from "./interrupting-message-event-subprocess-lowering.js";
 import { lowerTransactionDeclarations, lowerTransactionCancel } from "./transaction-source-lowering.js";
 import {
+  ActivityWorkKind,
   BoundaryInterruption,
   CheckedNodeKind,
   GatewayDirection,
@@ -44,6 +45,7 @@ import {
 } from "./semantic-process-identifiers.js";
 import { lowerTerminateEndEvent } from "./terminate-end-event-lowering.js";
 import { lowerConfiguredTask } from "./configured-task-lowering.js";
+import { lowerActivityHost } from "./activity-host-lowering.js";
 import { normalizeTimerDurationMs } from "./timer-duration-normalization.js";
 import {
   lowerSequentialMultiInstanceUserTask,
@@ -251,16 +253,21 @@ function lowerNode(
           },
         });
       }
+      const task = {
+        elementId: node.id,
+        name: node.name,
+        ...(node.metadata === undefined ? {} : { metadata: node.metadata }),
+      };
+      if (incoming.length >= 2) {
+        return scoped(lowerActivityHost(base, incoming, requireOnly(outgoing, node.id, "outgoing"),
+          { kind: ActivityWorkKind.UserTask, task }));
+      }
       return scoped({
         ...base,
         kind: SemanticOperationKind.AwaitUserTask,
         input: requireOnly(incoming, node.id, "incoming"),
         output: requireOnly(outgoing, node.id, "outgoing"),
-        task: {
-          elementId: node.id,
-          name: node.name,
-          ...(node.metadata === undefined ? {} : { metadata: node.metadata }),
-        },
+        task,
       });
     }
     case CheckedNodeKind.DataInputUserTask:
@@ -352,6 +359,13 @@ function lowerNode(
         message: { elementId: node.id, channel: node.channel },
       });
     case CheckedNodeKind.ServiceTask:
+      if (incoming.length >= 2 && node.bpmnErrorRoute === null) {
+        return scoped(lowerActivityHost(base, incoming, requireOnly(outgoing, node.id, "outgoing"), {
+          kind: ActivityWorkKind.Effect,
+          effect: { elementId: node.id, descriptor: node.descriptor, inputMappings: node.inputMappings,
+            outputMappings: node.outputMappings },
+        }));
+      }
       return scoped({
         ...base,
         kind: SemanticOperationKind.AwaitEffect,

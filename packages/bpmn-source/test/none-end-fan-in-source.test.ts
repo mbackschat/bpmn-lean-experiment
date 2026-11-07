@@ -106,10 +106,11 @@ test("NEF-ADMIT-01 admits two flows of one Choice into the End", async () => {
     ["place:Flow_Booked", "place:Flow_Call", "place:Flow_Reject"]);
 });
 
-test("NEF-ADMIT-01 refuses fan-in at an Activity, fan-in under a fork and a second root End", async () => {
-  await refused("the reject candidate redirected to Book travel", edited(travel,
+test("NEF-ADMIT-01 refuses fan-in at a Sub-Process, fan-in under a fork and a second root End", async () => {
+  // ACTH-ADMIT-01 admits fan-in at a User, Service or Send Task, so the refused Activity is the Sub-Process.
+  await refused("the reject candidate redirected to Assess request", edited(travel,
     [`<sequenceFlow id="Flow_Reject" sourceRef="RouteRequest" targetRef="RequestClosed">`,
-      `<sequenceFlow id="Flow_Reject" sourceRef="RouteRequest" targetRef="BookTravel">`]));
+      `<sequenceFlow id="Flow_Reject" sourceRef="RouteRequest" targetRef="AssessRequest">`]));
   // Fan-in under a fork, isolated from SRE-ROUTE-01: the retained root-fork model, admitted today, with both branches
   // ending at its End instead of joining. The concurrent account's End arity refuses it.
   assert.equal((await compile(onboarding, "employee-onboarding")).status, BpmnCompilationStatus.Accepted);

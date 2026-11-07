@@ -158,7 +158,8 @@ export async function domainCases(): Promise<readonly DomainCase[]> {
     addConcurrentStructuredScopeDataCases(context, add);
   }
   for (const id of ["scope-reentry-claim-rework-then-approve", "scope-reentry-contract-revise-then-sign",
-    "exclusive-choice-arity-complaint-delivery", "none-end-fan-in-travel-booked", "single-scope-models-invoice-valid"]) {
+    "exclusive-choice-arity-complaint-delivery", "none-end-fan-in-travel-booked", "single-scope-models-invoice-valid",
+    "activity-host-merge-claim-expert"]) {
     const context = (await loadAndCompileCases(pipelineCases.filter(candidate => candidate.id === id)))[0];
     assert.ok(context !== undefined, `the ${id} schedule is registered`);
     addScopeReentryCases(context, add);

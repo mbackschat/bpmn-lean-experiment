@@ -87,6 +87,23 @@ const linkEnds = (process: CheckedProcess, kind: CheckedNodeKind.LinkThrowEvent 
 const distinct = (values: readonly string[]): boolean => new Set(values).size === values.length;
 
 /**
+ * ACTH-ADMIT-01: several throws of one name are admitted exactly when that name's catch leads to a User, Service or Send
+ * Task in the Process root, which becomes a merging Task once contracted. Every other repeated name, including one
+ * whose catch leads to an already admitted merge, stays refused.
+ */
+function repeatedThrowsAdmitted(process: CheckedProcess, throws: readonly LinkEnd[], catches: readonly LinkEnd[]): boolean {
+  const root = process.definitionScopes.find(({ parentScopeId, originElementId }) =>
+    (parentScopeId === null || parentScopeId === undefined) && originElementId === process.processId)?.id;
+  return catches.every(catchEvent => {
+    if (throws.filter(({ linkName }) => linkName === catchEvent.linkName).length < 2) return true;
+    const successor = process.sequenceFlows.find(({ sourceId }) => sourceId === catchEvent.id)?.targetId;
+    const node = process.nodes.find(({ id }) => id === successor);
+    return node !== undefined && (node.kind === CheckedNodeKind.UserTask || node.kind === CheckedNodeKind.ServiceTask) &&
+      process.nodeScopes.some(({ nodeId, scopeId }) => nodeId === node.id && scopeId === root);
+  });
+}
+
+/**
  * The explicit-flow twin: each throw's incoming flow is retargeted to its catch's successor, and the throw, the catch,
  * the catch's outgoing flow and their ownership entries are removed. The process itself when it holds no Link arm;
  * `undefined` for any excluded pairing form or for a Link arm under another profile.
@@ -101,8 +118,9 @@ export function contractLinks(process: CheckedProcess): CheckedProcess | undefin
     return catchEvent === undefined ? [] : [[throwEvent, catchEvent] as const];
   });
   if (process.identity.semanticProfile !== SemanticProfileId.NestedEmbeddedScopeData || !rawIdentityValid(process) ||
-    !distinct(throws.map(({ linkName }) => linkName)) || !distinct(catches.map(({ linkName }) => linkName)) ||
-    pairs.length !== throws.length || throws.length !== catches.length ||
+    !distinct(catches.map(({ linkName }) => linkName)) || pairs.length !== throws.length ||
+    !catches.every(({ linkName }) => throws.some(throwEvent => throwEvent.linkName === linkName)) ||
+    !repeatedThrowsAdmitted(process, throws, catches) ||
     !pairs.every(([throwEvent, catchEvent]) => pairValid(process, throwIds, throwEvent, catchEvent))) return undefined;
   const catchIds = new Set(catches.map(({ id }) => id));
   const catchFlows = process.sequenceFlows.filter(({ sourceId }) => catchIds.has(sourceId));

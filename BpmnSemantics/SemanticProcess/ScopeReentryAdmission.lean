@@ -143,16 +143,20 @@ private def operationJoint? (program : Program) (root : String) (operation : Sem
 private def rootScopeOf (scopes : List DefinitionScope) (processId : ProcessId) : Option DefinitionScopeId :=
   (scopes.find? fun scope => scope.parentScopeId.isNone && scope.originElementId.value == processId.value).map (·.id)
 
-/-- SRE-ROUTE-01: a Program of the nested scope-data profile whose root body holds a Choice or a Merge. -/
+/-- SRE-ROUTE-01: a Program of the nested scope-data profile whose root body holds a Choice, a Merge or an Activity host,
+which always merges since the host Program rules require two inputs (ACTH-ADMIT-01). -/
 def programReentry (program : Program) : Bool :=
   program.identity.semanticProfile == nestedScopeDataProfileId &&
-    program.operations.any fun operation => operationJoint operation &&
+    program.operations.any fun operation =>
+      (operationJoint operation || match operation with | .activity _ => true | _ => false) &&
       (program.operationScopes.find? (·.operationId == operation.id)).map (·.scopeId) ==
         rootScopeOf program.definitionScopes program.processId
 
-/-- SRE-ROUTE-01 over the checked graph, independent of the Program; consulted only under the profile. -/
+/-- SRE-ROUTE-01 over the checked graph, independent of the Program; consulted only under the profile. A merging Task
+routes here as its lowered host does (ACTH-ADMIT-01). -/
 def checkedReentry (source : CheckedProcess) : Bool :=
-  source.nodes.any fun node => checkedJoint source node &&
+  source.nodes.any fun node =>
+    (checkedJoint source node || CheckedPassThroughFlow.mergingTask source.sequenceFlows node) &&
     (source.nodeScopes.find? (·.nodeId == node.id)).map (·.scopeId) ==
       rootScopeOf source.definitionScopes source.processId
 

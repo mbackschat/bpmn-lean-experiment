@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.EffectDataAdmission
 import BpmnSemantics.SemanticProcess.CheckedPassThroughFlow
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 meta import BpmnSemantics.PrivateEquationLemmas
 
 /-! # Nested scope-data profile admission
@@ -326,10 +327,11 @@ def childCompletion? (program : Program) (child : DefinitionScopeId) : Option Co
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeData #[`childCompletion?]
 
-/-- A root Choice's and Merge's inputs too, which only the re-entry account's root graph admits. -/
+/-- A root Choice's, Merge's and host's inputs too, which only the re-entry account's root graph admits. -/
 def operationInputs : SemanticOperation → List ControlPlaceId
   | .enterScope _ _ input .. | .invokeProcess _ _ input .. | .choose _ _ input .. => [input]
   | .mergeExclusive _ _ inputs _ => inputs
+  | .activity host => host.inputs
   | operation => SerialBusinessTask.operationInputs operation
 
 /-- The unique operation consuming `place`; scope completions consume no place. -/
@@ -338,25 +340,37 @@ def consumer? (program : Program) (place : ControlPlaceId) : Option String := do
     (operationInputs op).contains place)
   return consumer.id.value
 
+/-- The vertex of a User Task wait, the legacy operation's and its host's alike (ACTH-ADMIT-01). -/
+private def humanVertex? (program : Program) (id scope : String) (output : ControlPlaceId) (task : UserTaskDefinition) :
+    Option Vertex := do
+  if !metadataValid (SerialBusinessTask.programHandlers program) task.metadata then none
+  else return { id, scope, kind := .human, outputs := [← consumer? program output] }
+
+/-- The vertex of an effect wait without a BPMN Error route, the legacy operation's and its host's alike. -/
+private def serviceVertex? (program : Program) (id scope : String) (origin : BpmnElementOrigin) (output : ControlPlaceId)
+    (effect : EffectDefinition) : Option Vertex := do
+  if !(origin.elementId == effect.elementId && serviceValid (SerialBusinessTask.programHandlers program)
+      effect.descriptor effect.inputMappings effect.outputMappings) then none
+  else return { id, scope, kind := .service, outputs := [← consumer? program output],
+                reads := readNames effect.inputMappings, writes := effect.outputMappings.map (·.target) }
+
 def operationVertex? (program : Program) (operation : SemanticOperation) : Option Vertex := do
   let id := operation.id.value
   let scope ← dataOperationScope? program operation
   let consumer := consumer? program
-  let handlers := SerialBusinessTask.programHandlers program
   match operation with
   | .initiate _ _ output => return { id, scope, kind := .start, outputs := [← consumer output] }
   | .reachNoneEnd .. => return { id, scope, kind := .finish, outputs := [] }
   -- Every checked Exclusive merge has at least two inputs (`CheckedProcessAdmission`), so a one-input merge is an
   -- Abstract or Manual Task (PTT-ADMIT-01); a merge of two or more is no serial vertex.
   | .mergeExclusive _ _ [_] output => return { id, scope, kind := .passThrough, outputs := [← consumer output] }
-  | .awaitUserTask _ _ _ output task =>
-      if !metadataValid handlers task.metadata then none
-      else return { id, scope, kind := .human, outputs := [← consumer output] }
-  | .awaitEffect _ origin _ output effect none =>
-      if !(origin.elementId == effect.elementId &&
-          serviceValid handlers effect.descriptor effect.inputMappings effect.outputMappings) then none
-      else return { id, scope, kind := .service, outputs := [← consumer output],
-                    reads := readNames effect.inputMappings, writes := effect.outputMappings.map (·.target) }
+  | .awaitUserTask _ _ _ output task => humanVertex? program id scope output task
+  | .awaitEffect _ origin _ output effect none => serviceVertex? program id scope origin output effect
+  -- ACTH-ADMIT-01: a host is the vertex of its work's legacy projection, its inputs being its several predecessors.
+  | .activity host => match ← host.projection? (← host.inputs.head?) with
+      | .awaitUserTask _ _ _ output task => humanVertex? program id scope output task
+      | .awaitEffect _ origin _ output effect none => serviceVertex? program id scope origin output effect
+      | _ => none
   | .enterScope _ origin _ childEntry child =>
       return { id, scope, kind := .subProcess child.value (← consumer childEntry) origin.elementId.value,
                outputs := [← consumer (← childCompletion? program child)] }
@@ -404,6 +418,7 @@ def programEnvelope? (program : Program) : Option (DefinitionScopeId × Operatio
       | .initiate _ origin _ | .awaitUserTask _ origin ..
       | .awaitEffect _ origin .. | .enterScope _ origin .. | .invokeProcess _ origin ..
       | .choose _ origin .. | .mergeExclusive _ origin .. => some origin.elementId.value
+      | .activity host => some host.origin.elementId.value
       | _ => none) ++ (arrivals.map (·.1)).eraseDups ++ program.controlPlaces.map (·.origin.elementId.value)
     if !(rootCompleted && completions.length == program.definitionScopes.length - calledRoots &&
         arrivalsRooted && identities.eraseDups.length == identities.length) then none

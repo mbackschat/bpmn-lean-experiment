@@ -22,6 +22,7 @@ import { passThroughParallelBranchesPipelineCases } from "./pass-through-paralle
 import { noneIntermediateThrowPipelineCases } from "./none-intermediate-throw-pipeline-cases.ts";
 import { passThroughImplicitSplitMergePipelineCases } from "./pass-through-implicit-split-merge-pipeline-cases.ts";
 import { linkEventsPipelineCases } from "./link-events-pipeline-cases.ts";
+import { activityHostMergePipelineCases } from "./activity-host-merge-pipeline-cases.ts";
 import { singleScopeModelsPipelineCases } from "./single-scope-models-pipeline-cases.ts";
 import { sendTaskPipelineCases } from "./send-task-pipeline-cases.ts";
 import { exclusiveChoiceWithoutDefaultPipelineCases } from "./exclusive-choice-without-default-pipeline-cases.ts";
@@ -638,6 +639,7 @@ export const pipelineCases = Object.freeze([
   ...noneIntermediateThrowPipelineCases,
   ...passThroughImplicitSplitMergePipelineCases,
   ...linkEventsPipelineCases,
+  ...activityHostMergePipelineCases,
   ...singleScopeModelsPipelineCases,
   ...sendTaskPipelineCases,
   ...exclusiveChoiceWithoutDefaultPipelineCases,

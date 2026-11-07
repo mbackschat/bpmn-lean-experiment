@@ -295,8 +295,10 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
         | .directMessage .. | .unspecifiedMessage => false) &&
         incomingCount flows id = 0 && outgoingCount flows id = 1 &&
         flows.any fun flow => decide (flow.id = outputFlowId && flow.sourceId = id)
+  -- ACTH-ADMIT-01: under the pass-through merge's flags a User or Service Task may merge several incoming flows; placement
+  -- (the re-entry root graph only) is the profile's own admission.
   | .userTask id _ _ =>
-      incomingCount flows id = 1 && outgoingCount flows id = 1
+      (incomingCount flows id = 1 || (mixed && variableMerge && incomingCount flows id ≥ 2)) && outgoingCount flows id = 1
   -- The three source identities are what the copy resolves by, so a shared one would let the
   -- association read the DataInput it is meant to fill.
   | .dataInputUserTask id _ directInput =>
@@ -404,7 +406,8 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
           singleStringLiteralMapping inputMappings &&
           singleLocalVariableMapping outputMappings &&
           wellFormedCheckedBpmnErrorRoute id route)))) &&
-        incomingCount flows id = 1 && outgoingCount flows id = 1
+        (incomingCount flows id = 1 || (mixed && variableMerge && route.isNone && incomingCount flows id ≥ 2)) &&
+        outgoingCount flows id = 1
   | .parallelGateway id .diverging =>
       incomingCount flows id = 1 && outgoingCount flows id ≥ 2
   | .parallelGateway id .converging =>

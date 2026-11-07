@@ -128,7 +128,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "User Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Occurrence-bound wait and completion; string/null normally, with one Boolean and one literal group/form profile.",
+    restriction: "Occurrence-bound wait and completion; string/null normally, with one Boolean and one literal group/form profile. Under the nested scope-data profile, a User Task without data, boundary or Multi-Instance variants may merge several incoming flows in the Process root of a re-entry graph, each arriving token starting a fresh occurrence.",
     cibEvidence: exactCib("user-task-assignment-form-metadata"),
   },
   {
@@ -176,7 +176,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Service Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Exact registered bindings only: payload-free effects, bounded scalar mappings, one generation-1 incident account, or overlay-bound named operations with immutable enclosing String/null inputs and complete local results in serial or single-control mixed task graphs. The portable effect-data profile instead admits a serial chain of Service Tasks without Human Tasks whose handler results carry one structured item per output: a String of at most 1,024 UTF-8 bytes, Null, Boolean, Integer, exact Decimal, or a Map whose fields may nest Lists and Maps, but never a root List, within 16,384 canonical bytes. Inputs receive copies, so a handler changes Process data only through its result. A hosted Start is refused when the reserved result of a task or the successful journey cannot fit the capacity envelope; earlier profiles refuse structured results. The embedded completion profile also admits data-free overlay-bound Service Tasks wherever it admits a User Task in nested and concurrent Sub-Process bodies, never in a called body or beside a Call, at most 32 counted once per merge branch like its task bound; their Activities run concurrently with each other and with human work, and in a Program with scope data they may map exact ${name} inputs and outputs resolved along their own Sub-Process occurrence's chain. No general JUEL or Java delegate compatibility.",
+    restriction: "Exact registered bindings only: payload-free effects, bounded scalar mappings, one generation-1 incident account, or overlay-bound named operations with immutable enclosing String/null inputs and complete local results in serial or single-control mixed task graphs. The portable effect-data profile instead admits a serial chain of Service Tasks without Human Tasks whose handler results carry one structured item per output: a String of at most 1,024 UTF-8 bytes, Null, Boolean, Integer, exact Decimal, or a Map whose fields may nest Lists and Maps, but never a root List, within 16,384 canonical bytes. Inputs receive copies, so a handler changes Process data only through its result. A hosted Start is refused when the reserved result of a task or the successful journey cannot fit the capacity envelope; earlier profiles refuse structured results. The embedded completion profile also admits data-free overlay-bound Service Tasks wherever it admits a User Task in nested and concurrent Sub-Process bodies, never in a called body or beside a Call, at most 32 counted once per merge branch like its task bound; their Activities run concurrently with each other and with human work, and in a Program with scope data they may map exact ${name} inputs and outputs resolved along their own Sub-Process occurrence's chain. Under the nested scope-data profile, such a Service Task without a BPMN Error route may merge several incoming flows in the Process root of a re-entry graph, each arriving token starting a fresh occurrence. No general JUEL or Java delegate compatibility.",
     cibEvidence: exactCib("service-task-effect-success"),
   },
   {
@@ -184,7 +184,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Activities",
     element: "Send Task",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Under the nested scope-data profile only: a Send Task performed by a handler the source overlay binds through camunda:delegateExpression, with camunda:asyncBefore and input parameters, wherever that profile admits a mapped Service Task. It executes as that Service Task's effect, whose published arguments carry the send data, such as the recipient and the correlation key, and its handler result must be empty, since no output is admitted on a Send Task. No Message is constructed and no Message Flow, messageRef or operationRef is read; mail, external, class and expression implementations and every other profile are refused.",
+    restriction: "Under the nested scope-data profile only: a Send Task performed by a handler the source overlay binds through camunda:delegateExpression, with camunda:asyncBefore and input parameters, wherever that profile admits a mapped Service Task. It executes as that Service Task's effect, whose published arguments carry the send data, such as the recipient and the correlation key, and its handler result must be empty, since no output is admitted on a Send Task. No Message is constructed and no Message Flow, messageRef or operationRef is read; mail, external, class and expression implementations and every other profile are refused. Like that Service Task, it may merge several incoming flows in the Process root of a re-entry graph.",
     cibEvidence: notSelected,
   },
   {
@@ -376,7 +376,7 @@ export const mvpBpmnCapabilities = Object.freeze([
     family: "Intermediate Throw Events",
     element: "Link Intermediate Throw and Catch Event pair",
     support: BpmnCapabilitySupport.BoundedStandard,
-    restriction: "Under the nested scope-data profile only: one throw and one catch of each Link name in one scope of the executed Process, the throw with one incoming flow and the catch with one unconditioned outgoing flow. The pair behaves exactly as the Sequence Flow it replaces and publishes no occurrence or wait. No several throws of one name, chains, source or target references, asynchronous continuations, listeners, called Processes or Multi-Instance bodies.",
+    restriction: "Under the nested scope-data profile only: one throw and one catch of each Link name in one scope of the executed Process, the throw with one incoming flow and the catch with one unconditioned outgoing flow. The pair behaves exactly as the Sequence Flow it replaces and publishes no occurrence or wait. Several throws of one name are admitted only where their catch leads to a merging User, Service or Send Task in the Process root. No other several throws of one name, chains, source or target references, asynchronous continuations, listeners, called Processes or Multi-Instance bodies.",
     cibEvidence: notSelected,
   },
   {

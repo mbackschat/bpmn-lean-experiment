@@ -304,6 +304,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** Abstract Tasks, Manual Tasks and None Throws of the nested scope-data profile with several incoming flows in the Process root of a re-entry graph or several unconditioned outgoing flows where a Parallel fork of that arity is admitted, never both; public task, job and history APIs. Merges under a fork, conditioned or default outgoing flows, every other Activity kind, Start Events and asynchronous or listened nodes stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
 
+### CIB-AGR-0020 — a User, Service or Send Task starts one occurrence per arriving token
+
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Activity host account](capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending. It is the waiting-Task instance of `CIB-AGR-0019` and admits several `CIB-AGR-0018` throws into such a Task.
+
+**BPMN basis:** Clause 13.3.1 makes an Activity that is the target of several Sequence Flows participate in uncontrolled flow, enabled for each arriving token independently of the others, and the Activity notes of Clause 10.3 make a further arriving token create a separate instance of the Activity.
+
+**Evidence:** At pinned `5a45b47`, a transition enters its destination without consulting the destination's other incoming transitions (`AbstractPvmAtomicOperationTransitionNotifyListenerTake.java:34-51`), so each arrival executes the Task's behavior on its own: `UserTaskActivityBehavior#performExecution` inserts one new task per entry (`UserTaskActivityBehavior.java:54-62`), and `ServiceTaskDelegateExpressionActivityBehavior#performExecution` invokes the delegate once per entry before leaving (`ServiceTaskDelegateExpressionActivityBehavior.java:101-119`). The [retained claim review](../scenarios/activity-host-merge/README.md) is the calibration model; its CIB probe is the closure's qualification evidence.
+
+**Boundary:** User Tasks without data-input, data-output, boundary or Multi-Instance variants, and Service and Send Tasks without a BPMN Error route, of the nested scope-data profile, with several incoming flows and one outgoing flow in the Process root of a re-entry graph, including several Link throws of one name whose catch leads to such a Task; public task, job and history APIs. Merges under a fork or in a body, splits at any Task, every other Activity kind and asynchronous or listened Tasks stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
+
 ### CIB-AGR-0021 — exact Intermediate Catch Timer durations
 
 **Status:** Selected by the [Intermediate Catch Timer](../profiles/cibseven-2.2.0-intermediate-catch-timer-draft/profile.json) and [Timer/User Task composition](../profiles/bpmn-2.0.2-timer-user-task-composition-draft/profile.json) profiles for the [Timer exact durations](capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md) account.

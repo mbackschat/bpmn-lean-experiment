@@ -186,10 +186,11 @@ private def two_flows_of_one_choice_are_admitted : Bool :=
   admitted edited && (arrivals (lowerCheckedProcess edited) "RequestClosed").map (·.2) ==
     ["place:Flow_Booked", "place:Flow_Call", "place:Flow_Reject"]
 
-/-- NEF-ADMIT-01's exclusions: fan-in at an Activity, fan-in under a fork (against the admitted joined model) and a
-second root End are each refused. -/
+/-- NEF-ADMIT-01's exclusions: fan-in at a Sub-Process, fan-in under a fork (against the admitted joined model) and a
+second root End are each refused. ACTH-ADMIT-01 admits fan-in at a User, Service or Send Task, so the refused Activity
+is the Sub-Process. -/
 private def edits_leaving_the_class_are_refused : Bool :=
-  !admitted (travelWith (rejectTo := "BookTravel")) && admitted (onboarding true) && !admitted (onboarding false) &&
+  !admitted (travelWith (rejectTo := "AssessRequest")) && admitted (onboarding true) && !admitted (onboarding false) &&
     !admitted (travelWith (secondEnd := true))
 
 /-- NEF-ADMIT-01's envelope relaxation: an End arrival sharing a User Task's origin and a body End sharing the root

@@ -51,6 +51,7 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "a handler changes Process data only through its result",
     "A hosted Start is refused when the reserved result of a task or the successful journey cannot fit the capacity envelope",
     "earlier profiles refuse structured results",
+    "such a Service Task without a BPMN Error route may merge several incoming flows in the Process root of a re-entry graph",
   ]],
   ["embeddedSubProcess", "restriction", [
     "The embedded completion profile also admits ordinary Sub-Processes nested to depth three whose bodies hold only User Tasks",
@@ -105,6 +106,9 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "Several incoming flows are admitted in the Process root of a re-entry graph",
     "several unconditioned outgoing flows wherever a Parallel fork of that arity is admitted",
   ]],
+  ["userTask", "restriction", [
+    "may merge several incoming flows in the Process root of a re-entry graph, each arriving token starting a fresh occurrence",
+  ]],
   ["sendTask", "element", ["Send Task"]],
   ["sendTask", "restriction", [
     "Under the nested scope-data profile only",
@@ -126,7 +130,8 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ["linkIntermediateEventPair", "restriction", [
     "one throw and one catch of each Link name in one scope of the executed Process",
     "behaves exactly as the Sequence Flow it replaces and publishes no occurrence or wait",
-    "No several throws of one name, chains, source or target references",
+    "Several throws of one name are admitted only where their catch leads to a merging User, Service or Send Task",
+    "No other several throws of one name, chains, source or target references",
   ]],
   ["noneEndEvent", "restriction", [
     "each arriving token ends there on its own, never waiting for another flow",

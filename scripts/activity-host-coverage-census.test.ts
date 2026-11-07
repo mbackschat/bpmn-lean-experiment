@@ -89,10 +89,6 @@ const leanAllowlist: Readonly<Record<string, string>> = {
     "the nested scope-data accounts admit a host only with the re-entry routing of the widening commit; the wildcard refuses it until then (ACTH-ADMIT-01)",
   "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programModel":
     "the nested scope-data accounts admit a host only with the re-entry routing of the widening commit; the wildcard refuses it until then (ACTH-ADMIT-01)",
-  "BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean::operationVertex?":
-    "the nested scope-data accounts admit a host only with the re-entry routing of the widening commit; the wildcard refuses it until then (ACTH-ADMIT-01)",
-  "BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean::programEnvelope?":
-    "the nested scope-data accounts admit a host only with the re-entry routing of the widening commit; the wildcard refuses it until then (ACTH-ADMIT-01)",
   "BpmnSemantics/SemanticProcess/ParallelScopeData.lean::evaluateParallelScopeInputs?":
     "Multi-Instance bodies and their accounts never hold a host (ACTH-ADMIT-01 body refusal)",
   "BpmnSemantics/SemanticProcess/ParallelScopeData.lean::writeParallelScopeValues?":
@@ -223,8 +219,6 @@ const typeScriptAllowlist: Readonly<Record<string, string>> = {
     "profile shape admits no host outside the nested scope-data profile (ACTH-PROFILE-01)",
   "packages/semantic-core/src/multi-instance-scope-write.ts::writeBoundMultiInstanceScopeValues":
     "Multi-Instance bodies never hold a host (ACTH-ADMIT-01 body refusal)",
-  "packages/semantic-core/src/nested-scope-data-admission.ts::operationVertex":
-    "the nested scope-data accounts admit a host only with the re-entry routing of the widening commit; the wildcard refuses it until then (ACTH-ADMIT-01)",
   "packages/semantic-core/src/parallel-scope-data.ts::evaluateParallelScopeInputs":
     "Multi-Instance bodies never hold a host (ACTH-ADMIT-01 body refusal)",
   "packages/semantic-core/src/repeatable-subscription-admission.ts::repeatableSubscriptionProgramShape":

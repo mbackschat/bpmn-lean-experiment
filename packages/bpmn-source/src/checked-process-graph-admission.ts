@@ -242,7 +242,6 @@ function hasSelectedArity(
     case CheckedNodeKind.ParallelMultiInstanceSubProcess:
     case CheckedNodeKind.EmbeddedSubProcess:
     case CheckedNodeKind.CallActivity:
-    case CheckedNodeKind.UserTask:
     case CheckedNodeKind.DataInputUserTask:
     case CheckedNodeKind.DataInputOutputUserTask:
     case CheckedNodeKind.DataOutputUserTask:
@@ -253,10 +252,16 @@ function hasSelectedArity(
     case CheckedNodeKind.PayloadMessageCatchEvent:
     case CheckedNodeKind.CorrelatedPayloadMessageCatchEvent:
     case CheckedNodeKind.ReceiveTask:
-    case CheckedNodeKind.ServiceTask:
     case CheckedNodeKind.ConfiguredTask:
     case CheckedNodeKind.GlobalSynchronousCompensationThrowEvent:
       return incoming === 1 && outgoing === 1;
+    // ACTH-ADMIT-01: under the pass-through merge's flags a User, Service or Send Task without a BPMN Error route may
+    // merge several incoming flows; placement (the re-entry root graph only) is the profile's own admission.
+    case CheckedNodeKind.UserTask:
+      return outgoing === 1 && (incoming === 1 || (passThroughSplitMerge(semanticProfile) && incoming >= 2));
+    case CheckedNodeKind.ServiceTask:
+      return outgoing === 1 &&
+        (incoming === 1 || (passThroughSplitMerge(semanticProfile) && node.bpmnErrorRoute === null && incoming >= 2));
     case CheckedNodeKind.NonOperationalTask:
     case CheckedNodeKind.NoneIntermediateThrowEvent:
       return passThroughSplitMerge(semanticProfile)

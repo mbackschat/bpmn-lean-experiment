@@ -796,8 +796,11 @@ private def programRestrictionsHold (program : Program) : Bool :=
         (program.operationScopes.find? (·.operationId == id)).map (·.scopeId)
       let inRoot := fun (id : OperationId) => scopeOf id == some root
       program.identity.sourceOverlay.isSome &&
-        -- PTPB-ADMIT-01: a one-input merge is a lowered pass-through Task, not a merge region.
-        !(program.operations.any fun | .mergeExclusive _ _ inputs _ => inputs.length ≥ 2 | _ => false) &&
+        -- PTPB-ADMIT-01: a one-input merge is a lowered pass-through Task, not a merge region; a host always merges.
+        !(program.operations.any fun
+          | .mergeExclusive _ _ inputs _ => inputs.length ≥ 2
+          | .activity _ => true
+          | _ => false) &&
         !(program.operations.any (fun operation => match operation with
             | .duplicate id .. | .selectMany id .. => inRoot id
             | _ => false) &&
@@ -812,10 +815,12 @@ private def checkedRestrictionsHold (source : CheckedProcess) : Bool :=
   | some root =>
       let inRoot := fun (id : NodeId) => (source.nodeScopes.find? (·.nodeId == id)).map (·.scopeId) == some root
       source.identity.sourceOverlay.isSome &&
-        -- PTSM-ADMIT-01: a merging pass-through node is a merge region, a splitting one a fork, as lowered.
+        -- PTSM-ADMIT-01 and ACTH-ADMIT-01: a merging pass-through node or Task is a merge region, a splitting node a
+        -- fork, as lowered.
         !(source.nodes.any fun node => match node with
             | .exclusiveMerge _ => true
-            | _ => CheckedPassThroughFlow.merges source.sequenceFlows node) &&
+            | _ => CheckedPassThroughFlow.merges source.sequenceFlows node ||
+                CheckedPassThroughFlow.mergingTask source.sequenceFlows node) &&
         !(source.nodes.any (fun node => CheckedPassThroughFlow.forks source.sequenceFlows node && inRoot node.id) &&
           source.nodes.any (fun | .callActivity id .. => inRoot id | _ => false)) &&
         callsAdmitted (source.nodes.filterMap fun

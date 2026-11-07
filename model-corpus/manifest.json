@@ -1998,6 +1998,45 @@
       }
     },
     {
+      "id": "claim-review-expert-opinion",
+      "title": "Review an insurance claim with an optional expert opinion",
+      "businessPurpose": "Triage an insurance claim through a claims service, obtain an expert opinion when triage asks for one, review the claim by hand whichever way it arrives, and send a reopened claim back for a further expert opinion before it is decided.",
+      "cloneFamily": "claim-review-expert-opinion",
+      "constructs": [
+        "endEvent",
+        "exclusiveGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "conditionalRouting",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/activity-host-merge/claim-review.bpmn",
+        "sha256": "39d5f35418f14edc60dce5392cb08030ded454df49cdc2ebff2b4ff05b56c680",
+        "scenarioRelativePath": "scenarios/activity-host-merge/claim-expert.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "activity-host-merge-claim-expert",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for merging User, Service or Send Tasks; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "purchase-request-single-scope",
       "title": "Approve and place a purchase request",
       "businessPurpose": "Review a purchase request, then check the budget through a budget service and log the check while, in parallel, collecting a signature and approving the purchase, and mark the purchase approved before placing the order, all in the Process itself without a Sub-Process.",

@@ -9,7 +9,7 @@ import {
   scopeDataStructureAdmitted, scopeDataVertexWalk,
 } from "./nested-scope-data-admission.js";
 import type { NestedScopeStartNames, ScopeDataAccess, ScopeDataModel, ScopeDataVertex } from "./nested-scope-data-admission.js";
-import { checkedNodeMerges } from "./checked-pass-through-flow.js";
+import { checkedNodeMerges, checkedNodeMergingTask } from "./checked-pass-through-flow.js";
 import { CheckedNodeKind } from "./checked-process-contract.js";
 import type { CheckedProcess } from "./checked-process-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
@@ -31,11 +31,12 @@ function scopeReentryModel(model: ScopeDataModel): boolean {
 
 /**
  * SRE-ROUTE-01 over a Program of the nested scope-data profile, whatever else its analysis decides. A one-input merge is
- * an Abstract or Manual Task (PTT-ADMIT-01), which keeps a serial model serial, so only a merge of two or more counts.
+ * an Abstract or Manual Task (PTT-ADMIT-01), which keeps a serial model serial, so only a merge of two or more counts;
+ * every Activity host merges, since the host Program rules require two inputs (ACTH-HOST-01).
  */
 export function scopeReentryProgram(program: SemanticProcessProgram): boolean {
   return program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData && program.operations.some(operation =>
-    (operation.kind === SemanticOperationKind.Choose ||
+    (operation.kind === SemanticOperationKind.Choose || operation.kind === SemanticOperationKind.Activity ||
       (operation.kind === SemanticOperationKind.MergeExclusive && operation.inputs.length >= 2)) &&
     program.operationScopes.some(({ operationId, scopeId }) => operationId === operation.id &&
       program.definitionScopes.some(scope => scope.id === scopeId && scope.parentScopeId === null &&
@@ -46,10 +47,11 @@ export function scopeReentryProgram(program: SemanticProcessProgram): boolean {
 export function scopeReentryChecked(source: CheckedProcess): boolean {
   const root = source.definitionScopes.find(({ parentScopeId, originElementId }) =>
     parentScopeId === null && originElementId === source.processId)?.id;
-  // PTSM-ADMIT-01: a pass-through node with several incoming flows counts as a Merge, as its lowered operation does.
+  // PTSM-ADMIT-01: a pass-through node with several incoming flows counts as a Merge, as its lowered operation does;
+  // ACTH-ADMIT-01: a merging Task routes here as its lowered host does.
   return source.nodes.some(node =>
     (node.kind === CheckedNodeKind.ExclusiveGateway || node.kind === CheckedNodeKind.ExclusiveMerge ||
-      checkedNodeMerges(node, source.sequenceFlows)) &&
+      checkedNodeMerges(node, source.sequenceFlows) || checkedNodeMergingTask(node, source.sequenceFlows)) &&
     source.nodeScopes.some(({ nodeId, scopeId }) => nodeId === node.id && scopeId === root));
 }
 

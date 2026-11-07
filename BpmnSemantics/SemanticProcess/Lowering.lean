@@ -4,6 +4,7 @@ public import BpmnSemantics.SemanticProcess.TransactionSourceLowering
 public import BpmnSemantics.SemanticProcess.ErrorDefinition
 public import BpmnSemantics.SemanticProcess.ParallelMultiInstanceLowering
 public import BpmnSemantics.SemanticProcess.ConfiguredTaskLowering
+import BpmnSemantics.SemanticProcess.ActivityHostLowering
 public import BpmnSemantics.SemanticProcess.TimerStartLowering
 public import BpmnSemantics.SemanticProcess.TerminateEndLowering
 public import BpmnSemantics.SemanticProcess.CompensationSourceLowering
@@ -390,7 +391,11 @@ def lowerNode (source : CheckedProcess) :
               output := firstPlace (outgoingPlaces source timerId)
               origin := { elementId := outputFlowId } }, scopeId)
       | none, some _, some _ => none
-      | none, none, _ =>
+      | none, none, _ => -- ACTH-ADMIT-01: a merging User Task lowers to its host; ACTH-ONE-01 keeps a single input's wait.
+          if 2 ≤ (incomingPlaces source id).length then
+            lowerActivityHost? (checkedNodeScopeId? source id) id (lowerExclusiveMergeInputs source id)
+              (firstPlace (outgoingPlaces source id)) (.userTask { id := ⟨id.value⟩, name, metadata })
+          else
           checkedNodeScopeId? source id |>.map fun scopeId =>
           (.awaitUserTask
             (nodeOperationId id)
@@ -515,6 +520,11 @@ def lowerNode (source : CheckedProcess) :
         (firstPlace (incomingPlaces source id))
         (firstPlace (outgoingPlaces source id))
   | .serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
+      -- ACTH-ADMIT-01: a merging Service or Send Task, which admission keeps free of a BPMN Error route, lowers to its host.
+      if 2 ≤ (incomingPlaces source id).length && bpmnErrorRoute.isNone then
+        lowerActivityHost? (checkedNodeScopeId? source id) id (lowerExclusiveMergeInputs source id)
+          (firstPlace (outgoingPlaces source id)) (.effect { elementId := id, descriptor, inputMappings, outputMappings })
+      else
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.awaitEffect
         (nodeOperationId id)
@@ -668,14 +678,15 @@ private theorem lower_none_intermediate_throw_event_is_one_input_merge (source :
           (lowerExclusiveMergeOutput source id), scopeId) := by
   simp [lowerNode, one_in, one_out]
 
-/-- Ordinary User Task lowering preserves the exact checked/IL resumption-cut classification when no boundary deadline changes the operation family. -/
+/-- Ordinary User Task lowering preserves the exact checked/IL resumption-cut classification when no boundary deadline changes the operation family and one incoming flow keeps the legacy wait (ACTH-ONE-01); a merging User Task lowers to a host instead. -/
 theorem lowering_preserves_user_task_resumption_cut
     (source : CheckedProcess) (id : NodeId) (name : Option String)
     (metadata : Option UserTaskMetadata)
     (scopeId : DefinitionScopeId)
     (scope : checkedNodeScopeId? source id = some scopeId)
     (unbounded : timerBoundaryFor source id = none)
-    (noMessageBoundary : messageBoundaryFor source id = none) :
+    (noMessageBoundary : messageBoundaryFor source id = none)
+    (notMerging : (incomingPlaces source id).length < 2) :
     ∃ operation,
       lowerNode source (.userTask id name metadata) = some (operation, scopeId) ∧
         checkedNodeIsResumptionCut (.userTask id name metadata) = true ∧
@@ -686,7 +697,7 @@ theorem lowering_preserves_user_task_resumption_cut
       (firstPlace (incomingPlaces source id))
       (firstPlace (outgoingPlaces source id))
       { id := ⟨id.value⟩, name, metadata }, ?_, rfl, rfl⟩
-  simp [lowerNode, unbounded, noMessageBoundary, scope]
+  simp [lowerNode, unbounded, noMessageBoundary, scope, Nat.not_le.mpr notMerging]
 
 def lowerOrdinaryScopeCompletions (source : CheckedProcess)
     (scope : DefinitionScope) : List (SemanticOperation × DefinitionScopeId) :=
