@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: approved
 
 ## Question and delivery boundary
 
@@ -14,7 +14,7 @@ This is the second family of Kernel IL orthogonalization in [PLAN](../PLAN.md#sc
 The selected clauses of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list):
 
 - `PC-BASIC-01`, its last open clause, multiple outgoing Start flows: accepted for unconditioned flows of the root None Start and of the body None Start of an ordinary embedded Sub-Process that lies outside every fork region (`SCPH-SINGLE-01`). The row stays open on:
-  - conditional and default Start flows (7 of the 13 CIB root Start splits), which share the conditional outgoing-flow mechanism of `PC-CF-07` and are scheduled with that clause;
+  - conditional and default Start flows (7 of the 13 CIB root Start splits), which share the conditional outgoing-flow mechanism of `PC-CF-07` and are bound to that clause;
   - a splitting body Start whose Sub-Process lies inside a fork region;
   - Start splits in called Processes and in Multi-Instance, bounded, monitored and transaction bodies.
 - `PC-CF-07`, its split clause at embedded Sub-Processes outside every fork region. The row stays open on the split at Tasks (the wait-record stage), every merge other than at User, Service and Send Tasks, concurrent arrivals, conditional and default outgoing flows, and called and Multi-Instance bodies.
@@ -374,6 +374,6 @@ Two commits, each under its own [Rule 2](../../CLAUDE.md#rule-2-declare-review-a
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `cec35ffb` | `fork-turns-none` | `approve-with-required-edits` | `a925a8c9` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
