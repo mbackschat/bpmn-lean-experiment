@@ -98,13 +98,13 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Kernel IL orthogonalization, batch 5, first family: the merge at User, Service and Send Tasks through an appended Activity host ([proposal](capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md)), from the parked [Activity implicit split and merge](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) clauses. Close call: incremental over one reshape (two probes of 226 of 991 dependent modules failed in only six). The split waits for the wait-record stage and `PC-BASIC-01` for the scope host, both scheduled below.
+Current task: Kernel IL orthogonalization, batch 5, first family: the merge at User, Service and Send Tasks through an appended Activity host ([proposal](capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md)), from the parked [Activity implicit split and merge](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) clauses. Close call: incremental kept after the stop condition fired (32 one-line proof repairs, no law failure): the representation is green and the next host family is the switch. The split waits for the wait-record stage and `PC-BASIC-01` for the scope host, both scheduled below.
 
 Deliverable: `PC-CF-07`'s merge clause and `PC-BASIC-02` for ordered arrivals at User, Service and Send Tasks, landed on `main`.
 
 Acceptance blockers: the widening commit, the closure review and hosted `verify-complete`.
 
-Current result: representation commit `be083b0e`, Rule 2 declared, reviewed and checked, full library green (774 jobs). Its `ActivityHostWork` fan-out bound 440 is the owner-decided (2026-11-07), direction-reviewed exception to the proposal's unchanged bounds. Proof arms grew seven files inside existing size exceptions, so the `SerialBusinessTaskLifecycleProofs` rationale is stale (owner).
+Current result: representation commit `be083b0e` (Rule 2 checked, full library green); its `ActivityHostWork` fan-out bound 440 is the owner-decided exception (2026-11-07). Proof arms grew seven excepted files; one rationale is stale (owner).
 
 Effort budget: 12 hours from 2026-11-06 21:10 CET; the estimate exceeds it, so at the limit record the boundary at the first green commit and continue unless the evidence invalidates the path.
 
