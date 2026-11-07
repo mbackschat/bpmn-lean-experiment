@@ -311,9 +311,9 @@ Each split's step publishes once and opens both successors in the same command (
 
 ## Lean assurance lane
 
-Lane shape: proved, with a declared open boundary.
+Lane shape: proved
 
-**Proved.** The host and exit arms of the existing theorems quantified over all operations: evaluator soundness [`fire_sound`](../../BpmnSemantics/SemanticProcess/Transition.lean) (dispatch only), control places, wait declarers, structural validity, cardinalities, and runtime well-formedness preservation of initiation, scope creation and scope completion with entry and output lists.
+Evidence: the host and exit arms of the existing theorems quantified over all operations, among them evaluator soundness [`fire_sound`](../../BpmnSemantics/SemanticProcess/Transition.lean#fire_sound) (dispatch only), control places, wait declarers, structural validity, cardinalities, and runtime well-formedness preservation of initiation, scope creation and scope completion with entry and output lists; the open boundary and the conformance checks follow.
 
 **Deliberately open, checked instead:** host and exit agreement with their legacy operations on the state they write (the list step on a one-element list equals the legacy step, a law about Programs the host rules refuse, kept as the switch family's obligation), and the `none` footprints. Both would need new `import all` openers of hubs whose hidden-edit bounds have no headroom; the switch family owns them, as for the Activity host. If list-generalized well-formedness preservation needs a new opener, it joins this open boundary rather than raising a bound.
 
