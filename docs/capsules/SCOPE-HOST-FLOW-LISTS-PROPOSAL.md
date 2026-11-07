@@ -13,13 +13,17 @@ This is the second family of Kernel IL orthogonalization in [PLAN](../PLAN.md#sc
 
 The selected clauses of the [coverage checklist](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list):
 
-- `PC-BASIC-01`, its last open clause, multiple outgoing Start flows: accepted for the root None Start and for the body None Start of an ordinary embedded Sub-Process that lies outside every fork region (`SCPH-SINGLE-01`). The row stays open on a splitting body Start whose Sub-Process lies inside a fork region.
+- `PC-BASIC-01`, its last open clause, multiple outgoing Start flows: accepted for unconditioned flows of the root None Start and of the body None Start of an ordinary embedded Sub-Process that lies outside every fork region (`SCPH-SINGLE-01`). The row stays open on:
+  - conditional and default Start flows (7 of the 13 CIB root Start splits), which share the conditional outgoing-flow mechanism of `PC-CF-07` and are scheduled with that clause;
+  - a splitting body Start whose Sub-Process lies inside a fork region;
+  - Start splits in called Processes and in Multi-Instance, bounded, monitored and transaction bodies.
 - `PC-CF-07`, its split clause at embedded Sub-Processes outside every fork region. The row stays open on the split at Tasks (the wait-record stage), every merge other than at User, Service and Send Tasks, concurrent arrivals, conditional and default outgoing flows, and called and Multi-Instance bodies.
 
 Close calls, 2026-11-07, each with its reason:
 
 - **The merges at Sub-Processes and Calls wait.** Admitted, they reach no CIB test model: the one Sub-Process with two incoming flows (`bpmn/event/error/reviewSalesLead`) is re-entered through an Error boundary, which this profile refuses, and no Call has several flows. The host carries an `inputs` list, so a later merge family adds admission and a Program rule, not a kernel change; a Call merge adds one `ScopeWork` alternative.
 - **Hosts stay outside fork regions.** A host enabled beside another internal operation needs a prepared footprint and re-established scope-creation pair and batch laws; the [Activity host](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#internal-commutation) already assigns every host footprint to the stage that admits concurrent arrivals. No CIB test model holds a body Start split at all.
+- **Two host operations until the switch, one feature record after it.** An embedded Sub-Process is not an `ActivityWork` alternative: its inputs sit on its entry and its outputs on its completion, so an Activity host carrying both would hold outputs no step of its own produces, or completion would look them up in the Program. The scope host therefore stays a separate entry operation with its exit. The orthogonal features both host kinds will need (loop, typed boundary handlers, per-flow conditions and default) are not added to either constructor. The switch introduces them once, as fields of one shared feature record that `ActivityHost` and `ScopeHost` both carry, so that no feature is baked into two constructors ([capsule item 19](README.md#required-capsule-structure)). This rests on the incremental route, whose re-decision after the Activity host's stop condition awaits owner confirmation in [PLAN](../PLAN.md#exact-resume-point); if the owner reverses it, this family stops before its representation commit.
 - **The split needs no wait-record stage.** Every split here is produced by an operation that reads its own places from the Program: initiation, scope entry and scope completion. No runtime record carries a scope's output ([`RuntimeState`](../../BpmnSemantics/SemanticProcess/RuntimeState.lean) has no such field), unlike the Task split, whose completion reads `output` from the User Task and effect wait records.
 
 **Batch rule.** Both rows are selected together. Every open clause that shares the mechanism, an operation entering or leaving a scope with a flow list, is selected or screened above or under [Excluded](#required-optional-and-excluded-scope).
@@ -28,11 +32,11 @@ Close calls, 2026-11-07, each with its reason:
 
 | Form | Files |
 |---|---|
-| Root None Start, two or more outgoing flows | 13, of which 4 all unconditioned |
+| Root None Start, two or more outgoing flows | 13: 6 with every flow unconditioned, 7 with conditions |
 | Body None Start, two or more outgoing flows | 0 |
 | Sub-Process, two or more outgoing flows | 2, both unconditioned (`UncontrolledFlowTest`) |
 
-AISM recorded 7 root Start splits under a narrower file filter; the 13 come from the same tree without it.
+Files are deduplicated by content hash; a Start counts when it has no event definition and two or more flows whose `sourceRef` is the Start, and a flow is conditioned when it holds a `conditionExpression` (re-measured by the proposal review, 2026-11-07). AISM recorded 7 root Start splits under a narrower file filter.
 
 ## Normative basis and CIB classification
 
@@ -68,7 +72,7 @@ AISM recorded 7 root Start splits under a narrower file filter; the 13 come from
 - several incoming flows at a Sub-Process, Call Activity or None Start (the merges, screened above);
 - a Call Activity that splits, and a called Process's Start that splits: a split forks its graph, and the profile refuses a root Call in a forking model (`RPF-ADMIT-01` of [root Parallel forks](ROOT-PARALLEL-FORKS-SPEC.md)) and admits a body Call only on a serial body;
 - several flows at bounded, monitored, Multi-Instance, transaction or Event Sub-Processes, each of which has its own entry constructor or is refused today;
-- conditional or default outgoing flows of a Start or Sub-Process, an inclusive split in CIB (nine of the thirteen root Start splits);
+- conditional or default outgoing flows of a Start or Sub-Process, an inclusive split in CIB (seven of the thirteen root Start splits);
 - every form under any profile that lacks the arity flags named under [Admission](#admission).
 
 These bound admission only: the host's lists admit the excluded placements and merges, and its output records admit conditions and defaults, without reinterpreting an admitted model.
@@ -129,7 +133,7 @@ Of an exit they require two or more outputs and a scope that is an ordinary embe
 
 ### Per-work accessors
 
-The per-work facts are the published kind, the commutation family code (`P` for `process`, `S` for `subProcess` and the exit), the cardinality class, and the legacy projection when every list has one element. A new leaf module imported by `ProgramStructuralValidation`, `GraphValidation` or `TransitionRecord` would inherit a cone in the hundreds and need a bound above the default, as [`ActivityHostWork`](../../BpmnSemantics/SemanticProcess/ActivityHostWork.lean) did. These few functions therefore sit beside the host types in the kernel contract, whose constructor edit rebuilds the whole kernel cone anyway; `ActivityHostWork` is not reused, because its interface bound is reached and the scope consumers lie outside its cone.
+The per-work facts are the published kind, the commutation family code (`P` for `process`, `S` for `subProcess` and the exit) and the cardinality class. No legacy projection is defined: the host Program rules require two or more entries or outputs, so a one-element projection would never apply to an admitted host, and the Activity host's route through `settledOperation` and `settledOperations` ([`activity-host-work.ts`](../../packages/semantic-core/src/activity-host-work.ts)) is unavailable. Every consumer that settles operations through it names `Scope` and `ScopeExit` explicitly instead, and the census population includes those call sites. A new leaf module imported by `ProgramStructuralValidation`, `GraphValidation` or `TransitionRecord` would inherit a cone in the hundreds and need a bound above the default, as [`ActivityHostWork`](../../BpmnSemantics/SemanticProcess/ActivityHostWork.lean) did. These few functions therefore sit beside the host types in the kernel contract, whose constructor edit rebuilds the whole kernel cone anyway; `ActivityHostWork` is not reused, because its interface bound is reached and the scope consumers lie outside its cone.
 
 ### Kind vocabularies
 
@@ -169,11 +173,12 @@ A leaf `ScopeHostLowering.lean` beside [`Lowering`](../../BpmnSemantics/Semantic
 | Merges at Sub-Processes and Calls | `inputs` of two or more; a `call` work alternative |
 | Conditional and default Start and Sub-Process flows | Defaulted fields of `ActivityOutput` |
 | Message and Timer Starts | A trigger field on the `process` work, at the shared-trigger stage |
-| Bounded, monitored and Multi-Instance Sub-Processes | Host fields (typed boundary handlers, loop) |
+| Bounded, monitored and Multi-Instance Sub-Processes | Fields of the shared feature record (typed boundary handlers, loop) that `ActivityHost` carries as well, introduced once at the switch |
+| Convergence with the Activity host | The shared feature record above; `activity`, `scope` and `scopeExit` stay distinct operations because their flow lists live on different steps |
 
 ### Retirement of the dual representation
 
-The next family that adds any feature to None Starts or embedded Sub-Processes is the switch for this host: it lowers every such node onto `scope` and `scopeExit` and deletes their legacy lowering. Until then the [host-coverage census](../../scripts/activity-host-coverage-census.test.ts) holds byte-identical the declarations of `initiate`, `enterScope` and `completeScope`; a behaviour-preserving edit re-baselines only as a reviewed [Rule 2](../../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change) bound change. `enterScope` also serves transaction Sub-Processes and `completeScope` root completion, so a scheduled family that must change either declares itself the switch. PLAN records the binding.
+The next family that adds any feature to None Starts or embedded Sub-Processes is the switch for this host: it lowers every such node onto `scope` and `scopeExit` and deletes their legacy lowering. Until then the [host-coverage census](../../scripts/activity-host-coverage-census.test.ts) holds byte-identical the declarations of `initiate`, `enterScope` and `completeScope`; a behaviour-preserving edit re-baselines only as a reviewed [Rule 2](../../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change) bound change. A family adds a feature to None Starts or embedded Sub-Processes when it would change one of those declarations or lower a further BPMN variant of those nodes onto an unchanged legacy constructor, which the census cannot see; the conditional Start and Sub-Process flows and the scope merges are such families. `enterScope` also serves transaction Sub-Processes and `completeScope` root completion, so a scheduled family that must change either declares itself the switch. PLAN records the binding.
 
 ### Runtime-only and synthetic constructs
 
@@ -197,7 +202,9 @@ None at runtime: the host and exit write the legacy state with lists. The admiss
 | `source-hygiene` on the wider spike | `FlowNodeOccurrenceLifecycle` reaches 801 nonblank lines with its two arms (799 at `401a1164`); every other file passes |
 | Files naming the legacy constructors (Lean production, TypeScript production) | `initiate` 116 and 68, `enterScope` 60 and 64, `completeScope` 162 and 85 |
 
-Before its host arms are added, the representation moves a cohesive block of `FlowNodeOccurrenceLifecycle` into an existing module in its import closure, so that no new module enters its cone and no size exception is needed.
+**Coverage and stop condition.** The two probes' closure holds 571 of the 999 non-experiment modules that depend on `SemanticProcessContract`. Every Lean module with an exhaustive operation match names the Activity host's constructor, so all such modules lie inside the probe; the 428 unmeasured modules can need only proof sites that close operation cases by tactic without naming a constructor, as `ParallelScopeCounterGrowthProofs` did. Two probe modules still need host cases: `SequentialScopeAdmissionValidityProofs`, whose proofs exclude the Activity host by hypothesis, and `ParallelScopeCommandReplay`. The representation commit's Rule 2 declaration extrapolates its limits from the probe (20 Lean files, +74/−12 lines over 571 modules) and stops, writing nothing further, when a repair would need a new `import all` opener, a raised fan-out or heartbeat bound, or a size exception, or when the Lean files touched exceed twice the extrapolated count.
+
+Before their host arms are added, the representation moves cohesive blocks out of the owners at their review target, `FlowNodeOccurrenceLifecycle`, `Lowering` and `NestedScopeControlAdmission`, into existing modules in their import closures, so that no new module enters their cones and no size exception is needed.
 
 ## Admission
 
@@ -206,9 +213,18 @@ Admission stays [profile-parameterized](../PROFILE-PARAMETERIZED-ADMISSION-SPEC.
 The checked and Program analyses classify each form as its lowered operation forks:
 
 - **Checked level.** [`CheckedPassThroughFlow`](../../BpmnSemantics/SemanticProcess/CheckedPassThroughFlow.lean) and its twin gain `splittingStart` and `splittingSubProcess`, and `forks` includes both. The shape gate, the region walk and the routing read them.
-- **Program level.** `operationVertex?` in [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean) and [`NestedScopeDataAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean) and their twins give a host the vertex of its legacy work followed by a synthetic fork over its entries, and an exit's Sub-Process vertex a synthetic fork over its outputs; `controlParentOutput?` gains the exit's arm. `NestedScopeControlAdmission` is near its review target, so `operationVertex?` and its helpers move into an existing module it imports before the arms are added; no new module enters its cone. The [vertex arity rule](../../BpmnSemantics/SemanticProcess/StructuredParallelBodyAdmission.lean) is unchanged.
+- **Program level.** The vertex projection in [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean) and [`NestedScopeDataAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean) and their twins changes its producer result types, because a host or exit contributes two vertices and an exit two or more parent outputs:
+  - `operationVertex?` returns a vertex list instead of one vertex: a `process` host gives its `start` vertex followed by a synthetic `fork` vertex over its entries' consumers.
+  - `controlParentOutput?` becomes a parent-output list: the one output of a legacy `completeScope`, or the outputs of the child's exit. The Sub-Process vertex is produced by the entry arm, the legacy `enterScope` or a `subProcess` host, never by the exit, because `programBodies` filters completions out (and now filters `scopeExit` with them). With two or more parent outputs that entry arm gives the Sub-Process vertex followed by a synthetic `fork` vertex over them, so a legacy `enterScope` whose child ends in an exit changes its arm as well.
+  - `programBodies` builds each child body's synthetic `childStart` vertex from its entry operations; it gains the `subProcess` host, and with two or more entries the synthetic Start is followed by a synthetic `fork` vertex over their consumers, inside the child body, not after the parent's Sub-Process vertex.
+
+  `NestedScopeControlAdmission` is near its review target, so `operationVertex?`, `controlParentOutput?` and their helpers move into an existing module it imports before the arms are added; no new module enters its cone. The [vertex arity rule](../../BpmnSemantics/SemanticProcess/StructuredParallelBodyAdmission.lean) is unchanged: every synthetic fork has one predecessor and two or more successors.
 - **Placement (`SCPH-SINGLE-01`).** Both levels refuse a splitting body Start or splitting Sub-Process whose Sub-Process vertex lies between a fork and its join, or on a terminal branch, in its scope or any ancestor scope.
-- **Routing.** A model with a splitting Start or Sub-Process forks, so it routes to the concurrent account, and the profile's refusal of `models-that-both-fork-and-choose` keeps it off the re-entry account.
+- **Routing.** At Program level every split detector recognises a token split today only by `duplicate` or `selectMany`, so each counts a host with two or more entries and an exit as a split:
+  - `StructuredScopeData.splits` in [`NestedScopeControlAdmission`](../../BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean) and its twin in [`structured-scope-data-routing.ts`](../../packages/semantic-core/src/structured-scope-data-routing.ts); it drives `concurrentProgram`, hence `programRouted`, the re-entry refusal `!concurrentProgram` (`SRE-ROUTE-01`), `startBindingsRouted` and `programRouted_serial`, and Temporal host admission's `concurrentStructuredScopeDataProgram`.
+  - The root-split half of `programRestrictionsHold` and its twin (`RPF-ADMIT-01`): a `process` host splits in the root, and an exit splits in its Sub-Process's parent scope, so an exit of a root Sub-Process is a root split; a `subProcess` host splits inside its child and is not one.
+
+  The checked level already counts every splitting node through `CheckedPassThroughFlow.forks`. A model with a splitting Start or Sub-Process therefore routes to the concurrent account at both levels, and the profile's refusal of `models-that-both-fork-and-choose` keeps it off the re-entry account.
 
 **Nearest wrong algorithms**, each with a separating witness below:
 
@@ -220,7 +236,8 @@ The checked and Program analyses classify each form as its lowered operation for
 6. a Program analysis that skips the host or exit through a wildcard arm;
 7. a host or exit published under a kind the schema lacks;
 8. a one-flow node lowered onto the host;
-9. a splitting host classified as passive by Temporal host admission, so a concurrent effect wait escapes the concurrent analysis.
+9. a splitting host classified as passive by Temporal host admission, so a concurrent effect wait escapes the concurrent analysis;
+10. a Program-level split detector that ignores hosts and exits, so a split Program routes as serial, passes the re-entry account or keeps a root Call beside a root split.
 
 ## Stable rules
 
@@ -255,6 +272,7 @@ Each split's step publishes once and opens both successors in the same command (
 - a conditioned and a default outgoing flow of the Start and of *Issue equipment*;
 - a second incoming flow at *Issue equipment*, at a Call and at the Start;
 - a splitting Call Activity; a splitting called-Process Start;
+- a root Start split beside a root Call (`RPF-ADMIT-01`) and beside a root Choice (re-entry refusal), each also asserted on the lowered Program alone, apart from the checked level (wrong algorithm 10);
 - the model under the embedded completion profile.
 
 **Profile matrix.** Lean checks each widened arity arm over every combination of the flags. TypeScript keys arity on the profile, so only Lean separates wrong algorithm 2, as for merging Tasks.
@@ -286,6 +304,7 @@ Each split's step publishes once and opens both successors in the same command (
 | `SCPH-START-01` | Onboarding journeys; root and body split steps | Core; pipeline across Lean, core and Temporal; CIB probe | First flow only (3), a seeded pipeline mutation; a body Start occurrence (4) |
 | `SCPH-EXIT-01` | *Issue equipment*'s completion and terminal branch | Core; pipeline; CIB probe | First output only (3) |
 | `SCPH-SINGLE-01` | The branch-placed refusals; the scheduler counterexample | Source, core, Lean conformance checks | Admit inside a fork region (5) |
+| `SCPH-ADMIT-01`, routing | The Program-level root Call and Choice refusals; Temporal admission of the onboarding model through the concurrent analysis | Core, Lean conformance checks, protocol tests | Split detectors that ignore hosts (10) |
 | `SCPH-ONE-01` | Every existing scenario of every profile | Lean library, `BpmnConformance`, pipeline, differential, frozen compiler baseline | A one-flow node lowered to the host (8) |
 | `SCPH-HOST-01` | The refused host Programs, published kinds, `none` footprints, the validator refusal, the token-split classification | Lean conformance checks, core and protocol tests, host-coverage census | A wildcard arm skipping the host (6); publishing `scope` (7); passive classification (9) |
 | `SCPH-PROFILE-01` | The flag matrix; the model under the embedded completion profile | Source and Lean conformance checks | Widen for every profile (2) |
@@ -296,7 +315,7 @@ Lane shape: proved, with a declared open boundary.
 
 **Proved.** The host and exit arms of the existing theorems quantified over all operations: evaluator soundness [`fire_sound`](../../BpmnSemantics/SemanticProcess/Transition.lean) (dispatch only), control places, wait declarers, structural validity, cardinalities, and runtime well-formedness preservation of initiation, scope creation and scope completion with entry and output lists.
 
-**Deliberately open, checked instead:** host and exit agreement with their legacy operations on one-element lists, and the `none` footprints. Both would need new `import all` openers of hubs whose hidden-edit bounds have no headroom; the switch family owns them, as for the Activity host. If list-generalized well-formedness preservation needs a new opener, it joins this open boundary rather than raising a bound.
+**Deliberately open, checked instead:** host and exit agreement with their legacy operations on the state they write (the list step on a one-element list equals the legacy step, a law about Programs the host rules refuse, kept as the switch family's obligation), and the `none` footprints. Both would need new `import all` openers of hubs whose hidden-edit bounds have no headroom; the switch family owns them, as for the Activity host. If list-generalized well-formedness preservation needs a new opener, it joins this open boundary rather than raising a bound.
 
 **Conformance checks.** A new module beside [`ActivityHostConformance`](../../BpmnSemantics/ActivityHostConformance.lean) checks admission, placement and lowering agreement, including the onboarding model's concurrent analysis.
 
@@ -316,7 +335,7 @@ The preserved relation stays equality of hosted committed state and publications
 - Value-domain matrix rows, corpus rows and the About disclosure.
 - A CIB probe on a project-authored model of the onboarding shape, since CIB has no body-Start-split test, that calibrates per journey: one historic activity instance for each Start and Sub-Process and none for a split; both successors active after a split in the same command; the Process ending with its last User Task.
 
-Then `PC-BASIC-01` is accepted for root None Starts and for Sub-Process body Starts outside fork regions, and `PC-CF-07` for Sub-Process splits outside fork regions.
+Then `PC-BASIC-01` is accepted for unconditioned flows of root None Starts and of Sub-Process body Starts outside fork regions, and `PC-CF-07` for unconditioned Sub-Process splits outside fork regions; the residuals listed under [Question and delivery boundary](#question-and-delivery-boundary) stay open.
 
 ## Versioning consequences
 
@@ -327,14 +346,14 @@ A Program wire change: the `scope` and `scopeExit` members are added to the [sem
 Derived with `node scripts/what-binds.ts`; every owner that growth would push past the review target moves a cohesive block into an existing or family-owned module before the edit. No size exception and no bound change is requested.
 
 - **Lean hubs**, each for its exhaustive arms only: `SemanticProcessContract`, `TransitionRecord`, `OperationControlPlaces`, `ProgramStructuralValidation` and its laws, `RuntimeStateWellFormed`, `ProfileCardinalities`, `Transition`, `FlowNodeOccurrenceLifecycle`, `InternalCommutationCensus`, `InternalCommutationCore`, `InternalOperationOccurrence`, `SemanticProcessJson/Program`, `Scenario`, and `Lowering` for its dispatch.
-- **Lean step and admission owners:** `DeclaredScopeTransition`, `ScopeCompletion`, `CheckedProcessAdmission`, `CheckedPassThroughFlow`, `NestedScopeDataAdmission`, `NestedScopeControlAdmission`.
-- **TypeScript:** the [contract](../../packages/semantic-core/src/semantic-process-contract.ts), [runtime](../../packages/semantic-core/src/semantic-process-runtime.ts), [profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts), the nested scope-data and scope-control admissions, the [checked pass-through flow](../../packages/semantic-core/src/checked-pass-through-flow.ts), the [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts), the [source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts), the commutation census and [footprint](../../packages/semantic-core/src/internal-transition-footprint.ts), the publication owners, the [semantic process schema](../../contracts/schemas/semantic-process.schema.json), [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) and the [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts).
+- **Lean step and admission owners:** `DeclaredScopeTransition`, `ScopeCompletion`, `CheckedProcessAdmission`, `CheckedPassThroughFlow`, `NestedScopeDataAdmission`, and `NestedScopeControlAdmission` for `operationVertex?`, `controlParentOutput?`, `programBodies`, `StructuredScopeData.splits` and `programRestrictionsHold`.
+- **TypeScript:** the [Program routing](../../packages/semantic-core/src/structured-scope-data-routing.ts), the [contract](../../packages/semantic-core/src/semantic-process-contract.ts), [runtime](../../packages/semantic-core/src/semantic-process-runtime.ts), [profile shape](../../packages/semantic-core/src/semantic-program-profile-shape.ts), the nested scope-data and scope-control admissions, the [checked pass-through flow](../../packages/semantic-core/src/checked-pass-through-flow.ts), the [checked graph admission](../../packages/bpmn-source/src/checked-process-graph-admission.ts), the [source lowering](../../packages/bpmn-source/src/semantic-process-lowering.ts), the commutation census and [footprint](../../packages/semantic-core/src/internal-transition-footprint.ts), the publication owners, the [semantic process schema](../../contracts/schemas/semantic-process.schema.json), [host admission](../../packages/temporal-adapter/protocol/src/host-admission.ts) and the [publication validator](../../packages/temporal-adapter/protocol/src/semantic-publication-validation.ts).
 
 **Guards the implementation satisfies:** [`lean-fanout`](../../scripts/lean-fanout.test.ts) (no new `import all` opener of a hub, no new importer of `ActivityHostWork` or `NestedScopeDataAdmission`), [`lean-module-cost`](../../scripts/lean-module-cost.test.ts), [`source-hygiene`](../../scripts/source-hygiene.test.ts), [`semantic-operation-consumer-census`](../../scripts/semantic-operation-consumer-census.test.ts), [`activity-host-coverage-census`](../../scripts/activity-host-coverage-census.test.ts) (extended below), [`internal-commutation-census`](../../scripts/internal-commutation-census.test.ts), [`contract-schema-coverage`](../../scripts/contract-schema-coverage.test.ts), [`start-operation-artifact-consistency`](../../scripts/start-operation-artifact-consistency.test.ts), the [frozen compiler baseline](../../packages/bpmn-source/test/cyclic-control-flow-preservation-support.ts) and the [Start capacity envelope test](../../packages/temporal-adapter/protocol/test/start-capacity-envelope.test.ts).
 
 ### Host-coverage census, extended
 
-[`activity-host-coverage-census`](../../scripts/activity-host-coverage-census.test.ts) gains the scope populations: every production Lean `def` naming `.initiate` or `.enterScope` with a wildcard arm must name `.scope`, and every one naming `.completeScope` with a wildcard arm must name `.scopeExit`; the multiplicity-keyed sites (`operationVertex?`, `controlParentOutput?`, `prepareInternalArm?`, `semanticOperationInternalFamily`, host admission's classification and their twins); the TypeScript functions naming those kinds; and the frozen declarations above. The allowlist names declarations, never files.
+[`activity-host-coverage-census`](../../scripts/activity-host-coverage-census.test.ts) gains the scope populations: every production Lean `def` naming `.initiate` or `.enterScope` with a wildcard arm must name `.scope`, and every one naming `.completeScope` with a wildcard arm must name `.scopeExit`; the token-split population: every production `def` matching `.duplicate` or `.selectMany` with a wildcard arm must name `.scope` and `.scopeExit` or carry an allowlisted reason (33 Lean and 28 TypeScript production files match `duplicate`, 2026-11-07); the multiplicity-keyed sites (`operationVertex?`, `controlParentOutput?`, `programBodies`, `StructuredScopeData.splits`, `programRestrictionsHold`, `prepareInternalArm?`, `semanticOperationInternalFamily`, host admission's classification and their twins); the TypeScript call sites of `settledOperation` and `settledOperations`; the TypeScript functions naming those kinds; and the frozen declarations above. The allowlist names declarations, never files.
 
 ### Registration
 
