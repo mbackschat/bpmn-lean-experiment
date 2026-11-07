@@ -16,7 +16,9 @@ const restatedResidual = {
   fixtures: { mean: 56.9, p90: 163 },
   // Committed `elapsedSeconds` rows change only when a fixture is remeasured; the owner's decision guards their
   // per-commit sum, while each row stays unratcheted reading context.
-  fixtureSeconds: { median: 784, p90: 1045, above900: 10 },
+  // Followed down on 2026-11-07 to the replay's median 736 and p90 1000, when ServiceTaskIncidentCancellation and
+  // -Retry were remeasured at 48.17 s and 21.39 s.
+  fixtureSeconds: { median: 736, p90: 1000, above900: 10 },
 } as const;
 
 const staleTolerance: Readonly<Record<string, number>> = { mean: 2, median: 20, p90: 20, above500: 1, above900: 1 };
