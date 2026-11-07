@@ -387,10 +387,10 @@ def lowerNode (source : CheckedProcess) :
               output := firstPlace (outgoingPlaces source timerId)
               origin := { elementId := outputFlowId } }, scopeId)
       | none, some _, some _ => none
-      | none, none, _ => -- ACTH-ADMIT-01: a merging User Task lowers to its host; ACTH-ONE-01 keeps a single input's wait.
-          if 2 ≤ (incomingPlaces source id).length then
+      | none, none, _ => -- ACTH-ADMIT-01, ACSP-ADMIT-01: a merging or splitting User Task lowers to its host (ACSP-ONE-01).
+          if 2 ≤ (incomingPlaces source id).length || 2 ≤ (outgoingPlaces source id).length then
             lowerActivityHost? (checkedNodeScopeId? source id) id (lowerExclusiveMergeInputs source id)
-              (firstPlace (outgoingPlaces source id)) (.userTask { id := ⟨id.value⟩, name, metadata })
+              (canonicalControlPlaceOrder (outgoingPlaces source id)) (.userTask { id := ⟨id.value⟩, name, metadata })
           else
           checkedNodeScopeId? source id |>.map fun scopeId =>
           (.awaitUserTask
@@ -516,10 +516,11 @@ def lowerNode (source : CheckedProcess) :
         (firstPlace (incomingPlaces source id))
         (firstPlace (outgoingPlaces source id))
   | .serviceTask id descriptor inputMappings outputMappings bpmnErrorRoute =>
-      -- ACTH-ADMIT-01: a merging Service or Send Task, which admission keeps free of a BPMN Error route, lowers to its host.
-      if 2 ≤ (incomingPlaces source id).length && bpmnErrorRoute.isNone then
+      -- ACTH-ADMIT-01, ACSP-ADMIT-01: a merging or splitting Service or Send Task without a BPMN Error route lowers to its host.
+      if (2 ≤ (incomingPlaces source id).length || 2 ≤ (outgoingPlaces source id).length) && bpmnErrorRoute.isNone then
         lowerActivityHost? (checkedNodeScopeId? source id) id (lowerExclusiveMergeInputs source id)
-          (firstPlace (outgoingPlaces source id)) (.effect { elementId := id, descriptor, inputMappings, outputMappings })
+          (canonicalControlPlaceOrder (outgoingPlaces source id))
+          (.effect { elementId := id, descriptor, inputMappings, outputMappings })
       else
       checkedNodeScopeId? source id |>.map fun scopeId =>
       (.awaitEffect
@@ -674,7 +675,7 @@ private theorem lower_none_intermediate_throw_event_is_one_input_merge (source :
           (lowerExclusiveMergeOutput source id), scopeId) := by
   simp [lowerNode, one_in, one_out]
 
-/-- Ordinary User Task lowering preserves the exact checked/IL resumption-cut classification when no boundary deadline changes the operation family and one incoming flow keeps the legacy wait (ACTH-ONE-01); a merging User Task lowers to a host instead. -/
+/-- Ordinary User Task lowering preserves the exact checked/IL resumption-cut classification when no boundary deadline changes the operation family and one incoming and one outgoing flow keep the legacy wait (ACSP-ONE-01); a merging or splitting User Task lowers to a host instead. -/
 theorem lowering_preserves_user_task_resumption_cut
     (source : CheckedProcess) (id : NodeId) (name : Option String)
     (metadata : Option UserTaskMetadata)
@@ -682,7 +683,7 @@ theorem lowering_preserves_user_task_resumption_cut
     (scope : checkedNodeScopeId? source id = some scopeId)
     (unbounded : timerBoundaryFor source id = none)
     (noMessageBoundary : messageBoundaryFor source id = none)
-    (notMerging : (incomingPlaces source id).length < 2) :
+    (oneFlow : (incomingPlaces source id).length < 2 ∧ (outgoingPlaces source id).length < 2) :
     ∃ operation,
       lowerNode source (.userTask id name metadata) = some (operation, scopeId) ∧
         checkedNodeIsResumptionCut (.userTask id name metadata) = true ∧
@@ -693,7 +694,7 @@ theorem lowering_preserves_user_task_resumption_cut
       (firstPlace (incomingPlaces source id))
       (firstPlace (outgoingPlaces source id))
       { id := ⟨id.value⟩, name, metadata }, ?_, rfl, rfl⟩
-  simp [lowerNode, unbounded, noMessageBoundary, scope, Nat.not_le.mpr notMerging]
+  simp [lowerNode, unbounded, noMessageBoundary, scope, Nat.not_le.mpr oneFlow.1, Nat.not_le.mpr oneFlow.2]
 
 def lowerOrdinaryScopeCompletions (source : CheckedProcess)
     (scope : DefinitionScope) : List (SemanticOperation × DefinitionScopeId) :=

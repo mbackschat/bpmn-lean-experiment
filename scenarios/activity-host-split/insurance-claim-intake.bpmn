@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_InsuranceClaimIntake" targetNamespace="urn:bpmn-lean:insurance-claim-intake">
+  <process id="Process_InsuranceClaimIntake" name="Take in an insurance claim" isExecutable="true">
+    <startEvent id="ClaimReported" name="Claim reported" />
+    <subProcess id="Intake" name="Intake">
+      <startEvent id="IntakeOpened" name="Intake opened" />
+      <serviceTask id="RegisterClaim" name="Register claim"
+                   implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                   camunda:delegateExpression="${registerClaim}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="claim">${claimSummary}</camunda:inputParameter>
+            <camunda:outputParameter name="claimNumber">${claimNumber}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </serviceTask>
+      <userTask id="ArchiveDocuments" name="Archive documents" />
+      <sendTask id="NotifyBroker" name="Notify broker"
+                implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                camunda:delegateExpression="${notifyBroker}" camunda:asyncBefore="true">
+        <extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="claim">${claimSummary}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </extensionElements>
+      </sendTask>
+      <endEvent id="DocumentsArchived" name="Documents archived" />
+      <endEvent id="BrokerNotified" name="Broker notified" />
+      <sequenceFlow id="Flow_ToRegister" sourceRef="IntakeOpened" targetRef="RegisterClaim" />
+      <sequenceFlow id="Flow_ToArchive" sourceRef="RegisterClaim" targetRef="ArchiveDocuments" />
+      <sequenceFlow id="Flow_ToBroker" sourceRef="RegisterClaim" targetRef="NotifyBroker" />
+      <sequenceFlow id="Flow_Archived" sourceRef="ArchiveDocuments" targetRef="DocumentsArchived" />
+      <sequenceFlow id="Flow_BrokerNotified" sourceRef="NotifyBroker" targetRef="BrokerNotified" />
+    </subProcess>
+    <userTask id="ReviewClaim" name="Review claim" />
+    <serviceTask id="OrderAssessment" name="Order assessment"
+                 implementation="urn:bpmn-lean:effect-protocol:activity-v1"
+                 camunda:delegateExpression="${orderAssessment}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="claim">${claimSummary}</camunda:inputParameter>
+          <camunda:outputParameter name="assessmentReference">${assessmentReference}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="InformCustomer" name="Inform customer" />
+    <parallelGateway id="ReviewDone" name="Review done" gatewayDirection="Converging" />
+    <userTask id="DecideClaim" name="Decide claim" />
+    <endEvent id="ClaimDecided" name="Claim decided" />
+    <sequenceFlow id="Flow_ToIntake" sourceRef="ClaimReported" targetRef="Intake" />
+    <sequenceFlow id="Flow_ToReview" sourceRef="Intake" targetRef="ReviewClaim" />
+    <sequenceFlow id="Flow_ToAssessment" sourceRef="ReviewClaim" targetRef="OrderAssessment" />
+    <sequenceFlow id="Flow_ToCustomer" sourceRef="ReviewClaim" targetRef="InformCustomer" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="OrderAssessment" targetRef="ReviewDone" />
+    <sequenceFlow id="Flow_CustomerInformed" sourceRef="InformCustomer" targetRef="ReviewDone" />
+    <sequenceFlow id="Flow_ToDecision" sourceRef="ReviewDone" targetRef="DecideClaim" />
+    <sequenceFlow id="Flow_Decided" sourceRef="DecideClaim" targetRef="ClaimDecided" />
+  </process>
+</definitions>

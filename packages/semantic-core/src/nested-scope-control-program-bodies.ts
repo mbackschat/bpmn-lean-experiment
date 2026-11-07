@@ -3,6 +3,7 @@
  * raw structured body that `nested-scope-control-admission.ts` contracts and composes, the checked projection's twin.
  * The Lean twin is the Program half of `NestedScopeControlAdmission`.
  */
+import { activityHostSettledProjection, settledOperation } from "./activity-host-work.js";
 import { sameCallDataInterface } from "./call-data-admission.js";
 import { CallDataKind } from "./call-data-contract.js";
 import type { ScopeDataAccess } from "./concurrent-scope-data-availability.js";
@@ -175,16 +176,29 @@ export function programBodies(program: SemanticProcessProgram, data: ModelData |
           }
           break;
         }
-        // ACTH-ADMIT-01: a host belongs to the re-entry account, never to a concurrent body.
-        case SemanticOperationKind.Activity: return null;
+        // ACTH-ADMIT-01: a merging host belongs to the re-entry account, never to a concurrent body. ACSP-ADMIT-01: a
+        // splitting host is its work's task vertex with every output's consumer a successor.
+        case SemanticOperationKind.Activity: {
+          const work = activityHostSettledProjection(operation);
+          kind = RawBodyNodeKind.Task;
+          outputs = operation.inputs.length !== 1 || work === null ? null
+            : work.kind === SemanticOperationKind.AwaitUserTask
+              ? (work.task.metadata === undefined ? follow(operation.outputs.map(({ place }) => place)) : null)
+              : (admittedServiceTask(work.effect, null, data) ? follow(operation.outputs.map(({ place }) => place)) : null);
+          if (work?.kind === SemanticOperationKind.AwaitEffect) accesses.set(operation.id, accessOf(work.effect));
+          break;
+        }
         default: return null;
       }
       if (outputs === null) return null;
       vertices.push({ id: operation.id, kind, outputs });
     }
-    const serviceTasks = members.filter(({ kind }) => kind === SemanticOperationKind.AwaitEffect).map(({ id }) => id);
+    // ACSP-ADMIT-01: a host counts as its work's kind, so the Task and Service Task bounds see it.
+    const workKind = (member: SemanticOperation) => settledOperation(member)?.kind;
+    const serviceTasks = members.filter(member => workKind(member) === SemanticOperationKind.AwaitEffect).map(({ id }) => id);
     bodies.set(scope, { scope, nodes: vertices, children, calls, mapped, serviceTasks, accesses,
-      tasks: [...members.filter(({ kind }) => kind === SemanticOperationKind.AwaitUserTask).map(({ id }) => id), ...serviceTasks] });
+      tasks: [...members.filter(member => workKind(member) === SemanticOperationKind.AwaitUserTask).map(({ id }) => id),
+        ...serviceTasks] });
   }
   // Every return pairs with exactly one invocation, so no called root completes without a caller to continue.
   const invokes = operations.filter(({ kind }) => kind === SemanticOperationKind.InvokeProcess);

@@ -22,6 +22,7 @@ import { RawBodyNodeKind, contractMergeRegions, multiplicityWeightedExtra } from
 import { accessOf, admittedServiceTask, callAccess, callDataAdmitted } from "./nested-scope-control-vertex-data.js";
 import type { ModelData } from "./nested-scope-control-vertex-data.js";
 import { splitScopesPlaced, withSplitForks } from "./scope-host-body-projection.js";
+import { settledOperations } from "./activity-host-work.js";
 import { group, programBodies } from "./nested-scope-control-program-bodies.js";
 import type { RawBody } from "./nested-scope-control-program-bodies.js";
 import type { MergeRegion, RawBodyNode } from "./merge-region-admission.js";
@@ -574,10 +575,13 @@ export function nestedScopeControlProgramStartNameRule(program: SemanticProcessP
 function programModel(program: SemanticProcessProgram): Admitted | null {
   // CSE-ADMIT-01: the source overlay binds Service Task handlers, so a Program carries one exactly when it has an effect.
   // The nested scope-data profile requires one on every model and always carries data (CSSD-ADMIT-01).
-  // ACTH-ADMIT-01: the concurrent account refuses every host, so its arrival count never reads one as a waiting merge.
-  if (program.operations.some(({ kind }) => kind === SemanticOperationKind.Activity)) return null;
+  // ACTH-ADMIT-01: the concurrent account refuses every merging host, so its arrival count never reads one as a waiting
+  // merge; ACSP-ADMIT-01: a splitting host is its work's task, read through its settled projection (wrong algorithm 11).
+  if (program.operations.some(operation => operation.kind === SemanticOperationKind.Activity &&
+    operation.inputs.length >= 2)) return null;
   const structured = program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
-  const hasEffect = program.operations.some(({ kind }) => kind === SemanticOperationKind.AwaitEffect);
+  const settled = settledOperations(program.operations);
+  const hasEffect = settled.some(({ kind }) => kind === SemanticOperationKind.AwaitEffect);
   if ((program.identity.sourceOverlay !== null) !== (structured || hasEffect) ||
       program.internalSchedulingMode !== InternalSchedulingMode.RejectObservableChoice ||
       program.compensationActivityRetention !== undefined || program.compensationEventSubProcessSnapshots !== undefined ||
@@ -593,7 +597,7 @@ function programModel(program: SemanticProcessProgram): Admitted | null {
     operation.kind === SemanticOperationKind.CompleteScope && operation.scopeId === root?.id && operation.parentOutput === null);
   const data: ModelData | null = structured || embeddedScopeDataBearing(program) ? {
     records: program.scopeLocalData ?? [],
-    handlers: new Set(program.operations.flatMap(operation =>
+    handlers: new Set(settled.flatMap(operation =>
       operation.kind === SemanticOperationKind.AwaitEffect ? [operation.effect.descriptor.operation] : [])),
   } : null;
   return rootCompletion.length === 1 && (!structured || inclusiveRegionsProgramAdmitted(program))
@@ -618,10 +622,11 @@ const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
 export function nestedScopeControlProgramShape(operations: readonly SemanticOperation[], semanticProfile: string,
   scopeCount: number): boolean {
   const regions = semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
-  // SCPH-ADMIT-01: the nested scope-data profile alone holds scope hosts and exits.
+  // SCPH-ADMIT-01, ACSP-ADMIT-01: the nested scope-data profile alone holds scope hosts, exits and Activity hosts.
   return scopeCountAdmitted(semanticProfile, scopeCount) && operations.every(({ kind }) => programOperationKinds.has(kind) ||
     (regions && (kind === SemanticOperationKind.SelectMany || kind === SemanticOperationKind.SynchronizeSelected ||
-      kind === SemanticOperationKind.Scope || kind === SemanticOperationKind.ScopeExit)));
+      kind === SemanticOperationKind.Scope || kind === SemanticOperationKind.ScopeExit ||
+      kind === SemanticOperationKind.Activity)));
 }
 
 export function nestedScopeControlCheckedShape(nodes: readonly CheckedNode[], semanticProfile: string,

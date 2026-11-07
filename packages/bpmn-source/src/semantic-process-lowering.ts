@@ -264,9 +264,8 @@ function lowerNode(
         name: node.name,
         ...(node.metadata === undefined ? {} : { metadata: node.metadata }),
       };
-      if (incoming.length >= 2) {
-        return scoped(lowerActivityHost(base, incoming, requireOnly(outgoing, node.id, "outgoing"),
-          { kind: ActivityWorkKind.UserTask, task }));
+      if (incoming.length >= 2 || outgoing.length >= 2) {
+        return scoped(lowerActivityHost(base, incoming, outgoing, { kind: ActivityWorkKind.UserTask, task }));
       }
       return scoped({
         ...base,
@@ -365,8 +364,8 @@ function lowerNode(
         message: { elementId: node.id, channel: node.channel },
       });
     case CheckedNodeKind.ServiceTask:
-      if (incoming.length >= 2 && node.bpmnErrorRoute === null) {
-        return scoped(lowerActivityHost(base, incoming, requireOnly(outgoing, node.id, "outgoing"), {
+      if ((incoming.length >= 2 || outgoing.length >= 2) && node.bpmnErrorRoute === null) {
+        return scoped(lowerActivityHost(base, incoming, outgoing, {
           kind: ActivityWorkKind.Effect,
           effect: { elementId: node.id, descriptor: node.descriptor, inputMappings: node.inputMappings,
             outputMappings: node.outputMappings },

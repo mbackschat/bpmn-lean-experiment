@@ -100,8 +100,11 @@ export function assessTemporalHostCapability(
       },
     };
   }
+  // ACSP-HOST-01: a splitting Activity host splits tokens and also waits as its work does, so it counts here while its
+  // class below stays its work's, and a splitting effect host takes the concurrent preflight (wrong algorithm 10).
   const canSplitTokens = program.operations.some(
-    (operation) => hostOperationClass(operation) === HostOperationClass.TokenSplit,
+    (operation) => hostOperationClass(operation) === HostOperationClass.TokenSplit ||
+      (operation.kind === SemanticOperationKind.Activity && operation.outputs.length > 1),
   );
   const hasHostDrivenWait = program.operations.some(
     (operation) =>
@@ -338,7 +341,10 @@ function hostOperationClass(operation: SemanticOperation): HostOperationClass {
   }
 }
 
-/** ACTH-HOST-01: a host is admitted exactly as the legacy operation of its work, so classification reads its published kind. */
+/**
+ * ACTH-HOST-01: a host is admitted exactly as the legacy operation of its work, so classification reads its published
+ * kind; a splitting host's token split is counted separately (ACSP-HOST-01).
+ */
 function classifyHostOperation(
   kind: PublishedSemanticOperationKind,
 ): HostOperationClass {

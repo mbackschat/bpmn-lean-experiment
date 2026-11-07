@@ -338,6 +338,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** the root None Start, the None Start of an ordinary embedded Sub-Process body and an ordinary embedded Sub-Process, of the nested scope-data profile, each with two or more unconditioned, non-default outgoing flows, the Sub-Process with one incoming flow, placed outside every fork region of its scope and its ancestors; public task, job and history APIs. Conditional and default outgoing flows, merges at Starts, Sub-Processes and Calls, splitting Calls and called-Process Starts, bounded, monitored, Multi-Instance, transaction and Event Sub-Processes, and asynchronous or listened Starts and Sub-Processes stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
 
+### CIB-AGR-0023 — a User, Service or Send Task's completion takes every unconditioned outgoing flow in its one step
+
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Activity host split account](capsules/ACTIVITY-HOST-SPLIT-PROPOSAL.md#separating-witnesses), implemented, awaiting closure review. It is the Task instance of `CIB-AGR-0019`'s split, beside `CIB-AGR-0022`'s Start and Sub-Process instances, and the split counterpart of `CIB-AGR-0020`'s merge at the same Tasks.
+
+**BPMN basis:** Clause 13.3.1 gives every outgoing Sequence Flow of a completing Activity a token, a parallel split, and Clause 10.3 restates it for Activities with several outgoing flows; Clause 13.3.3 applies it to User, Service and Send Tasks.
+
+**Evidence:** At pinned `5a45b47`, a completed User Task (`UserTaskActivityBehavior#signal`), a completed Service Task (`ServiceTaskDelegateExpressionActivityBehavior#execute`) and a Send Task, which `BpmnParse#parseSendTask` gives that same behavior through `parseServiceTaskLike`, leave through `FlowNodeActivityBehavior#leave`. `BpmnActivityBehavior#performOutgoingBehavior` collects every unconditioned non-default transition and takes them in one `leaveActivityViaTransitions`, creating no activity instance for the split. No pinned CIB test splits at a Task; the [retained insurance claim intake](../scenarios/activity-host-split/README.md) is the calibration model, and its CIB probe is the closure's qualification evidence.
+
+**Boundary:** a User Task, and a Service or Send Task without a BPMN Error route, of the nested scope-data profile, with one incoming flow and two or more unconditioned, non-default outgoing flows, without data associations, boundary events, Multi-Instance, listeners or task metadata, placed outside every fork region of its scope and its ancestors; public task, job and history APIs. Conditional and default outgoing flows, Tasks that both merge and split, Receive, Business Rule, Script and Manual Tasks, Calls, and every other profile stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases and the recovery witness.
+
 ## Interpretation register
 
 An interpretation belongs here when BPMN is ambiguous, inconsistent, non-operational, or leaves several permitted behaviors and the pinned CIB engine supplies one concrete meaning. It is not labeled a deviation.

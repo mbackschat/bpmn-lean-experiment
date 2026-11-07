@@ -143,12 +143,12 @@ private def operationJoint? (program : Program) (root : String) (operation : Sem
 private def rootScopeOf (scopes : List DefinitionScope) (processId : ProcessId) : Option DefinitionScopeId :=
   (scopes.find? fun scope => scope.parentScopeId.isNone && scope.originElementId.value == processId.value).map (·.id)
 
-/-- SRE-ROUTE-01: a Program of the nested scope-data profile whose root body holds a Choice, a Merge or an Activity host,
-which always merges since the host Program rules require two inputs (ACTH-ADMIT-01). -/
+/-- SRE-ROUTE-01: a Program of the nested scope-data profile whose root body holds a Choice, a Merge or an Activity host
+of two or more inputs; a host of one input splits instead (ACTH-ADMIT-01, ACSP-HOST-01). -/
 def programReentry (program : Program) : Bool :=
   program.identity.semanticProfile == nestedScopeDataProfileId &&
     program.operations.any fun operation =>
-      (operationJoint operation || match operation with | .activity _ => true | _ => false) &&
+      (operationJoint operation || match operation with | .activity host => 2 ≤ host.inputs.length | _ => false) &&
       (program.operationScopes.find? (·.operationId == operation.id)).map (·.scopeId) ==
         rootScopeOf program.definitionScopes program.processId
 

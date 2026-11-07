@@ -418,8 +418,8 @@ function withControlFlowFamilyOwner(file: string, routes: ReadonlyArray<AreaId>)
  */
 function withHostFamilyOwner(file: string, routes: ReadonlyArray<AreaId>): ReadonlyArray<AreaId> {
   const host =
-    /^BpmnSemantics\/(?:ActivityHost|ScopeHost)Conformance\.lean$/u.test(file) ||
-    /^scenarios\/(?:activity-host-merge|scope-host-split)\//u.test(file);
+    /^BpmnSemantics\/(?:ActivityHost|ActivityHostSplit|ScopeHost)Conformance\.lean$/u.test(file) ||
+    /^scenarios\/(?:activity-host-merge|activity-host-split|scope-host-split)\//u.test(file);
   return host ? [...routes, AreaId.EngineHostFamily] : routes;
 }
 

@@ -32,12 +32,13 @@ function scopeReentryModel(model: ScopeDataModel): boolean {
 /**
  * SRE-ROUTE-01 over a Program of the nested scope-data profile, whatever else its analysis decides. A one-input merge is
  * an Abstract or Manual Task (PTT-ADMIT-01), which keeps a serial model serial, so only a merge of two or more counts;
- * every Activity host merges, since the host Program rules require two inputs (ACTH-HOST-01).
+ * an Activity host merges when it has two or more inputs, and otherwise splits (ACTH-HOST-01, ACSP-HOST-01).
  */
 export function scopeReentryProgram(program: SemanticProcessProgram): boolean {
   return program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData && program.operations.some(operation =>
-    (operation.kind === SemanticOperationKind.Choose || operation.kind === SemanticOperationKind.Activity ||
-      (operation.kind === SemanticOperationKind.MergeExclusive && operation.inputs.length >= 2)) &&
+    (operation.kind === SemanticOperationKind.Choose ||
+      ((operation.kind === SemanticOperationKind.Activity || operation.kind === SemanticOperationKind.MergeExclusive) &&
+        operation.inputs.length >= 2)) &&
     program.operationScopes.some(({ operationId, scopeId }) => operationId === operation.id &&
       program.definitionScopes.some(scope => scope.id === scopeId && scope.parentScopeId === null &&
         scope.originElementId === program.processId)));

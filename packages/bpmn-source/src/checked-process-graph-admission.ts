@@ -78,6 +78,10 @@ export function passThroughSplitMerge(semanticProfile: string): boolean {
   return semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
 }
 
+/** A merging (several incoming, one outgoing) or splitting (one incoming, several outgoing) Activity host's arity. */
+const hostArity = (incoming: number, outgoing: number): boolean =>
+  (incoming >= 2 && outgoing === 1) || (incoming === 1 && outgoing >= 2);
+
 export function resolveAdmittedCheckedProcessGraph(
   graph: CheckedProcessGraph,
   semanticProfile: string = SemanticProfileId.UserTask,
@@ -259,13 +263,15 @@ function hasSelectedArity(
     case CheckedNodeKind.ConfiguredTask:
     case CheckedNodeKind.GlobalSynchronousCompensationThrowEvent:
       return incoming === 1 && outgoing === 1;
-    // ACTH-ADMIT-01: under the pass-through merge's flags a User, Service or Send Task without a BPMN Error route may
-    // merge several incoming flows; placement (the re-entry root graph only) is the profile's own admission.
+    // ACTH-ADMIT-01, ACSP-ADMIT-01: under the pass-through split and merge's flags a User, Service or Send Task without a
+    // BPMN Error route may merge several incoming flows or split onto several outgoing flows, never both; placement is
+    // the profile's own admission.
     case CheckedNodeKind.UserTask:
-      return outgoing === 1 && (incoming === 1 || (passThroughSplitMerge(semanticProfile) && incoming >= 2));
+      return (incoming === 1 && outgoing === 1) ||
+        (passThroughSplitMerge(semanticProfile) && hostArity(incoming, outgoing));
     case CheckedNodeKind.ServiceTask:
-      return outgoing === 1 &&
-        (incoming === 1 || (passThroughSplitMerge(semanticProfile) && node.bpmnErrorRoute === null && incoming >= 2));
+      return (incoming === 1 && outgoing === 1) ||
+        (passThroughSplitMerge(semanticProfile) && node.bpmnErrorRoute === null && hostArity(incoming, outgoing));
     case CheckedNodeKind.NonOperationalTask:
     case CheckedNodeKind.NoneIntermediateThrowEvent:
       return passThroughSplitMerge(semanticProfile)

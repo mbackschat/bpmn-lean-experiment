@@ -102,15 +102,15 @@ Current task: Kernel IL orthogonalization, batch 5, third family: the implicit s
 
 Deliverable: `PC-CF-07`'s unconditioned split at User, Service and Send Tasks outside fork regions, landed on `main`; the [proposal](capsules/ACTIVITY-HOST-SPLIT-PROPOSAL.md#question-and-delivery-boundary) lists every residual.
 
-Acceptance blockers: the representation, admission, evidence and closure.
+Acceptance blockers: closure (heavy lanes, cold closure review, landing).
 
-Current result: proposal approved with required edits at `c70abb14`, audit `d1c55a0f`.
+Current result: representation `ea34f83f`; admission and evidence pass type checks, fast guards and the four TypeScript package suites.
 
 Owner items: confirm the incremental re-decision after the stop condition fired; renew six stale size-exception rationales.
 
-Effort budget: 12 hours from 2026-11-07 13:30 CET; at the limit record the boundary and continue unless the evidence invalidates the path.
+Effort budget: 12 hours from 2026-11-07 13:30 CET; at the limit record the boundary and continue unless the evidence invalidates the path. Lean batch `acsp-family`: one full build at closure, one after a correction.
 
-Next action: the representation commit under a reviewed Rule 2 declaration.
+Next action: run the closure lanes once each, then the cold closure review.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
 

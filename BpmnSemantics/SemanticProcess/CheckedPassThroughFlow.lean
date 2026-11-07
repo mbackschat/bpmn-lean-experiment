@@ -34,14 +34,20 @@ private def splittingSubProcess (flows : List CheckedSequenceFlow) : CheckedNode
   | .embeddedSubProcess id _ => 2 ≤ (flows.filter (·.sourceId == id)).length
   | _ => false
 
-/-- A checked node that splits a token, as the Program's `duplicate`, `selectMany`, scope host and exit do. -/
+/-- ACSP-ADMIT-01: a User or Service Task with two or more outgoing flows, which lowers to a splitting Activity host. -/
+def splittingTask (flows : List CheckedSequenceFlow) : CheckedNode → Bool
+  | .userTask id .. | .serviceTask id .. => 2 ≤ (flows.filter (·.sourceId == id)).length
+  | _ => false
+
+/-- A checked node that splits a token, as the Program's `duplicate`, `selectMany`, scope host and exit and splitting
+Activity host do. -/
 def forks (flows : List CheckedSequenceFlow) : CheckedNode → Bool
   | .parallelGateway _ .diverging | .inclusiveGatewayDiverging .. => true
-  | node => splits flows node || splittingStart flows node || splittingSubProcess flows node
+  | node => splits flows node || splittingStart flows node || splittingSubProcess flows node || splittingTask flows node
 
-/-- ACTH-ADMIT-01: a User or Service Task with two or more incoming flows, which lowers to one Activity host over those
-flows. Routing counts it as the re-entry account's merge and the concurrent account refuses it, as both do the
-Program's host. -/
+/-- ACTH-ADMIT-01: a User or Service Task with two or more incoming flows, which lowers to one merging Activity host over
+those flows. Routing counts it as the re-entry account's merge and the concurrent account refuses it, as both do the
+Program's merging host. -/
 def mergingTask (flows : List CheckedSequenceFlow) : CheckedNode → Bool
   | .userTask id .. | .serviceTask id .. => 2 ≤ (flows.filter (·.targetId == id)).length
   | _ => false

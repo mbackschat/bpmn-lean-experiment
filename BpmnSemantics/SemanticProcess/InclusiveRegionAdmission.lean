@@ -78,6 +78,9 @@ private def programVertexKind : SemanticOperation → VertexKind
   | .synchronizeSelected .. => .inclusiveJoin
   | .reachNoneEnd .. => .finish
   | .invokeProcess .. => .call
+  -- ACTH-ADMIT-01: a merging Task belongs to the re-entry account, which no Inclusive region shares; ACSP-ADMIT-01: a
+  -- splitting host is a fork, as its checked Task is.
+  | .activity host => if 2 ≤ host.outputs.length then .fork else .other
   | _ => .other
 
 private def programInputs : SemanticOperation → List ControlPlaceId
@@ -85,6 +88,7 @@ private def programInputs : SemanticOperation → List ControlPlaceId
   | .awaitUserTask _ _ input .. | .awaitEffect _ _ input .. | .enterScope _ _ input .. | .duplicate _ _ input _
   | .selectMany _ _ input .. | .reachNoneEnd _ _ input | .invokeProcess _ _ input .. => [input]
   | .synchronize _ _ inputs _ | .synchronizeSelected _ _ inputs _ _ | .mergeExclusive _ _ inputs _ => inputs
+  | .activity host => host.inputs
   | _ => []
 
 private def alwaysTrue : SimpleBooleanExpression → Bool
@@ -124,6 +128,7 @@ private def programGraph (program : Program) : Graph :=
                 (if alwaysTrue candidate.condition then .always else .conditioned) (some candidate.expectedJoinInput)) ++
               defaultBranch.toList.map fun branch => edge branch.output .default (some branch.expectedJoinInput)
           | .duplicate _ _ _ outputs => outputs.map (edge · .conditioned none)
+          | .activity host => host.outputs.map (edge ·.place .conditioned none)
           | .enterScope _ _ _ _ child => parentOutput child
           | .initiate _ _ output | .awaitUserTask _ _ _ output _ | .awaitEffect _ _ _ output _ _
           | .synchronize _ _ _ output | .synchronizeSelected _ _ _ output _ | .mergeExclusive _ _ _ output =>

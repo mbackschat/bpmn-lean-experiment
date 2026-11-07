@@ -40,6 +40,7 @@ function outsideForkRegions(nodes: readonly RawBodyNode[], vertex: string): bool
  * SCPH-SINGLE-01: a splitting body Start's Sub-Process and a splitting Sub-Process lie outside every fork region of
  * their scope and of every ancestor scope, so no other internal operation is enabled with the host or exit. A root Start
  * always qualifies. Comparability reads exactly the fork regions because the concurrent account admits no Choice.
+ * ACSP-SINGLE-01: so does a splitting Task, a task vertex with two or more successors that holds no child scope.
  */
 export function splitScopesPlaced(bodies: ReadonlyMap<string, SplitBody>): boolean {
   const parent = new Map<string, Readonly<{ body: SplitBody; vertex: string }>>();
@@ -57,8 +58,12 @@ export function splitScopesPlaced(bodies: ReadonlyMap<string, SplitBody>): boole
   };
   return [...bodies.values()].every(body => body.nodes.every(vertex => {
     const child = body.children.get(vertex.id);
-    const splittingChild = child !== undefined && (splits(vertex) ||
-      (bodies.get(child)?.nodes.some(start => start.kind === RawBodyNodeKind.Start && splits(start)) ?? false));
+    if (child === undefined) {
+      return vertex.kind !== RawBodyNodeKind.Task || !splits(vertex) ||
+        (outsideForkRegions(body.nodes, vertex.id) && placed(body.scope));
+    }
+    const splittingChild = splits(vertex) ||
+      (bodies.get(child)?.nodes.some(start => start.kind === RawBodyNodeKind.Start && splits(start)) ?? false);
     return !splittingChild || placed(child);
   }));
 }

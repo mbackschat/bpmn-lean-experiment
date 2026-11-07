@@ -5,7 +5,7 @@
  * placement with at most one live region, the outputs and default rule, the strict cut, the Call exclusion and, at the Program level, every
  * branch's expected join input. Owner: the [Inclusive regions specification](../../../docs/capsules/INCLUSIVE-GATEWAY-REGIONS-SPEC.md#admission).
  */
-import { checkedNodeMerges, checkedNodeSplits } from "./checked-pass-through-flow.js";
+import { checkedNodeMerges, checkedNodeSplits, checkedNodeSplittingTask } from "./checked-pass-through-flow.js";
 import { CheckedNodeKind, GatewayDirection } from "./checked-process-contract.js";
 import type { CheckedNode, CheckedSequenceFlow } from "./checked-process-contract.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
@@ -166,9 +166,12 @@ function isAlwaysTrue(condition: SimpleBooleanExpression): boolean {
   return condition.kind === SimpleBooleanExpressionKind.Literal && condition.value;
 }
 
-/** PTSM-ADMIT-01: a several-flow pass-through node is classified as its lowered `duplicate` or many-input merge is. */
+/**
+ * PTSM-ADMIT-01: a several-flow pass-through node is classified as its lowered `duplicate` or many-input merge is.
+ * ACSP-ADMIT-01: a splitting Task is a fork, so the one-region-per-fork rule reads its branches.
+ */
 function checkedVertexKind(node: CheckedNode, flows: readonly CheckedSequenceFlow[]): RegionVertexKind {
-  if (checkedNodeSplits(node, flows)) return RegionVertexKind.Fork;
+  if (checkedNodeSplits(node, flows) || checkedNodeSplittingTask(node, flows)) return RegionVertexKind.Fork;
   if (checkedNodeMerges(node, flows)) return RegionVertexKind.Other;
   switch (node.kind) {
     case CheckedNodeKind.NoneStartEvent: return RegionVertexKind.Start;
@@ -230,8 +233,9 @@ function programVertexKind(operation: SemanticOperation): RegionVertexKind {
     case SemanticOperationKind.SynchronizeSelected: return RegionVertexKind.InclusiveJoin;
     case SemanticOperationKind.ReachNoneEnd: return RegionVertexKind.End;
     case SemanticOperationKind.InvokeProcess: return RegionVertexKind.Call;
-    // ACTH-ADMIT-01: a merging Task belongs to the re-entry account, which no Inclusive region shares.
-    case SemanticOperationKind.Activity: return RegionVertexKind.Other;
+    // ACTH-ADMIT-01: a merging Task belongs to the re-entry account, which no Inclusive region shares; ACSP-ADMIT-01: a
+    // splitting host is a fork, as its checked Task is.
+    case SemanticOperationKind.Activity: return operation.outputs.length >= 2 ? RegionVertexKind.Fork : RegionVertexKind.Other;
     default: return RegionVertexKind.Other;
   }
 }
@@ -240,7 +244,8 @@ function programInputs(operation: SemanticOperation): readonly string[] {
   switch (operation.kind) {
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.SynchronizeSelected:
-    case SemanticOperationKind.MergeExclusive: return operation.inputs;
+    case SemanticOperationKind.MergeExclusive:
+    case SemanticOperationKind.Activity: return operation.inputs;
     default: return "input" in operation && typeof operation.input === "string" ? [operation.input] : [];
   }
 }
@@ -267,6 +272,7 @@ export function programRegionGraph(program: SemanticProcessProgram): RegionGraph
           { guard: RegionGuard.Default, expectedJoinInput: operation.defaultBranch.expectedJoinInput })]),
       ];
       case SemanticOperationKind.Duplicate: return operation.outputs.map(place => edge(place));
+      case SemanticOperationKind.Activity: return operation.outputs.map(({ place }) => edge(place));
       case SemanticOperationKind.EnterScope: {
         const completions = program.operations.filter(candidate =>
           candidate.kind === SemanticOperationKind.CompleteScope && candidate.scopeId === operation.childScopeId);

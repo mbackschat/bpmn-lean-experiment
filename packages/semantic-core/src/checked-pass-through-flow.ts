@@ -32,20 +32,27 @@ export function checkedNodeSplittingSubProcess(node: CheckedNode, flows: readonl
   return node.kind === CheckedNodeKind.EmbeddedSubProcess && flows.filter(({ sourceId }) => sourceId === node.id).length >= 2;
 }
 
+/** ACSP-ADMIT-01: a User or Service Task with two or more outgoing flows, which lowers to a splitting Activity host. */
+export function checkedNodeSplittingTask(node: CheckedNode, flows: readonly CheckedSequenceFlow[]): boolean {
+  return (node.kind === CheckedNodeKind.UserTask || node.kind === CheckedNodeKind.ServiceTask) &&
+    flows.filter(({ sourceId }) => sourceId === node.id).length >= 2;
+}
+
 /**
- * A checked node that splits a token, as the Program's `duplicate`, `selectMany`, splitting scope hosts and exits do
- * (SCPH-ADMIT-01 routing).
+ * A checked node that splits a token, as the Program's `duplicate`, `selectMany`, splitting scope hosts and exits and
+ * splitting Activity hosts do (SCPH-ADMIT-01 and ACSP-ADMIT-01 routing).
  */
 export function checkedNodeForks(node: CheckedNode, flows: readonly CheckedSequenceFlow[]): boolean {
   return ((node.kind === CheckedNodeKind.ParallelGateway || node.kind === CheckedNodeKind.InclusiveGateway) &&
     node.direction === GatewayDirection.Diverging) || checkedNodeSplits(node, flows) ||
-    checkedNodeSplittingStart(node, flows) || checkedNodeSplittingSubProcess(node, flows);
+    checkedNodeSplittingStart(node, flows) || checkedNodeSplittingSubProcess(node, flows) ||
+    checkedNodeSplittingTask(node, flows);
 }
 
 /**
- * ACTH-ADMIT-01: a User or Service Task with two or more incoming flows, which lowers to one Activity host over those
- * flows. Routing counts it as the re-entry account's merge and the concurrent account refuses it, as both do the
- * Program's host.
+ * ACTH-ADMIT-01: a User or Service Task with two or more incoming flows, which lowers to one merging Activity host over
+ * those flows. Routing counts it as the re-entry account's merge and the concurrent account refuses it, as both do the
+ * Program's merging host.
  */
 export function checkedNodeMergingTask(node: CheckedNode, flows: readonly CheckedSequenceFlow[]): boolean {
   return (node.kind === CheckedNodeKind.UserTask || node.kind === CheckedNodeKind.ServiceTask) &&

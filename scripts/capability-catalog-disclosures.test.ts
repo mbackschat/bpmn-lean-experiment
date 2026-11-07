@@ -52,6 +52,7 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
     "A hosted Start is refused when the reserved result of a task or the successful journey cannot fit the capacity envelope",
     "earlier profiles refuse structured results",
     "such a Service Task without a BPMN Error route may merge several incoming flows in the Process root of a re-entry graph",
+    "with one incoming flow, leave on two or more unconditioned flows outside every fork region, its completion taking all of them",
   ]],
   ["embeddedSubProcess", "restriction", [
     "The embedded completion profile also admits ordinary Sub-Processes nested to depth three whose bodies hold only User Tasks",
@@ -110,12 +111,14 @@ const requiredDisclosures: ReadonlyArray<readonly [MvpBpmnCapabilityId, "element
   ]],
   ["userTask", "restriction", [
     "may merge several incoming flows in the Process root of a re-entry graph, each arriving token starting a fresh occurrence",
+    "With one incoming flow, it may instead leave on two or more unconditioned flows outside every fork region",
   ]],
   ["sendTask", "element", ["Send Task"]],
   ["sendTask", "restriction", [
     "Under the nested scope-data profile only",
     "its handler result must be empty",
     "no Message Flow, messageRef or operationRef is read",
+    "or split onto several unconditioned outgoing flows",
   ]],
   ["process", "restriction", [
     "The nested scope-data profile also admits a Process without an embedded Sub-Process",

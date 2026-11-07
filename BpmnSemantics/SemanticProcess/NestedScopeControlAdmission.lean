@@ -522,7 +522,7 @@ def operationInputs : SemanticOperation → List ControlPlaceId
   | .enterScope _ _ input .. | .awaitUserTask _ _ input .. | .awaitEffect _ _ input .. | .duplicate _ _ input _
   | .reachNoneEnd _ _ input | .invokeProcess _ _ input .. | .selectMany _ _ input .. => [input]
   | .synchronize _ _ inputs _ | .mergeExclusive _ _ inputs _ | .synchronizeSelected _ _ inputs _ _
-  | .scope { inputs, .. } => inputs
+  | .scope { inputs, .. } | .activity { inputs, .. } => inputs
   | _ => []
 
 /-- The unique same-scope operation consuming `place`. -/
@@ -560,17 +560,24 @@ def operationVertex? (program : Program) (data : Option Data) (scope : String) (
     Option (MergeRegion.RawVertex × Option String) := do
   let id := operation.id.value
   let follow := fun (places : List ControlPlaceId) => places.mapM (consumer? program scope)
+  let serviceAdmitted := fun (effect : EffectDefinition) => match data with
+    | none => effect.inputMappings.isEmpty && effect.outputMappings.isEmpty &&
+        SerialBusinessTask.descriptorValid effect.descriptor
+    | some data => NestedScopeData.serviceValid data.handlers effect.descriptor effect.inputMappings effect.outputMappings
   match operation with
   | .initiate _ _ output => return (⟨id, .vertex .start, ← follow [output]⟩, none)
   | .awaitUserTask _ _ _ output task =>
       if task.metadata.isSome then none else return (⟨id, .vertex .task, ← follow [output]⟩, none)
   | .awaitEffect _ _ _ output effect none =>
-      let admitted := match data with
-        | none => effect.inputMappings.isEmpty && effect.outputMappings.isEmpty &&
-            SerialBusinessTask.descriptorValid effect.descriptor
-        | some data => NestedScopeData.serviceValid data.handlers effect.descriptor effect.inputMappings
-            effect.outputMappings
-      if admitted then return (⟨id, .vertex .task, ← follow [output]⟩, none) else none
+      if serviceAdmitted effect then return (⟨id, .vertex .task, ← follow [output]⟩, none) else none
+  -- ACTH-ADMIT-01, ACSP-ADMIT-01: a merging host is the re-entry account's; a splitting host is its work's task vertex.
+  | .activity host => do
+      let [_] := host.inputs | none
+      let admitted := (match NestedScopeData.settledOperation operation with
+        | .awaitUserTask _ _ _ _ task => task.metadata.isNone
+        | .awaitEffect _ _ _ _ effect _ => serviceAdmitted effect
+        | _ => false)
+      if admitted then return (⟨id, .vertex .task, ← follow (host.outputs.map (·.place))⟩, none) else none
   | .duplicate _ _ _ outputs => return (⟨id, .vertex .fork, ← follow outputs⟩, none)
   | .synchronize _ _ _ output => return (⟨id, .vertex .join, ← follow [output]⟩, none)
   -- IGR-ADMIT-01: the nested scope-data profile's Inclusive split and join, projected as fork and join.
@@ -617,13 +624,17 @@ def programBodies (program : Program) (data : Option Data) : Option (List RawBod
     let start := match entries.eraseDups with
       | [outputs] => [⟨childStart scope.id.value, .vertex .start, outputs⟩]
       | _ => []
+    -- ACSP-ADMIT-01: a host counts as its work's kind, so the Task and Service Task bounds see it.
     let serviceTasks := members.filterMap fun op => match op with
       | .awaitEffect id .. => some id.value
+      | .activity _ => (match NestedScopeData.settledOperation op with | .awaitEffect id .. => some id.value | _ => none)
       | _ => none
     return { scope := scope.id.value, vertices := start ++ projected.map (·.1)
              children := projected.filterMap fun (vertex, child) => child.map (vertex.id, ·)
              tasks := members.filterMap (fun op => match op with
                | .awaitUserTask id .. => some id.value
+               | .activity _ => (match NestedScopeData.settledOperation op with
+                 | .awaitUserTask id .. => some id.value | _ => none)
                | _ => none) ++ serviceTasks
              serviceTasks
              calls := members.filterMap (fun op => match op with
@@ -635,13 +646,23 @@ def programBodies (program : Program) (data : Option Data) : Option (List RawBod
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`programBodies]
 
+/-- ACSP-ADMIT-01: every effect's handler, a host's read through its work; the shared serial list stays host-blind. -/
+private def programHandlers (program : Program) : List String :=
+  SerialBusinessTask.programHandlers program ++ program.operations.filterMap fun
+    | operation@(.activity _) => (match NestedScopeData.settledOperation operation with
+      | .awaitEffect _ _ _ _ effect _ => some effect.descriptor.operation | _ => none)
+    | _ => none
+
 /-- A data-bearing embedded completion Program's, or any nested scope-data Program's (CSSD-ADMIT-01),
 declarations, handlers, mapped Service Tasks and mapped Calls. -/
 private def programData (program : Program) : Option Data :=
   if program.identity.semanticProfile == nestedScopeDataProfileId || embeddedScopeDataBearing program then
-    some { records := program.scopeLocalData, handlers := SerialBusinessTask.programHandlers program
+    some { records := program.scopeLocalData, handlers := programHandlers program
            accesses := program.operations.filterMap fun op => match op with
              | .awaitEffect id _ _ _ effect _ => some (id.value, serviceAccess effect.inputMappings effect.outputMappings)
+             | .activity _ => (match NestedScopeData.settledOperation op with
+               | .awaitEffect id _ _ _ effect _ => some (id.value, serviceAccess effect.inputMappings effect.outputMappings)
+               | _ => none)
              | .invokeProcess id _ _ _ _ _ _ (.variableMappings inputs outputs) => some (id.value, callAccess inputs outputs)
              | _ => none }
   else none
@@ -665,6 +686,7 @@ private def programModel (program : Program) : Option (Nat × List String × Opt
   let structured := program.identity.semanticProfile == nestedScopeDataProfileId
   let hasEffect := program.operations.any fun op => match op with
     | .awaitEffect .. => true
+    | .activity _ => (match NestedScopeData.settledOperation op with | .awaitEffect .. => true | _ => false)
     | _ => false
   if !(program.identity.sourceOverlay.isSome == (structured || hasEffect) &&
       program.internalSchedulingMode == .rejectObservableChoice &&
@@ -711,8 +733,7 @@ def startBindingsAdmitted (program : Program) (bindings : List VariableBinding) 
   match programModel program with
   | none => false
   | some (_, required, optional) =>
-      EffectData.bindingsValidUnder (programEffectMappingValuePolicy program)
-          (SerialBusinessTask.programHandlers program) bindings &&
+      EffectData.bindingsValidUnder (programEffectMappingValuePolicy program) (programHandlers program) bindings &&
         required.all (fun name => bindings.any (·.name == name)) &&
         optional.all fun optional => bindings.all fun binding =>
           required.contains binding.name || optional.contains binding.name
@@ -734,10 +755,12 @@ namespace BpmnSemantics.SemanticProcess.StructuredScopeData
 
 open BpmnSemantics
 
-/-- IGR-ADMIT-01, SCPH-ADMIT-01: an Inclusive split, scope host or exit splits as a fork does; Choices, cycles and root Calls route away. -/
+/-- IGR-ADMIT-01, SCPH-ADMIT-01, ACSP-ADMIT-01: an Inclusive split, scope host or exit and an Activity host with two or
+more outputs split as a fork does; Choices, cycles and root Calls route away. -/
 private def splits (operations : List SemanticOperation) : Bool :=
   operations.any fun
     | .duplicate .. | .selectMany .. | .scope .. | .scopeExit .. => true
+    | .activity host => 2 ≤ host.outputs.length
     | _ => false
 
 /-- CSSD-ROUTE-01: a Program of the nested scope-data profile that splits a token. -/
@@ -769,14 +792,14 @@ private def programRestrictionsHold (program : Program) : Bool :=
         (program.operationScopes.find? (·.operationId == id)).map (·.scopeId)
       let inRoot := fun (id : OperationId) => scopeOf id == some root
       program.identity.sourceOverlay.isSome &&
-        -- PTPB-ADMIT-01: a one-input merge is a lowered pass-through Task, not a merge region; a host always merges.
+        -- PTPB-ADMIT-01, ACSP-ADMIT-01: a one-input merge is a pass-through Task and a one-input host a split, not merges.
         !(program.operations.any fun
-          | .mergeExclusive _ _ inputs _ => inputs.length ≥ 2
-          | .activity _ => true
+          | .mergeExclusive _ _ inputs _ | .activity { inputs, .. } => inputs.length ≥ 2
           | _ => false) &&
         -- A `process` host splits in the root, an exit in its scope's parent, a `subProcess` host in its child.
         !(program.operations.any (fun operation => match operation with
             | .duplicate id .. | .selectMany id .. | .scope { id, work := .process, .. } => inRoot id
+            | .activity { id, outputs, .. } => 2 ≤ outputs.length && inRoot id
             | .scopeExit exit => (program.definitionScopes.find? (·.id == exit.scopeId)).bind (·.parentScopeId) == some root
             | _ => false) &&
           program.operations.any (fun | .invokeProcess id .. => inRoot id | _ => false)) &&

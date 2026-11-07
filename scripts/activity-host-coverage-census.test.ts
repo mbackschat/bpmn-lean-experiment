@@ -10,6 +10,7 @@ import {
   nonExhaustive,
   siteDeclaration,
   staleEntries,
+  typeScriptDeclarations,
   typeScriptProductionDeclarations,
 } from "./host-coverage-census-support.ts";
 
@@ -44,12 +45,6 @@ const leanAllowlist: Readonly<Record<string, string>> = {
     "profile shape admits no host outside the nested scope-data profile (ACTH-PROFILE-01)",
   "BpmnSemantics/SemanticProcess/EffectDataCommandAdmission.lean::runtimeAssociationsValid":
     "profile shape admits no host outside the nested scope-data profile (ACTH-PROFILE-01)",
-  "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programGraph":
-    "a merging Task belongs to the re-entry account, which no Inclusive region shares; the wildcard reads a host as another vertex",
-  "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programInputs":
-    "a merging Task belongs to the re-entry account, which no Inclusive region shares; the wildcard reads a host as another vertex",
-  "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programVertexKind":
-    "a merging Task belongs to the re-entry account, which no Inclusive region shares; the wildcard reads a host as another vertex",
   "BpmnSemantics/SemanticProcess/InternalCommutationCore.lean::footprintOfPatch":
     "a host has no arming input (`internalArmInput?`), so it never reaches an arming patch (ACTH-HOST-01)",
   "BpmnSemantics/SemanticProcess/InternalCommutationCore.lean::internalArmOrigin?":
@@ -69,7 +64,7 @@ const leanAllowlist: Readonly<Record<string, string>> = {
   "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessProgramAdmission.lean::taskPorts":
     "profile shape admits no host outside the nested scope-data profile (ACTH-PROFILE-01)",
   "BpmnSemantics/SemanticProcess/Lowering.lean::lowerNode":
-    "emits a host only through the host lowering leaf, for a merging Task; every other Task keeps its legacy operation (ACTH-ONE-01)",
+    "emits a host only through the host lowering leaf, for a merging or splitting Task; every other Task keeps its legacy operation (ACTH-ONE-01, ACSP-ONE-01)",
   "BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmission.lean::operationInputs":
     "profile shape admits no host outside the nested scope-data profile (ACTH-PROFILE-01)",
   "BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmission.lean::operationOrigin?":
@@ -82,16 +77,6 @@ const leanAllowlist: Readonly<Record<string, string>> = {
     "profile shape admits no host outside the nested scope-data profile (ACTH-PROFILE-01)",
   "BpmnSemantics/SemanticProcess/MixedTaskControlFlowDataProofs.lean::OperationAllowed":
     "profile shape admits no host outside the nested scope-data profile (ACTH-PROFILE-01)",
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::operationInputs":
-    "a Program holding a host routes to the re-entry account and the concurrent account refuses it, so this reader never sees a host (ACTH-ADMIT-01)",
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::operationVertex?":
-    "a Program holding a host routes to the re-entry account and the concurrent account refuses it, so this reader never sees a host (ACTH-ADMIT-01)",
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programBodies":
-    "a Program holding a host routes to the re-entry account and the concurrent account refuses it, so this reader never sees a host (ACTH-ADMIT-01)",
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programData":
-    "a Program holding a host routes to the re-entry account and the concurrent account refuses it, so this reader never sees a host (ACTH-ADMIT-01)",
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programModel":
-    "a Program holding a host routes to the re-entry account and the concurrent account refuses it, so this reader never sees a host (ACTH-ADMIT-01)",
   "BpmnSemantics/SemanticProcess/ParallelScopeData.lean::evaluateParallelScopeInputs?":
     "Multi-Instance bodies and their accounts never hold a host (ACTH-ADMIT-01 body refusal)",
   "BpmnSemantics/SemanticProcess/ParallelScopeData.lean::writeParallelScopeValues?":
@@ -186,8 +171,6 @@ const leanAllowlist: Readonly<Record<string, string>> = {
 const typeScriptAllowlist: Readonly<Record<string, string>> = {
   "packages/bpmn-source/src/configured-task-lowering.ts::lowerConfiguredTask":
     "a configured Task (`CheckedNodeKind.ConfiguredTask`) is never a merging Task, so it keeps its legacy effect wait (ACTH-ADMIT-01)",
-  "packages/bpmn-source/src/semantic-process-lowering.ts::lowerNode":
-    "emits a host only through the host lowering leaf, for a merging Task; every other Task keeps its legacy operation (ACTH-ONE-01)",
   "packages/bpmn-source/src/user-task-metadata-source.ts::userTaskMetadataBindingValid":
     "source metadata binding precedes lowering and never sees an operation",
   "packages/semantic-core/src/compensation-activity-retention-state-validation.ts::targetOperationMatches":
@@ -340,6 +323,9 @@ test("every Lean declaration that can absorb the host through a wildcard names i
   const missing = population.filter((declaration) => !leanHost.test(declaration.body) && !(key(declaration) in leanAllowlist));
   assert.deepEqual(missing.map(key), []);
   assert.deepEqual(staleEntries(leanAllowlist, population), [], "stale Lean allowlist entries");
+  // A reason for omitting the host is false once the declaration names it, so the entry must go with the change.
+  assert.deepEqual(population.filter((declaration) => leanHost.test(declaration.body) && key(declaration) in leanAllowlist)
+    .map(key), [], "Lean allowlist entries whose declaration names the host");
 });
 
 test("every non-exhaustive TypeScript reader of the legacy kinds names the host or carries a reason", () => {
@@ -348,6 +334,58 @@ test("every non-exhaustive TypeScript reader of the legacy kinds names the host 
     !typeScriptHost.test(declaration.body) && !(key(declaration) in typeScriptAllowlist));
   assert.deepEqual(missing.map(key), []);
   assert.deepEqual(staleEntries(typeScriptAllowlist, population), [], "stale TypeScript allowlist entries");
+  assert.deepEqual(population.filter((declaration) => typeScriptHost.test(declaration.body) &&
+    key(declaration) in typeScriptAllowlist).map(key), [], "TypeScript allowlist entries whose declaration names the host");
+});
+
+/*
+ * The split account's populations (docs/capsules/ACTIVITY-HOST-SPLIT-PROPOSAL.md, "Oracles this family changes"). A
+ * splitting host's one-output projection is absent and its settled projection carries only the first output, so a
+ * reader of either that compares outputs would drop or narrow the split (wrong algorithm 7); a reader of a wait's
+ * output list that takes its first element would miss a branch (wrong algorithm 6).
+ */
+const settledCall = /\b(settledOperations?|activityHostSettledProjection|activityHostProjection)\(/u;
+const settledOutputsRead = /\bsettledWaitOutputs\(|SemanticOperationKind\.Activity\b/u;
+const leanProjection = /\bprojection\?|\bsettledOperation\b|\bworkAt\b/u;
+const waitRecord = /\b(UserTaskWait|EffectWait|userTaskWaits|effectWaits)\b/u;
+const firstOutputOnly = /\.outputs(\[0\]|\.at\(0\)|\.head\b|\.get\? 0|\.getD\b|\[0\]!)/u;
+
+test("every settled-projection call site that reads an output reads the host's outputs", () => {
+  const population = typeScriptProductionDeclarations().filter(({ path, body }) =>
+    !path.endsWith("activity-host-work.ts") && settledCall.test(body));
+  assert.ok(population.length > 0, "the settled-projection population is empty, so the recognizer has drifted");
+  assert.deepEqual(population.filter(({ body }) => /\.output\b/u.test(body) && !settledOutputsRead.test(body)).map(key), []);
+});
+
+test("every Lean reader of a host's one-output projection names the host", () => {
+  const population = leanProductionDeclarations().filter(({ path, body }) =>
+    !path.endsWith("ActivityHostWork.lean") && leanProjection.test(body));
+  assert.ok(population.length > 0, "the projection population is empty, so the recognizer has drifted");
+  assert.deepEqual(population.filter(({ body }) => !leanHost.test(body)).map(key), []);
+});
+
+test("no reader of a wait's output list takes only its first element", () => {
+  const population = [...leanProductionDeclarations(), ...typeScriptProductionDeclarations()]
+    .filter(({ body }) => /\.outputs\b/u.test(body) && waitRecord.test(body));
+  assert.ok(population.length > 0, "the wait-list population is empty, so the recognizer has drifted");
+  assert.deepEqual(population.filter(({ body }) => firstOutputOnly.test(body)).map(key), []);
+});
+
+test("rejects each wrong reader the split populations name", () => {
+  const [lean] = leanDeclarations("Probe.lean", "def probe (wait : UserTaskWait) : Option ControlPlaceId :=\n  wait.outputs.head?\n");
+  assert.ok(lean !== undefined && waitRecord.test(lean.body) && firstOutputOnly.test(lean.body));
+  const [typeScript] = typeScriptDeclarations("probe.ts",
+    "export function probe(operation: SemanticOperation, place: string): boolean {\n" +
+    "  return settledOperation(operation)?.output === place;\n}\n");
+  assert.ok(typeScript !== undefined && settledCall.test(typeScript.body) && /\.output\b/u.test(typeScript.body) &&
+    !settledOutputsRead.test(typeScript.body));
+  const [leanProjectionReader] = leanDeclarations("Probe.lean",
+    "def probe (host : ActivityHost) (input : ControlPlaceId) : Bool :=\n  (host.projection? input).isSome\n");
+  assert.ok(leanProjectionReader !== undefined && leanProjection.test(leanProjectionReader.body) &&
+    !leanHost.test(leanProjectionReader.body));
+  const [typeScriptWait] = typeScriptDeclarations("probe.ts",
+    "export function probe(wait: UserTaskWait): string | undefined {\n  return wait.outputs[0];\n}\n");
+  assert.ok(typeScriptWait !== undefined && waitRecord.test(typeScriptWait.body) && firstOutputOnly.test(typeScriptWait.body));
 });
 
 test("every multiplicity-keyed site names the host", () => {

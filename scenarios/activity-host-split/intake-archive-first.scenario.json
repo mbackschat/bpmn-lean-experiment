@@ -1,0 +1,150 @@
+{
+  "kind": "scenario",
+  "id": "activity-host-split-intake-archive-first",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "insurance-claim-intake",
+    "relativePath": "scenarios/activity-host-split/insurance-claim-intake.bpmn",
+    "sha256": "6e068b442f647e2ec6a38e77ef467517736df6381b501b4d5c7b7d6a56384dc6",
+    "sourceOverlay": {
+      "id": "insurance-claim-intake-handlers",
+      "sha256": "f7f8cbaf5571ea047dee4cf4bd2618091c6c347737256e4eb7a1e6915625f31b"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.1",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.3.1",
+      "BPMN 2.0.2 Clause 13.3.3"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0023"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_InsuranceClaimIntake",
+      "instanceId": "InsuranceClaimIntake_1",
+      "initialVariables": [
+        {
+          "name": "claimSummary",
+          "value": {
+            "kind": "string",
+            "value": "CLM-2026-0418: water damage in kitchen, EUR 3,150"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:f58f0ffe223dd7b867ba3a4a8894f80e74206d8f968afffed1a7fb93195089eb",
+      "effectId": {
+        "processInstanceId": "InsuranceClaimIntake_1",
+        "elementId": "RegisterClaim",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "claimNumber",
+            "value": {
+              "kind": "string",
+              "value": "CLM-2026-0418"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-archive-documents",
+      "taskId": {
+        "processInstanceId": "InsuranceClaimIntake_1",
+        "elementId": "ArchiveDocuments",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:2cd6d19cca44471fbde74c03c9da0956ac02354d605401200ee8892733038f1a",
+      "effectId": {
+        "processInstanceId": "InsuranceClaimIntake_1",
+        "elementId": "NotifyBroker",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": []
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-review-claim",
+      "taskId": {
+        "processInstanceId": "InsuranceClaimIntake_1",
+        "elementId": "ReviewClaim",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:4d6f3d5f136f67ef08ca08306a4b8c408dba5d0b7f923613219c5ffa8a98ae86",
+      "effectId": {
+        "processInstanceId": "InsuranceClaimIntake_1",
+        "elementId": "OrderAssessment",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "assessmentReference",
+            "value": {
+              "kind": "string",
+              "value": "ASM-7731"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-inform-customer",
+      "taskId": {
+        "processInstanceId": "InsuranceClaimIntake_1",
+        "elementId": "InformCustomer",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-decide-claim",
+      "taskId": {
+        "processInstanceId": "InsuranceClaimIntake_1",
+        "elementId": "DecideClaim",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

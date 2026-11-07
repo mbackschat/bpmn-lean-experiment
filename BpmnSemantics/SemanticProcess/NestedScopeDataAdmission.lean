@@ -355,6 +355,14 @@ private def serviceVertex? (program : Program) (id scope : String) (origin : Bpm
   else return { id, scope, kind := .service, outputs := ← outputs.mapM (consumer? program),
                 reads := readNames effect.inputMappings, writes := effect.outputMappings.map (·.target) }
 
+/-- ACSP-ADMIT-01: a host read as its work's legacy operation between its first input and output, the TypeScript
+`settledOperation`'s twin, here because the accessor leaf is at its importer bound. Any other operation, and a host
+without an input or output (the TypeScript's `null`), reads as itself; every consumer's wildcard refuses that host. -/
+def settledOperation : SemanticOperation → SemanticOperation
+  | .activity host => (host.inputs.head?.bind fun input => host.outputs.head?.map fun output =>
+      host.workAt input output.place).getD (.activity host)
+  | operation => operation
+
 def operationVertex? (program : Program) (operation : SemanticOperation) : Option Vertex := do
   let id := operation.id.value
   let scope ← dataOperationScope? program operation

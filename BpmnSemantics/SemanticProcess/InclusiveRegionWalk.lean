@@ -85,9 +85,10 @@ def walkFuel (graph : Graph) : Nat := graph.vertices.length + 1
 def pairedJoin (graph : Graph) (vertex : Vertex) : Option Vertex :=
   joinOf graph (vertex.outputs.map (branchEnd graph (walkFuel graph)))
 
-/-- PTSM-ADMIT-01: a several-flow pass-through node is classified as its lowered `duplicate` or many-input merge is. -/
+/-- PTSM-ADMIT-01: a several-flow pass-through node is classified as its lowered `duplicate` or many-input merge is.
+ACSP-ADMIT-01: a splitting Task is a fork, so the one-region-per-fork rule reads its branches. -/
 private def checkedVertexKind (flows : List CheckedSequenceFlow) (node : CheckedNode) : VertexKind :=
-  if CheckedPassThroughFlow.splits flows node then .fork
+  if CheckedPassThroughFlow.splits flows node || CheckedPassThroughFlow.splittingTask flows node then .fork
   else if CheckedPassThroughFlow.merges flows node then .other
   else match node with
   | .noneStartEvent _ => .start

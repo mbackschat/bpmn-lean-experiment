@@ -24,6 +24,7 @@ import { passThroughImplicitSplitMergePipelineCases } from "./pass-through-impli
 import { linkEventsPipelineCases } from "./link-events-pipeline-cases.ts";
 import { activityHostMergePipelineCases } from "./activity-host-merge-pipeline-cases.ts";
 import { scopeHostSplitPipelineCases } from "./scope-host-split-pipeline-cases.ts";
+import { activityHostSplitPipelineCases } from "./activity-host-split-pipeline-cases.ts";
 import { singleScopeModelsPipelineCases } from "./single-scope-models-pipeline-cases.ts";
 import { sendTaskPipelineCases } from "./send-task-pipeline-cases.ts";
 import { exclusiveChoiceWithoutDefaultPipelineCases } from "./exclusive-choice-without-default-pipeline-cases.ts";
@@ -642,6 +643,7 @@ export const pipelineCases = Object.freeze([
   ...linkEventsPipelineCases,
   ...activityHostMergePipelineCases,
   ...scopeHostSplitPipelineCases,
+  ...activityHostSplitPipelineCases,
   ...singleScopeModelsPipelineCases,
   ...sendTaskPipelineCases,
   ...exclusiveChoiceWithoutDefaultPipelineCases,

@@ -2078,6 +2078,48 @@
       }
     },
     {
+      "id": "insurance-claim-intake-activity-host",
+      "title": "Take in an insurance claim",
+      "businessPurpose": "Register a reported claim through a claims service, then archive its documents while the broker is notified, and after the claim review order an assessment while the customer is informed before the claim is decided, each split taken straight from a completed Task without a gateway.",
+      "cloneFamily": "insurance-claim-intake-activity-host",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sendTask",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/activity-host-split/insurance-claim-intake.bpmn",
+        "sha256": "6e068b442f647e2ec6a38e77ef467517736df6381b501b4d5c7b7d6a56384dc6",
+        "scenarioRelativePath": "scenarios/activity-host-split/intake-archive-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "activity-host-split-intake-archive-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for splitting User, Service and Send Tasks; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "purchase-request-single-scope",
       "title": "Approve and place a purchase request",
       "businessPurpose": "Review a purchase request, then check the budget through a budget service and log the check while, in parallel, collecting a signature and approving the purchase, and mark the purchase approved before placing the order, all in the Process itself without a Sub-Process.",

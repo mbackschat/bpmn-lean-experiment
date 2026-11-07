@@ -342,6 +342,8 @@ test("routes the host family artifacts to the host family map beside their tree 
     ["BpmnSemantics/ScopeHostConformance.lean", AreaId.EngineRuntimeProof],
     ["scenarios/activity-host-merge/claim-review.bpmn", AreaId.AssuranceAdoption],
     ["scenarios/scope-host-split/README.md", AreaId.AssuranceAdoption],
+    ["BpmnSemantics/ActivityHostSplitConformance.lean", AreaId.EngineRuntimeProof],
+    ["scenarios/activity-host-split/insurance-claim-intake.bpmn", AreaId.AssuranceAdoption],
   ] as const) assert.deepEqual(routeImplementationPath(file), [owner, AreaId.EngineHostFamily], file);
 });
 

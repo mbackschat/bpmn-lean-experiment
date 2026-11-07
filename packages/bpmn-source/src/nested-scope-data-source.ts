@@ -210,9 +210,17 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
     collected.flows.push(flow);
     collected.flowScopes.push({ sequenceFlowId: flow.id, scopeId });
   }
+  // ACSP-ADMIT-01: a splitting Task's default flow is taken only when no other flow is, so it is refused as at a
+  // splitting Sub-Process; `default` is read by name for the same moddle reason. A one-flow Task keeps today's reading.
+  const splittingDefault = (element: Readonly<Record<string, unknown>>): boolean => element["default"] !== undefined &&
+    flows.filter(({ sourceId }) => sourceId === readId(element)).length >= 2;
   for (const element of elements) {
     collected.ids.push(readId(element) ?? "");
     let node: CheckedNode | undefined;
+    if ((element.$type === "bpmn:UserTask" || element.$type === "bpmn:ServiceTask" ||
+        element.$type === bpmnTypes.sendTaskType) && splittingDefault(element)) {
+      return "A splitting Task declares a default flow.";
+    }
     switch (element.$type) {
       case "bpmn:SequenceFlow": continue;
       case "bpmn:StartEvent": node = projectPlainNode(element, CheckedNodeKind.NoneStartEvent); break;

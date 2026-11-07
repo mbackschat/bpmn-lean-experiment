@@ -127,11 +127,13 @@ private def placedFrom (bodies : List (String × List MergeRegion.RawVertex × L
 
 /-- SCPH-SINGLE-01: a splitting body Start's Sub-Process and a splitting Sub-Process lie outside every fork region of
 their scope and of every ancestor scope, so no other internal operation is enabled with the host or exit. A root Start
-always qualifies. -/
+always qualifies. ACSP-SINGLE-01: so does a splitting Task, a task vertex with two or more successors that holds no child
+scope. -/
 def splitScopesPlaced (bodies : List (String × List MergeRegion.RawVertex × List (String × String))) : Bool :=
-  bodies.all fun (_, vertices, children) => vertices.all fun vertex =>
+  bodies.all fun (scope, vertices, children) => vertices.all fun vertex =>
     match children.find? (·.1 == vertex.id) with
-    | none => true
+    | none => vertex.kind != .vertex .task || !splitsRaw vertex ||
+        (outsideForkRegions vertices vertex.id && placedFrom bodies bodies.length scope)
     | some (_, child) =>
         let splittingChild := splitsRaw vertex || (bodies.find? (·.1 == child)).any fun (_, childVertices, _) =>
           childVertices.any fun start => start.kind == .vertex .start && splitsRaw start
