@@ -20,7 +20,7 @@ import {
   StimulusKind,
   VariableValueKind,
   initialState,
-  sequentialMultiInstanceLimits,
+  multiInstanceLimits,
   type CompleteUserTaskInstanceStimulus,
   type RuntimeState,
   type SemanticProcessProgram,
@@ -114,7 +114,7 @@ export const reviewProgram = rootScopedProgram({
           elementId: "Flow_Boundary",
         },
       },
-      limits: sequentialMultiInstanceLimits,
+      limits: multiInstanceLimits,
     },
     {
       ...operationBase("Start"),

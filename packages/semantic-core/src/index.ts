@@ -127,6 +127,7 @@ export * from "./semantic-transition-trace.js";
 export * from "./simple-boolean-expression.js";
 export * from "./source-overlay-identity.js";
 export * from "./scenario.js";
+export * from "./multi-instance-limits.js";
 export * from "./sequential-multi-instance-contract.js";
 export * from "./parallel-multi-instance-contract.js";
 export * from "./sequential-multi-instance-admission.js";

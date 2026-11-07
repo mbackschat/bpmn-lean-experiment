@@ -1,7 +1,7 @@
 /** Closed capacity owner for the pre-registration Sequential Multi-Instance host probe. */
 import {
   CommandOutcome,
-  sequentialMultiInstanceLimits,
+  multiInstanceLimits,
   utf8ByteLength,
 } from "@bpmn-lean/semantic-core";
 import {
@@ -264,11 +264,11 @@ function requireSeparator(
   const equal508CollectionBytes = utf8ByteLength(JSON.stringify(equal508));
   const equal512CollectionBytes = utf8ByteLength(JSON.stringify(equal512));
   if (
-    value.maximumItems !== sequentialMultiInstanceLimits.maximumItems ||
+    value.maximumItems !== multiInstanceLimits.maximumItems ||
     value.maximumItemUtf8Bytes !==
-      sequentialMultiInstanceLimits.maximumItemUtf8Bytes ||
+      multiInstanceLimits.maximumItemUtf8Bytes ||
     value.maximumCanonicalCollectionUtf8Bytes !==
-      sequentialMultiInstanceLimits.maximumCanonicalCollectionUtf8Bytes ||
+      multiInstanceLimits.maximumCanonicalCollectionUtf8Bytes ||
     value.canonicalMaximumCollectionBytes !== canonicalMaximumCollectionBytes ||
     value.equal508CollectionBytes !== equal508CollectionBytes ||
     value.equal512CollectionBytes !== equal512CollectionBytes ||

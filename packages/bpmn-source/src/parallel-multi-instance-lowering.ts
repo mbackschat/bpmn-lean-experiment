@@ -5,7 +5,7 @@ import {
   SemanticOriginKind,
   SimpleBooleanExpressionLanguage,
   parallelMultiInstanceCompletionPolicyBinding,
-  parallelMultiInstanceLimits,
+  multiInstanceLimits,
 } from "@bpmn-lean/semantic-core";
 import type {
   AwaitParallelMultiInstanceUserTaskOperation,
@@ -48,7 +48,7 @@ export function lowerParallelMultiInstanceUserTaskOperations(
       variable: parallelMultiInstanceCompletionPolicyBinding,
       value: ParallelMultiInstanceCompletionPolicy.First,
     },
-    limits: parallelMultiInstanceLimits,
+    limits: multiInstanceLimits,
   } as const;
   return [
     entry,

@@ -31,16 +31,3 @@ export type SequentialMultiInstanceDataDefinition = DeepReadonly<{
   input: SequentialMultiInstanceInputDefinition;
   output: SequentialMultiInstanceOutputDefinition;
 }>;
-
-export type SequentialMultiInstanceLimits = DeepReadonly<{
-  maximumItems: 16;
-  maximumItemUtf8Bytes: 512;
-  maximumCanonicalCollectionUtf8Bytes: 8192;
-}>;
-
-export const sequentialMultiInstanceLimits: SequentialMultiInstanceLimits =
-  Object.freeze({
-    maximumItems: 16,
-    maximumItemUtf8Bytes: 512,
-    maximumCanonicalCollectionUtf8Bytes: 8_192,
-  });

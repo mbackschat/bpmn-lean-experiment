@@ -25,14 +25,11 @@ import type {
 import type { DeepReadonly } from "./deep-readonly.js";
 import type { SourceOverlayIdentity } from "./source-overlay-identity.js";
 import type { UserTaskMetadata } from "./user-task-metadata.js";
-import type {
-  SequentialMultiInstanceDataDefinition,
-  SequentialMultiInstanceLimits,
-} from "./sequential-multi-instance-contract.js";
+import type { MultiInstanceLimits } from "./multi-instance-limits.js";
+import type { SequentialMultiInstanceDataDefinition } from "./sequential-multi-instance-contract.js";
 import type {
   ParallelMultiInstanceCompletionCondition,
   ParallelMultiInstanceDataDefinition,
-  ParallelMultiInstanceLimits,
 } from "./parallel-multi-instance-contract.js";
 import { MessageChannelKind } from "./semantic-value-contract.js";
 import type {
@@ -538,7 +535,7 @@ export type AwaitSequentialMultiInstanceUserTaskOperation = OperationBase &
     data: SequentialMultiInstanceDataDefinition;
     normalOutput: string;
     boundaryTimer: BoundaryTimerArm<5000>;
-    limits: SequentialMultiInstanceLimits;
+    limits: MultiInstanceLimits;
   }>;
 
 export type AwaitParallelMultiInstanceUserTaskOperation = OperationBase &
@@ -553,7 +550,7 @@ export type AwaitParallelMultiInstanceUserTaskOperation = OperationBase &
     completionCondition: ParallelMultiInstanceCompletionCondition;
     normalOutput: string;
     boundaryTimer: BoundaryTimerArm<5000>;
-    limits: ParallelMultiInstanceLimits;
+    limits: MultiInstanceLimits;
   }>;
 
 /** The command-addressed child-completion half paired to one parallel entry operation. */

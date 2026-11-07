@@ -10,19 +10,8 @@ import {
   parallelMultiInstanceCompletionPolicyBinding,
 } from "./parallel-multi-instance-contract.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
+import { multiInstanceCollectionWithinLimits } from "./multi-instance-limits.js";
 import { utf8ByteLength } from "./wire.js";
-
-export function parallelMultiInstanceCollectionWithinLimits(
-  operation: AwaitParallelMultiInstanceUserTaskOperation,
-  items: ReadonlyArray<string>,
-): boolean {
-  return items.length <= operation.limits.maximumItems &&
-    items.every((item) =>
-      utf8ByteLength(item) <= operation.limits.maximumItemUtf8Bytes
-    ) &&
-    utf8ByteLength(JSON.stringify(items)) <=
-      operation.limits.maximumCanonicalCollectionUtf8Bytes;
-}
 
 export function admittedParallelMultiInstanceInputCollection(
   operation: AwaitParallelMultiInstanceUserTaskOperation,
@@ -44,7 +33,7 @@ export function admittedParallelMultiInstanceInputCollection(
     policy?.kind !== VariableValueKind.String ||
     (policy.value !== ParallelMultiInstanceCompletionPolicy.All &&
       policy.value !== ParallelMultiInstanceCompletionPolicy.First) ||
-    !parallelMultiInstanceCollectionWithinLimits(operation, collection.value)
+    !multiInstanceCollectionWithinLimits(operation.limits, collection.value)
   ) {
     return undefined;
   }

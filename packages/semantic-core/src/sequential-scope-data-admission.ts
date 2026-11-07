@@ -6,8 +6,7 @@ import { MappingExpressionKind } from "./semantic-value-contract.js";
 import type { VariableMapping } from "./semantic-value-contract.js";
 import { isSerialBusinessIdentifier, serialBusinessBindingsAdmitted, serialBusinessEffectAdmitted } from "./serial-business-task-policy.js";
 import { SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
-import { sequentialMultiInstanceCollectionWithinLimits } from "./sequential-multi-instance-command-data-admission.js";
-import { sequentialMultiInstanceLimits } from "./sequential-multi-instance-contract.js";
+import { multiInstanceCollectionWithinLimits, multiInstanceLimits } from "./multi-instance-limits.js";
 import { compareCanonicalStrings, isWellFormedWireString } from "./wire.js";
 
 export type SequentialScopeDataAnalysis = Readonly<{
@@ -97,7 +96,7 @@ export function sequentialScopeStartDataAdmitted(analysis: SequentialScopeDataAn
   if (!bindings.every(({ name, value }, index) => isSerialBusinessIdentifier(name) && !analysis.handlerNames.has(name) &&
       (index === 0 || compareCanonicalStrings(bindings[index - 1]!.name, name) < 0) &&
       (name === analysis.collectionName ? value.kind === VariableValueKind.StringList &&
-        sequentialMultiInstanceCollectionWithinLimits({ limits: sequentialMultiInstanceLimits }, value.value)
+        multiInstanceCollectionWithinLimits(multiInstanceLimits, value.value)
         : name === analysis.completionBooleanName ? value.kind === VariableValueKind.Boolean
         : value.kind === VariableValueKind.String || value.kind === VariableValueKind.Null))) return false;
   const names = new Set(bindings.map(binding => binding.name));

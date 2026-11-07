@@ -7,9 +7,7 @@ import {
 import type {
   AwaitSequentialMultiInstanceUserTaskOperation,
 } from "./semantic-process-contract.js";
-import {
-  sequentialMultiInstanceLimits,
-} from "./sequential-multi-instance-contract.js";
+import { multiInstanceLimits } from "./multi-instance-limits.js";
 import { isWellFormedWireString } from "./wire.js";
 
 export function isWellFormedAwaitSequentialMultiInstanceUserTaskOperation(
@@ -103,11 +101,11 @@ function hasExactLimits(value: unknown): boolean {
       "maximumItemUtf8Bytes",
       "maximumCanonicalCollectionUtf8Bytes",
     ]) &&
-    value.maximumItems === sequentialMultiInstanceLimits.maximumItems &&
+    value.maximumItems === multiInstanceLimits.maximumItems &&
     value.maximumItemUtf8Bytes ===
-      sequentialMultiInstanceLimits.maximumItemUtf8Bytes &&
+      multiInstanceLimits.maximumItemUtf8Bytes &&
     value.maximumCanonicalCollectionUtf8Bytes ===
-      sequentialMultiInstanceLimits.maximumCanonicalCollectionUtf8Bytes;
+      multiInstanceLimits.maximumCanonicalCollectionUtf8Bytes;
 }
 
 function isPlaceReference(

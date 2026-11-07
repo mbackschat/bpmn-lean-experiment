@@ -832,7 +832,7 @@
         }
       }
     },
-    "sequentialMultiInstanceLimits": {
+    "multiInstanceLimits": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -1530,7 +1530,7 @@
           "properties": { "durationMs": { "const": 5000 } }
         },
         "limits": {
-          "$ref": "#/$defs/sequentialMultiInstanceLimits"
+          "$ref": "#/$defs/multiInstanceLimits"
         }
       }
     },
@@ -1590,7 +1590,7 @@
           "type": "object",
           "properties": { "durationMs": { "const": 5000 } }
         },
-        "limits": { "$ref": "#/$defs/sequentialMultiInstanceLimits" }
+        "limits": { "$ref": "#/$defs/multiInstanceLimits" }
       }
     },
     "completeParallelMultiInstanceUserTask": {

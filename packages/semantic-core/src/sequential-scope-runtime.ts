@@ -9,8 +9,7 @@ import { enterChildScope, issueChildScope, isScopeOccurrenceQuiescent, selectChi
 import { addToken, ControlStateKind, nextActivation, ownedTokenMultiplicity, removeToken,
   sameScopeOccurrence, setActivationCount } from "./semantic-process-state.js";
 import type { RuntimeState, ScopeOccurrenceId } from "./semantic-process-state.js";
-import { sequentialMultiInstanceLimits } from "./sequential-multi-instance-contract.js";
-import { sequentialMultiInstanceCollectionWithinLimits } from "./sequential-multi-instance-command-data-admission.js";
+import { multiInstanceCollectionWithinLimits, multiInstanceLimits } from "./multi-instance-limits.js";
 
 /** SMIS-ENTER-01 consumes the parent once and issues no identities for an empty collection. */
 export function enterSequentialScope(operation: EnterSequentialMultiInstanceScopeOperation,
@@ -24,7 +23,7 @@ export function enterSequentialScope(operation: EnterSequentialMultiInstanceScop
   const collection = bindings[0]?.value;
   if (bindings.length !== 1 || collection?.kind !== VariableValueKind.StringList) return null;
   const items = collection.value;
-  if (!sequentialMultiInstanceCollectionWithinLimits({ limits: sequentialMultiInstanceLimits }, items)) return null;
+  if (!multiInstanceCollectionWithinLimits(multiInstanceLimits, items)) return null;
   const currentItem = items[0];
   if (currentItem === undefined) return { ...state,
     controlTokens: addToken(removeToken(state.controlTokens, operation.input, parent), operation.normalOutput, parent) };

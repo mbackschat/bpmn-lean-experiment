@@ -247,6 +247,7 @@ This contributor map assigns source-file responsibilities inside `@bpmn-lean/sem
 | [semantic-process-parallel-multi-instance-runtime.ts](src/semantic-process-parallel-multi-instance-runtime.ts) | Parallel Multi-Instance entry, child completion, and interruption transitions |
 | [parallel-multi-instance-observation.ts](src/parallel-multi-instance-observation.ts) | Public progress derived from the exact indexed parallel controller binding |
 | [multi-instance-observation.ts](src/multi-instance-observation.ts) | Composition root for the additive sequential and parallel progress union |
+| [multi-instance-limits.ts](src/multi-instance-limits.ts) | The one set of collection bounds and its fit check, for sequential and parallel Multi-Instance alike |
 | [flow-node-occurrence-parallel-multi-instance-lifecycle.ts](src/flow-node-occurrence-parallel-multi-instance-lifecycle.ts) | Exact starts created by one atomic parallel entry transition |
 | [flow-node-occurrence-parallel-multi-instance-open-set.ts](src/flow-node-occurrence-parallel-multi-instance-open-set.ts) | Exact current-open bindings for parallel Multi-Instance task and boundary waits |
 | [flow-node-occurrence-parallel-multi-instance-publication.ts](src/flow-node-occurrence-parallel-multi-instance-publication.ts) | Publication completeness for parallel Multi-Instance child lifecycles |
