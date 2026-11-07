@@ -1,0 +1,116 @@
+{
+  "kind": "scenario",
+  "id": "scope-host-split-onboarding-register-first",
+  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "bpmn": {
+    "id": "employee-onboarding",
+    "relativePath": "scenarios/scope-host-split/employee-onboarding.bpmn",
+    "sha256": "263d9a9586009359bba3d2268286a5febac9623a0c023d788e01fb13af90398f",
+    "sourceOverlay": {
+      "id": "employee-onboarding-handlers",
+      "sha256": "41fe67efbbd42ff15fc8ab74c36e9d5317e790b5377b146a35be9f0bdd7893d0"
+    }
+  },
+  "observations": [
+    "deployment",
+    "commandResults",
+    "processStatus",
+    "activeWaits",
+    "openUserTasks",
+    "openTimers",
+    "openEffects",
+    "variables",
+    "enabledInteractions",
+    "logicalTime"
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 Clause 10.5.1",
+      "BPMN 2.0.2 Clause 13.2",
+      "BPMN 2.0.2 Clause 13.3.1",
+      "BPMN 2.0.2 Clause 13.3.4"
+    ],
+    "cibRevision": "5a45b47ea22688d774de97277c3ff7013f54fdd2",
+    "cibRefs": [
+      "CIB-AGR-0022"
+    ]
+  },
+  "stimuli": [
+    {
+      "kind": "startProcess",
+      "commandId": "start-process",
+      "processId": "Process_EmployeeOnboarding",
+      "instanceId": "EmployeeOnboarding_1",
+      "initialVariables": [
+        {
+          "name": "hireSummary",
+          "value": {
+            "kind": "string",
+            "value": "Dana Ruiz, data engineer, starts 2026-12-01"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "completeEffect",
+      "commandId": "complete-effect-sha256:2928988dcc73b4fe62b83a781b969dfe6223750ed46b3b882c553590e3e74206",
+      "effectId": {
+        "processInstanceId": "EmployeeOnboarding_1",
+        "elementId": "RegisterHire",
+        "activation": 1
+      },
+      "result": {
+        "kind": "success",
+        "localPatch": [
+          {
+            "name": "employeeNumber",
+            "value": {
+              "kind": "string",
+              "value": "E-20417"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-prepare-workstation",
+      "taskId": {
+        "processInstanceId": "EmployeeOnboarding_1",
+        "elementId": "PrepareWorkstation",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-issue-badge",
+      "taskId": {
+        "processInstanceId": "EmployeeOnboarding_1",
+        "elementId": "IssueBadge",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-issue-laptop",
+      "taskId": {
+        "processInstanceId": "EmployeeOnboarding_1",
+        "elementId": "IssueLaptop",
+        "activation": 1
+      },
+      "submittedValues": []
+    },
+    {
+      "kind": "completeUserTaskInstance",
+      "commandId": "complete-confirm-it-access",
+      "taskId": {
+        "processInstanceId": "EmployeeOnboarding_1",
+        "elementId": "ConfirmItAccess",
+        "activation": 1
+      },
+      "submittedValues": []
+    }
+  ]
+}

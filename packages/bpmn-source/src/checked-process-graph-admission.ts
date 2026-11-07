@@ -233,14 +233,18 @@ function hasSelectedArity(
   const incoming = flows.filter(({ targetId }) => targetId === node.id).length;
   const outgoing = flows.filter(({ sourceId }) => sourceId === node.id).length;
   switch (node.kind) {
+    // SCPH-ADMIT-01: under the pass-through split's flags a None Start and an ordinary embedded Sub-Process may split
+    // over several unconditioned flows; placement (SCPH-SINGLE-01) is the profile's own admission.
     case CheckedNodeKind.NoneStartEvent:
+      return incoming === 0 && (outgoing === 1 || (passThroughSplitMerge(semanticProfile) && outgoing >= 2));
+    case CheckedNodeKind.EmbeddedSubProcess:
+      return incoming === 1 && (outgoing === 1 || (passThroughSplitMerge(semanticProfile) && outgoing >= 2));
     case CheckedNodeKind.MessageStartEvent:
     case CheckedNodeKind.TimerStartEvent:
       return incoming === 0 && outgoing === 1;
     case CheckedNodeKind.TransactionSubProcess:
     case CheckedNodeKind.SequentialMultiInstanceSubProcess:
     case CheckedNodeKind.ParallelMultiInstanceSubProcess:
-    case CheckedNodeKind.EmbeddedSubProcess:
     case CheckedNodeKind.CallActivity:
     case CheckedNodeKind.DataInputUserTask:
     case CheckedNodeKind.DataInputOutputUserTask:

@@ -328,6 +328,16 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Boundary:** an exact `PT[nH][nM][nS]` lexeme from 1 ms to `PT87660H` at the Intermediate Catch Timer only. The boundary, race-arm, Timer Start and repeatable-catch sites keep `CIB-AGR-0004`'s single literal; the refused forms are `CIB-LIM-0003`.
 
+### CIB-AGR-0022 — a None Start's start and an embedded Sub-Process's completion take every unconditioned outgoing flow in their one step
+
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [scope host account](capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#normative-basis-and-cib-classification), whose proposal review is approved; closure qualification pending. It is the Start and Sub-Process instance of `CIB-AGR-0019`'s split.
+
+**BPMN basis:** Clause 10.5.1 generates a token for each outgoing Sequence Flow of a triggered Start Event, which Clause 13.2 restates for the Process; Clause 13.3.1 gives every outgoing flow of a completing Activity a token, a parallel split; Clause 13.3.4 instantiates an embedded Sub-Process when a token arrives and completes it when no token remains inside.
+
+**Evidence:** At pinned `5a45b47`, a body Start is the Sub-Process's initial activity (`BpmnParse#parseStartEvents`, `#selectInitial`; `SubProcessActivityBehavior#execute`) and a root Start is entered at process start (`PvmAtomicOperationProcessStart`); both leave through `FlowNodeActivityBehavior#leave`, and a Sub-Process leaves through `SubProcessActivityBehavior#complete`. `BpmnActivityBehavior#performOutgoingBehavior` collects every unconditioned non-default transition and takes them in one `leaveActivityViaTransitions`, creating one concurrent execution per further transition (`PvmAtomicOperationTransitionDestroyScope`) and no activity instance for the split. `UncontrolledFlowTest#testSubProcessTwoOutgoingFlowsEndProcess` asserts both successors of a splitting Sub-Process. The [retained employee onboarding](../scenarios/scope-host-split/README.md) is the calibration model; its CIB probe is the closure's qualification evidence.
+
+**Boundary:** the root None Start, the None Start of an ordinary embedded Sub-Process body and an ordinary embedded Sub-Process, of the nested scope-data profile, each with two or more unconditioned, non-default outgoing flows, the Sub-Process with one incoming flow, placed outside every fork region of its scope and its ancestors; public task, job and history APIs. Conditional and default outgoing flows, merges at Starts, Sub-Processes and Calls, splitting Calls and called-Process Starts, bounded, monitored, Multi-Instance, transaction and Event Sub-Processes, and asynchronous or listened Starts and Sub-Processes stay outside the class, and no Temporal refinement is claimed beyond the registered pipeline cases.
+
 ## Interpretation register
 
 An interpretation belongs here when BPMN is ambiguous, inconsistent, non-operational, or leaves several permitted behaviors and the pinned CIB engine supplies one concrete meaning. It is not labeled a deviation.

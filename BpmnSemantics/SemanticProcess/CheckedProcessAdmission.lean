@@ -248,8 +248,9 @@ def checkedEventRaceConfigurationValid (source : CheckedProcess) : Bool :=
 def checkedNodeArityValid (serial repeatable mixed businessError variableMerge : Bool) (dormantHandlers : List NodeId)
     (flows : List CheckedSequenceFlow) :
     CheckedNode → Bool
+  -- SCPH-ADMIT-01: a None Start and an ordinary Sub-Process split under the pass-through split flags.
   | .noneStartEvent id =>
-      incomingCount flows id = 0 && outgoingCount flows id = 1
+      incomingCount flows id = 0 && (outgoingCount flows id = 1 || (mixed && variableMerge && outgoingCount flows id ≥ 2))
   | .messageStartEvent id channel =>
       (match channel with
         | .operationMessage .. => channel.identifiersNonempty
@@ -271,7 +272,8 @@ def checkedNodeArityValid (serial repeatable mixed businessError variableMerge :
   | .embeddedSubProcess id _ =>
       if dormantHandlers.contains id then
         incomingCount flows id = 0 && outgoingCount flows id = 0
-      else incomingCount flows id = 1 && outgoingCount flows id = 1
+      else incomingCount flows id = 1 &&
+        (outgoingCount flows id = 1 || (mixed && variableMerge && outgoingCount flows id ≥ 2))
   | .parallelMultiInstanceSubProcess id ..
   | .sequentialMultiInstanceSubProcess id .. =>
       incomingCount flows id = 1 && outgoingCount flows id = 1

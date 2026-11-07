@@ -30,8 +30,9 @@ const multiInstance = "a Multi-Instance body is no ordinary embedded Sub-Process
 const single = "a host or exit is never applied by owning occurrence or prepared as a commutation member (SCPH-SINGLE-01); the wildcard refuses it";
 const snapshot = "compensation snapshot declarations exist only under compensation profiles, which admit no host (SCPH-PROFILE-01)";
 const legacyStep = "evaluates the legacy operation it is given; a host or exit reaches it only as its legacy step (SCPH-HOST-01)";
-const widening = "the nested scope-data accounts admit no host before the widening commit, which names it here (SCPH-ADMIT-01)";
-const lowering = "no lowering emits a host before the widening commit; every one-flow node keeps its legacy lowering (SCPH-ONE-01)";
+const rootCompletion = "reads the root completion, which has no parent output and so is never an exit (SCPH-HOST-01)";
+const serial = "the serial account never sees a host or exit: each splits (SCPH-ONE-01), so routing hands its Program to the concurrent account (SCPH-ADMIT-01)";
+const placed = "a host or exit lies outside every fork and Inclusive region of its scope and its ancestors (SCPH-SINGLE-01), so no region graph walks through it";
 const selection = "keys an Inclusive selection record, which a host never creates (SCPH-HOST-01)";
 const noWait = "matches a wait or effect, which a host never declares (SCPH-HOST-01)";
 
@@ -47,9 +48,9 @@ const leanAllowlist: Readonly<Record<string, string>> = {
   "BpmnSemantics/SemanticProcess/GraphValidation.lean::messageHandlerEdges": profile,
   "BpmnSemantics/SemanticProcess/GraphValidation.lean::rootCompletionIds":
     "an exit completes an embedded Sub-Process, never the root (SCPH-HOST-01 Program rules)",
-  "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programGraph": widening,
-  "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programInputs": widening,
-  "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programVertexKind": widening,
+  "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programGraph": placed,
+  "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programInputs": placed,
+  "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programVertexKind": placed,
   "BpmnSemantics/SemanticProcess/InternalLocalControlPreparation.lean::internalLocalControlOrigin?": single,
   "BpmnSemantics/SemanticProcess/InternalLocalControlSelection.lean::InternalLocalControlSelection.censusReads": single,
   "BpmnSemantics/SemanticProcess/InternalLocalControlSelection.lean::selectInternalLocalControl?": single,
@@ -69,8 +70,8 @@ const leanAllowlist: Readonly<Record<string, string>> = {
   "BpmnSemantics/SemanticProcess/InternalSnapshotArmingExecution.lean::SnapshotRefusableDisabled": snapshot,
   "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessProgramAdmission.lean::flowNodeOrigins": profile,
   "BpmnSemantics/SemanticProcess/InterruptingMessageEventSubProcessProgramAdmission.lean::withdrawalProgramTopology": profile,
-  "BpmnSemantics/SemanticProcess/Lowering.lean::lowerNode": lowering,
-  "BpmnSemantics/SemanticProcess/Lowering.lean::lowerOrdinaryScopeCompletions": lowering,
+  "BpmnSemantics/SemanticProcess/Lowering.lean::lowerNode":
+    "lowers a flow node; a Sub-Process exit is lowered by lowerOrdinaryScopeCompletions, which names it (SCPH-HOST-01)",
   "BpmnSemantics/SemanticProcess/MergeTargetOperations.lean::isMergeTargetOperation": profile,
   "BpmnSemantics/SemanticProcess/MergeTargetOperations.lean::mergeTargetEntry": profile,
   "BpmnSemantics/SemanticProcess/MixedTaskControlFlowAdmission.lean::operationOrigin?": profile,
@@ -81,16 +82,14 @@ const leanAllowlist: Readonly<Record<string, string>> = {
   "BpmnSemantics/SemanticProcess/MixedTaskControlFlowLifecycleProofs.lean::FirePhase": profile,
   "BpmnSemantics/SemanticProcess/MonitoredScope.lean::monitoredScopeCandidate?": profile,
   "BpmnSemantics/SemanticProcess/MonitoredScope.lean::monitoredScopeCompletionOperations": profile,
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::controlParentOutput?": widening,
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::operationInputs": widening,
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::operationVertex?": widening,
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programBodies": widening,
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programModel": widening,
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programRestrictionsHold": widening,
-  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::splits": widening,
-  "BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean::childCompletion?": widening,
-  "BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean::operationVertex?": widening,
-  "BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean::programEnvelope?": widening,
+  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::operationInputs":
+    "an exit fires on its scope's completion and consumes no place, so the wildcard's empty list is its inputs (SCPH-HOST-01)",
+  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::operationVertex?":
+    "projects no completion: programBodies drops exits with legacy completions, and a Sub-Process vertex reads its exit through controlParentOutputs? (SCPH-EXIT-01)",
+  "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean::programModel": rootCompletion,
+  "BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean::childCompletion?": serial,
+  "BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean::operationVertex?": serial,
+  "BpmnSemantics/SemanticProcess/NestedScopeDataAdmission.lean::programEnvelope?": serial,
   "BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean::programActivityBoundaryMessageTopologyValid": catalog,
   "BpmnSemantics/SemanticProcess/ProfileShapeCatalog.lean::programParallelTopologyValid": catalog,
   "BpmnSemantics/SemanticProcess/ProgramStructuralValidation.lean::inclusiveOperationsPaired":
@@ -130,8 +129,8 @@ const leanAllowlist: Readonly<Record<string, string>> = {
 const typeScriptAllowlist: Readonly<Record<string, string>> = {
   "packages/bpmn-source/src/call-activity-lowering.ts::callForestDefinitionBindingValid":
     "a Program with a root Call refuses a splitting root Start (SCPH-ADMIT-01 routing), so a Call forest keeps `initiate`",
-  "packages/bpmn-source/src/semantic-process-lowering.ts::lowerNode": lowering,
-  "packages/bpmn-source/src/semantic-process-lowering.ts::lowerScopeCompletion": lowering,
+  "packages/bpmn-source/src/semantic-process-lowering.ts::lowerNode":
+    "lowers a flow node; a Sub-Process exit is lowered by lowerScopeCompletion, which names it (SCPH-HOST-01)",
   "packages/semantic-core/src/call-data-program-admission.ts::callDataProgramGraph": profile,
   "packages/semantic-core/src/call-data-state-validation.ts::callDataStateIsValid": profile,
   "packages/semantic-core/src/compensation-event-sub-process-snapshot-state-validation.ts::compensationEventSubProcessSnapshotProgramDefects": snapshot,
@@ -140,8 +139,8 @@ const typeScriptAllowlist: Readonly<Record<string, string>> = {
     "a host owns its origin element, which the non-effect branch reads (SCPH-HOST-01)",
   "packages/semantic-core/src/inclusive-gateway-admission.ts::inclusiveOperationsArePaired":
     "pairs each Inclusive split with its join; a host is no Inclusive split (SCPH-HOST-01)",
-  "packages/semantic-core/src/inclusive-region-admission.ts::programRegionGraph": widening,
-  "packages/semantic-core/src/inclusive-region-admission.ts::programVertexKind": widening,
+  "packages/semantic-core/src/inclusive-region-admission.ts::programRegionGraph": placed,
+  "packages/semantic-core/src/inclusive-region-admission.ts::programVertexKind": placed,
   "packages/semantic-core/src/internal-occurrence-batch.ts::applyInternalOccurrenceBatch": single,
   "packages/semantic-core/src/internal-occurrence-batch.ts::deriveOccurrenceControlPatch": single,
   "packages/semantic-core/src/internal-occurrence-batch.ts::prepareInternalOccurrenceBatch": single,
@@ -169,13 +168,10 @@ const typeScriptAllowlist: Readonly<Record<string, string>> = {
   "packages/semantic-core/src/merge-target-operations.ts::isMergeTargetOperation": profile,
   "packages/semantic-core/src/mixed-task-control-flow-admission.ts::mixedTaskControlProgramShape": profile,
   "packages/semantic-core/src/mixed-task-control-flow-admission.ts::programAnalysis": profile,
-  "packages/semantic-core/src/nested-scope-control-admission.ts::inputsOf": widening,
-  "packages/semantic-core/src/nested-scope-control-admission.ts::nestedScopeControlProgramShape": widening,
-  "packages/semantic-core/src/nested-scope-control-admission.ts::programBodies": widening,
-  "packages/semantic-core/src/nested-scope-control-admission.ts::programModel": widening,
-  "packages/semantic-core/src/nested-scope-data-admission.ts::nestedScopeProgramModel": widening,
-  "packages/semantic-core/src/nested-scope-data-admission.ts::operationInputs": widening,
-  "packages/semantic-core/src/nested-scope-data-admission.ts::operationVertex": widening,
+  "packages/semantic-core/src/nested-scope-control-admission.ts::programModel": rootCompletion,
+  "packages/semantic-core/src/nested-scope-data-admission.ts::nestedScopeProgramModel": serial,
+  "packages/semantic-core/src/nested-scope-data-admission.ts::operationInputs": serial,
+  "packages/semantic-core/src/nested-scope-data-admission.ts::operationVertex": serial,
   "packages/semantic-core/src/nested-scope-data-admission.ts::programHandlers":
     "collects handler names, which a host never carries (SCPH-HOST-01)",
   "packages/semantic-core/src/nested-scope-data.ts::completeDeclaredScope": legacyStep,
@@ -205,7 +201,6 @@ const typeScriptAllowlist: Readonly<Record<string, string>> = {
   "packages/semantic-core/src/serial-business-task-admission.ts::serialBusinessProgramShape": profile,
   "packages/semantic-core/src/structured-process-composition-admission.ts::programVertices": profile,
   "packages/semantic-core/src/structured-process-composition-admission.ts::structuredCompositionProgramShape": profile,
-  "packages/semantic-core/src/structured-scope-data-routing.ts::programRestrictionsHold": widening,
   "packages/temporal-adapter/protocol/src/start-capacity-journey.ts::completionFor": noWait,
   "packages/temporal-adapter/testkit/src/branch-bypass-mutation-workflows.ts::mutateConditionalSelection":
     "testkit mutation of Inclusive fixtures, which hold no host",
@@ -213,9 +208,17 @@ const typeScriptAllowlist: Readonly<Record<string, string>> = {
 };
 
 /** Declarations keyed on entry or output multiplicity, which must name the host explicitly. */
-const multiplicitySites: ReadonlyArray<Readonly<{ path: string; name: string }>> = [
+/** Sites keyed on the host's entry or the exit's output multiplicity; `exit` sites read only the exit. */
+const multiplicitySites: ReadonlyArray<Readonly<{ path: string; name: string; exit?: true }>> = [
   { path: "BpmnSemantics/SemanticProcess/InternalCommutationCore.lean", name: "prepareInternalArm?" },
   { path: "BpmnSemantics/SemanticProcess/InternalCommutationCensus.lean", name: "semanticOperationInternalFamily" },
+  { path: "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean", name: "controlParentOutputs?", exit: true },
+  { path: "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean", name: "operationVertex?" },
+  { path: "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean", name: "programBodies" },
+  { path: "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean", name: "programRestrictionsHold" },
+  { path: "BpmnSemantics/SemanticProcess/NestedScopeControlAdmission.lean", name: "splits" },
+  { path: "packages/semantic-core/src/nested-scope-control-admission.ts", name: "programBodies" },
+  { path: "packages/semantic-core/src/structured-scope-data-routing.ts", name: "splitScope" },
   { path: "packages/semantic-core/src/internal-commutation-census.ts", name: "semanticOperationInternalFamily" },
   { path: "packages/temporal-adapter/protocol/src/host-admission.ts", name: "hostOperationClass" },
 ];
@@ -231,10 +234,12 @@ const frozenLeanDeclarations: Readonly<Record<string, string>> = {
   "constructor completeScope": "ea730f8960b715af0ffd9bdb95e005100a884868ec118a506a869717efb3b27b",
 };
 
-const leanScopeHost = /\.scope\b/u;
-const leanScopeExit = /\.scopeExit\b/u;
-const typeScriptScopeHost = /SemanticOperationKind\.Scope\b|ScopeWorkKind\./u;
-const typeScriptScopeExit = /SemanticOperationKind\.ScopeExit\b/u;
+// Lowering names the host through its constructors in ScopeHostLowering.lean.
+const leanScopeHost = /\.scope\b|\blower(Process|SubProcess)Host\b/u;
+const leanScopeExit = /\.scopeExit\b|\blowerScopeExit\b/u;
+// Lowering names the host through its constructors in scope-host-lowering.ts.
+const typeScriptScopeHost = /SemanticOperationKind\.Scope\b|ScopeWorkKind\.|\blower(Process|SubProcess)Host\(/u;
+const typeScriptScopeExit = /SemanticOperationKind\.ScopeExit\b|\blowerScopeExit\(/u;
 
 type Population = Readonly<{ reads: RegExp; names: (body: string) => boolean }>;
 
@@ -296,8 +301,9 @@ test("every multiplicity-keyed site names the scope host", () => {
   for (const site of multiplicitySites) {
     const declaration = siteDeclaration(site);
     assert.ok(declaration !== undefined, `absent ${key(site)}`);
-    assert.ok(site.path.endsWith(".lean") ? leanScopeHost.test(declaration.body) : typeScriptScopeHost.test(declaration.body),
-      `${key(site)} does not name the scope host`);
+    const pattern = site.path.endsWith(".lean") ? (site.exit ? leanScopeExit : leanScopeHost)
+      : (site.exit ? typeScriptScopeExit : typeScriptScopeHost);
+    assert.ok(pattern.test(declaration.body), `${key(site)} does not name the scope host`);
   }
 });
 

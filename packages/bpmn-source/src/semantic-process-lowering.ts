@@ -46,6 +46,7 @@ import {
 import { lowerTerminateEndEvent } from "./terminate-end-event-lowering.js";
 import { lowerConfiguredTask } from "./configured-task-lowering.js";
 import { lowerActivityHost } from "./activity-host-lowering.js";
+import { lowerProcessHost, lowerScopeExit, lowerSubProcessHost } from "./scope-host-lowering.js";
 import { normalizeTimerDurationMs } from "./timer-duration-normalization.js";
 import {
   lowerSequentialMultiInstanceUserTask,
@@ -149,6 +150,7 @@ function lowerNode(
         ? scoped(lowerMessageStartEvent(node, source.sequenceFlows))
         : [];
     case CheckedNodeKind.NoneStartEvent:
+      if (isEntryRootScope(source, scopeId) && outgoing.length >= 2) return scoped(lowerProcessHost(base, outgoing));
       return isEntryRootScope(source, scopeId)
         ? scoped({
             ...base,
@@ -171,6 +173,10 @@ function lowerNode(
     case CheckedNodeKind.TransactionSubProcess:
     case CheckedNodeKind.EmbeddedSubProcess: {
       if (isDeclaredMessageEventSubProcess(source, node.id)) return [];
+      const childEntries = childEntryPlaces(source, node.childScopeId);
+      if (node.kind === CheckedNodeKind.EmbeddedSubProcess && childEntries.length >= 2) {
+        return scoped(lowerSubProcessHost(base, requireOnly(incoming, node.id, "incoming"), childEntries, node.childScopeId));
+      }
       const entry = {
         input: requireOnly(incoming, node.id, "incoming"),
         childEntry: childEntryPlace(source, node.childScopeId),
@@ -585,6 +591,12 @@ function lowerScopeCompletion(
       origin: { kind: SemanticOriginKind.BpmnElement, elementId: entry.id },
       entryOperationId: operationId(entry.id) },
   };
+  const exitBase = {
+    id: `operation:complete-scope:${scope.id}`,
+    origin: { kind: SemanticOriginKind.BpmnElement, elementId: scope.originElementId },
+  } as const;
+  const outputs = scope.parentScopeId === null ? [] : flowPlaces(source.sequenceFlows, scope.originElementId, "outgoing");
+  if (outputs.length >= 2) return { scopeId: scope.id, operation: lowerScopeExit(exitBase, scope.id, outputs) };
   return {
     scopeId: scope.id,
     operation: {
@@ -611,6 +623,16 @@ function lowerScopeCompletion(
 }
 
 function childEntryPlace(source: CheckedProcess, childScopeId: string): string {
+  const start = childStartNode(source, childScopeId);
+  return requireOnly(flowPlaces(source.sequenceFlows, start, "outgoing"), start, "outgoing");
+}
+
+/** The outgoing places of a child scope's one None Start, sorted. */
+function childEntryPlaces(source: CheckedProcess, childScopeId: string): ReadonlyArray<string> {
+  return flowPlaces(source.sequenceFlows, childStartNode(source, childScopeId), "outgoing");
+}
+
+function childStartNode(source: CheckedProcess, childScopeId: string): string {
   const starts = source.nodes.filter(
     (node) =>
       node.kind === CheckedNodeKind.NoneStartEvent &&
@@ -620,11 +642,7 @@ function childEntryPlace(source: CheckedProcess, childScopeId: string): string {
   if (starts.length !== 1 || start === undefined) {
     throw new TypeError(`Checked scope ${childScopeId} requires one None Start Event`);
   }
-  return requireOnly(
-    flowPlaces(source.sequenceFlows, start.id, "outgoing"),
-    start.id,
-    "outgoing",
-  );
+  return start.id;
 }
 
 function requireNodeScope(source: CheckedProcess, nodeId: string): string {

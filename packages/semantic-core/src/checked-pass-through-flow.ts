@@ -22,10 +22,24 @@ export function checkedNodeMerges(node: CheckedNode, flows: readonly CheckedSequ
   return passThrough(node) && flows.filter(({ targetId }) => targetId === node.id).length >= 2;
 }
 
-/** A checked node that splits a token, as the Program's `duplicate` and `selectMany` do. */
+/** SCPH-ADMIT-01: a None Start with two or more outgoing flows, which lowers to a scope host over them. */
+export function checkedNodeSplittingStart(node: CheckedNode, flows: readonly CheckedSequenceFlow[]): boolean {
+  return node.kind === CheckedNodeKind.NoneStartEvent && flows.filter(({ sourceId }) => sourceId === node.id).length >= 2;
+}
+
+/** SCPH-ADMIT-01: an embedded Sub-Process with two or more outgoing flows, which lowers to a scope exit over them. */
+export function checkedNodeSplittingSubProcess(node: CheckedNode, flows: readonly CheckedSequenceFlow[]): boolean {
+  return node.kind === CheckedNodeKind.EmbeddedSubProcess && flows.filter(({ sourceId }) => sourceId === node.id).length >= 2;
+}
+
+/**
+ * A checked node that splits a token, as the Program's `duplicate`, `selectMany`, splitting scope hosts and exits do
+ * (SCPH-ADMIT-01 routing).
+ */
 export function checkedNodeForks(node: CheckedNode, flows: readonly CheckedSequenceFlow[]): boolean {
   return ((node.kind === CheckedNodeKind.ParallelGateway || node.kind === CheckedNodeKind.InclusiveGateway) &&
-    node.direction === GatewayDirection.Diverging) || checkedNodeSplits(node, flows);
+    node.direction === GatewayDirection.Diverging) || checkedNodeSplits(node, flows) ||
+    checkedNodeSplittingStart(node, flows) || checkedNodeSplittingSubProcess(node, flows);
 }
 
 /**

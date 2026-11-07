@@ -14,13 +14,15 @@ import type { CheckedNode, CheckedSequenceFlow } from "./checked-process-contrac
 import { branchesReachWorkOrEnd, branchesStartWithWork } from "./nested-scope-branch-work.js";
 import { parallelBodyScans } from "./parallel-body-burst-analysis.js";
 import type { ParallelBodyScans } from "./parallel-body-burst-analysis.js";
-import { InternalSchedulingMode, SemanticOperationKind } from "./semantic-process-contract.js";
+import { InternalSchedulingMode, ScopeWorkKind, SemanticOperationKind } from "./semantic-process-contract.js";
 import type { ReturnProcessOperation, SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 import { semanticProcessClosureLimit } from "./semantic-process-limits.js";
 import { ParallelBodyNodeKind as Kind } from "./structured-parallel-body-analysis.js";
 import type { ParallelBodyNode } from "./structured-parallel-body-analysis.js";
 import { RawBodyNodeKind, contractMergeRegions, multiplicityWeightedExtra } from "./merge-region-admission.js";
-import { serialBusinessEffectAdmitted, serialChainRulesForProfile } from "./serial-business-task-policy.js";
+import { accessOf, admittedServiceTask, callAccess, callDataAdmitted } from "./nested-scope-control-vertex-data.js";
+import type { ModelData } from "./nested-scope-control-vertex-data.js";
+import { splitScopesPlaced, withSplitForks } from "./scope-host-body-projection.js";
 import type { MergeRegion, RawBodyNode } from "./merge-region-admission.js";
 import type { DefinitionScope, ScopeLocalData, VariableMapping } from "./semantic-value-contract.js";
 import { compareCanonicalStrings } from "./wire.js";
@@ -392,8 +394,6 @@ function maximumBurst(tree: Tree, scans: ReadonlyMap<string, ParallelBodyScans>)
 }
 
 /** A model's data: its scope declarations and handler names, or `null` for a data-free model. */
-type ModelData = Readonly<{ records: readonly ScopeLocalData[]; handlers: ReadonlySet<string> }>;
-
 /**
  * The admitted largest closure and, for a data-bearing model, its required Start names; `optional` is `null` without a
  * mapped Call, where every admitted Start name is allowed (CMCALL-START-01).
@@ -420,8 +420,11 @@ function admittedData(scopes: readonly DefinitionScope[], raw: ReadonlyMap<strin
   return names === null ? null : { required: names.required, optional: mapped ? names.optional : null };
 }
 
-function admittedModel(scopes: readonly DefinitionScope[], raw: ReadonlyMap<string, RawBody> | null,
+function admittedModel(scopes: readonly DefinitionScope[], split: ReadonlyMap<string, RawBody> | null,
   data: ModelData | null, forks: boolean): Admitted | null {
+  // SCPH-SINGLE-01 places every splitting Start and Sub-Process; SCPH-ADMIT-01 then gives each split its fork vertex.
+  const raw = split === null || !splitScopesPlaced(split) ? null
+    : new Map([...split].map(([scope, body]) => [scope, withSplitForks(body)]));
   const burst = admittedBurst(scopes, raw, data !== null, forks);
   if (burst === null || raw === null) return null;
   if (data === null) return { burst, required: [], optional: null };
@@ -465,45 +468,6 @@ export type NestedScopeControlCheckedGraph = Readonly<{
   /** The admitting profile, which alone decides whether a pass-through Task maps to a pass vertex (PTPB-PROFILE-01). */
   identity?: Readonly<{ semanticProfile: string }>;
 }>;
-
-/** CSE-ADMIT-01: no mapping, no Error route, and the serial business-task Activity descriptor. */
-function dataFreeServiceTask(effect: Readonly<{ inputMappings: readonly unknown[]; outputMappings: readonly unknown[] }>,
-  bpmnErrorRoute: unknown): boolean {
-  return effect.inputMappings.length === 0 && effect.outputMappings.length === 0 && bpmnErrorRoute === null &&
-    serialBusinessEffectAdmitted(effect);
-}
-
-const scopeDataRules = serialChainRulesForProfile(SemanticProfileId.EmbeddedSubProcessCompletion);
-
-/**
- * CSD-ADMIT-01 and CSSD-ADMIT-01: in a data-bearing model a Service Task may map data. Mapping admission reads only the
- * 1,024-byte literal ceiling, which both data profiles share; each profile's value policy applies when values arrive.
- */
-function admittedServiceTask(effect: Readonly<{ inputMappings: readonly VariableMapping[]; outputMappings: readonly VariableMapping[] }>,
-  bpmnErrorRoute: unknown, data: ModelData | null): boolean {
-  return data === null ? dataFreeServiceTask(effect, bpmnErrorRoute)
-    : bpmnErrorRoute === null && serialBusinessEffectAdmitted(effect, data.handlers, scopeDataRules);
-}
-
-function accessOf(effect: Readonly<{ inputMappings: readonly VariableMapping[]; outputMappings: readonly VariableMapping[] }>):
-  ScopeDataAccess {
-  return { reads: enclosingReads(effect.inputMappings), writes: effect.outputMappings.map(({ target }) => target) };
-}
-
-/** A mapped Call reads without requiring and definitely writes its outputs (CMCALL-AVAILABLE-01, CMCALL-START-01). */
-function callAccess(data: VariableMappingCallData): ScopeDataAccess {
-  const writes = data.outputs.map(({ target }) => target);
-  return { reads: [], writes, optional: [...enclosingReads(data.inputs), ...writes] };
-}
-
-/** CALLN-ADMIT-01's empty Call anywhere; in a data-bearing model also CVM-ADMIT-01's mappings (CMCALL-ADMIT-01). */
-function callDataAdmitted(callData: CallDataInterface, data: ModelData | null): boolean {
-  switch (callData.kind) {
-    case CallDataKind.Empty: return true;
-    case CallDataKind.VariableMappings: return data !== null && callMappingsAdmitted(callData, data.handlers);
-    case CallDataKind.Scalar: return false;
-  }
-}
 
 /**
  * CSD-ADMIT-01's Service Task data and CMCALL-ADMIT-01's Call data. `structured` marks the nested scope-data profile,
@@ -631,7 +595,10 @@ function inputsOf(operation: SemanticOperation): readonly string[] {
     case SemanticOperationKind.SynchronizeSelected:
     case SemanticOperationKind.MergeExclusive:
     case SemanticOperationKind.Activity:
+    case SemanticOperationKind.Scope:
       return operation.inputs;
+    // An exit fires on its scope's completion and consumes no place (SCPH-HOST-01).
+    case SemanticOperationKind.ScopeExit:
     default:
       return [];
   }
@@ -642,11 +609,12 @@ const childStart = (scope: string): string => `start:${scope}`;
 
 function programBodies(program: SemanticProcessProgram, data: ModelData | null, structured: boolean): Map<string, RawBody> | null {
   const scopeOf = new Map(program.operationScopes.map(({ operationId, scopeId }) => [operationId, scopeId]));
-  const completions = program.operations.filter(({ kind }) => kind === SemanticOperationKind.CompleteScope);
+  const completions = program.operations.filter(({ kind }) =>
+    kind === SemanticOperationKind.CompleteScope || kind === SemanticOperationKind.ScopeExit);
   const returns = program.operations.filter((operation): operation is ReturnProcessOperation =>
     operation.kind === SemanticOperationKind.ReturnProcess);
-  const operations = program.operations.filter(({ kind }) =>
-    kind !== SemanticOperationKind.CompleteScope && kind !== SemanticOperationKind.ReturnProcess);
+  const operations = program.operations.filter(({ kind }) => kind !== SemanticOperationKind.CompleteScope &&
+    kind !== SemanticOperationKind.ScopeExit && kind !== SemanticOperationKind.ReturnProcess);
   // A called root completes by its returns, one per Call naming it, so it has no `completeScope`.
   const calledRoots = new Set(returns.map(({ calledRootScopeId }) => calledRootScopeId));
   if (scopeOf.size !== program.operations.length ||
@@ -656,12 +624,21 @@ function programBodies(program: SemanticProcessProgram, data: ModelData | null, 
     const matching = operations.filter(operation => inputsOf(operation).includes(place));
     return matching.length === 1 && scopeOf.get(matching[0]!.id) === scope ? matching[0]!.id : undefined;
   };
-  const parentOutput = (child: string): string | null | undefined => {
-    const matching = completions.filter(operation => operation.kind === SemanticOperationKind.CompleteScope && operation.scopeId === child);
+  // SCPH-EXIT-01: a child completes onto one parent output, or onto every output of its exit.
+  const parentOutputs = (child: string): readonly string[] | undefined => {
+    const matching = completions.filter(operation => (operation.kind === SemanticOperationKind.CompleteScope ||
+      operation.kind === SemanticOperationKind.ScopeExit) && operation.scopeId === child);
     const [completion] = matching;
-    return matching.length === 1 && completion?.kind === SemanticOperationKind.CompleteScope &&
-      scopeOf.get(completion.id) === child ? completion.parentOutput : undefined;
+    if (matching.length !== 1 || completion === undefined || scopeOf.get(completion.id) !== child) return undefined;
+    return completion.kind === SemanticOperationKind.ScopeExit ? completion.outputs.map(({ place }) => place)
+      : completion.kind === SemanticOperationKind.CompleteScope && completion.parentOutput !== null ? [completion.parentOutput]
+        : undefined;
   };
+  // SCPH-START-01: a child is entered onto its legacy entry place, or onto every entry of its host.
+  const childEntries = (operation: SemanticOperation | undefined): readonly string[] | undefined =>
+    operation?.kind === SemanticOperationKind.EnterScope ? [operation.childEntry]
+      : operation?.kind === SemanticOperationKind.Scope && operation.work.kind === ScopeWorkKind.SubProcess
+        ? operation.entries.map(({ place }) => place) : undefined;
   const grouped = group(operations, operation => scopeOf.get(operation.id));
   if (grouped === null) return null;
   const bodies = new Map<string, RawBody>();
@@ -703,13 +680,26 @@ function programBodies(program: SemanticProcessProgram, data: ModelData | null, 
           break;
         case SemanticOperationKind.ReachNoneEnd: kind = RawBodyNodeKind.End; outputs = []; break;
         case SemanticOperationKind.EnterScope: {
-          const output = parentOutput(operation.childScopeId);
+          const output = parentOutputs(operation.childScopeId);
           const entry = consumer(operation.childScopeId, operation.childEntry);
           kind = RawBodyNodeKind.Task;
-          outputs = output === null || output === undefined || entry === undefined ? null : follow([output]);
+          outputs = output === undefined || entry === undefined ? null : follow(output);
           children.set(operation.id, operation.childScopeId);
           break;
         }
+        // SCPH-ADMIT-01: a `process` host is the root Start over its entries; a `subProcess` host is a Sub-Process
+        // vertex whose child body starts on its entries.
+        case SemanticOperationKind.Scope:
+          if (operation.work.kind === ScopeWorkKind.Process) {
+            kind = RawBodyNodeKind.Start;
+            outputs = follow(operation.entries.map(({ place }) => place));
+          } else {
+            const output = parentOutputs(operation.work.childScopeId);
+            kind = RawBodyNodeKind.Task;
+            outputs = output === undefined ? null : follow(output);
+            children.set(operation.id, operation.work.childScopeId);
+          }
+          break;
         case SemanticOperationKind.InvokeProcess: {
           const returned = returns.filter(({ id }) => id === operation.returnOperationId);
           kind = RawBodyNodeKind.Task;
@@ -744,12 +734,11 @@ function programBodies(program: SemanticProcessProgram, data: ModelData | null, 
   // Child bodies take a synthetic Start in front of the operation their entry place feeds.
   for (const body of [...bodies.values()]) {
     for (const [vertex, child] of body.children) {
-      const enter = operations.find(({ id }) => id === vertex);
+      const entries = childEntries(operations.find(({ id }) => id === vertex));
       const childBody = bodies.get(child);
-      if (enter?.kind !== SemanticOperationKind.EnterScope || childBody === undefined) return null;
-      const entry = consumer(child, enter.childEntry);
-      if (entry === undefined) return null;
-      bodies.set(child, { ...childBody, nodes: [{ id: childStart(child), kind: RawBodyNodeKind.Start, outputs: [entry] }, ...childBody.nodes] });
+      const entry = entries?.map(place => consumer(child, place));
+      if (childBody === undefined || entry === undefined || !entry.every(target => target !== undefined)) return null;
+      bodies.set(child, { ...childBody, nodes: [{ id: childStart(child), kind: RawBodyNodeKind.Start, outputs: entry as string[] }, ...childBody.nodes] });
     }
   }
   // A called root takes its synthetic Start once, however many Calls name it; they must agree on its entry place.
@@ -827,8 +816,10 @@ const checkedNodeKinds: ReadonlySet<CheckedNodeKind> = new Set([
 export function nestedScopeControlProgramShape(operations: readonly SemanticOperation[], semanticProfile: string,
   scopeCount: number): boolean {
   const regions = semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
+  // SCPH-ADMIT-01: the nested scope-data profile alone holds scope hosts and exits.
   return scopeCountAdmitted(semanticProfile, scopeCount) && operations.every(({ kind }) => programOperationKinds.has(kind) ||
-    (regions && (kind === SemanticOperationKind.SelectMany || kind === SemanticOperationKind.SynchronizeSelected)));
+    (regions && (kind === SemanticOperationKind.SelectMany || kind === SemanticOperationKind.SynchronizeSelected ||
+      kind === SemanticOperationKind.Scope || kind === SemanticOperationKind.ScopeExit)));
 }
 
 export function nestedScopeControlCheckedShape(nodes: readonly CheckedNode[], semanticProfile: string,

@@ -22,12 +22,33 @@ import {
 } from "./scope-reentry-admission.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import { semanticProcessClosureLimit } from "./semantic-process-limits.js";
-import { SemanticOperationKind } from "./semantic-process-contract.js";
+import { ScopeWorkKind, SemanticOperationKind } from "./semantic-process-contract.js";
 import type { SemanticOperation, SemanticProcessProgram } from "./semantic-process-contract.js";
 
-// IGR-ADMIT-01: an Inclusive split splits a token as a fork does, so Choices, cycles and root Calls route away from it.
-const splits = (operations: readonly SemanticOperation[]): boolean =>
-  operations.some(({ kind }) => kind === SemanticOperationKind.Duplicate || kind === SemanticOperationKind.SelectMany);
+// IGR-ADMIT-01: an Inclusive split splits a token as a fork does, so Choices, cycles and root Calls route away from it;
+// SCPH-ADMIT-01: so do a scope host and exit, whose Program rules give them two or more entries or outputs.
+const splitting = (kind: SemanticOperationKind): boolean => kind === SemanticOperationKind.Duplicate ||
+  kind === SemanticOperationKind.SelectMany || kind === SemanticOperationKind.Scope || kind === SemanticOperationKind.ScopeExit;
+
+const splits = (operations: readonly SemanticOperation[]): boolean => operations.some(({ kind }) => splitting(kind));
+
+/**
+ * The scope an operation splits a token in (SCPH-ADMIT-01 routing): a fork and a `process` host split in their own
+ * scope, a `subProcess` host in its child, an exit in its Sub-Process's parent scope.
+ */
+function splitScope(program: SemanticProcessProgram, operation: SemanticOperation, owner: string | undefined): string | null | undefined {
+  switch (operation.kind) {
+    case SemanticOperationKind.Duplicate:
+    case SemanticOperationKind.SelectMany:
+      return owner;
+    case SemanticOperationKind.Scope:
+      return operation.work.kind === ScopeWorkKind.Process ? owner : operation.work.childScopeId;
+    case SemanticOperationKind.ScopeExit:
+      return program.definitionScopes.find(({ id }) => id === operation.scopeId)?.parentScopeId;
+    default:
+      return undefined;
+  }
+}
 
 // PTSM-ADMIT-01: a pass-through node with several outgoing flows forks, as its lowered `duplicate` splits.
 const forks = (nodes: readonly CheckedNode[], flows: readonly CheckedSequenceFlow[]): boolean =>
@@ -60,12 +81,13 @@ function programRestrictionsHold(program: SemanticProcessProgram): boolean {
   const scopeOf = new Map(program.operationScopes.map(({ operationId, scopeId }) => [operationId, scopeId]));
   const inRoot = (kind: SemanticOperationKind): boolean =>
     program.operations.some(operation => operation.kind === kind && scopeOf.get(operation.id) === root);
+  const rootSplits = program.operations.some(operation =>
+    root !== undefined && splitScope(program, operation, scopeOf.get(operation.id)) === root);
   return program.identity.sourceOverlay !== null && root !== undefined &&
     // PTPB-ADMIT-01: a one-input merge is a lowered pass-through Task, not a merge region; a host always merges.
     !program.operations.some(operation => operation.kind === SemanticOperationKind.Activity ||
       (operation.kind === SemanticOperationKind.MergeExclusive && operation.inputs.length >= 2)) &&
-    !((inRoot(SemanticOperationKind.Duplicate) || inRoot(SemanticOperationKind.SelectMany)) &&
-      inRoot(SemanticOperationKind.InvokeProcess)) &&
+    !(rootSplits && inRoot(SemanticOperationKind.InvokeProcess)) &&
     calledProcessesAdmitted(program.operations.flatMap(operation =>
       operation.kind === SemanticOperationKind.InvokeProcess ? [operation] : []));
 }

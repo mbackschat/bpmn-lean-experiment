@@ -23,10 +23,21 @@ def splits (flows : List CheckedSequenceFlow) (node : CheckedNode) : Bool :=
 def merges (flows : List CheckedSequenceFlow) (node : CheckedNode) : Bool :=
   (passThroughId? node).any fun id => 2 ≤ (flows.filter (·.targetId == id)).length
 
-/-- A checked node that splits a token, as the Program's `duplicate` and `selectMany` do. -/
+/-- SCPH-ADMIT-01: a None Start with two or more outgoing flows, which lowers to a scope host over them. -/
+private def splittingStart (flows : List CheckedSequenceFlow) : CheckedNode → Bool
+  | .noneStartEvent id => 2 ≤ (flows.filter (·.sourceId == id)).length
+  | _ => false
+
+/-- SCPH-ADMIT-01: an ordinary embedded Sub-Process with two or more outgoing flows, which lowers to a scope exit over
+them. -/
+private def splittingSubProcess (flows : List CheckedSequenceFlow) : CheckedNode → Bool
+  | .embeddedSubProcess id _ => 2 ≤ (flows.filter (·.sourceId == id)).length
+  | _ => false
+
+/-- A checked node that splits a token, as the Program's `duplicate`, `selectMany`, scope host and exit do. -/
 def forks (flows : List CheckedSequenceFlow) : CheckedNode → Bool
   | .parallelGateway _ .diverging | .inclusiveGatewayDiverging .. => true
-  | node => splits flows node
+  | node => splits flows node || splittingStart flows node || splittingSubProcess flows node
 
 /-- ACTH-ADMIT-01: a User or Service Task with two or more incoming flows, which lowers to one Activity host over those
 flows. Routing counts it as the re-entry account's merge and the concurrent account refuses it, as both do the

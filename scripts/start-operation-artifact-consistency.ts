@@ -16,6 +16,10 @@ export function referencedStartControlPlaces(
     case "initiateMessage":
     case "initiateTimer":
       return operation.outputs;
+    case "scope":
+      return operation.work.kind === "process"
+        ? operation.entries.map(({ place }) => place)
+        : undefined;
     default:
       return undefined;
   }
@@ -46,11 +50,13 @@ export function verifyStartOperationBindings(
       kind === "messageStartEvent" ||
       kind === "timerStartEvent",
   );
+  // SCPH-HOST-01: a `process` host is a splitting None Start's initiation.
   const initiations = semanticProcess.operations.filter(
-    ({ kind }) =>
-      kind === "initiate" ||
-      kind === "initiateMessage" ||
-      kind === "initiateTimer",
+    (operation) =>
+      operation.kind === "initiate" ||
+      operation.kind === "initiateMessage" ||
+      operation.kind === "initiateTimer" ||
+      (operation.kind === "scope" && operation.work.kind === "process"),
   );
   for (const start of starts) {
     const matching = initiations.filter(
@@ -68,9 +74,18 @@ export function verifyStartOperationBindings(
       case "noneStartEvent":
         if (
           matching.length !== 1 ||
-          initiation?.kind !== "initiate" ||
-          expectedOutputs.length !== 1 ||
-          initiation.output !== expectedOutputs[0]
+          !(
+            (initiation?.kind === "initiate" &&
+              expectedOutputs.length === 1 &&
+              initiation.output === expectedOutputs[0]) ||
+            (initiation?.kind === "scope" &&
+              initiation.inputs.length === 0 &&
+              expectedOutputs.length >= 2 &&
+              isDeepStrictEqual(
+                initiation.entries.map(({ place }) => place),
+                expectedOutputs,
+              ))
+          )
         ) {
           throw new Error(
             `None Start ${start.id} has no exact initiation binding`,

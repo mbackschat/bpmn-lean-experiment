@@ -40,6 +40,7 @@ public section
 namespace BpmnSemantics.SemanticProcess.NestedScopeControl
 
 open StructuredParallelBody
+open ConcurrentScopeData (Data serviceAccess callAccess)
 
 /-- Definition depth of the deepest admitted Sub-Process body below the root. -/
 def depthLimit : Nat := 3
@@ -88,6 +89,11 @@ def contractBody (raw : RawBody) : Option Body := do
   let (vertices, regions) ← MergeRegion.contract raw.vertices raw.children
   return { scope := raw.scope, vertices, children := raw.children, tasks := raw.tasks,
            serviceTasks := raw.serviceTasks, regions, calls := raw.calls, mapped := raw.mapped }
+
+/-- SCPH-SINGLE-01 placement of every split, then its synthetic fork (SCPH-ADMIT-01), at both levels. -/
+private def splitBodies? (raw : List RawBody) : Option (List RawBody) :=
+  if splitScopesPlaced (raw.map fun body => (body.scope, body.vertices, body.children))
+  then some (raw.map fun body => { body with vertices := withSplitForks body.vertices }) else none
 
 /-- A merge target's body is a serial chain of tasks; it owns no Sub-Process, gateway or region. -/
 def serialTargetBody (body : Body) : Bool :=
@@ -370,21 +376,6 @@ def analyze (allScopes : List DefinitionScope) (allBodies : List Body) (dataBear
         let maximum := (resumed ++ regional).foldl max (1 + entryBurst scans expandedFuel root.id.value)
         if maximum ≤ scenarioClosureLimit then some maximum else none
 
-/-- A data-bearing model's declarations, handler names and mapped Service Task and Call accesses. -/
-structure Data where
-  records : List ScopeLocalData
-  handlers : List String
-  accesses : List (String × ConcurrentScopeData.Access)
-
-private def serviceAccess (inputs outputs : List VariableMapping) : ConcurrentScopeData.Access :=
-  { reads := SerialBusinessTask.readNames inputs, writes := outputs.map (·.target) }
-
-/-- A mapped Call reads without requiring and definitely writes its outputs (CMCALL-AVAILABLE-01,
-CMCALL-START-01). -/
-private def callAccess (inputs outputs : List VariableMapping) : ConcurrentScopeData.Access :=
-  let writes := outputs.map (·.target)
-  { reads := [], writes, optional := SerialBusinessTask.readNames inputs ++ writes }
-
 /-- CALLN-ADMIT-01's empty Call anywhere; in a data-bearing model also CVM-ADMIT-01's mappings
 (CMCALL-ADMIT-01). -/
 private def callDataAdmitted (data : Option Data) : CallDataInterface → Bool
@@ -520,7 +511,7 @@ private def checkedModel (source : CheckedProcess) : Option (Nat × List String 
   if !(source.nodes.all fun node => (controlCheckedScope? source node.id).isSome) then none
   else
     let data := checkedData source
-    let bodies ← checkedBodies source data
+    let bodies ← splitBodies? (← checkedBodies source data)
     let contracted ← bodies.mapM contractBody
     let root := (source.definitionScopes.find? fun scope =>
       scope.parentScopeId.isNone && scope.originElementId.value == source.processId.value).map (·.id.value)
@@ -549,7 +540,8 @@ def controlOperationScope? (program : Program) (operation : SemanticOperation) :
 def operationInputs : SemanticOperation → List ControlPlaceId
   | .enterScope _ _ input .. | .awaitUserTask _ _ input .. | .awaitEffect _ _ input .. | .duplicate _ _ input _
   | .reachNoneEnd _ _ input | .invokeProcess _ _ input .. | .selectMany _ _ input .. => [input]
-  | .synchronize _ _ inputs _ | .mergeExclusive _ _ inputs _ | .synchronizeSelected _ _ inputs _ _ => inputs
+  | .synchronize _ _ inputs _ | .mergeExclusive _ _ inputs _ | .synchronizeSelected _ _ inputs _ _
+  | .scope { inputs, .. } => inputs
   | _ => []
 
 /-- The unique same-scope operation consuming `place`. -/
@@ -557,16 +549,18 @@ def consumer? (program : Program) (scope : String) (place : ControlPlaceId) : Op
   let consumer ← StructuredComposition.unique? (program.operations.filter fun op => (operationInputs op).contains place)
   if controlOperationScope? program consumer == some scope then some consumer.id.value else none
 
-def controlParentOutput? (program : Program) (child : DefinitionScopeId) : Option ControlPlaceId := do
+/-- The parent places a child's completion yields: a legacy `completeScope`'s one output or an exit's outputs. -/
+private def controlParentOutputs? (program : Program) (child : DefinitionScopeId) : Option (List ControlPlaceId) := do
   let completion ← StructuredComposition.unique? (program.operations.filter fun op => match op with
-    | .completeScope _ _ scopeId _ => scopeId == child
+    | .completeScope _ _ scopeId _ | .scopeExit { scopeId, .. } => scopeId == child
     | _ => false)
-  match completion with
-  | .completeScope _ _ _ (some output) =>
-      if controlOperationScope? program completion == some child.value then some output else none
-  | _ => none
+  if controlOperationScope? program completion != some child.value then none
+  else match completion with
+    | .completeScope _ _ _ (some output) => some [output]
+    | .scopeExit exit => some (exit.outputs.map (·.place))
+    | _ => none
 
-run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`controlParentOutput?]
+run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`controlParentOutputs?]
 
 /-- The caller output of the one return an invocation names, owned by its called root and carrying the
 invocation's own Call data, so CVM-OUT-01 reads exactly what this Call declares. -/
@@ -583,6 +577,11 @@ run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl
 
 def isCallReturn : SemanticOperation → Bool
   | .returnProcess .. => true
+  | _ => false
+
+/-- A scope's completion, legacy or exit (SCPH-EXIT-01); a body projects neither. -/
+private def completesScope : SemanticOperation → Bool
+  | .completeScope .. | .scopeExit .. => true
   | _ => false
 
 /-- The lowered child Start is elided; this synthetic vertex stands for the child's entry place. -/
@@ -619,8 +618,10 @@ def operationVertex? (program : Program) (data : Option Data) (scope : String) (
         then MergeRegion.RawKind.vertex .pass else .merge
       return (⟨id, kind, ← follow [output]⟩, none)
   | .reachNoneEnd .. => return (⟨id, .vertex .finish, []⟩, none)
-  | .enterScope _ _ _ _ child =>
-      return (⟨id, .vertex .task, ← follow [← controlParentOutput? program child]⟩, some child.value)
+  | .enterScope _ _ _ _ child | .scope { work := .subProcess child, .. } =>
+      return (⟨id, .vertex .task, ← follow (← controlParentOutputs? program child)⟩, some child.value)
+  -- SCPH-ADMIT-01: a `process` host is the Start over its entries; `splitBodies?` adds its fork.
+  | .scope { work := .process, entries, .. } => return (⟨id, .vertex .start, ← follow (entries.map (·.place))⟩, none)
   | .invokeProcess _ _ _ _ calledRoot calledEntry returnOperationId callData => do
       if !callDataAdmitted data callData then none
       let output ← callerOutput? program calledRoot returnOperationId callData
@@ -629,20 +630,23 @@ def operationVertex? (program : Program) (data : Option Data) (scope : String) (
   | _ => none
 
 def programBodies (program : Program) (data : Option Data) : Option (List RawBody) := do
-  let operations := program.operations.filter fun op => !StructuredComposition.isScopeCompletion op && !isCallReturn op
+  let operations := program.operations.filter fun op => !completesScope op && !isCallReturn op
   program.definitionScopes.mapM fun scope => do
     let members ← (operations.filterM fun op => do
       return (← controlOperationScope? program op) == scope.id.value)
     let projected ← members.mapM (operationVertex? program data scope.id.value)
     let entries ← operations.filterMapM fun op => match op with
       | .enterScope _ _ _ childEntry child =>
-          if child == scope.id then (consumer? program scope.id.value childEntry).map some else some none
+          if child == scope.id then (consumer? program scope.id.value childEntry).map ([·]) else some none
+      | .scope { work := .subProcess child, entries, .. } =>
+          if child == scope.id then entries.mapM (consumer? program scope.id.value ·.place) else some none
       | .invokeProcess _ _ _ _ calledRoot calledEntry .. =>
-          if calledRoot == scope.id then (consumer? program scope.id.value calledEntry).map some else some none
+          if calledRoot == scope.id then (consumer? program scope.id.value calledEntry).map ([·]) else some none
       | _ => some none
-    -- A called root takes its synthetic Start once, however many Calls name it; they agree on its entry.
+    -- A called root takes its synthetic Start once, however many Calls name it; they agree on its entry. A
+    -- `subProcess` host's Start splits over its entries.
     let start := match entries.eraseDups with
-      | [entry] => [⟨childStart scope.id.value, .vertex .start, [entry]⟩]
+      | [outputs] => [⟨childStart scope.id.value, .vertex .start, outputs⟩]
       | _ => []
     let serviceTasks := members.filterMap fun op => match op with
       | .awaitEffect id .. => some id.value
@@ -676,7 +680,7 @@ private def programData (program : Program) : Option Data :=
 private def programModel (program : Program) : Option (Nat × List String × Option (List String)) := do
   let root ← StructuredComposition.unique? (program.definitionScopes.filter fun scope =>
     scope.parentScopeId.isNone && scope.originElementId.value == program.processId.value)
-  let completions := program.operations.filter StructuredComposition.isScopeCompletion
+  let completions := program.operations.filter completesScope
   -- A called root completes by its returns, one per Call naming it, so it has no `completeScope`.
   let calledRoots := (program.operations.filterMap fun op => match op with
     | .returnProcess _ _ _ root _ _ => some root
@@ -708,7 +712,7 @@ private def programModel (program : Program) : Option (Nat × List String × Opt
       program.operations.all fun op => (controlOperationScope? program op).isSome) then none
   else
     let data := programData program
-    let bodies ← programBodies program data
+    let bodies ← splitBodies? (← programBodies program data)
     -- SSM-PROFILE-01 follows the structural reading, where the one-scope refusal stood inside `analyze`: kernel-decided
     -- fixtures that open only this module, such as the sequential Multi-Instance binding refusals, reach their
     -- structural refusal without unfolding the hidden `scopeCountAdmitted`.
@@ -761,10 +765,10 @@ namespace BpmnSemantics.SemanticProcess.StructuredScopeData
 
 open BpmnSemantics
 
-/-- IGR-ADMIT-01: an Inclusive split splits a token as a fork does, so Choices, cycles and root Calls route away from it. -/
+/-- IGR-ADMIT-01, SCPH-ADMIT-01: an Inclusive split, scope host or exit splits as a fork does; Choices, cycles and root Calls route away. -/
 private def splits (operations : List SemanticOperation) : Bool :=
   operations.any fun
-    | .duplicate .. | .selectMany .. => true
+    | .duplicate .. | .selectMany .. | .scope .. | .scopeExit .. => true
     | _ => false
 
 /-- CSSD-ROUTE-01: a Program of the nested scope-data profile that splits a token. -/
@@ -801,8 +805,10 @@ private def programRestrictionsHold (program : Program) : Bool :=
           | .mergeExclusive _ _ inputs _ => inputs.length ≥ 2
           | .activity _ => true
           | _ => false) &&
+        -- A `process` host splits in the root, an exit in its scope's parent, a `subProcess` host in its child.
         !(program.operations.any (fun operation => match operation with
-            | .duplicate id .. | .selectMany id .. => inRoot id
+            | .duplicate id .. | .selectMany id .. | .scope { id, work := .process, .. } => inRoot id
+            | .scopeExit exit => (program.definitionScopes.find? (·.id == exit.scopeId)).bind (·.parentScopeId) == some root
             | _ => false) &&
           program.operations.any (fun | .invokeProcess id .. => inRoot id | _ => false)) &&
         callsAdmitted (program.operations.filterMap fun

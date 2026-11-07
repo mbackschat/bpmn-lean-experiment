@@ -12,6 +12,7 @@ import type {
   SemanticProcessCompilerId,
   SemanticProcessKind,
   SemanticProcessProgram,
+  ScopeWorkKind,
 } from "../packages/semantic-core/src/index.ts";
 
 import {
@@ -200,4 +201,57 @@ test("checks canonical Timer Start fan-out independently of selected profile car
       ),
     /outputs must be sorted/u,
   );
+});
+
+const noneStartKind = "noneStartEvent" as CheckedNodeKind.NoneStartEvent;
+const scopeKind = "scope" as SemanticOperationKind.Scope;
+const processWorkKind = "process" as ScopeWorkKind.Process;
+
+function splittingNoneStartArtifacts(): Readonly<{
+  checkedProcess: CheckedProcess;
+  semanticProcess: SemanticProcessProgram;
+}> {
+  const exact = structuredClone(timerArtifacts());
+  const flows = ["Flow_StartToA", "Flow_StartToB"] as const;
+  Reflect.set(exact.checkedProcess, "nodes", [{ kind: noneStartKind, id: "Start" }]);
+  Reflect.set(exact.checkedProcess, "nodeScopes", [{ nodeId: "Start", scopeId: "scope:Process_TimerStart" }]);
+  Reflect.set(exact.checkedProcess, "sequenceFlows", flows.map((id) => ({
+    id, sourceId: "Start", targetId: `Task_${id}`, condition: null,
+  })));
+  Reflect.set(exact.semanticProcess, "controlPlaces", flows.map((id) => ({
+    id: `place:${id}`, origin: { kind: bpmnSequenceFlowOriginKind, elementId: id },
+  })));
+  Reflect.set(exact.semanticProcess, "operations", [{
+    id: "operation:Start",
+    kind: scopeKind,
+    origin: { kind: bpmnElementOriginKind, elementId: "Start" },
+    inputs: [],
+    entries: flows.map((id) => ({ place: `place:${id}` })),
+    work: { kind: processWorkKind },
+  }]);
+  return exact;
+}
+
+// SCPH-HOST-01: a splitting None Start initiates through a `process` host over every outgoing place.
+test("binds a splitting None Start to a process host over every outgoing place", () => {
+  const exact = splittingNoneStartArtifacts();
+  assert.doesNotThrow(() =>
+    verifyStartOperationBindings(exact.checkedProcess, exact.semanticProcess, compareCanonicalStrings),
+  );
+  const mutations: ReadonlyArray<(operation: object) => void> = [
+    (operation) => Reflect.set(operation, "entries", [{ place: "place:Flow_StartToA" }]),
+    (operation) => Reflect.set(operation, "entries", [{ place: "place:Flow_StartToB" }, { place: "place:Flow_StartToA" }]),
+    (operation) => Reflect.set(operation, "work", { kind: "subProcess", childScopeId: "scope:Process_TimerStart" }),
+    (operation) => Reflect.set(operation, "inputs", ["place:Flow_StartToA"]),
+  ];
+  for (const mutate of mutations) {
+    const mutation = structuredClone(exact.semanticProcess);
+    const operation = mutation.operations[0];
+    assert.ok(operation);
+    mutate(operation);
+    assert.throws(
+      () => verifyStartOperationBindings(exact.checkedProcess, mutation, compareCanonicalStrings),
+      /None Start|cardinality/u,
+    );
+  }
 });

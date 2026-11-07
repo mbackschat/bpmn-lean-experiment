@@ -2037,6 +2037,47 @@
       }
     },
     {
+      "id": "employee-onboarding-scope-host",
+      "title": "Onboard a new hire and issue equipment",
+      "businessPurpose": "Register a new hire through an HR service while preparing the workstation, then issue the badge and laptop side by side, and afterwards confirm IT access while facilities is notified, each split taken straight from a start or a completed equipment scope without a gateway.",
+      "cloneFamily": "employee-onboarding-scope-host",
+      "constructs": [
+        "endEvent",
+        "parallelGateway",
+        "process",
+        "sequenceFlow",
+        "serviceTask",
+        "startEvent",
+        "subProcess",
+        "userTask"
+      ],
+      "mechanisms": [
+        "processLifecycle",
+        "sequenceFlow",
+        "embeddedSubProcess",
+        "parallelSplit",
+        "externalEffect",
+        "userTaskWait",
+        "userTaskCompletion",
+        "mappedData",
+        "atomicProcessDataPatch"
+      ],
+      "source": {
+        "kind": "retainedScenario",
+        "bpmnRelativePath": "scenarios/scope-host-split/employee-onboarding.bpmn",
+        "sha256": "263d9a9586009359bba3d2268286a5febac9623a0c023d788e01fb13af90398f",
+        "scenarioRelativePath": "scenarios/scope-host-split/onboarding-register-first.scenario.json",
+        "license": "MIT"
+      },
+      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "admission": { "kind": "accepted" },
+      "pipelineCaseId": "scope-host-split-onboarding-register-first",
+      "product2": {
+        "kind": "notCatalogReady",
+        "reason": "No production browser journey is selected for splitting None Starts and Sub-Processes; retained engine evidence does not establish Product 2 catalog readiness."
+      }
+    },
+    {
       "id": "purchase-request-single-scope",
       "title": "Approve and place a purchase request",
       "businessPurpose": "Review a purchase request, then check the budget through a budget service and log the check while, in parallel, collecting a signature and approving the purchase, and mark the purchase approved before placing the order, all in the Process itself without a Sub-Process.",

@@ -1,10 +1,10 @@
 module
 
-public import BpmnSemantics.SemanticProcess.StructuredParallelBodyAdmission
+public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
 
 /-! The fork-branch cut of NSC-ADMIT-01 and the Call placement scan of CMCALL-ADMIT-01, as PTPB-WORK-01 and
 PTPB-CALL-01 of the [pass-through branch specification](../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#admission)
-relax them for pass vertices, and the terminal-fork relaxation of the [terminal forks specification](../../docs/capsules/TERMINAL-FORKS-SPEC.md#admission). `NestedScopeControl` consumes them in hidden bodies only, through a private import. -/
+relax them for pass vertices, and the terminal-fork relaxation of the [terminal forks specification](../../docs/capsules/TERMINAL-FORKS-SPEC.md#admission), and the placement and synthetic forks of the [scope host](../../docs/capsules/SCOPE-HOST-FLOW-LISTS-PROPOSAL.md#admission) over raw bodies. `NestedScopeControl` consumes them in hidden bodies only, through a private import; the TypeScript twin of the scope host part is `scope-host-body-projection.ts`. -/
 
 public section
 
@@ -91,5 +91,49 @@ def afterPasses (vertices : List Vertex) : Nat → List String → List String
           | some vertex => if vertex.kind == .pass then afterPasses vertices fuel vertex.outputs else first
           | none => first
       | _ => first
+
+/-- A raw Start or task vertex with two or more successors: a splitting None Start or Sub-Process, a scope host's
+entries or an exit's parent outputs (SCPH-ADMIT-01). -/
+private def splitsRaw (vertex : MergeRegion.RawVertex) : Bool :=
+  (vertex.kind == .vertex .start || vertex.kind == .vertex .task) && 2 ≤ vertex.outputs.length
+
+/-- Each splitting vertex followed by a synthetic fork over its successors, so the structured-body analysis keeps its
+arity rule; `>` occurs in no XML ID or derived operation ID. -/
+def withSplitForks (vertices : List MergeRegion.RawVertex) : List MergeRegion.RawVertex :=
+  vertices.flatMap fun vertex =>
+    if splitsRaw vertex then
+      [{ vertex with outputs := ["fork>" ++ vertex.id] }, ⟨"fork>" ++ vertex.id, .vertex .fork, vertex.outputs⟩]
+    else [vertex]
+
+/-- Ordered by reachability with every vertex of its body, so no fork region holds it; this reads exactly the fork
+regions because the concurrent account admits no Choice. -/
+private def outsideForkRegions (vertices : List MergeRegion.RawVertex) (vertex : String) : Bool :=
+  let edges := vertices.flatMap fun source => source.outputs.map fun target => (⟨source.id, target⟩ : GraphEdge String)
+  let reach := reachedSet edges vertices.length
+  vertices.all fun other => (reach vertex).contains other.id || (reach other.id).contains vertex
+
+/-- Whether the Sub-Process vertex entering `scope`, and that of every ancestor, lies outside the fork regions of its
+body; fuel of one level per body refuses a parent cycle. -/
+private def placedFrom (bodies : List (String × List MergeRegion.RawVertex × List (String × String))) :
+    Nat → String → Bool
+  | fuel, scope =>
+      match bodies.findSome? fun (owner, vertices, children) =>
+          (children.find? (·.2 == scope)).map fun (vertex, _) => (owner, vertices, vertex) with
+      | none => true
+      | some (owner, vertices, vertex) => match fuel with
+        | 0 => false
+        | fuel + 1 => outsideForkRegions vertices vertex && placedFrom bodies fuel owner
+
+/-- SCPH-SINGLE-01: a splitting body Start's Sub-Process and a splitting Sub-Process lie outside every fork region of
+their scope and of every ancestor scope, so no other internal operation is enabled with the host or exit. A root Start
+always qualifies. -/
+def splitScopesPlaced (bodies : List (String × List MergeRegion.RawVertex × List (String × String))) : Bool :=
+  bodies.all fun (_, vertices, children) => vertices.all fun vertex =>
+    match children.find? (·.1 == vertex.id) with
+    | none => true
+    | some (_, child) =>
+        let splittingChild := splitsRaw vertex || (bodies.find? (·.1 == child)).any fun (_, childVertices, _) =>
+          childVertices.any fun start => start.kind == .vertex .start && splitsRaw start
+        !splittingChild || placedFrom bodies bodies.length child
 
 end BpmnSemantics.SemanticProcess.NestedScopeControl

@@ -37,6 +37,21 @@ structure Access where
   optional : List String := []
   deriving Repr, DecidableEq
 
+/-- A data-bearing model's declarations, handler names and mapped Service Task and Call accesses. -/
+structure Data where
+  records : List ScopeLocalData
+  handlers : List String
+  accesses : List (String × Access)
+
+def serviceAccess (inputs outputs : List VariableMapping) : Access :=
+  { reads := SerialBusinessTask.readNames inputs, writes := outputs.map (·.target) }
+
+/-- A mapped Call reads without requiring and definitely writes its outputs (CMCALL-AVAILABLE-01,
+CMCALL-START-01). -/
+def callAccess (inputs outputs : List VariableMapping) : Access :=
+  let writes := outputs.map (·.target)
+  { reads := [], writes, optional := SerialBusinessTask.readNames inputs ++ writes }
+
 /-- One definition scope's raw body and the child scope of each of its Sub-Process vertices. -/
 structure Body where
   scope : String

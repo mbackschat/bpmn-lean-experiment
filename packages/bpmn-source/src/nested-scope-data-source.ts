@@ -232,8 +232,11 @@ function readScope(elements: readonly ElementRecord[], scopeId: string, depth: n
       case "bpmn:SubProcess": {
         const id = readId(element);
         const children = asElementArray(element.flowElements);
+        // SCPH-ADMIT-01: a default flow beside an unconditioned split is taken only when no other flow is, so it is
+        // refused rather than dropped; `default` is read by name because moddle keeps reference-valued attributes
+        // non-enumerable (moddle 8.2.0 `dist/index.js:1139`), out of the key inventory.
         if (id === undefined || children === undefined || depth + 1 > readerDepthLimit ||
-            element.triggeredByEvent === true ||
+            element.triggeredByEvent === true || element["default"] !== undefined ||
             !hasOnlyModelledKeys(element, ["$type", "id", "name", "triggeredByEvent", "flowElements", "extensionElements"])) {
           return "A Sub-Process exceeds the ordinary embedded scope contract.";
         }
