@@ -54,6 +54,14 @@ function splitScope(program: SemanticProcessProgram, operation: SemanticOperatio
 const forks = (nodes: readonly CheckedNode[], flows: readonly CheckedSequenceFlow[]): boolean =>
   nodes.some(node => checkedNodeForks(node, flows));
 
+/**
+ * CSSD-ROUTE-01 at the checked level: a graph with a node that splits a token, an explicit diverging gateway or an
+ * implicit split alike, which the profile therefore routes to the concurrent account.
+ */
+export function concurrentStructuredScopeDataChecked(source: CheckedProcess): boolean {
+  return forks(source.nodes, source.sequenceFlows);
+}
+
 /** CSSD-ROUTE-01: a Program of the nested scope-data profile that splits a token. */
 export function concurrentStructuredScopeDataProgram(program: SemanticProcessProgram): boolean {
   return program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData && splits(program.operations);

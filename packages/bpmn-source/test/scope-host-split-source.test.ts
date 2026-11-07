@@ -11,11 +11,12 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import {
-  CheckedNodeKind, ScopeWorkKind, SemanticOperationKind, SemanticProfileId, concurrentStructuredScopeDataProgram,
+  CheckedNodeKind, ScopeWorkKind, SemanticOperationKind, SemanticProfileId, StimulusKind, applyStimulus,
+  concurrentStructuredScopeDataProgram, initialState,
   isWellFormedSemanticProcessProgram, scopeReentryProgram, structuredScopeDataCheckedAnalysis,
   structuredScopeDataCheckedStartNames, structuredScopeDataProgramAnalysis, structuredScopeDataProgramStartNames,
 } from "@bpmn-lean/semantic-core";
-import type { CheckedProcess, SemanticProcessProgram } from "@bpmn-lean/semantic-core";
+import type { CheckedProcess, SemanticProcessProgram, Stimulus } from "@bpmn-lean/semantic-core";
 import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 
 const directory = new URL("../../../scenarios/scope-host-split/", import.meta.url);
@@ -240,4 +241,121 @@ test("SCPH-ADMIT-01: a root split beside a root Call or Choice is refused at bot
       `${name}: ${from} lowers to ${kind}`);
     assert.equal(structuredScopeDataProgramAnalysis(program), null, `${name}: ${from} split, Program alone`);
   }
+});
+
+/** `xml` under the profile with an overlay that binds no handler, as a model with no Service Task needs. */
+async function compileUnbound(xml: string) {
+  const bytes = new TextEncoder().encode(JSON.stringify({ kind: "bpmnSourceOverlay", id: "unbound",
+    semanticProfile: SemanticProfileId.NestedEmbeddedScopeData, effectBindings: [], inertAttributes: [] }));
+  return compileBpmnToSemanticProcess({ bytes: new TextEncoder().encode(xml), sourceId: "unbound",
+    expectedSha256: undefined, semanticProfile: SemanticProfileId.NestedEmbeddedScopeData,
+    sourceOverlay: { id: "unbound", sha256: createHash("sha256").update(bytes).digest("hex"), bytes },
+    limits: semanticProcessTestLimits });
+}
+
+const processOf = (body: string): string => '<?xml version="1.0" encoding="UTF-8"?><definitions ' +
+  `xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="D" targetNamespace="urn:x"><process id="P" isExecutable="true">${body}</process></definitions>`;
+const fork = '<parallelGateway id="Fork" gatewayDirection="Diverging" />';
+const join = (id: string) => `<parallelGateway id="${id}" gatewayDirection="Converging" />`;
+
+/** `from` forking into `T1` and `T2`, directly or through an explicit Parallel fork, rejoined at `Join`. */
+const twoBranches = (from: string, explicit: boolean): string => (explicit
+  ? `${fork}${flow("f0", from, "Fork")}${flow("f1", "Fork", "T1")}${flow("f2", "Fork", "T2")}`
+  : `${flow("f1", from, "T1")}${flow("f2", from, "T2")}`) +
+  `<userTask id="T1" /><userTask id="T2" />${join("Join")}${flow("f3", "T1", "Join")}${flow("f4", "T2", "Join")}`;
+
+/** CIB's `UncontrolledFlowTest#testSubProcessTwoOutgoingFlowsEndProcess` shape: a Sub-Process left on two flows to two Ends. */
+const subProcessToTwoEnds = (explicit: boolean): string =>
+  '<startEvent id="Start" /><subProcess id="S"><startEvent id="S_Start" /><userTask id="S_Task" /><endEvent id="S_End" />' +
+  `${flow("s1", "S_Start", "S_Task")}${flow("s2", "S_Task", "S_End")}</subProcess>` +
+  '<endEvent id="E1" /><endEvent id="E2" />' + flow("a", "Start", "S") + (explicit
+    ? `${fork}${flow("b", "S", "Fork")}${flow("c", "Fork", "E1")}${flow("d", "Fork", "E2")}`
+    : `${flow("c", "S", "E1")}${flow("d", "S", "E2")}`);
+
+// CSSD-ADMIT-01: a model that forks routes to the concurrent account, which may bind no handler; an implicit split forks
+// as its explicit-fork twin does, so the two are admitted alike. A serial model keeps NSD-ADMIT-01's overlay rule.
+test("SCPH-ADMIT-01: an implicit split binds no handler exactly as its explicit-fork twin", async () => {
+  const models: readonly (readonly [string, (explicit: boolean) => string])[] = [
+    ["root Start split", (explicit) => processOf(`<startEvent id="Start" />${twoBranches("Start", explicit)}` +
+      `<endEvent id="End" />${flow("f5", "Join", "End")}`)],
+    ["body Start split", (explicit) => processOf('<startEvent id="Start" /><subProcess id="S"><startEvent id="S_Start" />' +
+      `${twoBranches("S_Start", explicit)}<endEvent id="S_End" />${flow("f5", "Join", "S_End")}</subProcess>` +
+      `<endEvent id="End" />${flow("a", "Start", "S")}${flow("b", "S", "End")}`)],
+    ["Sub-Process split to two Ends", (explicit) => processOf(subProcessToTwoEnds(explicit))],
+    ["pass-through split", (explicit) => processOf('<startEvent id="Start" /><manualTask id="M" />' +
+      `${flow("a", "Start", "M")}${twoBranches("M", explicit)}<endEvent id="End" />${flow("f5", "Join", "End")}`)],
+  ];
+  for (const [label, model] of models) {
+    for (const explicit of [true, false]) {
+      const result = await compileUnbound(model(explicit));
+      assert.equal(result.status, BpmnCompilationStatus.Accepted,
+        `${label}${explicit ? ", explicit fork" : ""}: ${JSON.stringify(result.diagnostics)}`);
+    }
+  }
+  const serial = await compileUnbound(processOf('<startEvent id="Start" /><userTask id="T" /><endEvent id="End" />' +
+    `${flow("a", "Start", "T")}${flow("b", "T", "End")}`));
+  assert.equal(serial.status, BpmnCompilationStatus.Rejected, "serial model without a handler");
+});
+
+// The census's executable counterexample for SCPH-SINGLE-01: a body-Start host on a Parallel branch is enabled beside
+// the sibling branch's work, and the scheduler refuses the start rather than choose, while the admitted twin, whose body
+// Start does not split, commits.
+test("SCPH-SINGLE-01: a host placed on a Parallel branch fails closed in the scheduler", async () => {
+  const { lowerCheckedProcess } = await import(new URL("../dist/semantic-process-lowering.js", import.meta.url).href) as
+    { lowerCheckedProcess: (source: CheckedProcess) => SemanticProcessProgram };
+  const twin = await compileUnbound(processOf('<startEvent id="Start" /><userTask id="Sibling" /><endEvent id="SiblingEnd" />' +
+    '<subProcess id="S"><startEvent id="S_Start" /><userTask id="S_Task" /><endEvent id="S_End" />' +
+    `${flow("s1", "S_Start", "S_Task")}${flow("s2", "S_Task", "S_End")}</subProcess><endEvent id="End" />` +
+    `${fork}${flow("a", "Start", "Fork")}${flow("b", "Fork", "Sibling")}${flow("c", "Sibling", "SiblingEnd")}` +
+    `${flow("d", "Fork", "S")}${flow("e", "S", "End")}`));
+  assert.ok(twin.status === BpmnCompilationStatus.Accepted, JSON.stringify(twin.diagnostics));
+  const start: Stimulus = { kind: StimulusKind.StartProcess, commandId: "start", processId: "P", instanceId: "i",
+    initialVariables: [] };
+  assert.equal(applyStimulus(twin.semanticProcess, initialState, start).outcome, "committed", "admitted twin");
+  const program = lowerCheckedProcess(withTerminalFlow(twin.checkedProcess, "S_Start"));
+  assert.ok(program.operations.some((operation) => operation.kind === SemanticOperationKind.Scope &&
+    operation.origin.elementId === "S"), "the branch-placed Sub-Process lowers to a host");
+  assert.equal(applyStimulus(program, initialState, start).outcome, "rejected", "host on a branch");
+});
+
+/**
+ * The retained loan application without its Service Task, so CSE-ADMIT-01's refusal of a Service Task beside a Call
+ * cannot refuse a variant on its own; its overlay keeps the now unused binding.
+ */
+async function loanWithoutServiceTask() {
+  const loan = await retained("call-variable-mapping", "loan-application");
+  const task = loan.xml.slice(loan.xml.indexOf('<serviceTask id="AcknowledgeApplication"'),
+    loan.xml.indexOf("</serviceTask>") + "</serviceTask>".length);
+  const xml = replaceOnce(replaceOnce(replaceOnce(loan.xml, task, ""),
+    flow("Flow_Received", "ApplicationReceived", "AcknowledgeApplication"),
+    flow("Flow_Received", "ApplicationReceived", "VerifyIdentity")),
+  flow("Flow_Acknowledged", "AcknowledgeApplication", "VerifyIdentity"), "");
+  return { xml, compileXml: loan.compileXml };
+}
+
+// Wrong algorithm 10, isolated: with no Service Task beside the Call, the structured analysis alone admits a root Start
+// or root Sub-Process split beside the root Call, so the root-split restriction (RPF-ADMIT-01) is what refuses it, at
+// the checked level and on the lowered Program alone; a body-Start split is no root split, so it stays admitted.
+test("SCPH-ADMIT-01: the root-split restriction alone refuses a root split beside a root Call", async () => {
+  const { lowerCheckedProcess } = await import(new URL("../dist/semantic-process-lowering.js", import.meta.url).href) as
+    { lowerCheckedProcess: (source: CheckedProcess) => SemanticProcessProgram };
+  const { nestedScopeControlProgramStartNameRule } = await import(
+    new URL("../../semantic-core/dist/nested-scope-control-admission.js", import.meta.url).href) as
+    { nestedScopeControlProgramStartNameRule: (program: SemanticProcessProgram) => unknown };
+  const loan = await loanWithoutServiceTask();
+  const control = await loan.compileXml(loan.xml);
+  assert.ok(control.status === BpmnCompilationStatus.Accepted, `control: ${JSON.stringify(control.diagnostics)}`);
+  const closing = '<endEvent id="ApplicationDecided" name="Application decided" />';
+  for (const [from, kind] of [["ApplicationReceived", SemanticOperationKind.Scope],
+    ["ReviewApplication", SemanticOperationKind.ScopeExit]] as const) {
+    assert.equal((await loan.compileXml(before(loan.xml, closing, terminal(from)))).status,
+      BpmnCompilationStatus.Rejected, `${from} split beside the root Call`);
+    const program = lowerCheckedProcess(withTerminalFlow(control.checkedProcess, from));
+    assert.ok(program.operations.some((operation) => operation.kind === kind && operation.origin.elementId === from), from);
+    assert.notEqual(nestedScopeControlProgramStartNameRule(program), null, `${from}: the analysis alone admits it`);
+    assert.equal(structuredScopeDataProgramAnalysis(program), null, `${from}: the restriction refuses it`);
+  }
+  const bodySplit = await loan.compileXml(before(loan.xml, '<endEvent id="ReviewClosed"', terminal("ReviewOpened")));
+  assert.equal(bodySplit.status, BpmnCompilationStatus.Accepted,
+    `body Start split beside the root Call: ${JSON.stringify(bodySplit.status === BpmnCompilationStatus.Rejected ? bodySplit.diagnostics : [])}`);
 });

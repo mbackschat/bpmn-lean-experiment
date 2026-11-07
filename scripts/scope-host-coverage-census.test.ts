@@ -47,7 +47,7 @@ const leanAllowlist: Readonly<Record<string, string>> = {
   "BpmnSemantics/SemanticProcess/EffectDataAdmission.lean::programAnalysis": profile,
   "BpmnSemantics/SemanticProcess/GraphValidation.lean::messageHandlerEdges": profile,
   "BpmnSemantics/SemanticProcess/GraphValidation.lean::rootCompletionIds":
-    "an exit completes an embedded Sub-Process, never the root (SCPH-HOST-01 Program rules)",
+    "an exit completes a child scope, never the root (SCPH-HOST-01 Program rules)",
   "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programGraph": placed,
   "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programInputs": placed,
   "BpmnSemantics/SemanticProcess/InclusiveRegionAdmission.lean::programVertexKind": placed,
@@ -184,7 +184,7 @@ const typeScriptAllowlist: Readonly<Record<string, string>> = {
   "packages/semantic-core/src/repeatable-subscription-admission.ts::repeatableSubscriptionProgramShape": profile,
   "packages/semantic-core/src/runtime-state-well-formedness.ts::runtimeStateDefects": selection,
   "packages/semantic-core/src/semantic-process-bounded-scope-runtime.ts::completeScopeWithdrawingDeadline":
-    "completes a bounded scope, which only `enterBoundedScope` opens and no exit completes (SCPH-HOST-01 Program rules)",
+    "completes a bounded scope, which only `enterBoundedScope` opens; the profile shapes, not the Program rules, refuse an exit beside a bounded entry",
   "packages/semantic-core/src/semantic-process-control-flow-runtime.ts::duplicate": legacyStep,
   "packages/semantic-core/src/semantic-process-graph-admission.ts::hasSelectedParallelTopology": profile,
   "packages/semantic-core/src/semantic-process-profile.ts::hasExactActivityBoundaryMessageProgram": catalog,

@@ -36,7 +36,7 @@ Close calls, 2026-11-07, each with its reason:
 | Body None Start, two or more outgoing flows | 0 |
 | Sub-Process, two or more outgoing flows | 2, both unconditioned (`UncontrolledFlowTest`) |
 
-Files are deduplicated by content hash; a Start counts when it has no event definition and two or more flows whose `sourceRef` is the Start, and a flow is conditioned when it holds a `conditionExpression` (re-measured by the proposal review, 2026-11-07). AISM recorded 7 root Start splits under a narrower file filter.
+Files are deduplicated by content hash; a Start counts when it has no event definition and two or more flows whose `sourceRef` is the Start, and a flow is conditioned when it holds a `conditionExpression` (re-measured by the proposal review, 2026-11-07). AISM recorded 7 root Start splits under a narrower file filter. None of the 6 unconditioned root Start split files is admitted whole today, each for an exclusion outside this family (for example `ExclusiveGatewayTest.testMergingExclusiveGateway` for its Start split into an Exclusive merge, `jobPrioProcess` for `camunda:asyncAfter`), while both Sub-Process split files have the singleton placement this family admits (closure review, 2026-11-07).
 
 ## Normative basis and CIB classification
 
@@ -127,9 +127,9 @@ The host's `origin` is the root Start for `process` and the Sub-Process otherwis
 
 - every list strictly sorted by control-place id, and every named place exists;
 - `process`: no inputs and two or more entries;
-- `subProcess`: exactly one input and two or more entries, its child scope a Sub-Process scope that no other entry operation enters.
+- `subProcess`: exactly one input and two or more entries, its child scope a child of the host's own scope that no other entry operation enters.
 
-Of an exit they require two or more outputs and a scope that is an ordinary embedded Sub-Process's, completed by no other operation. They refuse every other host or exit, so no host or exit doubles a legacy encoding (`SCPH-HOST-01`). Completion is keyed by scope, so a host's child scope may be completed by a legacy `completeScope` or an exit, and a legacy entry's by either.
+Of an exit they require two or more outputs and a child scope, never the root, completed by no other operation. Neither rule reads which kind of entry opens the scope: an exit over a scope a bounded, monitored or transaction entry opens is refused by the profile shapes, not by these rules. They refuse every other host or exit, so no host or exit doubles a legacy encoding (`SCPH-HOST-01`). Completion is keyed by scope, so a host's child scope may be completed by a legacy `completeScope` or an exit, and a legacy entry's by either.
 
 ### Per-work accessors
 
@@ -275,6 +275,8 @@ Each split's step publishes once and opens both successors in the same command (
 - a root Start split beside a root Call (`RPF-ADMIT-01`) and beside a root Choice (re-entry refusal), each also asserted on the lowered Program alone, apart from the checked level (wrong algorithm 10);
 - the model under the embedded completion profile.
 
+**Data-free twins.** A root Start split, a body Start split, CIB's Sub-Process split to two Ends and a pass-through split are each admitted under an overlay that binds no handler, as their explicit-fork twins are, while a serial model without a handler stays refused (`CSSD-ADMIT-01`).
+
 **Profile matrix.** Lean checks each widened arity arm over every combination of the flags. TypeScript keys arity on the profile, so only Lean separates wrong algorithm 2, as for merging Tasks.
 
 **Kernel witnesses**, in both languages:
@@ -282,7 +284,7 @@ Each split's step publishes once and opens both successors in the same command (
 - every existing scenario's Program unchanged (`SCPH-ONE-01`, wrong algorithm 8);
 - each journey publishes one internal record per split step under its legacy kind (wrong algorithms 4 and 7);
 - a host with one entry, unsorted lists, a `process` host with an input, a `subProcess` host with two inputs, and an exit with one output are each refused;
-- a hand-built Program with a host on a Parallel branch fails closed in the scheduler (wrong algorithm 5);
+- a lowered Program with a host on a Parallel branch fails closed in the scheduler (wrong algorithm 5), in TypeScript; the Lean counterpart is open;
 - a host's and exit's footprint is `none`;
 - the publication validator refuses `"scope"` and `"scopeExit"`;
 - Temporal host admission classifies a host or exit with several entries or outputs as a token split, so the onboarding model with its effect wait is admitted only through the concurrent analysis (wrong algorithm 9).
@@ -313,9 +315,9 @@ Each split's step publishes once and opens both successors in the same command (
 
 Lane shape: proved
 
-Evidence: the host and exit arms of the existing theorems quantified over all operations, among them evaluator soundness [`fire_sound`](../../BpmnSemantics/SemanticProcess/Transition.lean#fire_sound) (dispatch only), control places, wait declarers, structural validity, cardinalities, and runtime well-formedness preservation of initiation, scope creation and scope completion with entry and output lists; the open boundary and the conformance checks follow.
+Evidence: evaluator soundness [`fire_sound`](../../BpmnSemantics/SemanticProcess/Transition.lean#fire_sound), whose host and exit arms establish that the evaluator's step for a host or exit is the declared `OperationStep` (dispatch only); the other theorems quantified over all operations hold with host and exit arms that their premises dismiss (the profile's allowed operations, the published kind, the owning occurrence), so they state nothing further about hosts. The open boundary and the conformance checks follow.
 
-**Deliberately open, checked instead:** host and exit agreement with their legacy operations on the state they write (the list step on a one-element list equals the legacy step, a law about Programs the host rules refuse, kept as the switch family's obligation), and the `none` footprints. Both would need new `import all` openers of hubs whose hidden-edit bounds have no headroom; the switch family owns them, as for the Activity host. If list-generalized well-formedness preservation needs a new opener, it joins this open boundary rather than raising a bound.
+**Deliberately open, checked instead:** host and exit agreement with their legacy operations on the state they write (the list step on a one-element list equals the legacy step, a law about Programs the host rules refuse, kept as the switch family's obligation); the `none` footprints; runtime well-formedness preservation of the list steps `scopeHostState?` and `completeDeclaredScopeOutputs?`; and `SCPH-SINGLE-01` as a theorem, that a placed host or exit is the only enabled internal operation, which the finite placement checks and the scheduler counterexample witness instead. Both would need new `import all` openers of hubs whose hidden-edit bounds have no headroom; the switch family owns them, as for the Activity host. If list-generalized well-formedness preservation needs a new opener, it joins this open boundary rather than raising a bound.
 
 **Conformance checks.** A new module beside [`ActivityHostConformance`](../../BpmnSemantics/ActivityHostConformance.lean) checks admission, placement and lowering agreement, including the onboarding model's concurrent analysis.
 

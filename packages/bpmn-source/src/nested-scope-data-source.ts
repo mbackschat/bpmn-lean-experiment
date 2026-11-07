@@ -4,8 +4,9 @@ import {
   classifyGateway, projectCheckedSequenceFlows, projectExclusiveMerge, projectUserTaskMetadata,
 } from "./checked-element-projection.js";
 import {
-  CallDataKind, CheckedNodeKind, CheckedProcessKind, GatewayDirection, MappingExpressionKind, SemanticProfileId,
+  CallDataKind, CheckedNodeKind, CheckedProcessKind, MappingExpressionKind, SemanticProfileId,
   TaskNotation, callDataInterfaceValid, compareCanonicalStrings, isWellFormedWireString, structuredScopeDataCheckedAnalysis,
+  concurrentStructuredScopeDataChecked,
 } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode, CheckedProcess, CheckedSequenceFlow, DefinitionScope, ScopeLocalData, VariableMapping,
@@ -84,13 +85,11 @@ const nestedScopeDataReader: ScopeDataReader = {
   projectCall: projectMappedCall,
   caller: callerProcess, overlayRequired: true,
   // CSSD-ADMIT-01: the routed analysis refuses the merges and forking-root Calls (RPF-ADMIT-01) the shared gateway
-  // grammar reads, and only a model with a Parallel fork may bind no handler, so a serial model keeps NSD-ADMIT-01's
-  // overlay rule.
+  // grammar reads, and only a model that forks, explicitly or by an implicit split (SCPH-ADMIT-01, PTSM-ADMIT-01), may
+  // bind no handler, so a serial model keeps NSD-ADMIT-01's overlay rule.
   admitted: (checkedProcess, policy) => structuredScopeDataCheckedAnalysis(checkedProcess) !== null &&
     !effectResultReachesDefaultlessChoice(checkedProcess) &&
-    (policy.effectBindings.length > 0 || checkedProcess.nodes.some(node =>
-      (node.kind === CheckedNodeKind.ParallelGateway || node.kind === CheckedNodeKind.InclusiveGateway) &&
-      node.direction === GatewayDirection.Diverging)),
+    (policy.effectBindings.length > 0 || concurrentStructuredScopeDataChecked(checkedProcess)),
   refusal: "The checked graph does not satisfy nested scope-data admission.",
 };
 
