@@ -32,9 +32,9 @@ test("retains pinned deterministic capacity facts below every boundary", () => {
     activationEventReserve,
     activationByteReserve,
     maximumMeasuredRunEvents: 87,
-    maximumMeasuredRunBytes: 569_660,
+    maximumMeasuredRunBytes: 569_666,
     maximumMeasuredActivationEvents: 10,
-    maximumMeasuredActivationPayloadBytes: 247_285,
+    maximumMeasuredActivationPayloadBytes: 247_291,
     maximumInterruptedCompletedItems: 15,
   });
 });

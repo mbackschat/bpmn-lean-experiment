@@ -59,7 +59,7 @@ export type SequentialMultiInstanceHistoryCapacity = Readonly<{
   maximumInterruptedCompletedItems: number;
 }>;
 
-/** Canonical byte measurements from 2026-10-08 plus historical, non-authoritative pinned service-size observations. */
+/** Canonical byte measurements from 2026-11-07 plus historical, non-authoritative pinned service-size observations. */
 export const retainedSequentialMultiInstanceHistoryMeasurement:
   SequentialMultiInstanceHistoryMeasurement = Object.freeze<
     SequentialMultiInstanceMeasuredHistory
@@ -85,8 +85,8 @@ export const retainedSequentialMultiInstanceHistoryMeasurement:
       completedItemsBeforeTimerResolution: 16,
       terminalOutcome: CommandOutcome.Committed,
       runs: [
-        retainedRun(SequentialMultiInstanceHistoryTopology.Natural, SequentialMultiInstanceHistoryRunRole.PreArming, 1, [3, 3], [123_796, 123_796], [2, 123_791, 8_192], 5, 391_556, 5, 247_285, [1, 3, 0, 0, 0, 0, 0, 1, 0]),
-        retainedRun(SequentialMultiInstanceHistoryTopology.Natural, SequentialMultiInstanceHistoryRunRole.Armed, 2, [3, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 82], [124_329, 124_753, 126_857, 128_958, 131_059, 133_160, 135_261, 137_362, 139_463, 141_564, 143_665, 145_767, 147_871, 149_975, 152_079, 154_183, 156_287, 156_287], [5, 21_601, 20_480], 87, 501_744, 10, 123_791, [1, 51, 16, 16, 1, 1, 0, 0, 1]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Natural, SequentialMultiInstanceHistoryRunRole.PreArming, 1, [3, 3], [123_833, 123_833], [2, 123_794, 8_192], 5, 391_565, 5, 247_291, [1, 3, 0, 0, 0, 0, 0, 1, 0]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Natural, SequentialMultiInstanceHistoryRunRole.Armed, 2, [3, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 82], [124_366, 124_790, 126_894, 128_995, 131_096, 133_197, 135_298, 137_399, 139_500, 141_601, 143_702, 145_804, 147_908, 150_012, 152_116, 154_220, 156_324, 156_324], [5, 21_601, 20_480], 87, 501_747, 10, 123_794, [1, 51, 16, 16, 1, 1, 0, 0, 1]),
       ],
     },
     interrupted: {
@@ -94,10 +94,10 @@ export const retainedSequentialMultiInstanceHistoryMeasurement:
       completedItemsBeforeTimerResolution: 15,
       terminalOutcome: CommandOutcome.Committed,
       runs: [
-        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.PreArming, 1, [3, 3], [109_473, 109_473], [2, 109_466, 8_192], 5, 348_581, 5, 218_635, [1, 3, 0, 0, 0, 0, 0, 1, 0]),
-        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.Armed, 2, [3, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 83, 83], [110_004, 110_425, 112_524, 114_620, 116_716, 118_812, 120_908, 123_004, 125_100, 127_196, 129_292, 131_389, 133_488, 135_587, 137_686, 139_785, 142_042, 142_042], [2, 110_750, 8_192], 85, 569_660, 8, 110_750, [1, 51, 15, 15, 1, 0, 1, 1, 0]),
-        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.StaleRefusal, 3, [3, 6, 6], [111_279, 111_666, 111_666], [4, 111_112, 16_384], 10, 264_126, 7, 112_054, [1, 6, 1, 1, 0, 0, 0, 1, 0]),
-        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.Escalation, 4, [3, 6, 6], [111_652, 112_040, 112_040], [4, 14_213, 16_384], 10, 166_285, 7, 111_112, [1, 6, 1, 1, 0, 0, 0, 0, 1]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.PreArming, 1, [3, 3], [109_512, 109_512], [2, 109_469, 8_192], 5, 348_590, 5, 218_641, [1, 3, 0, 0, 0, 0, 0, 1, 0]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.Armed, 2, [3, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, 77, 83, 83], [110_045, 110_469, 112_573, 114_674, 116_775, 118_876, 120_977, 123_078, 125_179, 127_280, 129_381, 131_483, 133_587, 135_691, 137_795, 139_899, 142_163, 142_163], [2, 110_753, 8_192], 85, 569_666, 8, 110_753, [1, 51, 15, 15, 1, 0, 1, 1, 0]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.StaleRefusal, 3, [3, 6, 6], [111_320, 111_708, 111_708], [4, 111_115, 16_384], 10, 264_132, 7, 112_057, [1, 6, 1, 1, 0, 0, 0, 1, 0]),
+        retainedRun(SequentialMultiInstanceHistoryTopology.Interrupted, SequentialMultiInstanceHistoryRunRole.Escalation, 4, [3, 6, 6], [111_691, 112_079, 112_079], [4, 14_213, 16_384], 10, 166_288, 7, 111_115, [1, 6, 1, 1, 0, 0, 0, 0, 1]),
       ],
     },
   });
