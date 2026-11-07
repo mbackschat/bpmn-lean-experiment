@@ -1,0 +1,41 @@
+# Engine host family implementation map
+
+This detail map owns the exact implemented and absent status of each closed or in-progress semantic family whose BPMN capability is carried by an Activity or scope host (the `SemanticOperation.activity` and `SemanticOperation.scope` flow-list operations) and which grows a data-bearing profile. It keeps one section per capsule delegation. Other control-flow families are owned by [`implementation-status-owner:ENGINE-CONTROL-FLOW-FAMILY`](ENGINE-CONTROL-FLOW-FAMILY-IMPLEMENTATION-MAP.md), Gateway families by [`implementation-status-owner:ENGINE-GATEWAY-FAMILY`](ENGINE-GATEWAY-FAMILY-IMPLEMENTATION-MAP.md), data-flow families by [`implementation-status-owner:ENGINE-DATA-FAMILY`](ENGINE-DATA-FAMILY-IMPLEMENTATION-MAP.md), other BPMN element families by [`implementation-status-owner:ENGINE-SEMANTIC-FAMILY`](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), and cross-cutting mechanisms by [`implementation-status-owner:ENGINE-SEMANTIC-INVARIANT`](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md).
+
+This map exists because the control-flow family map reached its reviewed word budget when the Activity host splits needed recording (2026-11-07). The stated axis is what carries a family's BPMN capability: a section belongs here when an Activity or scope host carries it on a data-bearing profile, and in the control-flow map when other control flow does.
+
+## Current boundary
+
+Each section below states the exact implemented and absent status of one host family, delegated to this map by that family's capsule or specification. A section asserts nothing about any other family. The union of these sections is not a coverage figure: BPMN requirement coverage, CIB profile coverage, and platform milestone coverage are three separate denominators with their own owners.
+
+## Implemented
+
+Each section below owns one family's exact rules, evidence lanes, and absences, including its closure status. Its claims do not extend to another family or an excluded composition.
+
+## Explicitly absent
+
+A family with no section here has no status in this map, which is an absence of routing rather than a claim that the family is unimplemented; [the requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns dispositions and the owning capsule owns meaning. No section here is a BPMN conformance or CIB compatibility claim.
+
+## Evidence owners
+
+The [capsule registry](capsules/README.md), the Lean modules under [`BpmnSemantics/`](../BpmnSemantics/), the pure core under [`packages/semantic-core/`](../packages/semantic-core/), the registered scenarios, and the differential pipeline bind every claim below. [TESTING-SPEC.md](TESTING-SPEC.md) owns the gate contract.
+
+## Nearest unsupported claims
+
+Reading these sections together supports no cross-family theorem. A mechanism two families share is established only where each section says so independently.
+
+## Activity host merges
+
+The [Activity host flow lists account](capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md) grows `cibseven-2.2.0-nested-embedded-scope-data-draft` with User, Service and Send Tasks of several incoming flows, each arrival starting its own occurrence (`CIB-AGR-0020`); its receipt owns review state.
+
+**Implemented.** One kernel change: the appended `SemanticOperation.activity` host, whose per-work facts only the accessor leaf [`ActivityHostWork`](../BpmnSemantics/SemanticProcess/ActivityHostWork.lean) and its TypeScript twin read; it publishes its work's legacy kind, is never batched, and the [host-coverage census](../scripts/activity-host-coverage-census.test.ts) keeps every wildcard consumer from absorbing it silently (`ACTH-HOST-01`). Under this profile only, the checked arity admits a User Task, or a Service or Send Task without a BPMN Error route, with two or more incoming flows and one outgoing flow (`ACTH-ADMIT-01`, `ACTH-PROFILE-01`). Such a Program routes to the re-entry account, which refuses it under a fork; the concurrent account refuses it; and lowering through [`ActivityHostLowering`](../BpmnSemantics/SemanticProcess/ActivityHostLowering.lean) and its twin emits one host over the sorted incoming places, while a one-input Task keeps its legacy operation (`ACTH-ONE-01`). Each arrival opens the legacy wait in one step (`ACTH-MERGE-01`). Link contraction admits several throws of one name when the catch's successor is such a Task in the root scope. The claim review model and its Link twin witness it through the [conformance module](../BpmnSemantics/ActivityHostConformance.lean)'s nine checks, a source test, three pipeline cases whose mutations skip the review or reuse its occurrence, a value-domain row, a corpus row, About, the [hosted witness](../packages/temporal-adapter/testkit/test/activity-host-merge-recovery.temporal-test.ts) of a second-flow arrival carried across Continue-As-New and replayed, and the [CIB probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenActivityHostMergeProbeTest.java).
+
+**Open.** `PC-CF-07` stays open on its split clause, Sub-Processes and Call Activities, concurrent arrivals, conditional and default outgoing flows and called and Multi-Instance bodies, and `PC-BASIC-02` on concurrent sources and other successors. Not proved in Lean, only checked on the model: that a host arrival equals the legacy firing of its work's projection, and that a host's footprint is `none`. The host-coverage census reads column-zero TypeScript functions only. The legacy User Task and effect operations coexist with the host until the next family that adds a User, Service or Send Task feature retires them. Excluded: a merging Task under a fork or in a body, data-input, data-output, bounded, monitored or Multi-Instance User Tasks, a Service or Send Task with a BPMN Error route, and every form under any other profile.
+
+## Scope hosts
+
+The [scope host flow lists account](capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md) grows the same profile with None Starts and embedded Sub-Processes that split onto several unconditioned flows (`CIB-AGR-0022`); its receipt owns review state.
+
+**Implemented.** One kernel change: the appended `SemanticOperation.scope` host, whose work is the Process or one child scope, and `SemanticOperation.scopeExit`; both publish their legacy kinds, are never batched, and the [scope host census](../scripts/scope-host-coverage-census.test.ts) keeps every wildcard consumer from absorbing them silently (`SCPH-HOST-01`). Under this profile only, the checked arity admits a root None Start with two or more outgoing flows, a Sub-Process whose body None Start has them, and a Sub-Process with two or more outgoing flows and no default (`SCPH-ADMIT-01`, `SCPH-PROFILE-01`), each outside every fork region (`SCPH-SINGLE-01`). Lowering through [`ScopeHostLowering`](../BpmnSemantics/SemanticProcess/ScopeHostLowering.lean) and its twin emits a `process` host over the root Start's outgoing places, a `subProcess` host over the body Start's, and an exit over the Sub-Process's outgoing places, while every one-flow node keeps its legacy operation (`SCPH-ONE-01`); each puts one token on every flow in its one step (`SCPH-START-01`, `SCPH-EXIT-01`). The employee onboarding model witnesses it through the [conformance module](../BpmnSemantics/ScopeHostConformance.lean)'s checks, a source test, two pipeline cases whose mutations take the first flow or output only, a value-domain row, a corpus row, About, the [hosted witness](../packages/temporal-adapter/testkit/test/scope-host-split-recovery.temporal-test.ts) of both body-split waits carried across Continue-As-New and replayed, and the [CIB probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenScopeHostSplitProbeTest.java).
+
+**Open.** `PC-BASIC-01` and `PC-CF-07` stay open on the residuals the [account](capsules/SCOPE-HOST-FLOW-LISTS-SPEC.md#question-and-delivery-boundary) lists. Not proved in Lean, only checked: list steps on one-element lists equal to the legacy steps, the `none` footprints, well-formedness preservation of the list steps, and `SCPH-SINGLE-01`'s singleton enabledness. Excluded: every split inside a fork region, a Sub-Process split with a conditional or default flow, a merging Sub-Process or None Start, and every form under any other profile.

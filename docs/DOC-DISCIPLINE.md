@@ -160,6 +160,8 @@ On 2026-11-02 the data-flow map reached 3,999 words when None End fan-in needed 
 
 On 2026-11-07 the control-flow map reached 4,000 words when the Activity host merges needed recording, and the same rule applied again. Gateway families that grow a data-bearing profile (root Parallel forks, Exclusive choice arity, Exclusive Choice without a default and Inclusive Gateway regions) moved to [`implementation-status-owner:ENGINE-GATEWAY-FAMILY`](ENGINE-GATEWAY-FAMILY-IMPLEMENTATION-MAP.md), which keeps the 4,000-word default.
 
+Later on 2026-11-07 the control-flow map would have reached 4,292 words when the Activity host splits needed recording, and the same rule applied again. Families that an Activity or scope host carries on a data-bearing profile (Activity host merges and scope hosts) moved to [`implementation-status-owner:ENGINE-HOST-FAMILY`](ENGINE-HOST-FAMILY-IMPLEMENTATION-MAP.md), which keeps the 4,000-word default.
+
 ## Project document homes
 
 | Information | Owner role |
