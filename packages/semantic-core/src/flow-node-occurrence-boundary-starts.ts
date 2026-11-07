@@ -4,6 +4,7 @@
  * The selected Program operation, its runtime owner, and the exact successor record must agree.
  * Current-open projection is a later oracle and is deliberately absent from this owner.
  */
+import { settledOperation } from "./activity-host-work.js";
 import type { OccurrenceId } from "./contract.js";
 import { VariableValueKind } from "./contract.js";
 import { parallelScopeBinding } from "./parallel-scope-runtime.js";
@@ -53,12 +54,14 @@ export function candidateLongLivedStarts(
   program: SemanticProcessProgram,
   before: RuntimeState,
   after: RuntimeState,
-  operation: SemanticOperation,
+  programOperation: SemanticOperation,
   owner: ScopeOccurrenceId,
 ): UnnumberedFlowNodeOccurrenceStart[] | null {
-  if (!operationIsSelectedFromProgram(program, operation, owner)) return null;
+  if (!operationIsSelectedFromProgram(program, programOperation, owner)) return null;
   const processId = candidateProcessId(program, after, owner);
-  if (processId === null) return null;
+  // ACTH-HOST-01: a committed host arrival starts exactly what its settled projection starts.
+  const operation = settledOperation(programOperation);
+  if (processId === null || operation === null) return null;
   switch (operation.kind) {
     case SemanticOperationKind.AwaitUserTask: {
       const wait = only(after.userTaskWaits.filter((candidate) =>

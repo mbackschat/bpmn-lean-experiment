@@ -630,6 +630,7 @@ function inputsOf(operation: SemanticOperation): readonly string[] {
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.SynchronizeSelected:
     case SemanticOperationKind.MergeExclusive:
+    case SemanticOperationKind.Activity:
       return operation.inputs;
     default:
       return [];
@@ -725,6 +726,8 @@ function programBodies(program: SemanticProcessProgram, data: ModelData | null, 
           }
           break;
         }
+        // ACTH-ADMIT-01: a host belongs to the re-entry account, never to a concurrent body.
+        case SemanticOperationKind.Activity: return null;
         default: return null;
       }
       if (outputs === null) return null;
@@ -780,6 +783,8 @@ export function nestedScopeControlProgramStartNameRule(program: SemanticProcessP
 function programModel(program: SemanticProcessProgram): Admitted | null {
   // CSE-ADMIT-01: the source overlay binds Service Task handlers, so a Program carries one exactly when it has an effect.
   // The nested scope-data profile requires one on every model and always carries data (CSSD-ADMIT-01).
+  // ACTH-ADMIT-01: the concurrent account refuses every host, so its arrival count never reads one as a waiting merge.
+  if (program.operations.some(({ kind }) => kind === SemanticOperationKind.Activity)) return null;
   const structured = program.identity.semanticProfile === SemanticProfileId.NestedEmbeddedScopeData;
   const hasEffect = program.operations.some(({ kind }) => kind === SemanticOperationKind.AwaitEffect);
   if ((program.identity.sourceOverlay !== null) !== (structured || hasEffect) ||

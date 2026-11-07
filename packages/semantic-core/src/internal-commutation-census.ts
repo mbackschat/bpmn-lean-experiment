@@ -45,6 +45,8 @@ export function semanticOperationInternalFamily(
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:
     case SemanticOperationKind.AwaitParallelMultiInstanceUserTask:
     case SemanticOperationKind.AwaitEventRace:
+    // ACTH-HOST-01: the host joins the composite family, whose members carry no footprint until prepared.
+    case SemanticOperationKind.Activity:
       return InternalOperationFamily.CompositeWaitAndActivityArming;
     case SemanticOperationKind.EnterSequentialMultiInstanceScope:
     case SemanticOperationKind.EnterParallelMultiInstanceScope:

@@ -657,7 +657,9 @@ theorem sequentialScope_body_operation_ports (program : Program) (operation : Se
     (owned : program.operationScopes.any (fun ownership => decide
       (ownership.operationId = operation.id && ownership.scopeId = scope)) = true)
     (kind : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect,
-      .duplicate, .synchronize, .reachNoneEnd]) :
+      .duplicate, .synchronize, .reachNoneEnd])
+    -- A host publishes its work's body kind but is no body vertex: `bodyVertex?` refuses it (ACTH-HOST-01).
+    (notHost : ∀ host, operation ≠ .activity host) :
     bodyConsumedPorts operation ≠ [] ∧ (bodyConsumedPorts operation).Nodup ∧
       ∀ port ∈ bodyConsumedPorts operation,
         program.controlPlaceScopes.filter (fun ownership => decide (ownership.controlPlaceId = port)) =
@@ -674,12 +676,12 @@ theorem sequentialScope_body_operation_ports (program : Program) (operation : Se
     exact strictlySortedStrings_nodup _ (programWellFormed_controlPlaceIdsSorted program valid)
   have structural := List.all_eq_true.mp (programWellFormed_operations program valid) operation member
   have shared : operationControlPlacesShareOwner operation = true := by
-    cases operation <;> simp_all [SemanticOperation.kind, operationControlPlacesShareOwner]
+    cases operation <;> (try exact (notHost _ rfl).elim) <;> simp_all [SemanticOperation.kind, operationControlPlacesShareOwner]
   have included : ∀ port ∈ bodyConsumedPorts operation, port ∈ operationControlPlaces operation := by
     intro port selectedPort
     unfold operationControlPlaces
     apply List.mem_append_left
-    cases operation <;> simp only [SemanticOperation.kind] at kind <;> try simp at kind
+    cases operation <;> (try exact (notHost _ rfl).elim) <;> simp only [SemanticOperation.kind] at kind <;> try simp at kind
     all_goals exact selectedPort
   have ports : ∀ port ∈ bodyConsumedPorts operation,
       program.controlPlaceScopes.filter (fun ownership => decide (ownership.controlPlaceId = port)) =
@@ -698,7 +700,7 @@ theorem sequentialScope_body_operation_ports (program : Program) (operation : Se
       simpa [selectedOwner] using matchedFacts.2
     simpa [same] using portScope
   refine ⟨?_, ?_, ports⟩
-  all_goals cases operation <;> simp_all [SemanticOperation.kind, bodyConsumedPorts]
+  all_goals cases operation <;> (try exact (notHost _ rfl).elim) <;> simp_all [SemanticOperation.kind, bodyConsumedPorts]
   all_goals rename_i id origin inputs output
   · have size : inputs.length ≥ 2 := by
       unfold operationWellFormed at structural

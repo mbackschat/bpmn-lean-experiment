@@ -64,7 +64,11 @@ private theorem admitted_initiations_eq (program : Program) (analysis : ProgramA
         | .initiate id .. | .initiateMessage id .. | .initiateTimer id .. => some id | _ => none) := by
       apply List.mem_filterMap.mpr
       refine ⟨operation, member, ?_⟩
-      cases operation <;> simp_all [SemanticOperation.kind, SemanticOperation.id]
+      cases operation
+      case activity =>
+        -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
+        cases wait : (‹ActivityHost›).waitKind <;> simp [SemanticOperation.kind, wait] at kind
+      all_goals simp_all [SemanticOperation.kind, SemanticOperation.id]
     rw [singleton] at included
     exact List.mem_singleton.mp included
   exact same_declaration program analysis admitted left right leftMember rightMember
@@ -94,7 +98,11 @@ private theorem admitted_entry_input (program : Program) (analysis : ProgramAnal
     analysis.entry.input ∈ SequentialScopeControl.inputs operation := by
   obtain ⟨_, _, _, _, _, _, _, entries, _⟩ := analyzeProgram_body_certificate program analysis admitted
   have parsed : ∃ entry, parallelScopeEntry? operation = some entry := by
-    cases operation <;> simp_all [SemanticOperation.kind, parallelScopeEntry?]
+    cases operation
+    case activity =>
+      -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
+      cases wait : (‹ActivityHost›).waitKind <;> simp [SemanticOperation.kind, wait] at kind
+    all_goals simp_all [SemanticOperation.kind, parallelScopeEntry?]
   obtain ⟨entry, decoded⟩ := parsed
   have included : entry ∈ program.operations.filterMap parallelScopeEntry? :=
     List.mem_filterMap.mpr ⟨operation, member, decoded⟩

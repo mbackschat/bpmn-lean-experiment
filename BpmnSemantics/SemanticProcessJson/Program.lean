@@ -224,6 +224,21 @@ def decodePlaceIdArray (json : Json) :
     Except String (List ControlPlaceId) :=
   decodeArray (fun value => ControlPlaceId.mk <$> value.getStr?) json
 
+private def decodeActivityOutput (json : Json) : Except String ActivityOutput := do
+  requireObjectShape json ["place"]
+  pure { place := ⟨← stringField json "place"⟩ }
+
+/-- Decode a host's work; `task` and `effect` keep the exact wire shapes of the legacy User Task and effect. -/
+private def decodeActivityWork (json : Json) : Except String ActivityWork := do
+  match ← stringField json "kind" with
+  | "userTask" =>
+      requireObjectShape json ["kind", "task"]
+      pure (.userTask (← decodeTaskDefinition (← field json "task")))
+  | "effect" =>
+      requireObjectShape json ["effect", "kind"]
+      pure (.effect (← decodeEffectDefinition (← field json "effect")))
+  | other => throw s!"unsupported Activity host work kind {other}"
+
 def decodeSimpleBooleanExpression (json : Json) :
     Except String SimpleBooleanExpression := do
   match ← stringField json "kind" with
@@ -589,6 +604,13 @@ def decodeOperation (json : Json) :
           ⟨← stringField json "input"⟩
           (← decodeBoundedTaskArm (← field json "task"))
           (← decodeBoundaryMessageArm (← field json "boundaryMessage")))
+  | "activity" =>
+      requireObjectShape json ["id", "inputs", "kind", "origin", "outputs", "work"]
+      pure (.activity
+        { id, origin
+          inputs := ← decodePlaceIdArray (← field json "inputs")
+          outputs := ← decodeArray decodeActivityOutput (← field json "outputs")
+          work := ← decodeActivityWork (← field json "work") })
   | "awaitEffect" =>
       requireObjectShape json
         ["bpmnErrorRoute", "effect", "id", "input", "kind", "origin",

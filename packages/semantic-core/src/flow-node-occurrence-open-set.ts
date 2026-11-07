@@ -5,6 +5,7 @@
  * exact long-lived occurrence identities. Boundary Timer deadlines and Process roots are validated
  * but deliberately excluded because neither is an executing BPMN flow node.
  */
+import { settledOperation, settledOperations } from "./activity-host-work.js";
 import type { OccurrenceId } from "./contract.js";
 import {
   ActivityBodyKind,
@@ -389,8 +390,10 @@ function waitMatchesUserTask(
   wait: RuntimeState["userTaskWaits"][number],
 ): boolean {
   if (!ownerExists(state, wait.owner)) return false;
-  return only(program.operations.filter((operation) => {
-    if (!operationOwnedBy(program, operation, wait.owner)) return false;
+  return only(program.operations.filter((programOperation) => {
+    if (!operationOwnedBy(program, programOperation, wait.owner)) return false;
+    const operation = settledOperation(programOperation);
+    if (operation === null) return false;
     switch (operation.kind) {
       case SemanticOperationKind.AwaitUserTask:
         return operation.task.elementId === wait.id.elementId &&
@@ -611,7 +614,7 @@ function waitMatchesEffect(
   wait: RuntimeState["effectWaits"][number],
 ): boolean {
   return ownerExists(state, wait.owner) &&
-    only(program.operations.filter((operation) =>
+    only(settledOperations(program.operations).filter((operation) =>
       operation.kind === SemanticOperationKind.AwaitEffect &&
       operation.effect.elementId === wait.id.elementId &&
       operation.output === wait.output &&

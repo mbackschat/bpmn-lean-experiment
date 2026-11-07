@@ -1,4 +1,5 @@
 import { isSerialBusinessIdentifier, isSerialChainProfile, serialBusinessEffectAdmitted, serialChainRulesForProfile } from "./serial-business-task-policy.js";
+import { ActivityWorkKind } from "./activity-host-contract.js";
 import { sequentialScopeBodyMappingsAdmitted } from "./sequential-scope-data-admission.js";
 import { SemanticProfileId } from "./semantic-profile-catalog.js";
 import { MIXED_TASK_BUSINESS_ERROR_CHECKPOINT_PROFILE_ID, MIXED_TASK_CONTROL_FLOW_CHECKPOINT_PROFILE_ID, SEQUENTIAL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID, PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID } from "./semantic-profile-catalog.js";
@@ -238,6 +239,8 @@ export function isWellFormedSemanticOperation(
     return false;
   }
   switch (value.kind) {
+    case SemanticOperationKind.Activity:
+      return isWellFormedActivityHost(value, placeIds, placeOrigins, scopeOrigins, semanticProfile);
     case SemanticOperationKind.Initiate:
       return (
         hasOnlyKeys(value, ["id", "kind", "origin", "output"]) &&
@@ -521,6 +524,37 @@ export function isWellFormedSemanticOperation(
     default:
       return false;
   }
+}
+
+/**
+ * ACTH-HOST-01: two or more canonical inputs, exactly one output record, and work well formed as the legacy operation
+ * of its kind, so a one-input host never doubles the legacy encoding of a Task.
+ */
+function isWellFormedActivityHost(
+  value: Readonly<Record<string, unknown>>,
+  placeIds: ReadonlySet<string>,
+  placeOrigins: ReadonlyMap<string, string>,
+  scopeOrigins: ReadonlyMap<string, string>,
+  semanticProfile: string,
+): boolean {
+  if (!hasOnlyKeys(value, ["id", "kind", "origin", "inputs", "outputs", "work"]) ||
+      !isManyPlaceReferences(value.inputs, placeIds) || !Array.isArray(value.outputs) ||
+      value.outputs.length !== 1 || !isRecord(value.work)) {
+    return false;
+  }
+  const [output] = value.outputs as unknown[];
+  if (!isRecord(output) || !hasOnlyKeys(output, ["place"]) || !isPlaceReference(output.place, placeIds)) {
+    return false;
+  }
+  const base = { id: value.id, origin: value.origin, input: value.inputs[0], output: output.place };
+  const work = value.work;
+  const projected = work.kind === ActivityWorkKind.UserTask && hasOnlyKeys(work, ["kind", "task"])
+    ? { ...base, kind: SemanticOperationKind.AwaitUserTask, task: work.task }
+    : work.kind === ActivityWorkKind.Effect && hasOnlyKeys(work, ["kind", "effect"])
+      ? { ...base, kind: SemanticOperationKind.AwaitEffect, effect: work.effect, bpmnErrorRoute: null }
+      : null;
+  return projected !== null &&
+    isWellFormedSemanticOperation(projected, placeIds, placeOrigins, scopeOrigins, semanticProfile);
 }
 
 function isWellFormedThrowError(

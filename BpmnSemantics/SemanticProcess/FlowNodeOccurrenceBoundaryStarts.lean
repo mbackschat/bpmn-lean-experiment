@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.ParallelScopeRuntime
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 public import BpmnSemantics.SemanticProcess.EffectDataMapping
 public import BpmnSemantics.SemanticProcess.SequentialScopeRuntime
 meta import BpmnSemantics.PrivateEquationLemmas
@@ -204,6 +205,15 @@ def candidateUserTaskStart? (program : Program) (operation : SemanticOperation)
         else
           candidateWaitStart? program operation owner wait.processInstanceId
             (⟨wait.task.id.value⟩ : NodeId) wait.activation
+    -- ACTH-HOST-01: a host's wait is its projection's ordinary wait; the host stays the selected operation.
+    | .activity host =>
+        match host.userTask? with
+        | some task =>
+            if wait.task ≠ task || host.outputs ≠ [⟨wait.output⟩] || wait.metadata ≠ task.metadata then none
+            else
+              candidateWaitStart? program operation owner wait.processInstanceId
+                (⟨wait.task.id.value⟩ : NodeId) wait.activation
+        | none => none
     | .awaitBoundedUserTask _ _ _ task _ | .awaitMonitoredUserTask _ _ _ task _
     | .awaitMessageBoundedUserTask _ _ _ task _ | .awaitMessageMonitoredUserTask _ _ _ task _ =>
         if wait.task.id ≠ task.id || wait.task.name ≠ task.name || wait.output ≠ task.output ||
@@ -307,6 +317,18 @@ def candidateEffectStart? (program : Program) (operation : SemanticOperation)
         else
           candidateWaitStart? program operation owner wait.processInstanceId wait.elementId
             wait.activation
+    -- ACTH-HOST-01: a host's wait is its projection's, which carries no BPMN Error route.
+    | .activity host =>
+        match host.effect? with
+        | some effect =>
+            if wait.elementId ≠ effect.elementId || wait.descriptor ≠ effect.descriptor ||
+                !inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings wait.arguments ||
+                wait.outputMappings ≠ effect.outputMappings || host.outputs ≠ [⟨wait.output⟩] ||
+                wait.bpmnErrorRoute.isSome then none
+            else
+              candidateWaitStart? program operation owner wait.processInstanceId wait.elementId
+                wait.activation
+        | none => none
     | _ => none
 
 /-- Candidate embedded Sub-Process start from the exact scope occurrence created by the selected operation. -/

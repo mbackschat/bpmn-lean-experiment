@@ -76,7 +76,7 @@ theorem SequentialScopeBodyPortAccounting.fire
     (executed : fire? program operation before = some after) :
     SequentialScopeBodyPortAccounting entry body (operation :: fired) after := by
   obtain ⟨owner, present, _, balance⟩ :=
-    (fire_body_port_accounting program before after operation bodyOperation unique absent executed).1
+    (fire_body_port_accounting program before after operation bodyOperation nonempty unique absent executed).1
   have same := sequentialScope_consumed_token_owner before operation body nonempty owners owner present
   subst owner
   refine ⟨fun place => ?_⟩
@@ -114,7 +114,7 @@ theorem SequentialScopeBodyPortAccounting.prepared
     rw [prepareInternalTransition_alternative program before operation prepared selected] at actual
     simpa only [same, fireInternalAlternative_operation] using actual
   have scopeFrame := (fire_body_port_accounting program before
-    (prepared.apply program before) operation bodyOperation unique snapshots executed).2
+    (prepared.apply program before) operation bodyOperation nonempty unique snapshots executed).2
   refine ⟨applies.2, ?_, scopeFrame⟩
   apply SequentialScopeBodyPortAccounting.fire program entry.childEntry binding.body.id fired before
     (prepared.apply program before) operation accounting bodyOperation nonempty unique snapshots _ executed
@@ -220,6 +220,7 @@ theorem sequentialScope_body_prepared_certificate (program : Program) [Interrupt
       .duplicate, .synchronize, .reachNoneEnd] := by
     cases operation <;> simp_all [SequentialScopeControl.bodyVertex?, SemanticOperation.kind]
   obtain ⟨nonempty, unique, ports⟩ := sequentialScope_body_operation_ports program operation data.entry.childScopeId valid member owned kind
+    (fun host equal => by subst equal; simp [SequentialScopeControl.bodyVertex?] at parsed)
   rcases certificate with ⟨wellFormed, projectable, invariant, census, provenance, initiation, unitStart, balance, waiting,
     running, binding, fired, bound, owner, forest, elements, locals, counter, accounting, bodyProvenance, bodyWaiting, zero⟩
   have entries := sequentialScope_analyzed_entry_census program data dataAnalyzed
@@ -247,7 +248,7 @@ theorem sequentialScope_body_prepared_certificate (program : Program) [Interrupt
     (fun token selectedToken consumed => sequentialScope_current_body_token_owner program hosting data.entry before binding token
       wellFormed running declared bound selectedToken (ports token.placeId consumed))
   obtain ⟨actualOwner, present, _, delta⟩ :=
-    (fire_body_port_accounting program before after operation kind unique absent executed).1
+    (fire_body_port_accounting program before after operation kind nonempty unique absent executed).1
   have bodyOwner := selectedOwner actualOwner present
   subst actualOwner
   have different : binding.body.id ≠ parent := by

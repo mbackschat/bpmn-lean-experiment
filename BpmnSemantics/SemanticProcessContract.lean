@@ -107,18 +107,11 @@ structure BpmnErrorRoute where
   origin : BpmnErrorRouteOrigin
   deriving Repr, DecidableEq
 
-structure InterruptingErrorHandlerOrigin where
-  boundaryEventId : NodeId
-  errorDefinitionId : NodeId
-  errorElementId : NodeId
-  sequenceFlowId : SequenceFlowId
-  deriving Repr, DecidableEq
-
 structure InterruptingErrorHandler where
   attachedScopeId : DefinitionScopeId
   code : String
   output : ControlPlaceId
-  origin : InterruptingErrorHandlerOrigin
+  origin : BpmnErrorRouteOrigin
   deriving Repr, DecidableEq
 
 structure ConditionalCandidate where
@@ -138,6 +131,31 @@ structure InclusiveDefaultBranch where
   output : ControlPlaceId
   expectedJoinInput : ControlPlaceId
   origin : BpmnSequenceFlowOrigin
+  deriving Repr, DecidableEq
+
+/-- One outgoing flow's place of an Activity host. A structure rather than a bare place, so the later per-flow facts
+(a condition, the default mark, the flow origin) become defaulted fields of one output instead of a parallel list
+([Activity host proposal](../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-PROPOSAL.md#host-operation)). -/
+structure ActivityOutput where
+  place : ControlPlaceId
+  deriving Repr, DecidableEq
+
+/-- The work an Activity host performs, in the exact payload shapes of the legacy `awaitUserTask` and `awaitEffect`
+operations, which stay frozen until every such Task lowers onto the host. The effect carries no BPMN Error route: a
+boundary handler becomes a host field. -/
+inductive ActivityWork where
+  | userTask (task : UserTaskDefinition)
+  | effect (effect : EffectDefinition)
+  deriving Repr, DecidableEq
+
+/-- An Activity with its flow lists (ACTH-HOST-01): one structure payload, so a later feature is a defaulted field or a
+work alternative and consumers read fields by name. -/
+structure ActivityHost where
+  id : OperationId
+  origin : BpmnElementOrigin
+  inputs : List ControlPlaceId
+  outputs : List ActivityOutput
+  work : ActivityWork
   deriving Repr, DecidableEq
 
 inductive SemanticOperation where
@@ -407,6 +425,7 @@ inductive SemanticOperation where
       (definitionScopeId : DefinitionScopeId)
       (input output : ControlPlaceId)
       (boundaryEventElementId : NodeId)
+  | activity (host : ActivityHost)
   deriving Repr, DecidableEq
 
 @[no_expose] def SemanticOperation.id : SemanticOperation → OperationId
@@ -452,6 +471,7 @@ inductive SemanticOperation where
   | .completeEventSubProcess id _ _
   | .triggerCompensation id _ _ _ _
   | .cancelTransaction id _ _ _ _ _ => id
+  | .activity host => host.id
 
 @[no_expose] def SemanticOperation.origin : SemanticOperation → BpmnElementOrigin
   | .initiate _ origin _
@@ -496,6 +516,7 @@ inductive SemanticOperation where
   | .completeEventSubProcess _ origin _
   | .triggerCompensation _ origin _ _ _
   | .cancelTransaction _ origin _ _ _ _ => origin
+  | .activity host => host.origin
 
 structure OperationScopeOwnership where
   operationId : OperationId

@@ -10,6 +10,7 @@
  * deliberate: the activation-ordinal reconstruction it replaced was independent and became wrong under
  * body turnover, refusing a correct publication. Reconstruction of the lifecycle itself is unchanged.
  */
+import { publishedOperationKind, settledOperation } from "./activity-host-work.js";
 import type { DeepReadonly } from "./deep-readonly.js";
 import { ActivityHandlerKind } from "./activity-occurrence.js";
 import type { ActivityHandlerOccurrence } from "./activity-occurrence.js";
@@ -156,13 +157,16 @@ function expectedDelta(
 function internalDelta(
   program: SemanticProcessProgram,
   open: readonly OpenOccurrence[],
-  operation: SemanticOperation,
+  programOperation: SemanticOperation,
   owner: ScopeOccurrenceId,
   supplied: UnnumberedFlowNodeOccurrenceDelta,
   commandId: string,
   transitionIndex: number,
   positions: PublicControlPositionDelta,
 ): UnnumberedFlowNodeOccurrenceDelta {
+  // ACTH-HOST-01: a host arrival's occurrences are its settled projection's.
+  const operation = settledOperation(programOperation);
+  if (operation === null) return failCompleteness();
   const processId = requireProcessId(program, owner);
   const operationInstant = instantOccurrence(
     processId,
@@ -421,7 +425,7 @@ function requireOperation(
 ): SemanticOperation {
   const selected = program.operations.filter((operation) =>
     operation.id === transition.operationId &&
-    operation.kind === transition.operationKind &&
+    publishedOperationKind(operation) === transition.operationKind &&
     sameJson(operation.origin, transition.origin) &&
     operationOwnedBy(program, operation, transition.owner));
   return requireUnique(selected);

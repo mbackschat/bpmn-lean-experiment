@@ -1,4 +1,5 @@
 import { validParallelScopeIterations } from "./parallel-scope-population.js";
+import { settledOperation } from "./activity-host-work.js";
 import { sequentialScopeStateValid } from "./sequential-scope-state-validation.js";
 import { nestedScopeDataProgram, nestedScopeFramesValid } from "./nested-scope-data.js";
 import {
@@ -112,7 +113,9 @@ function declaredElementIds(
   const message = new Set<string>();
   const timer = new Set<string>();
   const effect = new Set<string>();
-  for (const operation of program.operations) {
+  for (const programOperation of program.operations) {
+    const operation = settledOperation(programOperation);
+    if (operation === null) continue;
     switch (operation.kind) {
       case SemanticOperationKind.AwaitUserTask:
       // Both direct data families arm an ordinary task wait; their own Activity record owns local

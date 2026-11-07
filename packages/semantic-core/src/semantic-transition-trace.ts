@@ -1,4 +1,6 @@
 import { isMergeTargetOperation } from "./merge-target-operations.js";
+import { publishedOperationKind } from "./activity-host-work.js";
+import type { PublishedSemanticOperationKind } from "./semantic-process-contract.js";
 import { CommandOutcome } from "./contract.js";
 import type {
   StateObservation,
@@ -71,7 +73,7 @@ export type UnnumberedCommittedTransition = DeepReadonly<
   | {
       kind: SemanticTransitionKind.InternalOperation;
       operationId: string;
-      operationKind: SemanticOperationKind;
+      operationKind: PublishedSemanticOperationKind;
       origin: BpmnElementOrigin;
       owner: ScopeOccurrenceId;
     }
@@ -280,7 +282,7 @@ function internalPublicationUnit(
   const transition = {
     kind: SemanticTransitionKind.InternalOperation,
     operationId: step.operation.id,
-    operationKind: step.operation.kind,
+    operationKind: publishedOperationKind(step.operation),
     origin: step.operation.origin,
     owner,
   } as const;
@@ -378,7 +380,7 @@ export function replayInternalTransitionRecord(
   if (operations.length !== 1 || operation === undefined) {
     return null;
   }
-  if (operation.kind !== transition.operationKind || !sameOrigin(operation.origin, transition.origin)) return null;
+  if (publishedOperationKind(operation) !== transition.operationKind || !sameOrigin(operation.origin, transition.origin)) return null;
   // A merge-target record names one of several live occurrences, so it replays by that owner (CEA-QUIESCE-01).
   if (program.identity.semanticProfile === PARALLEL_MULTI_INSTANCE_SUBPROCESS_CHECKPOINT_PROFILE_ID ||
       isMergeTargetOperation(program, operation)) {

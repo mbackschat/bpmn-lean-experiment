@@ -45,7 +45,7 @@ def enteredChildScopeId? : SemanticOperation → Option DefinitionScopeId
   | .awaitBoundedUserTask .. | .awaitMonitoredUserTask ..
   | .awaitMessageBoundedUserTask ..
   | .awaitMessageMonitoredUserTask ..
-  | .awaitEffect .. | .duplicate ..
+  | .awaitEffect .. | .activity .. | .duplicate ..
   | .synchronize .. | .mergeExclusive .. | .choose .. | .selectMany ..
   | .synchronizeSelected ..
   | .throwError .. | .reachNoneEnd .. | .terminateScope ..

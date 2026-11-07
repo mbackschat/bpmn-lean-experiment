@@ -655,6 +655,8 @@ theorem applyInternalOperationOccurrence_body_effect
   obtain ⟨instanceId, running⟩ := occurrenceApplicationRunning program before after candidate applied
   cases operation <;> simp [SemanticOperation.kind] at bodyOperation
   all_goals simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied
+  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  case activity => simp at applied
   case awaitUserTask id origin input output task =>
     have applied := refusingGuardSuccess _ _ after applied
     cases parallel : hasParallelScopeDefinition program candidate.owner with

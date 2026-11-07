@@ -1,4 +1,5 @@
 /** External-stimulus and cancellation side of the semantic occurrence completeness relation. */
+import { settledOperation } from "./activity-host-work.js";
 import {
   EffectExecutionResultKind,
   StimulusKind,
@@ -618,7 +619,8 @@ function uniqueOperationForElement<K extends SemanticOperationKind>(
   return matches.length === 1 ? matches[0]! : null;
 }
 
-function operationOwnsElement(operation: SemanticOperation, elementId: string): boolean {
+function operationOwnsElement(programOperation: SemanticOperation, elementId: string): boolean {
+  const operation = settledOperation(programOperation) ?? programOperation;
   return operation.kind === SemanticOperationKind.AwaitEffect
     ? operation.effect.elementId === elementId
     : operation.origin.elementId === elementId;

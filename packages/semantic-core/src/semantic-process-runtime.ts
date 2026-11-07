@@ -1,4 +1,5 @@
 import { enterSequentialScope, completeSequentialScopeStep } from "./sequential-scope-runtime.js";
+import { activityHostProjection } from "./activity-host-work.js";
 import { CommandOutcome } from "./contract.js";
 import type { Stimulus } from "./contract.js";
 import type { DeepReadonly } from "./deep-readonly.js";
@@ -447,6 +448,23 @@ function applyInternalOperationState(
         () => returnCalledProcessWithData(program, operation, state),
         captureOwner,
       );
+    }
+    case SemanticOperationKind.Activity: {
+      // ACTH-MERGE-01: the legacy arrival of the host's work from each input. The step commits only when exactly one
+      // input yields, so two marked inputs leave it unprepared rather than choosing; admission keeps that unreachable.
+      const arrivals = operation.inputs.flatMap((input) => {
+        const projected = activityHostProjection(operation, input);
+        if (projected === null) return [];
+        const captured: { owner?: ScopeOccurrenceId } = {};
+        const successor = applyInternalOperationState(program, projected, state, (selected) => {
+          captured.owner = selected;
+        });
+        return successor === null || captured.owner === undefined ? [] : [{ successor, owner: captured.owner }];
+      });
+      const [arrival, ...others] = arrivals;
+      if (arrival === undefined || others.length > 0) return null;
+      captureOwner(arrival.owner);
+      return arrival.successor;
     }
     case SemanticOperationKind.AwaitUserTask: {
       const taskOwner = onlyTokenOwner(state, operation.input);

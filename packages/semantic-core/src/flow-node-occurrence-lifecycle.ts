@@ -416,7 +416,8 @@ function internalLifecycle(
     case SemanticOperationKind.AwaitPayloadMessage:
     case SemanticOperationKind.AwaitCorrelatedPayloadMessage:
     case SemanticOperationKind.AwaitTimer:
-    case SemanticOperationKind.AwaitEffect: {
+    case SemanticOperationKind.AwaitEffect:
+    case SemanticOperationKind.Activity: {
       const starts = candidateLongLivedStarts(program, before, after, operation, owner);
       return starts === null ? null : pieces(starts);
     }

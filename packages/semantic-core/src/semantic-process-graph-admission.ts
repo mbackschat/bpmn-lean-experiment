@@ -1,4 +1,5 @@
 import type { InterruptingMessageEventSubProcess } from "./interrupting-message-event-subprocess-contract.js";
+import { publishedOperationKind } from "./activity-host-work.js";
 import { SemanticOperationKind } from "./semantic-process-contract.js";
 import type { CompensationEventSubProcessSnapshotTarget } from "./compensation-event-sub-process-snapshot-contract.js";
 import type { DefinitionScope } from "./semantic-value-contract.js";
@@ -250,8 +251,9 @@ function isWellFormedSemanticProcessGraphWithDormantHandlers(
       const resumptionKinds = new Set<SemanticOperationKind>(
         graphPolicy.semanticResumptionOperationKinds,
       );
+      // ACTH-HOST-01: a host is a resumption cut exactly where the legacy operation of its work is one.
       const operationKinds = new Map(
-        graph.operations.map(({ id, kind }) => [id, kind]),
+        graph.operations.map((operation) => [operation.id, publishedOperationKind(operation)]),
       );
       return isAcyclic(
         operationIds,
@@ -622,6 +624,7 @@ function operationInputs(
     case SemanticOperationKind.Synchronize:
     case SemanticOperationKind.MergeExclusive:
     case SemanticOperationKind.SynchronizeSelected:
+    case SemanticOperationKind.Activity:
       return operation.inputs;
   }
 }
@@ -647,6 +650,8 @@ function operationOutputs(
       return operation.outputs;
     case SemanticOperationKind.InitiateTimer:
       return operation.outputs;
+    case SemanticOperationKind.Activity:
+      return operation.outputs.map(({ place }) => place);
     case SemanticOperationKind.AwaitEventRace:
       return [operation.message.output, operation.timer.output];
     case SemanticOperationKind.AwaitSequentialMultiInstanceUserTask:

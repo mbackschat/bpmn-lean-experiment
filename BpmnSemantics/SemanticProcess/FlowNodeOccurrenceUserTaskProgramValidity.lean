@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import BpmnSemantics.SemanticProcess.CollectionOrder
 import all BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
@@ -31,6 +32,9 @@ def userTaskWaitValid (program : Program) (state : RuntimeState)
       else match operation with
       | .awaitUserTask _ _ _ output task =>
           output = wait.output && task = wait.task && wait.metadata = task.metadata
+      -- ACTH-HOST-01: a host's opened wait is its projection's.
+      | .activity host => host.userTask?.any fun task =>
+          host.outputs = [⟨wait.output⟩] && task = wait.task && wait.metadata = task.metadata
       | .awaitDataInputUserTask _ _ _ output taskId taskName _
       | .awaitDataInputOutputUserTask _ _ _ output taskId taskName _ _
       | .awaitDataOutputUserTask _ _ _ output taskId taskName _ =>
@@ -102,6 +106,12 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_output_binding (program : Prog
   clear checked census selected valid accepted
   cases operation <;> simp only at excluded <;>
     simp only [Bool.and_eq_true, decide_eq_true_eq] at matched <;> try contradiction
+  case activity host =>
+    cases work : host.work with
+    | effect _ => simp [ActivityHost.userTask?_eq, work] at matched
+    | userTask task =>
+        simp only [ActivityHost.userTask?_eq, work, Option.any_some, Bool.and_eq_true, decide_eq_true_eq] at matched
+        simp [operationControlPlacesShareOwner, operationControlPlaces, operationOutputs, matched.1.1]
   all_goals simp_all only [operationControlPlacesShareOwner, operationControlPlaces,
     operationOutputs, List.mem_append, List.mem_cons, List.not_mem_nil, and_true, or_true, true_or, or_false]
 
@@ -133,6 +143,10 @@ inductive UnboundedUserTaskWaitDeclaration (wait : UserTaskWait) : SemanticOpera
   | ordinary (id origin input) (metadata : wait.metadata = wait.task.metadata) :
       UnboundedUserTaskWaitDeclaration wait
         (.awaitUserTask id origin input wait.output wait.task)
+  /-- ACTH-HOST-01: a host opens exactly the ordinary wait of its projection. -/
+  | host (host : ActivityHost) (task : host.work = .userTask wait.task)
+      (outputs : host.outputs = [⟨wait.output⟩]) (metadata : wait.metadata = wait.task.metadata) :
+      UnboundedUserTaskWaitDeclaration wait (.activity host)
   | dataInput (id origin input directInput)
       (taskMetadata : wait.task.metadata = none) (metadata : wait.metadata = none) :
       UnboundedUserTaskWaitDeclaration wait
@@ -207,7 +221,7 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_insertUserTask (program : Prog
         · have operationEq := only.mp familyMember
           subst candidate
           cases declaration with
-          | unbounded original => cases original <;> simp_all
+          | unbounded original => cases original <;> simp_all [ActivityHost.userTask?_eq]
           | bounded | monitored | messageBounded | messageMonitored => simp_all
         · cases candidate with
           | awaitUserTask candidateId candidateOrigin candidateInput candidateOutput candidateTask =>
@@ -280,6 +294,17 @@ theorem flowNodeOccurrenceUserTaskProgramValidity_insertUserTask (program : Prog
                 rw [List.mem_filter]
                 exact ⟨member, by simp [same]⟩
               simp [different]
+          | activity host =>
+              cases work : host.work with
+              | effect _ => simp [ActivityHost.userTask?_eq, work]
+              | userTask candidateTask =>
+                  have different : candidateTask.id ≠ wait.task.id := by
+                    intro same
+                    apply familyMember
+                    simp [userTaskWaitDeclarers, member, ActivityHost.userTask?_eq, work, same]
+                  have taskDifferent : candidateTask ≠ wait.task :=
+                    fun same => different (congrArg UserTaskDefinition.id same)
+                  simp [ActivityHost.userTask?_eq, work, taskDifferent, different]
           | _ => simp
       _ = 1 := by
         simpa [userTaskWaitDeclarers] using congrArg List.length declarers

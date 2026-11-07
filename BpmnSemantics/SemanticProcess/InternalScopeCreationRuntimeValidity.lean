@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 import BpmnSemantics.SemanticProcess.InternalScopeCreationPositionValidity
 import BpmnSemantics.SemanticProcess.CallStorageOrder
 import BpmnSemantics.SemanticProcess.ScopeCreationCompensationValidity
@@ -486,6 +487,12 @@ theorem sequentialScopeEntry_task_separate (program : Program) (operation : Sema
   cases operation <;> simp only [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq] at declares
   all_goals try contradiction
   all_goals unfold operationWellFormed at checked
+  -- A host declares its work's wait at its origin, which `operationWellFormed` aligns with the work's identity.
+  case activity host =>
+    cases work : host.work <;>
+      simp_all [ActivityHost.userTask?_eq, ActivityHost.effect?_eq, SemanticOperation.origin,
+        userTaskWaitDeclarationKey_eq, effectWaitDeclarationKey_eq]
+    all_goals exact separate (congrArg NodeId.mk (by grind))
   all_goals simp_all [userTaskWaitDeclarationKey_eq, timerWaitDeclarationKey_eq, messageWaitDeclarationKey_eq,
     SemanticOperation.origin,
     parallelMultiInstanceOperationWellFormed, parallelMultiInstanceExactEntry]

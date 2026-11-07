@@ -9,6 +9,7 @@
  *
  * The program is immutable; runtime state lives in `semantic-process-state.ts`.
  */
+import type { ActivityOutput, ActivityWork } from "./activity-host-contract.js";
 import type { DirectActivityDataInput } from "./activity-data-input-contract.js";
 import type { DirectActivityDataOutput } from "./activity-data-output-contract.js";
 import type { CallDataInterface } from "./call-data-contract.js";
@@ -100,7 +101,12 @@ export enum SemanticOperationKind {
   ReachNoneEnd = "reachNoneEnd",
   CompleteScope = "completeScope",
   CompleteEventSubProcess = "completeEventSubProcess",
+  /** The Activity host (ACTH-HOST-01): a Program discriminant only, never published; its steps publish its work's kind. */
+  Activity = "activity",
 }
+
+/** The operation kinds a publication may carry: every kind except the host's discriminant. */
+export type PublishedSemanticOperationKind = Exclude<SemanticOperationKind, SemanticOperationKind.Activity>;
 
 export enum SemanticOriginKind {
   BpmnElement = "bpmnElement",
@@ -140,29 +146,26 @@ export type ControlPlaceScopeOwnership = DeepReadonly<{
   scopeId: string;
 }>;
 
+/** The source identities of one routed BPMN Error: an Error route and an interrupting handler share them. */
+export type BpmnErrorRouteOrigin = DeepReadonly<{
+  kind: SemanticOriginKind.BpmnElement;
+  boundaryEventId: string;
+  errorDefinitionId: string;
+  errorElementId: string;
+  sequenceFlowId: string;
+}>;
+
 export type BpmnErrorRoute = DeepReadonly<{
   code: string;
   output: string;
-  origin: {
-    kind: SemanticOriginKind.BpmnElement;
-    boundaryEventId: string;
-    errorDefinitionId: string;
-    errorElementId: string;
-    sequenceFlowId: string;
-  };
+  origin: BpmnErrorRouteOrigin;
 }>;
 
 export type InterruptingErrorHandler = DeepReadonly<{
   attachedScopeId: string;
   code: string;
   output: string;
-  origin: {
-    kind: SemanticOriginKind.BpmnElement;
-    boundaryEventId: string;
-    errorDefinitionId: string;
-    errorElementId: string;
-    sequenceFlowId: string;
-  };
+  origin: BpmnErrorRouteOrigin;
 }>;
 
 export type ConditionalCandidate = DeepReadonly<{
@@ -746,6 +749,13 @@ export type SemanticOperation =
       DeepReadonly<{
         kind: SemanticOperationKind.CompleteEventSubProcess;
         scopeId: string;
+      }>)
+  | (OperationBase &
+      DeepReadonly<{
+        kind: SemanticOperationKind.Activity;
+        inputs: string[];
+        outputs: ActivityOutput[];
+        work: ActivityWork;
       }>);
 
 export type SemanticProcessProgram = DeepReadonly<{

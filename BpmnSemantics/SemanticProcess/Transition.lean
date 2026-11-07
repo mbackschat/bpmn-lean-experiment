@@ -34,6 +34,22 @@ namespace BpmnSemantics.SemanticProcess
 
 open BpmnSemantics
 
+/-- ACTH-HOST-01: a host arrival is the legacy arrival of its work's projection from the one input that yields a
+state. With several yielding inputs it is not prepared, a refusal rather than a choice; admission keeps every admitted
+host in a serial root graph, so at most one input is marked. -/
+def activityArrivalState? (program : Program) (state : RuntimeState) (host : ActivityHost) :
+    Option RuntimeState :=
+  match host.outputs with
+  | [output] =>
+      let arrivals := host.inputs.filterMap fun input =>
+        match host.work with
+        | .userTask task => awaitUserTaskState? state input output.place task
+        | .effect effect => awaitEffectState? program state input output.place effect none
+      match arrivals with
+      | [after] => some after
+      | _ => none
+  | _ => none
+
 /-- Declarative transition relation for one explicitly selected Semantic Process operation.
 
 The arms are not uniform in what they claim, and the difference decides what may be cited as
@@ -146,6 +162,9 @@ inductive OperationStep (program : Program) :
         callerOutput inputs outputs = some after) :
       OperationStep program (.returnProcess id origin calledProcessId calledRootScopeId callerOutput
         (.variableMappings inputs outputs)) before after
+  | activity (host : ActivityHost) (before after : RuntimeState)
+      (transition : activityArrivalState? program before host = some after) :
+      OperationStep program (.activity host) before after
   | awaitUserTask (id origin input output task) (before after : RuntimeState)
       (transition : awaitUserTaskState? before input output task = some after) :
       OperationStep program (.awaitUserTask id origin input output task) before after
@@ -343,6 +362,7 @@ def fireWithoutCompensationSnapshots? (program : Program)
         callerOutput inputs outputs
   | .awaitUserTask _ _ input output task =>
       awaitUserTaskState? state input output task
+  | .activity host => activityArrivalState? program state host
   | .awaitDataInputUserTask _ _ input output taskId taskName directInput =>
       activateDataInputUserTask? state input output taskId taskName directInput
   | .awaitDataInputOutputUserTask _ _ input output taskId taskName directInput _ =>
@@ -520,6 +540,8 @@ private theorem fireWithoutCompensationSnapshots_sound (program : Program)
         exact False.elim (by simp [fireWithoutCompensationSnapshots?] at result)
     | case cancelTransaction =>
         exact False.elim (by simp [fireWithoutCompensationSnapshots?] at result)
+    | case activity =>
+        exact .activity _ before after result
 
 /-- Evaluate one exact Program operation through the closed snapshot-aware attempt boundary. -/
 def attemptInternalOperation (program : Program) (operation : SemanticOperation)

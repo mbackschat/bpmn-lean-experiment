@@ -13,6 +13,7 @@ import {
   FlowNodeOccurrenceTerminalKind,
   SemanticFlowNodeOccurrenceAnchorKind,
   SemanticOperationKind,
+  publishedOperationKind,
   SemanticTransitionKind,
   applyInternalOperation,
   applyStimulusWithTrace,
@@ -538,7 +539,7 @@ function internalRecord(
     transition: {
       kind: SemanticTransitionKind.InternalOperation,
       operationId: operation.id,
-      operationKind: operation.kind,
+      operationKind: publishedOperationKind(operation),
       origin: operation.origin,
       owner,
     },

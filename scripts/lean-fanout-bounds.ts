@@ -82,6 +82,11 @@ const realizedLeakWitness = {
   rewrites: "the witness of scripts/lean-realized-leaks.lean must leak generated lemmas, so it rewrites with its own hidden definitions on purpose; nothing imports it but the conformance root",
 } as const;
 
+/** Why the Activity host's per-work accessor leaf (Activity host representation, 2026-11-07) raised a bound. */
+const activityHostAccessors = {
+  interface: "the Activity host's per-work accessor leaf ActivityHostWork (owner decision 2026-11-07 at 439, re-measured at 440 under the owner's delegation of the same day and accepted by its direction review): the step, publication, validation and declarer owners that read a host import it, and their `import all` openers load it; its only edit, a new work alternative, also edits `SemanticProcessContract`, whose cone contains this one",
+} as const;
+
 /** Set on 2026-10-25 above the converted graph's median fanout of 30, leaving a family leaf room for its family, the registry and its fixtures. */
 export const leanFanoutDefaultBound = 100;
 
@@ -189,6 +194,7 @@ export const leanFanoutBounds: ReadonlyArray<LeanFanoutBound> = [
   { module: "BpmnSemantics.SemanticProcess.ActivityBodyTurnover", bound: 446 },
   { module: "BpmnSemantics.SemanticProcess.InternalCommutationCore", bound: 445 },
   { module: "BpmnSemantics.SemanticProcess.BoundedTask", bound: 442 },
+  { module: "BpmnSemantics.SemanticProcess.ActivityHostWork", bound: 440, raisedFrom: 100, raised: activityHostAccessors.interface },
   { module: "BpmnSemantics.SemanticProcess.MonitoredTask", bound: 440 },
   { module: "BpmnSemantics.SemanticProcess.SequentialMultiInstanceRewrite", bound: 440 },
   { module: "BpmnSemantics.SemanticProcess.CyclicControlFlow", bound: 439 },

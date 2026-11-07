@@ -7,6 +7,7 @@ import {
   ControlStateKind,
   ScenarioStepKind,
   SemanticOperationKind,
+  publishedOperationKind,
   SemanticTransitionKind,
   StimulusKind,
   VariableValueKind,
@@ -238,7 +239,7 @@ export function projectCapacityCommand(
       {
         kind: SemanticTransitionKind.InternalOperation,
         operationId: step.operation.id,
-        operationKind: step.operation.kind,
+        operationKind: publishedOperationKind(step.operation),
         origin: step.operation.origin,
         owner: step.owner,
       },

@@ -1,6 +1,7 @@
 import {
   candidateProcessId,
 } from "./flow-node-occurrence-candidates.js";
+import { publishedOperationKind } from "./activity-host-work.js";
 import {
   InternalPublicationTemplateAnchorKind,
 } from "./internal-publication-template.js";
@@ -85,7 +86,7 @@ export function deriveInternalOrdinaryArmingPreparation(
     lifecycle === undefined ||
     pair === undefined ||
     committed.operationId !== operation.id ||
-    committed.operationKind !== operation.kind ||
+    committed.operationKind !== publishedOperationKind(operation) ||
     !sameScopeOccurrence(committed.owner, owner) ||
     pair.operationId !== operation.id ||
     pair.occurrence.kind !== occurrenceKind(operation) ||

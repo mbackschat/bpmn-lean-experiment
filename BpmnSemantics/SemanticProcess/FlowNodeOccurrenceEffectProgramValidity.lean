@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import BpmnSemantics.SemanticProcess.CollectionOrder
 public import BpmnSemantics.SemanticProcess.EffectDataMapping
@@ -36,6 +37,13 @@ def effectWaitValid (program : Program) (state : RuntimeState)
               wait.arguments = true &&
             effect.outputMappings = wait.outputMappings && output = wait.output &&
             route = wait.bpmnErrorRoute
+      -- ACTH-HOST-01: a host's opened wait is its projection's, which carries no BPMN Error route.
+      | .activity host => host.origin.elementId = wait.elementId && host.effect?.any fun effect =>
+          effect.elementId = wait.elementId && effect.descriptor = wait.descriptor &&
+            inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) effect.inputMappings
+              wait.arguments = true &&
+            effect.outputMappings = wait.outputMappings && host.outputs = [⟨wait.output⟩] &&
+            wait.bpmnErrorRoute.isNone
       | _ => false).length = 1
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`effectWaitValid]
@@ -71,10 +79,13 @@ theorem flowNodeOccurrenceEffectProgramValidity_declaration (program : Program)
     (valid : flowNodeOccurrenceEffectProgramValidity program state = true)
     (member : wait ∈ state.effectWaits) :
     flowNodeOccurrenceOwnerLiveUnique state wait.owner = true ∧
-      ∃ id origin input output effect route,
+      ((∃ id origin input output effect route,
         SemanticOperation.awaitEffect id origin input output effect route ∈ program.operations ∧
         operationOwnedBy program (.awaitEffect id origin input output effect route) wait.owner = true ∧
-        effect.outputMappings = wait.outputMappings ∧ output = wait.output := by
+        effect.outputMappings = wait.outputMappings ∧ output = wait.output) ∨
+      ∃ host effect, SemanticOperation.activity host ∈ program.operations ∧
+        operationOwnedBy program (.activity host) wait.owner = true ∧ host.work = .effect effect ∧
+        effect.outputMappings = wait.outputMappings ∧ host.outputs = [⟨wait.output⟩]) := by
   have checked := List.all_eq_true.mp (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp valid).1).1 wait member
   simp only [effectWaitValid, Bool.and_eq_true, decide_eq_true_eq] at checked
   have live : flowNodeOccurrenceOwnerLiveUnique state wait.owner = true := by
@@ -91,7 +102,13 @@ theorem flowNodeOccurrenceEffectProgramValidity_declaration (program : Program)
     | true => rfl
   cases operation <;> simp only [Bool.and_eq_true, decide_eq_true_eq] at matched <;> try contradiction
   case awaitEffect id origin input output effect route =>
-    exact ⟨live, id, origin, input, output, effect, route, selected.1, owned, matched.1.1.2, matched.1.2⟩
+    exact ⟨live, .inl ⟨id, origin, input, output, effect, route, selected.1, owned, matched.1.1.2, matched.1.2⟩⟩
+  case activity host =>
+    cases work : host.work with
+    | userTask _ => simp [ActivityHost.effect?_eq, work] at matched
+    | effect effect =>
+        simp only [ActivityHost.effect?_eq, work, Option.any_some, Bool.and_eq_true, decide_eq_true_eq] at matched
+        exact ⟨live, .inr ⟨host, effect, selected.1, owned, work, matched.2.1.1.2, matched.2.1.2⟩⟩
 
 /-- Valid waits retain a real owned declaring port, so completion can restore its continuation token. -/
 theorem flowNodeOccurrenceEffectProgramValidity_output_binding (program : Program)
@@ -101,10 +118,13 @@ theorem flowNodeOccurrenceEffectProgramValidity_output_binding (program : Progra
     flowNodeOccurrenceOwnerLiveUnique state wait.owner = true ∧
       ∃ operation ∈ program.operations, operationOwnedBy program operation wait.owner = true ∧
         operationControlPlacesShareOwner operation = true ∧ wait.output ∈ operationControlPlaces operation := by
-  obtain ⟨live, id, origin, input, output, effect, route, declared, owned, _, sameOutput⟩ :=
-    flowNodeOccurrenceEffectProgramValidity_declaration program state wait valid member
-  refine ⟨live, .awaitEffect id origin input output effect route, declared, owned, ?_⟩
-  simp [operationControlPlacesShareOwner, operationControlPlaces, operationOutputs, sameOutput]
+  obtain ⟨live, declaration⟩ := flowNodeOccurrenceEffectProgramValidity_declaration program state wait valid member
+  rcases declaration with ⟨id, origin, input, output, effect, route, declared, owned, _, sameOutput⟩ |
+    ⟨host, _, declared, owned, _, _, sameOutputs⟩
+  · refine ⟨live, .awaitEffect id origin input output effect route, declared, owned, ?_⟩
+    simp [operationControlPlacesShareOwner, operationControlPlaces, operationOutputs, sameOutput]
+  · refine ⟨live, .activity host, declared, owned, ?_⟩
+    simp [operationControlPlacesShareOwner, operationControlPlaces, operationOutputs, sameOutputs]
 
 theorem flowNodeOccurrenceEffectProgramValidity_frame (program : Program)
     (before after : RuntimeState)
@@ -352,6 +372,12 @@ theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : 
                 wait.arguments = true &&
               candidate.outputMappings = wait.outputMappings && output = wait.output &&
               candidateRoute = wait.bpmnErrorRoute
+        | .activity host => host.origin.elementId = wait.elementId && host.effect?.any fun candidate =>
+            candidate.elementId = wait.elementId && candidate.descriptor = wait.descriptor &&
+              inputSnapshotMatchesUnder (programEffectMappingValuePolicy program) candidate.inputMappings
+                wait.arguments = true &&
+              candidate.outputMappings = wait.outputMappings && host.outputs = [⟨wait.output⟩] &&
+              wait.bpmnErrorRoute.isNone
         | _ => false).length = 1 := by
     calc
       _ = (effectWaitDeclarers program wait.elementId).length := by
@@ -382,6 +408,15 @@ theorem flowNodeOccurrenceEffectProgramValidity_insertOrdinaryEffect (program : 
                   candidateEffect candidateRoute member]
                 exact different
               simp [different, originDifferent]
+          | activity host =>
+              cases work : host.work with
+              | userTask _ => simp [ActivityHost.effect?_eq, work]
+              | effect candidate =>
+                  have different : host.origin.elementId ≠ wait.elementId := by
+                    intro same
+                    apply familyMember
+                    simp [effectWaitDeclarers, member, ActivityHost.effect?_eq, work, same]
+                  simp [ActivityHost.effect?_eq, work, different]
           | _ => simp
       _ = 1 := by simpa [effectWaitDeclarers] using congrArg List.length declarers
   have newValid : effectWaitValid program after wait = true := by

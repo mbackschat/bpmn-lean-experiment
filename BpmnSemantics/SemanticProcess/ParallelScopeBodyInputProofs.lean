@@ -424,6 +424,8 @@ private theorem body_locals (program : Program)
   cases control : before.control <;> simp only [applyInternalOperationOccurrence?, control, bind] at applied <;> try contradiction
   cases operation <;> simp only [SemanticOperation.kind, List.mem_cons] at kind <;> try contradiction
   all_goals simp only [resolved, Option.bind_some] at applied
+  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  case activity => simp at applied
   case awaitUserTask =>
     split at applied <;> try contradiction
     split at applied

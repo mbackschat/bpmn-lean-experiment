@@ -107,6 +107,8 @@ export {
 export * from "./semantic-value-contract.js";
 export * from "./checked-process-contract.js";
 export * from "./semantic-process-contract.js";
+export * from "./activity-host-contract.js";
+export { activityHostPublishedKind, isPublishedOperationKind, publishedOperationKind, settledOperation, settledOperations } from "./activity-host-work.js";
 export * from "./semantic-process-data.js";
 export * from "./process-interface-data.js";
 export {

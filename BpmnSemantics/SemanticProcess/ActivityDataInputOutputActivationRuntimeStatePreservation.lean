@@ -164,8 +164,10 @@ theorem unboundedTaskActivityInsertion_preserves_runtimeStateWellFormed
   have sameScope : operationControlPlacesShareOwner operation = true := by
     cases declaration <;> rfl
   have declaresKey : operationDeclaresWaitKey operation (userTaskWaitDeclarationKey taskId) = true := by
-    cases declaration <;> simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
-      userTaskWaitDeclarationKey_eq]
+    cases declaration
+    case host _ task _ _ =>
+      simp [task, operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq]
+    all_goals simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq]
   simp only [runtimeStateWellFormed, Bool.and_eq_true] at wellFormed
   have claims := wellFormed.2.1.1.1.1
   have retention := wellFormed.2.1.1.1.2

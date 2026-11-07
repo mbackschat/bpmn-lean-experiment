@@ -34,6 +34,12 @@ def operationAllowed : SemanticOperation → Bool
       route.isNone && effect.elementId == origin.elementId
   | _ => false
 
+run_meta privateEquations `BpmnSemantics.SemanticProcess.SequentialScopeProgram #[`operationAllowed]
+
+/-- No scope profile admitted here allows an Activity host (ACTH-HOST-01). -/
+theorem operationAllowed_activity (host : ActivityHost) : operationAllowed (.activity host) = false := by
+  unfold operationAllowed; rfl
+
 /-- Completion operations reuse their owning source element; every other admitted operation owns a distinct source node. -/
 def sourceNode? : SemanticOperation → Option String
   | .initiate _ origin _ | .enterSequentialMultiInstanceScope _ origin ..

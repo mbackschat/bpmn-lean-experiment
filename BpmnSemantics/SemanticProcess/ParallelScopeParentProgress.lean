@@ -173,6 +173,8 @@ theorem body_step_inputs_positive (program : Program) (before after : RuntimeSta
   cases control : before.control <;> simp only [applyInternalOperationOccurrence?, control, bind] at applied <;> try contradiction
   cases operation <;> simp only [SemanticOperation.kind, List.mem_cons] at kind <;> try contradiction
   all_goals simp only [resolved, Option.bind_some] at applied
+  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  case activity => simp at applied
   case awaitUserTask id origin input output task =>
     split at applied <;> try contradiction
     rename_i valid

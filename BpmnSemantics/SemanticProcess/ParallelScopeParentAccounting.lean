@@ -172,7 +172,8 @@ private theorem replayed_parent_balance (program : Program) (analysis : Parallel
     have zero : bodyConsumedPorts declared = [] ∧ bodyProducedPorts declared = [] := by
       rw [retirement] at declaredKind
       cases declared <;> simp only [SemanticOperation.kind] at declaredKind <;> try contradiction
-      exact ⟨rfl, rfl⟩
+      -- A host, whose published kind stays unreduced, has no body ports either (ACTH-HOST-01).
+      all_goals exact ⟨rfl, rfl⟩
     simp only [transitionPortCharge, lookup, zero.1, zero.2, ownedPortCount]
     unfold completeParallelScope? at completed
     obtain ⟨binding, bound, completed⟩ := Option.bind_eq_some_iff.mp completed
@@ -571,7 +572,8 @@ theorem ContinuationCommandHistory.entry_normal_produced_charge_zero
   rw [placeEq] at only
   have emptyPorts : bodyProducedPorts completion = [] := by
     cases completion <;> simp only [SemanticOperation.kind] at completionKind <;> try contradiction
-    rfl
+    -- A host, whose published kind stays unreduced, has no body ports either (ACTH-HOST-01).
+    all_goals rfl
   exact history_produced_charge_zero program analysis admitted owner queried selected initial final records history
     analysis.entry.normalOutput completion completionMember only emptyPorts
 

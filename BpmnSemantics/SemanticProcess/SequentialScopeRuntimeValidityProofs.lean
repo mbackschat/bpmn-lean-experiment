@@ -448,13 +448,19 @@ private theorem smis_task_mi_absent (program : Program) (state : RuntimeState)
     apply List.all_eq_true.mpr
     intro operation member
     have excluded := domain operation member
-    cases operation <;> simp_all [SemanticOperation.kind, sequentialMultiInstanceOperationBindingComplete]
+    cases operation
+    -- Settle the host first: `simp_all` over its unreduced published kind exhausts the heartbeat limit.
+    case activity => first | rfl | simp [sequentialMultiInstanceOperationBindingComplete]
+    all_goals simp_all [SemanticOperation.kind, sequentialMultiInstanceOperationBindingComplete]
   · simp only [parallelMultiInstanceProgramBindingsValid, parallel,
       List.all_nil, Bool.true_and, parallelMultiInstanceControllersOrdered]
     apply List.all_eq_true.mpr
     intro operation member
     have excluded := domain operation member
-    cases operation <;> simp_all [SemanticOperation.kind, ParallelMultiInstanceArm.ofOperation?]
+    cases operation
+    -- Settle the host first: `simp_all` over its unreduced published kind exhausts the heartbeat limit.
+    case activity => first | rfl | simp [ParallelMultiInstanceArm.ofOperation?]
+    all_goals simp_all [SemanticOperation.kind, ParallelMultiInstanceArm.ofOperation?]
 
 private theorem smis_ingress_runtime_assembly (program : Program) (hosting : SemanticId)
     (before : RuntimeState) (tokens : List ControlToken) (humans : List UserTaskWait)

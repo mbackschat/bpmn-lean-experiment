@@ -31,6 +31,7 @@ import {
   projectEffectTransportMaterial,
   projectOpenEffects,
   SemanticOperationKind,
+  settledOperations,
 } from "@bpmn-lean/semantic-core";
 import type {
   BusinessValue,
@@ -229,7 +230,7 @@ export function reservedEffectResult(
 export function effectOutputMappings(
   program: SemanticProcessProgram,
 ): ReadonlyArray<DeepReadonly<{ elementId: string; outputMappings: VariableMapping[] }>> {
-  return program.operations.flatMap((operation) =>
+  return settledOperations(program.operations).flatMap((operation) =>
     operation.kind === SemanticOperationKind.AwaitEffect
       ? [{ elementId: operation.effect.elementId, outputMappings: operation.effect.outputMappings }]
       : []);
@@ -285,7 +286,7 @@ function completionFor(
   const [wait, ...others] = state.userTaskWaits;
   const operation = wait === undefined
     ? undefined
-    : program.operations.find((candidate) =>
+    : settledOperations(program.operations).find((candidate) =>
       (candidate.kind === SemanticOperationKind.AwaitDataInputOutputUserTask ||
         candidate.kind === SemanticOperationKind.AwaitUserTask) &&
       candidate.task.elementId === wait.id.elementId

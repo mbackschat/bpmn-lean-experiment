@@ -109,7 +109,7 @@ test("Lean and TypeScript agree on shared-input reservation slots and every appl
             for (const transition of [
               { ...record.transition, owner: root },
               { ...record.transition, operationId: "missing" },
-              { ...record.transition, operationKind: SemanticOperationKind.Initiate },
+              { ...record.transition, operationKind: SemanticOperationKind.Initiate as const },
               { ...record.transition, origin: { ...record.transition.origin, elementId: "Wrong" } },
             ]) assert.equal(replayInternalTransitionRecord(program, replayed, { ...record, transition }), null);
             assert.equal(replayInternalTransitionRecord(program, replayed,

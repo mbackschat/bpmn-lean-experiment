@@ -125,6 +125,12 @@ test("covers every stimulus, operation, result, and safe-integer branch", async 
   // kinds that commit no transition must stay out so the schema cannot admit a record no producer can
   // emit.
   for (const { name, value } of operations) {
+    // ACTH-HOST-01: the Activity host publishes its work's legacy kind, so its discriminant is never a published kind.
+    if (value === "activity") {
+      assert.ok(!schemaText.includes(`\"${value}\"`), "schema carries the Activity host discriminant");
+      assert.ok(!leanPublished.has(value), "Lean publishes the Activity host discriminant");
+      continue;
+    }
     if (failClosed.has(name)) {
       assert.ok(
         !schemaText.includes(`\"${value}\"`),

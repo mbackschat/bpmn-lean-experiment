@@ -1,6 +1,7 @@
 module
 
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceBoundaryStarts
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 import BpmnSemantics.SemanticProcess.ParallelScopeCompletionPublication
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidityCore
 import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceProgramValidity
@@ -155,6 +156,11 @@ def sortFlowNodeOccurrenceEnds : List UnnumberedFlowNodeOccurrenceEnd → List U
   | .triggerCompensation _ _ _ input _
   | .cancelTransaction _ _ _ input _ _ => onlyTokenOwner? state input
   | .synchronize _ _ inputs _ => commonTokenOwner? state inputs
+  -- ACTH-HOST-01: the owner of the one marked input, as the host's arrival consumes it.
+  | .activity host =>
+      match exclusiveMergeInputTokens state host.inputs with
+      | [token] => some token.owner
+      | _ => none
   | .mergeExclusive _ _ inputs _ =>
       match exclusiveMergeInputTokens state inputs with
       | [token] => some token.owner
@@ -634,6 +640,26 @@ def candidateFlowNodeOccurrenceDeltaForOwnedOperation? (program : Program) (befo
         | [record] => some record
         | _ => none
       pure (canonicalFlowNodeOccurrenceDelta [] [completedEnd (.callActivity record.id)])
+  -- ACTH-HOST-01: a host starts the legacy occurrence of its work. These arms repeat the legacy User Task and effect
+  -- arms only until the switch retires those operations (Activity host proposal, retirement of the dual representation).
+  | .activity host =>
+      match host.userTask?, host.effect? with
+      | some task, _ =>
+          let activation := activationForTask before task.id + 1
+          let wait ← match after.waits.filter fun wait => decide
+              (wait.owner = owner && wait.task.id = task.id && wait.activation = activation) with
+            | [wait] => some wait
+            | _ => none
+          pure (canonicalFlowNodeOccurrenceDelta [← candidateUserTaskStart? program operation owner wait] [])
+      | none, some effect =>
+          let activation :=
+            activationForNode (before.effectActivations.map fun value => (value.elementId, value.count)) effect.elementId + 1
+          let wait ← match after.effectWaits.filter fun wait => decide
+              (wait.owner = owner && wait.elementId = effect.elementId && wait.activation = activation) with
+            | [wait] => some wait
+            | _ => none
+          pure (canonicalFlowNodeOccurrenceDelta [← candidateEffectStart? program operation owner wait] [])
+      | none, none => none
   | .awaitUserTask _ _ _ _ task =>
       let activation := activationForTask before task.id + 1
       let wait ← match after.waits.filter fun wait => decide

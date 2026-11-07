@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 public import BpmnSemantics.SemanticProcess.ParallelScopeDeclaration
 public import BpmnSemantics.SemanticProcess.GraphReachability
 public import BpmnSemantics.SemanticProcess.CallActivityAdmission
@@ -252,6 +253,7 @@ def operationIsInvocation : SemanticOperation → Bool
 
 /-- Closed Semantic Process resumption family, decided independently from the checked-source cut. -/
 def semanticOperationIsResumptionCut : SemanticOperation → Bool
+  | .activity host => host.isResumptionCut
   | .awaitUserTask .. => true
   | .awaitDataInputUserTask .. => true
   | .awaitDataInputOutputUserTask .. => true
@@ -322,6 +324,8 @@ def programGraphPolicyValid (program : Program)
       acyclicClosed (edges.filter fun edge => !program.operations.any (fun operation =>
         operation.id == edge.source && match operation with
           | .awaitUserTask .. | .awaitEffect .. => true
+          -- ACTH-HOST-01: both works of a host are cuts here, as both legacy operations are.
+          | .activity _ => true
           | _ => false)) fuel
   | none => false
 

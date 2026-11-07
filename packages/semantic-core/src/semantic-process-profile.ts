@@ -1,4 +1,5 @@
 import { mixedTaskControlProgramShape, mixedTaskControlCheckedShape } from "./mixed-task-control-flow-admission.js";
+import { settledOperations } from "./activity-host-work.js";
 import { serialBusinessProgramShape, serialBusinessCheckedShape } from "./serial-business-task-admission.js";
 import { isSerialChainProfile, serialChainRulesForProfile } from "./serial-business-task-policy.js";
 import { structuredScopeDataCheckedShape, structuredScopeDataProgramShape } from "./structured-scope-data-routing.js";
@@ -125,7 +126,8 @@ function profileAllowsProgramOperationDetails(
   semanticProfile: string,
   operations: ReadonlyArray<SemanticOperation>,
 ): boolean {
-  const userTaskMetadataMatchesProfile = operations.every((operation) =>
+  // ACTH-HOST-01: a host's User Task meets the same metadata selection as the legacy operation of its work.
+  const userTaskMetadataMatchesProfile = settledOperations(operations).every((operation) =>
     operation.kind !== SemanticOperationKind.AwaitUserTask ||
     userTaskMetadataMatchesProfileSelection(semanticProfile, operation.task)
   );

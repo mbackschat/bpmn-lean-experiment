@@ -3,6 +3,8 @@ import {
   CorrelatedMessageInteractionKind,
   ProcessStatus,
   SemanticOperationKind,
+  isPublishedOperationKind,
+  publishedOperationKind,
   SemanticOriginKind,
   SemanticProcessCompilerId,
   StimulusKind,
@@ -197,7 +199,7 @@ function isInternalTransition(
 ): boolean {
   if (!hasOnlyKeys(value, ["kind", "operationId", "operationKind", "origin", "owner"]) ||
     value.kind !== "internalOperation" || !isNonEmpty(value.operationId) ||
-    !Object.values(SemanticOperationKind).includes(value.operationKind as SemanticOperationKind) ||
+    !isPublishedOperationKind(value.operationKind) ||
     !isRecord(value.origin) || !hasOnlyKeys(value.origin, ["kind", "elementId"]) ||
     value.origin.kind !== SemanticOriginKind.BpmnElement || !isNonEmpty(value.origin.elementId) ||
     !isScopeId(value.owner) || !deltaMentionsOwner(delta, value.owner)) {
@@ -218,7 +220,7 @@ function isInternalTransition(
   const owner = value.owner as ScopeOccurrenceId;
   const definition = program.definitionScopes.find(({ id }) => id === ownership[0]?.scopeId);
   return operation !== undefined && ownership[0] !== undefined &&
-    value.operationKind === operation.kind && sameOrigin(value.origin, operation.origin) &&
+    value.operationKind === publishedOperationKind(operation) && sameOrigin(value.origin, operation.origin) &&
     owner.definitionScopeId === ownership[0].scopeId &&
     (definition?.originElementId !== program.processId || owner.processInstanceId === processInstanceId);
 }

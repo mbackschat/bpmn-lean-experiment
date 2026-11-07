@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 public import BpmnSemantics.SemanticProcess.OpenWaitProjection
 public import BpmnSemantics.SemanticProcess.ScenarioAdmission
 public import BpmnSemantics.SemanticProcess.CompensationEventSubProcessSnapshotTransitionTrace
@@ -57,6 +58,7 @@ def ownedWaitDefinitions : SemanticOperation → OwnedWaitDefinitions
   | .awaitPayloadMessage _ _ _ _ message _ => { messages := [message] }
   | .awaitCorrelatedPayloadMessage _ _ _ _ message _ _ _ _ => { messages := [message] }
   | .awaitEffect _ _ _ _ effect _ => { effects := [effect] }
+  | .activity host => { tasks := host.userTask?.toList, effects := host.effect?.toList }
   | .awaitEventRace _ _ _ message timer =>
       { messages :=
           [{ elementId := message.elementId, channel := message.channel }]

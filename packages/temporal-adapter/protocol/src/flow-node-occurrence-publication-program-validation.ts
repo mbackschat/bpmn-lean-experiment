@@ -4,6 +4,7 @@ import {
   SemanticTransitionKind,
   StimulusKind,
   sameMessageChannel,
+  settledOperation,
 } from "@bpmn-lean/semantic-core";
 import type {
   ScopeOccurrenceId,
@@ -85,12 +86,15 @@ export function programOccurrenceStartMatchesTransition(
 }
 
 function internalOperationStarts(
-  operation: SemanticOperation,
+  programOperation: SemanticOperation,
   transitionOwner: ScopeOccurrenceId,
   value: OccurrenceFact,
   program: SemanticProcessProgram,
   positions: CommittedTransitionRecord["positionDelta"],
 ): boolean {
+  // ACTH-HOST-01: a host arrival starts what its settled projection starts.
+  const operation = settledOperation(programOperation);
+  if (operation === null) return false;
   const owner = value.owner as ScopeOccurrenceId;
   const exactOrigin = operation.origin.elementId === value.elementId &&
     sameScope(owner, transitionOwner);
@@ -482,12 +486,14 @@ function compensationSubjectElementId(
 }
 
 function operationPublishesNestedElement(
-  operation: SemanticProcessProgram["operations"][number],
+  programOperation: SemanticProcessProgram["operations"][number],
   elementId: string,
   operationScopeId: string,
   ownerScopeId: string,
   program: SemanticProcessProgram,
 ): boolean {
+  const operation = settledOperation(programOperation);
+  if (operation === null) return false;
   const directlyOwned = operationScopeId === ownerScopeId;
   switch (operation.kind) {
     case SemanticOperationKind.AwaitUserTask:

@@ -1,6 +1,7 @@
 module
 
 import BpmnSemantics.SemanticProcess.ErrorDefinition
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 public import BpmnSemantics.SemanticProcess.GraphValidation
 import BpmnSemantics.SemanticProcess.InclusiveGateway
 import BpmnSemantics.SemanticProcess.TimerStart
@@ -67,6 +68,9 @@ def effectWaitDeclarationKey (elementId : NodeId) : WaitDeclarationKey :=
 key per family because runtime well-formedness validates each wait family independently. -/
 def operationWaitDeclarationKeys : SemanticOperation → List WaitDeclarationKey
   | .awaitUserTask _ _ _ _ task => [userTaskWaitDeclarationKey task.id]
+  | .activity host =>
+      (host.userTask?.map fun task => userTaskWaitDeclarationKey task.id).toList ++
+        (host.effect?.map fun _ => effectWaitDeclarationKey host.origin.elementId).toList
   | .awaitDataInputUserTask _ _ _ _ taskId _ _
   | .awaitDataInputOutputUserTask _ _ _ _ taskId _ _ _
   | .awaitDataOutputUserTask _ _ _ _ taskId _ _ =>
@@ -192,6 +196,18 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
       callDataInterfaceValid data origin.elementId.value calledProcessId.value &&
       returnProcessOperationWellFormed program id origin calledProcessId calledRoot
         callerOutput
+  -- ACTH-HOST-01: at least two inputs, so a host never doubles a Task's legacy encoding, and one output in this
+  -- family; `activityHostWorkValid` checks the work against its legacy projection. The origin alignment repeats the
+  -- projection's so that consumers of this arm alone read the host's wait identity as its origin.
+  | .activity host =>
+      nonempty host.id.value && nonempty host.origin.elementId.value &&
+        host.userTask?.all (fun task => decide (host.origin.elementId.value = task.id.value)) &&
+        host.effect?.all (fun effect => decide (host.origin.elementId = effect.elementId)) &&
+        1 < host.inputs.length && sortedDistinctPlaceIds host.inputs &&
+        host.inputs.all (placeExists places) &&
+        (match host.outputs with
+          | [output] => placeExists places output.place
+          | _ => false)
   | .awaitUserTask id origin input output task =>
       nonempty id.value &&
         nonempty origin.elementId.value &&
@@ -543,6 +559,12 @@ def operationWellFormed (program : Program) (places : List ControlPlace) :
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess #[`operationWellFormed] (congruence := true)
 
+/-- A host's work satisfies the rules of its legacy projection from every input (ACTH-HOST-01). Kept beside
+`operationWellFormed` rather than in its host arm because the projection is no structural subterm of the host. -/
+def activityHostWorkValid (program : Program) (places : List ControlPlace) : SemanticOperation → Bool
+  | .activity host => host.inputs.all fun input => (host.projection? input).all (operationWellFormed program places)
+  | _ => true
+
 def isInitiate : SemanticOperation → Bool
   | .initiate .. => true
   | .initiateMessage .. => true
@@ -594,6 +616,7 @@ def programWellFormed (program : Program) : Bool :=
     program.controlPlaces.all (fun place =>
       nonempty place.id.value && nonempty place.origin.elementId.value) &&
     program.operations.all (operationWellFormed program program.controlPlaces) &&
+    program.operations.all (activityHostWorkValid program program.controlPlaces) &&
     program.operations.all (operationRecurrenceValid program.identity.semanticProfile) &&
     inclusiveOperationsPaired program.operations &&
     callOperationsPaired program &&

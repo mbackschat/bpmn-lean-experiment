@@ -13,6 +13,7 @@ public section
 namespace BpmnSemantics.SemanticProcess
 
 def operationInputPlaces : SemanticOperation → List ControlPlaceId
+  | .activity host => host.inputs
   | .initiate ..
   | .initiateMessage ..
   | .initiateTimer ..
@@ -56,6 +57,7 @@ def operationInputPlaces : SemanticOperation → List ControlPlaceId
   | .synchronizeSelected _ _ inputs _ _ => inputs
 
 def operationOutputs : SemanticOperation → List ControlPlaceId
+  | .activity host => host.outputs.map (·.place)
   | .initiate _ _ output
   | .invokeProcess _ _ _ _ _ output _ _
   | .returnProcess _ _ _ _ output _

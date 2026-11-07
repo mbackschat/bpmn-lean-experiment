@@ -1,4 +1,5 @@
 import type { OccurrenceId } from "./contract.js";
+import { settledOperation } from "./activity-host-work.js";
 import {
   SemanticOperationKind,
 } from "./semantic-process-contract.js";
@@ -77,8 +78,11 @@ export function operationDeclaresWait(
 }
 
 function operationWaitDeclarations(
-  operation: SemanticOperation,
+  programOperation: SemanticOperation,
 ): ReadonlyArray<WaitDeclaration> {
+  // ACTH-HOST-01: a host declares exactly the wait of its work.
+  const operation = settledOperation(programOperation);
+  if (operation === null) return [];
   switch (operation.kind) {
     case SemanticOperationKind.AwaitUserTask:
     case SemanticOperationKind.AwaitDataInputUserTask:

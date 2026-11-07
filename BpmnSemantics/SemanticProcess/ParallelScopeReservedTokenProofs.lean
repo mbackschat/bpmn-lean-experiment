@@ -56,6 +56,10 @@ private theorem resolved_ordinary_port_declared (program : Program) (state : Run
     all_goals rfl
   have portMember : port ∈ operationControlPlaces operation := by
     cases operation <;> simp only [SemanticOperation.kind, List.mem_cons] at kind <;> try contradiction
+    case activity =>
+      -- A host's body ports are empty, so `member` names one of its outputs (ACTH-HOST-01).
+      unfold operationControlPlaces
+      exact List.mem_append_right _ (by simpa [bodyConsumedPorts] using member)
     all_goals exact member
   obtain ⟨origin, selected⟩ := resolved_selectedInputOrigin program state candidate operation port wellFormed resolved sameScope portMember
   unfold selectedInputOrigin? at selected
@@ -224,6 +228,9 @@ private theorem reserved_member_ports (program : Program) (state : RuntimeState)
       · exact Or.inl input
       · refine Or.inr ⟨output, ?_⟩
         cases operation : patch.operation <;> simp only [operation, SemanticOperation.kind, List.mem_cons] at kind <;> try contradiction
+        case activity =>
+          -- A host publishes its work's wait kind, never a token operation's (ACTH-HOST-01).
+          cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at kind
         all_goals simp [InternalOccurrencePatch.operation, operation, SemanticOperation.kind]
         all_goals simp [operation, operationOutputs] at output
 

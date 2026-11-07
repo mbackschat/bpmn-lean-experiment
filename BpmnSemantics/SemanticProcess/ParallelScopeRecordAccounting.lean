@@ -282,7 +282,12 @@ private theorem admitted_nonretirement_body (program : Program) (analysis : Para
     rw [← completionEq]
     apply List.filter_congr
     intro operation member
-    cases operation <;> rfl
+    cases operation
+    case activity =>
+      -- A host publishes its work's wait kind, never a scope completion (ACTH-HOST-01).
+      unfold SemanticOperation.kind
+      cases wait : (‹ActivityHost›).waitKind <;> simp [wait]
+    all_goals rfl
   have completionSelected : completion ∈ child.filter
       (fun operation => operation.kind == .completeParallelMultiInstanceScope) :=
     kindFilter.symm ▸ (show completion ∈ [completion] from by simp)

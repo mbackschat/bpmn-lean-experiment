@@ -469,6 +469,10 @@ private theorem declared_effect_compensation_disjoint (program : Program) (state
             simp only [decide_eq_true_eq] at aligned
             exact compensationExecutionStateValid_awaitEffect_disjoint program state executionValid
               id origin input output effect route member elementId aligned wait waitMember
+          case activity host =>
+            simp only [Bool.and_eq_true, decide_eq_true_eq] at aligned
+            exact compensationExecutionStateValid_operation_disjoint program state executionValid _
+              host.origin.elementId (operationOriginElementId_activity host) member elementId aligned.2 wait waitMember
 
 private theorem incident_compensation_disjoint (program : Program) (state : RuntimeState)
     (expectedInstanceId runningInstanceId : SemanticId)

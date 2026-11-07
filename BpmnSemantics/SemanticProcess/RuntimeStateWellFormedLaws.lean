@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 public import BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import all BpmnSemantics.SemanticProcess.RuntimeStateWellFormed
 import BpmnSemantics.SemanticProcess.ProgramStructuralValidationLaws
@@ -46,7 +47,12 @@ theorem timerWaitDeclarers_eq_keyFilter (program : Program) (elementId : NodeId)
   unfold timerWaitDeclarers
   apply List.filter_congr
   intro operation _
-  cases operation <;> simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
+  cases operation
+  case activity =>
+    cases work : ‹ActivityHost›.work <;>
+      simp [work, operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq,
+        timerWaitDeclarationKey_eq, effectWaitDeclarationKey_eq, eq_comm]
+  all_goals simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
     userTaskWaitDeclarationKey_eq, messageWaitDeclarationKey_eq, timerWaitDeclarationKey_eq,
     effectWaitDeclarationKey_eq, nodeId_eq_iff_value_eq, eq_comm]
 
@@ -58,7 +64,12 @@ theorem messageWaitDeclarers_eq_keyFilter (program : Program) (elementId : NodeI
   unfold messageWaitDeclarers
   apply List.filter_congr
   intro operation _
-  cases operation <;> simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
+  cases operation
+  case activity =>
+    cases work : ‹ActivityHost›.work <;>
+      simp [work, operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq, userTaskWaitDeclarationKey_eq,
+        messageWaitDeclarationKey_eq, effectWaitDeclarationKey_eq, eq_comm]
+  all_goals simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
     userTaskWaitDeclarationKey_eq, messageWaitDeclarationKey_eq, timerWaitDeclarationKey_eq,
     effectWaitDeclarationKey_eq, nodeId_eq_iff_value_eq, eq_comm]
 
@@ -70,7 +81,12 @@ theorem userTaskWaitDeclarers_eq_keyFilter (program : Program) (taskId : TaskDef
   unfold userTaskWaitDeclarers
   apply List.filter_congr
   intro operation _
-  cases operation <;> simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
+  cases operation
+  case activity =>
+    cases work : ‹ActivityHost›.work <;>
+      simp [ActivityHost.userTask?_eq, work, operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
+        userTaskWaitDeclarationKey_eq, effectWaitDeclarationKey_eq, taskDefinitionId_eq_iff_value_eq, eq_comm]
+  all_goals simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
     userTaskWaitDeclarationKey_eq, messageWaitDeclarationKey_eq, timerWaitDeclarationKey_eq,
     effectWaitDeclarationKey_eq, taskDefinitionId_eq_iff_value_eq, eq_comm]
 
@@ -82,7 +98,12 @@ theorem effectWaitDeclarers_eq_keyFilter (program : Program) (elementId : NodeId
   unfold effectWaitDeclarers
   apply List.filter_congr
   intro operation _
-  cases operation <;> simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
+  cases operation
+  case activity =>
+    cases work : ‹ActivityHost›.work <;>
+      simp [ActivityHost.effect?_eq, work, operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
+        userTaskWaitDeclarationKey_eq, effectWaitDeclarationKey_eq, nodeId_eq_iff_value_eq, eq_comm]
+  all_goals simp [operationDeclaresWaitKey_eq, operationWaitDeclarationKeys_eq,
     userTaskWaitDeclarationKey_eq, messageWaitDeclarationKey_eq, timerWaitDeclarationKey_eq,
     effectWaitDeclarationKey_eq, nodeId_eq_iff_value_eq, eq_comm]
 

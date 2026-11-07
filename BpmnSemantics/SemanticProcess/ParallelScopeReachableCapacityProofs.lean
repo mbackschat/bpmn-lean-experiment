@@ -382,8 +382,12 @@ private theorem effect_completion_capacity (program : Program) (analysis : Progr
       exact False.elim (impossible values rfl)
   · have member : wait ∈ before.effectWaits :=
       (List.mem_filter.mp (selectedWait.symm ▸ List.mem_singleton_self wait)).1
-    obtain ⟨_, operationId, origin, input, output, effect, route, declared, _, mappingsEq, _⟩ :=
-      flowNodeOccurrenceEffectProgramValidity_declaration program before wait valid member
+    obtain ⟨_, declaration⟩ := flowNodeOccurrenceEffectProgramValidity_declaration program before wait valid member
+    obtain ⟨operationId, origin, input, output, effect, route, declared, _, mappingsEq, _⟩ := declaration.resolve_right (by
+      -- The parallel-scope profile admits no host (ACTH-HOST-01).
+      rintro ⟨host, _, declared, _⟩
+      have allowed := ParallelScopeStart.analyzeProgram_operation_allowed program analysis analyzed _ declared
+      simp [SequentialScopeProgram.operationAllowed_activity] at allowed)
     obtain ⟨mappings, reserved⟩ := declared_output_contract program analysis analyzed _ _ _ _ _ _ declared
     rw [mappingsEq] at mappings reserved
     simp only [completeSerialEffect?, selectedWait] at completed

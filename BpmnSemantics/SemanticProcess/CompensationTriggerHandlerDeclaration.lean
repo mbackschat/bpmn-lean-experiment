@@ -109,6 +109,7 @@ def declaredTargetCountsMatch (program : Program)
 
 def operationOriginElementId : SemanticOperation → Option NodeId
   | .triggerCompensation .. => none
+  | .activity host => some host.origin.elementId
   | .initiate _ origin _ | .initiateMessage _ origin _ _ | .initiateTimer _ origin _ _
   | .enterSequentialMultiInstanceScope _ origin _ _ _ _ _ _ _ _
   | .enterParallelMultiInstanceScope _ origin _ _ _ _ _ _ _ _
@@ -274,6 +275,38 @@ theorem compensationExecutionDeclarationValid_minimumBytes (program : Program)
     decide_eq_true_eq] at valid
   exact valid.1.1.2
 
+theorem operationOriginElementId_awaitEffect (id : OperationId) (origin : BpmnElementOrigin)
+    (input output : ControlPlaceId) (effect : EffectDefinition) (route : Option BpmnErrorRoute) :
+    operationOriginElementId (.awaitEffect id origin input output effect route) = some origin.elementId := by
+  simp [operationOriginElementId]
+
+theorem operationOriginElementId_activity (host : ActivityHost) :
+    operationOriginElementId (.activity host) = some host.origin.elementId := by
+  simp [operationOriginElementId]
+
+/-- An operation's origin element is unavailable to every compensation body. -/
+theorem compensationExecutionDeclarationValid_operation_body_disjoint (program : Program)
+    (declaration : CompensationExecutionDeclaration)
+    (present : program.compensationExecution = some declaration)
+    (valid : compensationExecutionDeclarationValid program = true)
+    (operation : SemanticOperation) (origin : NodeId)
+    (originEq : operationOriginElementId operation = some origin)
+    (operationMember : operation ∈ program.operations)
+    (subject : CompensationSubjectDefinition) (subjectMember : subject ∈ declaration.subjects) :
+    origin ∉ (match subject with
+      | .boundaryActivity _ body | .eventSubProcess _ _ body =>
+          [body.handlerElementId, body.effectElementId]) := by
+  have unavailable : bodyElementsUnavailableToOperations program declaration.subjects = true := by
+    simp only [compensationExecutionDeclarationValid, present, Bool.and_eq_true] at valid
+    exact valid.1.1.1.1.1.1.1.1.2
+  simp only [bodyElementsUnavailableToOperations, List.all_eq_true] at unavailable
+  have excluded := unavailable operation operationMember
+  simp only [originEq, Bool.not_eq_true', List.contains_eq_mem, decide_eq_false_iff_not] at excluded
+  intro member
+  apply excluded
+  exact List.mem_flatMap.mpr ⟨subject, subjectMember, by
+    cases subject <;> exact member⟩
+
 theorem compensationExecutionDeclarationValid_awaitEffect_body_disjoint (program : Program)
     (declaration : CompensationExecutionDeclaration)
     (present : program.compensationExecution = some declaration)
@@ -284,17 +317,8 @@ theorem compensationExecutionDeclarationValid_awaitEffect_body_disjoint (program
     (subject : CompensationSubjectDefinition) (subjectMember : subject ∈ declaration.subjects) :
     origin.elementId ∉ (match subject with
       | .boundaryActivity _ body | .eventSubProcess _ _ body =>
-          [body.handlerElementId, body.effectElementId]) := by
-  have unavailable : bodyElementsUnavailableToOperations program declaration.subjects = true := by
-    simp only [compensationExecutionDeclarationValid, present, Bool.and_eq_true] at valid
-    exact valid.1.1.1.1.1.1.1.1.2
-  simp only [bodyElementsUnavailableToOperations, List.all_eq_true] at unavailable
-  have excluded := unavailable (.awaitEffect id origin input output effect route) operationMember
-  simp only [operationOriginElementId, Bool.not_eq_true', List.contains_eq_mem,
-    decide_eq_false_iff_not] at excluded
-  intro member
-  apply excluded
-  exact List.mem_flatMap.mpr ⟨subject, subjectMember, by
-    cases subject <;> exact member⟩
+          [body.handlerElementId, body.effectElementId]) :=
+  compensationExecutionDeclarationValid_operation_body_disjoint program declaration present valid _ _
+    (operationOriginElementId_awaitEffect id origin input output effect route) operationMember subject subjectMember
 
 end BpmnSemantics.SemanticProcess

@@ -108,6 +108,9 @@ theorem replayed_retirement_execution (program : Program) (before after : Runtim
   have unique := resolved_operation_unique program before ⟨record.operationId, record.owner⟩ operation resolved
   rw [retirement] at metadata
   cases operation <;> simp only [SemanticOperation.kind] at metadata <;> try contradiction
+  case activity =>
+    -- A host publishes its work's wait kind, never a scope transition (ACTH-HOST-01).
+    cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
   cases control : before.control <;> simp only [InternalCommutation.applyInternalOperationOccurrence?, control,
     resolved, bind, Option.bind_some] at applied <;> try contradiction
   simp only [key] at applied
@@ -308,6 +311,9 @@ theorem replayed_initiation_execution (program : Program) (before after : Runtim
     ⟨record.operationId, record.owner⟩ operation resolved
   rw [kind] at metadata
   cases operation <;> simp only [SemanticOperation.kind] at metadata <;> try contradiction
+  case activity =>
+    -- A host publishes its work's wait kind, never a scope transition (ACTH-HOST-01).
+    cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
   rename_i id origin output
   simp only [SemanticOperation.id] at key
   simp only [SemanticOperation.origin] at originEq
@@ -339,6 +345,9 @@ theorem replayed_scope_completion_execution (program : Program) (before after : 
     ⟨record.operationId, record.owner⟩ operation resolved
   rw [kind] at metadata
   cases operation <;> simp only [SemanticOperation.kind] at metadata <;> try contradiction
+  case activity =>
+    -- A host publishes its work's wait kind, never a scope transition (ACTH-HOST-01).
+    cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
   rename_i id origin scopeId parentOutput
   simp only [SemanticOperation.id] at key
   simp only [SemanticOperation.origin] at originEq
@@ -369,6 +378,9 @@ theorem replayed_parallel_entry_execution (program : Program) (analysis : Parall
   have unique := resolved_operation_unique program before ⟨record.operationId, record.owner⟩ operation resolved
   rw [kind] at metadata
   cases operation <;> simp only [SemanticOperation.kind] at metadata <;> try contradiction
+  case activity =>
+    -- A host publishes its work's wait kind, never a scope transition (ACTH-HOST-01).
+    cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
   case enterParallelMultiInstanceScope id origin input childEntry childScope normalOutput collection item mappings condition ignored =>
     cases control : before.control <;> simp only [InternalCommutation.applyInternalOperationOccurrence?, control,
       resolved, bind, Option.bind_some] at applied <;> try contradiction

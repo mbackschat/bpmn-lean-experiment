@@ -248,6 +248,8 @@ theorem ParallelScopeInternalPrefixReachable.body_wait_program_validity
   have named := flowNodeOccurrenceStructuralProgramValidity_live_owner_nonempty program before candidate.owner structural live
   cases operation <;> simp [SemanticOperation.kind] at body
   all_goals simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied
+  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  case activity => simp at applied
   case awaitUserTask id origin input output task =>
     have applied := guard_tail _ _ after applied
     cases parallel : hasParallelScopeDefinition program candidate.owner with

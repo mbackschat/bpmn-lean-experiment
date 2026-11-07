@@ -24,6 +24,7 @@ import {
   CommandOutcome, SemanticOperationKind, SemanticOriginKind, SemanticTransitionKind,
 } from "@bpmn-lean/semantic-core";
 import type { Scenario } from "@bpmn-lean/semantic-core";
+import type { PublishedSemanticOperationKind } from "@bpmn-lean/semantic-core";
 
 import {
   compileExecutionInput,
@@ -248,7 +249,7 @@ function expectedParallelRecords(scenario: Scenario): PairedRecord[] {
     kind: SemanticTransitionKind.ExternalStimulus, stimulus: scenario.stimuli[index]!,
   });
   const internal = (
-    elementId: string, operationKind: SemanticOperationKind, operationId = `operation:${elementId}`,
+    elementId: string, operationKind: PublishedSemanticOperationKind, operationId = `operation:${elementId}`,
   ): CommittedTransitionRecord["transition"] => ({
     kind: SemanticTransitionKind.InternalOperation, operationId, operationKind,
     origin: { kind: SemanticOriginKind.BpmnElement, elementId }, owner,

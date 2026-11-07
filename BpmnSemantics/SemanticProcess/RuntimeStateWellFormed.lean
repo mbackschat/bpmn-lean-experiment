@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 public import BpmnSemantics.SemanticProcess.RuntimeStateCollectionStorage
 public import BpmnSemantics.SemanticProcess.ActivityBodyClaimUniqueness
 public import BpmnSemantics.SemanticProcess.CompensationTriggerHandlerRuntime
@@ -414,6 +415,7 @@ or by `awaitEventRace`. A
 single-kind reading would reject reachable states from four shipped capsules. -/
 def timerWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticOperation :=
   program.operations.filter fun
+    | .activity .. => false
     | .awaitTimer _ _ _ _ timer => decide (timer.elementId = elementId)
     | .awaitBoundedUserTask _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
     | .awaitMonitoredUserTask _ _ _ _ boundaryTimer => decide (boundaryTimer.elementId = elementId)
@@ -444,6 +446,7 @@ carries no separate `awaitMessage` operation for its configured catch, so `await
 declarer here for the same reason it is one above. -/
 def messageWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticOperation :=
   program.operations.filter fun
+    | .activity .. => false
     | .awaitMessage _ _ _ _ message => decide (message.elementId = elementId)
     | .awaitPayloadMessage _ _ _ _ message _ =>
         decide (message.elementId = elementId)
@@ -472,6 +475,7 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
     List SemanticOperation :=
   program.operations.filter fun
     | .awaitUserTask _ _ _ _ task => decide (task.id = taskId)
+    | .activity host => host.userTask?.any fun task => decide (task.id = taskId)
     | .awaitBoundedUserTask _ _ _ task _ => decide (task.id = taskId)
     | .awaitMessageBoundedUserTask _ _ _ task _
     | .awaitMessageMonitoredUserTask _ _ _ task _ => decide (task.id = taskId)
@@ -500,6 +504,7 @@ def userTaskWaitDeclarers (program : Program) (taskId : TaskDefinitionId) :
 def effectWaitDeclarers (program : Program) (elementId : NodeId) : List SemanticOperation :=
   program.operations.filter fun
     | .awaitEffect _ origin _ _ _ _ => decide (origin.elementId = elementId)
+    | .activity host => host.effect?.isSome && decide (host.origin.elementId = elementId)
     | .initiate .. | .initiateMessage .. | .initiateTimer ..
     | .enterSequentialMultiInstanceScope .. | .completeSequentialMultiInstanceScope ..
     | .enterParallelMultiInstanceScope .. | .completeParallelMultiInstanceScope ..

@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 public import BpmnSemantics.SemanticProcess.FlowNodeOccurrenceLifecycle
 public import BpmnSemantics.SemanticProcess.Transition
 public import BpmnSemantics.SemanticProcess.CommandAdmission
@@ -78,6 +79,11 @@ def SemanticOperation.kind : SemanticOperation → SemanticOperationKind
   | .invokeProcess .. => .invokeProcess
   | .returnProcess .. => .returnProcess
   | .awaitUserTask .. => .awaitUserTask
+  -- ACTH-HOST-01: a host publishes the legacy discriminant of its work, never one of its own.
+  | .activity host =>
+      match host.waitKind with
+      | .userTask => .awaitUserTask
+      | .effect => .awaitEffect
   | .awaitDataInputUserTask .. => .awaitDataInputUserTask
   | .awaitDataInputOutputUserTask .. => .awaitDataInputOutputUserTask
   | .awaitDataOutputUserTask .. => .awaitDataOutputUserTask

@@ -2687,8 +2687,101 @@
         }
       }
     },
+    "activityOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "place"
+      ],
+      "properties": {
+        "place": {
+          "$ref": "#/$defs/nonemptyString"
+        }
+      }
+    },
+    "activityWork": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "task"
+          ],
+          "properties": {
+            "kind": {
+              "const": "userTask"
+            },
+            "task": {
+              "$ref": "#/$defs/taskDefinition"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "effect"
+          ],
+          "properties": {
+            "kind": {
+              "const": "effect"
+            },
+            "effect": {
+              "$ref": "#/$defs/effectDefinition"
+            }
+          }
+        }
+      ]
+    },
+    "activity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "origin",
+        "inputs",
+        "outputs",
+        "work"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "kind": {
+          "const": "activity"
+        },
+        "origin": {
+          "$ref": "#/$defs/bpmnElementOrigin"
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/nonemptyString"
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/activityOutput"
+          }
+        },
+        "work": {
+          "$ref": "#/$defs/activityWork"
+        }
+      }
+    },
     "operation": {
       "oneOf": [
+        {
+          "$ref": "#/$defs/activity"
+        },
         {
           "$ref": "#/$defs/initiate"
         },

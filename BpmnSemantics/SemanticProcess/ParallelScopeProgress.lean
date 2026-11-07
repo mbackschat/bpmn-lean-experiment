@@ -343,6 +343,8 @@ theorem applyInternalOperationOccurrence_body_quiescence_locality
   obtain ⟨instanceId, running⟩ := occurrenceApplicationRunning program before after candidate applied
   cases operation <;> simp [SemanticOperation.kind] at bodyOperation
   all_goals simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied
+  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  case activity => simp at applied
   case awaitUserTask id origin input output task =>
     have applied := refusingGuardSuccess _ _ after applied
     cases parallel : hasParallelScopeDefinition program candidate.owner with
@@ -397,6 +399,8 @@ theorem applyInternalOperationOccurrence_body_foreign_token_reads
   obtain ⟨instanceId, running⟩ := occurrenceApplicationRunning program before after actor applied
   cases operation <;> simp [SemanticOperation.kind] at bodyOperation
   all_goals simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied
+  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  case activity => simp at applied
   case awaitUserTask id origin input output task =>
     have applied := refusingGuardSuccess _ _ after applied
     cases parallel : hasParallelScopeDefinition program actor.owner <;>
@@ -575,6 +579,8 @@ theorem stable_frontier_wait_input_absent (program : Program) (state : RuntimeSt
   obtain ⟨candidates, candidatesEq, member⟩ :=
     resolveInternalOperationOccurrence_requires_exact_candidate program state candidate operation resolved
   cases operation <;> simp [SemanticOperation.kind] at waitKind
+  -- A host offers no owning occurrence (ACTH-HOST-01).
+  case activity => simp [internalOperationOccurrenceOffers?] at discovered
   all_goals
     simp only [internalOperationOccurrenceOffers?] at discovered
     obtain ⟨owners, ownersEq, discovered⟩ := Option.bind_eq_some_iff.mp discovered
@@ -634,6 +640,8 @@ theorem stable_frontier_body_refusal_of_resolved_token_frame
       have absent := stable_frontier_wait_input_absent program before profile instanceId beforeRunning
         candidate operation resolved waitKind empty successful
       cases operation <;> simp [SemanticOperation.kind] at waitKind
+      -- A host is never applied by owning occurrence (ACTH-HOST-01).
+      case activity => simp [applyInternalOperationOccurrence?, running, selected] at applied
       all_goals
         have zero := absent _ (by simp only [bodyConsumedPorts, SequentialScopeControl.inputs, List.mem_singleton]; rfl)
         rw [← counts] at zero

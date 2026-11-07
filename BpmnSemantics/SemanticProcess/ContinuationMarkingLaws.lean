@@ -343,6 +343,8 @@ theorem fire_body_port_accounting
     (program : Program) (before after : RuntimeState) (operation : SemanticOperation)
     (bodyOperation : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect,
       .duplicate, .synchronize, .reachNoneEnd])
+    -- An Activity host publishes a body kind but consumes one of several inputs, which no static port list states.
+    (nonempty : bodyConsumedPorts operation ≠ [])
     (unique : (bodyConsumedPorts operation).Nodup)
     (absent : program.compensationEventSubProcessSnapshots = none)
     (fired : fire? program operation before = some after) :
@@ -360,6 +362,7 @@ theorem fire_body_port_accounting
           ownedPortCount (bodyProducedPorts operation) owner queried place)) ∧
       after.scopeActivations = before.scopeActivations := by
   cases operation <;> simp [SemanticOperation.kind] at bodyOperation
+  case activity => simp [bodyConsumedPorts] at nonempty
   all_goals simp only [fire?, absent] at fired
   case awaitUserTask id origin input output task =>
     change awaitUserTaskState? before input output task = some after at fired
@@ -457,6 +460,7 @@ theorem fire_body_continuation_balance
     (program : Program) (before after : RuntimeState) (operation : SemanticOperation)
     (bodyOperation : operation.kind ∈ [SemanticOperationKind.awaitUserTask, .awaitEffect,
       .duplicate, .synchronize, .reachNoneEnd])
+    (nonempty : bodyConsumedPorts operation ≠ [])
     (unique : (bodyConsumedPorts operation).Nodup)
     (absent : program.compensationEventSubProcessSnapshots = none)
     (fired : fire? program operation before = some after) :
@@ -464,7 +468,7 @@ theorem fire_body_continuation_balance
       continuationMarking after queried place + ownedPortCount (bodyConsumedPorts operation) owner queried place =
       continuationMarking before queried place + ownedPortCount (bodyProducedPorts operation) owner queried place := by
   obtain ⟨owner, _, _, combined⟩ :=
-    (fire_body_port_accounting program before after operation bodyOperation unique absent fired).1
+    (fire_body_port_accounting program before after operation bodyOperation nonempty unique absent fired).1
   exact ⟨owner, combined⟩
 
 /-- Successful actual body execution consumes and produces precisely its declared owned ports. -/
@@ -481,6 +485,8 @@ theorem applyInternalOperationOccurrence_continuation_balance
   cases control : before.control <;> try { simp [applyInternalOperationOccurrence?, control] at applied }
   cases operation <;> simp [SemanticOperation.kind] at bodyOperation
   all_goals simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied
+  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  case activity => simp at applied
   case awaitUserTask id origin input output task =>
     split at applied <;> try contradiction
     rename_i valid

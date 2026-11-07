@@ -112,6 +112,8 @@ theorem ParallelScopeInternalPrefixReachable.ordinary_member_reserved (program :
     exact ⟨valid.1.1.1.1.1.1, valid.1.1.1.1.1.2⟩
   have inputs := (ordinary_operation_inputs_unit program state after candidate operation resolved kind applied).2
   cases operation <;> simp only [SemanticOperation.kind, List.mem_cons] at kind <;> try contradiction
+  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  case activity => simp [applyInternalOperationOccurrence?, running, resolved] at applied
   case awaitUserTask id origin input output task =>
     have unit := inputs input (by simp [bodyConsumedPorts, SequentialScopeControl.inputs])
     obtain ⟨patch, prepared⟩ := reachable.human_cohort_reserved program analysis analyzed state instanceId running candidate

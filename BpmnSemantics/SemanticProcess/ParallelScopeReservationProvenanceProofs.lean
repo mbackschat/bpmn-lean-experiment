@@ -180,6 +180,10 @@ theorem analyzeProgram_effect_uniqueFamilyDeclarer (program : Program) (analysis
       case awaitEffect candidateId candidateOrigin candidateInput candidateOutput candidateEffect candidateRoute =>
         change some candidateOrigin.elementId.value = some effect.elementId.value
         exact congrArg (fun element : NodeId => some element.value) (of_decide_eq_true matched)
+      -- The admitted body holds no host: `programOperationAllowed` refuses it.
+      case activity host =>
+        have refused := List.all_eq_true.mp (analyzeProgram_incidence_admission program analysis admitted).2.2 _ included
+        simp [programOperationAllowed, SequentialScopeProgram.operationAllowed] at refused
   simpa only [InternalCommutation.uniqueFamilyDeclarer?, decide_eq_true_eq] using singleton
 
 /-- Human and Service counters have separate namespaces, but admitted source identities prevent their published wait anchors from sharing an element key. -/

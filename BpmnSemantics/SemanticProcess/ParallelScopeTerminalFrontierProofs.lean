@@ -242,7 +242,11 @@ private theorem parent_completions_eq (program : Program) (analysis : ProgramAna
       rw [← completions]
       apply List.mem_filter.mpr
       refine ⟨population, ?_⟩
-      cases operation <;> simp [SemanticOperation.kind] at kind ⊢
+      cases operation
+      case activity =>
+        -- A host publishes its work's wait kind, never a scope completion (ACTH-HOST-01).
+        cases wait : (‹ActivityHost›).waitKind <;> simp [SemanticOperation.kind, wait] at kind
+      all_goals simp [SemanticOperation.kind] at kind ⊢
     exact List.mem_singleton.mp included
   exact (completionEq left leftOperation leftResolved leftOwned leftKind).trans
     (completionEq right rightOperation rightResolved rightOwned rightKind).symm

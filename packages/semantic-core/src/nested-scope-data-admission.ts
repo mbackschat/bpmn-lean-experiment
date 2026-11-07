@@ -1,4 +1,5 @@
 import { sameCallDataInterface, variableMappingsValid } from "./call-data-admission.js";
+import { settledOperations } from "./activity-host-work.js";
 import { CallDataKind } from "./call-data-contract.js";
 import type { VariableMappingCallData } from "./call-data-contract.js";
 import { checkedNodeMerges } from "./checked-pass-through-flow.js";
@@ -435,6 +436,7 @@ function operationInputs(operation: SemanticOperation): readonly string[] {
     case SemanticOperationKind.Choose:
       return [operation.input];
     case SemanticOperationKind.MergeExclusive:
+    case SemanticOperationKind.Activity:
       return operation.inputs;
     default:
       return [];
@@ -442,7 +444,7 @@ function operationInputs(operation: SemanticOperation): readonly string[] {
 }
 
 function programHandlers(program: SemanticProcessProgram): ReadonlySet<string> {
-  return new Set(program.operations.flatMap(operation =>
+  return new Set(settledOperations(program.operations).flatMap(operation =>
     operation.kind === SemanticOperationKind.AwaitEffect ? [operation.effect.descriptor.operation] : []));
 }
 

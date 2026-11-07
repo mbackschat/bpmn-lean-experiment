@@ -315,6 +315,9 @@ private theorem replayed_retirement_le (program : Program) (before after : Runti
     rfl
   rw [kind] at metadata
   cases operation <;> simp only [SemanticOperation.kind] at metadata <;> try contradiction
+  case activity =>
+    -- A host publishes its work's wait kind, never a scope completion (ACTH-HOST-01).
+    cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
   cases control : before.control <;> simp only [InternalCommutation.applyInternalOperationOccurrence?, control,
     resolved, bind, Option.bind_some] at applied <;> try contradiction
   simp only [key] at applied

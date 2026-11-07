@@ -652,12 +652,13 @@ private theorem waitMatchesHandler_effect_definition (program : Program)
     · contradiction
   · contradiction
 
-theorem compensationExecutionStateValid_awaitEffect_disjoint (program : Program)
+/-- A declared operation's origin is no running compensation handler's element. -/
+theorem compensationExecutionStateValid_operation_disjoint (program : Program)
     (state : RuntimeState) (valid : compensationExecutionStateValid program state = true)
-    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
-    (effect : EffectDefinition) (route : Option BpmnErrorRoute)
-    (operationMember : .awaitEffect id origin input output effect route ∈ program.operations)
-    (elementId : NodeId) (aligned : origin.elementId = elementId)
+    (operation : SemanticOperation) (origin : NodeId)
+    (originEq : operationOriginElementId operation = some origin)
+    (operationMember : operation ∈ program.operations)
+    (elementId : NodeId) (aligned : origin = elementId)
     (wait : CompensationHandlerEffectWait) (waitMember : wait ∈ state.compensationHandlerEffectWaits) :
     elementId.value ≠ wait.id.elementId.value := by
   have declarationValid : compensationExecutionDeclarationValid program = true :=
@@ -672,15 +673,26 @@ theorem compensationExecutionStateValid_awaitEffect_disjoint (program : Program)
         exact List.all_eq_true.mp valid.2.1.1.1.1.1.1.2 wait waitMember
   obtain ⟨declaration, definition, present, member, elementEq⟩ :=
     waitMatchesHandler_effect_definition program state.compensationTriggers wait matching
-  have excluded := compensationExecutionDeclarationValid_awaitEffect_body_disjoint
-    program declaration present declarationValid id origin input output effect route
-      operationMember definition member
+  have excluded := compensationExecutionDeclarationValid_operation_body_disjoint
+    program declaration present declarationValid operation origin originEq operationMember definition member
   intro same
-  have bodyEq : origin.elementId = definition.body.effectElementId := by
+  have bodyEq : origin = definition.body.effectElementId := by
     rw [aligned]
     exact congrArg NodeId.mk (same.trans elementEq)
   apply excluded
   cases definition <;> simp_all [CompensationSubjectDefinition.body]
+
+theorem compensationExecutionStateValid_awaitEffect_disjoint (program : Program)
+    (state : RuntimeState) (valid : compensationExecutionStateValid program state = true)
+    (id : OperationId) (origin : BpmnElementOrigin) (input output : ControlPlaceId)
+    (effect : EffectDefinition) (route : Option BpmnErrorRoute)
+    (operationMember : .awaitEffect id origin input output effect route ∈ program.operations)
+    (elementId : NodeId) (aligned : origin.elementId = elementId)
+    (wait : CompensationHandlerEffectWait) (waitMember : wait ∈ state.compensationHandlerEffectWaits) :
+    elementId.value ≠ wait.id.elementId.value :=
+  compensationExecutionStateValid_operation_disjoint program state valid _ _
+    (operationOriginElementId_awaitEffect id origin input output effect route) operationMember elementId aligned wait
+    waitMember
 
 theorem compensationExecutionStateValid_running_insertEffect_frame (program : Program)
     (domain : RootCompensationExecutionDomain program)

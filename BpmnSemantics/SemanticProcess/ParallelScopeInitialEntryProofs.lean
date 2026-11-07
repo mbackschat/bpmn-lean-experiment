@@ -130,6 +130,8 @@ private theorem body_ports (program : Program) (analysis : ParallelScopeStart.Pr
   have allowed := ParallelScopeStart.analyzeProgram_operation_allowed program analysis admitted operation member
   cases operation <;> simp only [SemanticOperation.kind, List.mem_cons, List.not_mem_nil] at kind <;>
     try contradiction
+  -- The parallel-scope profile admits no host (ACTH-HOST-01).
+  case activity => simp [SequentialScopeProgram.operationAllowed] at allowed
   case awaitEffect id origin input output effect route =>
     cases route <;> simp [SequentialScopeProgram.operationAllowed] at allowed
     simp [bodyConsumedPorts, SequentialScopeControl.inputs, bodyProducedPorts, operationOutputs]
@@ -265,6 +267,8 @@ private theorem body_step_waits (program : Program) (before after : RuntimeState
   rename_i instanceId
   cases operation <;> simp only [SemanticOperation.kind, List.mem_cons, List.not_mem_nil] at ordinary <;> try contradiction
   all_goals simp only [applyInternalOperationOccurrence?, control, resolved, bind, Option.bind_some] at applied
+  -- A host is never applied by owning occurrence (ACTH-HOST-01).
+  case activity => simp at applied
   case awaitUserTask id origin input output task =>
     split at applied <;> try contradiction
     have activated : after = activateUserTask before record.owner.processInstanceId record.owner input output task := by
@@ -539,6 +543,9 @@ theorem initial_entry_body_replay_nonquiescent (program : Program)
         have nonentry : producer.kind ≠ .enterParallelMultiInstanceScope := by
           obtain ⟨producerVertex, _, producerEq⟩ := ParallelScopeStart.mapped_member _ _ _ convertedEq producer producerMember
           cases producer <;> simp only [SemanticOperation.kind, ne_eq, reduceCtorEq, not_false_eq_true]
+          case activity =>
+            -- A host publishes its work's wait kind, never a scope entry (ACTH-HOST-01).
+            cases wait : (‹ActivityHost›).waitKind <;> simp [wait]
           simp only [SequentialScopeControl.bodyVertex?] at producerEq
           contradiction
         have notEntry := nonentry_output_not_entry program analysis admitted producer (population producer producerMember)

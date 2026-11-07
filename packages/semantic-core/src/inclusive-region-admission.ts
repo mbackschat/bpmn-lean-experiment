@@ -230,6 +230,8 @@ function programVertexKind(operation: SemanticOperation): RegionVertexKind {
     case SemanticOperationKind.SynchronizeSelected: return RegionVertexKind.InclusiveJoin;
     case SemanticOperationKind.ReachNoneEnd: return RegionVertexKind.End;
     case SemanticOperationKind.InvokeProcess: return RegionVertexKind.Call;
+    // ACTH-ADMIT-01: a merging Task belongs to the re-entry account, which no Inclusive region shares.
+    case SemanticOperationKind.Activity: return RegionVertexKind.Other;
     default: return RegionVertexKind.Other;
   }
 }

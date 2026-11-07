@@ -138,6 +138,9 @@ theorem parallelScope_entered_retirement_dispatch (program : Program)
   have unique := resolved_operation_unique program before ⟨record.operationId, record.owner⟩ operation resolved
   rw [kind] at metadata
   cases operation <;> simp only [SemanticOperation.kind] at metadata <;> try contradiction
+  case activity =>
+    -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
+    cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at metadata
   rename_i id origin input childEntry childScope output collection item mappings condition ignored
   cases control : before.control <;> simp only [applyInternalOperationOccurrence?, control,
     resolved, bind, Option.bind_some] at applied <;> try contradiction
@@ -323,6 +326,9 @@ theorem parallelScope_start_occurrence_initiates (program : Program)
   rcases phases with ⟨kind, output, initiated, _⟩ | ⟨kind, _⟩ | ⟨kind, entered⟩ | ⟨kind, _⟩
   · have operationKind : operation.kind = .initiate := by simpa only [metadata] using kind
     cases operation <;> simp [SemanticOperation.kind] at operationKind
+    case activity =>
+      -- A host publishes its work's wait kind, never the kind selected here (ACTH-HOST-01).
+      cases wait : (‹ActivityHost›).waitKind <;> simp [wait] at operationKind
     rename_i id origin declaredOutput
     refine ⟨id, origin, declaredOutput, member, ?_⟩
     simp only [applyInternalOperationOccurrence?, running, resolved, bind, Option.bind_some] at applied

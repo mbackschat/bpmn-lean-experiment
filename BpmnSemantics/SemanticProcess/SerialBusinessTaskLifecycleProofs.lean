@@ -287,6 +287,83 @@ private theorem allowed_filter_absent (program : Program) (select : SemanticOper
   intro operation member
   simp [excluded operation (allowed operation member)]
 
+-- One lemma per family: each case-splits every `SemanticOperation` constructor, and nine such splits in one
+-- declaration exceed its heartbeat limit once the Activity host constructor is added (narrow build, 2026-11-07).
+private theorem parallelMultiInstance_absent (program : Program) (taskId : TaskDefinitionId)
+    (allowed : ∀ operation ∈ program.operations, OperationAllowed operation) :
+    parallelMultiInstanceEntryForTask? program taskId = none := by
+  unfold parallelMultiInstanceEntryForTask?
+  rw [allowed_filter_absent program _ allowed (by
+    intro operation selected
+    cases operation <;> simp_all [OperationAllowed, ParallelMultiInstanceArm.ofOperation?])]
+
+private theorem sequentialMultiInstance_absent (program : Program) (taskId : TaskDefinitionId)
+    (allowed : ∀ operation ∈ program.operations, OperationAllowed operation) :
+    sequentialMultiInstanceOperationForTask? program taskId = none := by
+  unfold sequentialMultiInstanceOperationForTask?
+  rw [allowed_filter_absent program _ allowed (by
+    intro operation selected
+    cases operation <;> simp_all [OperationAllowed])]
+
+private theorem messageMonitored_absent (program : Program) (taskId : TaskDefinitionId)
+    (allowed : ∀ operation ∈ program.operations, OperationAllowed operation) :
+    isMessageMonitoredTaskDefinition program taskId = false := by
+  unfold isMessageMonitoredTaskDefinition messageMonitoredTaskDefinitions
+  rw [allowed_filterMap_absent program _ allowed (by
+    intro operation selected
+    cases operation <;> simp_all [OperationAllowed])]
+  rfl
+
+private theorem messageBounded_absent (program : Program) (taskId : TaskDefinitionId)
+    (allowed : ∀ operation ∈ program.operations, OperationAllowed operation) :
+    isMessageBoundedTaskDefinition program taskId = false := by
+  unfold isMessageBoundedTaskDefinition messageBoundedTaskOperations
+  rw [allowed_filterMap_absent program _ allowed (by
+    intro operation selected
+    cases operation <;> simp_all [OperationAllowed])]
+  rfl
+
+private theorem bounded_absent (program : Program) (taskId : TaskDefinitionId)
+    (allowed : ∀ operation ∈ program.operations, OperationAllowed operation) :
+    isBoundedTaskDefinition program taskId = false := by
+  unfold isBoundedTaskDefinition boundedTaskOperations
+  rw [allowed_filterMap_absent program _ allowed (by
+    intro operation selected
+    cases operation <;> simp_all [OperationAllowed])]
+  rfl
+
+private theorem dataInput_absent (program : Program)
+    (allowed : ∀ operation ∈ program.operations, OperationAllowed operation) :
+    dataInputTaskOperations program = [] := by
+  exact allowed_filterMap_absent program _ allowed (by
+    intro operation selected
+    cases operation <;> simp_all [OperationAllowed])
+
+private theorem dataOutput_absent (program : Program)
+    (allowed : ∀ operation ∈ program.operations, OperationAllowed operation) :
+    dataOutputTaskOperations program = [] := by
+  exact allowed_filterMap_absent program _ allowed (by
+    intro operation selected
+    cases operation <;> simp_all [OperationAllowed])
+
+private theorem monitored_absent (program : Program) (taskId : TaskDefinitionId)
+    (allowed : ∀ operation ∈ program.operations, OperationAllowed operation) :
+    isMonitoredTaskDefinition program taskId = false := by
+  unfold isMonitoredTaskDefinition monitoredTaskOperations
+  rw [allowed_filterMap_absent program _ allowed (by
+    intro operation selected
+    cases operation <;> simp_all [OperationAllowed])]
+  rfl
+
+private theorem dataInputOutput_absent (program : Program) (taskId : TaskDefinitionId)
+    (allowed : ∀ operation ∈ program.operations, OperationAllowed operation) :
+    isDataInputOutputTaskDefinition program taskId = false := by
+  unfold isDataInputOutputTaskDefinition dataInputOutputTaskContracts
+  rw [allowed_filterMap_absent program _ allowed (by
+    intro operation selected
+    cases operation <;> simp_all [OperationAllowed])]
+  rfl
+
 theorem completion_foreign_families_absent (program : Program) (analysis : Analysis)
     (taskId : TaskDefinitionId) (analyzed : programAnalysis program = some analysis) :
     parallelMultiInstanceEntryForTask? program taskId = none ∧
@@ -298,46 +375,10 @@ theorem completion_foreign_families_absent (program : Program) (analysis : Analy
       isMonitoredTaskDefinition program taskId = false ∧
       isDataInputOutputTaskDefinition program taskId = false := by
   have allowed := program_analysis_operations_allowed program analysis analyzed
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · unfold parallelMultiInstanceEntryForTask?
-    rw [allowed_filter_absent program _ allowed (by
-      intro operation selected
-      cases operation <;> simp_all [OperationAllowed, ParallelMultiInstanceArm.ofOperation?])]
-  · unfold sequentialMultiInstanceOperationForTask?
-    rw [allowed_filter_absent program _ allowed (by
-      intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
-  · unfold isMessageMonitoredTaskDefinition messageMonitoredTaskDefinitions
-    rw [allowed_filterMap_absent program _ allowed (by
-      intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
-    rfl
-  · unfold isMessageBoundedTaskDefinition messageBoundedTaskOperations
-    rw [allowed_filterMap_absent program _ allowed (by
-      intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
-    rfl
-  · unfold isBoundedTaskDefinition boundedTaskOperations
-    rw [allowed_filterMap_absent program _ allowed (by
-      intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
-    rfl
-  · exact allowed_filterMap_absent program _ allowed (by
-      intro operation selected
-      cases operation <;> simp_all [OperationAllowed])
-  · exact allowed_filterMap_absent program _ allowed (by
-      intro operation selected
-      cases operation <;> simp_all [OperationAllowed])
-  · unfold isMonitoredTaskDefinition monitoredTaskOperations
-    rw [allowed_filterMap_absent program _ allowed (by
-      intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
-    rfl
-  · unfold isDataInputOutputTaskDefinition dataInputOutputTaskContracts
-    rw [allowed_filterMap_absent program _ allowed (by
-      intro operation selected
-      cases operation <;> simp_all [OperationAllowed])]
-    rfl
+  exact ⟨parallelMultiInstance_absent program taskId allowed, sequentialMultiInstance_absent program taskId allowed,
+    messageMonitored_absent program taskId allowed, messageBounded_absent program taskId allowed,
+    bounded_absent program taskId allowed, dataInput_absent program allowed, dataOutput_absent program allowed,
+    monitored_absent program taskId allowed, dataInputOutput_absent program taskId allowed⟩
 
 /-- The existing User Task dispatcher either refuses exactly or commits its actual raw completion and canonical Process merge. -/
 theorem human_dispatch_cases (program : Program) (analysis : Analysis) (before : RuntimeState)

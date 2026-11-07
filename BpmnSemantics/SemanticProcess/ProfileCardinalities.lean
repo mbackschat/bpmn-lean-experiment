@@ -47,6 +47,9 @@ structure ShapeCardinalities where
   pass-through Task count admits an Event in its place. -/
   noneIntermediateThrowEvents : Nat := 0
   effects : Nat := 0
+  /-- ACTH-HOST-01: Activity hosts, counted apart from the legacy Tasks as the TypeScript shape counts the `activity`
+  kind, so that no exact profile shape admits a host in a Task's place. -/
+  activityHosts : Nat := 0
   duplicates : Nat := 0
   synchronizes : Nat := 0
   exclusiveMerges : Nat := 0
@@ -206,6 +209,7 @@ def addOperationCardinality (counts : ShapeCardinalities)
     | .awaitMonitoredUserTask .. =>
         { counts with monitoredUserTasks := counts.monitoredUserTasks + 1 }
     | .awaitEffect .. => { counts with effects := counts.effects + 1 }
+    | .activity _ => { counts with activityHosts := counts.activityHosts + 1 }
     | .duplicate .. => { counts with duplicates := counts.duplicates + 1 }
     | .synchronize .. =>
         { counts with synchronizes := counts.synchronizes + 1 }

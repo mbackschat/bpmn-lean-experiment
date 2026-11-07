@@ -2,6 +2,7 @@ import {
   ControlStateKind,
   MappingExpressionKind,
   SemanticOperationKind,
+  publishedOperationKind,
   SemanticProcessCompilerId,
   SemanticProcessKind,
   SemanticTransitionKind,
@@ -330,7 +331,7 @@ export function runExplicitOrder(
       transition: {
         kind: SemanticTransitionKind.InternalOperation,
         operationId: step.operation.id,
-        operationKind: step.operation.kind,
+        operationKind: publishedOperationKind(step.operation),
         origin: step.operation.origin,
         owner: step.owner,
       },

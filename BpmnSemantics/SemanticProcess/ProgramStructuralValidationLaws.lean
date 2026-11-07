@@ -1,5 +1,6 @@
 module
 
+import BpmnSemantics.SemanticProcess.ActivityHostWork
 public import BpmnSemantics.SemanticProcess.ProgramStructuralValidation
 public import BpmnSemantics.SemanticProcess.CallDataAdmission
 public import BpmnSemantics.SemanticProcess.CompensationActivityRetentionDeclaration
@@ -300,6 +301,10 @@ theorem effectWaitDeclarationKey_eq (elementId : NodeId) :
 theorem operationWaitDeclarationKeys_eq (operation : SemanticOperation) :
     operationWaitDeclarationKeys operation = match operation with
   | .awaitUserTask _ _ _ _ task => [userTaskWaitDeclarationKey task.id]
+  | .activity host =>
+      match host.work with
+      | .userTask task => [userTaskWaitDeclarationKey task.id]
+      | .effect _ => [effectWaitDeclarationKey host.origin.elementId]
   | .awaitDataInputUserTask _ _ _ _ taskId _ _
   | .awaitDataInputOutputUserTask _ _ _ _ taskId _ _ _
   | .awaitDataOutputUserTask _ _ _ _ taskId _ _ =>
@@ -354,7 +359,11 @@ theorem operationWaitDeclarationKeys_eq (operation : SemanticOperation) :
   | .completeScope ..
   | .completeEventSubProcess ..
   | .triggerCompensation .. | .cancelTransaction .. => [] := by
-  cases operation <;> rfl
+  cases operation
+  case activity host =>
+    unfold operationWaitDeclarationKeys
+    cases work : host.work <;> simp [ActivityHost.userTask?_eq, ActivityHost.effect?_eq, work]
+  all_goals rfl
 
 theorem operationDeclaresWaitKey_eq (operation : SemanticOperation) (key : WaitDeclarationKey) :
     operationDeclaresWaitKey operation key = (operationWaitDeclarationKeys operation).contains key := by
@@ -378,6 +387,7 @@ theorem programWellFormed_eq (program : Program) :
     program.controlPlaces.all (fun place =>
       nonempty place.id.value && nonempty place.origin.elementId.value) &&
     program.operations.all (operationWellFormed program program.controlPlaces) &&
+    program.operations.all (activityHostWorkValid program program.controlPlaces) &&
     program.operations.all (operationRecurrenceValid program.identity.semanticProfile) &&
     inclusiveOperationsPaired program.operations &&
     callOperationsPaired program &&

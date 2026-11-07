@@ -401,6 +401,8 @@ def internalArmInput? : SemanticOperation → Option ControlPlaceId
   | .awaitPayloadMessage _ _ input _ _ _
   | .awaitCorrelatedPayloadMessage _ _ input _ _ _ _ _ _
   | .awaitTimer _ _ input _ _ | .awaitEffect _ _ input _ _ _ => some input
+  -- A host takes several inputs and is never batched (Activity host proposal, internal commutation).
+  | .activity .. => none
   | _ => none
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.InternalCommutation #[`internalArmInput?]
@@ -492,6 +494,8 @@ def prepareInternalArm? (program : Program) (state : RuntimeState)
     | .running instanceId => some instanceId
     | _ => none
   let write : InternalArmingWrite ← match operation with
+    -- A host has no arming input above, so it never reaches here; named so no arm can absorb it.
+    | .activity .. => none
     | .awaitUserTask _ _ _ output task =>
         let next := activationCount state task.id + 1
         some (.userTask

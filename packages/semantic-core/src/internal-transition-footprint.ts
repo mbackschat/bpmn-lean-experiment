@@ -1,4 +1,5 @@
 import type { OccurrenceId } from "./contract.js";
+import type { PublishedSemanticOperationKind } from "./semantic-process-contract.js";
 import type {
   ActivityOccurrence,
   ActivityOccurrenceId,
@@ -207,7 +208,7 @@ export type InternalTransitionPublicationAtom = Readonly<
   | {
       kind: InternalTransitionPublicationAtomKind.CommittedTransition;
       operationId: string;
-      operationKind: SemanticOperationKind;
+      operationKind: PublishedSemanticOperationKind;
       origin: BpmnElementOrigin;
       owner: ScopeOccurrenceId;
       logicalTimeMs: number;
@@ -502,6 +503,8 @@ export function deriveInternalTransitionFootprint(
     case SemanticOperationKind.ReachNoneEnd:
     case SemanticOperationKind.CompleteScope:
     case SemanticOperationKind.CompleteEventSubProcess:
+    // ACTH-HOST-01: a host is never batched; its footprint waits for concurrent arrivals.
+    case SemanticOperationKind.Activity:
       return null;
     default:
       return assertNever(operation);

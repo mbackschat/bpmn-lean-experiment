@@ -13,8 +13,10 @@ import {
   nestedScopeControlProgramAnalysis,
   structuredScopeDataProgramAnalysis,
   profileAllowsProgramShape,
+  publishedOperationKind,
 } from "@bpmn-lean/semantic-core";
 import type {
+  PublishedSemanticOperationKind,
   SemanticOperation,
   SemanticProcessProgram,
 } from "@bpmn-lean/semantic-core";
@@ -99,16 +101,16 @@ export function assessTemporalHostCapability(
     };
   }
   const canSplitTokens = program.operations.some(
-    ({ kind }) => classifyHostOperation(kind) === HostOperationClass.TokenSplit,
+    (operation) => classifyHostOperation(publishedOperationKind(operation)) === HostOperationClass.TokenSplit,
   );
   const hasHostDrivenWait = program.operations.some(
-    ({ kind }) =>
-      classifyHostOperation(kind) === HostOperationClass.HostDrivenWait,
+    (operation) =>
+      classifyHostOperation(publishedOperationKind(operation)) === HostOperationClass.HostDrivenWait,
   );
   const claimants = managedClasses.map((managed) => ({
     managed,
     operations: program.operations.filter(
-      ({ kind }) => classifyHostOperation(kind) === managed.operationClass,
+      (operation) => classifyHostOperation(publishedOperationKind(operation)) === managed.operationClass,
     ),
   }));
   // Each managed class owns one scheduler instance, so the host admits at most one managed
@@ -321,8 +323,9 @@ const managedClasses: ReadonlyArray<ManagedHostClass> = [
   },
 ];
 
+/** ACTH-HOST-01: a host is admitted exactly as the legacy operation of its work, so classification reads its published kind. */
 function classifyHostOperation(
-  kind: SemanticOperationKind,
+  kind: PublishedSemanticOperationKind,
 ): HostOperationClass {
   switch (kind) {
     case SemanticOperationKind.Duplicate:
