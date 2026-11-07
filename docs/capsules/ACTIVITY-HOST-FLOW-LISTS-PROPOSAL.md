@@ -290,7 +290,7 @@ None. A host arrival opens the existing User Task or effect wait with its single
 - two Link throws whose catch's successor is an Exclusive Gateway, a None End or a pass-through Manual Task, the last against its admitted explicit-flow twin, with the contraction refusal checked directly in both languages;
 - each model under the embedded completion profile.
 
-**Profile matrix.** Lean checks the Task arity arm over all four combinations of the two flags. TypeScript keys the arity on the profile, so its source test refuses the claim model under every other registered profile (wrong algorithm 2).
+**Profile matrix.** Lean checks the Task arity arm over all four combinations of the two flags. TypeScript keys the arity on the profile, and its source test refuses the claim model under every other registered profile; that shows the public outcome but not the arm, since the other profiles refuse the model for other reasons, so only Lean separates wrong algorithm 2.
 
 **Kernel witnesses**, in both languages:
 
@@ -451,7 +451,7 @@ It sits beside the [consumer census](../../scripts/semantic-operation-consumer-c
 
 - **Lean population.** Every production Lean `def` (excluding `Experiments`, `*Conformance*` and `*Fixtures*`) whose body names `.awaitUserTask` or `.awaitEffect` and holds a wildcard arm (`| _ =>`, `| _,` or a trailing `| _`) must also name `.activity`. Measured 2026-11-06: 91 declarations in 47 files.
 - **Multiplicity-keyed sites.** These are listed by name and must name the host, though they never name `awaitUserTask`: `operationJoint`, `programReentry`, `checkedReentry`, `operationVertex?`, `internalArmInput?`, `prepareInternalArm?` and `semanticOperationInternalFamily`, with their TypeScript twins.
-- **TypeScript population.** Every production function naming `SemanticOperationKind.AwaitUserTask` or `AwaitEffect` must also name `SemanticOperationKind.Activity` or call the accessor leaf. Measured: 195 sites in 50 files. The scan reads column-zero `function` declarations only; arrow functions, `const` function values and methods are outside its reach (19 legacy-kind lines, 2026-11-07), so those readers rest on exhaustive switches and the core tests.
+- **TypeScript population.** Every production function naming `SemanticOperationKind.AwaitUserTask` or `AwaitEffect` must also name `SemanticOperationKind.Activity` or call the accessor leaf. Measured with the compiler API before the representation commit: 195 sites in 50 files. The scan in use reads column-zero `function` declarations only; arrow functions, `const` function values and methods are outside its reach (19 legacy-kind lines, 2026-11-07), so those readers rest on exhaustive switches and the core tests.
 - **Allowlist.** The allowlist names declarations, never files, each with a one-line reason. It is measured before the representation commit's review and stated in its Rule 2 declaration.
 - **Frozen legacy.** Every publication site derives `operationKind` through the accessor. Every `SemanticOperation` constructor whose text mentions `UserTask` or `Effect`, and the two payload structures, stay byte-identical until retirement, and a new such constructor fails the guard. Lowering a further BPMN variant onto an unchanged legacy constructor, such as a new Service Task variant onto `awaitEffect`, is equally a feature that triggers the switch; the census cannot see it, so that family's proposal declares it.
 
