@@ -24,6 +24,7 @@ structure OccurrenceId where
 structure ActiveWait where
   elementId : String
   kind : String
+  rank : Nat
   multiplicity : Nat
   deriving Repr
 
@@ -78,12 +79,13 @@ structure Observation where
   logicalTimeMs : Nat
   deriving Repr
 
-def waitKind : OpenKind → Option String
-  | .userTask _ => some "userTask"
-  | .message _ => some "message"
-  | .timer _ => some "timer"
-  | .effect _ => some "effect"
-  | .incident _ => some "incident"
+/-- The published wait kind of an open item and its rank in `activeWaits`; evaluation requests are not waits. -/
+def waitKind : OpenKind → Option (String × Nat)
+  | .userTask _ => some ("userTask", 0)
+  | .message _ => some ("message", 1)
+  | .timer _ => some ("timer", 2)
+  | .effect _ => some ("effect", 3)
+  | .incident _ => some ("incident", 4)
   | .evaluation _ => none
 
 def statusName : InstanceStatus → String
@@ -93,17 +95,23 @@ def statusName : InstanceStatus → String
   | .failed => "failed"
 
 /-- One wait per element and kind, counting its open items, in the order the first of them opened. -/
-def activeWaits (items : List OpenItem) : List ActiveWait :=
+def activeWaitsInOpenOrder (items : List OpenItem) : List ActiveWait :=
   items.foldl (fun waits item =>
     match waitKind item.kind with
     | none => waits
-    | some kind =>
+    | some (kind, rank) =>
       if waits.any (fun wait => wait.elementId == item.element.value && wait.kind == kind) then
         waits.map fun wait =>
           if wait.elementId == item.element.value && wait.kind == kind then
             { wait with multiplicity := wait.multiplicity + 1 }
           else wait
-      else waits ++ [{ elementId := item.element.value, kind, multiplicity := 1 }]) []
+      else waits ++ [{ elementId := item.element.value, kind, rank, multiplicity := 1 }]) []
+
+/-- One wait per element and kind, counting its open items, ordered by kind (user task, message, timer, effect,
+incident) and then by element id, as every retained baseline state orders them (994 of 994, 2026-11-08). -/
+def activeWaits (items : List OpenItem) : List ActiveWait :=
+  (activeWaitsInOpenOrder items).mergeSort fun left right =>
+    left.rank < right.rank || (left.rank == right.rank && decide (left.elementId ≤ right.elementId))
 
 def occurrenceId (state : State) (item : OpenItem) : OccurrenceId :=
   { processInstanceId := state.instanceId, elementId := item.element.value, activation := item.activation }

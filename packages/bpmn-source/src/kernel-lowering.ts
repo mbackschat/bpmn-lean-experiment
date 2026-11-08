@@ -1,9 +1,10 @@
-import { ActivityDataEndpointKind, CheckedNodeKind, SimpleBooleanExpressionKind } from "@bpmn-lean/semantic-core";
+import { ActivityDataEndpointKind, CheckedNodeKind, MessageChannelKind, SimpleBooleanExpressionKind } from "@bpmn-lean/semantic-core";
 import type {
   CheckedNode,
   CheckedProcess,
   DirectActivityDataInput,
   DirectActivityDataOutput,
+  MessageChannel,
   SimpleBooleanExpression,
 } from "@bpmn-lean/semantic-core";
 
@@ -103,8 +104,20 @@ const subscription = (trigger: KernelJson, outputs: KernelJson[] = []): KernelJs
 const timer = (schedule: KernelJson): KernelJson => ctor("timer", { payload: { schedule } });
 const duration = (literal: string): KernelJson => timer(ctor("duration", { value: literalSource(literal) }));
 const cycle = (literal: string): KernelJson => timer(ctor("cycle", { value: literalSource(literal), dialect: "iso8601" }));
-const message = (messageId: string, correlation: KernelJson[] = []): KernelJson =>
-  ctor("message", { payload: { name: literalSource(messageId), correlation } });
+/** The IL `MessageTrigger` of a checked channel; an unspecified Message has no name (CIB-INT-0004). */
+function messageTrigger(channel: MessageChannel): KernelJson {
+  switch (channel.kind) {
+    case MessageChannelKind.OperationMessage:
+      return { name: literalSource(channel.messageId), correlation: [],
+        interfaceRef: channel.interfaceId, operationRef: channel.interfaceOperationId };
+    case MessageChannelKind.DirectMessage:
+      return { name: literalSource(channel.messageId), correlation: [], interfaceRef: null, operationRef: null };
+    case MessageChannelKind.UnspecifiedMessage:
+      return { name: null, correlation: [], interfaceRef: null, operationRef: null };
+  }
+}
+
+const message = (channel: MessageChannel): KernelJson => ctor("message", { payload: messageTrigger(channel) });
 
 type Ownership = {
   readonly parentOf: (nodeId: string) => string | null;
@@ -238,7 +251,7 @@ function lowerNode(checked: CheckedProcess, node: CheckedNode, owner: Ownership)
     case CheckedNodeKind.NoneStartEvent:
       return [start(node, null, owner)];
     case CheckedNodeKind.MessageStartEvent:
-      return [start(node, message(node.channel.messageId), owner)];
+      return [start(node, message(node.channel), owner)];
     case CheckedNodeKind.TimerStartEvent:
       return [start(node, duration(node.durationLiteral), owner)];
     case CheckedNodeKind.EmbeddedSubProcess:
@@ -282,7 +295,7 @@ function lowerNode(checked: CheckedProcess, node: CheckedNode, owner: Ownership)
         node.cycleLiteral === undefined ? duration(node.durationLiteral ?? "") : cycle(node.cycleLiteral),
         node.interruption === "interrupting", node.outputFlowId)];
     case CheckedNodeKind.MessageBoundaryEvent:
-      return [boundary(node.id, node.attachedToRef, message(node.channel.messageId),
+      return [boundary(node.id, node.attachedToRef, message(node.channel),
         node.interruption === "interrupting", node.outputFlowId)];
     case CheckedNodeKind.UserTask:
       return [activity(node, "userTask", userWork(node.name,
@@ -309,10 +322,10 @@ function lowerNode(checked: CheckedProcess, node: CheckedNode, owner: Ownership)
         ctor("catch", { subscription: subscription(duration(node.durationLiteral)) }), "intermediate", owner)];
     case CheckedNodeKind.IntermediateCatchMessageEvent:
       return [event(node, "intermediateCatchEvent",
-        ctor("catch", { subscription: subscription(message(messageIdOf(node.channel))) }), "intermediate", owner)];
+        ctor("catch", { subscription: subscription(message(node.channel)) }), "intermediate", owner)];
     case CheckedNodeKind.PayloadMessageCatchEvent:
       return [event(node, "intermediateCatchEvent", ctor("catch", {
-        subscription: subscription(message(node.channel.messageId), [
+        subscription: subscription(message(node.channel), [
           { target: node.directOutput.targetPropertyId, source: variable(node.directOutput.sourceDataOutputName ?? node.directOutput.sourceDataOutputId) },
         ]),
       }), "intermediate", owner)];
@@ -320,7 +333,7 @@ function lowerNode(checked: CheckedProcess, node: CheckedNode, owner: Ownership)
       throw new Refusal("lowering.correlatedPayloadMessageCatch");
     case CheckedNodeKind.ReceiveTask:
       return [activity(node, "receiveTask", ctor("receive", {
-        payload: { message: messageIdOf(node.channel) === "" ? null : { name: literalSource(messageIdOf(node.channel)), correlation: [] } },
+        payload: { message: messageTrigger(node.channel) },
       }), owner)];
     case CheckedNodeKind.ServiceTask: {
       const lowered = activity(node, "serviceTask", ctor("service", {
@@ -394,10 +407,6 @@ function directInput(input: DirectActivityDataInput): KernelJson {
 function directOutput(output: DirectActivityDataOutput): KernelJson {
   const target = output.target.kind === ActivityDataEndpointKind.Property ? output.target.propertyId : output.target.dataOutputId;
   return { target, source: variable(output.sourceDataOutputName ?? output.sourceDataOutputId) };
-}
-
-function messageIdOf(channel: { readonly kind: string; readonly messageId?: string }): string {
-  return channel.messageId ?? "";
 }
 
 export function lowerCheckedProcessToKernel(checked: CheckedProcess): KernelLowering {

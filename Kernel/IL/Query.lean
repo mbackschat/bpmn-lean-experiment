@@ -71,6 +71,22 @@ def EventPayload.catch? (payload : EventPayload) : Option Subscription :=
   | .linkCatch _ => none
   | .linkThrow _ => none
 
+/-- The Link name of a throwing Link Event. -/
+def EventPayload.linkThrow? (payload : EventPayload) : Option String :=
+  match payload.role with
+  | .linkThrow name => some name
+  | .catch _ => none
+  | .throw _ => none
+  | .linkCatch _ => none
+
+/-- The Link name of a catching Link Event. -/
+def EventPayload.linkCatch? (payload : EventPayload) : Option String :=
+  match payload.role with
+  | .linkCatch name => some name
+  | .catch _ => none
+  | .throw _ => none
+  | .linkThrow _ => none
+
 /-- The incoming flows of an element; a start Event has none. -/
 def Element.incoming : Element → List FlowId
   | .activity _ payload => payload.envelope.incoming

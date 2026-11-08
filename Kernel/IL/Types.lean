@@ -87,10 +87,11 @@ structure CorrelationCriterion where
   value : Expression
   deriving Repr
 
-/-- `name` is the BPMN Message's identifier; `interfaceRef` and `operationRef` name the Operation that carries it,
-when the model gives one. -/
+/-- `name` is the BPMN Message's identifier, `none` for an unspecified Message (a Receive Task without
+`messageRef`, which only its waiting occurrence addresses); `interfaceRef` and `operationRef` name the Operation that
+carries it, when the model gives one. -/
 structure MessageTrigger where
-  name : ValueSource
+  name : Option ValueSource
   correlation : List CorrelationCriterion := []
   interfaceRef : Option String := none
   operationRef : Option String := none
@@ -196,7 +197,7 @@ structure UserWork where
   deriving Repr
 
 structure ReceiveWork where
-  message : Option MessageTrigger
+  message : MessageTrigger
   deriving Repr
 
 structure ServiceWork where

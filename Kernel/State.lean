@@ -90,6 +90,22 @@ inductive OpenKind where
   | evaluation (request : Nat)
   deriving Repr
 
+def OpenKind.timer? : OpenKind → Option TimerDetail
+  | .timer detail => some detail
+  | .userTask _ => none
+  | .message _ => none
+  | .effect _ => none
+  | .incident _ => none
+  | .evaluation _ => none
+
+def OpenKind.message? : OpenKind → Option MessageWaitDetail
+  | .message detail => some detail
+  | .userTask _ => none
+  | .timer _ => none
+  | .effect _ => none
+  | .incident _ => none
+  | .evaluation _ => none
+
 /-- One open interaction. `activation` counts activations of `element` in this process instance, from 1.
 `attachedTo` is the host an attached subscription belongs to: the id of the host's own item, or the value of the
 host scope occurrence's id. A `passive` item, such as an Event Sub-Process start subscription, keeps no scope
