@@ -41,6 +41,7 @@ verify_lean_checks() {
 verify_runtime() {
   ./scripts/pnpm.sh run build:verification-typescript
   ./scripts/pnpm.sh run test:semantic-core:built
+  ./scripts/pnpm.sh run test:kernel
   ./scripts/pnpm.sh run test:bpmn-source:built
   ./scripts/test-cibseven-oracle.sh
   ./scripts/pnpm.sh run test:differential:built

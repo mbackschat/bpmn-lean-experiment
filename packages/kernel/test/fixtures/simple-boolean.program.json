@@ -1,0 +1,127 @@
+{"identity":
+ {"sourceSha256":
+  "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b",
+  "profile": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+  "processId": "Process_SimpleBooleanChoice"},
+ "flows":
+ [{"target": "Choice", "source": "Start", "id": "Flow_Start"},
+  {"target": "Task_First", "source": "Choice", "id": "Flow_First"},
+  {"target": "Task_Second", "source": "Choice", "id": "Flow_Second"},
+  {"target": "Task_Default", "source": "Choice", "id": "Flow_Default"},
+  {"target": "End_First", "source": "Task_First", "id": "Flow_First_End"},
+  {"target": "End_Second", "source": "Task_Second", "id": "Flow_Second_End"},
+  {"target": "End_Default",
+   "source": "Task_Default",
+   "id": "Flow_Default_End"}],
+ "elements":
+ [{"start":
+   {"payload": {"subscription": null, "outgoing": ["Flow_Start"]},
+    "header": {"sourceType": "startEvent", "parent": null, "id": "Start"}}},
+  {"gateway":
+   {"payload":
+    {"outgoing": ["Flow_Default", "Flow_Second", "Flow_First"],
+     "kind":
+     {"exclusive":
+      {"default": "Flow_Default",
+       "candidates":
+       [{"flow": "Flow_First",
+         "condition":
+         {"simpleBoolean": {"body": {"literal": {"value": true}}}}},
+        {"flow": "Flow_Second",
+         "condition":
+         {"simpleBoolean": {"body": {"isPresent": {"name": "route"}}}}}]}},
+     "incoming": ["Flow_Start"]},
+    "header":
+    {"sourceType": "exclusiveGateway", "parent": null, "id": "Choice"}}},
+  {"activity":
+   {"payload":
+    {"work":
+     {"user":
+      {"payload":
+       {"priority": null,
+        "name": "First branch",
+        "formKey": null,
+        "formFields": [],
+        "followUpDate": null,
+        "dueDate": null,
+        "candidateUsers": [],
+        "candidateGroups": [],
+        "assignee": null}}},
+     "envelope":
+     {"outputs": [],
+      "outgoing": ["Flow_First_End"],
+      "multiInstance": null,
+      "inputs": [],
+      "incoming": ["Flow_First"],
+      "compensationHandler": null,
+      "boundaries": []}},
+    "header": {"sourceType": "userTask", "parent": null, "id": "Task_First"}}},
+  {"activity":
+   {"payload":
+    {"work":
+     {"user":
+      {"payload":
+       {"priority": null,
+        "name": "Second branch",
+        "formKey": null,
+        "formFields": [],
+        "followUpDate": null,
+        "dueDate": null,
+        "candidateUsers": [],
+        "candidateGroups": [],
+        "assignee": null}}},
+     "envelope":
+     {"outputs": [],
+      "outgoing": ["Flow_Second_End"],
+      "multiInstance": null,
+      "inputs": [],
+      "incoming": ["Flow_Second"],
+      "compensationHandler": null,
+      "boundaries": []}},
+    "header": {"sourceType": "userTask", "parent": null, "id": "Task_Second"}}},
+  {"activity":
+   {"payload":
+    {"work":
+     {"user":
+      {"payload":
+       {"priority": null,
+        "name": "Default branch",
+        "formKey": null,
+        "formFields": [],
+        "followUpDate": null,
+        "dueDate": null,
+        "candidateUsers": [],
+        "candidateGroups": [],
+        "assignee": null}}},
+     "envelope":
+     {"outputs": [],
+      "outgoing": ["Flow_Default_End"],
+      "multiInstance": null,
+      "inputs": [],
+      "incoming": ["Flow_Default"],
+      "compensationHandler": null,
+      "boundaries": []}},
+    "header":
+    {"sourceType": "userTask", "parent": null, "id": "Task_Default"}}},
+  {"event":
+   {"payload":
+    {"role": {"throw": {"record": "none"}},
+     "placement": "finish",
+     "outgoing": [],
+     "incoming": ["Flow_First_End"]},
+    "header": {"sourceType": "endEvent", "parent": null, "id": "End_First"}}},
+  {"event":
+   {"payload":
+    {"role": {"throw": {"record": "none"}},
+     "placement": "finish",
+     "outgoing": [],
+     "incoming": ["Flow_Second_End"]},
+    "header": {"sourceType": "endEvent", "parent": null, "id": "End_Second"}}},
+  {"event":
+   {"payload":
+    {"role": {"throw": {"record": "none"}},
+     "placement": "finish",
+     "outgoing": [],
+     "incoming": ["Flow_Default_End"]},
+    "header":
+    {"sourceType": "endEvent", "parent": null, "id": "End_Default"}}}]}

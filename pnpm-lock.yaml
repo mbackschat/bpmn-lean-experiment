@@ -68,6 +68,8 @@ importers:
         specifier: workspace:*
         version: link:../temporal-adapter/protocol
 
+  packages/kernel: {}
+
   packages/semantic-core:
     dependencies:
       '@bpmn-lean/contract-types':
