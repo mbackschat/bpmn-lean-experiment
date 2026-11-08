@@ -102,16 +102,16 @@ Current task: the [Lean kernel rewrite](LEAN-KERNEL-REWRITE-PROPOSAL.md), owner 
 
 Deliverable: the proposal's W0 (new kernel at scenario parity, old stack and documents deleted), then mechanism tracks M1–M9 and the integration track.
 
-Acceptance blockers: the proposal's final review round (round 2 on `9342a8da` required edits, all answered in revision 3).
+Acceptance blockers: none for W0; the owner packet gates the start of M1, M2 and M6.
 
-Current result: proposal revision 3 after two rounds of eight reviews and audits.
+Current result: proposal approved in the final round on `4424cdab`; recommended items are carried into W0.
 
-Owner items: the proposal's owner packet during W0 (proof-wave confirmation, JUEL adoption as a W0 exit item, Script runtime, decision engine, Cron dialect, the two SDK holds).
+Owner items: the proposal's owner packet during W0 (proof-wave confirmation, JUEL adoption gating M1, M2 and M6, Script runtime, decision engine, Cron dialect, the two SDK holds).
 
 Effort budget: 168 hours from approval for W0, per the proposal's milestone budgets and stop rules; a missed budget is reported to the owner at once and never renewed silently.
 
-Next action: on approval, W0.1 starting with the process reset (rewrite `CLAUDE.md`, delete the process and document guards), then the kernel skeleton.
+Next action: W0.0, the process reset (rewrite `CLAUDE.md`, delete the process and document guards), then W0.1's kernel skeleton.
 
 Oracle: the proposal's guardrails; W0 parity against the frozen old-evaluator results.
 
-Stop if the path requires SDK work or a new dependency.
+Stop if the path requires SDK work or a new dependency without the owner's approval.
