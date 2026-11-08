@@ -36,6 +36,9 @@ verify_lean_checks() {
   # re-checks the closure on every call (scripts/lean-native-driver.ts).
   .lake/build/bin/checkCallFamilyFixtures
   .lake/build/bin/checkConformanceFixtures
+  # Guards 1 and 2 of the kernel rewrite proposal read the built kernel's environment.
+  ./scripts/lake.sh build Kernel kernelRun
+  ./scripts/lake.sh run scripts/kernel-dispatch.lean
 }
 
 verify_runtime() {
