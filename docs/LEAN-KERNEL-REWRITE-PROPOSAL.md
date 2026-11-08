@@ -52,7 +52,7 @@ Replaced in W0, atomically under the [pre-release evolution policy](PROJECT-DESI
 
 ### IL
 
-The IL fixes the shape for every open row now; admission widens per track. A field outside the admitted surface is refused with a stable refusal code, never left out of the type ([forward-compatible restrictions](../CLAUDE.md#forward-compatible-semantic-restrictions)). Admission (is this model inside the admitted surface) and normalization (lowering the checked source to the IL) stay separate steps.
+The IL fixes the shape for every open row now; admission widens per track. A field outside the admitted surface is refused with a stable refusal code, never left out of the type ([forward-compatible restrictions](../CLAUDE.md#forward-compatible-restrictions)). Admission (is this model inside the admitted surface) and normalization (lowering the checked source to the IL) stay separate steps.
 
 The IL is a flat table of elements keyed by element identifier; a Scope refers to its children, and a flow to its endpoints, by identifier. No IL or state type is a nested or mutual inductive. Every element is a header record (identity, origin, source element type, parent scope) plus one payload record; no constructor carries positional fields beyond those two. Element kinds, fixed for the whole target:
 

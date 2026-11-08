@@ -177,7 +177,7 @@ Guards the implementation changed or satisfied:
 - the [concurrent scope data runtime test](../../packages/bpmn-source/test/concurrent-scope-data-runtime.test.ts), which locks the declared-entry batch premise and gains the mapped invocation as a permitted member;
 - [`lean-fanout`](../../scripts/lean-fanout.test.ts) and [`source-hygiene`](../../scripts/source-hygiene.test.ts), which bound the new Lean module's fan-out and every grown owner's size;
 - [`interruption-invocation-premise`](../../packages/differential/test/interruption-invocation-premise.test.ts), which Sub-Process-placed callers satisfy because the profile excludes Error and Terminate;
-- [`document-reviewability`](../../scripts/document-reviewability.test.ts), for this inventory.
+- [`document-reviewability`](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts), for this inventory.
 
 ## Independent cold-review receipt
 

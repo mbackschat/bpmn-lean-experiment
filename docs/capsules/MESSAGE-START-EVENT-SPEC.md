@@ -331,8 +331,8 @@ Existing `startProcess`, `initiate`, runtime state, canonical observations, Mess
 
 | Guard or oracle | Obligation |
 |---|---|
-| [document reviewability](../../scripts/document-reviewability.test.ts) | Keep the graduated specification in both documentation registries and reject proposal-only owner-headroom inventory. |
-| [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Keep `BPMN-MESSAGE-START-01`, its disposition, and capsule citation aligned. |
+| [document reviewability](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts) | Keep the graduated specification in both documentation registries and reject proposal-only owner-headroom inventory. |
+| [requirement ledger consistency](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts) | Keep `BPMN-MESSAGE-START-01`, its disposition, and capsule citation aligned. |
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts), [contract artifacts](../../scripts/contract-artifacts.test.ts), and [artifact projection oracle](../../scripts/contract-artifact-projections.test.ts) | Cover each new exact union arm, preserve the ordinary projector path, and reject missing, extra, or malformed channel and start fields. |
 | [definition artifact consistency](../../packages/bpmn-source/test/message-start-artifact-consistency.test.ts) and [start-operation binding](../../scripts/start-operation-artifact-consistency.ts) | Bind checked Start Event origin/channel/output to the lowered operation and reject drift in each component without relying on generated package output. |
 | [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | Keep the new Start Event projector in the mechanically closed shared-key consumer inventory. |
@@ -344,9 +344,9 @@ Existing `startProcess`, `initiate`, runtime state, canonical observations, Mess
 | [A12 boundary](../../scripts/a12-boundary.test.ts) and [A12 preservation](../../scripts/a12-preservation.test.ts) | Keep A12 source, decisions, profiles, and adoption evidence outside this standards-only mechanism. |
 | [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts) and [BPMN corpus policy](../../scripts/bpmn-corpus-policy.test.ts) | Validate the source fixture and retain the pinned normative corpus. |
 | [normative reference resolution](../../scripts/normative-reference-resolution.test.ts) | Resolve every named clause, table, CMOF, and XSD anchor. |
-| [source hygiene](../../scripts/source-hygiene.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), and [what-binds](../../scripts/what-binds.test.ts) | Keep cohesive owners under the review target and preserve exhaustive guards and registries. |
+| [source hygiene](../../scripts/source-hygiene.test.ts), [Lean source contracts](../../scripts/lean-source-contracts.test.ts), and [what-binds](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/what-binds.test.ts) | Keep cohesive owners under the review target and preserve exhaustive guards and registries. |
 | [pre-release architecture](../../scripts/pre-release-architecture.test.ts) | Prevent optional trigger bags, topology-specific runtime dispatch, compatibility readers, or a second semantic core. |
-| [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Bind proposal, checkpoint, and closure review evidence to exact immutable targets and routed owner sections. |
+| [semantic review packet](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/semantic-review-packet.test.ts) | Bind proposal, checkpoint, and closure review evidence to exact immutable targets and routed owner sections. |
 | [Markdown links](../../scripts/markdown-links.test.ts) | Resolve every owner, guard, requirement, and evidence link. |
 
 ## Epistemic closure and cost boundary

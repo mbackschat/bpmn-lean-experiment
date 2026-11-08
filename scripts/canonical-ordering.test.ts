@@ -89,7 +89,7 @@ test("the inventory is not vacuous", () => {
     "packages/bpmn-source/test/projected-flow-element-keys.test.ts",
     "platform/modules/operate/src/flow-node-occurrence-projection.ts",
     "scripts/start-operation-artifact-consistency.test.ts",
-    "scripts/what-binds.ts",
+    "scripts/project-tags.ts",
     "showcase/m3-human-work/test/runtime-support.ts",
   ]) {
     assert.ok(files.includes(required), `executable inventory must include ${required}`);

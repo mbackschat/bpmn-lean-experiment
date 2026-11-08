@@ -52,14 +52,14 @@ const documentedInstructionSurfaces = [
 ] as const;
 const bareLeanCommand = /(?<![\w./-])lake\s+(?:build|test|exe|env|update|clean)\b/u;
 
-function assertLeanGateCadence(testing: string, review: string, guide: string): void {
+function assertLeanGateCadence(testing: string, review: string): void {
   assert.match(testing, /Local Lean commits require focused module\/consumer builds and regression tests; the full library is not a commit prerequisite\./u,
     "local Lean commits must use focused verification");
   assert.match(testing, /Before semantic-batch acceptance[^\n]*`LEAN_FULL_GATE=<batch-id> \.\/scripts\/lake\.sh test`/u,
     "full Lean qualification must remain required at semantic-batch acceptance");
   assert.match(testing, /Lean semantic definition or law[^\n]*`\.\/scripts\/lake\.sh build <module target>\.\.\.`/u,
     "the Lean matrix must expose the focused entry point");
-  for (const owner of [review, guide]) {
+  for (const owner of [review]) {
     assert.match(owner, /Local Lean commits use focused module\/consumer builds and regression tests/u,
       "review and contributor instructions must preserve focused local Lean commits");
     assert.doesNotMatch(owner, /Pass focused\/affected-package gates[^\n]*before committing/u,
@@ -68,15 +68,14 @@ function assertLeanGateCadence(testing: string, review: string, guide: string): 
 }
 
 test("keeps local Lean commits focused and full qualification at semantic-batch acceptance", async () => {
-  const [testing, review, guide] = await Promise.all([
+  const [testing, review] = await Promise.all([
     readFile(testingSpecPath, "utf8"),
     readFile(new URL("../docs/REVIEW-POLICY.md", import.meta.url), "utf8"),
-    readFile(contributorGuidePath, "utf8"),
   ]);
-  assertLeanGateCadence(testing, review, guide);
-  assert.throws(() => assertLeanGateCadence(testing.replace("the full library is not a commit prerequisite", "the full library is a commit prerequisite"), review, guide), /focused verification/u);
-  assert.throws(() => assertLeanGateCadence(testing.replace(/^\| Before semantic-batch acceptance.*\n/mu, ""), review, guide), /full Lean qualification/u);
-  assert.throws(() => assertLeanGateCadence(testing, `${review}\nPass focused/affected-package gates before committing.`, guide), /blanket pre-commit gate/u);
+  assertLeanGateCadence(testing, review);
+  assert.throws(() => assertLeanGateCadence(testing.replace("the full library is not a commit prerequisite", "the full library is a commit prerequisite"), review), /focused verification/u);
+  assert.throws(() => assertLeanGateCadence(testing.replace(/^\| Before semantic-batch acceptance.*\n/mu, ""), review), /full Lean qualification/u);
+  assert.throws(() => assertLeanGateCadence(testing, `${review}\nPass focused/affected-package gates before committing.`), /blanket pre-commit gate/u);
 });
 
 test("publication schema gates run without workspace build output", () => {
@@ -764,57 +763,5 @@ test("rejects a bare Lean command in a newly added executable surface", () => {
       { relativePath: "scripts/new-gate.sh", source: `#!/bin/sh\n${command}\n` },
     ]),
     ["scripts/new-gate.sh:2: lake build"],
-  );
-});
-
-/**
- * The contributor guide carries its own copy of the gate list because agents hold that file in
- * context and choose a proportionate gate from what it shows them. A gate the guide omits is a gate
- * they do not run: `test:infrastructure` was absent while being the only complete gate that needs no
- * host port, so a restricted sandbox had the choice between an unrunnable `verify.sh` and nothing.
- *
- * Equality, not containment, is the assertion that catches that. Containment would only reject a
- * guide naming a gate the owner never defined, which is the harmless direction.
- *
- * Scope is the `./scripts/pnpm.sh run` gates in both documents. Shell entry points and the Lean
- * experiment command pairs are deliberately outside it: they carry arguments and multi-line forms
- * that this comparison would have to model, and the claim here is exactly what it checks.
- *
- * The specification side reads its gate tables rather than its prose, because a pnpm script named in
- * prose need not be a gate at all. `replace:cib-evidence` is the discriminating case: it is the
- * evidence-replacement operation the guide places deliberately outside ordinary verification, and a
- * prose-wide scan would demand the guide advertise it as something to run.
- */
-test("the contributor guide names every pnpm gate the testing specification defines", async () => {
-  const pnpmGate = /\.\/scripts\/pnpm\.sh run ([\w:-]+)/gu;
-  const gateNames = async (
-    path: string,
-    lineFilter: (line: string) => boolean = () => true,
-  ): Promise<readonly string[]> => {
-    const source = await readFile(path, "utf8");
-    return source
-      .split("\n")
-      .filter(lineFilter)
-      .flatMap((line) => [...line.matchAll(pnpmGate)].map(([, name]) => name as string))
-      .sort();
-  };
-
-  const guideGates = new Set(await gateNames(contributorGuidePath));
-  const specGates = new Set(
-    await gateNames(testingSpecPath, (line) => line.trimStart().startsWith("|")),
-  );
-
-  const missingFromGuide = [...specGates].filter((name) => !guideGates.has(name)).sort();
-  const unknownToSpec = [...guideGates].filter((name) => !specGates.has(name)).sort();
-
-  assert.deepEqual(
-    missingFromGuide,
-    [],
-    `CLAUDE.md omits gates that docs/TESTING-SPEC.md defines, so an agent choosing from the guide cannot reach them: ${missingFromGuide.join(", ")}`,
-  );
-  assert.deepEqual(
-    unknownToSpec,
-    [],
-    `CLAUDE.md names gates docs/TESTING-SPEC.md does not define as focused gates: ${unknownToSpec.join(", ")}`,
   );
 });

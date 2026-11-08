@@ -227,7 +227,7 @@ Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) 
   - [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts);
   - the [warm budget](../../scripts/pipeline-budget.ts), whose `defaultWarmBudgetMs` and hosted allowance rise when the registered cases exceed the ceiling divided by the per-case rate;
   - [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts);
-  - [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts);
+  - [requirement ledger consistency](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts);
   - the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts).
 - Runtime invariants: the [non-reissue claim guard](../../scripts/runtime-state-non-reissue-claims.test.ts) and [collection-removal completeness](../../scripts/runtime-collection-removal-completeness.test.ts).
 - Operation consumers: the [semantic operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts) and the [internal commutation census](../../scripts/internal-commutation-census.test.ts).

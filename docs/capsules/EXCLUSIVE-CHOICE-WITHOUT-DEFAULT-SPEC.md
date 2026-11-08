@@ -305,7 +305,7 @@ Guards the implementation must change or satisfy:
 - [`contract-schema-coverage`](../../scripts/contract-schema-coverage.test.ts) and [`semantic-operation-consumer-census`](../../scripts/semantic-operation-consumer-census.test.ts);
 - the [projected flow-element keys test](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) and the [mixed-task control-flow source test](../../packages/bpmn-source/test/mixed-task-control-flow-source.test.ts), the per-profile loop;
 - the [closure failure classification test](../../packages/temporal-adapter/workflow/test/closure-failure-classification.test.ts);
-- [`lean-fanout`](../../scripts/lean-fanout.test.ts), [`source-hygiene`](../../scripts/source-hygiene.test.ts), the [executable model corpus test](../../packages/differential/test/executable-model-corpus.test.ts), the [capability catalog disclosures test](../../scripts/capability-catalog-disclosures.test.ts) and the [document reviewability guard](../../scripts/document-reviewability.test.ts).
+- [`lean-fanout`](../../scripts/lean-fanout.test.ts), [`source-hygiene`](../../scripts/source-hygiene.test.ts), the [executable model corpus test](../../packages/differential/test/executable-model-corpus.test.ts), the [capability catalog disclosures test](../../scripts/capability-catalog-disclosures.test.ts) and the [document reviewability guard](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts).
 
 Registration:
 

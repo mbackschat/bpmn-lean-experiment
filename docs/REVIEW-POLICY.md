@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented mandatory procedure for implementation handoffs, commit boundaries, Lean design review and approval receipts. [TESTING-SPEC.md](TESTING-SPEC.md) owns verification; [CLAUDE.md](../CLAUDE.md#delegated-implementation) owns tier selection and contributor triggers.
+Implemented mandatory procedure for implementation handoffs, commit boundaries, Lean design review and approval receipts. [TESTING-SPEC.md](TESTING-SPEC.md) owns verification; [CLAUDE.md](../CLAUDE.md#delegation) owns tier selection and contributor triggers.
 
 - Choose [commit boundaries](#commit-boundaries).
 - Assign [implementation lanes](#delegated-implementation-protocol).
@@ -30,7 +30,7 @@ Before proof-task expansion, record guarantee, next deliverable, separating evid
 
 ## Delegated implementation protocol
 
-Delegate independent work that repays handoff cost; a handful of tool calls stays with the root. Implementers run assigned tests, never independently review themselves. Concurrent paths/build outputs are disjoint; no delegated lane edits Lean or runs a Lean command. Apply [tier rules](../CLAUDE.md#delegated-implementation) and [reuse/concurrency rules](#delegation-lifecycle) and separate [reviewer continuity](#when-a-warm-review-is-valid).
+Delegate independent work that repays handoff cost; a handful of tool calls stays with the root. Implementers run assigned tests, never independently review themselves. Concurrent paths/build outputs are disjoint; no delegated lane edits Lean or runs a Lean command. Apply [tier rules](../CLAUDE.md#delegation) and [reuse/concurrency rules](#delegation-lifecycle) and separate [reviewer continuity](#when-a-warm-review-is-valid).
 
 The root retains shared integration points, lifecycle/status docs, commits and complete verification. Give new agents task-shaped names and reused agents explicit replacement assignments. Before work, define:
 
@@ -66,7 +66,7 @@ Prefer reusing a completed MEDIUM or LOW agent for related follow-ups while its 
 
 Give each new agent a task-shaped name and a concise brief covering one complete bounded outcome, affected consumers and proofs, constraints, owned paths and validation. Batch related work through implementation, tests and corrections into one handback; avoid helper-sized assignments, repeated polling and idle waiting updates. Reserve cleanup within the timebox. Run focused checks during development and broader affected-consumer gates after related changes stabilize, preserving required acceptance gates. Start with one MEDIUM worker; add concurrency only for independent subtasks of the selected deliverable with disjoint file ownership/build outputs and review capacity. A LOW agent may run beside it when read-only or on disjoint paths. Sub-agents never edit Lean or run a Lean command. HIGH takes over after repeated failure; do not delegate another equivalent attempt.
 
-HIGH checks handbacks and owns integration, [commit boundaries](REVIEW-POLICY.md#commit-boundaries) and acceptance; inspect evidence without duplicating the worker's investigation. Follow the [delegation protocol](REVIEW-POLICY.md#delegated-implementation-protocol) for limits and [independent-review rules](../CLAUDE.md#independent-cold-review); implementers cannot review their own work. At each bounded outcome, assess accepted results against rework, context/handoff, polling and validation cost, using measured usage when available; self-correct task size, reuse, concurrency and gate cadence. Failed attempts count as rework. Do not claim unmeasured token savings. Report assessments only when asked.
+HIGH checks handbacks and owns integration, [commit boundaries](REVIEW-POLICY.md#commit-boundaries) and acceptance; inspect evidence without duplicating the worker's investigation. Follow the [delegation protocol](REVIEW-POLICY.md#delegated-implementation-protocol) for limits and [independent-review rules](../CLAUDE.md#reviews); implementers cannot review their own work. At each bounded outcome, assess accepted results against rework, context/handoff, polling and validation cost, using measured usage when available; self-correct task size, reuse, concurrency and gate cadence. Failed attempts count as rework. Do not claim unmeasured token savings. Report assessments only when asked.
 
 ### CIB BPMN fixture construction
 
@@ -95,7 +95,7 @@ Material changes select/change BPMN meaning, profile/CIB relationship, checked-s
 
 Require one cold proposal review and one governed closure review; closure is cold except [warm continuity](#when-a-warm-review-is-valid) or [single-lane combined review](#combined-checkpoint-and-closure).
 
-For Practical CIB7 Coverage the review unit is a checklist family, not a slice or stage ([delivery cycle](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery)). A family takes one proposal review covering its selected increments, implements them as one batch through registration and hosting, and then takes one closure review. Intermediate slices and stages are private checkpoints and open no review stage; the semantic-checkpoint row below remains only for capsules outside Practical CIB7 Coverage and historical receipts.
+For Practical CIB7 Coverage the review unit is a checklist family, not a slice or stage ([delivery cycle](../CLAUDE.md#delivery)). A family takes one proposal review covering its selected increments, implements them as one batch through registration and hosting, and then takes one closure review. Intermediate slices and stages are private checkpoints and open no review stage; the semantic-checkpoint row below remains only for capsules outside Practical CIB7 Coverage and historical receipts.
 
 | Stage | Immutable target and timing | Isolation | Boundary |
 |---|---|---|---|
@@ -117,7 +117,7 @@ Cold prompts contain objective contract, exact targets, packet and concise claim
 
 | Stage | Required focus | Avoid repeated work |
 |---|---|---|
-| Proposal | Normative account, scope, exclusions, Temporal preflight, separating counterexamples, [forward-compatible restrictions](../CLAUDE.md#forward-compatible-semantic-restrictions), completeness and present achievability of [required capsule content 15](capsules/README.md#required-capsule-structure) guards/oracles, joint satisfiability of constraints on one source field/edge across sections/endpoints, and producer-result-type compatibility across ordered decisions | Read existing contracts statically; do not run implementation gates for absent lanes |
+| Proposal | Normative account, scope, exclusions, Temporal preflight, separating counterexamples, [forward-compatible restrictions](../CLAUDE.md#forward-compatible-restrictions), completeness and present achievability of [required capsule content 15](capsules/README.md#required-capsule-structure) guards/oracles, joint satisfiability of constraints on one source field/edge across sections/endpoints, and producer-result-type compatibility across ordered decisions | Read existing contracts statically; do not run implementation gates for absent lanes |
 | Semantic checkpoint | Changed source/admission, checked representation, IL/runtime/proof boundary, cross-target invariant matrix, nearest adversarial states | Do not review blocked byte-unadvanced artifact, CIB, differential or Temporal lanes |
 | Closure | Evidence independence, differential and Temporal refinement/replay, meaningful mutations, exact status, epistemic closure, cost | Do not mechanically re-prove unchanged checkpoint bytes unless a cross-lane/common-mode risk reopens them |
 | Combined | Complete checkpoint and closure scopes | Remove only the duplicate reviewer invocation |
@@ -128,7 +128,7 @@ Commit the target; pause all writes to reviewed files. Review read-only against 
 
 ### Review packet
 
-Generate [semantic-review-packet.ts](../scripts/semantic-review-packet.ts) from the exact target. The root records gates in a temporary JSON array of `{ command, exitStatus, elapsedMs, outputSha256 }`, hashing exact combined stdout/stderr per invocation. This is routing evidence, not independent proof: reviewers rerun decisive adversarial/focused checks and report disagreement. No packet verdict, diagnosis or conclusion is allowed.
+Generate [semantic-review-packet.ts](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/semantic-review-packet.ts) from the exact target. The root records gates in a temporary JSON array of `{ command, exitStatus, elapsedMs, outputSha256 }`, hashing exact combined stdout/stderr per invocation. This is routing evidence, not independent proof: reviewers rerun decisive adversarial/focused checks and report disagreement. No packet verdict, diagnosis or conclusion is allowed.
 
 ```sh
 node scripts/semantic-review-packet.ts \
@@ -145,7 +145,7 @@ Dependency-free `semantic-review-packet/v3` resolves full commits, requires base
 
 Both immutable trees derive changed Markdown heading paths from ordered unit-digest sequences: duplicates/order count, unrelated ordinal shifts do not. References use `{ path, headingPath, revision, sha256 }`; revision selects baseline/target, null heading means full file. New/deleted documents, renamed/deleted/repeated headings, pre-heading changes and out-of-unit structural/fenced changes retain before/after file references. The full capsule gets file references; other changes stay in `changedFiles`. Navigation proves neither consistency nor affected-owner completeness. Historical digests keep original formats; format changes require no dependent review open.
 
-For a bounded documentation migration whose review contract requires claim-by-claim preservation, supply exactly one temporary `--migration-matrix` with nonempty unique canonical Markdown `sourcePaths`; reviewers check completeness. [document-migration-matrix.ts](../scripts/document-migration-matrix.ts) derives Git baseline paragraphs/full list items/table rows, checks exactly-once coverage and exact target units or explicit changed/duplicate/history dispositions, and retains normalized source/target text. Duplicate rationale links the surviving owner section; sole records require destinations; history keeps baseline scope. Reviewers assess preservation, dispositions, hypotheses and exclusions beyond links. Matrix/packet commits must match; sources, normalized rows and exact matrix-byte SHA-256 enter `packetSha256`. The matrix is temporary review input, never a status owner.
+For a bounded documentation migration whose review contract requires claim-by-claim preservation, supply exactly one temporary `--migration-matrix` with nonempty unique canonical Markdown `sourcePaths`; reviewers check completeness. [document-migration-matrix.ts](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-migration-matrix.ts) derives Git baseline paragraphs/full list items/table rows, checks exactly-once coverage and exact target units or explicit changed/duplicate/history dispositions, and retains normalized source/target text. Duplicate rationale links the surviving owner section; sole records require destinations; history keeps baseline scope. Reviewers assess preservation, dispositions, hypotheses and exclusions beyond links. Matrix/packet commits must match; sources, normalized rows and exact matrix-byte SHA-256 enter `packetSha256`. The matrix is temporary review input, never a status owner.
 
 ### When a warm review is valid
 
@@ -230,7 +230,7 @@ Targets/audits are 7–40 lowercase hexadecimal Git commit objects ancestral to 
 
 Pending rows may retain `not-recorded | not-recorded | pending | not-applicable` or existing explicit targets; neither approves. Pre-review packet/prompt binds target/digest without another commit. Record target/isolation/verdict/audit together in the verdict commit. Unnecessary checkpoint: other cells `not-applicable`, verdict `not-required`; otherwise checkpoint/closure stay `not-reached` until targeted. Receipt-update commits are targets only when substantive content is expressly reviewed.
 
-[independent-review-policy.test.ts](../scripts/independent-review-policy.test.ts) recursively governs active proposals/specs under `docs/`, excluding archives/local references. Governed proposals and post-policy specs need receipts. Proposal `## Status` approval requires approved independent proposal review; post-policy graduation also requires approved closure. Warm closure requires strict checkpoint-target ancestry; identity/manifest completeness stay attested. Both combined rows require identical target/verdict/audit; first-green/full-closure stays attested.
+[independent-review-policy.test.ts](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/independent-review-policy.test.ts) recursively governs active proposals/specs under `docs/`, excluding archives/local references. Governed proposals and post-policy specs need receipts. Proposal `## Status` approval requires approved independent proposal review; post-policy graduation also requires approved closure. Warm closure requires strict checkpoint-target ancestry; identity/manifest completeness stay attested. Both combined rows require identical target/verdict/audit; first-green/full-closure stays attested.
 
 Immutable `f1ef362` fixes grandfather membership: its active specs/three legacy root proposals, excluding the already-receipted Receive Task proposal. Never extend, append or rebase this selection/membership; later specs are post-policy. Immutable `b361681` changes only isolation: strict-ancestor targets retain historical proposal/closure `external-fresh-session` and checkpoint alternatives. The baseline, descendants and later side branches require `fork-turns-none`, except guarded warm/combined review. Preserve historical receipts, never create future external-session receipts.
 

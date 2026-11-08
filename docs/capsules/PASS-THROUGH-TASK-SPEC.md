@@ -191,7 +191,7 @@ Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy):
 
 Build cost is a constraint. The kernel arm rebuilds nearly the whole library once, the price [contract item 4](../LEAN-BUILD-MODULARITY-SPEC.md#contract) sets for an increment that adds a kernel type, so every Lean edit lands in that one commit. Because that complete rebuild, not fan-out, prices this family, PLAN's [Lean build follow-up](../PLAN.md#lean-build-follow-ups) that repairs the fan-out model is not its prerequisite and stays scheduled for the next family whose plan prices its edits by fan-out.
 
-PLAN's two follow-ups scheduled "at the next kernel-type change" ride in the same rebuild window, as their own commit before it. Both are library-wide mechanical passes, so each runs under [Rule 2](../../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change): a declaration with its cost extrapolated from timed samples of its heaviest units, a fresh review before it runs and a fresh check after. If the declared cost exceeds 90 minutes, they do not run and are recorded for the next kernel change.
+PLAN's two follow-ups scheduled "at the next kernel-type change" ride in the same rebuild window, as their own commit before it. Both are library-wide mechanical passes, so each runs under [Rule 2](../../CLAUDE.md#rule-2-declare-and-check-every-bulk-change): a declaration with its cost extrapolated from timed samples of its heaviest units, a fresh review before it runs and a fresh check after. If the declared cost exceeds 90 minutes, they do not run and are recorded for the next kernel change.
 
 No `ValueDomain`, `ProgramStructuralValidation`, `CommandAdmission`, `RuntimeState`, `SemanticProcessContract` or `TransitionRecord` declaration is touched. The Lean owners:
 
@@ -226,8 +226,8 @@ Guards the implementation must change or satisfy:
 - [`lean-source-contracts`](../../scripts/lean-source-contracts.test.ts), which binds the checked admission and lowering owners;
 - [`semantic-operation-consumer-census`](../../scripts/semantic-operation-consumer-census.test.ts) and [`runtime-state-non-reissue-claims`](../../scripts/runtime-state-non-reissue-claims.test.ts), which must stay unchanged in content, since no operation or runtime field is added;
 - the [Start capacity envelope test](../../packages/temporal-adapter/protocol/test/start-capacity-envelope.test.ts), whose routing stays unchanged;
-- the [value-domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts), the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts), [`contract-artifact-projections`](../../scripts/contract-artifact-projections.test.ts), [`requirement-ledger-consistency`](../../scripts/requirement-ledger-consistency.test.ts) and the [About disclosure guard](../../scripts/capability-catalog-disclosures.test.ts), for the grown artifact;
-- [`document-reviewability`](../../scripts/document-reviewability.test.ts), for this inventory.
+- the [value-domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts), the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts), [`contract-artifact-projections`](../../scripts/contract-artifact-projections.test.ts), [`requirement-ledger-consistency`](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts) and the [About disclosure guard](../../scripts/capability-catalog-disclosures.test.ts), for the grown artifact;
+- [`document-reviewability`](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts), for this inventory.
 
 ## Independent cold-review receipt
 

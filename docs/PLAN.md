@@ -84,7 +84,7 @@ Batch 5 continues after the Timer family with Kernel IL orthogonalization (owner
 
 Parked: Activity implicit split and merge (`PC-CF-07`, `PC-BASIC-01`, `PC-BASIC-02`; [proposal](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) approved), by owner decision on 2026-11-05 ("Park AISM"). Its representation commit exceeded the Rule 2 line limits, and after a one-time owner-approved raise and restoration `lean-fanout` reported 67 violations: importer bounds, the new `MarkedInputSelection` module and hidden-definition rewrites. The stopped state is local branch `park/aism-representation` (`ca979e7d`, unpushed, not buildable). It resumes only inside Kernel IL orthogonalization, never by raising bounds.
 
-Within each delivery batch, select bounded outcomes by shared mechanism, contract and affected consumers. Name the participating checklist IDs in the exact resume point, retaining one primary task and each ID's separate acceptance criteria. Reuse the same MEDIUM worker through related implementation, focused testing and corrections while its assumptions remain valid; a checklist row or helper completion alone does not require a new agent, commit or broad gate. Share applicable validation across the coherent change and reuse unchanged evidence under [testing cadence](TESTING-SPEC.md#three-level-verification-policy). Under the owner direction of 2026-10-21 in [CLAUDE.md](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery), each checklist family takes one cold design review and one cold code review at closure plus correction audits, under the [cold-review gate](REVIEW-POLICY.md#independent-cold-review-gate); failing tests may be repaired in batches inside the family before its closure review.
+Within each delivery batch, select bounded outcomes by shared mechanism, contract and affected consumers. Name the participating checklist IDs in the exact resume point, retaining one primary task and each ID's separate acceptance criteria. Reuse the same MEDIUM worker through related implementation, focused testing and corrections while its assumptions remain valid; a checklist row or helper completion alone does not require a new agent, commit or broad gate. Share applicable validation across the coherent change and reuse unchanged evidence under [testing cadence](TESTING-SPEC.md#three-level-verification-policy). Under the owner direction of 2026-10-21 in [CLAUDE.md](../CLAUDE.md#delivery), each checklist family takes one cold design review and one cold code review at closure plus correction audits, under the [cold-review gate](REVIEW-POLICY.md#independent-cold-review-gate); failing tests may be repaired in batches inside the family before its closure review.
 
 Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements, HIGH accepts. Report progression only when requested.
 
@@ -104,13 +104,13 @@ Deliverable: the proposal's W0 (new kernel at scenario parity, old stack and doc
 
 Acceptance blockers: none for W0; the owner packet gates the start of M1, M2 and M6.
 
-Current result: proposal approved in the final round on `4424cdab`; recommended items are carried into W0.
+Current result: W0.0 done: `CLAUDE.md` rewritten, 33 process and document guard files deleted, fast suite green (705 tests). The old-library Lean scanners stay until the first kernel commit; each that fires on `Kernel/` is deleted then.
 
 Owner items: the proposal's owner packet during W0 (proof-wave confirmation, JUEL adoption gating M1, M2 and M6, Script runtime, decision engine, Cron dialect, the two SDK holds).
 
 Effort budget: 168 hours from approval for W0, per the proposal's milestone budgets and stop rules; a missed budget is reported to the owner at once and never renewed silently.
 
-Next action: W0.0, the process reset (rewrite `CLAUDE.md`, delete the process and document guards), then W0.1's kernel skeleton.
+Next action: W0.1, the kernel skeleton, guards, vocabulary, traceability table and vertical slice.
 
 Oracle: the proposal's guardrails; W0 parity against the frozen old-evaluator results.
 

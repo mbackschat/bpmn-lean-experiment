@@ -119,7 +119,7 @@ The two models carry the witnesses as answer-free scenarios with registered pipe
 
 Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) nothing changes shape: the profile identity, the operation set and every schema stay current, and no reader or migration is added. Before the first edit, `node scripts/what-binds.ts` on every grown path names the binding guards. The decisive ones are listed here.
 
-- Profile and registration: [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts), [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts), [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) and the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts).
+- Profile and registration: [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts), [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts), [requirement ledger consistency](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts) and the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts).
 - Hosting: [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts).
 - Structure: [Lean import boundaries](../../scripts/lean-import-boundaries.test.ts) and [source hygiene](../../scripts/source-hygiene.test.ts).
 

@@ -281,8 +281,8 @@ Pre-release replace-in-place policy applies. The checked-node union, importer ex
 
 | Guard or oracle | Obligation |
 |---|---|
-| [document reviewability](../../scripts/document-reviewability.test.ts) | Keep specification routing, lifecycle status, and the graduated filename contract aligned. |
-| [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Keep the two Task requirements, citations, dispositions, and capsule aligned. |
+| [document reviewability](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts) | Keep specification routing, lifecycle status, and the graduated filename contract aligned. |
+| [requirement ledger consistency](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts) | Keep the two Task requirements, citations, dispositions, and capsule aligned. |
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) and [contract artifacts](../../scripts/contract-artifacts.test.ts) | Cover the new checked/profile shapes and reject malformed exact values. |
 | [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) | Bind configured origin, descriptor, endpoints, empty mappings, and absent Error route without weakening Service Task. |
 | [projected keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | Close the Task projector and exact consumed-key inventory without changing another profile's Task diagnostic. |
@@ -294,8 +294,8 @@ Pre-release replace-in-place policy applies. The checked-node union, importer ex
 | [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts) and [pre-release architecture](../../scripts/pre-release-architecture.test.ts) | Prevent a new engine, handler transport, public private-state leak, or BPMN parsing in Workflow code. |
 | [platform boundary](../../scripts/platform-product-boundary.test.ts) | Keep Product 2 outside private checked, IL, handler, and Activity values. |
 | [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts) and [normative references](../../scripts/normative-reference-resolution.test.ts) | Validate the exact fixture and resolve the Task/extension citations. |
-| [source hygiene](../../scripts/source-hygiene.test.ts), [Lean contracts](../../scripts/lean-source-contracts.test.ts), and [what-binds](../../scripts/what-binds.test.ts) | Keep cohesive owners, exhaustive switches, comments, native decisions, and registries within bounds. |
-| [semantic review packet](../../scripts/semantic-review-packet.test.ts) and [Markdown links](../../scripts/markdown-links.test.ts) | Bind governed reviews to immutable targets and resolve every owner/guard link. |
+| [source hygiene](../../scripts/source-hygiene.test.ts), [Lean contracts](../../scripts/lean-source-contracts.test.ts), and [what-binds](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/what-binds.test.ts) | Keep cohesive owners, exhaustive switches, comments, native decisions, and registries within bounds. |
+| [semantic review packet](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/semantic-review-packet.test.ts) and [Markdown links](../../scripts/markdown-links.test.ts) | Bind governed reviews to immutable targets and resolve every owner/guard link. |
 
 ## Epistemic closure and cost boundary
 

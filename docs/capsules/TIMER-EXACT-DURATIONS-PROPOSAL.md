@@ -112,7 +112,7 @@ Sites, from `grep` of the lexeme, the constant and the literal types on 2026-11-
 
 Guards, with bounds unchanged and measured before the first edit: [`lean-fanout`](../../scripts/lean-fanout.test.ts) (no new module, no new `import all`, no interface change), [`lean-module-cost`](../../scripts/lean-module-cost.test.ts), [`source-hygiene`](../../scripts/source-hygiene.test.ts), every guard `what-binds` reports for the targets, and the executable oracles named in the rule matrix.
 
-**Cost.** One commit under a [Rule 2](../../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change) declaration if it exceeds 20 files: about 15 source files plus about 15 test, scenario, pipeline, oracle, profile, register and corpus files; Lean about +60/−15, TypeScript and JSON about +250/−40 lines including tests. Lean rebuild: hidden edits only, a union of about 230 modules across `Lowering`, `ProgramStructuralValidation` and `CheckedProcessAdmission`. Estimated 4 hours.
+**Cost.** One commit under a [Rule 2](../../CLAUDE.md#rule-2-declare-and-check-every-bulk-change) declaration if it exceeds 20 files: about 15 source files plus about 15 test, scenario, pipeline, oracle, profile, register and corpus files; Lean about +60/−15, TypeScript and JSON about +250/−40 lines including tests. Lean rebuild: hidden edits only, a union of about 230 modules across `Lowering`, `ProgramStructuralValidation` and `CheckedProcessAdmission`. Estimated 4 hours.
 
 Registration: the register entries, profile artifacts, scenarios, pipeline and integration cases, oracle cases, the corpus model, and the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) cell for Timer durations.
 

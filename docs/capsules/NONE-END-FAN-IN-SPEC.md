@@ -196,8 +196,8 @@ Guards the implementation must change or satisfy:
 - [`semantic-operation-consumer-census`](../../scripts/semantic-operation-consumer-census.test.ts), for the new `reachNoneEnd` producer;
 - the [mixed-task control-flow source test](../../packages/bpmn-source/test/mixed-task-control-flow-source.test.ts) and the [checked graph admission test](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts), which lock the other profiles' single-incoming Ends;
 - the [pipeline budget guard](../../scripts/pipeline-budget.test.ts), whose derived ceiling the three cases move without a bound change;
-- the [value-domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts), the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts), [`requirement-ledger-consistency`](../../scripts/requirement-ledger-consistency.test.ts) and the [About disclosure guard](../../scripts/capability-catalog-disclosures.test.ts), for the grown artifact;
-- [`document-reviewability`](../../scripts/document-reviewability.test.ts), for this inventory.
+- the [value-domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts), the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts), [`requirement-ledger-consistency`](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts) and the [About disclosure guard](../../scripts/capability-catalog-disclosures.test.ts), for the grown artifact;
+- [`document-reviewability`](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts), for this inventory.
 
 ## Independent cold-review receipt
 

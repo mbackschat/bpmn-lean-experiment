@@ -219,8 +219,8 @@ Each is a case that must fail before the change and pass after, or the reverse. 
 - [the source-hygiene gate](../scripts/source-hygiene.test.ts), which owns the module ceilings named below;
 - [the metamodel-default admission guard](../packages/bpmn-source/test/metamodel-default-admission.test.ts), which derives its cases from the scenario registry and manifest, so a widened admitted set is covered without being listed;
 - [the artifact roundtrip guard](../scripts/capsule-roundtrip.test.ts) and [the pipeline catalog](../packages/differential/test/pipeline-catalog.test.ts), which require a profile, its scenarios, and its cases to land atomically;
-- [the review-policy guard](../scripts/independent-review-policy.test.ts), which reads owner approval only from the Status section above;
-- [the plan-shape guard](../scripts/plan-status-consistency.test.ts) and [the reviewability guard](../scripts/document-reviewability.test.ts), which bound this document's owners.
+- [the review-policy guard](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/independent-review-policy.test.ts), which reads owner approval only from the Status section above;
+- [the plan-shape guard](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/plan-status-consistency.test.ts) and [the reviewability guard](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts), which bound this document's owners.
 
 ### Source owners this will grow
 

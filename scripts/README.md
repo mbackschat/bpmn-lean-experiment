@@ -2,13 +2,7 @@
 
 This directory contains repository automation, executable policy guards, evidence tooling, and their source-adjacent tests. Start from the task tables below rather than running an unfamiliar file by name. Most non-test TypeScript files are imported libraries, not standalone commands.
 
-Before changing a file under this directory, run:
-
-```sh
-node scripts/what-binds.ts scripts/<target>
-```
-
-The report names the required implementation detail maps, guards, this registry, and the 800-line owner headroom that constrain the target. [TESTING-SPEC.md](../docs/TESTING-SPEC.md) selects gates and [infrastructure policy](../docs/VERIFICATION-INFRASTRUCTURE-POLICY.md) owns execution and command bounds; this README only routes tasks to their existing entry points.
+[TESTING-SPEC.md](../docs/TESTING-SPEC.md) selects gates and [infrastructure policy](../docs/VERIFICATION-INFRASTRUCTURE-POLICY.md) owns execution and command bounds; this README only routes tasks to their existing entry points.
 
 ## Everyday repository work
 
@@ -21,9 +15,7 @@ The report names the required implementation detail maps, guards, this registry,
 | Run a focused Lean command | [`lake.sh`](lake.sh) | Lean wrapper with the repository lock, fixed environment, and target checks; agent use follows the [delegated implementation rules](../CLAUDE.md#delegated-implementation). |
 | Open a module's hidden bodies exactly | [`lean-fixture-owners.ts`](lean-fixture-owners.ts) | Print the `import all` lines a module's kernel decisions need under hidden bodies, from one plain-file compile whose diagnostics list every unfolded definition ([module rules](../docs/LEAN-BUILD-MODULARITY-SPEC.md#module-rules)). It runs Lean through `lake.sh`, so only the root runs it. |
 | Measure the Lean rebuild residual | [`lean-fanout-replay.ts`](lean-fanout-replay.ts) | Replay the fixed sample of ordinary semantic commits against the current fan-out model and print the statistics of the modules, the recorded fixtures and the fixture seconds each commit rebuilds; [`lean-fanout-replay-residual.test.ts`](lean-fanout-replay-residual.test.ts) ratchets the [owner-restated residual](../docs/LEAN-BUILD-MODULARITY-SPEC.md#current-boundary). TypeScript only. |
-| Check Lean assurance lanes | [`lean-assurance-lane.ts`](lean-assurance-lane.ts) | Require proved/checked specification lanes to name existing `Module.lean#declaration` guarantees, using [`lean-declarations.ts`](lean-declarations.ts) and [`markdown-sections.ts`](markdown-sections.ts); `document-reviewability.test.ts` runs it. |
 | Reject Lean proof escapes | [`lean-proof-escapes.test.ts`](lean-proof-escapes.test.ts) | Fail on `sorry`, `admit` or a project `axiom` in maintained Lean, with experiments excluded. [`AssuranceAxiomFootprint.lean`](../BpmnSemantics/AssuranceAxiomFootprint.lean) pins each composed guarantee's `#print axioms` output; build it with `./scripts/lake.sh build BpmnSemantics.AssuranceAxiomFootprint`. |
-| Discover change constraints | [`what-binds.ts`](what-binds.ts) | Report required implementation detail maps, executable guards, active assurance findings from declared Owner links, directory registries, and source-owner headroom before planning an edit; unknown implementation paths fail closed. Guards are tiered as named (exact path, basename, Lean module name, or relative import within depth two) or scanning (enumeration covering the path); ancestor-word matches are only counted, and `--mentions` lists them. `--unfolds <Lean declaration>` instead lists the proof sites that unfold a definition or one of its direct callers, from [`lean-unfolding-sites.ts`](lean-unfolding-sites.ts). [`what-binds-classification.ts`](what-binds-classification.ts) owns the tiers, [`what-binds-source-facts.ts`](what-binds-source-facts.ts) the lexical facts, and [`assurance-register.ts`](assurance-register.ts) the declared finding routes and task-bound assessment checks. |
 | Preserve long-command evidence | [`run-with-receipt.sh`](run-with-receipt.sh) | Capture output and the real exit status atomically when the testing specification requires a retained receipt. |
 | Assert a long-command verdict | [`assert-command-receipt.ts`](assert-command-receipt.ts) | Accept one completed receipt as green only when its exact durable exit status is zero. |
 | Summarize an increment's commands | [`summarize-command-receipts.ts`](summarize-command-receipts.ts) | Report direct-child receipt span, interval union, command-family totals, and optional lane labels; expose incomplete evidence without inferring effort or agent counts. |
@@ -50,15 +42,9 @@ The report names the required implementation detail maps, guards, this registry,
 
 | Task | Entry point | Use |
 |---|---|---|
-| Build a neutral review packet | [`semantic-review-packet.ts`](semantic-review-packet.ts) | Derive changed Markdown sections and before/after file fallbacks; bind immutable commits, full heading-path context, gate receipts, and an optional validated migration matrix. |
-| Build or check review continuity | [`semantic-review-manifest.ts`](semantic-review-manifest.ts) | Fingerprint full heading-path sections for eligible checkpoint-to-closure warm continuity. |
-| Measure a capsule | [`capsule-cost.ts`](capsule-cost.ts) | Report commit-bounded nonblank code and documentation additions/removals. |
-| Validate a documentation migration | [`document-migration-matrix.ts`](document-migration-matrix.ts) | Derive exactly-once claim dispositions for an invocation's declared Markdown source set, bound to immutable baseline and target trees. |
 | Generate mechanism-maturity evidence | [`mechanism-maturity.ts`](mechanism-maturity.ts) | Join the live mechanism-family map with the evidence-owned invariant, Activity-occurrence, multiple-enabled, and composition classifications into an ephemeral non-conformance JSON vector. |
 | Classify Activity-occurrence writers | [`activity-occurrence-writer-census.test.ts`](activity-occurrence-writer-census.test.ts) | Keep every production `activityOccurrences` assignment classified for Activity-identity issuance and body-claim preservation, with explicit evidence for each non-structural write shape. |
 | Check semantic operation censuses | [`internal-commutation-census.test.ts`](internal-commutation-census.test.ts) and [`semantic-operation-consumer-census.test.ts`](semantic-operation-consumer-census.test.ts) | Keep both semantic accounts exhaustive over operation families and RuntimeState atom domains, and require every composed Activity-data analogue consumer to remain classified in its reviewed implementation matrix. |
-| Validate structural implementation-status routes | [`document-control-plane.test.ts`](document-control-plane.test.ts) | Run the live documentation-universe guard and require trigger judgments for changed declared assurance owners against PLAN's immutable task base, including committed changes. [`structural-map-routes.ts`](structural-map-routes.ts) owns the closed route grammar and [`markdown-link-lexer.ts`](markdown-link-lexer.ts) owns the shared live-link spans used by it and the local-link guard. |
-| Check process-finding evidence | [`document-reviewability.test.ts`](document-reviewability.test.ts) | The escalation and UI-preflight guards share [`process-assessment-ledger.ts`](process-assessment-ledger.ts), which keeps each finding's count, disposition, and evidence in its own section. |
 | Confirm a clean immutable target | [`clean-committed-head.ts`](clean-committed-head.ts) | Refuse review or release evidence when the target is not the clean committed `HEAD`. |
 | Update publication statistics | [`publication-statistics.ts`](publication-statistics.ts) | Use the package commands `publication-stats:update` and `publication-stats:check`; normal verification does not require local Tokei. |
 | Create or push project tags | [`project-tags.ts`](project-tags.ts) | Use `tag:create` and `tag:push` so tag identity and preconditions stay centralized; phase and release creation require every applicable successful command receipt to name the exact tagged `HEAD` and fail closed unless the maintained publication statistics are current. |
@@ -68,7 +54,7 @@ The report names the required implementation detail maps, guards, this registry,
 
 ## Libraries and tests
 
-Do not execute a TypeScript module merely because it has no `.test` suffix. Contract artifact helpers, corpus loaders, CIB projectors, policy modules, parsers, and process runners are imported by the commands and tests that own their behavior. Follow imports and the `what-binds` report to the controlling test.
+Do not execute a TypeScript module merely because it has no `.test` suffix. Contract artifact helpers, corpus loaders, CIB projectors, policy modules, parsers, and process runners are imported by the commands and tests that own their behavior. Follow imports to the controlling test.
 
 Tests stay beside their scripts intentionally:
 

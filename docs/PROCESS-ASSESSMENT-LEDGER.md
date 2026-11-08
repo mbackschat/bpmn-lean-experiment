@@ -35,7 +35,7 @@ Answer these after a capsule or milestone closes, and again at each session hand
 
 ## Escalation rule
 
-A second occurrence refutes a prose-only disposition and requires an **executable guard**, unless no repository fact can observe the class; `unguardable` records that limit and its reason. Reporting and semantic claim-to-source judgments can have this limit even when narrower artifact defects are guarded. [The executable check](../scripts/document-reviewability.test.ts) rejects any row at two or more instances unless its disposition is `executable guard` or `unguardable`.
+A second occurrence refutes a prose-only disposition and requires an **executable guard**, unless no repository fact can observe the class; `unguardable` records that limit and its reason. Reporting and semantic claim-to-source judgments can have this limit even when narrower artifact defects are guarded. [The executable check](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts) rejects any row at two or more instances unless its disposition is `executable guard` or `unguardable`.
 
 Dispositions are a closed set:
 
@@ -73,7 +73,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [change-binding enumerator](../scripts/what-binds.test.ts), [capsule binding inventory](../scripts/document-reviewability.test.ts), [module-size headroom](../scripts/source-hygiene.test.ts)
+: [change-binding enumerator](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/what-binds.test.ts), [capsule binding inventory](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts), [module-size headroom](../scripts/source-hygiene.test.ts)
 
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
 
@@ -178,7 +178,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [no copied owner headroom](../scripts/document-reviewability.test.ts), [receipt-owned review state and evidence-owned gate tokens](../scripts/document-control-plane.test.ts)
+: [no copied owner headroom](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts), [receipt-owned review state and evidence-owned gate tokens](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-control-plane.test.ts)
 
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
 
@@ -332,7 +332,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [ordered-work status agreement](../scripts/plan-status-consistency.test.ts), [RC launch documentation](../scripts/rc-showcase-catalog.test.ts), [screenshot inventory delegation](../scripts/walkthrough-screenshot-refresh.platform-test.ts)
+: [ordered-work status agreement](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/plan-status-consistency.test.ts), [RC launch documentation](../scripts/rc-showcase-catalog.test.ts), [screenshot inventory delegation](../scripts/walkthrough-screenshot-refresh.platform-test.ts)
 
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
 
@@ -391,7 +391,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [capsule-cited requirement resolution](../scripts/document-reviewability.test.ts), [retirement-claim consistency](../scripts/document-retirement-claims.test.ts)
+: [capsule-cited requirement resolution](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts), [retirement-claim consistency](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-retirement-claims.test.ts)
 
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
 
@@ -518,7 +518,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [cost-ledger row reproduction](../scripts/capsule-cost-reproduction.test.ts), [cost-ledger rank claims](../scripts/capsule-cost-comparison.test.ts), [no copied owner headroom](../scripts/document-reviewability.test.ts)
+: [cost-ledger row reproduction](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/capsule-cost-reproduction.test.ts), [cost-ledger rank claims](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/capsule-cost-comparison.test.ts), [no copied owner headroom](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts)
 
 **First observed:** [Interrupting Activity boundary Timer](capsules/ACTIVITY-BOUNDARY-TIMER-SPEC.md) capsule
 
@@ -628,7 +628,7 @@ Evidence
 
 **First observed:** [Runtime-state invariant](RUNTIME-STATE-INVARIANT-SPEC.md)
 
-Immutable versions permit an exact audited-to-landed diff; overwriting a scratch target permits only attestations. Preserve distinct draft versions; landing an immutable target lets ordinary guards inspect corrections. No repository fact can prove out-of-tree bytes were retained. [The route-atom guard](../scripts/structural-map-routes.ts) only governs repository content.
+Immutable versions permit an exact audited-to-landed diff; overwriting a scratch target permits only attestations. Preserve distinct draft versions; landing an immutable target lets ordinary guards inspect corrections. No repository fact can prove out-of-tree bytes were retained. [The route-atom guard](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/structural-map-routes.ts) only governs repository content.
 
 Retained recurrence evidence: [Finding 30](process-assessment/REVIEW-AND-DELIVERY-LEDGER.md#finding-30).
 
@@ -753,7 +753,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [change-binding enumerator](../scripts/what-binds.test.ts)
+: [change-binding enumerator](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/what-binds.test.ts)
 
 **First observed:** Boolean Process-data registration integration
 
@@ -1219,7 +1219,7 @@ Disposition
 : `unguardable`
 
 Evidence
-: [commit boundaries](REVIEW-POLICY.md#commit-boundaries) and [instruction regression guard](../scripts/independent-review-policy.test.ts)
+: [commit boundaries](REVIEW-POLICY.md#commit-boundaries) and [instruction regression guard](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/independent-review-policy.test.ts)
 
 **First observed:** owner review of the scope-creation commit cadence on 2026-09-18. The six implementation/evidence/acceptance triples are retained in `598f7365..36cce36d`.
 
@@ -1240,7 +1240,7 @@ Disposition
 : `unguardable`
 
 Evidence
-: [thread-capacity rules](../CLAUDE.md#delegated-implementation), [questions 3 and 10](#self-assessment-questions)
+: [thread-capacity rules](../CLAUDE.md#delegation), [questions 3 and 10](#self-assessment-questions)
 
 **First observed:** owner review of agent-thread exhaustion during the 2026-09-20 architecture/workflow follow-up.
 
@@ -1257,7 +1257,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [packet position and CLI regression tests](../scripts/semantic-review-packet.test.ts), [review-prompt contract](../scripts/independent-review-policy.test.ts), and [packet/migration contract](REVIEW-POLICY.md#independent-cold-review-gate)
+: [packet position and CLI regression tests](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/semantic-review-packet.test.ts), [review-prompt contract](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/independent-review-policy.test.ts), and [packet/migration contract](REVIEW-POLICY.md#independent-cold-review-gate)
 
 **First observed:** exact Merge review at `cd114dd6`: the differential README change was under `Learn more`, while the packet routed `Quick start`.
 
@@ -1491,7 +1491,7 @@ Commit `2fb8a861` made a refused Start a semantic rejection in `advanceScenario`
 
 Second instance, `PC-DATA-03` effect-data closure on 2026-10-14: `b6a6fe74` widened effect transport to every value arm and was qualified by the component lane, selected hosted files and the pipeline, while a structured-human-work testkit test in `test:temporal:built:concurrent` still pinned the old transport refusal; the closure `test:temporal` gate failed on it and `041ad7f5` moved the lock to the profile policy. The consumer set is computable from imports, but which lanes an author ran before a local commit leaves no tracked fact; the acceptance-boundary complete gate that observed both instances is the designed backstop, so the class is unguardable short of running every complete lane per commit, which the verification cadence rejects. Reusable question: before committing a change to an exported encoder or classifier, have the complete lanes of every package that imports it run, not only the lanes already under attention?
 
-Third instance, `PC-SCOPE-04` checkpoint corrections on 2026-10-22: `560ba25c` was qualified by focused `node --test` runs, which strip types without checking them, so a test helper that passed a `VariableBinding` array where the canonical patch measure takes business values was committed and approved by the correction audit; the closure `test:temporal` gate failed in its harness type check before any test ran. The [verification rule](../CLAUDE.md#balance-semantic-breadth-and-usable-delivery) already asks for type checks while coding, so the instance is a lapse in a written step, and the disposition stands for the class. This variant alone is cheaply guardable, by a type check before each local commit; that is a cadence change for the owner, not one an agent adds.
+Third instance, `PC-SCOPE-04` checkpoint corrections on 2026-10-22: `560ba25c` was qualified by focused `node --test` runs, which strip types without checking them, so a test helper that passed a `VariableBinding` array where the canonical patch measure takes business values was committed and approved by the correction audit; the closure `test:temporal` gate failed in its harness type check before any test ran. The [verification rule](../CLAUDE.md#delivery) already asks for type checks while coding, so the instance is a lapse in a written step, and the disposition stands for the class. This variant alone is cheaply guardable, by a type check before each local commit; that is a cadence change for the owner, not one an agent adds.
 
 Fourth instance, `PC-CF-02` closure on 2026-11-04: `ab97b983` made the checked Exclusive Gateway's default optional and was qualified by a focused target list of the edited modules and their proof consumers. Three fixture roots that construct the node with a literal default were outside it: two conformance modules in `BpmnConformance` and the `Experiments` checked-source admission, which only `verify.sh` builds. Two consecutive complete runs failed on them (`55d1934d`, `8ec53479`). The consumer criterion was exact and cheap, every syntactic constructor site of the changed constructor across all Lean sources and every `lakefile.toml` root, and one search with that criterion found the last site before a single green focused build of every executable root. The disposition stands for the class. Reusable question: when a constructor's signature changes, did the focused target list come from a search for its construction sites across every Lean root, rather than from the modules already under edit?
 
@@ -1525,7 +1525,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [class `simp` lemma](../BpmnSemantics/SemanticProcess/CommandAdmission.lean), [root-only Lean delegation](../CLAUDE.md#delegated-implementation), [single dispatch rewrite point](../scripts/lean-profile-capability-dispatch.test.ts)
+: [class `simp` lemma](../BpmnSemantics/SemanticProcess/CommandAdmission.lean), [root-only Lean delegation](../CLAUDE.md#delegation), [single dispatch rewrite point](../scripts/lean-profile-capability-dispatch.test.ts)
 
 **First observed:** `PC-DATA-03` effect-data shared batch on 2026-10-14.
 
@@ -1595,7 +1595,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [body-edit fanout ratchet](../scripts/lean-fanout.test.ts), [guard relaxations in the review packet](../scripts/semantic-review-packet.ts), [goal-fidelity review prompt](REVIEW-POLICY.md#review-prompt)
+: [body-edit fanout ratchet](../scripts/lean-fanout.test.ts), [guard relaxations in the review packet](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/semantic-review-packet.ts), [goal-fidelity review prompt](REVIEW-POLICY.md#review-prompt)
 
 **First observed:** the concurrent scope data Lean increment `99cb3861` on 2026-10-27, after the [build modularity](LEAN-BUILD-MODULARITY-SPEC.md) closure of 2026-10-26.
 
@@ -1612,7 +1612,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [`import all` total ratchet and bound-rise reasons](../scripts/lean-fanout.test.ts), [minimizer declaration](../scripts/lean-import-all-minimize.ts), [Rule 2](../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change)
+: [`import all` total ratchet and bound-rise reasons](../scripts/lean-fanout.test.ts), [minimizer declaration](../scripts/lean-import-all-minimize.ts), [Rule 2](../CLAUDE.md#rule-2-declare-and-check-every-bulk-change)
 
 **First observed:** the uncommitted build modularity conversion of 2026-10-27 and 2026-10-28, reverted to `7bedde10` before any commit.
 
@@ -1673,7 +1673,7 @@ Disposition
 : `executable guard`
 
 Evidence
-: [minimizer compile budget](../scripts/lean-import-all-minimize.test.ts), [Rule 2](../CLAUDE.md#rule-2-declare-review-and-check-every-bulk-change)
+: [minimizer compile budget](../scripts/lean-import-all-minimize.test.ts), [Rule 2](../CLAUDE.md#rule-2-declare-and-check-every-bulk-change)
 
 **First observed:** step C of the build modularity conversion on 2026-10-28 and 2026-10-29.
 

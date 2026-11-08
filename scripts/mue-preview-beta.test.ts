@@ -47,7 +47,7 @@ test("binds the Product 2 Beta catalog to its frozen specification denominator a
 });
 
 test("keeps Beta acceptance build-once, reuse-only, and aligned across its owners", async () => {
-  const [rootSource, webGuide, webSourceMap, showcaseRegistry, uiQualityGuide, testingSpec, contributorGuide, architecture, rootGuide, platformMap, assuranceMap, docsRegistry] = await Promise.all([
+  const [rootSource, webGuide, webSourceMap, showcaseRegistry, uiQualityGuide, testingSpec, contributorGuide, architecture, platformMap, assuranceMap, docsRegistry] = await Promise.all([
     read("package.json"),
     read("platform/apps/web/README.md"),
     read("platform/apps/web/SOURCE-MAP.md"),
@@ -56,7 +56,6 @@ test("keeps Beta acceptance build-once, reuse-only, and aligned across its owner
     read("docs/TESTING-SPEC.md"),
     read("docs/CONTRIBUTOR-SETUP-GUIDE.md"),
     read("docs/ARCHITECTURE.md"),
-    read("CLAUDE.md"),
     read("docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md"),
     read("docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md"),
     read("docs/README.md"),
@@ -82,7 +81,6 @@ test("keeps Beta acceptance build-once, reuse-only, and aligned across its owner
   assert.match(headingSection(testingSpec, "## Focused gate matrix"), /^\| Complete MUE Preview Beta release acceptance \|[^\n]+`\.\/scripts\/pnpm\.sh run test:release:mue-preview-beta`/mu);
   assert.match(headingSection(contributorGuide, "## Clean-clone path"), /^\.\/scripts\/pnpm\.sh run test:release:mue-preview-beta$/mu);
   assert.match(headingSection(architecture, "## Showcases"), /MUE Preview Beta is a release composition/u);
-  assert.match(headingSection(rootGuide, "## Verification"), /^\.\/scripts\/pnpm\.sh run test:release:mue-preview-beta$/mu);
   assert.match(headingSection(platformMap, "### BPM platform"), /A separate immutable MUE Preview Beta About catalog/u);
   assert.match(headingSection(assuranceMap, "### Project foundation"), /one exact MUE Preview Beta integration guard[^\n]+`test:release:mue-preview-beta`/u);
   assert.match(headingSection(docsRegistry, "## Fast navigation"), /^\| Understand or run the MUE Preview Beta integration \| \[MUE Preview Beta integration specification\]\(MUE-PREVIEW-BETA-SPEC\.md\)/mu);

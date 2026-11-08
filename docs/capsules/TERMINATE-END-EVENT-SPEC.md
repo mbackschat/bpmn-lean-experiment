@@ -318,8 +318,8 @@ The registered profile literal belongs to `SemanticProfileId`; no checkpoint-onl
 
 | Guard or oracle | Obligation |
 |---|---|
-| [document reviewability](../../scripts/document-reviewability.test.ts) | Keep specification routing, lifecycle status, and the graduated filename contract aligned. |
-| [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Keep `BPMN-TERMINATE-END-01`, citations, disposition, and capsule aligned. |
+| [document reviewability](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts) | Keep specification routing, lifecycle status, and the graduated filename contract aligned. |
+| [requirement ledger consistency](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts) | Keep `BPMN-TERMINATE-END-01`, citations, disposition, and capsule aligned. |
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) and [contract artifacts](../../scripts/contract-artifacts.test.ts) | Cover every new union arm and reject malformed exact shapes. |
 | [definition artifact consistency](../../scripts/contract-definition-artifacts.test.ts) | Bind End Event origin, input, containing scope, and absent output to lowering. |
 | [projected keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts) | Close the shared projection consumer inventory. |
@@ -333,9 +333,9 @@ The registered profile literal belongs to `SemanticProfileId`; no checkpoint-onl
 | [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts) and [corpus policy](../../scripts/bpmn-corpus-policy.test.ts) | Validate the fixture and retain the pinned normative corpus. |
 | [bounded CMOF calibration](../../scripts/check-bpmn-semantic-process-metamodel.ts) | Derive `TerminateEventDefinition` identity from the pinned normative CMOF instead of accepting a hand-entered type string. |
 | [normative references](../../scripts/normative-reference-resolution.test.ts) | Resolve every named clause, table, CMOF, and XSD anchor. |
-| [source hygiene](../../scripts/source-hygiene.test.ts), [Lean contracts](../../scripts/lean-source-contracts.test.ts), and [what-binds](../../scripts/what-binds.test.ts) | Keep cohesive owners, exhaustive switches, and registries within bounds. |
+| [source hygiene](../../scripts/source-hygiene.test.ts), [Lean contracts](../../scripts/lean-source-contracts.test.ts), and [what-binds](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/what-binds.test.ts) | Keep cohesive owners, exhaustive switches, and registries within bounds. |
 | [pre-release architecture](../../scripts/pre-release-architecture.test.ts) | Prevent public termination bags, Event History semantics, and a second semantic core. |
-| [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Bind each governed review to immutable targets and routed sections. |
+| [semantic review packet](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/semantic-review-packet.test.ts) | Bind each governed review to immutable targets and routed sections. |
 | [Markdown links](../../scripts/markdown-links.test.ts) | Resolve every owner, guard, requirement, and evidence link. |
 
 ## Epistemic closure and cost boundary

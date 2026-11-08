@@ -2,7 +2,7 @@
 
 This repository-wide map is the mandatory implementation-status router. Read it after [PLAN.md](PLAN.md), then read the detail maps resolved for the concrete target paths, or every detail map the active work item names while target paths are unknown. Exact family status, evidence, and absences live only in the routed detail maps.
 
-**Frontend architecture discussion or recommendation:** first follow [Before frontend recommendations](../CLAUDE.md#before-frontend-recommendations). It routes the earlier stack research, adopted architecture decisions and reopen conditions, information architecture, and UI design; reading the implementation map alone is insufficient for choosing a router or state-management approach.
+**Frontend architecture discussion or recommendation:** first follow [Before frontend recommendations](../CLAUDE.md#product-2). It routes the earlier stack research, adopted architecture decisions and reopen conditions, information architecture, and UI design; reading the implementation map alone is insufficient for choosing a router or state-management approach.
 
 ## Current claim
 

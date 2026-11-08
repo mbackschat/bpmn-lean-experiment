@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented contributor guide. It owns source-code responsibility, size, module-boundary, TypeScript, Lean, and comment rules for hand-written source. [CLAUDE.md](../CLAUDE.md#code-hygiene-and-module-boundaries) keeps the trigger and the hard size limits; the [source-hygiene guard](../scripts/source-hygiene.test.ts), [Lean source contracts](../scripts/lean-source-contracts.test.ts), and [Lean import boundaries](../scripts/lean-import-boundaries.test.ts) own the executable checks.
+Implemented contributor guide. It owns source-code responsibility, size, module-boundary, TypeScript, Lean, and comment rules for hand-written source. [CLAUDE.md](../CLAUDE.md#code) keeps the trigger and the hard size limits; the [source-hygiene guard](../scripts/source-hygiene.test.ts), [Lean source contracts](../scripts/lean-source-contracts.test.ts), and [Lean import boundaries](../scripts/lean-import-boundaries.test.ts) own the executable checks.
 
 ## Code hygiene and module boundaries
 

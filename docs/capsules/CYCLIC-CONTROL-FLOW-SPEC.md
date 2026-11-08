@@ -284,8 +284,8 @@ The following guards and oracles bind the implemented contract:
 
 | Guard or oracle | Obligation |
 |---|---|
-| [document reviewability](../../scripts/document-reviewability.test.ts) | Keep this specification linked from both registries and free of proposal-only implementation inventory. |
-| [requirement ledger consistency](../../scripts/requirement-ledger-consistency.test.ts) | Both new requirement IDs and capsule citations agree before either row can advance. |
+| [document reviewability](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/document-reviewability.test.ts) | Keep this specification linked from both registries and free of proposal-only implementation inventory. |
+| [requirement ledger consistency](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts) | Both new requirement IDs and capsule citations agree before either row can advance. |
 | [contract schema coverage](../../scripts/contract-schema-coverage.test.ts) | Both new union alternatives reach exact schema branches and every old branch remains covered. |
 | [contract artifact gates](../../scripts/contract-artifacts.test.ts) and [definition artifact gates](../../scripts/contract-definition-artifacts.test.ts) | The strict schemas, typed projections, control-place references, and exact checked-to-IL correspondence accept the new alternatives and reject endpoint drift. |
 | [CIB observation fidelity](../../scripts/cib-observation-fidelity.test.ts) | The schema widening does not invent a CIB observation or extend any CIB relationship. |
@@ -296,7 +296,7 @@ The following guards and oracles bind the implemented contract:
 | [BPMN Error route consistency](../../packages/bpmn-source/test/bpmn-error-route-consistency.test.ts) | The shared artifact consistency owner retains exact existing route/place checks while adding the new operation. |
 | [Semantic Process lowering](../../packages/bpmn-source/test/semantic-process-lowering.test.ts) | Checked Sequence Flow endpoints remain the sole merge-lowering authority, semantically unordered declaration and gateway-reference permutations leave merge lowering unchanged, and process-level conditional Flow declaration order remains exact in `choose.candidates`. |
 | [differential pipeline](../../packages/differential/test/pipeline.test.ts) | Existing scenario results remain exact and the new answer-free scenario compares across all declared targets. |
-| [capsule cost](../../scripts/capsule-cost.test.ts) | Closure records the exact commit-bounded code and documentation cost against the named comparison increments. |
+| [capsule cost](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/capsule-cost.test.ts) | Closure records the exact commit-bounded code and documentation cost against the named comparison increments. |
 | [BPMN corpus policy](../../scripts/bpmn-corpus-policy.test.ts) | The selected normative clauses and machine-readable artifacts remain pinned and verified. |
 | [contributor setup](../../scripts/contributor-setup.test.ts) | New registered profile, fixture, and package-owned paths remain provisioned by the documented clean-machine setup. |
 | [host interaction plan](../../packages/temporal-adapter/testkit/test/host-interaction-plan.test.ts) | The widened wire contracts do not add a host interaction or bypass the existing content-bound User Task Update. |
@@ -310,9 +310,9 @@ The following guards and oracles bind the implemented contract:
 | [run-command policy](../../scripts/run-command.test.ts) | New direct command examples remain bounded, reproducible, and use the repository wrappers. |
 | [source hygiene](../../scripts/source-hygiene.test.ts) | Every hand-written owner stays within its responsibility and the 600-line review target. |
 | [Lean source contracts](../../scripts/lean-source-contracts.test.ts) | New modules carry purpose documents, durable conformance facts have public theorem names, and every tactic-position `decide` uses `+kernel`. |
-| [semantic review packet](../../scripts/semantic-review-packet.test.ts) | Checkpoint and closure packets route every changed semantic owner and retain immutable gate evidence. |
+| [semantic review packet](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/semantic-review-packet.test.ts) | Checkpoint and closure packets route every changed semantic owner and retain immutable gate evidence. |
 | [Temporal package boundary](../../scripts/temporal-package-boundary.test.ts) | The Workflow continues to consume only published semantic contracts, and no client, Worker, or testkit dependency crosses into the semantic core. |
-| [what-binds](../../scripts/what-binds.test.ts) | Every changed path resolves its current owners, guards, registries, and headroom without a private inventory. |
+| [what-binds](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/what-binds.test.ts) | Every changed path resolves its current owners, guards, registries, and headroom without a private inventory. |
 | [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts) | The profile, scenario, expected result, and example registration land atomically. |
 | [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts) | The answer-free scenario has one declared target set, non-null Temporal relation, and a meaningful seeded mutation. |
 | [BPMN XML validation](../../scripts/bpmn-xml-validation.test.ts) | The cyclic fixture remains valid against the pinned BPMN 2.0.2 schemas. |
