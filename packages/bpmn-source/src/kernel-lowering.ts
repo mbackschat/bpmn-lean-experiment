@@ -10,6 +10,8 @@ import type {
 } from "@bpmn-lean/semantic-core";
 
 import { parseSimpleBooleanExpression } from "./simple-boolean-expression.js";
+import { defaultKernelProfileOptions } from "./kernel-reader/wire.js";
+import type { KernelJson, KernelProfileOptions } from "./kernel-reader/wire.js";
 
 /**
  * Lowers a checked process to the kernel IL ([proposal](../../../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#il)) in its
@@ -20,39 +22,6 @@ import { parseSimpleBooleanExpression } from "./simple-boolean-expression.js";
  * `Kernel.Admission`, never here. Its one refusal is a checked-process part the kernel IL cannot carry yet
  * (`lowering.<part>`), which a track lifts by extending this file.
  */
-
-export type KernelJson = null | boolean | number | string | KernelJson[] | { [key: string]: KernelJson };
-
-/** The kernel IL's `ProfileOptions`: profile behaviour as typed data, selected by the profile's relations. */
-export type KernelProfileOptions = Readonly<{
-  submissionInstallsVariables: boolean;
-  incidentProcessCancellation: boolean;
-  scopeChainSubmissionBytes: number | null;
-}>;
-
-export const defaultKernelProfileOptions: KernelProfileOptions = {
-  submissionInstallsVariables: true,
-  incidentProcessCancellation: false,
-  scopeChainSubmissionBytes: null,
-};
-
-/** One portable value's allowance, which bounds a scope-chain submission (`NSD-TASK-01`). */
-const portableValueAllowanceBytes = 16_384;
-
-/**
- * The kernel options a profile selects, derived from its CIB relation identifiers
- * ([register](../../../docs/CIB-BPMN-RELATION-REGISTER.md)), never from its identity: a User Task completion
- * installs its submitted values as variables (`CIB-EXT-0005`), an effect incident offers the cancellation of its
- * root process (`CIB-OP-0009`), and a submission may name only scope-chain locals within one value allowance
- * (`CIB-EXT-0020`).
- */
-export function kernelProfileOptions(relations: readonly string[]): KernelProfileOptions {
-  return {
-    submissionInstallsVariables: relations.includes("CIB-EXT-0005"),
-    incidentProcessCancellation: relations.includes("CIB-OP-0009"),
-    scopeChainSubmissionBytes: relations.includes("CIB-EXT-0020") ? portableValueAllowanceBytes : null,
-  };
-}
 
 export type KernelLowering =
   | { readonly kind: "lowered"; readonly program: KernelJson }

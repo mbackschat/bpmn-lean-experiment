@@ -61,12 +61,21 @@ export {
   parseSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";
 export {
-  defaultKernelProfileOptions,
-  kernelProfileOptions,
   lowerCheckedProcessToKernel,
 } from "./kernel-lowering.js";
 export type {
-  KernelJson,
   KernelLowering,
-  KernelProfileOptions,
 } from "./kernel-lowering.js";
+export {
+  defaultKernelProfileOptions,
+  kernelProfileOptions,
+  readKernelProgram,
+  ReadRefusalCode,
+} from "./kernel-reader/index.js";
+export type {
+  KernelJson,
+  KernelProfileOptions,
+  KernelRead,
+  KernelSource,
+  SourceFactNotCarried,
+} from "./kernel-reader/index.js";
