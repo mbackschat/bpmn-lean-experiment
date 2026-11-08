@@ -4,6 +4,8 @@
 
 **Owner-selected CIB compatibility architecture on 2026-07-30 and deferred later that day behind the standards-first [Simple Boolean expression decision](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md). The reviewed dependency set remains approved but unadopted; the Java Activity Worker, wire contracts, and production implementation remain absent.**
 
+**Amended by owner decision on 2026-11-08: no JVM. A bounded read-only subset evaluated in Lean and TypeScript at M2 replaces the Java Worker and this decision's exclusion of a project-owned evaluator. The [kernel proposal](LEAN-KERNEL-REWRITE-PROPOSAL.md) owns it; the read-only context rules below stand.**
+
 ## Question
 
 How should a selected CIB Seven profile evaluate read-only JUEL expressions without creating a project-owned expression language, parser, abstract syntax tree, or evaluator?
