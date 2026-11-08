@@ -98,20 +98,20 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Kernel IL orthogonalization, batch 5, third family: the implicit split at User, Service and Send Tasks through the Activity host with output lists on the User Task and effect wait records ([specification](capsules/ACTIVITY-HOST-SPLIT-SPEC.md)). The scope host family landed on `main` at `d62d89d9`.
+Current task: the [Lean kernel rewrite](LEAN-KERNEL-REWRITE-PROPOSAL.md), owner direction 2026-11-08. The incremental Kernel IL orthogonalization stopped by owner direction during the switch's stage 1; that work is parked unqualified on branch `park/activity-host-switch-stage1` at `ff6ca8dc` and is not built on. The existing Lean library and TypeScript core are frozen.
 
-Deliverable: `PC-CF-07`'s unconditioned split at User, Service and Send Tasks outside fork regions, landed on `main`; the [specification](capsules/ACTIVITY-HOST-SPLIT-SPEC.md#question-and-delivery-boundary) lists every residual.
+Deliverable: the proposal's W0 (new kernel at scenario parity, old stack and documents deleted), then the coverage waves W1–W7.
 
-Acceptance blockers: hosted `verify-complete`, then the fast-forward of `main`.
+Acceptance blockers: round 2 of the proposal's reviews (round 1 on `59c38e87` required edits, all answered).
 
-Current result: graduated; closure review of `2b812165` approved with required edits, audit `a9363b20` approving on green hosted CI.
+Current result: proposal revised after eight round-1 reviews and audits.
 
-Owner items: confirm the incremental re-decision after the stop condition fired; renew six stale size-exception rationales.
+Owner items: the dependency and hold packet named in the proposal's owner decisions, during W0.
 
-Effort budget: 12 hours from 2026-11-07 13:30 CET; at the limit record the boundary and continue unless the evidence invalidates the path. Lean batch `acsp-family`: one full build at closure, one after a correction.
+Effort budget: 72 hours from 2026-11-08 18:00 CET for W0, per the proposal's day targets; at the limit record the boundary and continue unless the evidence invalidates the path, and apply the proposal's stop rule at the end of day 3.
 
-Next action: land through the branch push flow, then propose the switch, the fourth Kernel IL family.
+Next action: on approval, start W0.0 and W0.1 in parallel.
 
-Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
+Oracle: the proposal's guardrails; W0 parity against the frozen old-evaluator results.
 
-Stop if the path requires SDK work or a new dependency. Routine fast-uri 3.1.9 is admissible after 2026-11-02 23:05 UTC.
+Stop if the path requires SDK work or a new dependency.
