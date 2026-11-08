@@ -395,10 +395,6 @@ private def admittedModel (scopes : List DefinitionScope) (raw : List RawBody) (
 
 run_meta privateEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`admittedModel]
 
-def controlCheckedScope? (source : CheckedProcess) (nodeId : NodeId) : Option String := do
-  let owner ← StructuredComposition.unique? (source.nodeScopes.filter (·.nodeId == nodeId))
-  return owner.scopeId.value
-
 /-- CSD-ADMIT-01 lets Service Tasks of a data-bearing model map data under the bounded String rules, and
 CMCALL-ADMIT-01 lets its Calls map. -/
 def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : CheckedNode) :
@@ -440,12 +436,6 @@ def checkedVertex? (source : CheckedProcess) (data : Option Data) (node : Checke
   return (⟨id, kind, outputs⟩, child)
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`checkedVertex?]
-
-/-- The parentless definition scope of the Process a Call names. -/
-def calledRoot? (source : CheckedProcess) (calledProcessId : ProcessId) : Option String := do
-  let root ← StructuredComposition.unique? (source.definitionScopes.filter fun scope =>
-    scope.parentScopeId.isNone && scope.originElementId.value == calledProcessId.value)
-  return root.id.value
 
 /-- A checked graph carries data exactly when a scope declares a local, a Service Task maps one or a Call
 maps. -/
@@ -555,6 +545,18 @@ def callerOutput? (program : Program) (calledRoot : DefinitionScopeId) (returnOp
   | _ => none
 
 run_meta privateMatchEquations `BpmnSemantics.SemanticProcess.NestedScopeControl #[`callerOutput?]
+
+def isCallReturn : SemanticOperation → Bool
+  | .returnProcess .. => true
+  | _ => false
+
+/-- A scope's completion, legacy or exit (SCPH-EXIT-01); a body projects neither. -/
+private def completesScope : SemanticOperation → Bool
+  | .completeScope .. | .scopeExit .. => true
+  | _ => false
+
+/-- The lowered child Start is elided; this synthetic vertex stands for the child's entry place. -/
+def childStart (scope : String) : String := "start:" ++ scope
 
 def operationVertex? (program : Program) (data : Option Data) (scope : String) (operation : SemanticOperation) :
     Option (MergeRegion.RawVertex × Option String) := do

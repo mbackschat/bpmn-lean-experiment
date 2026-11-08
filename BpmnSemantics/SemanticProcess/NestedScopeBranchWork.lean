@@ -2,6 +2,7 @@ module
 
 public import BpmnSemantics.SemanticProcess.MergeRegionAdmission
 public import BpmnSemantics.SemanticProcessContract
+import BpmnSemantics.SemanticProcess.StructuredCompositionAdmission
 
 /-! The fork-branch cut of NSC-ADMIT-01 and the Call placement scan of CMCALL-ADMIT-01, as PTPB-WORK-01 and
 PTPB-CALL-01 of the [pass-through branch specification](../../docs/capsules/PASS-THROUGH-PARALLEL-BRANCHES-SPEC.md#admission)
@@ -139,8 +140,9 @@ def splitScopesPlaced (bodies : List (String × List MergeRegion.RawVertex × Li
           childVertices.any fun start => start.kind == .vertex .start && splitsRaw start
         !splittingChild || placedFrom bodies bodies.length child
 
-/-! Helpers of the nested analysis over vertex lists and operations, kept here so its owner stays within the size
-target. -/
+/-! Helpers of the nested analysis over vertex lists and checked scopes, kept here so its owner stays within the size
+target. Its Program-path helpers stay in the owner: `SequentialMultiInstanceProgramBindingConformance` kernel-decides
+Program admission through the owner's opened bodies and cannot reduce this leaf's (CI run 42424301692, 2026-11-07). -/
 
 /-- Task vertices a scan armed: each has exactly its one input among the scan's arrivals. -/
 def armed (vertices : List Vertex) (closure : Closure) : List String :=
@@ -161,16 +163,14 @@ def reaches (vertices : List Vertex) : Nat → String → String → Bool
       | some vertex => vertex.outputs.any fun next => next == target || reaches vertices fuel next target
       | none => false
 
-def isCallReturn : SemanticOperation → Bool
-  | .returnProcess .. => true
-  | _ => false
+def controlCheckedScope? (source : CheckedProcess) (nodeId : NodeId) : Option String := do
+  let owner ← StructuredComposition.unique? (source.nodeScopes.filter (·.nodeId == nodeId))
+  return owner.scopeId.value
 
-/-- The lowered child Start is elided; this synthetic vertex stands for the child's entry place. -/
-def childStart (scope : String) : String := "start:" ++ scope
-
-/-- A scope's completion, legacy or exit (SCPH-EXIT-01); a body projects neither. -/
-def completesScope : SemanticOperation → Bool
-  | .completeScope .. | .scopeExit .. => true
-  | _ => false
+/-- The parentless definition scope of the Process a Call names. -/
+def calledRoot? (source : CheckedProcess) (calledProcessId : ProcessId) : Option String := do
+  let root ← StructuredComposition.unique? (source.definitionScopes.filter fun scope =>
+    scope.parentScopeId.isNone && scope.originElementId.value == calledProcessId.value)
+  return root.id.value
 
 end BpmnSemantics.SemanticProcess.NestedScopeControl
