@@ -25,6 +25,7 @@ def hooks : Hooks :=
     arm := Feature.Subscriptions.arm
     armGateway := Feature.Subscriptions.armGateway
     catches := Feature.Subscriptions.catches
+    correlates := Feature.Subscriptions.correlates
     arriveScope := Feature.Scopes.arriveScope
     arriveThrow := Feature.Propagation.arriveThrow
     completeScope := Feature.Scopes.completeScope

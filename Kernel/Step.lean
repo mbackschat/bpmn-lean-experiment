@@ -213,11 +213,15 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (before : Option State) (transition : 
       let next ← transition state
       settle hooks ctx closureBound next
 
+/-- The context every hook of `program` reads, its queries filled from `hooks`. -/
+def context (hooks : Hooks) (program : Program) : Ctx :=
+  { program, evaluate := hooks.evaluate, catches := hooks.catches, eventStart := hooks.eventStart
+    bodyWait := hooks.bodyWait }
+
 /-- One input. `none` is the state before the instance starts; only a start applies to it. The root's Event
 Sub-Process starts are armed before the start Event's tokens move. -/
 def step (hooks : Hooks) (program : Program) (before : Option State) (input : Input) : Outcome :=
-  let ctx : Ctx := { program, evaluate := hooks.evaluate, catches := hooks.catches, eventStart := hooks.eventStart
-                     bodyWait := hooks.bodyWait }
+  let ctx := context hooks program
   match input with
   | .start payload =>
     match before, startElement? program payload.startEvent with

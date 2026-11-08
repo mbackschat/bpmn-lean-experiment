@@ -6,8 +6,8 @@ public import Kernel.IL.Timer
 /-! # Admission of catch Events, boundaries and triggered starts. A refusal carries a stable code.
 
 Admitted: Timers with a literal exact duration (a cycle only on a boundary), Messages with a literal or unspecified
-name and no correlation, and, on boundaries, the triggers that `Kernel.Feature.Propagation` delivers (Error,
-Escalation, Compensation, Cancel).
+name and no correlation, a correlated Message only on a catch Event, and, on boundaries, the triggers that
+`Kernel.Feature.Propagation` delivers (Error, Escalation, Compensation, Cancel).
 -/
 
 public section
@@ -41,10 +41,27 @@ def message (trigger : MessageTrigger) : Option String :=
     | some (.literal _) => none
     | none => none
 
+/-- A correlated catch, as the [specification](../../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#required-optional-and-excluded-scope)
+bounds it: one key bound to a variable, an Operation channel, and no output, since its payload is never written. -/
+def correlatedCatch (subscription : Subscription) (trigger : MessageTrigger) : Option String :=
+  match trigger.correlation with
+  | [] => message trigger
+  | [criterion] =>
+    if !subscription.outputs.isEmpty then some "message.correlation.output"
+    else if trigger.name.isNone || trigger.interfaceRef.isNone || trigger.operationRef.isNone then
+      some "message.correlation.channel"
+    else
+      match criterion.value with
+      | .variable _ => message { trigger with correlation := [] }
+      | .literal _ => some "message.correlation.value"
+      | .simpleBoolean _ => some "message.correlation.value"
+      | .foreign _ _ => some "message.correlation.value"
+  | _ :: _ :: _ => some "message.correlation.keys"
+
 def catchEvent (subscription : Subscription) : Option String :=
   match subscription.trigger with
   | .timer trigger => timer false trigger
-  | .message trigger => message trigger
+  | .message trigger => correlatedCatch subscription trigger
   | .signal _ => some "event.catch.signal"
   | .condition _ => some "event.catch.condition"
   | .error _ => some "event.catch.error"

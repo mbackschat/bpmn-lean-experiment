@@ -131,6 +131,11 @@ structure Hooks where
   eventStart : ScopePayload → Option (Subscription × Bool) := fun _ => none
   /-- Work: `Ctx.bodyWait`. -/
   bodyWait : ActivityPayload → Option OpenKind := fun _ => none
+  /-- Subscriptions: whether the open item is a correlated Message subscription on the channel whose criteria, evaluated
+  in the current state, equal the delivered correlation; `false` for any other item. `Kernel.Population` asks it to
+  find the candidates of a correlated publication. -/
+  correlates : Ctx → OpenItem → MessageChannel → List (String × Value) → State → Except Failure Bool :=
+    fun _ _ _ _ _ => .error (.unsupported "correlates")
   /-- MultiInstance: a token reached an Activity with Multi-Instance loop characteristics. -/
   arriveMultiInstance : Ctx → Header → ActivityPayload → MultiInstance → Arrival → State → Outcome :=
     fun _ _ _ _ _ => refuse "multiInstance"

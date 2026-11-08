@@ -59,7 +59,7 @@ export function classify(segments: readonly string[]): readonly [Layer, string] 
     case "admission": return [Layer.Admission, second];
     case "step":
     case "publish":
-    case "population": return [Layer.Dispatch, ""];
+    case "population": return [Layer.Dispatch, head];
     case "registry": return [Layer.Registry, ""];
     case "admissionregistry": return [Layer.AdmissionRegistry, ""];
     case "run": return [Layer.Run, ""];
@@ -116,7 +116,10 @@ export function layeringFindings(modules: readonly Module[], isKernel: (name: st
     }
     const sameFamily = target.layer === module.layer && target.family === module.family &&
       (module.layer === Layer.Feature || module.layer === Layer.Admission);
-    if (sameFamily || mayImport[module.layer].includes(target.layer)) return [];
+    // The population layer drives each instance through the one step function (proposal, module table and guard 13).
+    const populationSteps = module.layer === Layer.Dispatch && module.family === "population" &&
+      target.layer === Layer.Dispatch && target.family === "step";
+    if (sameFamily || populationSteps || mayImport[module.layer].includes(target.layer)) return [];
     return [`${module.file}: ${module.layer} module imports ${target.layer} module ${imported}`];
   }));
 }

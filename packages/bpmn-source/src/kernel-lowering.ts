@@ -137,10 +137,10 @@ const timer = (schedule: KernelJson): KernelJson => ctor("timer", { payload: { s
 const duration = (literal: string): KernelJson => timer(ctor("duration", { value: literalSource(literal) }));
 const cycle = (literal: string): KernelJson => timer(ctor("cycle", { value: literalSource(literal), dialect: "iso8601" }));
 /** The IL `MessageTrigger` of a checked channel; an unspecified Message has no name (CIB-INT-0004). */
-function messageTrigger(channel: MessageChannel): KernelJson {
+function messageTrigger(channel: MessageChannel, correlation: KernelJson[] = []): KernelJson {
   switch (channel.kind) {
     case MessageChannelKind.OperationMessage:
-      return { name: literalSource(channel.messageId), correlation: [],
+      return { name: literalSource(channel.messageId), correlation,
         interfaceRef: channel.interfaceId, operationRef: channel.interfaceOperationId };
     case MessageChannelKind.DirectMessage:
       return { name: literalSource(channel.messageId), correlation: [], interfaceRef: null, operationRef: null };
@@ -149,7 +149,8 @@ function messageTrigger(channel: MessageChannel): KernelJson {
   }
 }
 
-const message = (channel: MessageChannel): KernelJson => ctor("message", { payload: messageTrigger(channel) });
+const message = (channel: MessageChannel, correlation: KernelJson[] = []): KernelJson =>
+  ctor("message", { payload: messageTrigger(channel, correlation) });
 
 type Ownership = {
   readonly parentOf: (nodeId: string) => string | null;
@@ -391,7 +392,14 @@ function lowerNode(checked: CheckedProcess, node: CheckedNode, owner: Ownership)
         ]),
       }), "intermediate", owner)];
     case CheckedNodeKind.CorrelatedPayloadMessageCatchEvent:
-      throw new Refusal("lowering.correlatedPayloadMessageCatch");
+      // One criterion per key: the key's single property is bound to the Process Property its data path names, and
+      // the `payload` message path makes the whole payload that property's value; the payload is never written
+      // (docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md, exact expression and value subset).
+      return [event(node, "intermediateCatchEvent", ctor("catch", {
+        subscription: subscription(message(node.channel, [
+          { key: node.correlationKeyId, value: variable(node.processPropertySelector.propertyId) },
+        ])),
+      }), "intermediate", owner)];
     case CheckedNodeKind.ReceiveTask:
       return [activity(node, "receiveTask", ctor("receive", {
         payload: { message: messageTrigger(node.channel) },

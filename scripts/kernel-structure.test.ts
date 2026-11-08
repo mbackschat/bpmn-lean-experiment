@@ -28,7 +28,7 @@ test("no profile identifier appears in the kernel", () => {
 });
 
 // The scans must reject what they exist to reject, so each is checked against a minimal violating module set.
-test("layering rejects a feature importing another feature, an admission importing state, and a foreign import", () => {
+test("layering rejects a feature importing another feature, an admission importing state, a foreign import, and a dispatch module other than population importing step", () => {
   const module = (name: string, layer: Layer, family: string, imports: string[]): Module =>
     ({ name, layer, family, file: name, imports });
   const modules = [
@@ -38,10 +38,14 @@ test("layering rejects a feature importing another feature, an admission importi
     module("Kernel.Admission.Flow", Layer.Admission, "flow", ["Kernel.State", "Lean.Data.Json"]),
     module("Kernel.Hooks", Layer.Hooks, "", ["Kernel.State"]),
     module("Kernel.State", Layer.State, "", []),
+    module("Kernel.Step", Layer.Dispatch, "step", ["Kernel.Hooks"]),
+    module("Kernel.Population", Layer.Dispatch, "population", ["Kernel.Step"]),
+    module("Kernel.Publish", Layer.Dispatch, "publish", ["Kernel.Step"]),
   ];
   assert.deepEqual(layeringFindings(modules, (name) => name.startsWith("Kernel.")), [
     "Kernel.Feature.Work: feature module imports feature module Kernel.Feature.Data",
     "Kernel.Admission.Flow: admission module imports state module Kernel.State",
     "Kernel.Admission.Flow: imports Lean.Data.Json outside the kernel",
+    "Kernel.Publish: dispatch module imports dispatch module Kernel.Step",
   ]);
 });

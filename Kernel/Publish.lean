@@ -64,6 +64,9 @@ inductive EnabledInteraction where
   | completeUserTask (task : OccurrenceId)
   | deliverMessage (subscription : OccurrenceId) (channel : MessageChannel)
   | deliverPayloadMessage (subscription : OccurrenceId) (channel : MessageChannel)
+  /-- A correlated wait's definition-scoped publication; the subscription only orders it and is never published,
+  since a correlated publication names no target ([specification](../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#global-command-and-runtime-contract)). -/
+  | publishCorrelatedPayloadMessage (subscription : OccurrenceId) (channel : MessageChannel) (correlationKey : String)
   | retryIncident (effect : OccurrenceId) (generation : Nat)
   | cancelIncidentProcess (effect : OccurrenceId) (generation : Nat)
   deriving Repr
@@ -185,6 +188,7 @@ def EnabledInteraction.key : EnabledInteraction → Nat × OccurrenceId
   | .completeUserTask id => (0, id)
   | .deliverMessage id _ => (1, id)
   | .deliverPayloadMessage id _ => (1, id)
+  | .publishCorrelatedPayloadMessage id _ _ => (1, id)
   | .retryIncident id _ => (4, id)
   | .cancelIncidentProcess id _ => (4, id)
 
@@ -198,7 +202,10 @@ def interactions (state : State) (item : OpenItem) : List EnabledInteraction :=
   match item.kind with
   | .userTask _ => [.completeUserTask id]
   | .message detail =>
-    [if detail.payload then .deliverPayloadMessage id detail.channel else .deliverMessage id detail.channel]
+    match detail.correlationKey with
+    | some key => [.publishCorrelatedPayloadMessage id detail.channel key]
+    | none =>
+      [if detail.payload then .deliverPayloadMessage id detail.channel else .deliverMessage id detail.channel]
   | .incident detail =>
     .retryIncident id detail.generation ::
       (if detail.cancellable then [.cancelIncidentProcess id detail.generation] else [])

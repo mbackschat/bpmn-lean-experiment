@@ -54,7 +54,11 @@ def waitKind (now : Nat) (subscription : Subscription) : Except Failure (Option 
   | .timer trigger => (some ∘ OpenKind.timer) <$> timerDetail now trigger
   | .message trigger => do
     let channel ← channel trigger
-    pure (some (.message { channel, payload := !subscription.outputs.isEmpty }))
+    let correlationKey ← match trigger.correlation with
+      | [] => pure none
+      | [criterion] => pure (some criterion.key)
+      | _ :: _ :: _ => throw (.unsupported "message-correlation-keys")
+    pure (some (.message { channel, payload := !subscription.outputs.isEmpty, correlationKey }))
   | .signal _ => .error (.unsupported "signal-subscription")
   | .condition _ => .error (.unsupported "conditional-subscription")
   | .error _ => .ok none
@@ -126,8 +130,70 @@ def payloadBindings (ctx : Ctx) (outputs : List Mapping) (payload : Value) :
     | .foreign _ _ => none
   ctx.evaluateMappings outputsRead outputs
 
+/-! ## Correlation
+
+Message key correlation as the [specification](../../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md) bounds it: a
+criterion names one correlation key and the expression its single property's value is bound to in the subscription's
+scope; the delivered value is the Message payload's. Both must be non-empty Strings, compared by exact equality
+([exact subset](../../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#exact-expression-and-value-subset)), and the
+criterion is evaluated when a delivery is matched, never when the subscription opens, so the current Property value
+decides. -/
+
+def criteria : Trigger → List CorrelationCriterion
+  | .message trigger => trigger.correlation
+  | .timer _ => []
+  | .signal _ => []
+  | .condition _ => []
+  | .error _ => []
+  | .escalation _ => []
+  | .compensation => []
+  | .cancel => []
+
+/-- The key a criterion binds, evaluated in `variables`. -/
+def keyValue (ctx : Ctx) (variables : List (String × Value)) (criterion : CorrelationCriterion) :
+    Except Failure String :=
+  match ctx.evaluate variables criterion.value with
+  | .value (.string key) => if key.isEmpty then .error (.unsupported "correlation-key-empty") else .ok key
+  | .value _ => .error (.unsupported "correlation-key-type")
+  | .needsHost => .error (.unsupported "host-evaluation")
+  | .failure code => .error (.semanticFailure code)
+
+/-- Whether `correlation` names exactly the criteria's keys, in order, each with the String its criterion binds. -/
+def correlationMatches (ctx : Ctx) (variables : List (String × Value)) (bound : List CorrelationCriterion)
+    (correlation : List (String × Value)) : Except Failure Bool :=
+  if bound.length != correlation.length then .ok false
+  else (bound.zip correlation).allM fun (criterion, key, delivered) => do
+    let expected ← keyValue ctx variables criterion
+    pure (criterion.key == key && match delivered with
+      | .string value => value == expected
+      | _ => false)
+
+/-- The subscription an open item belongs to: a boundary's, a catch Event's or an Event Sub-Process start's; an
+Activity's own subscription (a Receive Task) is the work feature's. -/
+def subscription? (ctx : Ctx) (item : OpenItem) : Option Subscription :=
+  match ctx.program.boundary? item.element with
+  | some (_, boundary) => some boundary.subscription
+  | none =>
+    let element := ctx.program.element? item.element
+    let catchEvent := element.bind (·.event?) |>.bind fun (_, event) => event.catch?
+    let eventStart := element.bind (·.start?) |>.bind (·.1.parent) |>.bind ctx.program.element?
+      |>.bind (·.scope?) |>.bind fun (_, payload) => (ctx.eventStart payload).map (·.1)
+    catchEvent <|> eventStart
+
+/-- `Hooks.correlates`. -/
+def correlates (ctx : Ctx) (item : OpenItem) (channel : MessageChannel) (correlation : List (String × Value))
+    (state : State) : Except Failure Bool :=
+  match item.kind.message?, (subscription? ctx item).map (criteria ·.trigger) with
+  | some wait, some bound@(_ :: _) =>
+    if wait.channel != channel then .ok false
+    else correlationMatches ctx (state.visible item.scope) bound correlation
+  | some _, some [] => .ok false
+  | some _, none => .ok false
+  | none, _ => .ok false
+
 /-- Check that `fired` may fire `item` and return the state at the firing's logical time with the values the
-subscription writes. -/
+subscription writes. A Message delivery must carry exactly the subscription's correlation, none for an uncorrelated
+one; the target rechecks it rather than trusting the population's selection (specification, global command). -/
 def admitFiring (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fired : Fired) (state : State) :
     Except Failure (State × List (String × Value)) :=
   match fired with
@@ -142,12 +208,16 @@ def admitFiring (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fir
     | none => .error (.rejected "not-a-message-subscription")
     | some wait =>
       if delivery.channel != wait.channel then .error (.rejected "message-channel-mismatch")
-      else
-        match wait.payload, delivery.payload with
-        | true, some payload => do .ok (state, ← payloadBindings ctx subscription.outputs payload)
-        | true, none => .error (.rejected "message-payload-required")
-        | false, some _ => .error (.rejected "message-payload-not-accepted")
-        | false, none => .ok (state, [])
+      else do
+        let correlated ← correlationMatches ctx (state.visible item.scope) (criteria subscription.trigger)
+          delivery.correlation
+        if !correlated then .error (.rejected "message-correlation-mismatch")
+        else
+          match wait.payload, delivery.payload with
+          | true, some payload => do .ok (state, ← payloadBindings ctx subscription.outputs payload)
+          | true, none => .error (.rejected "message-payload-required")
+          | false, some _ => .error (.rejected "message-payload-not-accepted")
+          | false, none => .ok (state, [])
 
 /-- What remains of a fired subscription that does not interrupt: a Message subscription stays open with the
 same identity, a cycle Timer opens its next occurrence one period after the deadline it fired at, keeping its

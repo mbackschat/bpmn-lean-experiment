@@ -63,6 +63,10 @@ structure MessageWaitDetail where
   channel : MessageChannel
   /-- The delivery carries a payload the wait writes. -/
   payload : Bool := false
+  /-- The correlation key a delivery must match, for a subscription with correlation criteria: such a wait is
+  published as a definition-scoped correlated publication, never as a directly addressed delivery
+  ([specification](../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#source-checked-graph-and-semantic-process-contract)). -/
+  correlationKey : Option String := none
   deriving Repr
 
 /-- `period` re-arms a cycle Timer after it fires. -/
