@@ -24,10 +24,17 @@ inductive Evaluation where
   | failure (code : String)
   deriving Repr
 
-/-- What every hook may read: the program and the evaluator the profile selects. -/
+/-- What every hook may read: the program, the evaluator the profile selects, and the cross-owner queries. A
+feature that needs to inspect a guarded type it does not own asks that type's owner through one of these queries,
+which `Step` fills from the `Hooks` field of the same name. -/
 structure Ctx where
   program : Program
   evaluate : List (String × Value) → Expression → Evaluation
+  /-- Subscriptions: the precedence with which a catch trigger catches a raised event, lower first (an exact
+  Error or Escalation code before a catch-all), or `none` when it does not catch it. -/
+  catches : Raised → Trigger → Option Nat
+  /-- Scopes: the start subscription and interrupting flag of an Event Sub-Process, `none` for another scope. -/
+  eventStart : ScopePayload → Option (Subscription × Bool)
 
 /-- A token that reached an element, removed from the flow it arrived on. -/
 structure Arrival where
@@ -87,5 +94,9 @@ structure Hooks where
   startEventSubProcess : Ctx → ElementId → ScopeOccurrenceId → List (String × Value) → State → Outcome :=
     fun _ _ _ _ => refuse "startEventSubProcess"
   evaluate : List (String × Value) → Expression → Evaluation := fun _ _ => .failure "no-evaluator"
+  /-- Subscriptions: `Ctx.catches`. -/
+  catches : Raised → Trigger → Option Nat := fun _ _ => none
+  /-- Scopes: `Ctx.eventStart`. -/
+  eventStart : ScopePayload → Option (Subscription × Bool) := fun _ => none
 
 end Kernel

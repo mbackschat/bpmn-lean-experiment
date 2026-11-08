@@ -189,7 +189,7 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (before : Option State) (transition : 
 /-- One input. `none` is the state before the instance starts; only a start applies to it. The root's Event
 Sub-Process starts are armed before the start Event's tokens move. -/
 def step (hooks : Hooks) (program : Program) (before : Option State) (input : Input) : Outcome :=
-  let ctx : Ctx := { program, evaluate := hooks.evaluate }
+  let ctx : Ctx := { program, evaluate := hooks.evaluate, catches := hooks.catches, eventStart := hooks.eventStart }
   match input with
   | .start payload =>
     match before, startElement? program payload.startEvent with

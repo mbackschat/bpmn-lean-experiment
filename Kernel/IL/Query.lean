@@ -5,7 +5,8 @@ public import Kernel.IL.Types
 /-! # IL queries
 
 Read-only projections of a `Program` that every layer may use. They project; they never dispatch on what an element
-means, so matching here does not compete with the dispatch owners.
+means, so matching here does not compete with the dispatch owners. A feature that needs one kind of element uses
+the projection for it instead of matching `Element` or `EventRole`, which only `Kernel.Step` dispatches on.
 -/
 
 public section
@@ -26,6 +27,57 @@ def Element.envelope? : Element → Option Envelope
   | .event _ _ => none
   | .gateway _ _ => none
   | .start _ _ => none
+
+def Element.activity? : Element → Option (Header × ActivityPayload)
+  | .activity header payload => some (header, payload)
+  | .scope _ _ => none
+  | .event _ _ => none
+  | .gateway _ _ => none
+  | .start _ _ => none
+
+def Element.scope? : Element → Option (Header × ScopePayload)
+  | .scope header payload => some (header, payload)
+  | .activity _ _ => none
+  | .event _ _ => none
+  | .gateway _ _ => none
+  | .start _ _ => none
+
+def Element.event? : Element → Option (Header × EventPayload)
+  | .event header payload => some (header, payload)
+  | .activity _ _ => none
+  | .scope _ _ => none
+  | .gateway _ _ => none
+  | .start _ _ => none
+
+def Element.gateway? : Element → Option (Header × GatewayPayload)
+  | .gateway header payload => some (header, payload)
+  | .activity _ _ => none
+  | .scope _ _ => none
+  | .event _ _ => none
+  | .start _ _ => none
+
+def Element.start? : Element → Option (Header × StartPayload)
+  | .start header payload => some (header, payload)
+  | .activity _ _ => none
+  | .scope _ _ => none
+  | .event _ _ => none
+  | .gateway _ _ => none
+
+/-- The subscription of a catch Event. -/
+def EventPayload.catch? (payload : EventPayload) : Option Subscription :=
+  match payload.role with
+  | .catch subscription => some subscription
+  | .throw _ => none
+  | .linkCatch _ => none
+  | .linkThrow _ => none
+
+/-- The incoming flows of an element; a start Event has none. -/
+def Element.incoming : Element → List FlowId
+  | .activity _ payload => payload.envelope.incoming
+  | .scope _ payload => payload.envelope.incoming
+  | .event _ payload => payload.incoming
+  | .gateway _ payload => payload.incoming
+  | .start _ _ => []
 
 namespace Program
 
