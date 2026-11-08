@@ -3,6 +3,7 @@
  */
 import type {
   AcceptedBpmnCompilation,
+  KernelJson,
 } from "@bpmn-lean/bpmn-source";
 import type {
   CanonicalObservation,
@@ -135,12 +136,7 @@ export type PipelineContext<
   retainedEvidence: RetainedEvidence | null;
   checkedProcess: AcceptedBpmnCompilation["checkedProcess"];
   semanticProcess: SemanticProcessProgram;
-}>;
-
-export type LeanDefinitionRecord = Readonly<{
-  scenarioId: string;
-  checkedProcess: AcceptedBpmnCompilation["checkedProcess"];
-  semanticProcess: SemanticProcessProgram;
+  kernelProgram: KernelJson;
 }>;
 
 export type LeanResultRecord = Readonly<{
@@ -202,28 +198,10 @@ export type TemporalTargetBatch =
     workflowIds: ReadonlyArray<string>;
   }>;
 
-/** The Lean driver's rejections of three injected input defects, each probed once over the run's definitions. */
-export type LeanMutationProbes = Readonly<{
-  definition: Readonly<{
-    kind: "rejected";
-    mutation: "operationOrigin";
-  }>;
-  scenario: Readonly<{
-    kind: "rejected";
-    mutation: "scenarioExtraField";
-  }>;
-  provenance: Readonly<{
-    kind: "rejected";
-    mutation: "parallelControlPlaceProvenanceErasure";
-  }>;
-}>;
-
 export type PipelineTargets = Readonly<{
   cib: TargetBatch<CibPipelineResult>;
-  lean: TargetBatch<ScenarioResult>;
-  // Null only in a run that leaves the catalog-level probes to another hosted leg (`pipelinePartitionRunsLeanMutationProbes`).
-  leanMutationProbes: LeanMutationProbes | null;
-  core: TargetBatch<ScenarioResult>;
+  kernel: TargetBatch<ScenarioResult>;
+  kernelTs: TargetBatch<ScenarioResult>;
   temporal: TemporalTargetBatch;
   cibEffectRetry: TargetBatch<CibPipelineResult> | null;
 }>;
@@ -231,8 +209,8 @@ export type PipelineTargets = Readonly<{
 export type ProjectedTargets = Readonly<{
   cibResult: CibPipelineResult | null;
   canonicalCib: ScenarioResult | null;
-  leanResult: ScenarioResult;
-  semanticCoreResult: ScenarioResult;
+  kernelResult: ScenarioResult;
+  kernelTsResult: ScenarioResult;
   temporalResult: TemporalCaseExecution;
   cibEffectRetryResult: CibPipelineResult | null;
 }>;

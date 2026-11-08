@@ -22,7 +22,7 @@ import type {
 } from "./pipeline-types.ts";
 import {
   loadAndCompileCases,
-  runCoreTargets,
+  runKernelTsTargets,
 } from "./pipeline-targets.ts";
 import {
   verifyServiceTaskIncidentSuccessor,
@@ -61,25 +61,25 @@ test("detects nested incident identity drift and predecessor-result substitution
     withoutRetainedEvidence(predecessorCase),
     withoutRetainedEvidence(incidentCase),
   ]);
-  const core = runCoreTargets(contexts).results;
+  const core = runKernelTsTargets(contexts).results;
   const incidentResult = required(core.get(incidentCase.id));
   const predecessorResult = required(core.get(predecessorCase.id));
 
   const mutated = structuredClone(incidentResult) as MutableScenarioResult;
   incidentCase.injectMutation(mutated);
   const identityComparison = compareTargetResults(
-    { target: DifferentialTarget.SemanticCore, result: incidentResult },
+    { target: DifferentialTarget.KernelTs, result: incidentResult },
     [{ target: DifferentialTarget.CibSeven, result: mutated }],
   );
   assert.deepEqual(identityComparison, {
     kind: ComparisonKind.Disagreement,
-    referenceTarget: DifferentialTarget.SemanticCore,
+    referenceTarget: DifferentialTarget.KernelTs,
     candidateTarget: DifferentialTarget.CibSeven,
     disagreement: incidentCase.expectedInjectedDisagreement,
   });
 
   const substitution = compareTargetResults(
-    { target: DifferentialTarget.SemanticCore, result: incidentResult },
+    { target: DifferentialTarget.KernelTs, result: incidentResult },
     [{ target: DifferentialTarget.Temporal, result: predecessorResult }],
   );
   assert.equal(substitution.kind, ComparisonKind.Disagreement);

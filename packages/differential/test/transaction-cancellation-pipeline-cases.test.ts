@@ -185,8 +185,8 @@ test("Transaction cancellation registers exact neutral schedules and separating 
       pipelineCase.injectMutation(mutated);
       assert.notDeepEqual(mutated, result);
       const comparison = compareTargetResults(
-        { target: DifferentialTarget.SemanticCore, result },
-        [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+        { target: DifferentialTarget.KernelTs, result },
+        [{ target: DifferentialTarget.KernelTs, result: mutated }],
       );
       assert.equal(comparison.kind, ComparisonKind.Disagreement);
       if (comparison.kind !== ComparisonKind.Disagreement) throw new Error("Mutation escaped semantic comparison");

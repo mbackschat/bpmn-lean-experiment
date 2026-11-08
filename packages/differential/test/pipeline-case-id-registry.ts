@@ -326,24 +326,6 @@ export const otherSchedulePipelineCaseIds = Object.freeze([
 
 const otherSchedules = new Set<string>(otherSchedulePipelineCaseIds);
 
-/**
- * Whether a selected partition runs the catalog-level Lean mutation probes. They run once per catalog, like the
- * Lean-core suites `scripts/verify.sh` runs once, in the leg that holds the `parallel-fork-join-draft` definition the
- * provenance probe erases and the registry head the definition probe mutates.
- */
-export function pipelinePartitionRunsLeanMutationProbes(partition: string | undefined): boolean {
-  switch (partition) {
-    case undefined:
-    case "":
-    case PipelineCasePartition.OtherSchedules:
-      return true;
-    case PipelineCasePartition.StimulusOrder:
-      return false;
-    default:
-      throw new TypeError(`BPMN_PIPELINE_PARTITION must name a pipeline case partition, received ${JSON.stringify(partition)}`);
-  }
-}
-
 /** The registered ids a selected partition runs, in registry order; an absent selection runs the whole catalog. */
 export function pipelineCaseIdsFor(partition: string | undefined): readonly PipelineCaseId[] {
   switch (partition) {

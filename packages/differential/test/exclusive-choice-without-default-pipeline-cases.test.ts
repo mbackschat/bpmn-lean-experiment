@@ -81,8 +81,8 @@ test("each registered seeded mutation moves exactly the observation it names and
     const result = runScenario(scenario, program);
     const mutated = mutableClone(result);
     pipelineCase.injectMutation(mutated);
-    const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+    const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }]);
     assert.ok(comparison.kind === ComparisonKind.Disagreement, scenario.id);
     assert.deepEqual(comparison.disagreement, pipelineCase.expectedInjectedDisagreement, scenario.id);
     assert.throws(() => pipelineCase.injectMutation(mutated), /calibration requires/u, scenario.id);

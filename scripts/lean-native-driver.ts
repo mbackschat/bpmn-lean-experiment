@@ -47,13 +47,13 @@ export function declaredLeanExecutables(lakefile: string): ReadonlyMap<string, s
   return executables;
 }
 
-/** The declared executable for a `BpmnSemantics/<Module>.lean` driver source. */
+/** The declared executable for a `BpmnSemantics/<Module>.lean` or `Kernel/<Module>.lean` driver source. */
 export function nativeLeanDriverFor(lakefile: string, sourcePath: string): string {
-  const relative = /^BpmnSemantics\/([\w/]+)\.lean$/u.exec(sourcePath)?.[1];
+  const relative = /^(?:BpmnSemantics|Kernel)\/[\w/]+(?=\.lean$)/u.exec(sourcePath)?.[0];
   if (relative === undefined) {
-    throw new TypeError(`${sourcePath} is not a BpmnSemantics driver source`);
+    throw new TypeError(`${sourcePath} is not a BpmnSemantics or Kernel driver source`);
   }
-  const module = `BpmnSemantics.${relative.replaceAll("/", ".")}`;
+  const module = relative.replaceAll("/", ".");
   const name = declaredLeanExecutables(lakefile).get(module);
   if (name === undefined) {
     throw new TypeError(`${sourcePath} has no [[lean_exe]] whose root is ${module}`);

@@ -127,8 +127,8 @@ test("public-delivery observations preserve every open task's metadata and detec
     const task = start.openUserTasks[0];
     assert.ok(task !== undefined && task.metadata !== undefined);
     delete task.metadata;
-    const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+    const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }]);
     assert.equal(comparison.kind, ComparisonKind.Disagreement);
     if (comparison.kind !== ComparisonKind.Disagreement) throw new Error("Metadata loss escaped comparison");
     assert.equal(comparison.disagreement.kind, DisagreementKind.ObservationValue);
@@ -190,8 +190,8 @@ test("registered business journeys preserve exact semantic comparisons without a
       assert.equal(final.status, ProcessStatus.Completed);
       for (const mutated of [mutableClone(result), parseStrictJson<MutableScenarioResult>(JSON.stringify(result), "wire result")]) {
         pipelineCase.injectMutation(mutated);
-        const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result },
-          [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+        const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result },
+          [{ target: DifferentialTarget.KernelTs, result: mutated }]);
         assert.equal(comparison.kind, ComparisonKind.Disagreement);
         if (comparison.kind !== ComparisonKind.Disagreement) throw new Error("Business mutation escaped comparison");
         assert.deepEqual(comparison.disagreement, pipelineCase.expectedInjectedDisagreement);

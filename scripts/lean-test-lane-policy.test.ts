@@ -86,11 +86,11 @@ test("differential Lean batches cannot bypass the catalog-scaled driver helper",
     );
   assert.deepEqual(
     programmaticLeanInvocationFindings(surfaces),
-    ["packages/differential/test/semantic-differential-targets.ts"],
+    ["packages/differential/test/kernel-targets.ts"],
     "all differential Lean batches must pass through the one catalog-scaled driver helper",
   );
   const driverTarget = surfaces.find(({ relativePath }) =>
-    relativePath === "packages/differential/test/semantic-differential-targets.ts"
+    relativePath === "packages/differential/test/kernel-targets.ts"
   );
   assert.match(
     driverTarget?.source ?? "",

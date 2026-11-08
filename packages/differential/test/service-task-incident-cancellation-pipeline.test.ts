@@ -37,7 +37,7 @@ import type {
 } from "./pipeline-types.ts";
 import {
   loadAndCompileCases,
-  runCoreTargets,
+  runKernelTsTargets,
 } from "./pipeline-targets.ts";
 
 const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -86,7 +86,7 @@ test("registers the exact successor shape and canonical cancellation trace", asy
     predecessorContext,
     context,
   ));
-  const result = required(runCoreTargets([context]).results.get(cancellationCase.id));
+  const result = required(runKernelTsTargets([context]).results.get(cancellationCase.id));
   assert.deepEqual(result, context.retainedEvidence.result);
   const incident = result.trace[4];
   const cancelled = result.trace[6];
@@ -133,7 +133,7 @@ test("detects completed-state and predecessor target substitution", async () => 
     cancellationCase,
     withoutRetainedEvidence(predecessorCase),
   ]);
-  const results = runCoreTargets(contexts).results;
+  const results = runKernelTsTargets(contexts).results;
   const cancellation = required(results.get(cancellationCase.id));
   const predecessor = required(results.get(predecessorCase.id));
 
@@ -142,20 +142,20 @@ test("detects completed-state and predecessor target substitution", async () => 
   assert.deepEqual(
     compareTargetResults(
       { target: DifferentialTarget.CibSeven, result: cancellation },
-      [{ target: DifferentialTarget.SemanticCore, result: completed }],
+      [{ target: DifferentialTarget.KernelTs, result: completed }],
     ),
     {
       kind: ComparisonKind.Disagreement,
       referenceTarget: DifferentialTarget.CibSeven,
-      candidateTarget: DifferentialTarget.SemanticCore,
+      candidateTarget: DifferentialTarget.KernelTs,
       disagreement: cancellationCase.expectedInjectedDisagreement,
     },
   );
 
   for (const target of [
     DifferentialTarget.CibSeven,
-    DifferentialTarget.Lean,
-    DifferentialTarget.SemanticCore,
+    DifferentialTarget.Kernel,
+    DifferentialTarget.KernelTs,
     DifferentialTarget.Temporal,
   ]) {
     assert.equal(

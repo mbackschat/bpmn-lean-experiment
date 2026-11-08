@@ -23,8 +23,8 @@ test("supplier Call scenarios bind public admission, normal return and an owners
       assert.equal(final.status, ProcessStatus.Completed);
       const mutated = mutableClone(result);
       pipelineCase.injectMutation(mutated);
-      const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result },
-        [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+      const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result },
+        [{ target: DifferentialTarget.KernelTs, result: mutated }]);
       assert.equal(comparison.kind, ComparisonKind.Disagreement);
       if (comparison.kind !== ComparisonKind.Disagreement) assert.fail("Call ownership mutation escaped comparison");
       assert.deepEqual(comparison.disagreement, pipelineCase.expectedInjectedDisagreement);

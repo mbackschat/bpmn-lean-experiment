@@ -58,8 +58,10 @@ test("every tracked or pending test file is reachable from a gate command", () =
 
 test("the runnable inventory includes integration witnesses from distinct semantic families", () => {
   const runnable = new Set(runnableTestFiles());
-  for (const family of ["structured-composition", "interrupting-message-event-subprocess"]) {
-    const file = `packages/differential/test/${family}-lean-core.integration-test.ts`;
+  for (const file of [
+    "packages/differential/test/kernel-behavior-oracle.integration-test.ts",
+    "packages/bpmn-source/test/lean-fixture-bindings.integration-test.ts",
+  ]) {
     assert.equal(runnable.has(file), true, file);
   }
 });

@@ -3,6 +3,7 @@ import path from "node:path";
 import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import type { BpmnCompilationResult } from "@bpmn-lean/bpmn-source";
 import type { Scenario } from "@bpmn-lean/semantic-core";
+import { lowerCaseToKernel } from "./kernel-program.ts";
 import { projectRoot, readJson } from "./pipeline-target-support.ts";
 import type { PipelineContext, RetainedEvidence, SemanticDifferentialCase } from "./pipeline-types.ts";
 
@@ -93,6 +94,7 @@ export async function loadAndCompileCases<
         ...context,
         checkedProcess: compilation.checkedProcess,
         semanticProcess: compilation.semanticProcess,
+        kernelProgram: await lowerCaseToKernel(compilation.checkedProcess, scenario.profile),
       };
     }),
   );

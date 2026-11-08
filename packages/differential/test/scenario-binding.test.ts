@@ -100,13 +100,13 @@ function requireContentMismatch(
 test("an exact echo binds the target to the admitted scenario", () => {
   assert.deepEqual(
     verifyScenarioBinding(
-      DifferentialTarget.Lean,
+      DifferentialTarget.Kernel,
       admittedScenario,
       structuredClone(admittedScenario),
     ),
     {
       kind: ScenarioBindingKind.Bound,
-      target: DifferentialTarget.Lean,
+      target: DifferentialTarget.Kernel,
       scenarioId: "user-task-wrong-activation",
     },
   );
@@ -122,10 +122,10 @@ test("a drifted submitted activation is an exact content mismatch", () => {
     completion.taskId.activation = 3;
   });
   assert.deepEqual(
-    verifyScenarioBinding(DifferentialTarget.Lean, admittedScenario, echoed),
+    verifyScenarioBinding(DifferentialTarget.Kernel, admittedScenario, echoed),
     {
       kind: ScenarioBindingKind.Unbound,
-      target: DifferentialTarget.Lean,
+      target: DifferentialTarget.Kernel,
       issue: ScenarioBindingIssueKind.ContentMismatch,
       path: "scenario.stimuli[1].taskId.activation",
       expected: 2,
@@ -139,7 +139,7 @@ test("a drifted BPMN content identity is an exact content mismatch", () => {
     scenario.bpmn.sha256 = `${"0".repeat(64)}`;
   });
   const binding = requireContentMismatch(
-    verifyScenarioBinding(DifferentialTarget.Lean, admittedScenario, echoed),
+    verifyScenarioBinding(DifferentialTarget.Kernel, admittedScenario, echoed),
   );
   assert.equal(binding.path, "scenario.bpmn.sha256");
 });
@@ -152,7 +152,7 @@ test("a drifted normative reference is an exact content mismatch", () => {
     ];
   });
   const binding = requireContentMismatch(
-    verifyScenarioBinding(DifferentialTarget.Lean, admittedScenario, echoed),
+    verifyScenarioBinding(DifferentialTarget.Kernel, admittedScenario, echoed),
   );
   assert.equal(binding.path, "scenario.provenance.normativeRefs.length");
 });
@@ -162,7 +162,7 @@ test("a drifted scenario identity is an exact content mismatch", () => {
     scenario.id = "user-task-discovery-completion";
   });
   const binding = requireContentMismatch(
-    verifyScenarioBinding(DifferentialTarget.Lean, admittedScenario, echoed),
+    verifyScenarioBinding(DifferentialTarget.Kernel, admittedScenario, echoed),
   );
   assert.equal(binding.path, "scenario.id");
 });
@@ -170,10 +170,10 @@ test("a drifted scenario identity is an exact content mismatch", () => {
 test("an absent echo is a missing self-description, not a mismatch", () => {
   for (const echoed of [undefined, null, "scenario", 7, []]) {
     assert.deepEqual(
-      verifyScenarioBinding(DifferentialTarget.Lean, admittedScenario, echoed),
+      verifyScenarioBinding(DifferentialTarget.Kernel, admittedScenario, echoed),
       {
         kind: ScenarioBindingKind.Unbound,
-        target: DifferentialTarget.Lean,
+        target: DifferentialTarget.Kernel,
         issue: ScenarioBindingIssueKind.MissingEcho,
       },
     );

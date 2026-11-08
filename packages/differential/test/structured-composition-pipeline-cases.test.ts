@@ -47,8 +47,8 @@ test("composition scenarios bind public admission, mapped handoff and an input d
     }
     const mutated = mutableClone(result);
     pipelineCase.injectMutation(mutated);
-    const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+    const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }]);
     assert.equal(comparison.kind, ComparisonKind.Disagreement);
     if (comparison.kind !== ComparisonKind.Disagreement) assert.fail("Copied-input mutation escaped comparison");
     assert.deepEqual(comparison.disagreement, pipelineCase.expectedInjectedDisagreement);

@@ -25,12 +25,9 @@ export {
 } from "./pipeline-target-support.ts";
 export {
   loadAndCompileCases,
-  requireLeanDefinitionMutationRejection,
-  requireLeanProvenanceErasureRejection,
-  requireLeanScenarioMutationRejection,
-  runCoreTargets,
-  runLeanTargets,
-} from "./semantic-differential-targets.ts";
+  runKernelTargets,
+  runKernelTsTargets,
+} from "./kernel-targets.ts";
 import {
   elapsedMs,
 } from "./pipeline-target-support.ts";

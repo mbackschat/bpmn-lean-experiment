@@ -20,7 +20,7 @@ import {
 import { mutableClone } from "./pipeline-target-support.ts";
 import {
   loadAndCompileCases,
-  runCoreTargets,
+  runKernelTsTargets,
 } from "./pipeline-targets.ts";
 
 test("registers all, first, and interrupting Timer schedules independently", () => {
@@ -71,15 +71,15 @@ test("registers all, first, and interrupting Timer schedules independently", () 
 
 test("detects result reordering, retained first-policy siblings, and stale interrupted work", async () => {
   const contexts = await loadAndCompileCases(parallelMultiInstancePipelineCases);
-  const results = runCoreTargets(contexts).results;
+  const results = runKernelTsTargets(contexts).results;
   for (const context of contexts) {
     const result = results.get(context.scenario.id);
     assert.ok(result !== undefined);
     const mutated = mutableClone(result);
     context.pipelineCase.injectMutation(mutated);
     const comparison = compareTargetResults(
-      { target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+      { target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }],
     );
     assert.equal(comparison.kind, ComparisonKind.Disagreement);
     if (comparison.kind !== ComparisonKind.Disagreement) {

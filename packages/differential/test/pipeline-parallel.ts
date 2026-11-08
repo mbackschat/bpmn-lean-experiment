@@ -16,18 +16,3 @@ export async function settleOwnedLanes<Values extends readonly unknown[]>(
     return result.value;
   }) as unknown as Values;
 }
-
-/** Preserves the repository-wide Lean lock by starting each step only after its predecessor settles. */
-export async function runOwnedStepsInOrder<
-  Values extends readonly unknown[],
->(
-  steps: {
-    readonly [Index in keyof Values]: () => Promise<Values[Index]>;
-  },
-): Promise<Values> {
-  const results: Array<unknown> = [];
-  for (const step of steps) {
-    results.push(await step());
-  }
-  return results as unknown as Values;
-}

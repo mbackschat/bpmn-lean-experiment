@@ -31,7 +31,7 @@ async function buildPipeline() {
     }),
     runProjectCommand(
       "./scripts/lake.sh",
-      ["build", "emitSemanticProcessResults", "emitEnginePopulationResults"],
+      ["build", "kernelRun"],
       { timeoutMs: nativeLeanDriverBuildTimeoutMs },
     ),
     runProjectCommand(
@@ -77,7 +77,6 @@ const testFiles = modelCorpusOnly
   ? [
       "model-corpus/test/executable-model-corpus.test.ts",
       "packages/differential/test/executable-model-corpus.test.ts",
-      "packages/differential/test/message-key-correlation-population-lean-core.integration-test.ts",
       "packages/temporal-adapter/testkit/test/message-key-correlation-refinement.temporal-serial-test.ts",
     ]
   : ["packages/differential/test/pipeline.test.ts"];

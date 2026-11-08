@@ -82,7 +82,7 @@ export const minimumHostedWarmBudgetFactor = 1.5;
 
 /**
  * Allowance for everything the hosted integration-pipeline job runs besides the warm catalog phase:
- * runner setup, cache restores and the Lean-core integration suites before the catalog. Run
+ * runner setup, cache restores and the Lean integration suites before the catalog. Run
  * 41473082509 (measured 2026-11-02, 160 cases) spent 178 s of the job's 355 s, counted from job
  * start as `timeout-minutes` counts, outside its 177 s warm phase; the allowance carries about a
  * fifth more. The pipeline budget guard keeps the job's `timeout-minutes` above this allowance plus

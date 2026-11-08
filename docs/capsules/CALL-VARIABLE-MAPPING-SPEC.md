@@ -139,7 +139,7 @@ Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy):
 - Schema and IL: [schema coverage](../../scripts/contract-schema-coverage.test.ts), [definition artifacts](../../scripts/contract-definition-artifacts.test.ts), [operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts) and [internal commutation census](../../scripts/internal-commutation-census.test.ts).
 - Call state: [Call state validation](../../packages/semantic-core/test/call-data-state-validation.test.ts), the [removal ownership graph](../../packages/semantic-core/test/removal-ownership-graph.test.ts) and the [Call continuation controls](../../packages/temporal-adapter/workflow/test/call-data-recovery.test.ts).
 - Hosting: [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts) and the [nested scope-data capacity envelope](../../packages/temporal-adapter/protocol/test/nested-scope-data-capacity-envelope.test.ts).
-- Values: [cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts).
+- Values: cross-target domain matrix.
 - Registration: [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) for `CIB-EXT-0021` and the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts).
 - Structure: [Lean import boundaries](../../scripts/lean-import-boundaries.test.ts) and [source hygiene](../../scripts/source-hygiene.test.ts).
 

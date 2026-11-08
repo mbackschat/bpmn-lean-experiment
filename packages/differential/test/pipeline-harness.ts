@@ -25,7 +25,6 @@ export {
   pipelineCases,
 } from "./pipeline-cases.ts";
 import type {
-  LeanMutationProbes,
   PipelineCase,
   PipelineTargets,
 } from "./pipeline-types.ts";
@@ -33,19 +32,15 @@ import {
   CibEffectExecutionSchedule,
 } from "./pipeline-types.ts";
 import {
-  runOwnedStepsInOrder,
   settleOwnedLanes,
 } from "./pipeline-parallel.ts";
 import {
   elapsedMs,
   loadAndCompileCases,
-  requireLeanDefinitionMutationRejection,
-  requireLeanProvenanceErasureRejection,
-  requireLeanScenarioMutationRejection,
   requireUniqueCaseIds,
   runCibTargetGroups,
-  runCoreTargets,
-  runLeanTargets,
+  runKernelTargets,
+  runKernelTsTargets,
   runProcess,
   runTemporalTargets,
 } from "./pipeline-targets.ts";
@@ -60,7 +55,6 @@ const buildMode = process.env.BPMN_PIPELINE_BUILD_MODE;
 
 export async function runPipelineCases(
   cases: ReadonlyArray<PipelineCase>,
-  options: Readonly<{ runsLeanMutationProbes: boolean }> = { runsLeanMutationProbes: true },
 ) {
   requireUniqueCaseIds(cases);
   if (!Number.isFinite(buildMs)) {
@@ -80,26 +74,6 @@ export async function runPipelineCases(
   const ingestionMs = elapsedMs(ingestionStarted);
   const temporaryDirectory = await mkdtemp(
     path.join(tmpdir(), "bpmn-differential-"),
-  );
-  const leanInputPath = path.join(
-    temporaryDirectory,
-    "lean-definition-input.jsonl",
-  );
-  const leanMutationInputPath = path.join(
-    temporaryDirectory,
-    "lean-definition-mutation.jsonl",
-  );
-  const leanProvenanceMutationInputPath = path.join(
-    temporaryDirectory,
-    "lean-provenance-mutation.jsonl",
-  );
-  const leanScenarioMutationInputPath = path.join(
-    temporaryDirectory,
-    "lean-scenario-mutation.jsonl",
-  );
-  const leanScenarioMutationPath = path.join(
-    temporaryDirectory,
-    "lean-scenario-mutation.json",
   );
   const warmStarted = performance.now();
   let runner: TemporalScenarioRunner | undefined;
@@ -130,7 +104,7 @@ export async function runPipelineCases(
     startupMs = elapsedMs(startupStarted);
 
     const scenarioStarted = performance.now();
-    const core = runCoreTargets(contexts);
+    const kernelTs = runKernelTsTargets(contexts);
     const effectContexts = contexts.filter(
       ({ pipelineCase }) =>
         pipelineCase.cib?.effectExecutionSchedule ===
@@ -138,7 +112,7 @@ export async function runPipelineCases(
     );
     const [
       cib,
-      leanEvidence,
+      kernel,
       temporal,
       cibEffectRetry,
     ] = await settleOwnedLanes([
@@ -147,28 +121,7 @@ export async function runPipelineCases(
         temporaryDirectory,
         "cib",
       ),
-      runOwnedStepsInOrder([
-        () => runLeanTargets(contexts, leanInputPath),
-        async (): Promise<LeanMutationProbes | null> => {
-          if (!options.runsLeanMutationProbes) {
-            return null;
-          }
-          const definition = await requireLeanDefinitionMutationRejection(
-            contexts,
-            leanMutationInputPath,
-          );
-          const scenario = await requireLeanScenarioMutationRejection(
-            contexts,
-            leanScenarioMutationInputPath,
-            leanScenarioMutationPath,
-          );
-          const provenance = await requireLeanProvenanceErasureRejection(
-            contexts,
-            leanProvenanceMutationInputPath,
-          );
-          return { definition, scenario, provenance };
-        },
-      ] as const),
+      runKernelTargets(contexts, temporaryDirectory),
       runTemporalTargets(runner, contexts),
       effectContexts.length === 0
         ? Promise.resolve(null)
@@ -179,12 +132,10 @@ export async function runPipelineCases(
             EffectExecutionSchedule.FailAfterMutationOnce,
           ),
     ] as const);
-    const [lean, leanMutationProbes] = leanEvidence;
     const completedTargets: PipelineTargets = {
       cib,
-      lean,
-      leanMutationProbes,
-      core,
+      kernel,
+      kernelTs,
       temporal,
       cibEffectRetry,
     };
@@ -250,7 +201,6 @@ export async function runPipelineCases(
     buildMode,
     implementationRevision: revision,
     cases: caseResults.map(({ report: caseReport }) => caseReport),
-    leanMutationProbes: targets.leanMutationProbes,
     replay,
     phaseMs: {
       build: buildMs,
@@ -266,8 +216,8 @@ export async function runPipelineCases(
     },
     targetMs: {
       cibSeven: cibTiming(targets.cib, contexts),
-      lean: targets.lean.totalMs,
-      semanticCore: targets.core.totalMs,
+      kernel: targets.kernel.totalMs,
+      kernelTs: targets.kernelTs.totalMs,
       temporal: targets.temporal.totalMs,
     },
     isolation: {

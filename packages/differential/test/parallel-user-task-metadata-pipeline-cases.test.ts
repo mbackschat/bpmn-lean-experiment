@@ -19,7 +19,7 @@ import { pipelineCases } from "./pipeline-cases.ts";
 import { mutableClone } from "./pipeline-target-support.ts";
 import {
   loadAndCompileCases,
-  runCoreTargets,
+  runKernelTsTargets,
 } from "./pipeline-targets.ts";
 
 test("registers both composed schedules with independent mutations", () => {
@@ -63,15 +63,15 @@ test("registers both composed schedules with independent mutations", () => {
 
 test("makes metadata swap and sibling drop reach their exact loci", async () => {
   const contexts = await loadAndCompileCases(parallelUserTaskMetadataPipelineCases);
-  const results = runCoreTargets(contexts).results;
+  const results = runKernelTsTargets(contexts).results;
   for (const context of contexts) {
     const result = results.get(context.scenario.id);
     assert.ok(result !== undefined);
     const mutated = mutableClone(result);
     context.pipelineCase.injectMutation(mutated);
     const comparison = compareTargetResults(
-      { target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+      { target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }],
     );
     assert.equal(comparison.kind, ComparisonKind.Disagreement);
     if (comparison.kind !== ComparisonKind.Disagreement) {

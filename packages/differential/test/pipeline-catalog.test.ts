@@ -66,7 +66,7 @@ import {
 } from "./pipeline-target-support.ts";
 import {
   loadAndCompileCases,
-  runCoreTargets,
+  runKernelTsTargets,
 } from "./pipeline-targets.ts";
 import {
   CibCaseRelation,
@@ -75,6 +75,7 @@ import {
   TemporalCaseRelation,
 } from "./pipeline-types.ts";
 import type { PipelineCase } from "./pipeline-types.ts";
+import { expectedKernelTemporalDisagreements } from "./pipeline-comparison.ts";
 
 const unregisteredPipelineCaseId = "unregistered-pipeline-case";
 // @ts-expect-error The registry must reject a case before the expensive pipeline can start.
@@ -104,6 +105,11 @@ test("freezes the other-schedules leg as exactly the non-stimulus-order cases in
 
 // Every target batch is keyed by scenario identity and every projection looks a result up by it, so
 // a case identity that names something else addresses a key space no producer builds.
+test("every expected Kernel and Temporal disagreement names a registered case", () => {
+  const registered = new Set<string>(pipelineCases.map(({ id }) => id));
+  assert.deepEqual([...expectedKernelTemporalDisagreements.keys()].filter((id) => !registered.has(id)), []);
+});
+
 test("names every pipeline case after the scenario it runs", async () => {
   const mismatched = (await Promise.all(
     pipelineCases.map(async ({ id, scenarioRelativePath }) => {
@@ -119,7 +125,7 @@ test("names every pipeline case after the scenario it runs", async () => {
 
 test("every registered wait prefix ends at a canonical state", async () => {
   const contexts = await loadAndCompileCases(pipelineCases);
-  const results = runCoreTargets(contexts).results;
+  const results = runKernelTsTargets(contexts).results;
 
   for (const context of contexts) {
     const result = results.get(context.scenario.id);
@@ -507,14 +513,14 @@ test("seeds candidate, form-key, and Boolean-to-string metadata disagreements", 
 test("makes every User Task metadata mutation reach its exact open-task locus", async () => {
   const [context] = await loadAndCompileCases(userTaskMetadataPipelineCases);
   assert.ok(context !== undefined);
-  const result = runCoreTargets([context]).results.get(context.scenario.id);
+  const result = runKernelTsTargets([context]).results.get(context.scenario.id);
   assert.ok(result !== undefined);
   for (const mutation of userTaskMetadataMutations) {
     const mutated = mutableClone(result);
     mutation.injectMutation(mutated);
     const comparison = compareTargetResults(
-      { target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+      { target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }],
     );
     assert.equal(comparison.kind, ComparisonKind.Disagreement, mutation.id);
     if (comparison.kind !== ComparisonKind.Disagreement) {
@@ -531,14 +537,14 @@ test("makes every User Task metadata mutation reach its exact open-task locus", 
 test("makes Boolean-to-string conversion reach the exact value-kind disagreement", async () => {
   const [context] = await loadAndCompileCases(booleanProcessDataPipelineCases);
   assert.ok(context !== undefined);
-  const result = runCoreTargets([context]).results.get(context.scenario.id);
+  const result = runKernelTsTargets([context]).results.get(context.scenario.id);
   assert.ok(result !== undefined);
   const mutated = mutableClone(result);
   context.pipelineCase.injectMutation(mutated);
 
   const comparison = compareTargetResults(
-    { target: DifferentialTarget.SemanticCore, result },
-    [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+    { target: DifferentialTarget.KernelTs, result },
+    [{ target: DifferentialTarget.KernelTs, result: mutated }],
   );
   assert.equal(comparison.kind, ComparisonKind.Disagreement);
   if (comparison.kind !== ComparisonKind.Disagreement) {
@@ -553,14 +559,14 @@ test("makes Boolean-to-string conversion reach the exact value-kind disagreement
 test("detects configured Task effect pass-through and early User Task exposure", async () => {
   const [context] = await loadAndCompileCases(configuredTaskPipelineCases);
   assert.ok(context !== undefined);
-  const result = runCoreTargets([context]).results.get(context.scenario.id);
+  const result = runKernelTsTargets([context]).results.get(context.scenario.id);
   assert.ok(result !== undefined);
   const mutated = mutableClone(result);
   context.pipelineCase.injectMutation(mutated);
 
   const comparison = compareTargetResults(
-    { target: DifferentialTarget.SemanticCore, result },
-    [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+    { target: DifferentialTarget.KernelTs, result },
+    [{ target: DifferentialTarget.KernelTs, result: mutated }],
   );
   assert.equal(comparison.kind, ComparisonKind.Disagreement);
   if (comparison.kind !== ComparisonKind.Disagreement) {
@@ -574,7 +580,7 @@ test("detects configured Task effect pass-through and early User Task exposure",
 
 test("makes every Terminate End regional-cancellation mutation reach its declared disagreement", async () => {
   const contexts = await loadAndCompileCases(terminateEndPipelineCases);
-  const results = runCoreTargets(contexts).results;
+  const results = runKernelTsTargets(contexts).results;
 
   for (const context of contexts) {
     const result = results.get(context.scenario.id);
@@ -583,8 +589,8 @@ test("makes every Terminate End regional-cancellation mutation reach its declare
     context.pipelineCase.injectMutation(mutated);
 
     const comparison = compareTargetResults(
-      { target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+      { target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }],
     );
     assert.equal(comparison.kind, ComparisonKind.Disagreement);
     if (comparison.kind !== ComparisonKind.Disagreement) {
@@ -600,14 +606,14 @@ test("makes every Terminate End regional-cancellation mutation reach its declare
 test("makes the Timer Start instance-identity mutation reach its declared disagreement", async () => {
   const [context] = await loadAndCompileCases(timerStartPipelineCases);
   assert.ok(context !== undefined);
-  const result = runCoreTargets([context]).results.get(context.scenario.id);
+  const result = runKernelTsTargets([context]).results.get(context.scenario.id);
   assert.ok(result !== undefined);
   const mutated = mutableClone(result);
   context.pipelineCase.injectMutation(mutated);
 
   const comparison = compareTargetResults(
-    { target: DifferentialTarget.SemanticCore, result },
-    [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+    { target: DifferentialTarget.KernelTs, result },
+    [{ target: DifferentialTarget.KernelTs, result: mutated }],
   );
   assert.equal(comparison.kind, ComparisonKind.Disagreement);
   if (comparison.kind !== ComparisonKind.Disagreement) {
@@ -632,13 +638,13 @@ test("reports an exact Message Start Interface Operation binding disagreement", 
 
   assert.deepEqual(
     verifyScenarioBinding(
-      DifferentialTarget.Lean,
+      DifferentialTarget.Kernel,
       context.scenario,
       echoed,
     ),
     {
       kind: ScenarioBindingKind.Unbound,
-      target: DifferentialTarget.Lean,
+      target: DifferentialTarget.Kernel,
       issue: ScenarioBindingIssueKind.ContentMismatch,
       path: "scenario.stimuli[0].channel.interfaceOperationId",
       expected: "Operation_ReceiveApprovalRequest",
@@ -712,7 +718,7 @@ test("rejects an omitted, duplicated, or unprotected Event race catalog entry", 
 
 test("distinguishes a retained Timer loser and a wrong Timer-wins continuation", async () => {
   const contexts = await loadAndCompileCases(eventBasedGatewayPipelineCases);
-  const results = runCoreTargets(contexts).results;
+  const results = runKernelTsTargets(contexts).results;
   for (const { pipelineCase, scenario } of contexts) {
     const result = results.get(scenario.id);
     assert.ok(result !== undefined);
@@ -750,8 +756,8 @@ test("distinguishes a retained Timer loser and a wrong Timer-wins continuation",
     const mutated = mutableClone(result);
     pipelineCase.injectMutation(mutated);
     const comparison = compareTargetResults(
-      { target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+      { target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }],
     );
     assert.equal(comparison.kind, ComparisonKind.Disagreement);
     if (comparison.kind !== ComparisonKind.Disagreement) {

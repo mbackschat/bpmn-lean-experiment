@@ -133,9 +133,7 @@ export function maintainedExecutableRoots(lakefile: string): readonly string[] {
     assert.ok(root, "each executable must declare its import root");
     return root.startsWith(moduleName(experimentTree.slice(0, -1))) ? [] : [root];
   });
-  // The differential integration test runs this existing source entry without a Lake executable.
-  // Its command owner is packages/differential/test/parallel-scope-admission-lean-core.integration-test.ts.
-  return [...roots, "BpmnSemantics.ParallelScopeReservationMain"];
+  return roots;
 }
 
 export function executableProofImportEdges(

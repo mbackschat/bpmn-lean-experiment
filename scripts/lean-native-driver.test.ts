@@ -27,10 +27,11 @@ test("declared executables map each driver root module to its executable name", 
 test("a driver source resolves to the executable whose root is its module", () => {
   assert.equal(nativeLeanDriverFor(lakefile, "BpmnSemantics/ExampleMain.lean"), "emitExample");
   assert.equal(nativeLeanDriverFor(lakefile, "BpmnSemantics/Nested/OtherMain.lean"), "emitOther");
+  assert.equal(nativeLeanDriverFor(`[[lean_exe]]\nname = "kernelRun"\nroot = "Kernel.Run"\n`, "Kernel/Run.lean"), "kernelRun");
 });
 
 test("an undeclared driver or a non-driver path is refused rather than interpreted", () => {
   assert.throws(() => nativeLeanDriverFor(lakefile, "BpmnSemantics/MissingMain.lean"),
     /BpmnSemantics\/MissingMain\.lean has no \[\[lean_exe\]\] whose root is BpmnSemantics\.MissingMain/u);
-  assert.throws(() => nativeLeanDriverFor(lakefile, "scripts/ExampleMain.lean"), /not a BpmnSemantics driver source/u);
+  assert.throws(() => nativeLeanDriverFor(lakefile, "scripts/ExampleMain.lean"), /not a BpmnSemantics or Kernel driver source/u);
 });

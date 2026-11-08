@@ -129,7 +129,7 @@ test("the actual comparator separates premature activation, missing concurrency,
     const result = runScenario(scenario, semanticProcess);
     const mutated = mutableClone(result);
     pipelineCase.injectMutation(mutated);
-    const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result }, [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+    const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result }, [{ target: DifferentialTarget.KernelTs, result: mutated }]);
     assert.equal(comparison.kind, ComparisonKind.Disagreement);
     if (comparison.kind !== ComparisonKind.Disagreement) throw new Error("Compensation mutation escaped comparison");
     assert.deepEqual(comparison.disagreement, pipelineCase.expectedInjectedDisagreement, scenario.id);

@@ -97,8 +97,8 @@ test("each registered seeded mutation moves exactly the observation it names and
     const result = runScenario(scenario, program);
     const mutated = mutableClone(result);
     pipelineCase.injectMutation(mutated);
-    const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+    const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }]);
     assert.equal(comparison.kind, ComparisonKind.Disagreement, scenario.id);
     if (comparison.kind !== ComparisonKind.Disagreement) assert.fail("Seeded mutation escaped comparison");
     assert.deepEqual(comparison.disagreement, pipelineCase.expectedInjectedDisagreement, scenario.id);
@@ -174,8 +174,8 @@ test("every named mutation class is observed on the schedule that exposes it", a
     const result: ScenarioResult = runScenario(context.scenario, context.semanticProcess);
     const mutated = mutableClone(result);
     mutate(mutated);
-    const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+    const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }]);
     assert.equal(comparison.kind, ComparisonKind.Disagreement, label);
   }
 });

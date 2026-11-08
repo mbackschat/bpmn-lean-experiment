@@ -140,16 +140,20 @@ export function manifestTestEntrypoints(
  *
  * The Lean-checks stage builds each driver's declared executable so that the integration lane, which
  * restores that output, only performs Lake's up-to-date check instead of a native build inside a test.
- * Discovery is lexical over package source: every `BpmnSemantics/….lean` literal there is a driver,
- * and a computed path would escape it.
+ * Discovery is lexical over package source: every `BpmnSemantics/….lean` literal there is a driver, as is
+ * a quoted `Kernel/….lean` string, and a computed path would escape it. A Kernel path in backticks is a
+ * comment naming the Lean original of a transcribed module, not a driver.
  */
 export function leanDriverEntryModules(
   surfaces: ReadonlyArray<CommandSurface>,
 ): ReadonlyArray<string> {
   return [...new Set(surfaces
     .filter(({ relativePath }) => relativePath.startsWith("packages/"))
-    .flatMap(({ source }) => [...source.matchAll(/["'`](BpmnSemantics\/[\w/]+)\.lean["'`]/gu)])
-    .flatMap((match) => match[1] === undefined ? [] : [match[1].replaceAll("/", ".")]))].sort();
+    .flatMap(({ source }) => [...source.matchAll(/["'`](BpmnSemantics\/[\w/]+)\.lean["'`]|["'](Kernel\/[\w/]+)\.lean["']/gu)])
+    .flatMap((match) => {
+      const driver = match[1] ?? match[2];
+      return driver === undefined ? [] : [driver.replaceAll("/", ".")];
+    }))].sort();
 }
 
 /**

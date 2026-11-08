@@ -91,8 +91,8 @@ test("each registered seeded mutation moves exactly the observation it names and
     const result = runScenario(scenario, program);
     const mutated = mutableClone(result);
     pipelineCase.injectMutation(mutated);
-    const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+    const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }]);
     assert.equal(comparison.kind, ComparisonKind.Disagreement, scenario.id);
     if (comparison.kind !== ComparisonKind.Disagreement) assert.fail("Seeded mutation escaped comparison");
     assert.deepEqual(comparison.disagreement, pipelineCase.expectedInjectedDisagreement, scenario.id);
@@ -106,8 +106,8 @@ test("a correlation key bound from the wrong variable is named by the comparison
   const result = runScenario(context.scenario, context.semanticProcess);
   const mutated = mutableClone(result);
   argumentFrom(4, "SendShippingNotice", "correlationId", "A-17", "ada@example.org")(mutated);
-  const comparison = compareTargetResults({ target: DifferentialTarget.SemanticCore, result },
-    [{ target: DifferentialTarget.SemanticCore, result: mutated }]);
+  const comparison = compareTargetResults({ target: DifferentialTarget.KernelTs, result },
+    [{ target: DifferentialTarget.KernelTs, result: mutated }]);
   assert.ok(comparison.kind === ComparisonKind.Disagreement);
   assert.deepEqual(comparison.disagreement, { kind: DisagreementKind.ObservationValue,
     path: "trace[4].openEffects[0].arguments[1].value.value", expected: "A-17", actual: "ada@example.org" });

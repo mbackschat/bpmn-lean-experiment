@@ -7,7 +7,7 @@ The [pass-through Task specification](../../docs/capsules/PASS-THROUGH-TASK-SPEC
 
 The [source test](../../packages/bpmn-source/test/pass-through-task-source.test.ts) compiles both models and locks the refused one-fact edits. The [CIB calibration probe](../../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenPassThroughTaskProbeTest.java) drives both models in CIB Seven `2.2.0`, with each condition rendered as JUEL.
 
-Three answer-free schedules are registered as standards-only pipeline cases by the [pipeline cases](../../packages/differential/test/pass-through-task-pipeline-cases.ts), each with one seeded mutation that lets a pass-through Task wait as a User Task. Their occurrences appear only in the command publications, which the [publication agreement test](../../packages/differential/test/pipeline-publication-lean-core.integration-test.ts) compares between Lean and the core:
+Three answer-free schedules are registered as standards-only pipeline cases by the [pipeline cases](../../packages/differential/test/pass-through-task-pipeline-cases.ts), each with one seeded mutation that lets a pass-through Task wait as a User Task. Their occurrences appear only in the command publications, which the publication agreement test compares between Lean and the core:
 
 - [Equipment return](equipment-return.scenario.json) schedules the pickup, records the condition and completes the refund. Its mutation leaves *Unpack equipment* open in place of *Record condition*.
 - [Intake, illegible twice then paper](intake-illegible-twice-then-paper.scenario.json) phones the sender twice, re-entering the classification each time, then archives the paper original. Its mutation leaves *Phone sender* open in place of the second classification.

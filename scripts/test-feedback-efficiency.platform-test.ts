@@ -60,7 +60,7 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(showcaseWorkflow, /test:pre-push:showcase/u);
   assert.match(uiWorkflow, /test:pre-push:ui/u);
   assert.match(verifyWorkflow, /node scripts\/ci-change-selection\.ts/u);
-  assert.equal(matches(verifyWorkflow, /if: needs\.changes\.outputs\.product1 == 'true'/gu), 7);
+  assert.equal(matches(verifyWorkflow, /if: needs\.changes\.outputs\.product1 == 'true'/gu), 6);
   assert.match(verifyWorkflow, /^  verify_lean:$/mu);
   assert.match(verifyWorkflow, /^  verify_lean_checks:$/mu);
   assert.match(verifyWorkflow, /^  verify_runtime:$/mu);
@@ -69,10 +69,8 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(verifyWorkflow, /^  verify_temporal_serial:$/mu);
   assert.match(verifyWorkflow, /verify_temporal_serial:[\s\S]*?needs:\n      - changes\n      - verify_runtime\n/u);
   assert.match(verifyWorkflow, /^  verify_pipeline:$/mu);
-  assert.match(verifyWorkflow, /^  verify_composition_parity:$/mu);
   assert.match(verifyWorkflow, /verify_lean_checks:[\s\S]*?needs:\n      - changes\n      - verify_lean/u);
   assert.match(verifyWorkflow, /verify_pipeline:[\s\S]*?needs:\n      - changes\n      - verify_lean_checks\n      - verify_runtime/u);
-  assert.match(verifyWorkflow, /verify_composition_parity:[\s\S]*?needs:\n      - changes\n      - verify_lean_checks\n      - verify_runtime/u);
   assert.match(verifyWorkflow, /key: verify-lean-library-\$\{\{ runner\.os \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/u);
   assert.match(verifyWorkflow, /key: verify-lean-checks-\$\{\{ runner\.os \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/u);
   assert.match(verifyWorkflow, /key: verify-runtime-\$\{\{ runner\.os \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/u);
@@ -82,9 +80,8 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh temporal\n/u);
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh temporal-serial\n/u);
   assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh pipeline\n/u);
-  assert.match(verifyWorkflow, /run: \.\/scripts\/verify\.sh composition-parity\n/u);
   assert.match(verifyWorkflow, /name: verify-complete/u);
-  assert.match(verifyWorkflow, /test "\$\{\{ needs\.changes\.outputs\.product1 \}\}" = "false" \|\| \{\n            test "\$\{\{ needs\.verify_lean\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_lean_checks\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_runtime\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_temporal\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_temporal_serial\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_pipeline\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_composition_parity\.result \}\}" = "success"\n          \}/u);
+  assert.match(verifyWorkflow, /test "\$\{\{ needs\.changes\.outputs\.product1 \}\}" = "false" \|\| \{\n            test "\$\{\{ needs\.verify_lean\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_lean_checks\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_runtime\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_temporal\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_temporal_serial\.result \}\}" = "success"\n            test "\$\{\{ needs\.verify_pipeline\.result \}\}" = "success"\n          \}/u);
   assert.doesNotMatch(uiWorkflow, /test:platform-operations-checkpoint/u);
   assert.doesNotMatch(platformWorkflow, /playwright|chromium|test:ui-quality/iu);
   assert.doesNotMatch(platformWorkflow, /postgres(?:ql)?:18\.4|BPMN_TEST_POSTGRES_URL/iu);
@@ -199,25 +196,20 @@ test("builds feedback graphs once and keeps independent lanes parallel", async (
   }
   assert.doesNotMatch(verifyScript, /test:contracts|check:source-hygiene|test:infrastructure:runtime/u);
   assert.doesNotMatch(verifyScript, /lake\.sh build checkCheckedSourceRelationExperiment/u);
-  for (const stage of ["verify_common", "verify_lean_library", "verify_lean_checks", "verify_runtime", "verify_temporal", "verify_temporal_serial", "verify_pipeline", "verify_composition_parity"]) {
+  for (const stage of ["verify_common", "verify_lean_library", "verify_lean_checks", "verify_runtime", "verify_temporal", "verify_temporal_serial", "verify_pipeline"]) {
     assert.notEqual(shellFunction(verifyScript, stage), null, `${stage} must own one verification stage`);
   }
-  assert.match(verifyScript, /all\)\n\s+verify_common\n\s+verify_lean_library\n\s+verify_lean_checks\n\s+verify_runtime\n\s+verify_temporal\n\s+verify_temporal_serial\n\s+verify_pipeline\n\s+verify_composition_parity\n\s+;;/u);
+  assert.match(verifyScript, /all\)\n\s+verify_common\n\s+verify_lean_library\n\s+verify_lean_checks\n\s+verify_runtime\n\s+verify_temporal\n\s+verify_temporal_serial\n\s+verify_pipeline\n\s+;;/u);
   assert.match(verifyScript, /lean-library\) verify_lean_library ;;/u);
   assert.match(verifyScript, /lean-checks\) verify_lean_checks ;;/u);
   assert.match(verifyScript, /runtime\) verify_common; verify_runtime ;;/u);
   assert.match(verifyScript, /temporal\) verify_temporal ;;/u);
   assert.match(verifyScript, /temporal-serial\) verify_temporal_serial ;;/u);
   assert.match(verifyScript, /pipeline\) verify_pipeline ;;/u);
-  assert.match(verifyScript, /composition-parity\) verify_composition_parity ;;/u);
   assert.match(pipelineScript, /build:verification-typescript/u);
   assert.match(
     pipelineScript,
-    /"emitEnginePopulationResults"/u,
-  );
-  assert.match(
-    pipelineScript,
-    /message-key-correlation-population-lean-core\.integration-test\.ts/u,
+    /"kernelRun"/u,
   );
   assert.match(
     pipelineScript,

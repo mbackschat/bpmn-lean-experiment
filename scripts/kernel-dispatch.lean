@@ -7,7 +7,7 @@ type a `match`, `if let` or `matches` discriminates and which alternatives cover
 
 - Closed dispatch: a guarded type is matched (`match`, `casesOn`, `rec`, `ctorIdx`) only in its owner module, the
   module that defines it, `Kernel.IL.Codec`, and the owner's own `Admission` module; `Element` and `EventRole` also
-  in their projections (`Kernel.IL.Query`) and `Kernel.AdmissionRegistry`. Nothing compares one with `==` or
+  in `Kernel.AdmissionRegistry`. Nothing compares one with `==` or
   `decide`: no guarded type has a `DecidableEq` or `BEq` instance outside its defining module.
 - No catch-all: no match alternative binds a guarded-type discriminant to a variable, so every alternative names
   the constructors it covers and a new constructor fails to compile at every dispatch site.
@@ -23,11 +23,13 @@ open Lean Meta
 /-- Each guarded type with the modules, besides its defining module and `Kernel.IL.Codec`, that may match it. A
 listed module also covers its submodules. -/
 def owners : List (Name × List Name) := [
-  (`Kernel.Element, [`Kernel.Step, `Kernel.IL.Query, `Kernel.AdmissionRegistry]),
-  (`Kernel.EventRole, [`Kernel.Step, `Kernel.IL.Query, `Kernel.AdmissionRegistry]),
+  (`Kernel.Element, [`Kernel.Step, `Kernel.AdmissionRegistry]),
+  (`Kernel.EventRole, [`Kernel.Step, `Kernel.AdmissionRegistry]),
   (`Kernel.Input, [`Kernel.Step]),
   (`Kernel.Signal, [`Kernel.Step]),
-  (`Kernel.OpenKind, [`Kernel.Step, `Kernel.Publish]),
+  (`Kernel.Continuation, [`Kernel.Step]),
+  (`Kernel.Raised, [`Kernel.Feature.Propagation, `Kernel.Feature.Subscriptions]),
+  (`Kernel.OpenKind, []),
   (`Kernel.Trigger, [`Kernel.Feature.Subscriptions, `Kernel.Admission.Subscriptions]),
   (`Kernel.Work, [`Kernel.Feature.Work, `Kernel.Admission.Work]),
   (`Kernel.GatewayKind, [`Kernel.Feature.Flow, `Kernel.Admission.Flow]),

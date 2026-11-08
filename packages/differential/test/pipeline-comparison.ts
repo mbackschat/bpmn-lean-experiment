@@ -24,6 +24,9 @@ import {
 } from "@bpmn-lean/temporal-testkit";
 
 import {
+  projectToCibRelation,
+} from "./cib-relation-projection.ts";
+import {
   hostInteractionExpectations,
 } from "./pipeline-expectations.ts";
 import {
@@ -53,6 +56,30 @@ import {
 import {
   verifyTemporalPostTerminalLifecycle,
 } from "./pipeline-temporal-lifecycle.ts";
+
+const kernelProfileDataGap =
+  "the kernel rejects a stimulus the frozen evaluators commit because its profile data is incomplete until profile consolidation; " +
+  "the Temporal target still runs the old adapter, so it reports the frozen answer";
+
+/**
+ * Cases whose Temporal result is expected to differ from the kernel, by case identity and reason.
+ *
+ * The comparison asserts the disagreement, so a closed gap fails until its entry is removed. Until then the case's
+ * host expectations and seeded mutation use the Temporal result, because they are calibrated on the committed journey
+ * the kernel's early rejection never reaches.
+ */
+export const expectedKernelTemporalDisagreements: ReadonlyMap<string, string> = new Map([
+  "concurrent-mapped-calls-supplier-compliance-first",
+  "concurrent-mapped-calls-supplier-financial-first",
+  "concurrent-mapped-calls-travel-request",
+  "concurrent-scope-data-claim-fetch-one-first",
+  "concurrent-scope-data-claim-fetch-two-first",
+  "concurrent-scope-data-facility-inspection",
+  "expense-exception-review-abort",
+  "expense-exception-review-approve",
+  "expense-exception-review-request-changes",
+  "user-task-cycle-repeat-rework-exit",
+].map((id) => [id, kernelProfileDataGap] as const));
 
 function mutableClone<T>(value: T): DeepMutable<T> {
   return structuredClone(value) as DeepMutable<T>;
@@ -97,15 +124,15 @@ export function projectCaseTargets(
     cibResult,
     canonicalCib:
       cibResult === null ? null : canonicalCibResult(cibResult),
-    leanResult: requiredResult(
-      targets.lean.results,
+    kernelResult: requiredResult(
+      targets.kernel.results,
       scenarioId,
-      "Lean",
+      "Lean kernel",
     ),
-    semanticCoreResult: requiredResult(
-      targets.core.results,
+    kernelTsResult: requiredResult(
+      targets.kernelTs.results,
       scenarioId,
-      "semantic core",
+      "TypeScript kernel",
     ),
     temporalResult: requiredResult(
       targets.temporal.results,
@@ -133,8 +160,8 @@ export function compareCase(
   const {
     cibResult,
     canonicalCib,
-    leanResult,
-    semanticCoreResult,
+    kernelResult,
+    kernelTsResult,
     temporalResult,
     cibEffectRetryResult,
   } = projectedTargets;
@@ -150,17 +177,19 @@ export function compareCase(
   }
   const semanticCandidates: Array<TargetScenarioResult> = [
     {
-      target: DifferentialTarget.Lean,
-      result: leanResult,
+      target: DifferentialTarget.Kernel,
+      result: kernelResult,
     },
     {
-      target: DifferentialTarget.SemanticCore,
-      result: semanticCoreResult,
+      target: DifferentialTarget.KernelTs,
+      result: kernelTsResult,
     },
   ];
+  const hasExpectedTemporalDisagreement = expectedKernelTemporalDisagreements.has(scenario.id);
   if (
     pipelineCase.temporalRelation !==
-      TemporalCaseRelation.PostTerminalClosed
+      TemporalCaseRelation.PostTerminalClosed &&
+    !hasExpectedTemporalDisagreement
   ) {
     semanticCandidates.push({
       target: DifferentialTarget.Temporal,
@@ -181,56 +210,47 @@ export function compareCase(
     }
     return compareTargetResults(
       {
-        target: DifferentialTarget.Lean,
-        result: leanResult,
+        target: DifferentialTarget.Kernel,
+        result: kernelResult,
       },
       semanticCandidates.filter(
-        ({ target }) => target !== DifferentialTarget.Lean,
+        ({ target }) => target !== DifferentialTarget.Kernel,
       ),
     );
   })();
+  const expectedTemporalDisagreement = hasExpectedTemporalDisagreement
+    ? compareTargetResults(
+        { target: DifferentialTarget.Kernel, result: kernelResult },
+        [{ target: DifferentialTarget.Temporal, result: temporalResult.primary.result }],
+      )
+    : null;
   const cibHostComparison =
-    cibConfiguration?.relation ===
-      CibCaseRelation.SynchronousFinalState
-      ? compareTargetResults(
+    cibConfiguration === null ||
+      cibConfiguration.relation === CibCaseRelation.ExactSemantic
+      ? null
+      : compareTargetResults(
           {
             target: DifferentialTarget.CibSeven,
             result: requiredCibResult(canonicalCib, scenario.id),
           },
           [
             {
-              target: DifferentialTarget.Lean,
-              result: projectSynchronousHostResult(leanResult),
+              target: DifferentialTarget.Kernel,
+              result: projectToCibRelation(cibConfiguration.relation, kernelResult),
             },
           ],
-        )
-      : cibConfiguration?.relation ===
-          CibCaseRelation.SynchronousBoundaryError
-        ? compareTargetResults(
-            {
-              target: DifferentialTarget.CibSeven,
-              result: requiredCibResult(canonicalCib, scenario.id),
-            },
-            [
-              {
-                target: DifferentialTarget.Lean,
-                result:
-                  projectSynchronousBoundaryErrorHostResult(leanResult),
-              },
-            ],
-          )
-      : null;
+        );
   const expectedTemporalPrefix =
     pipelineCase.temporalRelation ===
       TemporalCaseRelation.PostTerminalClosed
-      ? semanticPrefixThroughCompletion(semanticCoreResult)
+      ? semanticPrefixThroughCompletion(kernelResult)
       : null;
   const temporalPrefixComparison =
     expectedTemporalPrefix === null
       ? null
       : compareTargetResults(
           {
-            target: DifferentialTarget.SemanticCore,
+            target: DifferentialTarget.Kernel,
             result: expectedTemporalPrefix,
           },
           [
@@ -309,30 +329,39 @@ export function compareCase(
       `Unexpected CIB retry execution for ${scenario.id}`,
     );
   }
-  const injectedResult = mutableClone(semanticCoreResult);
+  const hostExpectationResult = hasExpectedTemporalDisagreement
+    ? temporalResult.primary.result
+    : kernelTsResult;
+  const injectedResult = mutableClone(hostExpectationResult);
   pipelineCase.injectMutation(injectedResult);
-  const injectedReference =
-    cibConfiguration?.relation === CibCaseRelation.ExactSemantic
+  const injectedReference = hasExpectedTemporalDisagreement
+    ? {
+        target: DifferentialTarget.Temporal,
+        result: hostExpectationResult,
+      } as const
+    : cibConfiguration?.relation === CibCaseRelation.ExactSemantic
       ? {
           target: DifferentialTarget.CibSeven,
           result: requiredCibResult(canonicalCib, scenario.id),
         } as const
       : {
-          target: DifferentialTarget.Lean,
-          result: leanResult,
+          target: DifferentialTarget.Kernel,
+          result: kernelResult,
         } as const;
   const injectedDisagreement = compareTargetResults(
     injectedReference,
     [
       {
-        target: DifferentialTarget.SemanticCore,
+        target: hasExpectedTemporalDisagreement
+          ? DifferentialTarget.Temporal
+          : DifferentialTarget.KernelTs,
         result: injectedResult,
       },
     ],
   );
   const expectations = hostInteractionExpectations(
     scenario,
-    semanticCoreResult,
+    hostExpectationResult,
     pipelineCase.temporalRelation === TemporalCaseRelation.PostTerminalClosed,
     pipelineCase.executionSchedule,
     pipelineCase.expectedWaitTraceLength,
@@ -355,6 +384,7 @@ export function compareCase(
         cibRevision: scenario.provenance.cibRevision,
       },
       comparison,
+      expectedTemporalDisagreement,
       cibHostComparison,
       temporalPrefixComparison,
       evidenceComparison,
@@ -362,7 +392,7 @@ export function compareCase(
     },
     evidence: {
       scenarioId: scenario.id,
-      expectedWaitTrace: semanticCoreResult.trace.slice(
+      expectedWaitTrace: hostExpectationResult.trace.slice(
         0,
         pipelineCase.expectedWaitTraceLength,
       ),
@@ -394,71 +424,6 @@ export function compareCase(
         null,
       cibCleanup: cibResult?.diagnostics.cleanup ?? null,
     },
-  };
-}
-
-function projectSynchronousHostResult(
-  semanticResult: ScenarioResult,
-): ScenarioResult {
-  const deployment = semanticResult.trace[0];
-  const start = semanticResult.trace[1];
-  const finalState = [...semanticResult.trace].reverse().find(
-    (observation) =>
-      observation.kind === CanonicalObservationKind.State &&
-      observation.status === ProcessStatus.Completed,
-  );
-  if (
-    deployment?.kind !== CanonicalObservationKind.Deployment ||
-    start?.kind !== CanonicalObservationKind.Command ||
-    finalState === undefined
-  ) {
-    throw new Error(
-      "Synchronous CIB host relation requires deployment, start, and final semantic state",
-    );
-  }
-  return {
-    outcome: semanticResult.outcome,
-    trace: [deployment, start, finalState],
-  };
-}
-
-function projectSynchronousBoundaryErrorHostResult(
-  semanticResult: ScenarioResult,
-): ScenarioResult {
-  const deployment = semanticResult.trace[0];
-  const start = semanticResult.trace[1];
-  const boundaryStateIndex = semanticResult.trace.findIndex(
-    (observation) =>
-      observation.kind === CanonicalObservationKind.State &&
-      observation.openUserTasks.some(
-        ({ id }) =>
-          id.elementId === "ReviewMappedError",
-      ),
-  );
-  const boundaryState = semanticResult.trace[boundaryStateIndex];
-  const completion = semanticResult.trace[boundaryStateIndex + 1];
-  const finalState = semanticResult.trace[boundaryStateIndex + 2];
-  if (
-    deployment?.kind !== CanonicalObservationKind.Deployment ||
-    start?.kind !== CanonicalObservationKind.Command ||
-    boundaryState?.kind !== CanonicalObservationKind.State ||
-    completion?.kind !== CanonicalObservationKind.Command ||
-    finalState?.kind !== CanonicalObservationKind.State ||
-    finalState.status !== ProcessStatus.Completed
-  ) {
-    throw new Error(
-      "Synchronous boundary-error relation requires start, routed User Task, completion, and final state",
-    );
-  }
-  return {
-    outcome: semanticResult.outcome,
-    trace: [
-      deployment,
-      start,
-      boundaryState,
-      completion,
-      finalState,
-    ],
   };
 }
 

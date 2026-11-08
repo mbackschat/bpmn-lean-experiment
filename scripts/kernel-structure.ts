@@ -59,6 +59,7 @@ export function classify(segments: readonly string[]): readonly [Layer, string] 
     case "admission": return [Layer.Admission, second];
     case "step":
     case "publish":
+    case "host":
     case "population": return [Layer.Dispatch, head];
     case "registry": return [Layer.Registry, ""];
     case "admissionregistry": return [Layer.AdmissionRegistry, ""];

@@ -339,7 +339,7 @@ test("hosted Lean checks consume the completed library output in a separate boun
 test("staged job handoffs restore an earlier attempt of the same run", async () => {
   const workflow = await readFile(verificationWorkflowPath, "utf8");
   const consumers = workflow.split(/\n      - name: /u).filter((step) => /fail-on-cache-miss: true/u.test(step));
-  assert.ok(consumers.length >= 7, "every staged-output consumer is checked");
+  assert.ok(consumers.length >= 5, "every staged-output consumer is checked");
   for (const step of consumers) {
     const stage = step.match(/key: (verify-[a-z-]+)-\$\{\{ runner\.os \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/u)?.[1];
     assert.ok(stage !== undefined, step);
@@ -446,18 +446,18 @@ test("committed-publication parity runs in the restored-output integration lane"
   );
 });
 
-test("Message-correlation population parity runs in the restored-output integration lane", async () => {
+test("the kernel behavior oracle runs in the restored-output integration lane", async () => {
   const [manifest, verifyScript] = await Promise.all([
     readFile(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"),
     readFile(verifyScriptPath, "utf8"),
   ]);
   assert.match(
     manifest,
-    /"test:message-key-correlation-population-lean-core:built": "node --test --test-concurrency=1 packages\/differential\/test\/message-key-correlation-population-lean-core\.integration-test\.ts"/u,
+    /"test:kernel-behavior-oracle:built": "node --test --test-concurrency=1 packages\/differential\/test\/kernel-behavior-oracle\.integration-test\.ts"/u,
   );
   assert.equal(
     verifyScript.split("\n").filter((line) =>
-      line.trim() === "./scripts/pnpm.sh run test:message-key-correlation-population-lean-core:built"
+      line.trim() === "./scripts/pnpm.sh run test:kernel-behavior-oracle:built"
     ).length,
     1,
   );
@@ -555,10 +555,6 @@ test("Lean checks interpret their own witnesses and build package drivers native
   await assertLineOccursOnce(
     verifyScriptPath,
     "./scripts/lake.sh build emitSemanticProcessResults emitEnginePopulationResults emitCommittedExecutionPublication emitInternalChoiceSchedules emitDefinitionAdmissions emitParallelScopeAdmissions emitParallelScopeStartAdmissions emitParallelScopeReservations emitScenarioSupport checkCallFamilyFixtures checkConformanceFixtures",
-  );
-  await assertLineOccursOnce(
-    verifyScriptPath,
-    "./scripts/pnpm.sh run test:internal-choice-schedule-lean-core:built",
   );
   for (const path of [
     "BpmnSemantics/Experiments/CheckedSourceRelationMain.lean",

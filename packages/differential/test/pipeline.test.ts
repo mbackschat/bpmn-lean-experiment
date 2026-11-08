@@ -41,9 +41,9 @@ import {
   cibMavenBuildDirectory,
 } from "./pipeline-cib-targets.ts";
 import {
-  runOwnedStepsInOrder,
   settleOwnedLanes,
 } from "./pipeline-parallel.ts";
+import { expectedKernelTemporalDisagreements } from "./pipeline-comparison.ts";
 import {
   coldBudgetMsFor,
   defaultWarmBudgetMs,
@@ -52,7 +52,7 @@ import {
   warmPipelineTestTimeoutMs,
   warmSoftTargetMsFor,
 } from "../../../scripts/pipeline-budget.ts";
-import { pipelineCaseIdsFor, pipelinePartitionRunsLeanMutationProbes } from "./pipeline-case-id-registry.ts";
+import { pipelineCaseIdsFor } from "./pipeline-case-id-registry.ts";
 
 /**
  * Warm-pipeline feedback measures in milliseconds.
@@ -140,42 +140,6 @@ test("joins every owned lane before surfacing one parallel failure", async () =>
   assert.equal(siblingFinished, true);
 });
 
-test("runs one resource-exclusive lane's steps without overlap", async () => {
-  let activeSteps = 0;
-  let maximumActiveSteps = 0;
-  const events: Array<string> = [];
-  const step = (name: string) => async () => {
-    activeSteps += 1;
-    maximumActiveSteps = Math.max(maximumActiveSteps, activeSteps);
-    events.push(`start:${name}`);
-    await new Promise((resolve) => setTimeout(resolve, 5));
-    events.push(`finish:${name}`);
-    activeSteps -= 1;
-    return name;
-  };
-
-  const results = await runOwnedStepsInOrder([
-    step("primary"),
-    step("definition-mutation"),
-    step("scenario-mutation"),
-  ] as const);
-
-  assert.equal(maximumActiveSteps, 1);
-  assert.deepEqual(results, [
-    "primary",
-    "definition-mutation",
-    "scenario-mutation",
-  ]);
-  assert.deepEqual(events, [
-    "start:primary",
-    "finish:primary",
-    "start:definition-mutation",
-    "finish:definition-mutation",
-    "start:scenario-mutation",
-    "finish:scenario-mutation",
-  ]);
-});
-
 const cleanCibProjection = {
   deployments: 0,
   processDefinitions: 0,
@@ -226,8 +190,7 @@ test(
     const selectedIds = new Set<string>(pipelineCaseIdsFor(process.env["BPMN_PIPELINE_PARTITION"]));
     const selectedCases = pipelineCases.filter(({ id }) => selectedIds.has(id));
     assert.equal(selectedCases.length, selectedIds.size, "every selected identifier names a registered case");
-    const runsLeanMutationProbes = pipelinePartitionRunsLeanMutationProbes(process.env["BPMN_PIPELINE_PARTITION"]);
-    const { report, evidence } = await runPipelineCases(selectedCases, { runsLeanMutationProbes });
+    const { report, evidence } = await runPipelineCases(selectedCases);
 
     assert.equal(report.kind, "bpmnPipelineReport");
     assert.equal(report.cases.length, selectedCases.length);
@@ -266,11 +229,17 @@ test(
         requiredLast(caseEvidence.expectedWaitTrace, "expected wait trace"),
       );
       const hasCib = pipelineCase.cib !== null;
+      const hasExpectedTemporalDisagreement = expectedKernelTemporalDisagreements.has(pipelineCase.id);
       assert.equal(
         caseReport.comparison.targets.includes(
           DifferentialTarget.Temporal,
         ),
-        !isPostTerminal,
+        !isPostTerminal && !hasExpectedTemporalDisagreement,
+      );
+      assert.equal(
+        caseReport.expectedTemporalDisagreement?.kind ?? null,
+        hasExpectedTemporalDisagreement ? ComparisonKind.Disagreement : null,
+        `a closed profile-data gap must leave expectedKernelTemporalDisagreements: ${pipelineCase.id}`,
       );
       assert.equal(
         caseReport.comparison.targets.includes(
@@ -283,7 +252,7 @@ test(
           kind: ComparisonKind.Agreement,
           targets: [
             DifferentialTarget.CibSeven,
-            DifferentialTarget.Lean,
+            DifferentialTarget.Kernel,
           ],
         });
       } else {
@@ -293,7 +262,7 @@ test(
         assert.deepEqual(caseReport.temporalPrefixComparison, {
           kind: ComparisonKind.Agreement,
           targets: [
-            DifferentialTarget.SemanticCore,
+            DifferentialTarget.Kernel,
             DifferentialTarget.Temporal,
           ],
         });
@@ -334,12 +303,15 @@ test(
 
       assert.deepEqual(caseReport.injectedDisagreement, {
         kind: ComparisonKind.Disagreement,
-        referenceTarget:
-          pipelineCase.cib?.relation ===
+        referenceTarget: hasExpectedTemporalDisagreement
+          ? DifferentialTarget.Temporal
+          : pipelineCase.cib?.relation ===
               CibCaseRelation.ExactSemantic
             ? DifferentialTarget.CibSeven
-            : DifferentialTarget.Lean,
-        candidateTarget: DifferentialTarget.SemanticCore,
+            : DifferentialTarget.Kernel,
+        candidateTarget: hasExpectedTemporalDisagreement
+          ? DifferentialTarget.Temporal
+          : DifferentialTarget.KernelTs,
         disagreement: pipelineCase.expectedInjectedDisagreement,
       });
 
@@ -487,13 +459,6 @@ test(
         0,
       ),
     });
-    assert.deepEqual(report.leanMutationProbes, runsLeanMutationProbes
-      ? {
-        definition: { kind: "rejected", mutation: "operationOrigin" },
-        scenario: { kind: "rejected", mutation: "scenarioExtraField" },
-        provenance: { kind: "rejected", mutation: "parallelControlPlaceProvenanceErasure" },
-      }
-      : null);
     assert.equal(
       report.isolation.temporalWorkflowIds.length,
       selectedCases.length * 2,

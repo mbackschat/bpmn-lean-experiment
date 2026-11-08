@@ -23,7 +23,7 @@ import {
 import { mutableClone } from "./pipeline-target-support.ts";
 import {
   loadAndCompileCases,
-  runCoreTargets,
+  runKernelTsTargets,
 } from "./pipeline-targets.ts";
 
 test("registers natural closure and interrupted running-trace evidence", () => {
@@ -62,15 +62,15 @@ test("detects output reordering and an inner task retained after interruption", 
   const contexts = await loadAndCompileCases(
     sequentialMultiInstancePipelineCases,
   );
-  const results = runCoreTargets(contexts).results;
+  const results = runKernelTsTargets(contexts).results;
   for (const context of contexts) {
     const result = results.get(context.scenario.id);
     assert.ok(result !== undefined);
     const mutated = mutableClone(result);
     context.pipelineCase.injectMutation(mutated);
     const comparison = compareTargetResults(
-      { target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+      { target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }],
     );
     assert.equal(comparison.kind, ComparisonKind.Disagreement);
     if (comparison.kind !== ComparisonKind.Disagreement) {
@@ -106,7 +106,7 @@ test("consumes later input after an intermediate semantic rejection", async () =
       ],
     },
   };
-  const result = runCoreTargets([extended]).results.get(context.scenario.id);
+  const result = runKernelTsTargets([extended]).results.get(context.scenario.id);
 
   assert.deepEqual(result?.outcome, {
     kind: ScenarioOutcomeKind.Semantic,

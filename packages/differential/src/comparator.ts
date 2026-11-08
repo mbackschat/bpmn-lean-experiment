@@ -6,8 +6,8 @@ import { firstValueDisagreement } from "./structural-diff.js";
 export enum DifferentialTarget {
   RetainedCibEvidence = "retainedCibEvidence",
   CibSeven = "cibSeven",
-  Lean = "lean",
-  SemanticCore = "semanticCore",
+  Kernel = "kernel",
+  KernelTs = "kernelTs",
   Temporal = "temporal",
 }
 

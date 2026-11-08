@@ -249,7 +249,7 @@ Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) 
 - Lean:
   - the merge-region module, the new scope-entry owner, and occurrence-addressed `enterScope` and the lookup-by-id `completeScope` arm in `InternalOperationOccurrence`;
   - the merge-target `operationOccurrence` offers in `InternalExecutionFrontier` and the widened profile gate of `replayInternalOperationOccurrence?`;
-  - the merge-target arm of committed replay in [`ParallelScopeReplayExecution`](../../BpmnSemantics/SemanticProcess/ParallelScopeReplayExecution.lean). The closure missed it: until 2026-10-31 Lean replayed a merge-target record by definition, so Lean published nothing for any merge-region command while its results still agreed. The [pipeline publication parity test](../../packages/differential/test/pipeline-publication-lean-core.integration-test.ts) now compares the publications of every registered schedule;
+  - the merge-target arm of committed replay in [`ParallelScopeReplayExecution`](../../BpmnSemantics/SemanticProcess/ParallelScopeReplayExecution.lean). The closure missed it: until 2026-10-31 Lean replayed a merge-target record by definition, so Lean published nothing for any merge-region command while its results still agreed. The pipeline publication parity test now compares the publications of every registered schedule;
   - the `OperationStep` arms and the soundness bridge;
   - the extended `RSI-BOUND-01`;
   - the entry-child selection in the owned-operation lifecycle, and that lifecycle's owner-addressed `completeScope` arm; `FlowNodeOccurrenceBoundaryStarts` only validates the occurrence it is given and stays unchanged;

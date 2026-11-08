@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { runScenario } from "@bpmn-lean/semantic-core";
 import {
   ComparisonKind,
   DifferentialTarget,
@@ -21,7 +22,6 @@ import {
 } from "./pipeline-target-support.ts";
 import {
   loadAndCompileCases,
-  runCoreTargets,
 } from "./pipeline-targets.ts";
 import {
   TemporalCaseRelation,
@@ -71,15 +71,13 @@ test("registers three standards-profile M6 cases with no terminal CIB target", (
 
 test("each M6 case carries one independent result-class mutation at its exact locus", async () => {
   const contexts = await loadAndCompileCases(structuredHumanWorkPipelineCases);
-  const results = runCoreTargets(contexts).results;
   for (const context of contexts) {
-    const result = results.get(context.scenario.id);
-    assert.ok(result !== undefined);
+    const result = runScenario(context.scenario, context.semanticProcess);
     const mutated = mutableClone(result);
     context.pipelineCase.injectMutation(mutated);
     const comparison = compareTargetResults(
-      { target: DifferentialTarget.SemanticCore, result },
-      [{ target: DifferentialTarget.SemanticCore, result: mutated }],
+      { target: DifferentialTarget.KernelTs, result },
+      [{ target: DifferentialTarget.KernelTs, result: mutated }],
     );
     assert.equal(comparison.kind, ComparisonKind.Disagreement);
     if (comparison.kind !== ComparisonKind.Disagreement) {

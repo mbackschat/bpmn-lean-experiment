@@ -63,10 +63,10 @@ verify_temporal_serial() {
   ./scripts/pnpm.sh run test:temporal:built:hosted-serial
 }
 
-# The hosted job runs one leg per case partition (`pipelineCaseIdsFor`); the Lean-core integration suites run once, in
-# the other-schedules leg, which also runs the catalog-level Lean mutation probes, and a local run without a partition
-# runs everything. A leg not named here runs none of them.
-pipeline_leg_runs_lean_core_suites() {
+# The hosted job runs one leg per case partition (`pipelineCaseIdsFor`); the catalog-wide Lean integration suites run
+# once, in the other-schedules leg, and a local run without a partition runs everything. A leg not named here runs none
+# of them.
+pipeline_leg_runs_lean_suites() {
   case "${BPMN_PIPELINE_PARTITION:-}" in
     "" | other-schedules) return 0 ;;
     *) return 1 ;;
@@ -74,35 +74,13 @@ pipeline_leg_runs_lean_core_suites() {
 }
 
 verify_pipeline() {
-  if pipeline_leg_runs_lean_core_suites; then
+  if pipeline_leg_runs_lean_suites; then
     ./scripts/pnpm.sh run test:lean-fixture-bindings:built
     ./scripts/pnpm.sh run test:committed-execution-publication-parity:built
-    ./scripts/pnpm.sh run test:message-key-correlation-population-lean-core:built
-    ./scripts/pnpm.sh run test:message-payload-lean-core:built
-    ./scripts/pnpm.sh run test:activity-boundary-message-lean-core:built
-    ./scripts/pnpm.sh run test:internal-choice-schedule-lean-core:built
-    node --test --test-concurrency=1 packages/differential/test/compensation-pipeline-lean-core.integration-test.ts
-    node --test --test-concurrency=1 packages/differential/test/transaction-pipeline-lean-core.integration-test.ts
-    node --test --test-concurrency=1 packages/differential/test/repeatable-subscriptions-lean-core.integration-test.ts
-    node --test --test-concurrency=1 packages/differential/test/scenario-value-domain-lean-core.integration-test.ts
-    node --test --test-concurrency=1 packages/differential/test/pipeline-publication-lean-core.integration-test.ts
-    node --test --test-concurrency=1 packages/differential/test/exclusive-choice-without-default-lean-core.integration-test.ts
-    node --test --test-concurrency=1 packages/differential/test/intermediate-catch-timer-durations-lean-core.integration-test.ts
+    ./scripts/pnpm.sh run test:kernel-behavior-oracle:built
   fi
   env BPMN_PIPELINE_PREBUILT=1 ./scripts/pnpm.sh run test:pipeline
   git diff --check
-}
-
-# Scope and composition parity runs as its own hosted job: with the catalog half it exceeded one
-# 10-minute runner job (hosted 2026-10-21: 9.4 minutes before the warm catalog pipeline started).
-verify_composition_parity() {
-  node --test --test-concurrency=1 packages/differential/test/structured-composition-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/interrupting-message-event-subprocess-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/serial-business-task-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/mixed-task-control-flow-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/mixed-task-business-error-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/sequential-scope-lean-core.integration-test.ts
-  node --test --test-concurrency=1 packages/differential/test/parallel-scope-admission-lean-core.integration-test.ts
 }
 
 case "${1:-all}" in
@@ -114,7 +92,6 @@ case "${1:-all}" in
     verify_temporal
     verify_temporal_serial
     verify_pipeline
-    verify_composition_parity
     ;;
   lean-library) verify_lean_library ;;
   lean-checks) verify_lean_checks ;;
@@ -122,6 +99,5 @@ case "${1:-all}" in
   temporal) verify_temporal ;;
   temporal-serial) verify_temporal_serial ;;
   pipeline) verify_pipeline ;;
-  composition-parity) verify_composition_parity ;;
-  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|temporal|temporal-serial|pipeline|composition-parity]" >&2; exit 2 ;;
+  *) echo "usage: $0 [all|lean-library|lean-checks|runtime|temporal|temporal-serial|pipeline]" >&2; exit 2 ;;
 esac

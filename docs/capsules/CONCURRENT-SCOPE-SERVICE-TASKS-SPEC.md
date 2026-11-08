@@ -208,7 +208,7 @@ Under the [pre-release wire policy](../../contracts/README.md#evolution-policy) 
   - [nested scope-control admission](../../packages/semantic-core/test/nested-scope-control-admission.test.ts);
   - [checked graph admission](../../packages/bpmn-source/test/checked-process-graph-admission.test.ts);
   - [projected flow-element keys](../../packages/bpmn-source/test/projected-flow-element-keys.test.ts);
-  - [parallel-scope Lean/core admission parity](../../packages/differential/test/parallel-scope-admission-lean-core.integration-test.ts);
+  - parallel-scope Lean/core admission parity;
   - [effect operation artifacts](../../scripts/effect-operation-artifact-consistency.test.ts) and [contract definition artifacts](../../scripts/contract-definition-artifacts.test.ts);
   - [foreign-attribute admission](../../packages/bpmn-source/test/foreign-attribute-admission.test.ts), which binds the compilation dispatch.
 - Registration: the [capsule roundtrip](../../scripts/capsule-roundtrip.test.ts), the [pipeline catalog](../../packages/differential/test/pipeline-catalog.test.ts), [product examples](../../packages/temporal-adapter/testkit/test/product-example-configs.test.ts), [requirement ledger consistency](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/requirement-ledger-consistency.test.ts), the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts) and the [contract artifact projections](../../scripts/contract-artifact-projections.test.ts), which bind the new register entry.

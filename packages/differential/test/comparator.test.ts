@@ -99,8 +99,8 @@ test("accepts exact canonical agreement across all declared targets", () => {
   const comparison = compareTargetResults(
     target(DifferentialTarget.CibSeven),
     [
-      target(DifferentialTarget.Lean),
-      target(DifferentialTarget.SemanticCore),
+      target(DifferentialTarget.Kernel),
+      target(DifferentialTarget.KernelTs),
       target(DifferentialTarget.Temporal),
     ],
   );
@@ -109,8 +109,8 @@ test("accepts exact canonical agreement across all declared targets", () => {
     kind: ComparisonKind.Agreement,
     targets: [
       DifferentialTarget.CibSeven,
-      DifferentialTarget.Lean,
-      DifferentialTarget.SemanticCore,
+      DifferentialTarget.Kernel,
+      DifferentialTarget.KernelTs,
       DifferentialTarget.Temporal,
     ],
   });
@@ -122,13 +122,13 @@ test("classifies an injected observation-value disagreement at its first path", 
 
   const comparison = compareTargetResults(
     target(DifferentialTarget.CibSeven),
-    [target(DifferentialTarget.SemanticCore, mutatedResult)],
+    [target(DifferentialTarget.KernelTs, mutatedResult)],
   );
 
   assert.deepEqual(comparison, {
     kind: ComparisonKind.Disagreement,
     referenceTarget: DifferentialTarget.CibSeven,
-    candidateTarget: DifferentialTarget.SemanticCore,
+    candidateTarget: DifferentialTarget.KernelTs,
     disagreement: {
       kind: DisagreementKind.ObservationValue,
       path: "trace[1].status",
@@ -147,7 +147,7 @@ test("distinguishes outcome, trace-length, and observation-kind disagreements", 
   assert.equal(
     requireDisagreement(
       compareTargetResults(target(DifferentialTarget.CibSeven), [
-        target(DifferentialTarget.Lean, outcomeMutation),
+        target(DifferentialTarget.Kernel, outcomeMutation),
       ]),
     ).kind,
     DisagreementKind.Outcome,
@@ -158,7 +158,7 @@ test("distinguishes outcome, trace-length, and observation-kind disagreements", 
   assert.equal(
     requireDisagreement(
       compareTargetResults(target(DifferentialTarget.CibSeven), [
-        target(DifferentialTarget.Lean, lengthMutation),
+        target(DifferentialTarget.Kernel, lengthMutation),
       ]),
     ).kind,
     DisagreementKind.TraceLength,
@@ -173,7 +173,7 @@ test("distinguishes outcome, trace-length, and observation-kind disagreements", 
   assert.equal(
     requireDisagreement(
       compareTargetResults(target(DifferentialTarget.CibSeven), [
-        target(DifferentialTarget.Lean, kindMutation),
+        target(DifferentialTarget.Kernel, kindMutation),
       ]),
     ).kind,
     DisagreementKind.ObservationKind,

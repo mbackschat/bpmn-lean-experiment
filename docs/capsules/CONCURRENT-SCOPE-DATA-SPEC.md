@@ -287,7 +287,7 @@ Apply the [pre-release wire policy](../../contracts/README.md#evolution-policy).
 The decisive binding guards are:
 - **Commutation and IL:** the [internal commutation census](../../scripts/internal-commutation-census.test.ts) and the [operation consumer census](../../scripts/semantic-operation-consumer-census.test.ts).
 - **Hosting:** [host admission](../../packages/temporal-adapter/testkit/test/host-admission.test.ts).
-- **Values:** the [cross-target domain matrix](../../packages/differential/test/scenario-value-domain-lean-core.integration-test.ts).
+- **Values:** the cross-target domain matrix.
 - **Registration:** the [executable model corpus](../../model-corpus/test/executable-model-corpus.test.ts) and the [contract artifact projections](../../scripts/contract-artifact-projections.test.ts) for `CIB-EXT-0020`.
 - **Structure:** [Lean import boundaries](../../scripts/lean-import-boundaries.test.ts) and [source hygiene](../../scripts/source-hygiene.test.ts).
 

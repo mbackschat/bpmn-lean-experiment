@@ -1,17 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { applyStimulusWithTrace, replayCommittedTransitions, initialState, CommandOutcome, ControlStateKind,
   StimulusKind, EffectExecutionResultKind, VariableValueKind, LocalDataOwnerKind, supportsSemanticProcessExecution,
-  projectOpenFlowNodeOccurrences, requireCompleteFlowNodeOccurrenceLifecycles, SemanticOperationKind, SemanticTransitionKind } from "@bpmn-lean/semantic-core";
-import type { RuntimeState, ScopeOccurrenceId, SemanticProcessProgram, Stimulus, VariableBinding, OccurrenceId, UnnumberedFlowNodeOccurrenceEnd } from "@bpmn-lean/semantic-core";
-import { parallelProgramCapacityCases } from "../../bpmn-source/test/parallel-scope-start-bound-fixture.ts";
+  projectOpenFlowNodeOccurrences, requireCompleteFlowNodeOccurrenceLifecycles, SemanticTransitionKind } from "@bpmn-lean/semantic-core";
+import type { RuntimeState, ScopeOccurrenceId, SemanticProcessProgram, Stimulus, VariableBinding, OccurrenceId } from "@bpmn-lean/semantic-core";
 import { parallelCommandInputs } from "../../bpmn-source/test/parallel-scope-command-fixture.ts";
 import { parallelOutputMappingCommandInputs } from "../../bpmn-source/test/parallel-scope-output-mapping-fixture.ts";
-import { parseLeanOutputLines } from "./pipeline-target-support.ts";
-import { runLeanDriver } from "./semantic-differential-targets.ts";
 
 export const owner = (id: ScopeOccurrenceId) => [id.processInstanceId, id.definitionScopeId, id.activation];
 export const prefix = (before: RuntimeState, state: RuntimeState) => ({
@@ -82,6 +76,32 @@ function completePrivateState(state: RuntimeState) {
     callActivations: state.callActivations, activityActivations: state.activityActivations,
     endOccurrences: state.endOccurrences, logicalTimeMs: state.logicalTimeMs,
   } satisfies Record<keyof RuntimeState, unknown>;
+}
+
+function comparisonRecord(value: unknown, context: string): Record<string, unknown> {
+  assert.equal(typeof value === "object" && value !== null && !Array.isArray(value), true, `${context}: object shape`);
+  return value as Record<string, unknown>;
+}
+
+function compareRecordKeys(actual: Record<string, unknown>, expected: Record<string, unknown>, context: string): void {
+  assert.equal(isDeepStrictEqual(Object.keys(actual).sort(), Object.keys(expected).sort()), true, `${context}: exact keys`);
+}
+
+const taskCommand = (id: OccurrenceId, commandId: string, submittedValues: readonly VariableBinding[] = []): Stimulus =>
+  ({ kind: StimulusKind.CompleteUserTaskInstance, commandId, taskId: id, submittedValues });
+
+const effectCommand = (id: OccurrenceId, commandId: string, value: VariableBinding["value"]): Stimulus =>
+  ({ kind: StimulusKind.CompleteEffect, commandId, effectId: id,
+    result: { kind: EffectExecutionResultKind.Success, localPatch: [{ name: "result", value }] } });
+
+function completed(witness: CommandWitness): void {
+  assert.equal(witness.state.control.kind, ControlStateKind.Completed);
+  assert.deepEqual(witness.state.variables.scopes, []);
+  assert.deepEqual(witness.state.variables.activities, []);
+  assert.deepEqual(witness.state.parallelScopeControllers ?? [], []);
+  const start = witness.stimuli[0];
+  assert.ok(start?.kind === StimulusKind.StartProcess);
+  assert.equal(supportsSemanticProcessExecution(start, witness.program), false);
 }
 
 export function compareCommandState(actual: unknown, expected: unknown, context: string): void {
@@ -221,10 +241,6 @@ export async function parallelDataCommandWitnesses(): Promise<readonly CommandWi
   return witnesses;
 }
 
-export async function verifyParallelDataCommandParity(): Promise<void> {
-  await compareCommandWitnesses(await parallelDataCommandWitnesses());
-}
-
 export async function parallelOutputMappingCommandWitnesses(): Promise<readonly CommandWitness[]> {
   const witnesses: CommandWitness[] = [];
   for (const { shape, program, start } of await parallelOutputMappingCommandInputs()) {
@@ -288,335 +304,4 @@ export async function parallelOutputMappingCommandWitnesses(): Promise<readonly 
     }
   }
   return witnesses;
-}
-
-export async function verifyParallelOutputMappingParity(): Promise<void> {
-  const witnesses = await parallelOutputMappingCommandWitnesses();
-  await compareCommandWitnesses(witnesses);
-  const witness = witnesses[0]!;
-  const effect = witness.stimuli.find(stimulus => stimulus.commandId === "effect");
-  assert.ok(effect?.kind === StimulusKind.CompleteEffect && effect.result.kind === EffectExecutionResultKind.Success);
-  const duplicate: Stimulus = { ...effect, result: { ...effect.result,
-    localPatch: [...effect.result.localPatch, effect.result.localPatch[0]!] } };
-  await assert.rejects(compareCommandWitnesses([{ ...witness, stimuli: [...witness.stimuli.slice(0, 2), duplicate] }]),
-    /variable bindings must have unique names in canonical order/);
-}
-
-function completed(witness: CommandWitness): void {
-  assert.equal(witness.state.control.kind, ControlStateKind.Completed);
-  assert.deepEqual(witness.state.variables.scopes, []);
-  assert.deepEqual(witness.state.variables.activities, []);
-  assert.deepEqual(witness.state.parallelScopeControllers ?? [], []);
-  const start = witness.stimuli[0];
-  assert.ok(start?.kind === StimulusKind.StartProcess);
-  assert.equal(supportsSemanticProcessExecution(start, witness.program), false);
-}
-
-function comparisonRecord(value: unknown, context: string): Record<string, unknown> {
-  assert.equal(typeof value === "object" && value !== null && !Array.isArray(value), true, `${context}: object shape`);
-  return value as Record<string, unknown>;
-}
-
-function compareRecordKeys(actual: Record<string, unknown>, expected: Record<string, unknown>, context: string): void {
-  assert.equal(isDeepStrictEqual(Object.keys(actual).sort(), Object.keys(expected).sort()), true, `${context}: exact keys`);
-}
-
-function compareCommandResult(actual: unknown, witness: CommandWitness, index: number): void {
-  const context = `witness=${index} count=${witness.count}`;
-  const received = comparisonRecord(actual, context);
-  const expected = witness.result();
-  compareRecordKeys(received, expected, context);
-  assert.equal(Array.isArray(received.commands), true, `${context}: commands array`);
-  const commands = received.commands as unknown[];
-  assert.equal(commands.length, expected.commands.length, `${context}: command count`);
-  for (const [commandIndex, command] of expected.commands.entries()) {
-    const commandContext = `${context} command=${commandIndex} commandId=${witness.stimuli[commandIndex]!.commandId}`;
-    const actualCommand = comparisonRecord(commands[commandIndex], commandContext);
-    const expectedCommand = comparisonRecord(command, commandContext);
-    compareRecordKeys(actualCommand, expectedCommand, commandContext);
-    for (const key of Object.keys(expectedCommand)) {
-      if (key === "state") compareCommandState(actualCommand[key], expectedCommand[key], commandContext);
-      else assert.equal(isDeepStrictEqual(actualCommand[key], expectedCommand[key]), true, `${commandContext} key=${key}`);
-    }
-  }
-  for (const [key, value] of Object.entries(expected)) {
-    if (key === "finalState") compareCommandState(received[key], value, `${context} finalState`);
-    else if (key !== "commands") assert.equal(isDeepStrictEqual(received[key], value), true, `${context} key=${key}`);
-  }
-}
-
-async function compareCommandWitnesses(witnesses: readonly CommandWitness[]): Promise<void> {
-  const directory = await mkdtemp(path.join(tmpdir(), "parallel-command-parity-"));
-  try {
-    const files: string[] = [];
-    for (const [index, witness] of witnesses.entries()) {
-      const programPath = path.join(directory, `${index}.program.json`);
-      const stimuliPath = path.join(directory, `${index}.stimuli.json`);
-      await writeFile(programPath, JSON.stringify(witness.program));
-      await writeFile(stimuliPath, JSON.stringify(witness.stimuli));
-      files.push(programPath, stimuliPath);
-    }
-    const execution = await runLeanDriver("BpmnSemantics/ParallelScopeReservationMain.lean", ["--commands", ...files],
-      witnesses.reduce((count, witness) => count + witness.stimuli.length, 0));
-    const actual = parseLeanOutputLines(execution.stdout);
-    assert.equal(actual.length, witnesses.length, "exact witness count");
-    witnesses.forEach((witness, index) => compareCommandResult(actual[index], witness, index));
-  } finally { await rm(directory, { recursive: true, force: true }); }
-}
-
-const taskCommand = (id: OccurrenceId, commandId: string, submittedValues: readonly VariableBinding[] = []): Stimulus =>
-  ({ kind: StimulusKind.CompleteUserTaskInstance, commandId, taskId: id, submittedValues });
-const effectCommand = (id: OccurrenceId, commandId: string, value: VariableBinding["value"]): Stimulus =>
-  ({ kind: StimulusKind.CompleteEffect, commandId, effectId: id,
-    result: { kind: EffectExecutionResultKind.Success, localPatch: [{ name: "result", value }] } });
-
-export async function verifyParallelCommandParity(): Promise<void> {
-  const witnesses: CommandWitness[] = [];
-  for (const { count, program, start } of await parallelCommandInputs()) {
-    const witness = commandWitness(program, count);
-    witness.run(start);
-    let checkedStaleTask = false, checkedStaleEffect = false;
-    for (let step = 0; step < 3 * count + 1 && witness.state.control.kind !== ControlStateKind.Completed; step++) {
-      const task = witness.state.userTaskWaits[0];
-      const effect = witness.state.effectWaits[0];
-      if (task !== undefined) {
-        const stimulus = taskCommand(task.id, `task-${step}`, task.id.elementId === "Review"
-          ? [{ name: "reviewStatus", value: { kind: VariableValueKind.String, value: `review-${task.owner.activation}` } }] : []);
-        witness.run(stimulus);
-        if (!checkedStaleTask) { witness.run({ ...stimulus, commandId: `stale-${stimulus.commandId}` }, CommandOutcome.Rejected); checkedStaleTask = true; }
-      } else if (effect !== undefined) {
-        const stimulus = effectCommand(effect.id, `effect-${step}`, { kind: VariableValueKind.String, value: `accepted-${effect.owner.activation}` });
-        witness.run(stimulus);
-        if (!checkedStaleEffect) { witness.run({ ...stimulus, commandId: `stale-${stimulus.commandId}` }, CommandOutcome.Rejected); checkedStaleEffect = true; }
-      } else assert.fail(`${count}: unfinished command journey has no task or effect`);
-    }
-    completed(witness);
-    assert.deepEqual(witness.state.variables.process.bindings, start.initialVariables);
-    witnesses.push(witness);
-  }
-  await compareCommandWitnesses(witnesses);
-}
-
-export async function verifyParallelParentPreludeParity(): Promise<void> {
-  const witnesses: CommandWitness[] = [];
-  for (const { count, program, start } of (await parallelCommandInputs({ parentPrelude: true }))
-    .filter(input => input.count === 0 || input.count === 2)) {
-    const witness = commandWitness(program, count);
-    const assertBeforeEntry = () => {
-      assert.equal(witness.state.control.kind, ControlStateKind.Running);
-      assert.equal(witness.state.scopeOccurrences.length, 1);
-      assert.deepEqual(witness.state.activityOccurrences, []);
-      assert.deepEqual(witness.state.parallelScopeControllers ?? [], []);
-    };
-    witness.run(start);
-    assertBeforeEntry();
-    const approval = witness.state.userTaskWaits[0]!;
-    assert.equal(approval.id.elementId, "ApproveBatch");
-    const approve = taskCommand(approval.id, "approve-batch");
-    witness.run(approve);
-    assertBeforeEntry();
-    witness.run({ ...approve, commandId: "stale-approval" }, CommandOutcome.Rejected);
-    const validation = witness.state.effectWaits[0]!;
-    assert.equal(validation.id.elementId, "ValidateBatch");
-    witness.run({ kind: StimulusKind.CompleteEffect, commandId: "missing-validation-result",
-      effectId: validation.id, result: { kind: EffectExecutionResultKind.Success, localPatch: [] } }, CommandOutcome.Rejected);
-    assertBeforeEntry();
-    const validate = effectCommand(validation.id, "validate-batch", { kind: VariableValueKind.String, value: "accepted" });
-    witness.run(validate);
-    witness.run({ ...validate, commandId: "stale-validation" }, CommandOutcome.Rejected);
-    assert.equal(witness.state.scopeOccurrences.length, count + 1);
-    assert.equal(witness.state.userTaskWaits.length, count === 0 ? 1 : count);
-    assert.deepEqual(witness.state.variables.process.bindings.find(binding => binding.name === "batchValidation"),
-      { name: "batchValidation", value: { kind: VariableValueKind.String, value: "accepted" } });
-    for (let step = 0; step < 3 * count + 1 && witness.state.control.kind !== ControlStateKind.Completed; step++) {
-      const task = witness.state.userTaskWaits[0], effect = witness.state.effectWaits[0];
-      if (task !== undefined) witness.run(taskCommand(task.id, `body-task-${step}`, task.id.elementId === "Review"
-        ? [{ name: "reviewStatus", value: { kind: VariableValueKind.String, value: "reviewed" } }] : []));
-      else if (effect !== undefined) witness.run(effectCommand(effect.id, `body-effect-${step}`,
-        { kind: VariableValueKind.String, value: "validated" }));
-      else assert.fail(`${count}: unfinished parent-prelude journey has no task or effect`);
-    }
-    completed(witness);
-    witnesses.push(witness);
-  }
-  assert.equal(witnesses.length, 2);
-  await compareCommandWitnesses(witnesses);
-}
-
-export async function verifyParallelEarlyCompletionParity(): Promise<void> {
-  const witnesses: CommandWitness[] = [];
-  for (const { count, program, start } of (await parallelCommandInputs({ condition: true })).filter(input => input.count > 0)) {
-    for (const pendingEffect of count === 1 ? [false] : [false, true]) {
-      const witness = commandWitness(program, count);
-      witness.run(start);
-      const selected = witness.state.userTaskWaits[0]!;
-      const sibling = witness.state.userTaskWaits[1];
-      let cancelledEffect: OccurrenceId | undefined;
-      if (pendingEffect) {
-        witness.run(taskCommand(sibling!.id, "arm-sibling-effect"));
-        cancelledEffect = witness.state.effectWaits[0]!.id;
-      }
-      witness.run(taskCommand(selected.id, "request-stop", [{ name: "stop", value: { kind: VariableValueKind.Boolean, value: true } }]));
-      assert.equal(witness.state.variables.scopes.length, count, "condition cannot retire an incomplete body");
-      const selectedEffect = witness.state.effectWaits.find(wait => isDeepStrictEqual(wait.owner, selected.owner));
-      assert.ok(selectedEffect);
-      witness.run(effectCommand(selectedEffect.id, "validate-selected", { kind: VariableValueKind.Null }));
-      const confirmation = witness.state.userTaskWaits.find(wait => isDeepStrictEqual(wait.owner, selected.owner));
-      assert.ok(confirmation);
-      const retired = witness.run(taskCommand(confirmation.id, "finish-selected"));
-      const scopeEnds = retired.flowNodeOccurrenceLifecycles.flatMap(delta => delta.ended).filter(end => end.anchor.kind === "scope");
-      assert.equal(scopeEnds.filter(end => end.terminal === "completed").length, 1);
-      assert.equal(scopeEnds.filter(end => end.terminal === "cancelled").length, count - 1);
-      assert.deepEqual(witness.state.variables.scopes, []);
-      assert.deepEqual(witness.state.effectWaits, []);
-      if (sibling !== undefined && !pendingEffect) witness.run(taskCommand(sibling.id, "stale-cancelled-task"), CommandOutcome.Rejected);
-      if (cancelledEffect !== undefined) witness.run(effectCommand(cancelledEffect, "stale-cancelled-effect", { kind: VariableValueKind.String, value: "late" }), CommandOutcome.Rejected);
-      const publish = witness.state.userTaskWaits[0]!;
-      assert.equal(publish.id.elementId, "PublishBatch");
-      witness.run(taskCommand(publish.id, "publish"));
-      completed(witness);
-      assert.deepEqual(witness.state.variables.process.bindings, start.initialVariables.map(binding => binding.name === "stop"
-        ? { ...binding, value: { kind: VariableValueKind.Boolean, value: true } } : binding));
-      witnesses.push(witness);
-    }
-  }
-  await compareCommandWitnesses(witnesses);
-}
-
-export async function verifyParallelRootEffectParity(): Promise<void> {
-  const witnesses: CommandWitness[] = [];
-  for (const { count, program, start } of (await parallelCommandInputs({ parentEffect: true })).filter(input => input.count === 0)) {
-    const witness = commandWitness(program, count);
-    witness.run(start);
-    const wait = witness.state.effectWaits[0]!;
-    assert.equal(wait.id.elementId, "PublishBatch");
-    witness.run(effectCommand(wait.id, "publish-null", { kind: VariableValueKind.Null }));
-    witness.run(effectCommand(wait.id, "stale-publish", { kind: VariableValueKind.Null }), CommandOutcome.Rejected);
-    completed(witness);
-    assert.deepEqual(witness.state.variables.process.bindings, [...start.initialVariables, { name: "summary", value: { kind: VariableValueKind.Null } }]);
-    witnesses.push(witness);
-  }
-  await compareCommandWitnesses(witnesses);
-}
-
-export async function verifyParallelInnerBodyCommandParity(): Promise<void> {
-  const witnesses: CommandWitness[] = [];
-  for (const bodyShape of ["joined", "separate-ends"] as const) for (const early of [false, true]) {
-    const { program, start } = (await parallelCommandInputs({ bodyShape, condition: early })).find(input => input.count === 2)!;
-    const witness = commandWitness(program, 2);
-    witness.run(start);
-    const entry = program.operations.find(operation => operation.kind === SemanticOperationKind.EnterParallelMultiInstanceScope);
-    assert.ok(entry?.kind === SemanticOperationKind.EnterParallelMultiInstanceScope);
-    const owners = witness.state.scopeOccurrences.filter(scope => scope.id.definitionScopeId === entry.childScopeId).map(scope => scope.id);
-    assert.equal(owners.length, 2);
-    const branches = bodyShape === "joined" ? ["Branch0", "Branch1", "Branch2"] : ["Branch0", "Branch1"];
-    const terminals: string[] = [];
-    for (const element of [...branches, "Validate", "Confirm"]) for (const selectedOwner of owners) {
-      if (early && !witness.state.scopeOccurrences.some(scope => isDeepStrictEqual(scope.id, selectedOwner))) continue;
-      const commandId = `${bodyShape}-${early ? "early" : "natural"}-${element}-body${selectedOwner.activation}`;
-      let stimulus: Stimulus;
-      if (element === "Validate") {
-        const wait = witness.state.effectWaits.find(wait => wait.id.elementId === element && isDeepStrictEqual(wait.owner, selectedOwner));
-        assert.ok(wait, `${commandId}: enabled effect`);
-        stimulus = effectCommand(wait.id, commandId, { kind: VariableValueKind.String, value: "accepted" });
-      } else {
-        const wait = witness.state.userTaskWaits.find(wait => wait.id.elementId === element && isDeepStrictEqual(wait.owner, selectedOwner));
-        assert.ok(wait, `${commandId}: enabled human task`);
-        stimulus = taskCommand(wait.id, commandId, early
-          ? [{ name: "stop", value: { kind: VariableValueKind.Boolean, value: true } }] : []);
-      }
-      const traced = witness.run(stimulus);
-      const scopeEnds: readonly UnnumberedFlowNodeOccurrenceEnd[] = traced.flowNodeOccurrenceLifecycles.flatMap(delta => delta.ended).filter(end =>
-        end.anchor.kind === "scope" && end.anchor.id.definitionScopeId === entry.childScopeId);
-      terminals.push(...scopeEnds.map(end => end.terminal));
-      if (bodyShape === "separate-ends" && element.startsWith("Branch")) {
-        assert.equal(scopeEnds.length, 0, `${commandId}: inner End cannot retire a body with its Service branch pending`);
-        assert.equal(witness.state.variables.scopes.length, 2, `${commandId}: both body frames survive inner End`);
-      }
-    }
-    assert.equal(terminals.length, 2);
-    assert.equal(terminals.filter(terminal => terminal === "completed").length, early ? 1 : 2);
-    assert.equal(terminals.filter(terminal => terminal === "cancelled").length, early ? 1 : 0);
-    const publish = witness.state.userTaskWaits[0];
-    assert.equal(publish?.id.elementId, "PublishBatch");
-    assert.ok(publish);
-    witness.run(taskCommand(publish.id, "publish"));
-    completed(witness);
-    witnesses.push(witness);
-  }
-  assert.equal(witnesses.length, 4);
-  await compareCommandWitnesses(witnesses);
-}
-
-function capacitySyntaxError(program: unknown, bindings: readonly VariableBinding[]): RegExp | undefined {
-  // These are the explicit wire mutations in parallelProgramCapacityCases; semantic refusal is compared separately.
-  if (program === null || typeof program !== "object" || Array.isArray(program)) return /object expected/;
-  const value = program as Record<string, unknown>;
-  if (Object.keys(value).length === 0 || Object.hasOwn(value, "budget") ||
-      (Array.isArray(value.operations) && value.operations.some(operation => Object.hasOwn(operation, "extra"))))
-    return /object fields do not match/;
-  if (Array.isArray(value.interruptingMessageEventSubProcesses)) {
-    for (const handler of value.interruptingMessageEventSubProcesses) {
-      if (!Object.hasOwn(handler, "childEntry")) return /object fields do not match/;
-      if (handler.channel.kind === "directMessage") return /operation-addressed Message channel expected/;
-    }
-  }
-  if (bindings.some((binding, index) => index > 0 && bindings[index - 1]!.name >= binding.name))
-    return /variable bindings must have unique names in canonical order/;
-  return undefined;
-}
-
-type ProgramCapacityGroup = "ordinary" | "maximum-parent" | "maximum-body";
-type ProgramCapacityCase = Awaited<ReturnType<typeof parallelProgramCapacityCases>>[number];
-
-function programCapacityGroup({ program, expected }: ProgramCapacityCase): ProgramCapacityGroup {
-  if (expected === null) return "ordinary";
-  const admitted = program as SemanticProcessProgram;
-  if (admitted.operations.length !== 1024) return "ordinary";
-  const root = admitted.definitionScopes.find(scope => scope.parentScopeId === null);
-  assert.ok(root);
-  const parentCount = admitted.operationScopes.filter(owner => owner.scopeId === root.id).length;
-  assert.notEqual(parentCount, admitted.operations.length / 2, "maximum-operation fixture has one larger region");
-  return parentCount > admitted.operations.length / 2 ? "maximum-parent" : "maximum-body";
-}
-
-export async function verifyParallelProgramCapacityParity(group: ProgramCapacityGroup = "ordinary"): Promise<void> {
-  const cases = (await parallelProgramCapacityCases()).map((entry, index) => ({ entry, index, group: programCapacityGroup(entry) }));
-  const maximum = cases.filter(entry => entry.group !== "ordinary");
-  assert.equal(maximum.length, 2, "fixture retains both accepted 1024-operation boundaries");
-  for (const selected of ["maximum-parent", "maximum-body"])
-    assert.equal(maximum.filter(entry => entry.group === selected).length, 1, `exact ${selected} boundary`);
-  const selectedCases = cases.filter(entry => entry.group === group);
-
-  const { parallelScopeProgramStartCapacity } = await import(new URL("../../semantic-core/dist/parallel-scope-program-capacity.js", import.meta.url).href
-  ) as typeof import("../../semantic-core/src/parallel-scope-program-capacity.ts");
-  const directory = await mkdtemp(path.join(tmpdir(), "parallel-program-capacity-"));
-  try {
-    const files: string[] = [];
-    const expected: unknown[] = [];
-    for (const { index, entry: { program, bindings, expected: capacity } } of selectedCases) {
-      assert.deepEqual(parallelScopeProgramStartCapacity(program, bindings) ?? null, capacity, `Program capacity case ${index}`);
-      const programPath = path.join(directory, `${index}.program.json`);
-      const startPath = path.join(directory, `${index}.start.json`);
-      const processId = typeof program === "object" && program !== null && "processId" in program ? program.processId : "invalid";
-      await writeFile(programPath, JSON.stringify(program));
-      await writeFile(startPath, JSON.stringify({ kind: StimulusKind.StartProcess, commandId: "start", processId,
-        instanceId: "batch", initialVariables: bindings }));
-      const syntaxError = capacitySyntaxError(program, bindings);
-      if (syntaxError !== undefined) assert.equal(capacity, null);
-      files.push(programPath, startPath);
-      expected.push(syntaxError ?? capacity);
-    }
-    const execution = await runLeanDriver("BpmnSemantics/ParallelScopeReservationMain.lean", ["--program-capacity", ...files], expected.length);
-    const actual = parseLeanOutputLines<Readonly<{ syntaxError?: unknown }>>(execution.stdout);
-    assert.equal(actual.length, expected.length);
-    for (const [offset, result] of actual.entries()) {
-      const index = selectedCases[offset]!.index;
-      const wanted = expected[offset];
-      if (wanted instanceof RegExp) {
-        assert.deepEqual(Object.keys(result), ["syntaxError"], `Program syntax case ${index}`);
-        assert.match(String(result.syntaxError), wanted, `Program syntax case ${index}`);
-      } else assert.deepEqual(result, wanted, `Program capacity case ${index}`);
-    }
-  } finally { await rm(directory, { recursive: true, force: true }); }
 }
