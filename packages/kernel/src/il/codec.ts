@@ -39,11 +39,16 @@ import {
 } from "./types.js";
 import {
   CommandActionTag,
+  EffectOutcomeTag,
   FailureTag,
   InputTag,
   type Binding,
+  type CommandAction,
+  type EffectOutcome,
   type Failure,
   type Input,
+  type MessageChannel,
+  type OccurrenceRef,
 } from "../state.js";
 
 export type JsonValue =
@@ -73,20 +78,20 @@ type Constructors<T extends { readonly tag: string }> = {
   readonly [K in T["tag"]]: Fields<Omit<Extract<T, { readonly tag: K }>, "tag">>;
 };
 
-function accept<T>(value: T): Decoded<T> {
+export function accept<T>(value: T): Decoded<T> {
   return { ok: true, value };
 }
 
-function refuse<T>(refusal: string): Decoded<T> {
+export function refuse<T>(refusal: string): Decoded<T> {
   return { ok: false, refusal };
 }
 
-function isObject(json: unknown): json is Readonly<Record<string, unknown>> {
+export function isObject(json: unknown): json is Readonly<Record<string, unknown>> {
   return typeof json === "object" && json !== null && !Array.isArray(json);
 }
 
 /** Lean's `Json.getObjVal?`: the key must be present. */
-function objVal(json: unknown, key: string): Decoded<unknown> {
+export function objVal(json: unknown, key: string): Decoded<unknown> {
   if (!isObject(json)) {
     return refuse("object expected");
   }
@@ -94,12 +99,12 @@ function objVal(json: unknown, key: string): Decoded<unknown> {
 }
 
 /** Lean's `Json.getObjValD`: an absent key, or a non-object, reads as `null`. */
-function objValD(json: unknown, key: string): unknown {
+export function objValD(json: unknown, key: string): unknown {
   return isObject(json) && Object.hasOwn(json, key) ? json[key] : null;
 }
 
 /** Lean's `Json.getTag?`: a string, or the only key of an object. */
-function tagOf(json: unknown): string | null {
+export function tagOf(json: unknown): string | null {
   if (typeof json === "string") {
     return json;
   }
@@ -114,17 +119,17 @@ function loose<T>(codec: Codec<T>): LooseCodec {
   return codec as unknown as LooseCodec;
 }
 
-const string: Codec<string> = {
+export const string: Codec<string> = {
   decode: (json) => (typeof json === "string" ? accept(json) : refuse("String expected")),
   encode: (value) => value,
 };
 
-const bool: Codec<boolean> = {
+export const bool: Codec<boolean> = {
   decode: (json) => (typeof json === "boolean" ? accept(json) : refuse("Bool expected")),
   encode: (value) => value,
 };
 
-const nat: Codec<number> = {
+export const nat: Codec<number> = {
   decode: (json) =>
     typeof json === "number" && Number.isSafeInteger(json) && json >= 0
       ? accept(json)
@@ -132,7 +137,7 @@ const nat: Codec<number> = {
   encode: (value) => value,
 };
 
-const int: Codec<number> = {
+export const int: Codec<number> = {
   decode: (json) =>
     typeof json === "number" && Number.isSafeInteger(json) ? accept(json) : refuse("Integer expected"),
   encode: (value) => value,
@@ -288,7 +293,7 @@ function entryFromJson(entry: unknown): Decoded<Binding> {
   return value.ok ? accept([name.value, value.value] as const) : value;
 }
 
-function entriesFromJson(json: unknown): Decoded<readonly Binding[]> {
+export function entriesFromJson(json: unknown): Decoded<readonly Binding[]> {
   return list<Binding>({ decode: entryFromJson, encode: entryToJson }).decode(json);
 }
 
@@ -296,7 +301,7 @@ function entryToJson(entry: Binding): JsonValue {
   return { name: entry[0], value: valueCodec.encode(entry[1]) };
 }
 
-function mapDecoded<A, B>(decoded: Decoded<A>, wrap: (value: A) => B): Decoded<B> {
+export function mapDecoded<A, B>(decoded: Decoded<A>, wrap: (value: A) => B): Decoded<B> {
   return decoded.ok ? accept(wrap(decoded.value)) : decoded;
 }
 
@@ -359,7 +364,7 @@ function valueToJson(value: Value): JsonValue {
   return assertNever(value);
 }
 
-const valueCodec: Codec<Value> = {
+export const valueCodec: Codec<Value> = {
   decode: (json) => {
     const kind = string.decode(objValD(json, "kind"));
     if (!kind.ok) {
@@ -411,8 +416,10 @@ const correlationCriterion = struct<import("./types.js").CorrelationCriterion>("
 });
 
 const messageTrigger = struct<import("./types.js").MessageTrigger>("MessageTrigger", {
-  name: valueSource,
+  name: option(valueSource),
   correlation: list(correlationCriterion),
+  interfaceRef: option(string),
+  operationRef: option(string),
 });
 
 const trigger = inductive<import("./types.js").Trigger>("Trigger", {
@@ -488,7 +495,7 @@ const work = inductive<import("./types.js").Work>("Work", {
       priority: option(valueSource),
     }),
   },
-  [WorkTag.Receive]: { payload: struct("ReceiveWork", { message: option(messageTrigger) }) },
+  [WorkTag.Receive]: { payload: struct("ReceiveWork", { message: messageTrigger }) },
   [WorkTag.Service]: { payload: struct("ServiceWork", { protocol: string, operation: string }) },
   [WorkTag.Send]: {
     payload: struct("SendWork", {
@@ -510,6 +517,7 @@ const work = inductive<import("./types.js").Work>("Work", {
       outputs: list(mapping),
       propagateAllInputs: bool,
       propagateAllOutputs: bool,
+      unsetSourceReadsNull: bool,
     }),
   },
 });
@@ -610,8 +618,14 @@ const element = inductive<Element>("Element", {
 
 const program = struct<Program>("Program", {
   identity: struct("ProgramIdentity", { processId: string, sourceSha256: string, profile: string }),
+  options: struct("ProfileOptions", {
+    submissionInstallsVariables: bool,
+    incidentProcessCancellation: bool,
+    scopeChainSubmissionBytes: option(nat),
+  }),
   elements: list(element),
   flows: list(struct("Flow", { id: string, source: string, target: string })),
+  processes: list(struct("CalledProcess", { id: string, children: list(string) })),
 });
 
 export function decodeProgram(json: unknown): Decoded<Program> {
@@ -639,82 +653,4 @@ export function bindingsFromJson(json: unknown): Decoded<readonly Binding[]> {
 
 export function bindingsToJson(bindings: readonly Binding[]): JsonValue {
   return bindings.map(entryToJson);
-}
-
-/** `json[key]` when present, else an empty binding list: `(json.getObjVal? key).toOption.getD (Json.arr #[])`. */
-function bindingsOrEmpty(json: unknown, key: string): Decoded<readonly Binding[]> {
-  const raw = objVal(json, key);
-  return bindingsFromJson(raw.ok ? raw.value : []);
-}
-
-const stimulusKinds: ReadonlyMap<string, (json: unknown) => Decoded<Input>> = new Map([
-  [
-    "startProcess",
-    (json: unknown): Decoded<Input> => {
-      const instanceId = string.decode(objValD(json, "instanceId"));
-      if (!instanceId.ok) {
-        return instanceId;
-      }
-      return mapDecoded(bindingsOrEmpty(json, "initialVariables"), (variables) => ({
-        tag: InputTag.Start,
-        payload: { instanceId: instanceId.value, startEvent: null, variables },
-      }));
-    },
-  ],
-  [
-    "completeUserTaskInstance",
-    (json: unknown): Decoded<Input> => {
-      const task = objVal(json, "taskId");
-      if (!task.ok) {
-        return task;
-      }
-      const element = string.decode(objValD(task.value, "elementId"));
-      if (!element.ok) {
-        return element;
-      }
-      const activation = nat.decode(objValD(task.value, "activation"));
-      if (!activation.ok) {
-        return activation;
-      }
-      return mapDecoded(bindingsOrEmpty(json, "submittedValues"), (values) => ({
-        tag: InputTag.Command,
-        payload: {
-          occurrence: { element: element.value, activation: activation.value },
-          action: { tag: CommandActionTag.CompleteUserTask, values },
-        },
-      }));
-    },
-  ],
-]);
-
-/**
- * One scenario stimulus: its command identifier and the kernel input, or `null` for a stimulus kind the kernel
- * does not accept yet.
- */
-export function stimulusFromJson(json: unknown): Decoded<readonly [string, Input | null]> {
-  const commandId = string.decode(objValD(json, "commandId"));
-  if (!commandId.ok) {
-    return commandId;
-  }
-  const kind = string.decode(objValD(json, "kind"));
-  if (!kind.ok) {
-    return kind;
-  }
-  const decoder = stimulusKinds.get(kind.value);
-  if (decoder === undefined) {
-    return accept([commandId.value, null] as const);
-  }
-  return mapDecoded(decoder(json), (input) => [commandId.value, input] as const);
-}
-
-export function failureName(failure: Failure): string {
-  switch (failure.tag) {
-    case FailureTag.Rejected:
-      return "rejected";
-    case FailureTag.SemanticFailure:
-      return "semanticFailure";
-    case FailureTag.Unsupported:
-      return "unsupported";
-  }
-  return assertNever(failure.tag);
 }

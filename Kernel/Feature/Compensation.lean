@@ -46,18 +46,16 @@ def precedes (ctx : Ctx) (record other : Compensable) : Bool :=
 def position (ctx : Ctx) (element : ElementId) : Nat :=
   (ctx.program.elements.map (·.header.id)).idxOf element
 
-/-- Begin `record`'s handler in a new occurrence inside `scope`. The occurrence takes the activation the handler is
-about to receive, so it names the handler's public occurrence. -/
+/-- Begin `record`'s handler in a new occurrence inside `scope`; the handler's own start activates it. -/
 def begin (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) (record : Compensable) :
     Except Failure (State × ScopeOccurrenceId) := do
   let element ← match ctx.program.element? record.handler with
     | some element => .ok element
     | none => .error (.semanticFailure "compensation-handler-missing")
-  let activation := ((state.activations.find? (·.1 == record.handler)).map (·.2)).getD 0 + 1
   let (state, issued) := state.issue
   let occurrence : ScopeOccurrenceId := ⟨issued⟩
   let handler : ScopeOccurrence :=
-    { id := occurrence, element := some record.handler, parent := some scope, activation, compensating := true }
+    { id := occurrence, element := some record.handler, parent := some scope, compensating := true }
   let state : State := { state with
     scopes := state.scopes ++ [handler]
     variables := state.variables ++ [{ scope := occurrence, entries := record.snapshot }] }
@@ -134,9 +132,16 @@ def failCompensation (_ : Ctx) (handler : ScopeOccurrenceId) (code : String) (me
   let activation ← match origin.activation with
     | some activation => .ok activation
     | none => .error (.unsupported "compensation-handler-error-without-effect")
+  -- The handler's public occurrence is the activation its own start recorded: the raising Activity itself, or the
+  -- Event Sub-Process occurrence entered inside the handler occurrence.
+  let handlerActivation ←
+    if origin.element == element then .ok activation
+    else match state.scopes.find? (fun inner => inner.parent == some occurrence.id && inner.element == some element) with
+      | some inner => .ok inner.activation
+      | none => .error (.semanticFailure "compensation-handler-not-started")
   let failure : CompensationFailure :=
     { trigger := run.trigger
-      handler := { processInstanceId := state.instanceOf handler, element, activation := occurrence.activation }
+      handler := { processInstanceId := state.instanceOf handler, element, activation := handlerActivation }
       effect := { processInstanceId := state.instanceOf origin.scope, element := origin.element, activation }
       code, message }
   .ok { state.clearInside State.root with status := .failed, failure := some failure }

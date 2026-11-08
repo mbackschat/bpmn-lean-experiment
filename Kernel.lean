@@ -19,6 +19,7 @@ public import Kernel.Feature.Work.Call
 public import Kernel.Feature.Work.Submission
 public import Kernel.Hooks
 public import Kernel.IL.Codec
+public import Kernel.IL.Codec.Stimulus
 public import Kernel.IL.Query
 public import Kernel.IL.Timer
 public import Kernel.IL.Types

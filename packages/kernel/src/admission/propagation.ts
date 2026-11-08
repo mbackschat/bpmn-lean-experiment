@@ -1,38 +1,30 @@
-/** Admission of Events, transcribed from `Kernel/Admission/Propagation.lean`. A refusal carries a stable code. */
-import { EventRoleTag, ThrowTag, assertNever, type EventPayload, type Throw } from "../il/types.js";
+/** Admission of throw Events, transcribed from `Kernel/Admission/Propagation.lean`. A refusal carries a stable code. */
+import { ThrowTag, assertNever, type Throw } from "../il/types.js";
 
-function throwRecord(record: Throw): string | null {
+export function throwRecord(record: Throw): string | null {
   switch (record.tag) {
     case ThrowTag.None:
+      return null;
+    case ThrowTag.Error:
+      return null;
+    case ThrowTag.Escalation:
+      return null;
+    case ThrowTag.Terminate:
       return null;
     case ThrowTag.Message:
       return "throw.message";
     case ThrowTag.Signal:
       return "throw.signal";
-    case ThrowTag.Error:
-      return "throw.error";
-    case ThrowTag.Escalation:
-      return "throw.escalation";
     case ThrowTag.Compensation:
-      return "throw.compensation";
+      if (record.payload.activity !== null) {
+        return "throw.compensation.activity";
+      }
+      if (!record.payload.waitForCompletion) {
+        return "throw.compensation.asynchronous";
+      }
+      return null;
     case ThrowTag.Cancel:
-      return "throw.cancel";
-    case ThrowTag.Terminate:
-      return "throw.terminate";
+      return null;
   }
   return assertNever(record);
-}
-
-export function event(payload: EventPayload): string | null {
-  const role = payload.role;
-  switch (role.tag) {
-    case EventRoleTag.Catch:
-      return "event.catch";
-    case EventRoleTag.Throw:
-      return throwRecord(role.record);
-    case EventRoleTag.LinkCatch:
-    case EventRoleTag.LinkThrow:
-      return "event.link";
-  }
-  return assertNever(role);
 }

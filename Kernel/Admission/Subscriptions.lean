@@ -2,6 +2,7 @@ module
 
 public import Kernel.IL.Types
 public import Kernel.IL.Timer
+public import Kernel.IL.Query
 
 /-! # Admission of catch Events, boundaries and triggered starts. A refusal carries a stable code.
 
@@ -14,20 +15,16 @@ public section
 
 namespace Kernel.Admission.Subscriptions
 
-def literal? : ValueSource → Option String
-  | .literal value => some value
-  | .expression _ => none
-
 /-- `cycles` admits an unbounded cycle, which only an attached subscription can repeat. -/
 def timer (cycles : Bool) (trigger : TimerTrigger) : Option String :=
   match trigger.schedule with
   | .duration value =>
-    match (literal? value).bind Timer.durationMs? with
+    match (ValueSource.literal? value).bind Timer.durationMs? with
     | some _ => none
     | none => some "timer.duration"
   | .date _ => some "timer.date"
   | .cycle value dialect =>
-    match dialect, cycles, (literal? value).bind Timer.cyclePeriodMs? with
+    match dialect, cycles, (ValueSource.literal? value).bind Timer.cyclePeriodMs? with
     | .iso8601, true, some _ => none
     | .iso8601, true, none => some "timer.cycle"
     | .iso8601, false, _ => some "timer.cycleNotAttached"

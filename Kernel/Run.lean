@@ -6,6 +6,7 @@ public import Kernel.Population
 public import Kernel.Registry
 public import Kernel.AdmissionRegistry
 public import Kernel.IL.Codec
+public import Kernel.IL.Codec.Stimulus
 
 /-! # Kernel scenario runner
 

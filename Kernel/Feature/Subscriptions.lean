@@ -22,10 +22,6 @@ public section
 
 namespace Kernel.Feature.Subscriptions
 
-def literal? : ValueSource → Option String
-  | .literal value => some value
-  | .expression _ => none
-
 def channel (trigger : MessageTrigger) : Except Failure MessageChannel :=
   let address (messageId : Option String) : MessageChannel :=
     { messageId, interfaceRef := trigger.interfaceRef, operationRef := trigger.operationRef }
@@ -38,12 +34,12 @@ def channel (trigger : MessageTrigger) : Except Failure MessageChannel :=
 def timerDetail (now : Nat) (trigger : TimerTrigger) : Except Failure TimerDetail :=
   match trigger.schedule with
   | .duration value =>
-    match (literal? value).bind Timer.durationMs? with
+    match (ValueSource.literal? value).bind Timer.durationMs? with
     | some ms => .ok { deadlineMs := now + ms }
     | none => .error (.unsupported "timer-duration")
   | .date _ => .error (.unsupported "timer-date")
   | .cycle value dialect =>
-    match dialect, (literal? value).bind Timer.cyclePeriodMs? with
+    match dialect, (ValueSource.literal? value).bind Timer.cyclePeriodMs? with
     | .iso8601, some ms => .ok { deadlineMs := now + ms, period := some ms }
     | .iso8601, none => .error (.unsupported "timer-cycle")
     | .cron, _ => .error (.unsupported "timer-cron")
@@ -325,13 +321,6 @@ def isCompensation : Raised → Bool
   | .signal _ => false
   | .cancel => false
 
-def isCancel : Raised → Bool
-  | .cancel => true
-  | .error _ _ => false
-  | .escalation _ => false
-  | .signal _ => false
-  | .compensation _ _ => false
-
 /-- An exact code catches at precedence 0, a catch-all (no code) at 1 (BPMN 2.0.2 §10.5.4: a catch with a code is
 preferred over one without). -/
 def codePrecedence (catcher : Option String) (code : String) : Option Nat :=
@@ -345,9 +334,9 @@ def catches (raised : Raised) (trigger : Trigger) : Option Nat :=
   | .error catcher => (errorCode? raised).bind (codePrecedence catcher.code)
   | .escalation catcher => (escalationCode? raised).bind (codePrecedence catcher.code)
   | .signal catcher =>
-    (signalName? raised).bind fun name => if literal? catcher.name == some name then some 0 else none
+    (signalName? raised).bind fun name => if ValueSource.literal? catcher.name == some name then some 0 else none
   | .compensation => if isCompensation raised then some 0 else none
-  | .cancel => if isCancel raised then some 0 else none
+  | .cancel => if raised.isCancel then some 0 else none
   | .timer _ => none
   | .message _ => none
   | .condition _ => none

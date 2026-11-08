@@ -26,8 +26,8 @@ structure ScopeOccurrence where
   parent : Option ScopeOccurrenceId
   activation : Nat := 0
   calledInstance : Option String := none
-  /-- The occurrence runs one compensation handler (`Kernel.Feature.Compensation`); `element` is the handler and
-  `activation` the handler's. -/
+  /-- The occurrence runs one compensation handler (`Kernel.Feature.Compensation`); `element` is the handler, whose
+  public activation is the one its own start records inside this occurrence. -/
   compensating : Bool := false
   deriving Repr
 
@@ -162,6 +162,14 @@ inductive Raised where
   | compensation (activity : Option ElementId) (waitForCompletion : Bool)
   | cancel
   deriving Repr
+
+/-- Whether a raised event is a Cancel. -/
+def Raised.isCancel : Raised → Bool
+  | .cancel => true
+  | .error _ _ => false
+  | .escalation _ => false
+  | .signal _ => false
+  | .compensation _ _ => false
 
 /-- Where a raised event starts its search: the throwing element, the scope occurrence it ran in, and, for an
 Activity, the host id its boundaries are attached to and the activation it raised from. -/

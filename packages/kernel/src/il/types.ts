@@ -15,6 +15,48 @@ export function assertNever(value: never): never {
   throw new TypeError(`unhandled kernel variant ${JSON.stringify(value)}`);
 }
 
+/** Lean's `String` order: lexicographic by Unicode scalar value, not by UTF-16 code unit. */
+export function compareStrings(left: string, right: string): number {
+  const a = Array.from(left, (char) => char.codePointAt(0) ?? 0);
+  const b = Array.from(right, (char) => char.codePointAt(0) ?? 0);
+  for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
+    const difference = (a[index] ?? 0) - (b[index] ?? 0);
+    if (difference !== 0) {
+      return difference;
+    }
+  }
+  return a.length - b.length;
+}
+
+/**
+ * Lean's `List.mergeSort` with its `le` comparator, transcribed rather than delegated to `Array.prototype.sort` so
+ * that the result agrees with Lean's even for a comparator that is not a total preorder: the first half takes
+ * `⌈n/2⌉` items and a merge prefers the left item when `le left right`.
+ */
+export function mergeSort<T>(items: readonly T[], le: (left: T, right: T) => boolean): readonly T[] {
+  if (items.length < 2) {
+    return items;
+  }
+  const half = Math.floor((items.length + 1) / 2);
+  const left = mergeSort(items.slice(0, half), le);
+  const right = mergeSort(items.slice(half), le);
+  const merged: T[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < left.length && j < right.length) {
+    const x = left[i] as T;
+    const y = right[j] as T;
+    if (le(x, y)) {
+      merged.push(x);
+      i += 1;
+    } else {
+      merged.push(y);
+      j += 1;
+    }
+  }
+  return [...merged, ...left.slice(i), ...right.slice(j)];
+}
+
 /** Data values; the wire form is the scenario contract's `variableValue`, owned by `il/codec.ts`. */
 export enum ValueTag {
   Null = "null",
@@ -104,9 +146,16 @@ export interface CorrelationCriterion {
   readonly value: Expression;
 }
 
+/**
+ * `name` is the BPMN Message's identifier, `null` for an unspecified Message (a Receive Task without `messageRef`,
+ * which only its waiting occurrence addresses); `interfaceRef` and `operationRef` name the Operation that carries
+ * it, when the model gives one.
+ */
 export interface MessageTrigger {
-  readonly name: ValueSource;
+  readonly name: ValueSource | null;
   readonly correlation: readonly CorrelationCriterion[];
+  readonly interfaceRef: string | null;
+  readonly operationRef: string | null;
 }
 
 export interface SignalTrigger {
@@ -229,7 +278,7 @@ export interface UserWork {
 }
 
 export interface ReceiveWork {
-  readonly message: MessageTrigger | null;
+  readonly message: MessageTrigger;
 }
 
 export interface ServiceWork {
@@ -275,6 +324,12 @@ export interface CallWork {
   readonly outputs: readonly Mapping[];
   readonly propagateAllInputs: boolean;
   readonly propagateAllOutputs: boolean;
+  /**
+   * The mappings are CIB `camunda:in`/`camunda:out` copies, which read an unset source as null (CVM-IN-01,
+   * CVM-OUT-01); otherwise they are BPMN Data Associations, whose unset source leaves the InputSet or OutputSet
+   * unavailable (BPMN 2.0.2 §10.4.2).
+   */
+  readonly unsetSourceReadsNull: boolean;
 }
 
 /** Guarded type: `feature/work` owns matching on it. */
@@ -467,8 +522,39 @@ export interface ProgramIdentity {
   readonly profile: string;
 }
 
+/**
+ * The behaviour a profile selects where CIB Seven and the standard differ, as typed data the lowering fills from
+ * the profile's relation identifiers; the kernel never reads a profile identifier.
+ */
+export interface ProfileOptions {
+  /**
+   * A User Task completion without output mappings writes its submitted values as Process variables
+   * (CIB-EXT-0005); otherwise a submission must be exactly the task's OutputSet.
+   */
+  readonly submissionInstallsVariables: boolean;
+  /** An effect incident offers `cancelIncidentProcess` (CIB-OP-0009). */
+  readonly incidentProcessCancellation: boolean;
+  /**
+   * When set, a User Task submission may name only variables a scope occurrence on the task's chain declares, each
+   * once, and its canonical JSON may take at most this many UTF-8 bytes (CIB-EXT-0020, `NSD-TASK-01`).
+   */
+  readonly scopeChainSubmissionBytes: number | null;
+}
+
+/**
+ * A process the program carries besides its root process, for a Call Activity to call: its id and its
+ * process-level elements, which have no parent.
+ */
+export interface CalledProcess {
+  readonly id: string;
+  readonly children: readonly ElementId[];
+}
+
+/** `processes` lists the called processes; every other parentless element belongs to the root process. */
 export interface Program {
   readonly identity: ProgramIdentity;
+  readonly options: ProfileOptions;
   readonly elements: readonly Element[];
   readonly flows: readonly Flow[];
+  readonly processes: readonly CalledProcess[];
 }

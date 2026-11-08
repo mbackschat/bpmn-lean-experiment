@@ -95,6 +95,10 @@ def Element.incoming : Element → List FlowId
   | .gateway _ payload => payload.incoming
   | .start _ _ => []
 
+def ValueSource.literal? : ValueSource → Option String
+  | .literal value => some value
+  | .expression _ => none
+
 namespace Program
 
 def element? (program : Program) (id : ElementId) : Option Element :=

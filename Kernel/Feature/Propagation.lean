@@ -57,14 +57,6 @@ def unhandled : Raised → Outcome
   | .compensation _ _ => .error (.unsupported "raise-compensation")
   | .cancel => .error (.unsupported "raise-cancel")
 
-/-- Whether a raised event is a Cancel. -/
-def isCancel : Raised → Bool
-  | .cancel => true
-  | .error _ _ => false
-  | .escalation _ => false
-  | .signal _ => false
-  | .compensation _ _ => false
-
 /-- The public identity of the trigger `element` throws in `scope`: a fresh activation of the thrower. -/
 def trigger (state : State) (element : ElementId) (scope : ScopeOccurrenceId) : State × OccurrenceRef :=
   let (state, activation) := state.activate element
@@ -86,7 +78,7 @@ boundary's flows ([BPMN 2.0.2 §10.3.5](../../docs/reference/bpmn-2.0.2/README.m
 direct the flow after the Transaction has been rolled back and all compensation has been completed"). -/
 def leaveOccurrence (raised : Raised) (origin : Origin) (occurrence : ScopeOccurrence) (parent : ScopeOccurrenceId)
     (boundary : Boundary) (state : State) : State :=
-  if isCancel raised then
+  if raised.isCancel then
     let (state, thrown) := trigger state origin.element origin.scope
     (state.clearInside occurrence.id).signal
       (.compensate occurrence.id thrown true (boundary.outgoing.map ({ flow := ·, scope := parent })))

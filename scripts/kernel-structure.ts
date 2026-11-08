@@ -32,7 +32,7 @@ export type Module = Readonly<{ name: string; layer: Layer; family: string; file
 /** Which layers a layer may import; a feature or admission module may also import its own family's modules. */
 const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Il]: [Layer.Il],
-  [Layer.Codec]: [Layer.Il, Layer.State],
+  [Layer.Codec]: [Layer.Il, Layer.State, Layer.Codec],
   [Layer.State]: [Layer.Il],
   [Layer.Hooks]: [Layer.Il, Layer.State],
   [Layer.Feature]: [Layer.Il, Layer.State, Layer.Hooks],
