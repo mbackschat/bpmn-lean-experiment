@@ -48,6 +48,7 @@ When sources appear to disagree, classify the relationship in the [CIB–BPMN re
 - `bpmn-moddle` and raw moddle objects stay inside `@bpmn-lean/bpmn-source`; Lean, the kernel and Temporal Workflow code consume only project-owned serializable contracts. The sole exception is the Product 2 definition-projection boundary in [ARCHITECTURE](docs/ARCHITECTURE.md#user-interface).
 - Every parser warning blocks admission until a profile rule proves it safe; preserve exact bytes and normalized evidence even when compilation is rejected.
 - Never encode Temporal Workflow tasks, Activity attempts, retries, Run IDs or Event History as BPMN semantic facts.
+- The TypeScript and Temporal solution never depends on a JVM, in its runtime, build or local test loop (owner decision 2026-11-08). The pinned CIB Seven oracle stays an external evidence input, run only in its hosted lane.
 - Keep import and admission, normalization, runtime execution, public observation and host persistence separate.
 - Keep neutral scenario inputs physically separate from retained expected results; target runners receive no oracle answer.
 - Keep the pinned reference baseline pristine; modified reference source belongs to an explicit experimental branch.
