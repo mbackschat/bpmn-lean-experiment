@@ -102,15 +102,15 @@ Current task: Kernel IL orthogonalization, batch 5, fourth family: the switch of
 
 Deliverable: `PC-CF-07`'s Activity without outgoing flows at User, Service and Send Tasks in the nested scope-data profile, landed on `main` with the switch.
 
-Acceptance blockers: owner decision on scope and budget; a redesigned proposal.
+Acceptance blockers: a redesigned proposal and its cold review. Owner direction (2026-11-08): plain Tasks first, each variant later with its host field.
 
 Current result: proposal rejected at `e12d6b94`; plain hosts lack arming preparation, so Parallel plain Tasks turn ambiguous.
 
 Owner items: confirm the incremental re-decision after the stop condition fired; renew six stale size-exception rationales.
 
-Effort budget: 16 hours from 2026-11-08 01:45 CET; the proposal with measured switch cost within the first 5. At the limit record the boundary and continue unless the evidence invalidates the path.
+Effort budget: 40 hours from 2026-11-08 01:45 CET (owner direction, 2026-11-08). At the limit record the boundary and continue unless the evidence invalidates the path.
 
-Next action: after the owner decision, the footprint and arming stage.
+Next action: redesign: frozen and nested profiles execute a plain host's legacy view; the empty-output host stays outside fork regions.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
 
