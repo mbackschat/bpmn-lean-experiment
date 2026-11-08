@@ -62,6 +62,7 @@ export {
 } from "./simple-boolean-expression.js";
 export {
   defaultKernelProfileOptions,
+  kernelProfileOptions,
   lowerCheckedProcessToKernel,
 } from "./kernel-lowering.js";
 export type {

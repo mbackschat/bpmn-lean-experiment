@@ -106,9 +106,21 @@ def target? (program : Program) (flow : FlowId) : Option ElementId :=
 def source? (program : Program) (flow : FlowId) : Option ElementId :=
   (program.flows.find? (·.id == flow)).map (·.source)
 
-/-- The elements whose parent is `parent`; `none` is the process level. -/
+/-- Whether `element` is a process-level element of a called process. -/
+def inCalledProcess (program : Program) (element : ElementId) : Bool :=
+  program.processes.any (·.children.contains element)
+
+/-- The elements whose parent is `parent`; `none` is the root process level. -/
 def children (program : Program) (parent : Option ElementId) : List Element :=
-  program.elements.filter (·.header.parent == parent)
+  program.elements.filter fun element =>
+    element.header.parent == parent && !(parent.isNone && program.inCalledProcess element.header.id)
+
+def calledProcess? (program : Program) (id : String) : Option CalledProcess :=
+  program.processes.find? (·.id == id)
+
+/-- The process-level elements of a called process. -/
+def processChildren (program : Program) (process : CalledProcess) : List Element :=
+  process.children.filterMap program.element?
 
 /-- A boundary by its id, with the element it is attached to. -/
 def boundary? (program : Program) (id : ElementId) : Option (Element × Boundary) :=

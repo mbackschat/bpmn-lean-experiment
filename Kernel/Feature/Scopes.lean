@@ -11,8 +11,9 @@ re-entered Scope is a fresh occurrence with a fresh activation and freshly evalu
 
 Completing a Scope evaluates its output mappings against the variables visible inside the occurrence, leaves the
 occurrence with everything in it, disarms its boundaries, writes the outputs from the parent outward and emits the
-Scope's outgoing flows in the parent. A Transaction that completes normally completes like an embedded
-Sub-Process; its cancellation belongs to `Kernel.Feature.Propagation`.
+Scope's outgoing flows in the parent; a Scope with a compensation handler signals `completed` with the variables
+visible inside it as the snapshot its handler restores. A Transaction that completes normally completes like an
+embedded Sub-Process; its cancellation belongs to `Kernel.Feature.Propagation` and `Kernel.Feature.Compensation`.
 -/
 
 public section
@@ -35,6 +36,21 @@ def innerStart? (ctx : Ctx) (scope : ElementId) (payload : ScopePayload) : Optio
   | .embedded => starts.find? (·.subscription.isNone)
   | .transaction => starts.find? (·.subscription.isNone)
 
+/-- The children that begin when a Scope without a start Event is entered: every Activity without incoming Sequence
+Flow ([BPMN 2.0.2 §13.3.4](../../docs/reference/bpmn-2.0.2/README.md)), except a compensation handler, which is
+outside normal flow (§13.5.5), and an Event Sub-Process. A Gateway or Event without incoming flow, which §13.3.4
+would also begin, is refused. -/
+def implicitStart (ctx : Ctx) (scope : ElementId) : Except Failure (List ElementId) :=
+  let handler (id : ElementId) : Bool :=
+    ctx.program.elements.any fun element => (element.envelope?.bind (·.compensationHandler)) == some id
+  let eventSubProcess (element : Element) : Bool :=
+    ((element.scope?).bind fun (_, payload) => eventStart payload).isSome
+  (ctx.program.children (some scope)).foldlM (fun begun child =>
+    let id := child.header.id
+    if !child.incoming.isEmpty || child.start?.isSome || handler id || eventSubProcess child then .ok begun
+    else if child.activity?.isSome then .ok (begun ++ [id])
+    else .error (.unsupported "scope-implicit-start")) []
+
 def enter (ctx : Ctx) (header : Header) (payload : ScopePayload) (parent : ScopeOccurrenceId)
     (extra : List (String × Value)) (state : State) : Outcome := do
   let locals ← ctx.evaluateMappings (state.visible parent) payload.envelope.inputs
@@ -44,7 +60,10 @@ def enter (ctx : Ctx) (header : Header) (payload : ScopePayload) (parent : Scope
   let state := state.signal (.armScope occurrence)
   match innerStart? ctx header.id payload with
   | some start => .ok (state.emit start.outgoing occurrence)
-  | none => .error (.semanticFailure "scope-without-start-event")
+  | none =>
+    match ← implicitStart ctx header.id with
+    | [] => .error (.semanticFailure "scope-without-start-event")
+    | begun => .ok (begun.foldl (fun state element => state.signal (.startActivity element occurrence)) state)
 
 def arriveScope (ctx : Ctx) (header : Header) (payload : ScopePayload) (arrival : Arrival) (state : State) :
     Outcome :=
@@ -55,15 +74,24 @@ def arriveScope (ctx : Ctx) (header : Header) (payload : ScopePayload) (arrival 
     | .transaction => enter ctx header payload arrival.scope [] state
     | .eventSubProcess _ _ => .error (.semanticFailure "flow-into-event-subprocess")
 
-def completeScope (ctx : Ctx) (_ : Header) (payload : ScopePayload) (occurrence : ScopeOccurrence)
+/-- The Activities completed in a Sub-Process stay compensable after it completes: its handler "can recursively
+trigger compensation" for them, and a global throw compensates every completed Activity (BPMN 2.0.2 §13.5.5).
+Neither is implemented, so a Scope that completes while it retains a compensation record is refused. -/
+def completeScope (ctx : Ctx) (header : Header) (payload : ScopePayload) (occurrence : ScopeOccurrence)
     (state : State) : Outcome := do
   let parent ← match occurrence.parent with
     | some parent => .ok parent
     | none => .error (.semanticFailure "scope-occurrence-without-parent")
-  let outputs ← ctx.evaluateMappings (state.visible occurrence.id) payload.envelope.outputs
-  let left := (state.leaveScope occurrence.id).disarm occurrence.id.value
-  let written := outputs.foldl (fun state binding => state.writeOutward parent binding) left
-  .ok (written.emit payload.envelope.outgoing parent)
+  if state.slots.compensation.retained.any (·.scope == occurrence.id) then
+    .error (.unsupported "compensation-retained-at-scope-completion")
+  else
+    let outputs ← ctx.evaluateMappings (state.visible occurrence.id) payload.envelope.outputs
+    let snapshot := state.visible occurrence.id
+    let left := (state.leaveScope occurrence.id).disarm occurrence.id.value
+    let written := outputs.foldl (fun state binding => state.writeOutward parent binding) left
+    let emitted := written.emit payload.envelope.outgoing parent
+    .ok (if payload.envelope.compensationHandler.isSome then emitted.signal (.completed header.id parent snapshot)
+      else emitted)
 
 /-- `Signal.startEventSubProcess`. An interrupting Event Sub-Process first clears its parent occurrence, its other
 Event Sub-Process starts included ([BPMN 2.0.2 §13.5.4](../../docs/reference/bpmn-2.0.2/README.md)); the

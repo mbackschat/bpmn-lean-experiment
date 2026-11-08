@@ -6,9 +6,10 @@ public import Kernel.Hooks
 
 The one generic projection from runtime state to the public state observation of the
 [canonical result](../contracts/schemas/canonical-result.schema.json). Owns matching on `OpenKind` with `Step`.
-User tasks are ordered by occurrence (element id, then activation), and enabled interactions by their kind's wait
-rank and then occurrence, as every retained baseline state orders them except nine with Call Activities
-(2026-11-08); every other list keeps the order in which its items opened. Evaluation requests are internal and never published.
+User tasks and effects are ordered by occurrence (process instance id, element id, then activation), and enabled
+interactions by their kind's wait rank and then occurrence, as every retained baseline state orders them
+(2026-11-08); every other list keeps the order in which its items opened. Evaluation requests are internal and never
+published.
 -/
 
 public section
@@ -67,6 +68,15 @@ inductive EnabledInteraction where
   | cancelIncidentProcess (effect : OccurrenceId) (generation : Nat)
   deriving Repr
 
+/-- A compensation handler's failure as the failed state publishes it. -/
+structure PublishedFailure where
+  trigger : OccurrenceId
+  handler : OccurrenceId
+  effect : OccurrenceId
+  code : String
+  message : Option String
+  deriving Repr
+
 structure Observation where
   instanceId : String
   status : String
@@ -79,6 +89,7 @@ structure Observation where
   variables : List (String × Value)
   enabledInteractions : List EnabledInteraction
   logicalTimeMs : Nat
+  failure : Option PublishedFailure
   deriving Repr
 
 /-- The published wait kind of an open item and its rank in `activeWaits`; evaluation requests are not waits. -/
@@ -116,7 +127,7 @@ def activeWaits (items : List OpenItem) : List ActiveWait :=
     left.rank < right.rank || (left.rank == right.rank && decide (left.elementId ≤ right.elementId))
 
 def occurrenceId (state : State) (item : OpenItem) : OccurrenceId :=
-  { processInstanceId := state.instanceId, elementId := item.element.value, activation := item.activation }
+  { processInstanceId := state.instanceOf item.scope, elementId := item.element.value, activation := item.activation }
 
 def effect (id : OccurrenceId) (detail : EffectDetail) : OpenEffect :=
   { id, protocol := detail.protocol, operation := detail.operation, arguments := detail.arguments }
@@ -178,8 +189,9 @@ def EnabledInteraction.key : EnabledInteraction → Nat × OccurrenceId
   | .cancelIncidentProcess id _ => (4, id)
 
 def OccurrenceId.le (left right : OccurrenceId) : Bool :=
-  decide (left.elementId < right.elementId) ||
-    (left.elementId == right.elementId && left.activation ≤ right.activation)
+  decide (left.processInstanceId < right.processInstanceId) || (left.processInstanceId == right.processInstanceId &&
+    (decide (left.elementId < right.elementId) ||
+      (left.elementId == right.elementId && left.activation ≤ right.activation)))
 
 def interactions (state : State) (item : OpenItem) : List EnabledInteraction :=
   let id := occurrenceId state item
@@ -194,6 +206,18 @@ def interactions (state : State) (item : OpenItem) : List EnabledInteraction :=
   | .effect _ => []
   | .evaluation _ => []
 
+def reference (ref : OccurrenceRef) : OccurrenceId :=
+  { processInstanceId := ref.processInstanceId, elementId := ref.element.value, activation := ref.activation }
+
+/-- A trigger is published under an identity distinct from its throwing element's, `operation:<element>`: "each
+trigger has an identity distinct from its throw Event" in the
+[trigger account](../docs/capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md), whose name the retained baselines
+publish (`compensation-failure-*`, `transaction-cancellation-handler-failed`). -/
+def failure (record : CompensationFailure) : PublishedFailure :=
+  let trigger := reference record.trigger
+  { trigger := { trigger with elementId := s!"operation:{trigger.elementId}" }, handler := reference record.handler
+    effect := reference record.effect, code := record.code, message := record.message }
+
 def observe (state : State) : Observation :=
   let items := state.openItems
   { instanceId := state.instanceId
@@ -202,12 +226,74 @@ def observe (state : State) : Observation :=
     openUserTasks := (items.filterMap (userTask? state)).mergeSort fun left right => left.id.le right.id
     openMessageSubscriptions := items.filterMap (messageSubscription? state)
     openTimers := items.filterMap (timer? state)
-    openEffects := items.filterMap (effect? state)
+    openEffects := (items.filterMap (effect? state)).mergeSort fun left right => left.id.le right.id
     openIncidents := items.filterMap (incident? state)
     variables := (((state.variables.find? (·.scope == State.root)).map (·.entries)).getD []).mergeSort
       fun left right => decide (left.1 ≤ right.1)
     enabledInteractions := (items.flatMap (interactions state)).mergeSort fun left right =>
       left.key.1 < right.key.1 || (left.key.1 == right.key.1 && left.key.2.le right.key.2)
-    logicalTimeMs := state.logicalTimeMs }
+    logicalTimeMs := state.logicalTimeMs
+    failure := state.failure.map failure }
+
+/-! ## Multi-Instance Activities -/
+
+/-- An open instance: its zero-based position in the input collection, its User Task, the input data item it was
+given and the output data item its completion submits. -/
+structure OpenIteration where
+  loopCounter : Nat
+  taskId : OccurrenceId
+  taskInput : String × Value
+  completionBindingName : String
+  deriving Repr
+
+/-- The schema's `openSequentialMultiInstance` and `openParallelMultiInstance`: the Activity's occurrence, its mode,
+and the instance counts of BPMN 2.0.2 Table 10.30; an instance is never terminated in a state that keeps it. -/
+structure OpenMultiInstance where
+  processInstanceId : String
+  activityElementId : String
+  activation : Nat
+  mode : String
+  plannedInstanceCount : Nat
+  pendingItemCount : Nat
+  numberOfInstances : Nat
+  numberOfActiveInstances : Nat
+  numberOfCompletedInstances : Nat
+  activeIterations : List OpenIteration
+  deriving Repr
+
+/-- A program publishes `openMultiInstances`, in every state, exactly when it declares a Multi-Instance Activity or
+Scope, as the frozen evaluator does (`BpmnSemantics.SemanticProcess.hasMultiInstanceDefinitions`). -/
+def publishesMultiInstances (program : Program) : Bool :=
+  program.elements.any fun element => element.envelope?.any (·.multiInstance.isSome)
+
+def isCompleted : Iteration → Bool
+  | .completed _ => true
+  | .waiting => false
+  | .active _ => false
+
+/-- The open Multi-Instance Activities in the order they were entered; `modeName` is `Hooks.multiInstanceMode`. -/
+def multiInstances (modeName : MultiInstanceMode → String) (program : Program) (state : State) :
+    List OpenMultiInstance :=
+  state.slots.multiInstances.runs.filterMap fun run => do
+    let loop ← ((program.element? run.element).bind (·.envelope?)).bind (·.multiInstance)
+    let input ← loop.inputDataItem
+    let output ← loop.outputDataItem
+    let items ← run.items
+    let iterations := run.instances.zipIdx.filterMap fun (slot, index) =>
+      match slot with
+      | .active id => do
+        let item ← state.openItems.find? (·.id == id)
+        let value ← items[index]?
+        some { loopCounter := index, taskId := occurrenceId state item, taskInput := (input, value),
+               completionBindingName := output }
+      | .waiting => none
+      | .completed _ => none
+    let completed := (run.instances.filter isCompleted).length
+    let generated := iterations.length + completed
+    some { processInstanceId := state.instanceOf run.scope, activityElementId := run.element.value
+           activation := run.activation, mode := modeName loop.mode
+           plannedInstanceCount := run.instances.length, pendingItemCount := run.instances.length - generated
+           numberOfInstances := generated, numberOfActiveInstances := iterations.length
+           numberOfCompletedInstances := completed, activeIterations := iterations }
 
 end Kernel.Publish

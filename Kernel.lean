@@ -1,17 +1,22 @@
 module
 
 public import Kernel.Admission.Flow
+public import Kernel.Admission.MultiInstance
 public import Kernel.Admission.Propagation
 public import Kernel.Admission.Scopes
 public import Kernel.Admission.Subscriptions
 public import Kernel.Admission.Work
 public import Kernel.AdmissionRegistry
+public import Kernel.Feature.Compensation
 public import Kernel.Feature.Data
 public import Kernel.Feature.Flow
+public import Kernel.Feature.MultiInstance
 public import Kernel.Feature.Propagation
 public import Kernel.Feature.Scopes
 public import Kernel.Feature.Subscriptions
 public import Kernel.Feature.Work
+public import Kernel.Feature.Work.Call
+public import Kernel.Feature.Work.Submission
 public import Kernel.Hooks
 public import Kernel.IL.Codec
 public import Kernel.IL.Query

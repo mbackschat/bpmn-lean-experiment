@@ -18,12 +18,17 @@ structure ScopeOccurrenceId where
   value : Nat
   deriving DecidableEq, Repr, Inhabited
 
-/-- A scope occurrence: the process instance (`element = none`) or one activation of a Scope element. -/
+/-- A scope occurrence: the process instance (`element = none`), one activation of a Scope element, or the root of
+a called process instance, whose `element` is the Call Activity and `calledInstance` the instance's identifier. -/
 structure ScopeOccurrence where
   id : ScopeOccurrenceId
   element : Option ElementId
   parent : Option ScopeOccurrenceId
   activation : Nat := 0
+  calledInstance : Option String := none
+  /-- The occurrence runs one compensation handler (`Kernel.Feature.Compensation`); `element` is the handler and
+  `activation` the handler's. -/
+  compensating : Bool := false
   deriving Repr
 
 /-- A token on a sequence flow, inside a scope occurrence. -/
@@ -155,12 +160,20 @@ inductive Raised where
   deriving Repr
 
 /-- Where a raised event starts its search: the throwing element, the scope occurrence it ran in, and, for an
-Activity, the host id its boundaries are attached to. -/
+Activity, the host id its boundaries are attached to and the activation it raised from. -/
 structure Origin where
   element : ElementId
   scope : ScopeOccurrenceId
   host : Option Nat := none
+  activation : Option Nat := none
   deriving Repr
+
+/-- The public identity of an occurrence: its process instance, the element and its activation number. -/
+structure OccurrenceRef where
+  processInstanceId : String
+  element : ElementId
+  activation : Nat
+  deriving DecidableEq, Repr
 
 /-- Guarded type: `Kernel.Step` owns matching on it. The cross-feature protocol: a feature that needs another
 feature's mechanism enqueues a signal, and `Step` hands it to the owning hook before any token moves. -/
@@ -174,6 +187,91 @@ inductive Signal where
   | raise (event : Raised) (origin : Origin)
   /-- Start the Event Sub-Process `element` inside `parent`, writing `variables` into its new occurrence. -/
   | startEventSubProcess (element : ElementId) (parent : ScopeOccurrenceId) (variables : List (String × Value))
+  /-- `element`, an Activity or Scope with a compensation handler, completed in `scope`; `snapshot` is the context
+  its handler restores. -/
+  | completed (element : ElementId) (scope : ScopeOccurrenceId) (snapshot : List (String × Value))
+  /-- Run the compensation handlers retained in `scope` for `trigger`; once all have completed, leave `scope` if
+  `leave` and add the `resume` tokens. -/
+  | compensate (scope : ScopeOccurrenceId) (trigger : OccurrenceRef) (leave : Bool) (resume : List Token)
+  /-- Begin the Activity `element` in `scope` without an arriving token. -/
+  | startActivity (element : ElementId) (scope : ScopeOccurrenceId)
+  /-- An Error left the compensation handler occurrence `handler` uncaught. -/
+  | compensationFailed (handler : ScopeOccurrenceId) (code : String) (message : Option String) (origin : Origin)
+  deriving Repr
+
+/-- One instance of a Multi-Instance Activity: waiting to start, running as the open item `item`, or completed with
+the value its output data item received. -/
+inductive Iteration where
+  | waiting
+  | active (item : Nat)
+  | completed (output : Value)
+  deriving Repr
+
+/-- A running Multi-Instance Activity (`Kernel.Feature.MultiInstance`): the scope occurrence it holds its instances
+in, the Activity's own activation, the input collection as evaluated once on entry, and one instance per item in
+collection order. -/
+structure MultiInstanceRun where
+  scope : ScopeOccurrenceId
+  element : ElementId
+  activation : Nat
+  collection : Value
+  instances : List Iteration
+  deriving Repr
+
+/-- The members of an input collection in order, `none` for a value that is not a collection; a String List's
+members are Strings. -/
+def MultiInstanceRun.items (run : MultiInstanceRun) : Option (List Value) :=
+  match run.collection with
+  | .stringList items => some (items.map .string)
+  | .list items => some items
+  | .null => none
+  | .bool _ => none
+  | .int _ => none
+  | .decimal _ _ => none
+  | .string _ => none
+  | .map _ => none
+
+/-- `runs` are the open Multi-Instance Activities; `entered` counts each Activity's activations, which are numbered
+apart from those of its instances. -/
+structure MultiInstances where
+  runs : List MultiInstanceRun := []
+  entered : List (ElementId × Nat) := []
+  deriving Repr
+
+/-- A completed Activity or Scope whose compensation handler may still run: it completed in `scope`, and its
+handler restores `snapshot` ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md)). -/
+structure Compensable where
+  subject : ElementId
+  handler : ElementId
+  scope : ScopeOccurrenceId
+  snapshot : List (String × Value) := []
+  deriving Repr
+
+/-- One compensation trigger in progress for the records retained in `scope`: handlers still `pending`, and those
+`running` in their own scope occurrence. `leave` and `resume` say how the trigger continues once all completed. -/
+structure CompensationRun where
+  trigger : OccurrenceRef
+  scope : ScopeOccurrenceId
+  pending : List Compensable
+  running : List (ScopeOccurrenceId × Compensable) := []
+  leave : Bool
+  resume : List Token
+  deriving Repr
+
+/-- `Kernel.Feature.Compensation`'s data: the retained records and the triggers in progress. -/
+structure Compensations where
+  retained : List Compensable := []
+  runs : List CompensationRun := []
+  deriving Repr
+
+/-- The failure of a compensation handler, which fails its process instance: the trigger, the handler occurrence,
+the effect that reported the Error, and the Error. -/
+structure CompensationFailure where
+  trigger : OccurrenceRef
+  handler : OccurrenceRef
+  effect : OccurrenceRef
+  code : String
+  message : Option String
   deriving Repr
 
 /-- Feature-owned data. Each slot is fixed at W0.1 from the row traceability table and starts empty.
@@ -183,6 +281,8 @@ holds tokens at an Activity whose InputSet is unavailable ([BPMN 2.0.2 §10.4.2]
 structure FeatureSlots where
   parked : List Token := []
   held : List Token := []
+  multiInstances : MultiInstances := {}
+  compensation : Compensations := {}
   deriving Repr
 
 structure State where
@@ -197,6 +297,8 @@ structure State where
   logicalTimeMs : Nat := 0
   signals : List Signal := []
   slots : FeatureSlots := {}
+  /-- Present exactly when `status` is `failed`. -/
+  failure : Option CompensationFailure := none
   deriving Repr
 
 /-- Why a step does not commit. Harness failures never appear here. `rolledBack` is a command whose closure could
@@ -217,12 +319,6 @@ structure StartInput where
   startEvent : Option ElementId := none
   variables : List (String × Value) := []
   deriving Repr
-
-/-- The public identity of an occurrence: the element and its activation number in the instance. -/
-structure OccurrenceRef where
-  element : ElementId
-  activation : Nat
-  deriving DecidableEq, Repr
 
 inductive CommandAction where
   | completeUserTask (values : List (String × Value))
@@ -295,6 +391,10 @@ def initial (instanceId : String) (variables : List (String × Value)) : State :
 def emit (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) : State :=
   { state with tokens := state.tokens ++ flows.map fun flow => { flow, scope } }
 
+/-- Hold a token at an Activity whose InputSet is unavailable (`FeatureSlots.held`). -/
+def hold (state : State) (token : Token) : State :=
+  { state with slots := { state.slots with held := state.slots.held ++ [token] } }
+
 /-- The next activation number of `element`, recorded. -/
 def activate (state : State) (element : ElementId) : State × Nat :=
   let count := ((state.activations.find? (·.1 == element)).map (·.2)).getD 0 + 1
@@ -334,6 +434,43 @@ def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId
       scopes := state.scopes ++ [{ id, element := some element, parent := some parent, activation }]
       variables := state.variables ++ [{ scope := id, entries := locals }] }, id)
 
+/-- The identifier of the process instance a Call Activity's `activation` calls from the instance `caller`:
+each part prefixed by its UTF-8 byte length, so that nested identifiers never collide; the retained baselines
+publish it (`called-process-call-activity`, `repeated-nested-calls-natural-order`). -/
+def calledInstanceId (caller : String) (call : ElementId) (activation : Nat) : String :=
+  s!"call:{caller.utf8ByteSize}:{caller}:{call.value.utf8ByteSize}:{call.value}:{activation}"
+
+/-- Whether `scope` is the root of a called process instance, which hides its caller's variables. -/
+def calledRoot (state : State) (scope : ScopeOccurrenceId) : Bool :=
+  ((state.scopes.find? (·.id == scope)).bind (·.calledInstance)).isSome
+
+/-- The root of the process instance `scope` belongs to: the nearest called-instance root, else the process root. -/
+def instanceRoot (state : State) (scope : ScopeOccurrenceId) : ScopeOccurrenceId :=
+  let rec go (fuel : Nat) (current : ScopeOccurrenceId) : ScopeOccurrenceId :=
+    match fuel with
+    | 0 => root
+    | fuel + 1 =>
+      if state.calledRoot current then current
+      else match (state.scopes.find? (·.id == current)).bind (·.parent) with
+        | some parent => go fuel parent
+        | none => root
+  go state.scopes.length scope
+
+/-- The process instance identifier of `scope`. -/
+def instanceOf (state : State) (scope : ScopeOccurrenceId) : String :=
+  ((state.scopes.find? (·.id == state.instanceRoot scope)).bind (·.calledInstance)).getD state.instanceId
+
+/-- Enter the called process instance of the Call Activity `call` inside `parent`, with the given variables: a
+scope occurrence for the call's activation that is the called instance's root. -/
+def enterCalled (state : State) (call : ElementId) (parent : ScopeOccurrenceId) (variables : List (String × Value)) :
+    State × ScopeOccurrenceId :=
+  let caller := state.instanceOf parent
+  let (state, id) := state.enterScope call parent variables
+  ({ state with scopes := state.scopes.map fun occurrence =>
+      if occurrence.id == id then
+        { occurrence with calledInstance := some (calledInstanceId caller call occurrence.activation) }
+      else occurrence }, id)
+
 /-- The scope occurrences inside `scope`, transitively, including `scope`. -/
 def subtree (state : State) (scope : ScopeOccurrenceId) : List ScopeOccurrenceId :=
   let rec go (fuel : Nat) (frontier : List ScopeOccurrenceId) (seen : List ScopeOccurrenceId) :
@@ -345,8 +482,9 @@ def subtree (state : State) (scope : ScopeOccurrenceId) : List ScopeOccurrenceId
       go fuel (rest ++ children) (seen ++ [next])
   go (state.scopes.length + 1) [scope] []
 
-/-- Remove every token, item, parked token, variable set and child scope occurrence inside `scope`, keeping
-`scope` itself. The owning features are told nothing: what a removal means is the caller's account. -/
+/-- Remove every token, item, parked or held token, Multi-Instance run, compensation trigger, variable set and child
+scope occurrence inside `scope`, with the compensation records of the child occurrences, keeping `scope` itself.
+The owning features are told nothing: what a removal means is the caller's account. -/
 def clearInside (state : State) (scope : ScopeOccurrenceId) : State :=
   let inside := state.subtree scope
   let nested := inside.filter (· != scope)
@@ -357,23 +495,32 @@ def clearInside (state : State) (scope : ScopeOccurrenceId) : State :=
       variables := state.variables.filter (!nested.contains ·.scope)
       slots := { state.slots with
         parked := state.slots.parked.filter (!inside.contains ·.scope)
-        held := state.slots.held.filter (!inside.contains ·.scope) } }
+        held := state.slots.held.filter (!inside.contains ·.scope)
+        multiInstances := { state.slots.multiInstances with
+          runs := state.slots.multiInstances.runs.filter (!inside.contains ·.scope) }
+        compensation := {
+          retained := state.slots.compensation.retained.filter (!nested.contains ·.scope)
+          runs := state.slots.compensation.runs.filter (!inside.contains ·.scope) } } }
 
-/-- Leave `scope`: clear it and remove the occurrence and its variables. -/
+/-- Leave `scope`: clear it and remove the occurrence, its variables and the compensation records it retains, so
+the Activities completed in a Sub-Process left before its own completion are never compensated: compensation is
+for completed Activities only ([BPMN 2.0.2 §13.5.5](../docs/reference/bpmn-2.0.2/README.md), "presumed abort"). -/
 def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
   let cleared := state.clearInside scope
   { cleared with
       scopes := cleared.scopes.filter (·.id != scope)
-      variables := cleared.variables.filter (·.scope != scope) }
+      variables := cleared.variables.filter (·.scope != scope)
+      slots := { cleared.slots with compensation := { cleared.slots.compensation with
+        retained := cleared.slots.compensation.retained.filter (·.scope != scope) } } }
 
-/-- Variables visible from `scope`, innermost first. -/
+/-- Variables visible from `scope`, innermost first, up to the root of its process instance. -/
 def visible (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=
   let rec go (fuel : Nat) (current : Option ScopeOccurrenceId) : List (String × Value) :=
     match fuel, current with
     | 0, _ | _, none => []
     | fuel + 1, some id =>
       let own := ((state.variables.find? (·.scope == id)).map (·.entries)).getD []
-      own ++ go fuel ((state.scopes.find? (·.id == id)).bind (·.parent))
+      if state.calledRoot id then own else own ++ go fuel ((state.scopes.find? (·.id == id)).bind (·.parent))
   go state.scopes.length (some scope)
 
 /-- Write `name` in the innermost visible scope that declares it, else in `scope` itself. -/
@@ -385,6 +532,7 @@ def write (state : State) (scope : ScopeOccurrenceId) (name : String) (value : V
     | 0 => scope
     | fuel + 1 =>
       if declares current then current
+      else if state.calledRoot current then scope
       else match (state.scopes.find? (·.id == current)).bind (·.parent) with
         | some parent => owner fuel parent
         | none => scope
@@ -399,12 +547,12 @@ def write (state : State) (scope : ScopeOccurrenceId) (name : String) (value : V
     { state with variables := state.variables ++ [{ scope := target, entries := [(name, value)] }] }
 
 /-- Write an Activity or Scope output seen from `scope`: into the innermost visible scope that declares `name`,
-else into the process root, as a CIB Seven `setVariable` without a declaring scope does; the nested scope-data
-baselines (`nested-scope-data-order-null-risk`) observe an inner Sub-Process output at the root, not in the
-undeclaring parent. -/
+else into the root of its process instance, as a CIB Seven `setVariable` without a declaring scope does; the nested
+scope-data baselines (`nested-scope-data-order-null-risk`) observe an inner Sub-Process output at the root, not in
+the undeclaring parent. -/
 def writeOutward (state : State) (scope : ScopeOccurrenceId) (binding : String × Value) : State :=
   if (state.visible scope).any (·.1 == binding.1) then state.write scope binding.1 binding.2
-  else state.write root binding.1 binding.2
+  else state.write (state.instanceRoot scope) binding.1 binding.2
 
 end State
 

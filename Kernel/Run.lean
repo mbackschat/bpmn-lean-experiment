@@ -57,10 +57,42 @@ def interactionJson (instanceId : String) : Publish.EnabledInteraction → Json
   | .cancelIncidentProcess effect generation => Json.mkObj [("kind", "cancelIncidentProcess"),
       ("processInstanceId", Json.str instanceId), ("incidentId", incidentIdJson effect generation)]
 
-def observationJson (state : State) : Json :=
+def iterationJson (iteration : Publish.OpenIteration) : Json :=
+  Json.mkObj [("loopCounter", toJson iteration.loopCounter), ("taskId", occurrenceJson iteration.taskId),
+    ("taskInput", Json.mkObj [("name", Json.str iteration.taskInput.1),
+      ("value", Codec.valueToJson iteration.taskInput.2)]),
+    ("completionBindingName", Json.str iteration.completionBindingName)]
+
+def multiInstanceJson (entry : Publish.OpenMultiInstance) : Json :=
+  Json.mkObj [
+    ("id", Json.mkObj [("processInstanceId", Json.str entry.processInstanceId),
+      ("activityElementId", Json.str entry.activityElementId), ("activation", toJson entry.activation)]),
+    ("mode", Json.str entry.mode), ("bodyKind", "userTask"),
+    ("plannedInstanceCount", toJson entry.plannedInstanceCount), ("pendingItemCount", toJson entry.pendingItemCount),
+    ("numberOfInstances", toJson entry.numberOfInstances),
+    ("numberOfActiveInstances", toJson entry.numberOfActiveInstances),
+    ("numberOfCompletedInstances", toJson entry.numberOfCompletedInstances),
+    ("numberOfTerminatedInstances", toJson (0 : Nat)),
+    ("activeIterations", Json.arr (entry.activeIterations.map iterationJson).toArray)]
+
+/-- `openMultiInstances`, only for a program that publishes it (`Publish.publishesMultiInstances`). -/
+def multiInstancesJson (program : Program) (state : State) : List (String × Json) :=
+  if Publish.publishesMultiInstances program then
+    [("openMultiInstances", Json.arr ((Publish.multiInstances Registry.hooks.multiInstanceMode program state).map
+      multiInstanceJson).toArray)]
+  else []
+
+/-- `failure` appears only in a failed state. -/
+def failureJson (failure : Publish.PublishedFailure) : String × Json :=
+  ("failure", Json.mkObj [("kind", "compensationHandlerFailure"), ("triggerId", occurrenceJson failure.trigger),
+    ("handlerId", occurrenceJson failure.handler), ("effectId", occurrenceJson failure.effect),
+    ("code", Json.str failure.code),
+    ("message", match failure.message with | some message => Json.str message | none => Json.null)])
+
+def observationJson (program : Program) (state : State) : Json :=
   let o := Publish.observe state
   let array {α : Type} (items : List α) (encode : α → Json) : Json := Json.arr (items.map encode).toArray
-  Json.mkObj [
+  let fields : List (String × Json) := [
     ("kind", "state"), ("instanceId", Json.str o.instanceId), ("status", Json.str o.status),
     ("activeWaits", array o.activeWaits fun wait => Json.mkObj [("elementId", Json.str wait.elementId),
       ("kind", Json.str wait.kind), ("multiplicity", toJson wait.multiplicity)]),
@@ -75,13 +107,14 @@ def observationJson (state : State) : Json :=
     ("variables", Codec.bindingsToJson o.variables),
     ("enabledInteractions", array o.enabledInteractions (interactionJson o.instanceId)),
     ("logicalTimeMs", toJson o.logicalTimeMs)]
+  Json.mkObj (fields ++ multiInstancesJson program state ++ (o.failure.map failureJson).toList)
 
 def commandJson (commandId outcome : String) : Json :=
   Json.mkObj [("kind", "command"), ("commandId", Json.str commandId), ("outcome", Json.str outcome)]
 
-def snapshot (state : Option State) : List Json :=
+def snapshot (program : Program) (state : Option State) : List Json :=
   match state with
-  | some state => [observationJson state]
+  | some state => [observationJson program state]
   | none => []
 
 /-- The trace after deployment and the scenario outcome. -/
@@ -95,10 +128,10 @@ def execute (program : Program) : Option State → List (String × Option Input)
     match result with
     | .ok next =>
       let (trace, outcome) := execute program (some next) rest
-      (commandJson commandId "committed" :: snapshot (some next) ++ trace, outcome)
+      (commandJson commandId "committed" :: snapshot program (some next) ++ trace, outcome)
     | .error failure =>
       let name := Codec.failureName failure
-      let observed := commandJson commandId name :: snapshot state
+      let observed := commandJson commandId name :: snapshot program state
       match failure, rest with
       | .rejected _, _ :: _ =>
         let (trace, outcome) := execute program state rest

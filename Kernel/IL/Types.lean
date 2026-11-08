@@ -237,6 +237,10 @@ structure CallWork where
   outputs : List Mapping := []
   propagateAllInputs : Bool := false
   propagateAllOutputs : Bool := false
+  /-- The mappings are CIB `camunda:in`/`camunda:out` copies, which read an unset source as null, as CIB's
+  `VariableScope.getVariable` does (CVM-IN-01, CVM-OUT-01); otherwise they are BPMN Data Associations, whose unset
+  source leaves the InputSet or OutputSet unavailable ([BPMN 2.0.2 §10.4.2](../../docs/reference/bpmn-2.0.2/README.md)). -/
+  unsetSourceReadsNull : Bool := false
   deriving Repr
 
 /-- Guarded type: `Kernel.Feature.Work` owns matching on it. -/
@@ -389,13 +393,25 @@ structure ProfileOptions where
   submissionInstallsVariables : Bool := true
   /-- An effect incident offers `cancelIncidentProcess` (CIB-OP-0009). -/
   incidentProcessCancellation : Bool := false
+  /-- When set, a User Task submission may name only variables a scope occurrence on the task's chain declares, each
+  once, and its canonical JSON may take at most this many UTF-8 bytes (CIB-EXT-0020, `NSD-TASK-01`). -/
+  scopeChainSubmissionBytes : Option Nat := none
   deriving Repr
 
+/-- A process the program carries besides its root process, for a Call Activity to call: its id and its
+process-level elements, which have no parent. -/
+structure CalledProcess where
+  id : String
+  children : List ElementId
+  deriving Repr
+
+/-- `processes` lists the called processes; every other parentless element belongs to the root process. -/
 structure Program where
   identity : ProgramIdentity
   options : ProfileOptions := {}
   elements : List Element
   flows : List Flow
+  processes : List CalledProcess := []
   deriving Repr
 
 end Kernel

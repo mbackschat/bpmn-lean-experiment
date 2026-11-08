@@ -13,7 +13,6 @@ kernel could choose. -/
 def scope (payload : ScopePayload) : Option String :=
   let declared := payload.envelope.inputs.map (·.target)
   if payload.envelope.multiInstance.isSome then some "scope.multiInstance"
-  else if payload.envelope.compensationHandler.isSome then some "scope.compensationHandler"
   else if payload.localVariables.any (!declared.contains ·) then some "scope.localVariableWithoutInput"
   else none
 

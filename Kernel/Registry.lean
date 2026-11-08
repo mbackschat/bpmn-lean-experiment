@@ -3,6 +3,8 @@ module
 public import Kernel.Feature.Data
 public import Kernel.Feature.Flow
 public import Kernel.Feature.Work
+public import Kernel.Feature.Compensation
+public import Kernel.Feature.MultiInstance
 public import Kernel.Feature.Propagation
 public import Kernel.Feature.Scopes
 public import Kernel.Feature.Subscriptions
@@ -31,8 +33,19 @@ def hooks : Hooks :=
     eventStart := Feature.Scopes.eventStart
     armScope := Feature.Subscriptions.armScope
     completeUserTask := Feature.Work.completeUserTask
+    resolveIncident := Feature.Work.resolveIncident
+    bodyWait := Feature.Work.bodyWait
+    arriveMultiInstance := Feature.MultiInstance.arriveMultiInstance
+    completeInstance := Feature.MultiInstance.completeInstance
+    multiInstanceMode := Feature.MultiInstance.modeName
+    completeCall := Feature.Work.completeCall
     effectResult := Feature.Work.effectResult
     triggerActivity := Feature.Work.triggerActivity
+    startActivity := Feature.Work.startActivity
+    retain := Feature.Compensation.retain
+    compensate := Feature.Compensation.compensate
+    completeCompensation := Feature.Compensation.completeCompensation
+    failCompensation := Feature.Compensation.failCompensation
     evaluate := Feature.Data.evaluate }
 
 end Kernel.Registry

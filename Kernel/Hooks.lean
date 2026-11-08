@@ -35,6 +35,8 @@ structure Ctx where
   catches : Raised → Trigger → Option Nat
   /-- Scopes: the start subscription and interrupting flag of an Event Sub-Process, `none` for another scope. -/
   eventStart : ScopePayload → Option (Subscription × Bool)
+  /-- Work: the item one instance of a Multi-Instance Activity opens, `none` for work that has no such item. -/
+  bodyWait : ActivityPayload → Option OpenKind := fun _ => none
 
 /-- Evaluate each mapping's source against `variables`, in order. A mapping whose source the kernel cannot
 evaluate refuses the step, never drops the binding. Features share it here because they never import each other. -/
@@ -76,6 +78,10 @@ structure Hooks where
   /-- Scopes: the scope occurrence holds no token, no blocking item, no parked token and no child occurrence. -/
   completeScope : Ctx → Header → ScopePayload → ScopeOccurrence → State → Outcome :=
     fun _ _ _ _ => refuse "completeScope"
+  /-- Work: the root of a called process instance holds no token, no blocking item, no parked token and no child
+  occurrence; the header and payload are its Call Activity's. -/
+  completeCall : Ctx → Header → ActivityPayload → ScopeOccurrence → State → Outcome :=
+    fun _ _ _ _ => refuse "completeCall"
   /-- Work: complete an open User Task with the submitted values. -/
   completeUserTask : Ctx → Header → ActivityPayload → OpenItem → List (String × Value) → State → Outcome :=
     fun _ _ _ _ _ => refuse "completeUserTask"
@@ -103,10 +109,35 @@ structure Hooks where
   /-- Scopes: `Signal.startEventSubProcess`. -/
   startEventSubProcess : Ctx → ElementId → ScopeOccurrenceId → List (String × Value) → State → Outcome :=
     fun _ _ _ _ => refuse "startEventSubProcess"
+  /-- Work: `Signal.startActivity`. -/
+  startActivity : Ctx → Header → ActivityPayload → ScopeOccurrenceId → State → Outcome :=
+    fun _ _ _ _ => refuse "startActivity"
+  /-- Compensation: `Signal.completed`. -/
+  retain : Ctx → ElementId → ScopeOccurrenceId → List (String × Value) → State → Outcome :=
+    fun _ _ _ _ => refuse "retain"
+  /-- Compensation: `Signal.compensate`. -/
+  compensate : Ctx → ScopeOccurrenceId → OccurrenceRef → Bool → List Token → State → Outcome :=
+    fun _ _ _ _ _ => refuse "compensate"
+  /-- Compensation: a compensation handler's occurrence holds no token, no blocking item, no parked token and no
+  child occurrence. -/
+  completeCompensation : Ctx → ScopeOccurrence → State → Outcome := fun _ _ => refuse "completeCompensation"
+  /-- Compensation: `Signal.compensationFailed`. -/
+  failCompensation : Ctx → ScopeOccurrenceId → String → Option String → Origin → State → Outcome :=
+    fun _ _ _ _ _ => refuse "failCompensation"
   evaluate : List (String × Value) → Expression → Evaluation := fun _ _ => .failure "no-evaluator"
   /-- Subscriptions: `Ctx.catches`. -/
   catches : Raised → Trigger → Option Nat := fun _ _ => none
   /-- Scopes: `Ctx.eventStart`. -/
   eventStart : ScopePayload → Option (Subscription × Bool) := fun _ => none
+  /-- Work: `Ctx.bodyWait`. -/
+  bodyWait : ActivityPayload → Option OpenKind := fun _ => none
+  /-- MultiInstance: a token reached an Activity with Multi-Instance loop characteristics. -/
+  arriveMultiInstance : Ctx → Header → ActivityPayload → MultiInstance → Arrival → State → Outcome :=
+    fun _ _ _ _ _ => refuse "multiInstance"
+  /-- MultiInstance: complete the open User Task of one instance with the submitted values. -/
+  completeInstance : Ctx → Header → ActivityPayload → MultiInstance → OpenItem → List (String × Value) → State →
+      Outcome := fun _ _ _ _ _ _ => refuse "completeInstance"
+  /-- MultiInstance: the published `mode` of a Multi-Instance Activity, for `Kernel.Publish`. -/
+  multiInstanceMode : MultiInstanceMode → String := fun _ => "unregistered"
 
 end Kernel

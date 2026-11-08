@@ -15,7 +15,10 @@ def throwRecord : Throw → Option String
   | .terminate => none
   | .message _ => some "throw.message"
   | .signal _ => some "throw.signal"
-  | .compensation _ => some "throw.compensation"
-  | .cancel => some "throw.cancel"
+  | .compensation record =>
+    if record.activity.isSome then some "throw.compensation.activity"
+    else if !record.waitForCompletion then some "throw.compensation.asynchronous"
+    else none
+  | .cancel => none
 
 end Kernel.Admission.Propagation

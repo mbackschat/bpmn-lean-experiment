@@ -2,6 +2,7 @@ module
 
 public import Kernel.Admission.Flow
 public import Kernel.Admission.Work
+public import Kernel.Admission.MultiInstance
 public import Kernel.Admission.Propagation
 public import Kernel.Admission.Scopes
 public import Kernel.Admission.Subscriptions
@@ -14,7 +15,9 @@ namespace Kernel.AdmissionRegistry
 
 def element : Element → Option String
   | .activity _ payload =>
-    Admission.Work.activity payload <|> Admission.Subscriptions.boundaries payload.envelope.boundaries
+    Admission.Work.activity payload <|>
+      payload.envelope.multiInstance.bind (Admission.MultiInstance.activity payload.envelope) <|>
+      Admission.Subscriptions.boundaries payload.envelope.boundaries
   | .scope _ payload =>
     Admission.Scopes.scope payload <|> Admission.Subscriptions.boundaries payload.envelope.boundaries
   | .event _ payload =>

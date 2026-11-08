@@ -1,5 +1,6 @@
-import { ActivityDataEndpointKind, CheckedNodeKind, MessageChannelKind, SimpleBooleanExpressionKind } from "@bpmn-lean/semantic-core";
+import { ActivityDataEndpointKind, CallDataKind, CheckedNodeKind, MessageChannelKind, SimpleBooleanExpressionKind } from "@bpmn-lean/semantic-core";
 import type {
+  CallDataInterface,
   CheckedNode,
   CheckedProcess,
   DirectActivityDataInput,
@@ -26,12 +27,32 @@ export type KernelJson = null | boolean | number | string | KernelJson[] | { [ke
 export type KernelProfileOptions = Readonly<{
   submissionInstallsVariables: boolean;
   incidentProcessCancellation: boolean;
+  scopeChainSubmissionBytes: number | null;
 }>;
 
 export const defaultKernelProfileOptions: KernelProfileOptions = {
   submissionInstallsVariables: true,
   incidentProcessCancellation: false,
+  scopeChainSubmissionBytes: null,
 };
+
+/** One portable value's allowance, which bounds a scope-chain submission (`NSD-TASK-01`). */
+const portableValueAllowanceBytes = 16_384;
+
+/**
+ * The kernel options a profile selects, derived from its CIB relation identifiers
+ * ([register](../../../docs/CIB-BPMN-RELATION-REGISTER.md)), never from its identity: a User Task completion
+ * installs its submitted values as variables (`CIB-EXT-0005`), an effect incident offers the cancellation of its
+ * root process (`CIB-OP-0009`), and a submission may name only scope-chain locals within one value allowance
+ * (`CIB-EXT-0020`).
+ */
+export function kernelProfileOptions(relations: readonly string[]): KernelProfileOptions {
+  return {
+    submissionInstallsVariables: relations.includes("CIB-EXT-0005"),
+    incidentProcessCancellation: relations.includes("CIB-OP-0009"),
+    scopeChainSubmissionBytes: relations.includes("CIB-EXT-0020") ? portableValueAllowanceBytes : null,
+  };
+}
 
 export type KernelLowering =
   | { readonly kind: "lowered"; readonly program: KernelJson }
@@ -153,6 +174,10 @@ function ownership(checked: CheckedProcess): Ownership {
   const localData = new Map((checked.scopeLocalData ?? []).map((entry) => [entry.scopeId, entry]));
   const handled = compensationSubjects(checked).flatMap((subject) =>
     subject.kind === "boundaryActivity" ? [{ subject: subject.subjectElementId, handler: subject.body.handlerElementId }] : []);
+  const eventHandled = compensationSubjects(checked).flatMap((subject) =>
+    subject.kind === "eventSubProcess"
+      ? [{ subject: subject.parentElementId, scope: subject.parentScopeId, handler: subject.body.handlerElementId }]
+      : []);
   return {
     localData: (childScopeId) => {
       const entry = localData.get(childScopeId);
@@ -172,8 +197,10 @@ function ownership(checked: CheckedProcess): Ownership {
     children: (scopeId) => [
       ...checked.nodeScopes.filter((entry) => entry.scopeId === scopeId).map((entry) => entry.nodeId),
       ...handled.filter((entry) => nodeScope.get(entry.subject) === scopeId).map((entry) => entry.handler),
+      ...eventHandled.filter((entry) => entry.scope === scopeId).map((entry) => entry.handler),
     ],
-    compensationHandler: (nodeId) => handled.find((entry) => entry.subject === nodeId)?.handler ?? null,
+    compensationHandler: (nodeId) =>
+      [...handled, ...eventHandled].find((entry) => entry.subject === nodeId)?.handler ?? null,
   };
 }
 
@@ -314,8 +341,7 @@ function lowerNode(checked: CheckedProcess, node: CheckedNode, owner: Ownership)
           calledElement: literalSource(node.calledProcessId),
           binding: "latest",
           businessKey: null,
-          inputs: [],
-          outputs: [],
+          ...callData(node.data),
           propagateAllInputs: false,
           propagateAllOutputs: false,
         },
@@ -349,8 +375,9 @@ function lowerNode(checked: CheckedProcess, node: CheckedNode, owner: Ownership)
         outputs: [directOutput(node.directOutput)],
       })];
     case CheckedNodeKind.SequentialMultiInstanceUserTask:
+      return multiInstanceUserTask(node, "sequential", null, owner);
     case CheckedNodeKind.ParallelMultiInstanceUserTask:
-      throw new Refusal("lowering.multiInstanceUserTask");
+      return multiInstanceUserTask(node, "parallel", condition(node.completionCondition), owner);
     case CheckedNodeKind.IntermediateCatchTimerEvent:
       return [event(node, "intermediateCatchEvent",
         ctor("catch", { subscription: subscription(duration(node.durationLiteral)) }), "intermediate", owner)];
@@ -433,6 +460,66 @@ function lowerNode(checked: CheckedProcess, node: CheckedNode, owner: Ownership)
   }
 }
 
+/**
+ * A Call's data as `CallWork` mappings into and out of the called instance. A scalar interface joins the Call's
+ * DataInput and DataOutput to the called process's by correspondence (BPMN 2.0.2 §10.3.6), so its associations
+ * target the called process's DataInput and read its DataOutput; CIB variable mappings copy names across.
+ */
+function callData(data: CallDataInterface): Record<string, KernelJson> {
+  switch (data.kind) {
+    case CallDataKind.Empty:
+      return { inputs: [], outputs: [], unsetSourceReadsNull: false };
+    case CallDataKind.Scalar: {
+      if (data.directInput.targetDataInputId !== data.call.input.id ||
+        data.directOutput.sourceDataOutputId !== data.call.output.id) throw new Refusal("lowering.callData");
+      const { source } = data.directInput;
+      const { target } = data.directOutput;
+      return {
+        inputs: [{ target: data.called.input.id,
+          source: variable(source.kind === ActivityDataEndpointKind.Property ? source.propertyId : source.dataInputId) }],
+        outputs: [{ target: target.kind === ActivityDataEndpointKind.Property ? target.propertyId : target.dataOutputId,
+          source: variable(data.called.output.id) }],
+        unsetSourceReadsNull: false,
+      };
+    }
+    case CallDataKind.VariableMappings:
+      return {
+        inputs: data.inputs.map((input) => mapping(input.target, input.expression)),
+        outputs: data.outputs.map((output) => mapping(output.target, output.expression)),
+        unsetSourceReadsNull: true,
+      };
+  }
+}
+
+type MultiInstanceUserTaskNode = Extract<CheckedNode, {
+  kind: CheckedNodeKind.SequentialMultiInstanceUserTask | CheckedNodeKind.ParallelMultiInstanceUserTask;
+}>;
+
+/**
+ * A Multi-Instance User Task over a collection DataObject, with its lifetime Timer boundary. Its direct item
+ * associations are folded into the loop: each instance receives its item as the task's DataInput and submits the
+ * task's DataOutput, and the output collection is written to the output DataObject.
+ */
+function multiInstanceUserTask(node: MultiInstanceUserTaskNode, mode: "sequential" | "parallel",
+  completion: KernelJson, owner: Ownership): Lowered[] {
+  return [
+    activity(node, "userTask", userWork(node.name), owner, {
+      multiInstance: {
+        mode,
+        count: ctor("collection", { items: variable(node.input.dataObjectReferenceId) }),
+        elementVariable: null,
+        completionCondition: completion,
+        inputDataItem: node.input.taskDataInputId,
+        outputDataItem: node.output.taskDataOutputId,
+        outputCollection: node.output.dataObjectReferenceId,
+        mutableCollection: false,
+      },
+    }),
+    boundary(node.boundaryTimer.elementId, node.id, duration(node.boundaryTimer.durationLiteral), true,
+      node.boundaryTimer.outputFlowId),
+  ];
+}
+
 function directInput(input: DirectActivityDataInput): KernelJson {
   const source = input.source.kind === ActivityDataEndpointKind.Property ? input.source.propertyId : input.source.dataInputId;
   return { target: input.targetDataInputId, source: variable(source) };
@@ -443,28 +530,54 @@ function directOutput(output: DirectActivityDataOutput): KernelJson {
   return { target, source: variable(output.sourceDataOutputId) };
 }
 
-/**
- * A boundary-activity compensation subject: the compensation boundary on the subject (it has no outgoing flow and
- * interrupts nothing), the handler Activity in the subject's scope with no flows, and the subject's
- * `compensationHandler`. An Event Sub-Process subject is refused because the checked process carries only its
- * handler effect, not its start Event and flows.
- */
-function compensationSubject(subject: CompensationSubject, owner: Ownership): Lowered[] {
-  if (subject.kind === "eventSubProcess") throw new Refusal("lowering.compensationEventSubProcess");
-  const body = subject.body;
-  if (body.input.kind !== "empty") throw new Refusal("lowering.compensationInput");
-  const handler: KernelJson = ctor("activity", {
-    header: { id: body.handlerElementId, sourceType: "serviceTask", parent: owner.parentOf(subject.subjectElementId) },
+/** The single effect of a compensation handler, with the restored binding its checked body names as its input. */
+function compensationEffect(id: string, parent: string | null, body: CompensationSubject["body"]): KernelJson {
+  const inputs = body.input.kind === "empty" ? [] : [{ target: body.input.targetDataInputId, source: variable(body.input.sourcePropertyId) }];
+  return ctor("activity", {
+    header: { id, sourceType: "serviceTask", parent },
     payload: {
       work: ctor("service", { payload: { protocol: body.descriptor.protocol, operation: body.descriptor.operation } }),
-      envelope: envelope([], []),
+      envelope: { ...envelope([], []), inputs },
     },
   });
+}
+
+/**
+ * A compensation subject. A boundary-activity subject: the compensation boundary on the subject (it has no outgoing
+ * flow and interrupts nothing), the handler Activity in the subject's scope with no flows, and the subject's
+ * `compensationHandler`. An Event Sub-Process subject: the Compensation Event Sub-Process inside its parent
+ * Sub-Process, which is the subject, and its single effect. The checked process erases the Event Sub-Process's
+ * start Event, end Event and Sequence Flows; the kernel begins its effect as an Activity without incoming flow in a
+ * Scope without a start Event (BPMN 2.0.2 §13.3.4) and invents no identifier for them.
+ */
+function compensationSubject(subject: CompensationSubject, owner: Ownership): Lowered[] {
+  const body = subject.body;
+  if (subject.kind === "eventSubProcess") {
+    const eventSubProcess: KernelJson = ctor("scope", {
+      header: { id: body.handlerElementId, sourceType: "subProcess", parent: subject.parentElementId },
+      payload: {
+        kind: ctor("eventSubProcess", { start: subscription("compensation"), interrupting: false }),
+        children: [body.effectElementId],
+        localVariables: [],
+        envelope: envelope([], []),
+      },
+    });
+    return [fixed(body.handlerElementId, eventSubProcess),
+      fixed(body.effectElementId, compensationEffect(body.effectElementId, body.handlerElementId, body))];
+  }
+  if (body.input.kind !== "empty") throw new Refusal("lowering.compensationInput");
   return [
-    fixed(body.handlerElementId, handler),
+    fixed(body.handlerElementId, compensationEffect(body.handlerElementId, owner.parentOf(subject.subjectElementId), body)),
     { kind: "boundary", attachedTo: subject.subjectElementId,
       boundary: { id: subject.boundaryEventElementId, subscription: subscription("compensation"), interrupting: false, outgoing: [] } },
   ];
+}
+
+/** Every parentless definition scope other than the root process's is a called process. */
+function calledProcesses(checked: CheckedProcess, owner: Ownership): KernelJson[] {
+  return checked.definitionScopes
+    .filter((scope) => scope.parentScopeId === null && scope.originElementId !== checked.processId)
+    .map((scope) => ({ id: scope.originElementId, children: owner.children(scope.id) }));
 }
 
 export function lowerCheckedProcessToKernel(
@@ -494,6 +607,7 @@ export function lowerCheckedProcessToKernel(
         options,
         elements,
         flows: checked.sequenceFlows.map((flow) => ({ id: flow.id, source: flow.sourceId, target: flow.targetId })),
+        processes: calledProcesses(checked, owner),
       },
     };
   } catch (error) {

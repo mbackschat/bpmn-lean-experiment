@@ -11,20 +11,24 @@ complete one idle scope occurrence; until none is left. A closure that does not 
 steps is `unsupported`, never silently truncated.
 
 A scope occurrence is idle when it holds no token, no blocking open item, no parked token and no child
-occurrence. An idle Scope element is completed by its hook; an idle process root completes the instance, removing
-the passive items left in it.
+occurrence. An idle Scope element is completed by its hook, an idle called instance's root by its Call Activity's;
+an idle process root completes the instance, removing the passive items left in it.
 -/
 
 public section
 
 namespace Kernel.Step
 
-/-- Route one token to the element its flow targets. -/
+/-- Route one token to the element its flow targets. An Activity with Multi-Instance loop characteristics goes to the
+Multi-Instance hook, which runs its instances (BPMN 2.0.2 §13.3.7). -/
 def arrive (hooks : Hooks) (ctx : Ctx) (token : Token) (state : State) : Outcome :=
   let arrival : Arrival := { flow := token.flow, scope := token.scope }
   match (ctx.program.target? token.flow).bind ctx.program.element? with
   | none => .error (.semanticFailure "flow-without-target")
-  | some (.activity header payload) => hooks.arriveActivity ctx header payload arrival state
+  | some (.activity header payload) =>
+    match payload.envelope.multiInstance with
+    | some loop => hooks.arriveMultiInstance ctx header payload loop arrival state
+    | none => hooks.arriveActivity ctx header payload arrival state
   | some (.scope header payload) => hooks.arriveScope ctx header payload arrival state
   | some (.gateway header payload) => hooks.arriveGateway ctx header payload arrival state
   | some (.start _ _) => .error (.semanticFailure "flow-into-start-event")
@@ -41,6 +45,20 @@ def signal (hooks : Hooks) (ctx : Ctx) : Signal → State → Outcome
   | .armGateway gateway scope => hooks.armGateway ctx gateway scope
   | .raise event origin => hooks.raise ctx event origin
   | .startEventSubProcess element parent variables => hooks.startEventSubProcess ctx element parent variables
+  | .completed element scope snapshot => hooks.retain ctx element scope snapshot
+  | .compensate scope trigger leave resume => hooks.compensate ctx scope trigger leave resume
+  | .startActivity element scope => fun state =>
+    let notActivity : Outcome := .error (.semanticFailure "start-activity-without-activity")
+    match ctx.program.element? element with
+    | some (.activity header payload) =>
+      if payload.envelope.multiInstance.isSome then .error (.unsupported "start-multi-instance-activity")
+      else hooks.startActivity ctx header payload scope state
+    | some (.scope _ _) => notActivity
+    | some (.event _ _) => notActivity
+    | some (.gateway _ _) => notActivity
+    | some (.start _ _) => notActivity
+    | none => notActivity
+  | .compensationFailed handler code message origin => hooks.failCompensation ctx handler code message origin
 
 def idle (state : State) (scope : ScopeOccurrenceId) : Bool :=
   !state.tokens.any (·.scope == scope) &&
@@ -49,11 +67,15 @@ def idle (state : State) (scope : ScopeOccurrenceId) : Bool :=
     !state.slots.held.any (·.scope == scope) &&
     !state.scopes.any (·.parent == some scope)
 
+/-- Complete an idle scope occurrence: a compensation handler's by the compensation hook, a Scope's by its hook, a
+called instance's root by its Call Activity's. -/
 def completeScope (hooks : Hooks) (ctx : Ctx) (occurrence : ScopeOccurrence) (state : State) : Outcome :=
   let notScope : Outcome := .error (.semanticFailure "scope-occurrence-without-scope")
+  if occurrence.compensating then hooks.completeCompensation ctx occurrence state else
   match occurrence.element.bind ctx.program.element? with
   | some (.scope header payload) => hooks.completeScope ctx header payload occurrence state
-  | some (.activity _ _) => notScope
+  | some (.activity header payload) =>
+    if occurrence.calledInstance.isSome then hooks.completeCall ctx header payload occurrence state else notScope
   | some (.event _ _) => notScope
   | some (.gateway _ _) => notScope
   | some (.start _ _) => notScope
@@ -76,9 +98,10 @@ def settle (hooks : Hooks) (ctx : Ctx) : Nat → State → Outcome
           if idle state State.root then .ok { state.clearInside State.root with status := .completed }
           else .ok state
 
+/-- The start Event of the root process a start input names, else its one none start Event. -/
 def startElement? (program : Program) (requested : Option ElementId) : Option (Header × StartPayload) :=
-  let starts := program.elements.filterMap fun
-    | .start header payload => if header.parent.isNone then some (header, payload) else none
+  let starts := (program.children none).filterMap fun
+    | .start header payload => some (header, payload)
     | .activity _ _ => none
     | .scope _ _ => none
     | .event _ _ => none
@@ -133,7 +156,8 @@ def isTimer : OpenKind → Bool
 /-- The open item of a kind `accepts` with the public identity `occurrence`. -/
 def item? (state : State) (occurrence : OccurrenceRef) (accepts : OpenKind → Bool) : Option OpenItem :=
   state.openItems.find? fun item =>
-    item.element == occurrence.element && item.activation == occurrence.activation && accepts item.kind
+    item.element == occurrence.element && item.activation == occurrence.activation && accepts item.kind &&
+      state.instanceOf item.scope == occurrence.processInstanceId
 
 /-- Run `onActivity` on the Activity an open item belongs to. -/
 def atActivity (ctx : Ctx) (item : OpenItem) (onActivity : Header → ActivityPayload → Outcome) : Outcome :=
@@ -157,7 +181,9 @@ def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) :
     match item? state input.occurrence isUserTask with
     | none => .error (.rejected "unknown-user-task")
     | some item => atActivity ctx item fun header payload =>
-      hooks.completeUserTask ctx header payload item values state
+      match payload.envelope.multiInstance with
+      | some loop => hooks.completeInstance ctx header payload loop item values state
+      | none => hooks.completeUserTask ctx header payload item values state
   | .retryIncident => incident .retryIncident
   | .cancelIncidentProcess => incident .cancelIncidentProcess
 
@@ -190,7 +216,8 @@ def onRunning (hooks : Hooks) (ctx : Ctx) (before : Option State) (transition : 
 /-- One input. `none` is the state before the instance starts; only a start applies to it. The root's Event
 Sub-Process starts are armed before the start Event's tokens move. -/
 def step (hooks : Hooks) (program : Program) (before : Option State) (input : Input) : Outcome :=
-  let ctx : Ctx := { program, evaluate := hooks.evaluate, catches := hooks.catches, eventStart := hooks.eventStart }
+  let ctx : Ctx := { program, evaluate := hooks.evaluate, catches := hooks.catches, eventStart := hooks.eventStart
+                     bodyWait := hooks.bodyWait }
   match input with
   | .start payload =>
     match before, startElement? program payload.startEvent with

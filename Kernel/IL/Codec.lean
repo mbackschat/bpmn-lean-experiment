@@ -65,7 +65,7 @@ deriving instance FromJson, ToJson for SimpleBoolean, Expression, ValueSource, M
   CompensationThrow, Throw, UserWork, ReceiveWork, ServiceWork, SendWork, ScriptWork, RuleWork, CallBinding,
   CallWork, Work, MultiInstanceMode, InstanceCount, MultiInstance, Envelope, ActivityPayload, ScopeKind,
   ScopePayload, Placement, EventRole, EventPayload, ConditionalFlow, EventArm, GatewayKind, GatewayPayload,
-  StartPayload, Header, Element, Flow, ProgramIdentity, ProfileOptions, Program
+  StartPayload, Header, Element, Flow, ProgramIdentity, ProfileOptions, CalledProcess, Program
 
 /-- `[{name, value}]`, the scenario contract's variable bindings. -/
 def bindingsFromJson (json : Json) : Except String (List (String × Value)) := do
@@ -97,9 +97,10 @@ def channelToJson (channel : MessageChannel) : Json :=
   | some message, _, _ => Json.mkObj [("kind", "directMessage"), ("messageId", Json.str message)]
   | none, _, _ => Json.mkObj [("kind", "unspecifiedMessage")]
 
-/-- An `occurrenceId` object, by element and activation. -/
+/-- An `occurrenceId` object, by process instance, element and activation. -/
 def occurrenceFromJson (json : Json) : Except String OccurrenceRef := do
-  pure { element := ⟨← json.getObjValAs? String "elementId"⟩, activation := ← json.getObjValAs? Nat "activation" }
+  pure { processInstanceId := ← json.getObjValAs? String "processInstanceId"
+         element := ⟨← json.getObjValAs? String "elementId"⟩, activation := ← json.getObjValAs? Nat "activation" }
 
 def bindingsField (json : Json) (field : String) : Except String (List (String × Value)) :=
   bindingsFromJson ((json.getObjVal? field).toOption.getD (Json.arr #[]))

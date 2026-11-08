@@ -100,16 +100,18 @@ def startEvent? (ctx : Ctx) (eventSubProcess : ElementId) : Option ElementId :=
   (ctx.program.children (some eventSubProcess)).findSome? fun child => child.start?.map (·.1.id)
 
 /-- `Signal.armScope`: open the start subscriptions of the Event Sub-Processes declared in the scope occurrence's
-element as passive items on their start Events. -/
+element as passive items on their start Events. A start that opens no item needs no start Event: the lowering
+carries a Compensation Event Sub-Process without the start Event the checked process erases. -/
 def armScope (ctx : Ctx) (scope : ScopeOccurrenceId) (state : State) : Outcome :=
   let element := (state.scopes.find? (·.id == scope)).bind (·.element)
   (ctx.program.children element).foldlM (fun state child =>
     match child.scope?.bind fun (header, payload) => (ctx.eventStart payload).map (header.id, ·) with
     | none => .ok state
-    | some (eventSubProcess, subscription, _) =>
-      match startEvent? ctx eventSubProcess with
-      | some start => subscribe state subscription start scope none true
-      | none => .error (.semanticFailure "event-subprocess-without-start")) state
+    | some (eventSubProcess, subscription, _) => do
+      match startEvent? ctx eventSubProcess, ← waitKind state.logicalTimeMs subscription with
+      | some start, _ => subscribe state subscription start scope none true
+      | none, none => .ok state
+      | none, some _ => .error (.semanticFailure "event-subprocess-without-start")) state
 
 /-! ## Firing -/
 
