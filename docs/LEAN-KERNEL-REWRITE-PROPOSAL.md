@@ -208,16 +208,19 @@ Codecs and each type's own `Admission` module may also match it.
 21. Shape sufficiency, fails (causes 1, 7). Every row of the coverage target, discovered from it, has a traceability entry and an IL fixture that decodes in both kernels, so the shape for a row is proved present before the row's track starts.
 22. Growth probe, on every push, fails (cause 3). The hosted Lean lane copies every feature and admission module three times under renamed namespaces and builds the fourfold kernel: clean build within the bound of guard 15, feature edit unchanged. Build cost that grows with the code fails here, while the code is still small.
 23. Guards prove themselves, fails (all causes). Every guard has a test that seeds its violation and sees it fail, so no guard passes by matching nothing. A renamed module, type or directory that empties a guard's input fails it.
+24. Justified rules, fails (cause 7). No rule in the kernel is justified by a baseline, the frozen evaluator or an old implementation; its comment cites a BPMN clause or a register identifier. Matching a past result is evidence of agreement, never a reason for a rule.
 
 ## Review
 
 - This proposal: one final round with the same reviewers; afterwards, recommended items become W0.1 work.
 - W0.1 architecture checkpoint: a cold reviewer checks the first kernel commit against the guardrails and the module table before W0.2 builds on it.
-- Each mechanism track ends with one combined review of meaning and structure, which is also the closure approval of every row the track closes. Its checklist names the degradation classes of the guardrails.
+- Each mechanism track has one combined review of meaning and structure, run when the track's first row is green, where a rejection is still cheap. Its approval covers every row the track closes under that seam; a later row that changes shape reopens it. Its checklist names the degradation classes of the guardrails.
 - A row that needs a new BPMN or CIB interpretation takes one cold review of that interpretation before its code: PC-BASIC-04 (M1), PC-AUTO-05 and PC-AUTO-07 (M3), PC-SCOPE-03 (gates M8), PC-COMPENSATION-01 and PC-TX-01 (gate M9).
 - A correction gets at most one audit. The verdict is recorded in the correction commit's message.
 
 ## Delivery plan
+
+Order gates bind alongside the day budgets, because a budget of days cannot fire on work that takes hours. Nothing builds on a kernel shape until guards 17 to 21 pass on it and every open row maps onto it. A track's fill starts only when its row fixtures, scenarios and CIB evidence exist, so rows turn red to green against an answer fixed before the code. Within W0.3b the contracts re-cut and the generic CIB runner come first, because they are the oracle of every track; the Temporal host and W0.4 run alongside them. Agreement between Lean and TypeScript is a transcription check, never evidence of meaning.
 
 ### W0: the kernel
 
