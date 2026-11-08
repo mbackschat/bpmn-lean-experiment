@@ -180,6 +180,10 @@ Effort budget: 16 hours from 2026-11-08 01:45 CET for the family. Expected stop 
 - **Common-mode risk:** the view and the vertex projections are transcribed from one account; the CIB probe is the independent lane for the implicit end, not for the view.
 - **Nearest realistic counterexample:** a Task without outgoing flows on one Parallel branch while the other branch still waits, which must leave the Process running.
 
+## Open question
+
+Whether the frozen profiles' proofs consume their admission only through the profile entry points, so that the legacy view and the bridge laws close every proof the view touches. The spikes changed no admission and cannot answer it; the stage-1 Rule 2 declaration's stop condition bounds it, and an answer of no returns the view to design before any proof is edited.
+
 ## Independent cold-review receipt
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
