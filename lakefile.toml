@@ -23,6 +23,10 @@ name = "BpmnConformance"
 name = "Kernel"
 
 [[lean_exe]]
+name = "kernelRun"
+root = "Kernel.Run"
+
+[[lean_exe]]
 name = "checkSemanticRepresentationSpike"
 root = "BpmnSemantics.Experiments.SemanticRepresentationsMain"
 

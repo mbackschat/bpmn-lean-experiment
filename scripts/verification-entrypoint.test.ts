@@ -309,11 +309,11 @@ test("the hosted Lean cache identity includes every library root and nested sour
   const workflow = await readFile(verificationWorkflowPath, "utf8");
   assert.match(
     workflow,
-    /hashFiles\('lean-toolchain', 'lakefile\.toml', 'lake-manifest\.json', 'BpmnSemantics\.lean', 'BpmnConformance\.lean', 'BpmnSemantics\/\*\*\/\*\.lean'\)/u,
+    /hashFiles\('lean-toolchain', 'lakefile\.toml', 'lake-manifest\.json', 'BpmnSemantics\.lean', 'BpmnConformance\.lean', 'BpmnSemantics\/\*\*\/\*\.lean', 'Kernel\.lean', 'Kernel\/\*\*\/\*\.lean'\)/u,
   );
   const libraries = [...(await readFile("lakefile.toml", "utf8")).matchAll(/^\[\[lean_lib\]\]\nname = "([^"]+)"$/gmu)]
     .map((match) => match[1]!);
-  assert.deepEqual(libraries, ["BpmnSemantics", "BpmnConformance"]);
+  assert.deepEqual(libraries, ["BpmnSemantics", "BpmnConformance", "Kernel"]);
   for (const library of libraries) assert.match(workflow, new RegExp(`hashFiles\\([^)]*'${library}\\.lean'`, "u"), library);
 });
 

@@ -1,0 +1,36 @@
+/**
+ * Generates `Kernel.lean`, the kernel library's root module, from the modules under `Kernel/`: the root is derived,
+ * never edited by hand, so adding a module never touches a shared file (kernel rewrite proposal, guardrail 14).
+ * Run `node scripts/kernel-root.ts --write` after adding or removing a kernel module; `kernel-root.test.ts` fails
+ * while the committed root differs from the generated one.
+ */
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+function leanModules(directory: string, prefix: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const name = entry.name;
+    if (entry.isDirectory()) return leanModules(path.join(directory, name), `${prefix}.${name}`);
+    return name.endsWith(".lean") ? [`${prefix}.${name.slice(0, -".lean".length)}`] : [];
+  });
+}
+
+export function generatedKernelRoot(): string {
+  const modules = leanModules(path.join(projectRoot, "Kernel"), "Kernel")
+    .filter((name) => name !== "Kernel.Run")
+    .sort();
+  return ["module", "", ...modules.map((name) => `public import ${name}`), ""].join("\n");
+}
+
+if (process.argv.includes("--write")) {
+  writeFileSync(path.join(projectRoot, "Kernel.lean"), generatedKernelRoot());
+} else if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  process.stdout.write(generatedKernelRoot());
+}
+
+export function committedKernelRoot(): string {
+  return readFileSync(path.join(projectRoot, "Kernel.lean"), "utf8");
+}

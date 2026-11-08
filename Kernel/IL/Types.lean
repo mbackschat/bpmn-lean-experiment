@@ -23,13 +23,14 @@ structure FlowId where
   value : String
   deriving DecidableEq, Hashable, Repr, Inhabited
 
-/-- A typed data value, as the scenario contract's `variableValue` carries it. Decimals keep their canonical text. -/
+/-- A typed data value, as the scenario contract's `variableValue` carries it. -/
 inductive Value where
   | null
   | bool (value : Bool)
   | int (value : Int)
-  | decimal (canonical : String)
+  | decimal (coefficient : Int) (scale : Nat)
   | string (value : String)
+  | stringList (items : List String)
   | list (items : List Value)
   | map (entries : List (String × Value))
   deriving Repr, Inhabited
