@@ -3,7 +3,7 @@
 ## Status
 
 Lifecycle: draft
-Review: pending
+Review: rejected
 
 ## Question and delivery boundary
 
@@ -188,6 +188,6 @@ Whether the frozen profiles' proofs consume their admission only through the pro
 
 | Stage | Review target | Isolation | Verdict | Correction audit |
 |---|---|---|---|---|
-| Proposal | `not-recorded` | `not-recorded` | `pending` | `not-applicable` |
+| Proposal | `e12d6b94` | `fork-turns-none` | `reject` | `not-required` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
 | Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
