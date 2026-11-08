@@ -100,17 +100,17 @@ Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
 Current task: the [Lean kernel rewrite](LEAN-KERNEL-REWRITE-PROPOSAL.md), owner direction 2026-11-08. The incremental Kernel IL orthogonalization stopped by owner direction during the switch's stage 1; that work is parked unqualified on branch `park/activity-host-switch-stage1` at `ff6ca8dc` and is not built on. The existing Lean library and TypeScript core are frozen.
 
-Deliverable: the proposal's W0 (new kernel at scenario parity, old stack and documents deleted), then the coverage waves W1–W7.
+Deliverable: the proposal's W0 (new kernel at scenario parity, old stack and documents deleted), then mechanism tracks M1–M9 and the integration track.
 
-Acceptance blockers: round 2 of the proposal's reviews (round 1 on `59c38e87` required edits, all answered).
+Acceptance blockers: the proposal's final review round (round 2 on `9342a8da` required edits, all answered in revision 3).
 
-Current result: proposal revised after eight round-1 reviews and audits.
+Current result: proposal revision 3 after two rounds of eight reviews and audits.
 
-Owner items: the dependency and hold packet named in the proposal's owner decisions, during W0.
+Owner items: the proposal's owner packet during W0 (proof-wave confirmation, JUEL adoption as a W0 exit item, Script runtime, decision engine, Cron dialect, the two SDK holds).
 
-Effort budget: 72 hours from 2026-11-08 18:00 CET for W0, per the proposal's day targets; at the limit record the boundary and continue unless the evidence invalidates the path, and apply the proposal's stop rule at the end of day 3.
+Effort budget: 168 hours from approval for W0, per the proposal's milestone budgets and stop rules; a missed budget is reported to the owner at once and never renewed silently.
 
-Next action: on approval, start W0.0 and W0.1 in parallel.
+Next action: on approval, W0.1 starting with the process reset (rewrite `CLAUDE.md`, delete the process and document guards), then the kernel skeleton.
 
 Oracle: the proposal's guardrails; W0 parity against the frozen old-evaluator results.
 
