@@ -98,19 +98,19 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Kernel IL orthogonalization, batch 5, third family: the implicit split at User, Service and Send Tasks through the Activity host with output lists on the User Task and effect wait records ([proposal](capsules/ACTIVITY-HOST-SPLIT-PROPOSAL.md)). The scope host family landed on `main` at `d62d89d9`.
+Current task: Kernel IL orthogonalization, batch 5, third family: the implicit split at User, Service and Send Tasks through the Activity host with output lists on the User Task and effect wait records ([specification](capsules/ACTIVITY-HOST-SPLIT-SPEC.md)). The scope host family landed on `main` at `d62d89d9`.
 
-Deliverable: `PC-CF-07`'s unconditioned split at User, Service and Send Tasks outside fork regions, landed on `main`; the [proposal](capsules/ACTIVITY-HOST-SPLIT-PROPOSAL.md#question-and-delivery-boundary) lists every residual.
+Deliverable: `PC-CF-07`'s unconditioned split at User, Service and Send Tasks outside fork regions, landed on `main`; the [specification](capsules/ACTIVITY-HOST-SPLIT-SPEC.md#question-and-delivery-boundary) lists every residual.
 
-Acceptance blockers: closure (heavy lanes, cold closure review, landing).
+Acceptance blockers: hosted `verify-complete`, then the fast-forward of `main`.
 
-Current result: representation `ea34f83f`; admission and evidence pass type checks, fast guards and the four TypeScript package suites.
+Current result: graduated; closure review of `2b812165` approved with required edits, audit `a9363b20` approving on green hosted CI.
 
 Owner items: confirm the incremental re-decision after the stop condition fired; renew six stale size-exception rationales.
 
 Effort budget: 12 hours from 2026-11-07 13:30 CET; at the limit record the boundary and continue unless the evidence invalidates the path. Lean batch `acsp-family`: one full build at closure, one after a correction.
 
-Next action: run the closure lanes once each, then the cold closure review.
+Next action: land through the branch push flow, then propose the switch, the fourth Kernel IL family.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
 

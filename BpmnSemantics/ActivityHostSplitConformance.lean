@@ -9,7 +9,7 @@ import BpmnSemantics.SemanticProcess.InternalCommutationCore
 
 /-! # Activity host split conformance
 
-Finite witnesses of the [split proposal](../docs/capsules/ACTIVITY-HOST-SPLIT-PROPOSAL.md#separating-witnesses).
+Finite witnesses of the [split proposal](../docs/capsules/ACTIVITY-HOST-SPLIT-SPEC.md#separating-witnesses).
 
 The host Program rules (ACSP-HOST-01) admit a host of one input and two or more sorted distinct outputs beside the
 merging form, and refuse a host that both merges and splits; the host takes no arming input, so it is never batched.

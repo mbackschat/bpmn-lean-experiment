@@ -340,7 +340,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0023 — a User, Service or Send Task's completion takes every unconditioned outgoing flow in its one step
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Activity host split account](capsules/ACTIVITY-HOST-SPLIT-PROPOSAL.md#separating-witnesses), implemented, awaiting closure review. It is the Task instance of `CIB-AGR-0019`'s split, beside `CIB-AGR-0022`'s Start and Sub-Process instances, and the split counterpart of `CIB-AGR-0020`'s merge at the same Tasks.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Activity host split account](capsules/ACTIVITY-HOST-SPLIT-SPEC.md#separating-witnesses), implemented, awaiting closure review. It is the Task instance of `CIB-AGR-0019`'s split, beside `CIB-AGR-0022`'s Start and Sub-Process instances, and the split counterpart of `CIB-AGR-0020`'s merge at the same Tasks.
 
 **BPMN basis:** Clause 13.3.1 gives every outgoing Sequence Flow of a completing Activity a token, a parallel split, and Clause 10.3 restates it for Activities with several outgoing flows; Clause 13.3.3 applies it to User, Service and Send Tasks.
 

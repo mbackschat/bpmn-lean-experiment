@@ -1,8 +1,8 @@
-# Activity host split proposal
+# Activity host split specification
 
 ## Status
 
-Lifecycle: draft
+Lifecycle: implemented
 Review: approved
 
 ## Question and delivery boundary
@@ -23,7 +23,7 @@ Close calls, 2026-11-07, each with its measured reason:
 
 - **The split precedes the switch, by owner direction (2026-11-07).** The [retirement rule](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#retirement-of-the-dual-representation) and PLAN's batch-5 text made the split family PLAN's "one switch", which lowers every User, Service and Send Task onto `activity`. The owner chose a bounded amendment (2026-11-07): the Task split is the last host-only arity form of the Activity host; the switch is scheduled as the next Kernel IL family after this one; later Timer increments still wait for the switch. The double check presented with the choice: it serves the deliverable-first direction and the incremental route PLAN records; the strongest objection is one more host-only branch the switch must fold back; the best alternative, the split as the switch, re-lowers every plain Task, and a spike of that lowering alone on a throwaway clone of `d62d89d9` failed 392 of the 2,354 `bpmn-source` tests across about 60 test files, every profile's admission among them, without the variant fields the real switch also needs, so its full cost is unmeasured and larger; a measured switch cost close to this family's would reverse the choice. The freeze keeps the legacy declarations fixed in the meantime. Rejected besides: a defaulted `extraOutputs` field beside `output`, which every reader of `output` would silently ignore, among them the continuation counts of [`ContinuationMarking`](../../BpmnSemantics/SemanticProcess/ContinuationMarking.lean).
 - **The wait records carry the list.** The rejected alternative is completion reading its outputs from the Program by operation id, which puts a Program lookup into every completion path. Kind-keyed waits, PLAN's later reshape of the same records, keeps the list as a field.
-- **Splitting Tasks stay outside fork regions**, as the scope host's splits do: the host's arrival has no prepared footprint ([internal commutation](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#internal-commutation)), so enabled beside a sibling it fails closed.
+- **Splitting Tasks stay outside fork regions**, as the scope host's splits do: the host's arrival has no prepared footprint ([internal commutation](ACTIVITY-HOST-FLOW-LISTS-SPEC.md#internal-commutation)), so enabled beside a sibling it fails closed; Program admission refuses such a placement first, and the scheduler's own refusal is unwitnessed ([Lean assurance lane](#lean-assurance-lane)).
 
 **Batch rule.** The one open clause that shares the mechanism, a Task completion producing several tokens, is selected; its variants are screened under [Excluded](#required-optional-and-excluded-scope).
 
@@ -247,7 +247,7 @@ Each split's completion publishes once and opens both successors in the same com
 - every existing scenario's Program unchanged (`ACSP-ONE-01`, wrong algorithm 8);
 - a legacy wait opened with a one-element list and a host wait with the host's outputs; a continuation count over a two-element wait (wrong algorithm 6);
 - a host with one input and one output, with two inputs and two outputs, and with unsorted outputs, each refused;
-- a lowered Program with a splitting host on a Parallel branch fails closed in the scheduler (wrong algorithm 5), in TypeScript;
+- a lowered Program with a splitting host on a Parallel branch refused by Program admission before the scheduler runs (wrong algorithm 5), in TypeScript;
 - the onboarding of each settled-projection call site, by the census (wrong algorithm 7);
 - Temporal host admission classifies a host with two or more outputs as a token split and as its work's host-driven wait (wrong algorithm 10);
 - a two-element effect wait carried across a forced Continue-As-New, which [`workflow-continuation.ts`](../../packages/temporal-adapter/protocol/src/workflow-continuation.ts) validates by string key, outside the compiler's reach.
@@ -271,6 +271,8 @@ Each split's completion publishes once and opens both successors in the same com
 | `ACSP-ONE-01` | Every existing scenario of every profile | Lean library, `BpmnConformance`, pipeline, differential, frozen compiler baseline | A one-flow Task lowered to the host (8) |
 | `ACSP-HOST-01` | The refused host Programs; routing of both forms; the token-split classification | Lean conformance checks, core and protocol tests, host-coverage census | A split routed as a merge (9); passive classification (10); a dropped settled projection (7) |
 | `ACSP-PROFILE-01` | The flag matrix; the model under the embedded completion profile | Source and Lean conformance checks | Widen for every profile (2) |
+
+The Service Task bound witness of wrong algorithm 11 runs in TypeScript only; the Lean bound rests on its explicit `.activity` arm and the host-coverage census.
 
 ## Lean assurance lane
 
@@ -304,6 +306,8 @@ Then `PC-CF-07` is accepted for unconditioned splits at User, Service and Send T
 
 A runtime-state change: the User Task and effect wait records' `output` becomes `outputs` in Lean and TypeScript, with every producer, consumer, fixture and test replaced atomically under the [pre-release wire policy](../../contracts/README.md#evolution-policy). No published wire schema carries the field ([publication](../../contracts/schemas/semantic-publication.schema.json) and [canonical result](../../contracts/schemas/canonical-result.schema.json) schemas checked 2026-11-07). The Program schema is unchanged: the host already carries `outputs`. No admitted model's Program or publication changes, by `ACSP-ONE-01`.
 
+The `ActivityHostSplitConformance` row of the [module cost guard](../../scripts/lean-module-cost.test.ts) records `measuredAtCommit` `2b812165`, the commit its measurement snapshot started from; the measured source also holds the refusal check that `49f908b8` commits, and the row's `codeSha256` binds it to this code.
+
 ### Owners this implementation grows
 
 Derived with `node scripts/what-binds.ts`; every owner that growth would push past the review target moves a cohesive block into an existing or family-owned module before the edit. No size exception and no bound change is requested. The owners at or near their review target are `NestedScopeControlAdmission`, `Lowering`, [`nested-scope-control-admission.ts`](../../packages/semantic-core/src/nested-scope-control-admission.ts), [`semantic-process-operation-admission.ts`](../../packages/semantic-core/src/semantic-process-operation-admission.ts) and [`semantic-process-runtime.ts`](../../packages/semantic-core/src/semantic-process-runtime.ts); before an arm would push one of them past its target, the representation's Rule 2 declaration names the block that moves into an existing module of its import closure and that move's `lean-fanout` result, so no new module enters a hub's cone.
@@ -316,10 +320,6 @@ Derived with `node scripts/what-binds.ts`; every owner that growth would push pa
 ### Registration
 
 The family registers the register entry, the profile artifact and README, scenarios and pipeline cases, the value-domain matrix, the corpus, About, the CIB probe and the [requirement ledger](../BPMN-REQUIREMENT-LEDGER.md) cell of `BPMN-MECH-FLOW-01`.
-
-## Cost
-
-Effort budget: 12 hours from 2026-11-07 13:30 CET, for proposal review, representation, widening and closure; at the limit the boundary is recorded and the family continues unless the evidence invalidates the path. Expected stop point at the limit: the representation commit (wait lists and the host rules) landed green on the branch, with admission widening and the Temporal and CIB evidence after it.
 
 ## Epistemic closure
 
@@ -334,6 +334,6 @@ Effort budget: 12 hours from 2026-11-07 13:30 CET, for proposal review, represen
 |---|---|---|---|---|
 | Proposal | `c70abb14` | `fork-turns-none` | `approve-with-required-edits` | `d1c55a0f` |
 | Semantic checkpoint | `not-applicable` | `not-applicable` | `not-required` | `not-applicable` |
-| Closure | `not-applicable` | `not-applicable` | `not-reached` | `not-applicable` |
+| Closure | `2b812165` | `fork-turns-none` | `approve-with-required-edits` | `a9363b20` |
 
 The wait records' non-emptiness amendment took its own proposal-stage cold review (2026-11-07): target `e3c819e5`, `fork-turns-none`, `approve-with-required-edits`, green correction audit `ccece8c0`.

@@ -6,7 +6,7 @@ public import BpmnSemantics.SemanticProcessContract
 /-! # Activity host lowering
 
 ACTH-ADMIT-01 of the [Activity host specification](../../docs/capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#lowering) and
-ACSP-ADMIT-01 of the [split proposal](../../docs/capsules/ACTIVITY-HOST-SPLIT-PROPOSAL.md#lowering): a User, Service or
+ACSP-ADMIT-01 of the [split proposal](../../docs/capsules/ACTIVITY-HOST-SPLIT-SPEC.md#lowering): a User, Service or
 Send Task with two or more incoming or two or more outgoing flows lowers to one Activity host whose inputs and outputs
 are those flows' places in canonical order. A Task with one incoming and one outgoing flow keeps its legacy lowering
 (ACSP-ONE-01), so `Lowering` dispatches here only for a merging or splitting Task. Transcribed independently by the

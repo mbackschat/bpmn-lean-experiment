@@ -339,7 +339,7 @@ test("every non-exhaustive TypeScript reader of the legacy kinds names the host 
 });
 
 /*
- * The split account's populations (docs/capsules/ACTIVITY-HOST-SPLIT-PROPOSAL.md, "Oracles this family changes"). A
+ * The split account's populations (docs/capsules/ACTIVITY-HOST-SPLIT-SPEC.md, "Oracles this family changes"). A
  * splitting host's one-output projection is absent and its settled projection carries only the first output, so a
  * reader of either that compares outputs would drop or narrow the split (wrong algorithm 7); a reader of a wait's
  * output list that takes its first element would miss a branch (wrong algorithm 6).
