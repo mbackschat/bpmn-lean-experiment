@@ -151,6 +151,28 @@ export function shapeFindings(root = projectRoot): string[] {
   });
 }
 
+/** A module path normalized for pairing: lower case, separators kept, dashes and underscores dropped. */
+function pairKey(segments: readonly string[]): string {
+  return segments.map((segment) => segment.replace(/[-_]/gu, "").toLowerCase()).join("/");
+}
+
+/** Guard 8: every Lean executable module has a TypeScript file of the same normalized path, and the reverse. The
+ * generated Lean root and the TypeScript export index have no pair; `Laws` and `Proofs` are not executable. */
+export function pairingFindings(root = projectRoot): string[] {
+  const lean = new Set(files(path.join(root, "Kernel"), ".lean")
+    .map((file) => path.relative(path.join(root, "Kernel"), file).slice(0, -".lean".length).split(path.sep))
+    .filter((segments) => segments[0] !== "Laws" && segments[0] !== "Proofs")
+    .map(pairKey));
+  const typeScript = new Set(files(path.join(root, "packages", "kernel", "src"), ".ts")
+    .map((file) => path.relative(path.join(root, "packages", "kernel", "src"), file).slice(0, -".ts".length).split(path.sep))
+    .filter((segments) => !(segments.length === 1 && segments[0] === "index"))
+    .map(pairKey));
+  return [
+    ...[...lean].filter((key) => !typeScript.has(key)).map((key) => `Lean module without a TypeScript pair: ${key}`),
+    ...[...typeScript].filter((key) => !lean.has(key)).map((key) => `TypeScript module without a Lean pair: ${key}`),
+  ].sort();
+}
+
 /** Guard 7: no profile identifier literal in the kernel; profiles are data the catalog owns. */
 export function profileLiteralFindings(root = projectRoot): string[] {
   const scanned = [...files(path.join(root, "Kernel"), ".lean"), ...files(path.join(root, "packages", "kernel", "src"), ".ts")];

@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { test } from "node:test";
 
 import {
   Layer,
   layeringFindings,
   leanModules,
+  pairingFindings,
   profileLiteralFindings,
   shapeFindings,
   typeScriptModules,
@@ -21,6 +25,10 @@ test("the TypeScript kernel follows the layer table", () => {
 
 test("kernel files stay within the shape and size ceilings", () => {
   assert.deepEqual(shapeFindings(), []);
+});
+
+test("every Lean executable module has a TypeScript pair of the same name", () => {
+  assert.deepEqual(pairingFindings(), []);
 });
 
 test("no profile identifier appears in the kernel", () => {
@@ -48,4 +56,24 @@ test("layering rejects a feature importing another feature, an admission importi
     "Kernel.Admission.Flow: imports Lean.Data.Json outside the kernel",
     "Kernel.Publish: dispatch module imports dispatch module Kernel.Step",
   ]);
+});
+
+test("pairing rejects a Lean module without a TypeScript pair and the reverse", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "kernel-pairing-"));
+  try {
+    for (const file of ["Kernel/Feature/MultiInstance.lean", "Kernel/Step.lean", "Kernel/Laws/Flow.lean"]) {
+      mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      writeFileSync(path.join(root, file), "");
+    }
+    for (const file of ["packages/kernel/src/feature/multi-instance.ts", "packages/kernel/src/index.ts", "packages/kernel/src/extra.ts"]) {
+      mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      writeFileSync(path.join(root, file), "");
+    }
+    assert.deepEqual(pairingFindings(root), [
+      "Lean module without a TypeScript pair: step",
+      "TypeScript module without a Lean pair: extra",
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
