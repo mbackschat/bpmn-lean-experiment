@@ -13,8 +13,10 @@ public section
 namespace Kernel.AdmissionRegistry
 
 def element : Element → Option String
-  | .activity _ payload => Admission.Work.activity payload
-  | .scope _ payload => Admission.Scopes.scope payload
+  | .activity _ payload =>
+    Admission.Work.activity payload <|> Admission.Subscriptions.boundaries payload.envelope.boundaries
+  | .scope _ payload =>
+    Admission.Scopes.scope payload <|> Admission.Subscriptions.boundaries payload.envelope.boundaries
   | .event _ payload =>
     match payload.role with
     | .catch subscription => Admission.Subscriptions.catchEvent subscription
@@ -22,7 +24,8 @@ def element : Element → Option String
     | .linkCatch _ => Admission.Flow.link payload
     | .linkThrow _ => Admission.Flow.link payload
   | .gateway _ payload => Admission.Flow.gateway payload
-  | .start _ payload => Admission.Flow.start payload
+  | .start header payload =>
+    Admission.Flow.start payload <|> payload.subscription.bind (Admission.Subscriptions.start header.parent.isSome)
 
 def admit (program : Program) : Option String :=
   program.elements.findSome? element

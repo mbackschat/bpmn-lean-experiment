@@ -8,6 +8,13 @@ public section
 
 namespace Kernel.Admission.Scopes
 
-def scope (_ : ScopePayload) : Option String := some "scope"
+/-- A local variable is declared by an input mapping; a declared local without one has no initial value the
+kernel could choose. -/
+def scope (payload : ScopePayload) : Option String :=
+  let declared := payload.envelope.inputs.map (·.target)
+  if payload.envelope.multiInstance.isSome then some "scope.multiInstance"
+  else if payload.envelope.compensationHandler.isSome then some "scope.compensationHandler"
+  else if payload.localVariables.any (!declared.contains ·) then some "scope.localVariableWithoutInput"
+  else none
 
 end Kernel.Admission.Scopes

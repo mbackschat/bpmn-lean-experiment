@@ -178,9 +178,11 @@ structure State where
   slots : FeatureSlots := {}
   deriving Repr
 
-/-- Why a step does not commit. Harness failures never appear here. -/
+/-- Why a step does not commit. Harness failures never appear here. `rolledBack` is a command whose closure could
+not continue (no outgoing flow to take): it ends the run with the state before the command. -/
 inductive Failure where
   | rejected (code : String)
+  | rolledBack (code : String)
   | semanticFailure (code : String)
   | unsupported (code : String)
   deriving DecidableEq, Repr

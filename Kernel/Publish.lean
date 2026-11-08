@@ -6,8 +6,9 @@ public import Kernel.Hooks
 
 The one generic projection from runtime state to the public state observation of the
 [canonical result](../contracts/schemas/canonical-result.schema.json). Owns matching on `OpenKind` with `Step`.
-Every list keeps the order in which its items opened; each open item contributes its enabled interactions in that
-same order. Evaluation requests are internal and never published.
+User tasks are ordered by occurrence (element id, then activation), and enabled interactions by their kind's wait
+rank and then occurrence, as every retained baseline state orders them except nine with Call Activities
+(2026-11-08); every other list keeps the order in which its items opened. Evaluation requests are internal and never published.
 -/
 
 public section
@@ -167,6 +168,18 @@ def incident? (state : State) (item : OpenItem) : Option OpenIncident :=
   | .effect _ => none
   | .evaluation _ => none
 
+/-- The sort key of an enabled interaction: its kind's wait rank, then its occurrence. -/
+def EnabledInteraction.key : EnabledInteraction → Nat × OccurrenceId
+  | .completeUserTask id => (0, id)
+  | .deliverMessage id _ => (1, id)
+  | .deliverPayloadMessage id _ => (1, id)
+  | .retryIncident id _ => (4, id)
+  | .cancelIncidentProcess id _ => (4, id)
+
+def OccurrenceId.le (left right : OccurrenceId) : Bool :=
+  decide (left.elementId < right.elementId) ||
+    (left.elementId == right.elementId && left.activation ≤ right.activation)
+
 def interactions (state : State) (item : OpenItem) : List EnabledInteraction :=
   let id := occurrenceId state item
   match item.kind with
@@ -185,14 +198,15 @@ def observe (state : State) : Observation :=
   { instanceId := state.instanceId
     status := statusName state.status
     activeWaits := activeWaits items
-    openUserTasks := items.filterMap (userTask? state)
+    openUserTasks := (items.filterMap (userTask? state)).mergeSort fun left right => left.id.le right.id
     openMessageSubscriptions := items.filterMap (messageSubscription? state)
     openTimers := items.filterMap (timer? state)
     openEffects := items.filterMap (effect? state)
     openIncidents := items.filterMap (incident? state)
     variables := (((state.variables.find? (·.scope == State.root)).map (·.entries)).getD []).mergeSort
       fun left right => decide (left.1 ≤ right.1)
-    enabledInteractions := items.flatMap (interactions state)
+    enabledInteractions := (items.flatMap (interactions state)).mergeSort fun left right =>
+      left.key.1 < right.key.1 || (left.key.1 == right.key.1 && left.key.2.le right.key.2)
     logicalTimeMs := state.logicalTimeMs }
 
 end Kernel.Publish

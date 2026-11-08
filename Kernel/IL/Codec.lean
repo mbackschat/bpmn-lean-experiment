@@ -156,6 +156,7 @@ def stimulusFromJson (json : Json) : Except String (String × Option Input) := d
 
 def failureName : Failure → String
   | .rejected _ => "rejected"
+  | .rolledBack _ => "rolledBack"
   | .semanticFailure _ => "semanticFailure"
   | .unsupported _ => "unsupported"
 

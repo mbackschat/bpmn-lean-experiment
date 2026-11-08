@@ -125,12 +125,23 @@ type Ownership = {
   readonly incoming: (nodeId: string) => string[];
   readonly outgoing: (nodeId: string) => string[];
   readonly children: (scopeId: string) => string[];
+  readonly compensationHandler: (nodeId: string) => string | null;
 };
+
+type CompensationSubject = NonNullable<CheckedProcess["compensation"]>["subjects"][number];
+
+/** The compensation subjects of the checked process, from Compensation and Transaction cancellation alike. */
+function compensationSubjects(checked: CheckedProcess): CompensationSubject[] {
+  return [...(checked.compensation?.subjects ?? []),
+    ...(checked.transactionCancellation === undefined ? [] : [checked.transactionCancellation.subject])];
+}
 
 function ownership(checked: CheckedProcess): Ownership {
   const scopeOrigin = new Map(checked.definitionScopes.map((scope) => [scope.id, scope]));
   const nodeScope = new Map(checked.nodeScopes.map((entry) => [entry.nodeId, entry.scopeId]));
   const localData = new Map((checked.scopeLocalData ?? []).map((entry) => [entry.scopeId, entry]));
+  const handled = compensationSubjects(checked).flatMap((subject) =>
+    subject.kind === "boundaryActivity" ? [{ subject: subject.subjectElementId, handler: subject.body.handlerElementId }] : []);
   return {
     localData: (childScopeId) => {
       const entry = localData.get(childScopeId);
@@ -147,8 +158,11 @@ function ownership(checked: CheckedProcess): Ownership {
     },
     incoming: (nodeId) => checked.sequenceFlows.filter((flow) => flow.targetId === nodeId).map((flow) => flow.id),
     outgoing: (nodeId) => checked.sequenceFlows.filter((flow) => flow.sourceId === nodeId).map((flow) => flow.id),
-    children: (scopeId) =>
-      checked.nodeScopes.filter((entry) => entry.scopeId === scopeId).map((entry) => entry.nodeId),
+    children: (scopeId) => [
+      ...checked.nodeScopes.filter((entry) => entry.scopeId === scopeId).map((entry) => entry.nodeId),
+      ...handled.filter((entry) => nodeScope.get(entry.subject) === scopeId).map((entry) => entry.handler),
+    ],
+    compensationHandler: (nodeId) => handled.find((entry) => entry.subject === nodeId)?.handler ?? null,
   };
 }
 
@@ -170,7 +184,15 @@ function activity(node: CheckedNode, sourceType: string, work: KernelJson, owner
     id: node.id,
     build: (boundaries) => ctor("activity", {
       header: header(node, sourceType, owner),
-      payload: { work, envelope: { ...envelope(owner.incoming(node.id), owner.outgoing(node.id)), ...extra, boundaries } },
+      payload: {
+        work,
+        envelope: {
+          ...envelope(owner.incoming(node.id), owner.outgoing(node.id)),
+          compensationHandler: owner.compensationHandler(node.id),
+          ...extra,
+          boundaries,
+        },
+      },
     }),
   };
 }
@@ -207,6 +229,7 @@ function scope(node: CheckedNode, sourceType: string, kind: KernelJson, childSco
           ...envelope(owner.incoming(node.id), owner.outgoing(node.id)),
           inputs: local.inputs,
           outputs: local.outputs,
+          compensationHandler: owner.compensationHandler(node.id),
           ...extra,
           boundaries,
         },
@@ -409,15 +432,38 @@ function directOutput(output: DirectActivityDataOutput): KernelJson {
   return { target, source: variable(output.sourceDataOutputName ?? output.sourceDataOutputId) };
 }
 
+/**
+ * A boundary-activity compensation subject: the compensation boundary on the subject (it has no outgoing flow and
+ * interrupts nothing), the handler Activity in the subject's scope with no flows, and the subject's
+ * `compensationHandler`. An Event Sub-Process subject is refused because the checked process carries only its
+ * handler effect, not its start Event and flows.
+ */
+function compensationSubject(subject: CompensationSubject, owner: Ownership): Lowered[] {
+  if (subject.kind === "eventSubProcess") throw new Refusal("lowering.compensationEventSubProcess");
+  const body = subject.body;
+  if (body.input.kind !== "empty") throw new Refusal("lowering.compensationInput");
+  const handler: KernelJson = ctor("activity", {
+    header: { id: body.handlerElementId, sourceType: "serviceTask", parent: owner.parentOf(subject.subjectElementId) },
+    payload: {
+      work: ctor("service", { payload: { protocol: body.descriptor.protocol, operation: body.descriptor.operation } }),
+      envelope: envelope([], []),
+    },
+  });
+  return [
+    fixed(body.handlerElementId, handler),
+    { kind: "boundary", attachedTo: subject.subjectElementId,
+      boundary: { id: subject.boundaryEventElementId, subscription: subscription("compensation"), interrupting: false, outgoing: [] } },
+  ];
+}
+
 export function lowerCheckedProcessToKernel(checked: CheckedProcess): KernelLowering {
   try {
-    if (checked.compensation !== undefined) throw new Refusal("lowering.compensation");
-    if (checked.transactionCancellation !== undefined) throw new Refusal("lowering.transactionCancellation");
     if ((checked.interruptingMessageEventSubProcesses ?? []).length > 0) {
       throw new Refusal("lowering.interruptingMessageEventSubProcess");
     }
     const owner = ownership(checked);
-    const lowered = checked.nodes.flatMap((node) => lowerNode(checked, node, owner));
+    const lowered = [...checked.nodes.flatMap((node) => lowerNode(checked, node, owner)),
+      ...compensationSubjects(checked).flatMap((subject) => compensationSubject(subject, owner))];
     const boundaries = new Map<string, KernelJson[]>();
     for (const entry of lowered) {
       if (entry.kind === "boundary") boundaries.set(entry.attachedTo, [...(boundaries.get(entry.attachedTo) ?? []), entry.boundary]);

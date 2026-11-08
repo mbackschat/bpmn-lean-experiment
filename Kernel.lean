@@ -15,6 +15,7 @@ public import Kernel.Feature.Work
 public import Kernel.Hooks
 public import Kernel.IL.Codec
 public import Kernel.IL.Query
+public import Kernel.IL.Timer
 public import Kernel.IL.Types
 public import Kernel.Publish
 public import Kernel.Registry
