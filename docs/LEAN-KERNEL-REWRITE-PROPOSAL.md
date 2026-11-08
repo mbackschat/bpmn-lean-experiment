@@ -76,7 +76,7 @@ W0.1 publishes a traceability table mapping every open row to the IL fields and 
 
 ### Runtime state and step
 
-State is flat and identifier-indexed: scope occurrences (parent by identifier); tokens; variables per scope occurrence; one list of open items (waits, timers, subscriptions, effects, evaluation requests) keyed by engine-issued identity; Multi-Instance controllers; completed-work records; one slot per feature. The open-item kind is a fixed guarded type that only `Step` and `Publish` match. Feature slots are fixed at W0.1 from the traceability table, always present and empty by default, so the state codec never varies by program. Cancellation is one generic subtree removal that notifies the owning features through `Hooks`; publication is one generic projection.
+State is flat and identifier-indexed: scope occurrences (parent by identifier); tokens; variables per scope occurrence; one list of open items (waits, timers, subscriptions, effects) keyed by engine-issued identity; Multi-Instance controllers; completed-work records; one slot per feature. The open-item kind is a fixed guarded type that only `Step` and `Publish` match. Feature slots are fixed at W0.1 from the traceability table, always present and empty by default, so the state codec never varies by program. Cancellation is one generic subtree removal that notifies the owning features through `Hooks`; publication is one generic projection.
 
 The step function is pure and total. Its inputs, mapped from every current stimulus:
 
@@ -87,13 +87,12 @@ The step function is pure and total. Its inputs, mapped from every current stimu
 | Delivery (trigger, address, payload) | `deliverMessage`, `deliverPayloadMessage`, `deliverCorrelatedPayloadMessage`, Signal |
 | Timer firing (subscription identity, logical time) | `fireTimer` |
 | Effect result (effect identity, success, business failure or technical failure) | `completeEffect`, `reportEffectFailure` |
-| Evaluation result (request identity, request content digest, typed value or evaluation failure) | none: host-internal, never a scenario stimulus |
 
 Evaluation. Each profile selects exactly one evaluator for its admitted expressions. Every profile selects the [Simple Boolean subset](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md), evaluated inside the kernel. By owner decision of 2026-11-08 JUEL stays deferred and no part of the TypeScript and Temporal solution depends on a JVM, which excludes the Java evaluation Worker the [JUEL decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md) selected. An expression outside the subset is refused at admission with a stable code. A row whose acceptance needs such an expression is owner-held and never closed on Simple Boolean; the rest of that row's track proceeds.
 
 After every committed write, the step closure re-evaluates the Conditions whose filters match, within a declared re-trigger bound. Logical time, scheduler choices and races stay explicit inputs. Outcomes stay distinct: committed, rolled back, rejected, semantic failure, unsupported.
 
-`Hooks` is one record of functions, each field with a no-op default: host lifecycle (activate, complete, cancel), subscription arm and disarm, completed-work record, scope quiescence, evaluation request. The order in which `Step` invokes hooks is semantic and owned by `Step` alone; `Registry` only fills the fields. A feature whose rules outgrow three files becomes sub-features joined by their own hooks record. Runtime invariants live per feature in `Laws.<F>`; there is no global well-formedness function.
+`Hooks` is one record of functions, each field with a no-op default: host lifecycle (activate, complete, cancel), subscription arm and disarm, completed-work record, scope quiescence. The order in which `Step` invokes hooks is semantic and owned by `Step` alone; `Registry` only fills the fields. A feature whose rules outgrow three files becomes sub-features joined by their own hooks record. Runtime invariants live per feature in `Laws.<F>`; there is no global well-formedness function.
 
 ### Population
 
@@ -101,7 +100,7 @@ Mechanisms across process instances live in one layer, `Kernel.Population`, whic
 
 ### Host interface
 
-The adapter sees the kernel only through `hostRequirements(program)` (timers, concurrent waits, effect frontier, subscription lifetimes) and `hostView(state)` (open items with input kind, address, deadline and typed detail; effect requests; evaluation requests; enabled interactions; occurrence start and end facts). State is opaque to the adapter apart from its codec.
+The adapter sees the kernel only through `hostRequirements(program)` (timers, concurrent waits, effect frontier, subscription lifetimes) and `hostView(state)` (open items with input kind, address, deadline and typed detail; effect requests; enabled interactions; occurrence start and end facts). State is opaque to the adapter apart from its codec.
 
 ### Modules and build shape
 
@@ -260,7 +259,7 @@ Budgets: M1–M9 five days across three parallel tracks; integration and qualifi
 
 ### Definition of done for a row
 
-This replaces the coverage target's inherited definition of done. A row is done when its acceptance clause in the [coverage target](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) holds on the kernel in Lean, TypeScript and the retained CIB evidence, and its track's combined review approved it. The kernel status map lists, per row, the open proof lanes it depends on. A hosted Temporal witness is needed only for a new hosting mechanism. Product 2 disclosure comes from the generated capability catalog. A whole corpus model is needed only where the row's acceptance clause names one; the journey rows carry the business models.
+This replaces the coverage target's inherited definition of done. A row is done when its acceptance clause in the [coverage target](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) holds on the kernel in Lean, TypeScript and the retained CIB evidence, and its track's combined review approved it. The kernel status map lists, per row, the open proof lanes it depends on. A hosted Temporal witness is needed only for a new hosting mechanism. Product 2 disclosure comes from the generated capability catalog. A whole corpus model is needed only where the row's acceptance clause names one; the journey rows carry the business models. A row marked `yes` in the `needs-expression-beyond-simple-boolean` column of the [row traceability table](kernel/ROW-TRACEABILITY.md) is owner-held for that acceptance; while any is held, the qualification and acceptance rows that consume them and overall target acceptance cannot close, however complete the tracks look.
 
 ### Verification cadence
 
