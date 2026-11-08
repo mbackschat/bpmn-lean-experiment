@@ -36,6 +36,16 @@ structure Ctx where
   /-- Scopes: the start subscription and interrupting flag of an Event Sub-Process, `none` for another scope. -/
   eventStart : ScopePayload → Option (Subscription × Bool)
 
+/-- Evaluate each mapping's source against `variables`, in order. A mapping whose source the kernel cannot
+evaluate refuses the step, never drops the binding. Features share it here because they never import each other. -/
+def Ctx.evaluateMappings (ctx : Ctx) (variables : List (String × Value)) (mappings : List Mapping) :
+    Except Failure (List (String × Value)) :=
+  mappings.mapM fun mapping =>
+    match ctx.evaluate variables mapping.source with
+    | .value value => .ok (mapping.target, value)
+    | .needsHost => .error (.unsupported "host-evaluation")
+    | .failure code => .error (.semanticFailure code)
+
 /-- A token that reached an element, removed from the flow it arrived on. -/
 structure Arrival where
   flow : FlowId
