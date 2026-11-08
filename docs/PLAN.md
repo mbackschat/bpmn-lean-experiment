@@ -98,19 +98,19 @@ Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements
 
 Active work ID: `CIB7-PRACTICAL-COVERAGE`.
 
-Current task: Kernel IL orthogonalization, batch 5, third family: the implicit split at User, Service and Send Tasks through the Activity host with output lists on the User Task and effect wait records ([specification](capsules/ACTIVITY-HOST-SPLIT-SPEC.md)). The scope host family landed on `main` at `d62d89d9`.
+Current task: Kernel IL orthogonalization, batch 5, fourth family: the switch of plain User, Service and Send Tasks onto the Activity host, carrying the Task without outgoing flows ([proposal](capsules/ACTIVITY-HOST-SWITCH-PROPOSAL.md)). The split family landed on `main` at `776edaf4`. Close call: the implicit end leads on reach (CIB corpus 2026-11-08: 160 of 2,340 models at a User Task, 43 at a Service Task; conditional Task flows 1).
 
-Deliverable: `PC-CF-07`'s unconditioned split at User, Service and Send Tasks outside fork regions, landed on `main`; the [specification](capsules/ACTIVITY-HOST-SPLIT-SPEC.md#question-and-delivery-boundary) lists every residual.
+Deliverable: `PC-CF-07`'s Activity without outgoing flows at User, Service and Send Tasks in the nested scope-data profile, landed on `main` with the switch.
 
-Acceptance blockers: hosted `verify-complete`, then the fast-forward of `main`.
+Acceptance blockers: the switch's measured cost, then an approved proposal.
 
-Current result: graduated; closure review of `2b812165` approved with required edits, audit `a9363b20` approving on green hosted CI.
+Current result: none yet.
 
 Owner items: confirm the incremental re-decision after the stop condition fired; renew six stale size-exception rationales.
 
-Effort budget: 12 hours from 2026-11-07 13:30 CET; at the limit record the boundary and continue unless the evidence invalidates the path. Lean batch `acsp-family`: one full build at closure, one after a correction.
+Effort budget: 16 hours from 2026-11-08 01:45 CET; the proposal with measured switch cost within the first 5. At the limit record the boundary and continue unless the evidence invalidates the path.
 
-Next action: land through the branch push flow, then propose the switch, the fourth Kernel IL family.
+Next action: measure the switch on a throwaway clone, then write the proposal.
 
 Oracle: Lean, core and pipeline agreement on every scenario, unchanged expected results for every existing scenario, and approving proposal and closure reviews.
 
