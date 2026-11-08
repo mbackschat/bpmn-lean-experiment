@@ -38,4 +38,14 @@ def evaluate (variables : List (String × Value)) : Expression → Evaluation
     | none => .failure "unknown-variable"
   | .foreign _ _ => .needsHost
 
+/-- Evaluate each mapping's source against `variables`, in order. A mapping whose source the kernel cannot
+evaluate refuses the step, never drops the binding. -/
+def evaluateMappings (ctx : Ctx) (variables : List (String × Value)) (mappings : List Mapping) :
+    Except Failure (List (String × Value)) :=
+  mappings.mapM fun mapping =>
+    match ctx.evaluate variables mapping.source with
+    | .value value => .ok (mapping.target, value)
+    | .needsHost => .error (.unsupported "host-evaluation")
+    | .failure code => .error (.semanticFailure code)
+
 end Kernel.Feature.Data
