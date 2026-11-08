@@ -60,7 +60,8 @@ fi
 # A full-library build recompiles every module downstream of an edit, so it must name the gate or
 # Lean batch that owns it; full builds started as consumer discovery or "still red?" probes are
 # Finding 75 in docs/PROCESS-ASSESSMENT-LEDGER.md. Classification fails closed: only a
-# `BpmnSemantics.` submodule or a declared `lean_exe` is narrow, so package, facet and umbrella
+# `BpmnSemantics.` submodule, the whole `Kernel` library (bounded by the kernel's 3-minute clean build) or one of its
+# modules, or a declared `lean_exe` is narrow, so package, facet and umbrella
 # spellings count as full. A target list longer than 16 needs the same declaration, so an enumerated
 # reverse closure (877 modules, 1434 s, run as consumer discovery on 2026-11-07) cannot pass as
 # focused; the cap refuses lists, it does not measure the rebuild set. It admits the largest maintained
@@ -84,7 +85,7 @@ elif [ "${1:-}" = "build" ]; then
     fi
     case "$target" in
       -*) continue ;;
-      BpmnSemantics.?* | +BpmnSemantics.?*) ;;
+      BpmnSemantics.?* | +BpmnSemantics.?* | Kernel | Kernel.?* | +Kernel.?*) ;;
       *)
         if ! printf '%s\n' "$declared_executables" | grep -Fqx -- "$target"; then
           full_gate_required=true

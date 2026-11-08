@@ -75,7 +75,7 @@ Excluded:
 
 ## Module rules
 
-- **Private by default.** A new declaration starts private until another module names it, because a public one joins the module's interface and adding it rebuilds every module that loads it (owner decision 3, 2026-10-29). [`lean-private-by-default.ts`](../scripts/lean-private-by-default.ts) checks this against the merge base; a declaration that a public statement of its own module names, an instance and a declaration with a registering attribute are exempt.
+- **Private by default.** A new declaration starts private until another module names it, because a public one joins the module's interface and adding it rebuilds every module that loads it (owner decision 3, 2026-10-29). [`lean-private-by-default.ts`](https://github.com/mbackschat/bpmn-lean-experiment/blob/7f85d302750487fa2c30e54597200dadb2568c3d/scripts/lean-private-by-default.ts) checks this against the merge base; a declaration that a public statement of its own module names, an instance and a declaration with a registering attribute are exempt.
 - **New declarations.** A new declaration lives in a family-owned leaf module, never appended to a hub. Existing families move into the family shape when next touched, and profile identity branches become per-family descriptors as their families move.
 - **Imports.**
   - A module re-exports only the modules its public declarations name.

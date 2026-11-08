@@ -19,6 +19,9 @@ name = "BpmnSemantics"
 [[lean_lib]]
 name = "BpmnConformance"
 
+[[lean_lib]]
+name = "Kernel"
+
 [[lean_exe]]
 name = "checkSemanticRepresentationSpike"
 root = "BpmnSemantics.Experiments.SemanticRepresentationsMain"
