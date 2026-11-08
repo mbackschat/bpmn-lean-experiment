@@ -1,0 +1,47 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import {
+  Layer,
+  layeringFindings,
+  leanModules,
+  profileLiteralFindings,
+  shapeFindings,
+  typeScriptModules,
+  type Module,
+} from "./kernel-structure.ts";
+
+test("the Lean kernel follows the layer table", () => {
+  assert.deepEqual(layeringFindings(leanModules(), (name) => name === "Kernel" || name.startsWith("Kernel.")), []);
+});
+
+test("the TypeScript kernel follows the layer table", () => {
+  assert.deepEqual(layeringFindings(typeScriptModules(), (name) => !name.startsWith("node:") && !name.startsWith("@") && !name.startsWith("..")), []);
+});
+
+test("kernel files stay within the shape and size ceilings", () => {
+  assert.deepEqual(shapeFindings(), []);
+});
+
+test("no profile identifier appears in the kernel", () => {
+  assert.deepEqual(profileLiteralFindings(), []);
+});
+
+// The scans must reject what they exist to reject, so each is checked against a minimal violating module set.
+test("layering rejects a feature importing another feature, an admission importing state, and a foreign import", () => {
+  const module = (name: string, layer: Layer, family: string, imports: string[]): Module =>
+    ({ name, layer, family, file: name, imports });
+  const modules = [
+    module("Kernel.Feature.Work", Layer.Feature, "work", ["Kernel.Feature.Data", "Kernel.Hooks"]),
+    module("Kernel.Feature.Data", Layer.Feature, "data", ["Kernel.Hooks"]),
+    module("Kernel.Feature.Work.Effects", Layer.Feature, "work", ["Kernel.Feature.Work"]),
+    module("Kernel.Admission.Flow", Layer.Admission, "flow", ["Kernel.State", "Lean.Data.Json"]),
+    module("Kernel.Hooks", Layer.Hooks, "", ["Kernel.State"]),
+    module("Kernel.State", Layer.State, "", []),
+  ];
+  assert.deepEqual(layeringFindings(modules, (name) => name.startsWith("Kernel.")), [
+    "Kernel.Feature.Work: feature module imports feature module Kernel.Feature.Data",
+    "Kernel.Admission.Flow: admission module imports state module Kernel.State",
+    "Kernel.Admission.Flow: imports Lean.Data.Json outside the kernel",
+  ]);
+});
