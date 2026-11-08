@@ -27,6 +27,8 @@ structure ActiveWait where
 structure OpenUserTask where
   id : TaskRef
   name : Option String
+  candidateGroups : List String
+  formFields : List (String × String)
   deriving Repr
 
 structure EnabledInteraction where
@@ -75,7 +77,9 @@ def taskRef (state : State) (item : OpenItem) : TaskRef :=
 def openUserTasks (state : State) : List OpenUserTask :=
   state.openItems.filterMap fun item =>
     match item.kind with
-    | .userTask detail => some { id := taskRef state item, name := detail.name }
+    | .userTask detail =>
+      some { id := taskRef state item, name := detail.name, candidateGroups := detail.candidateGroups,
+             formFields := detail.formFields }
     | .receive => none
     | .timer => none
     | .subscription => none
@@ -89,7 +93,8 @@ def observe (state : State) : Observation :=
     status := statusName state.status
     activeWaits := activeWaits state.openItems
     openUserTasks := tasks
-    variables := ((state.variables.find? (·.scope == State.root)).map (·.entries)).getD []
+    variables := (((state.variables.find? (·.scope == State.root)).map (·.entries)).getD []).mergeSort
+      fun left right => decide (left.1 ≤ right.1)
     enabledInteractions := tasks.map fun task => { kind := "completeUserTaskInstance", taskId := task.id }
     logicalTimeMs := state.logicalTimeMs }
 

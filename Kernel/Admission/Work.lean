@@ -21,7 +21,10 @@ def activity (payload : ActivityPayload) : Option String :=
     match payload.work with
     | .none => none
     | .manual => none
-    | .user _ => none
+    | .user task =>
+      if task.candidateGroups.any (fun
+        | .literal _ => false
+        | .expression _ => true) then some "work.user.candidateGroupExpression" else none
     | .receive _ => some "work.receive"
     | .service _ => some "work.service"
     | .send _ => some "work.send"

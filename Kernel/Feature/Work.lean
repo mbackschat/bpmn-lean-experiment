@@ -17,7 +17,12 @@ def arriveActivity (_ : Ctx) (header : Header) (payload : ActivityPayload) (arri
   match payload.work with
   | .none => .ok (state.emit payload.envelope.outgoing arrival.scope)
   | .manual => .ok (state.emit payload.envelope.outgoing arrival.scope)
-  | .user task => .ok (state.openItem (.userTask { name := task.name }) header.id arrival.scope)
+  | .user task =>
+    let groups := task.candidateGroups.filterMap fun
+      | .literal group => some group
+      | .expression _ => none
+    .ok (state.openItem (.userTask { name := task.name, candidateGroups := groups, formFields := task.formFields })
+      header.id arrival.scope)
   | .receive _ => .error (.unsupported "receive-task")
   | .service _ => .error (.unsupported "service-task")
   | .send _ => .error (.unsupported "send-task")

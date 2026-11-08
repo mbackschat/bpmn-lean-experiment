@@ -24,15 +24,25 @@ def taskRefJson (ref : Publish.TaskRef) : Json :=
   Json.mkObj [("processInstanceId", Json.str ref.processInstanceId), ("elementId", Json.str ref.elementId),
     ("activation", toJson ref.activation)]
 
+/-- `metadata` appears only for a task with candidate groups, and `form` within it only with form fields. -/
+def openUserTaskJson (task : Publish.OpenUserTask) : Json :=
+  let base := [("id", taskRefJson task.id),
+    ("name", match task.name with | some name => Json.str name | none => Json.null), ("state", Json.str "active")]
+  let form := if task.formFields.isEmpty then [] else
+    [("form", Json.mkObj [("fields", Json.arr (task.formFields.map fun (key, type) =>
+      Json.mkObj [("key", Json.str key), ("type", Json.str type)]).toArray)])]
+  let metadata := if task.candidateGroups.isEmpty then [] else
+    [("metadata", Json.mkObj ([("assignment", Json.mkObj [("candidates", Json.arr (task.candidateGroups.map fun group =>
+      Json.mkObj [("id", Json.str group), ("kind", Json.str "group")]).toArray)])] ++ form))]
+  Json.mkObj (base ++ metadata)
+
 def observationJson (state : State) : Json :=
   let o := Publish.observe state
   Json.mkObj [
     ("kind", "state"), ("instanceId", Json.str o.instanceId), ("status", Json.str o.status),
     ("activeWaits", Json.arr (o.activeWaits.map fun wait => Json.mkObj [("elementId", Json.str wait.elementId),
       ("kind", Json.str wait.kind), ("multiplicity", toJson wait.multiplicity)]).toArray),
-    ("openUserTasks", Json.arr (o.openUserTasks.map fun task => Json.mkObj [("id", taskRefJson task.id),
-      ("name", match task.name with | some name => Json.str name | none => Json.null),
-      ("state", "active")]).toArray),
+    ("openUserTasks", Json.arr (o.openUserTasks.map openUserTaskJson).toArray),
     ("openMessageSubscriptions", Json.arr #[]), ("openTimers", Json.arr #[]), ("openEffects", Json.arr #[]),
     ("openIncidents", Json.arr #[]),
     ("variables", Codec.bindingsToJson o.variables),
@@ -89,6 +99,7 @@ def orFail {α : Type} (path : String) : Except String α → IO α
 
 def run (programPath scenarioPath : String) : IO Json := do
   let program ← orFail programPath (Lean.fromJson? (α := Program) (← readJson programPath))
+  if let some code := AdmissionRegistry.admit program then IO.eprintln s!"admission refused: {code}"
   let scenario ← readJson scenarioPath
   let stimuli ← orFail scenarioPath do
     let items ← scenario.getObjValAs? (Array Json) "stimuli"

@@ -44,25 +44,26 @@ inductive SimpleBoolean where
   | stringEquals (name value : String)
   deriving DecidableEq, Repr
 
-/-- An expression. Only `simpleBoolean` and `variable` are evaluated by the kernel; `foreign` is answered by the
-profile's evaluator through an evaluation request. -/
+/-- An expression. `literal`, `simpleBoolean` and `variable` are evaluated by the kernel; `foreign` is answered by
+the profile's evaluator through an evaluation request. -/
 inductive Expression where
+  | literal (value : Value)
   | simpleBoolean (body : SimpleBoolean)
   | variable (name : String)
   | foreign (language source : String)
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- A configuration value given either literally or by an expression. -/
 inductive ValueSource where
   | literal (value : String)
   | expression (body : Expression)
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- `target := source`, evaluated in the scope the owning element names. -/
 structure Mapping where
   target : String
   source : Expression
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-! ## Subscriptions -/
 
@@ -75,44 +76,44 @@ inductive TimerSchedule where
   | duration (value : ValueSource)
   | date (value : ValueSource)
   | cycle (value : ValueSource) (dialect : CycleDialect)
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure TimerTrigger where
   schedule : TimerSchedule
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure CorrelationCriterion where
   key : String
   value : Expression
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure MessageTrigger where
   name : ValueSource
   correlation : List CorrelationCriterion := []
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure SignalTrigger where
   name : ValueSource
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure ConditionTrigger where
   condition : Expression
   variableName : Option String := none
   variableEvents : List String := []
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- `code = none` catches every Error. -/
 structure ErrorTrigger where
   code : Option String
   codeVariable : Option String := none
   messageVariable : Option String := none
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- `code = none` catches every Escalation. -/
 structure EscalationTrigger where
   code : Option String
   codeVariable : Option String := none
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- Guarded type: `Kernel.Feature.Subscriptions` owns matching on it. -/
 inductive Trigger where
@@ -124,45 +125,45 @@ inductive Trigger where
   | escalation (payload : EscalationTrigger)
   | compensation
   | cancel
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure Subscription where
   trigger : Trigger
   outputs : List Mapping := []
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure Boundary where
   id : ElementId
   subscription : Subscription
   interrupting : Bool
   outgoing : List FlowId
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-! ## Throws -/
 
 structure MessageThrow where
   binding : String
   payload : List Mapping := []
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure SignalThrow where
   name : ValueSource
   payload : List Mapping := []
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure ErrorThrow where
   code : String
   message : Option String := none
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure EscalationThrow where
   code : String
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure CompensationThrow where
   activity : Option ElementId
   waitForCompletion : Bool
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- Guarded type: `Kernel.Feature.Propagation` owns matching on it. -/
 inductive Throw where
@@ -174,7 +175,7 @@ inductive Throw where
   | compensation (payload : CompensationThrow)
   | cancel
   | terminate
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-! ## Work -/
 
@@ -188,40 +189,40 @@ structure UserWork where
   dueDate : Option ValueSource := none
   followUpDate : Option ValueSource := none
   priority : Option ValueSource := none
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure ReceiveWork where
   message : Option MessageTrigger
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure ServiceWork where
   protocol : String
   operation : String
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure SendWork where
   binding : String
   recipient : Option ValueSource := none
   correlation : List CorrelationCriterion := []
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure ScriptWork where
   format : String
   source : String
   resultVariable : Option String := none
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure RuleWork where
   decision : ValueSource
   resultVariable : Option String := none
-  deriving DecidableEq, Repr
+  deriving Repr
 
 inductive CallBinding where
   | latest
   | deployment
   | version (value : ValueSource)
   | versionTag (value : ValueSource)
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure CallWork where
   calledElement : ValueSource
@@ -231,7 +232,7 @@ structure CallWork where
   outputs : List Mapping := []
   propagateAllInputs : Bool := false
   propagateAllOutputs : Bool := false
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- Guarded type: `Kernel.Feature.Work` owns matching on it. -/
 inductive Work where
@@ -244,7 +245,7 @@ inductive Work where
   | script (payload : ScriptWork)
   | rule (payload : RuleWork)
   | call (payload : CallWork)
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-! ## Multi-Instance and the shared activity envelope -/
 
@@ -256,7 +257,7 @@ inductive MultiInstanceMode where
 inductive InstanceCount where
   | collection (items : Expression)
   | cardinality (count : Expression)
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure MultiInstance where
   mode : MultiInstanceMode
@@ -267,7 +268,7 @@ structure MultiInstance where
   outputDataItem : Option String := none
   outputCollection : Option String := none
   mutableCollection : Bool := false
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure Envelope where
   incoming : List FlowId := []
@@ -277,28 +278,28 @@ structure Envelope where
   boundaries : List Boundary := []
   multiInstance : Option MultiInstance := none
   compensationHandler : Option ElementId := none
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-! ## Elements -/
 
 structure ActivityPayload where
   work : Work
   envelope : Envelope := {}
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- Guarded type: `Kernel.Feature.Scopes` owns matching on it. -/
 inductive ScopeKind where
   | embedded
   | transaction
   | eventSubProcess (start : Subscription) (interrupting : Bool)
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure ScopePayload where
   kind : ScopeKind
   children : List ElementId
   localVariables : List String := []
   envelope : Envelope := {}
-  deriving DecidableEq, Repr
+  deriving Repr
 
 inductive Placement where
   | intermediate
@@ -310,24 +311,24 @@ inductive EventRole where
   | throw (record : Throw)
   | linkCatch (name : String)
   | linkThrow (name : String)
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure EventPayload where
   role : EventRole
   placement : Placement
   incoming : List FlowId := []
   outgoing : List FlowId := []
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure ConditionalFlow where
   flow : FlowId
   condition : Option Expression
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- An Event-Based Gateway arm is a catch Event or a Receive Task, named by identifier. -/
 structure EventArm where
   target : ElementId
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- Guarded type: `Kernel.Feature.Flow` owns matching on it. Conditional candidates keep document order. -/
 inductive GatewayKind where
@@ -335,24 +336,24 @@ inductive GatewayKind where
   | parallel
   | inclusive (candidates : List ConditionalFlow) (default : Option FlowId)
   | eventBased (arms : List EventArm)
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure GatewayPayload where
   kind : GatewayKind
   incoming : List FlowId := []
   outgoing : List FlowId := []
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure StartPayload where
   subscription : Option Subscription
   outgoing : List FlowId := []
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure Header where
   id : ElementId
   sourceType : String
   parent : Option ElementId
-  deriving DecidableEq, Repr
+  deriving Repr
 
 /-- Guarded type: `Kernel.Step` owns matching on it. -/
 inductive Element where
@@ -361,19 +362,19 @@ inductive Element where
   | event (header : Header) (payload : EventPayload)
   | gateway (header : Header) (payload : GatewayPayload)
   | start (header : Header) (payload : StartPayload)
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure Flow where
   id : FlowId
   source : ElementId
   target : ElementId
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure ProgramIdentity where
   processId : String
   sourceSha256 : String
   profile : String
-  deriving DecidableEq, Repr
+  deriving Repr
 
 structure Program where
   identity : ProgramIdentity

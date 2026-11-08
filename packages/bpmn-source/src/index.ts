@@ -60,3 +60,10 @@ export {
 export {
   parseSimpleBooleanExpression,
 } from "./simple-boolean-expression.js";
+export {
+  lowerCheckedProcessToKernel,
+} from "./kernel-lowering.js";
+export type {
+  KernelJson,
+  KernelLowering,
+} from "./kernel-lowering.js";

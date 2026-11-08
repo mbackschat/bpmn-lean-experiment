@@ -36,9 +36,12 @@ structure ScopeVariables where
   entries : List (String × Value)
   deriving Repr
 
-/-- What an open User Task publishes besides its identity. -/
+/-- What an open User Task publishes besides its identity. Metadata is published only when the task carries
+candidate groups; form fields are `(key, type)` pairs. -/
 structure UserTaskDetail where
   name : Option String
+  candidateGroups : List String := []
+  formFields : List (String × String) := []
   deriving DecidableEq, Repr
 
 /-- Guarded type: only `Kernel.Step` and `Kernel.Publish` match on it. Each kind carries the typed detail its

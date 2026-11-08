@@ -30,6 +30,7 @@ def simpleBoolean (variables : List (String × Value)) : SimpleBoolean → Bool
     | _ => false
 
 def evaluate (variables : List (String × Value)) : Expression → Evaluation
+  | .literal value => .value value
   | .simpleBoolean body => .value (.bool (simpleBoolean variables body))
   | .variable name =>
     match lookup variables name with
