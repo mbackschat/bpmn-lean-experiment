@@ -65,7 +65,7 @@ deriving instance FromJson, ToJson for SimpleBoolean, Expression, ValueSource, M
   CompensationThrow, Throw, UserWork, ReceiveWork, ServiceWork, SendWork, ScriptWork, RuleWork, CallBinding,
   CallWork, Work, MultiInstanceMode, InstanceCount, MultiInstance, Envelope, ActivityPayload, ScopeKind,
   ScopePayload, Placement, EventRole, EventPayload, ConditionalFlow, EventArm, GatewayKind, GatewayPayload,
-  StartPayload, Header, Element, Flow, ProgramIdentity, Program
+  StartPayload, Header, Element, Flow, ProgramIdentity, ProfileOptions, Program
 
 /-- `[{name, value}]`, the scenario contract's variable bindings. -/
 def bindingsFromJson (json : Json) : Except String (List (String × Value)) := do

@@ -46,6 +46,7 @@ def idle (state : State) (scope : ScopeOccurrenceId) : Bool :=
   !state.tokens.any (·.scope == scope) &&
     !state.openItems.any (fun item => item.scope == scope && !item.passive) &&
     !state.slots.parked.any (·.scope == scope) &&
+    !state.slots.held.any (·.scope == scope) &&
     !state.scopes.any (·.parent == some scope)
 
 def completeScope (hooks : Hooks) (ctx : Ctx) (occurrence : ScopeOccurrence) (state : State) : Outcome :=

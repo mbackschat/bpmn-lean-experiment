@@ -66,10 +66,12 @@ structure TimerDetail where
   period : Option Nat := none
   deriving Repr
 
+/-- `failures` counts the incidents this effect occurrence has had; a retry reopens it with the same activation. -/
 structure EffectDetail where
   protocol : String
   operation : String
   arguments : List (String × Value) := []
+  failures : Nat := 0
   deriving Repr
 
 /-- `cancellable` publishes the `cancelIncidentProcess` interaction beside `retryIncident`. -/
@@ -96,6 +98,22 @@ def OpenKind.timer? : OpenKind → Option TimerDetail
   | .message _ => none
   | .effect _ => none
   | .incident _ => none
+  | .evaluation _ => none
+
+def OpenKind.effect? : OpenKind → Option EffectDetail
+  | .effect detail => some detail
+  | .userTask _ => none
+  | .message _ => none
+  | .timer _ => none
+  | .incident _ => none
+  | .evaluation _ => none
+
+def OpenKind.incident? : OpenKind → Option IncidentDetail
+  | .incident detail => some detail
+  | .userTask _ => none
+  | .message _ => none
+  | .timer _ => none
+  | .effect _ => none
   | .evaluation _ => none
 
 def OpenKind.message? : OpenKind → Option MessageWaitDetail
@@ -159,9 +177,12 @@ inductive Signal where
   deriving Repr
 
 /-- Feature-owned data. Each slot is fixed at W0.1 from the row traceability table and starts empty.
-`parked` holds tokens that reached a join and wait for its other incoming flows (`Kernel.Feature.Flow`). -/
+`parked` holds tokens that reached a join and wait for its other incoming flows (`Kernel.Feature.Flow`); `held`
+holds tokens at an Activity whose InputSet is unavailable ([BPMN 2.0.2 §10.4.2](../docs/reference/bpmn-2.0.2/README.md),
+`Kernel.Feature.Work`). Both keep their scope occurrence alive. -/
 structure FeatureSlots where
   parked : List Token := []
+  held : List Token := []
   deriving Repr
 
 structure State where
@@ -334,7 +355,9 @@ def clearInside (state : State) (scope : ScopeOccurrenceId) : State :=
       openItems := state.openItems.filter (!inside.contains ·.scope)
       scopes := state.scopes.filter (!nested.contains ·.id)
       variables := state.variables.filter (!nested.contains ·.scope)
-      slots := { state.slots with parked := state.slots.parked.filter (!inside.contains ·.scope) } }
+      slots := { state.slots with
+        parked := state.slots.parked.filter (!inside.contains ·.scope)
+        held := state.slots.held.filter (!inside.contains ·.scope) } }
 
 /-- Leave `scope`: clear it and remove the occurrence and its variables. -/
 def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
@@ -374,6 +397,14 @@ def write (state : State) (scope : ScopeOccurrenceId) (name : String) (value : V
         if vars.scope == target then { vars with entries := replace vars.entries } else vars }
   else
     { state with variables := state.variables ++ [{ scope := target, entries := [(name, value)] }] }
+
+/-- Write an Activity or Scope output seen from `scope`: into the innermost visible scope that declares `name`,
+else into the process root, as a CIB Seven `setVariable` without a declaring scope does; the nested scope-data
+baselines (`nested-scope-data-order-null-risk`) observe an inner Sub-Process output at the root, not in the
+undeclaring parent. -/
+def writeOutward (state : State) (scope : ScopeOccurrenceId) (binding : String × Value) : State :=
+  if (state.visible scope).any (·.1 == binding.1) then state.write scope binding.1 binding.2
+  else state.write root binding.1 binding.2
 
 end State
 

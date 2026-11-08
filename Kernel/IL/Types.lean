@@ -381,8 +381,19 @@ structure ProgramIdentity where
   profile : String
   deriving Repr
 
+/-- The behaviour a profile selects where CIB Seven and the standard differ, as typed data the lowering fills from
+the profile's relation identifiers; the kernel never reads a profile identifier. -/
+structure ProfileOptions where
+  /-- A User Task completion without output mappings writes its submitted values as Process variables
+  (CIB-EXT-0005); otherwise a submission must be exactly the task's OutputSet. -/
+  submissionInstallsVariables : Bool := true
+  /-- An effect incident offers `cancelIncidentProcess` (CIB-OP-0009). -/
+  incidentProcessCancellation : Bool := false
+  deriving Repr
+
 structure Program where
   identity : ProgramIdentity
+  options : ProfileOptions := {}
   elements : List Element
   flows : List Flow
   deriving Repr

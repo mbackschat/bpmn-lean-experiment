@@ -34,6 +34,7 @@ structure OpenUserTask where
   name : Option String
   candidateGroups : List String
   formFields : List (String × String)
+  inputs : List (String × Value)
   deriving Repr
 
 structure OpenMessageSubscription where
@@ -124,7 +125,7 @@ def userTask? (state : State) (item : OpenItem) : Option OpenUserTask :=
   match item.kind with
   | .userTask detail =>
     some { id := occurrenceId state item, name := detail.name, candidateGroups := detail.candidateGroups,
-           formFields := detail.formFields }
+           formFields := detail.formFields, inputs := detail.inputs }
   | .message _ => none
   | .timer _ => none
   | .effect _ => none

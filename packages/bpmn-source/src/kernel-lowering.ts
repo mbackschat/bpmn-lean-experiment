@@ -22,6 +22,17 @@ import { parseSimpleBooleanExpression } from "./simple-boolean-expression.js";
 
 export type KernelJson = null | boolean | number | string | KernelJson[] | { [key: string]: KernelJson };
 
+/** The kernel IL's `ProfileOptions`: profile behaviour as typed data, selected by the profile's relations. */
+export type KernelProfileOptions = Readonly<{
+  submissionInstallsVariables: boolean;
+  incidentProcessCancellation: boolean;
+}>;
+
+export const defaultKernelProfileOptions: KernelProfileOptions = {
+  submissionInstallsVariables: true,
+  incidentProcessCancellation: false,
+};
+
 export type KernelLowering =
   | { readonly kind: "lowered"; readonly program: KernelJson }
   | { readonly kind: "refused"; readonly code: string };
@@ -424,12 +435,12 @@ function lowerNode(checked: CheckedProcess, node: CheckedNode, owner: Ownership)
 
 function directInput(input: DirectActivityDataInput): KernelJson {
   const source = input.source.kind === ActivityDataEndpointKind.Property ? input.source.propertyId : input.source.dataInputId;
-  return { target: input.targetDataInputName ?? input.targetDataInputId, source: variable(source) };
+  return { target: input.targetDataInputId, source: variable(source) };
 }
 
 function directOutput(output: DirectActivityDataOutput): KernelJson {
   const target = output.target.kind === ActivityDataEndpointKind.Property ? output.target.propertyId : output.target.dataOutputId;
-  return { target, source: variable(output.sourceDataOutputName ?? output.sourceDataOutputId) };
+  return { target, source: variable(output.sourceDataOutputId) };
 }
 
 /**
@@ -456,7 +467,10 @@ function compensationSubject(subject: CompensationSubject, owner: Ownership): Lo
   ];
 }
 
-export function lowerCheckedProcessToKernel(checked: CheckedProcess): KernelLowering {
+export function lowerCheckedProcessToKernel(
+  checked: CheckedProcess,
+  options: KernelProfileOptions = defaultKernelProfileOptions,
+): KernelLowering {
   try {
     if ((checked.interruptingMessageEventSubProcesses ?? []).length > 0) {
       throw new Refusal("lowering.interruptingMessageEventSubProcess");
@@ -477,6 +491,7 @@ export function lowerCheckedProcessToKernel(checked: CheckedProcess): KernelLowe
           sourceSha256: checked.identity.sourceSha256,
           profile: checked.identity.semanticProfile,
         },
+        options,
         elements,
         flows: checked.sequenceFlows.map((flow) => ({ id: flow.id, source: flow.sourceId, target: flow.targetId })),
       },

@@ -34,12 +34,6 @@ def channel (trigger : MessageTrigger) : Except Failure MessageChannel :=
   | some (.literal name) => .ok (address (some name))
   | some (.expression _) => .error (.unsupported "receive-message-expression")
 
-/-- An output whose target no visible scope declares lands in the process root, as a CIB Seven `setVariable`
-without a declaring scope does (`Kernel.Feature.Scopes.writeOutput` states the same rule for Scope outputs). -/
-def writeOutput (scope : ScopeOccurrenceId) (state : State) (binding : String × Value) : State :=
-  if (state.visible scope).any (·.1 == binding.1) then state.write scope binding.1 binding.2
-  else state.write State.root binding.1 binding.2
-
 /-- The outputs a completion writes, from the values it submits. The submission must be exactly the Activity's
 OutputSet ([BPMN 2.0.2 §10.4.1](../../docs/reference/bpmn-2.0.2/README.md)): every output mapping evaluates against
 the submitted values alone, no name is submitted twice, and no submitted value is superfluous (dropping it leaves
@@ -68,7 +62,7 @@ def outputs (ctx : Ctx) (mappings : List Mapping) (values : List (String × Valu
 def finish (payload : ActivityPayload) (item : OpenItem) (written : List (String × Value)) (state : State) :
     State :=
   let closed := (state.closeItem item.id).disarm item.id
-  (written.foldl (writeOutput item.scope) closed).emit payload.envelope.outgoing item.scope
+  (written.foldl (·.writeOutward item.scope ·) closed).emit payload.envelope.outgoing item.scope
 
 /-- An input mapping whose source is unavailable makes the InputSet unavailable, and the Activity must wait for it
 ([BPMN 2.0.2 §10.4.2](../../docs/reference/bpmn-2.0.2/README.md)); the state has no place for a token held at an
@@ -123,7 +117,7 @@ def effectResult (ctx : Ctx) (header : Header) (payload : ActivityPayload) (item
   | .businessFailure code message patch => do
     let written ← outputs ctx payload.envelope.outputs patch
     let closed := (state.closeItem item.id).disarm item.id
-    .ok ((written.foldl (writeOutput item.scope) closed).signal
+    .ok ((written.foldl (·.writeOutward item.scope ·) closed).signal
       (.raise (.error code message) { element := header.id, scope := item.scope, host := some item.id }))
   | .technicalFailure => .error (.unsupported "effect-incident")
 

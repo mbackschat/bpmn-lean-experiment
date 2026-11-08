@@ -24,7 +24,8 @@ def occurrenceJson (id : Publish.OccurrenceId) : Json :=
   Json.mkObj [("processInstanceId", Json.str id.processInstanceId), ("elementId", Json.str id.elementId),
     ("activation", toJson id.activation)]
 
-/-- `metadata` appears only for a task with candidate groups, and `form` within it only with form fields. -/
+/-- `inputs` appears only for a task with input mappings, `metadata` only for a task with candidate groups, and
+`form` within it only with form fields. -/
 def openUserTaskJson (task : Publish.OpenUserTask) : Json :=
   let base := [("id", occurrenceJson task.id),
     ("name", match task.name with | some name => Json.str name | none => Json.null), ("state", Json.str "active")]
@@ -34,7 +35,8 @@ def openUserTaskJson (task : Publish.OpenUserTask) : Json :=
   let metadata := if task.candidateGroups.isEmpty then [] else
     [("metadata", Json.mkObj ([("assignment", Json.mkObj [("candidates", Json.arr (task.candidateGroups.map fun group =>
       Json.mkObj [("id", Json.str group), ("kind", Json.str "group")]).toArray)])] ++ form))]
-  Json.mkObj (base ++ metadata)
+  let inputs := if task.inputs.isEmpty then [] else [("inputs", Codec.bindingsToJson task.inputs)]
+  Json.mkObj (base ++ inputs ++ metadata)
 
 def openEffectJson (effect : Publish.OpenEffect) : Json :=
   Json.mkObj [("id", occurrenceJson effect.id),

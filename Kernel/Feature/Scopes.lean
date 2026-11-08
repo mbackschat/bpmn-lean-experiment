@@ -35,14 +35,6 @@ def innerStart? (ctx : Ctx) (scope : ElementId) (payload : ScopePayload) : Optio
   | .embedded => starts.find? (·.subscription.isNone)
   | .transaction => starts.find? (·.subscription.isNone)
 
-/-- An output whose target no visible scope declares lands in the process root, as a CIB Seven
-`setVariable` without a declaring scope does; the nested scope-data baselines
-(`nested-scope-data-order-null-risk`) observe an inner Sub-Process output at the root, not in the
-undeclaring parent. -/
-def writeOutput (state : State) (parent : ScopeOccurrenceId) (binding : String × Value) : State :=
-  if (state.visible parent).any (·.1 == binding.1) then state.write parent binding.1 binding.2
-  else state.write State.root binding.1 binding.2
-
 def enter (ctx : Ctx) (header : Header) (payload : ScopePayload) (parent : ScopeOccurrenceId)
     (extra : List (String × Value)) (state : State) : Outcome := do
   let locals ← ctx.evaluateMappings (state.visible parent) payload.envelope.inputs
@@ -70,7 +62,7 @@ def completeScope (ctx : Ctx) (_ : Header) (payload : ScopePayload) (occurrence 
     | none => .error (.semanticFailure "scope-occurrence-without-parent")
   let outputs ← ctx.evaluateMappings (state.visible occurrence.id) payload.envelope.outputs
   let left := (state.leaveScope occurrence.id).disarm occurrence.id.value
-  let written := outputs.foldl (fun state binding => writeOutput state parent binding) left
+  let written := outputs.foldl (fun state binding => state.writeOutward parent binding) left
   .ok (written.emit payload.envelope.outgoing parent)
 
 /-- `Signal.startEventSubProcess`. An interrupting Event Sub-Process first clears its parent occurrence, its other
