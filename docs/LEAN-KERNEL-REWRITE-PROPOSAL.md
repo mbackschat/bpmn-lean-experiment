@@ -160,7 +160,7 @@ Retained evidence (canonical results, CIB evidence) is regenerated once into the
 
 Lane shape: checked
 
-Evidence: W0's claim is executable parity of the Lean kernel's runner through the [pipeline](../scripts/test-pipeline.ts) against the frozen baseline. Lean stays the formal semantic authority as the executable specification that every scenario checks the TypeScript kernel and CIB Seven against, and each `Laws.<F>` states its feature's rules declaratively, independent of `Step`'s code. This proposal moves the `proved` lanes of the 2026-10-14 set (concurrency, cancellation, Compensation and Transaction, Multi-Instance) to a proof wave after the coverage rows close, which proves `Step` sound against the `Laws`, pending the owner's confirmation in the packet. Until then each is recorded as a deliberately open lane in the kernel status map with coverage closure as its reopen trigger. Rows already `done` (PC-DATA-01/02, PC-HUM-04, PC-SCOPE-04/05) keep their state on the kernel's scenario evidence; their former theorems are listed as open lanes in the same map.
+Evidence: W0's claim is executable parity of the Lean kernel's runner through the [pipeline](../scripts/test-pipeline.ts) against the frozen baseline. Lean stays the formal semantic authority as the executable specification that every scenario checks the TypeScript kernel and CIB Seven against, and each `Laws.<F>` states its feature's rules declaratively, independent of `Step`'s code. This proposal moves the `proved` lanes of the 2026-10-14 set (concurrency, cancellation, Compensation and Transaction, Multi-Instance) to a proof wave after the coverage rows close, which proves `Step` sound against the `Laws`, as decided under Owner decisions on the path. Until then each is recorded as a deliberately open lane in the kernel status map with coverage closure as its reopen trigger. Rows already `done` (PC-DATA-01/02, PC-HUM-04, PC-SCOPE-04/05) keep their state on the kernel's scenario evidence; their former theorems are listed as open lanes in the same map.
 
 ## Temporal hosting and refinement preflight
 
@@ -271,7 +271,7 @@ Budgets: M1–M9 five days across three parallel tracks; integration and qualifi
 
 ### Definition of done for a row
 
-This replaces the coverage target's inherited definition of done. A row is done when its acceptance clause in the [coverage target](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) holds on the kernel in Lean, TypeScript and the retained CIB evidence, and its track's combined review approved it. The kernel status map lists, per row, the open proof lanes it depends on. A hosted Temporal witness is needed only for a new hosting mechanism. Product 2 disclosure comes from the generated capability catalog. A whole corpus model is needed only where the row's acceptance clause names one; the journey rows carry the business models. A row marked `yes` in the `needs-expression-beyond-simple-boolean` column of the [row traceability table](kernel/ROW-TRACEABILITY.md) closes only on the JUEL level that delivers it. PC-AUTO-05 and PC-AUTO-06 stay owner-held on the Script runtime decision; while they are held, the qualification and acceptance rows that consume them and overall target acceptance cannot close, however complete the tracks look.
+This replaces the coverage target's inherited definition of done. A row is done when its acceptance clause in the [coverage target](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) holds on the kernel in Lean, TypeScript and the retained CIB evidence, and its track's combined review approved it. The kernel status map lists, per row, the open proof lanes it depends on. A hosted Temporal witness is needed only for a new hosting mechanism. Product 2 disclosure comes from the generated capability catalog. A whole corpus model is needed only where the row's acceptance clause names one; the journey rows carry the business models. A row marked `yes` in the `needs-expression-beyond-simple-boolean` column of the [row traceability table](kernel/ROW-TRACEABILITY-MAP.md) closes only on the JUEL level that delivers it. While PC-DELIVERY-01 or PC-QUALIFY-03 is held, overall target acceptance cannot close, however complete the tracks look.
 
 ### Verification cadence
 
@@ -283,7 +283,15 @@ HIGH track agents author kernel feature, admission and laws modules in Lean and 
 
 ## Owner decisions on the path
 
-One packet during W0, each item with a recommendation: confirmation of the proof-wave deferral; PC-AUTO-05 Script runtime and PC-AUTO-07 decision engine (M3); PC-TIMER-02 Cron dialect (M6); PC-DELIVERY-01 and PC-QUALIFY-03 qualification holds on the recorded Temporal SDK defects, which block acceptance while SDK work stays prohibited.
+Decided on 2026-11-08 under the owner's direction to decide autonomously; none adds a dependency or a JVM.
+
+| Item | Decision | Basis |
+|---|---|---|
+| Proof wave | Deferred until the coverage rows close; until then each proved lane is an open lane in the kernel status map | proofs over a moving `Step` are rewritten, the old slowdown's main cost; Lean stays the executable specification checked by every scenario |
+| PC-AUTO-05, PC-AUTO-06 Script | JavaScript Script Tasks run in the TypeScript host's built-in Node `vm` with a read-only context and no host objects; the result is recorded like an effect result, so replay never reruns it; other languages are refused | CIB's default script language without its JVM engine; the `vm` is no security boundary, so scripts are trusted model content |
+| PC-AUTO-07 decisions | DMN decision tables evaluated in the kernel, Lean and TypeScript, with the hit policies UNIQUE, FIRST, ANY, COLLECT and RULE ORDER and a bounded FEEL unary-test subset (literals, comparisons, ranges, lists, negation); other FEEL is refused | the same treatment as the JUEL subset: the specification is normative, CIB's DMN engine the oracle, Lean the authority |
+| PC-TIMER-02 Cron | CIB's cron dialect, with its seconds field, evaluated in the kernel over UTC from logical time; CIB's use of the JVM default time zone is a classified register difference; other zones are refused | deterministic and replay-safe without time-zone data |
+| PC-DELIVERY-01, PC-QUALIFY-03 | Stay held; re-qualified against the generic Temporal host once it replaces the adapter, since TD-001 and TD-002 arose in the deleted adapter's code paths | SDK work stays prohibited; the [ledger](TEMPORAL-DEFECTS-LEDGER.md) keeps the dispositions |
 
 ## Process and rule reset
 
