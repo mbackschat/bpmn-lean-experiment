@@ -14,7 +14,7 @@ import {
   scopeReentryProgram, structuredScopeDataCheckedStartNames, structuredScopeDataProgramStartNames,
 } from "@bpmn-lean/semantic-core";
 import type { SemanticProcessProgram } from "@bpmn-lean/semantic-core";
-import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
+import { assertProgramSchema, semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 
 const directory = new URL("../../../scenarios/activity-host-merge/", import.meta.url);
 const model = "claim-review";
@@ -37,6 +37,7 @@ async function admitted(xml: string, label: string) {
   const result = await compile(xml);
   assert.ok(result.status === BpmnCompilationStatus.Accepted, `${label}: ${JSON.stringify(result.diagnostics)}`);
   assert.equal(isWellFormedSemanticProcessProgram(result.semanticProcess), true, label);
+  assertProgramSchema(result.semanticProcess, label);
   // Both levels route to the re-entry account independently, so a widening at one level only cannot pass. The checked
   // analyses read the Link-free graph (LNK-CONT-01), which is the checked graph itself for a model without Links.
   const checked = contractLinks(result.checkedProcess);

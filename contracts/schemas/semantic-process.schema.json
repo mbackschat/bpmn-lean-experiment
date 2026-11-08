@@ -2758,7 +2758,7 @@
         },
         "inputs": {
           "type": "array",
-          "minItems": 2,
+          "minItems": 1,
           "uniqueItems": true,
           "items": {
             "$ref": "#/$defs/nonemptyString"
@@ -2767,13 +2767,25 @@
         "outputs": {
           "type": "array",
           "minItems": 1,
-          "maxItems": 1,
           "items": {
             "$ref": "#/$defs/activityOutput"
           }
         },
         "work": {
           "$ref": "#/$defs/activityWork"
+        }
+      },
+      "not": {
+        "type": "object",
+        "properties": {
+          "inputs": {
+            "type": "array",
+            "maxItems": 1
+          },
+          "outputs": {
+            "type": "array",
+            "maxItems": 1
+          }
         }
       }
     },

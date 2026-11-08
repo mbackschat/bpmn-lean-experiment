@@ -17,7 +17,7 @@ import {
   structuredScopeDataProgramStartNames,
 } from "@bpmn-lean/semantic-core";
 import type { CheckedProcess, SemanticOperation, SemanticProcessProgram, Stimulus } from "@bpmn-lean/semantic-core";
-import { semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
+import { assertProgramSchema, programSchemaAccepts, semanticProcessTestLimits } from "./semantic-process-compilation-test-support.ts";
 
 const directory = new URL("../../../scenarios/activity-host-split/", import.meta.url);
 const model = "insurance-claim-intake";
@@ -43,6 +43,7 @@ async function admitted(xml: string, label: string) {
   const result = await compile(xml);
   assert.ok(result.status === BpmnCompilationStatus.Accepted, `${label}: ${JSON.stringify(result.diagnostics)}`);
   assert.equal(isWellFormedSemanticProcessProgram(result.semanticProcess), true, label);
+  assertProgramSchema(result.semanticProcess, label);
   // Each level admits the model independently, so a widening at one level only cannot pass (wrong algorithm 1).
   assert.notEqual(structuredScopeDataProgramAnalysis(result.semanticProcess), null, `${label}: Program analysis`);
   assert.notEqual(structuredScopeDataCheckedAnalysis(result.checkedProcess), null, `${label}: checked analysis`);
@@ -233,6 +234,17 @@ test("ACSP-ADMIT-01: a root Task split beside a root Call or Choice is refused a
     assert.ok(host.kind === SemanticOperationKind.Activity && host.outputs.length === 2, `${name}: ${task} lowers to a host`);
     assert.equal(structuredScopeDataProgramAnalysis(program), null, `${name}: ${task} split, Program alone`);
   }
+});
+
+// The Program schema carries ACSP-HOST-01's shape bound: a splitting host validates, and the same host cut to one output,
+// which would double the legacy encoding, does not.
+test("ACSP-HOST-01: the Program schema refuses a host with one input and one output", async () => {
+  const program = await admitted(await source(), model);
+  const register = only(program, "RegisterClaim", SemanticOperationKind.Activity);
+  assert.ok(register.kind === SemanticOperationKind.Activity);
+  const plain = { ...register, outputs: register.outputs.slice(0, 1) };
+  assert.equal(programSchemaAccepts({ ...program, operations: program.operations.map((operation) =>
+    operation === register ? plain : operation) }), false);
 });
 
 // The refused edits that add a flow, on the lowered Program alone: a split on a split's branch (wrong algorithm 5) and a
