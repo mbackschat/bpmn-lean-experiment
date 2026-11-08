@@ -20,4 +20,6 @@ def start (payload : StartPayload) : Option String :=
   | none => none
   | some _ => some "start.triggered"
 
+def link (_ : EventPayload) : Option String := some "event.link"
+
 end Kernel.Admission.Flow

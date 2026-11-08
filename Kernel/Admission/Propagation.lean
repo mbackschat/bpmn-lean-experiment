@@ -18,11 +18,5 @@ def throwRecord : Throw → Option String
   | .cancel => some "throw.cancel"
   | .terminate => some "throw.terminate"
 
-def event (payload : EventPayload) : Option String :=
-  match payload.role with
-  | .catch _ => some "event.catch"
-  | .throw record => throwRecord record
-  | .linkCatch _ => some "event.link"
-  | .linkThrow _ => some "event.link"
 
 end Kernel.Admission.Propagation

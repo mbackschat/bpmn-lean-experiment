@@ -87,9 +87,13 @@ structure CorrelationCriterion where
   value : Expression
   deriving Repr
 
+/-- `name` is the BPMN Message's identifier; `interfaceRef` and `operationRef` name the Operation that carries it,
+when the model gives one. -/
 structure MessageTrigger where
   name : ValueSource
   correlation : List CorrelationCriterion := []
+  interfaceRef : Option String := none
+  operationRef : Option String := none
   deriving Repr
 
 structure SignalTrigger where

@@ -23,6 +23,7 @@ structure ScopeOccurrence where
   id : ScopeOccurrenceId
   element : Option ElementId
   parent : Option ScopeOccurrenceId
+  activation : Nat := 0
   deriving Repr
 
 /-- A token on a sequence flow, inside a scope occurrence. -/
@@ -42,37 +43,109 @@ structure UserTaskDetail where
   name : Option String
   candidateGroups : List String := []
   formFields : List (String × String) := []
+  inputs : List (String × Value) := []
+  deriving Repr
+
+/-- A Message address: the Message's identifier and, when the model routes it through an Operation, that
+Operation. `messageId = none` is an unspecified Message. -/
+structure MessageChannel where
+  messageId : Option String
+  interfaceRef : Option String := none
+  operationRef : Option String := none
   deriving DecidableEq, Repr
+
+structure MessageWaitDetail where
+  channel : MessageChannel
+  /-- The delivery carries a payload the wait writes. -/
+  payload : Bool := false
+  deriving Repr
+
+/-- `period` re-arms a cycle Timer after it fires. -/
+structure TimerDetail where
+  deadlineMs : Nat
+  period : Option Nat := none
+  deriving Repr
+
+structure EffectDetail where
+  protocol : String
+  operation : String
+  arguments : List (String × Value) := []
+  deriving Repr
+
+/-- `cancellable` publishes the `cancelIncidentProcess` interaction beside `retryIncident`. -/
+structure IncidentDetail where
+  effect : EffectDetail
+  generation : Nat := 1
+  cancellable : Bool := false
+  deriving Repr
 
 /-- Guarded type: only `Kernel.Step` and `Kernel.Publish` match on it. Each kind carries the typed detail its
 public observation needs, filled by the feature that opens the item. -/
 inductive OpenKind where
   | userTask (detail : UserTaskDetail)
-  | receive
-  | timer
-  | subscription
-  | effect
-  | incident
-  | evaluation
-  deriving DecidableEq, Repr
+  | message (detail : MessageWaitDetail)
+  | timer (detail : TimerDetail)
+  | effect (detail : EffectDetail)
+  | incident (detail : IncidentDetail)
+  | evaluation (request : Nat)
+  deriving Repr
 
-/-- One open interaction. `activation` counts activations of `element` in this process instance, from 1. -/
+/-- One open interaction. `activation` counts activations of `element` in this process instance, from 1.
+`attachedTo` is the host an attached subscription belongs to: the id of the host's own item, or the value of the
+host scope occurrence's id. A `passive` item, such as an Event Sub-Process start subscription, keeps no scope
+occurrence alive and is removed when its scope completes. -/
 structure OpenItem where
   id : Nat
   kind : OpenKind
   element : ElementId
   scope : ScopeOccurrenceId
   activation : Nat
+  attachedTo : Option Nat := none
+  passive : Bool := false
   deriving Repr
 
 inductive InstanceStatus where
   | running
   | completed
-  | terminated
+  | cancelled
+  | failed
   deriving DecidableEq, Repr
 
-/-- Feature-owned data. Each slot is fixed at W0.1 from the row traceability table and starts empty. -/
+/-- A thrown event that propagates to a catcher. -/
+inductive Raised where
+  | error (code : String) (message : Option String)
+  | escalation (code : String)
+  | signal (name : String)
+  | compensation (activity : Option ElementId) (waitForCompletion : Bool)
+  | cancel
+  deriving Repr
+
+/-- Where a raised event starts its search: the throwing element, the scope occurrence it ran in, and, for an
+Activity, the host id its boundaries are attached to. -/
+structure Origin where
+  element : ElementId
+  scope : ScopeOccurrenceId
+  host : Option Nat := none
+  deriving Repr
+
+/-- Guarded type: `Kernel.Step` owns matching on it. The cross-feature protocol: a feature that needs another
+feature's mechanism enqueues a signal, and `Step` hands it to the owning hook before any token moves. -/
+inductive Signal where
+  /-- Arm the boundaries of `element`, attached to `host`, in `scope`. -/
+  | arm (host : Nat) (element : ElementId) (scope : ScopeOccurrenceId)
+  /-- Arm the Event Sub-Process starts of the scope occurrence `scope` (the process root included). -/
+  | armScope (scope : ScopeOccurrenceId)
+  /-- Arm the arms of the Event-Based Gateway `gateway`, reached in `scope`. -/
+  | armGateway (gateway : ElementId) (scope : ScopeOccurrenceId)
+  | raise (event : Raised) (origin : Origin)
+  /-- Start the Event Sub-Process `element` inside `parent`, writing `variables` into its new occurrence. -/
+  | startEventSubProcess (element : ElementId) (parent : ScopeOccurrenceId) (variables : List (String × Value))
+  deriving Repr
+
+/-- Feature-owned data. Each slot is fixed at W0.1 from the row traceability table and starts empty.
+`parked` holds tokens that reached a join and wait for its other incoming flows (`Kernel.Feature.Flow`). -/
 structure FeatureSlots where
+  parked : List Token := []
   deriving Repr
 
 structure State where
@@ -85,6 +158,7 @@ structure State where
   activations : List (ElementId × Nat) := []
   nextIssue : Nat := 1
   logicalTimeMs : Nat := 0
+  signals : List Signal := []
   slots : FeatureSlots := {}
   deriving Repr
 
@@ -113,6 +187,8 @@ structure OccurrenceRef where
 
 inductive CommandAction where
   | completeUserTask (values : List (String × Value))
+  | retryIncident
+  | cancelIncidentProcess
   deriving Repr
 
 structure CommandInput where
@@ -120,11 +196,18 @@ structure CommandInput where
   action : CommandAction
   deriving Repr
 
+/-- A Message delivered to the subscription `occurrence` names. -/
 structure DeliveryInput where
-  trigger : String
-  name : String
+  occurrence : OccurrenceRef
+  channel : MessageChannel
   correlation : List (String × Value) := []
-  payload : List (String × Value) := []
+  payload : Option Value := none
+  deriving Repr
+
+/-- What fired a message or timer subscription. -/
+inductive Fired where
+  | timer (logicalTimeMs : Nat)
+  | message (delivery : DeliveryInput)
   deriving Repr
 
 structure TimerInput where
@@ -134,8 +217,8 @@ structure TimerInput where
 
 inductive EffectOutcome where
   | success (outputs : List (String × Value))
-  | businessFailure (code : String) (message : Option String)
-  | technicalFailure (message : String)
+  | businessFailure (code : String) (message : Option String) (outputs : List (String × Value))
+  | technicalFailure
   deriving Repr
 
 structure EffectInput where
@@ -186,8 +269,61 @@ def openItem (state : State) (kind : OpenKind) (element : ElementId) (scope : Sc
   let (state, id) := state.issue
   { state with openItems := state.openItems ++ [{ id, kind, element, scope, activation }] }
 
+def signal (state : State) (signal : Signal) : State :=
+  { state with signals := state.signals ++ [signal] }
+
 def closeItem (state : State) (id : Nat) : State :=
   { state with openItems := state.openItems.filter (·.id != id) }
+
+/-- Remove the items attached to `host`. -/
+def disarm (state : State) (host : Nat) : State :=
+  { state with openItems := state.openItems.filter (·.attachedTo != some host) }
+
+def openAttached (state : State) (kind : OpenKind) (element : ElementId) (scope : ScopeOccurrenceId)
+    (host : Option Nat) : State × Nat :=
+  let (state, activation) := state.activate element
+  let (state, id) := state.issue
+  ({ state with openItems := state.openItems ++ [{ id, kind, element, scope, activation, attachedTo := host }] }, id)
+
+/-- Enter a new scope occurrence of `element` inside `parent`, with the given local variables. -/
+def enterScope (state : State) (element : ElementId) (parent : ScopeOccurrenceId)
+    (locals : List (String × Value)) : State × ScopeOccurrenceId :=
+  let (state, activation) := state.activate element
+  let (state, issued) := state.issue
+  let id : ScopeOccurrenceId := ⟨issued⟩
+  ({ state with
+      scopes := state.scopes ++ [{ id, element := some element, parent := some parent, activation }]
+      variables := state.variables ++ [{ scope := id, entries := locals }] }, id)
+
+/-- The scope occurrences inside `scope`, transitively, including `scope`. -/
+def subtree (state : State) (scope : ScopeOccurrenceId) : List ScopeOccurrenceId :=
+  let rec go (fuel : Nat) (frontier : List ScopeOccurrenceId) (seen : List ScopeOccurrenceId) :
+      List ScopeOccurrenceId :=
+    match fuel, frontier with
+    | 0, _ | _, [] => seen
+    | fuel + 1, next :: rest =>
+      let children := (state.scopes.filter (·.parent == some next)).map (·.id)
+      go fuel (rest ++ children) (seen ++ [next])
+  go (state.scopes.length + 1) [scope] []
+
+/-- Remove every token, item, parked token, variable set and child scope occurrence inside `scope`, keeping
+`scope` itself. The owning features are told nothing: what a removal means is the caller's account. -/
+def clearInside (state : State) (scope : ScopeOccurrenceId) : State :=
+  let inside := state.subtree scope
+  let nested := inside.filter (· != scope)
+  { state with
+      tokens := state.tokens.filter (!inside.contains ·.scope)
+      openItems := state.openItems.filter (!inside.contains ·.scope)
+      scopes := state.scopes.filter (!nested.contains ·.id)
+      variables := state.variables.filter (!nested.contains ·.scope)
+      slots := { state.slots with parked := state.slots.parked.filter (!inside.contains ·.scope) } }
+
+/-- Leave `scope`: clear it and remove the occurrence and its variables. -/
+def leaveScope (state : State) (scope : ScopeOccurrenceId) : State :=
+  let cleared := state.clearInside scope
+  { cleared with
+      scopes := cleared.scopes.filter (·.id != scope)
+      variables := cleared.variables.filter (·.scope != scope) }
 
 /-- Variables visible from `scope`, innermost first. -/
 def visible (state : State) (scope : ScopeOccurrenceId) : List (String × Value) :=

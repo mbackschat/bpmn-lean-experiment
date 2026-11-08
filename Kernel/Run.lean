@@ -20,13 +20,13 @@ namespace Kernel.Run
 
 open Lean (Json toJson)
 
-def taskRefJson (ref : Publish.TaskRef) : Json :=
-  Json.mkObj [("processInstanceId", Json.str ref.processInstanceId), ("elementId", Json.str ref.elementId),
-    ("activation", toJson ref.activation)]
+def occurrenceJson (id : Publish.OccurrenceId) : Json :=
+  Json.mkObj [("processInstanceId", Json.str id.processInstanceId), ("elementId", Json.str id.elementId),
+    ("activation", toJson id.activation)]
 
 /-- `metadata` appears only for a task with candidate groups, and `form` within it only with form fields. -/
 def openUserTaskJson (task : Publish.OpenUserTask) : Json :=
-  let base := [("id", taskRefJson task.id),
+  let base := [("id", occurrenceJson task.id),
     ("name", match task.name with | some name => Json.str name | none => Json.null), ("state", Json.str "active")]
   let form := if task.formFields.isEmpty then [] else
     [("form", Json.mkObj [("fields", Json.arr (task.formFields.map fun (key, type) =>
@@ -36,18 +36,42 @@ def openUserTaskJson (task : Publish.OpenUserTask) : Json :=
       Json.mkObj [("id", Json.str group), ("kind", Json.str "group")]).toArray)])] ++ form))]
   Json.mkObj (base ++ metadata)
 
+def openEffectJson (effect : Publish.OpenEffect) : Json :=
+  Json.mkObj [("id", occurrenceJson effect.id),
+    ("descriptor", Json.mkObj [("protocol", Json.str effect.protocol), ("operation", Json.str effect.operation)]),
+    ("arguments", Codec.bindingsToJson effect.arguments)]
+
+def incidentIdJson (effect : Publish.OccurrenceId) (generation : Nat) : Json :=
+  Json.mkObj [("effectId", occurrenceJson effect), ("generation", toJson generation)]
+
+def interactionJson (instanceId : String) : Publish.EnabledInteraction → Json
+  | .completeUserTask task => Json.mkObj [("kind", "completeUserTaskInstance"), ("taskId", occurrenceJson task)]
+  | .deliverMessage subscription channel => Json.mkObj [("kind", "deliverMessage"),
+      ("subscriptionId", occurrenceJson subscription), ("channel", Codec.channelToJson channel)]
+  | .deliverPayloadMessage subscription channel => Json.mkObj [("kind", "deliverPayloadMessage"),
+      ("subscriptionId", occurrenceJson subscription), ("channel", Codec.channelToJson channel)]
+  | .retryIncident effect generation =>
+    Json.mkObj [("kind", "retryIncident"), ("incidentId", incidentIdJson effect generation)]
+  | .cancelIncidentProcess effect generation => Json.mkObj [("kind", "cancelIncidentProcess"),
+      ("processInstanceId", Json.str instanceId), ("incidentId", incidentIdJson effect generation)]
+
 def observationJson (state : State) : Json :=
   let o := Publish.observe state
+  let array {α : Type} (items : List α) (encode : α → Json) : Json := Json.arr (items.map encode).toArray
   Json.mkObj [
     ("kind", "state"), ("instanceId", Json.str o.instanceId), ("status", Json.str o.status),
-    ("activeWaits", Json.arr (o.activeWaits.map fun wait => Json.mkObj [("elementId", Json.str wait.elementId),
-      ("kind", Json.str wait.kind), ("multiplicity", toJson wait.multiplicity)]).toArray),
-    ("openUserTasks", Json.arr (o.openUserTasks.map openUserTaskJson).toArray),
-    ("openMessageSubscriptions", Json.arr #[]), ("openTimers", Json.arr #[]), ("openEffects", Json.arr #[]),
-    ("openIncidents", Json.arr #[]),
+    ("activeWaits", array o.activeWaits fun wait => Json.mkObj [("elementId", Json.str wait.elementId),
+      ("kind", Json.str wait.kind), ("multiplicity", toJson wait.multiplicity)]),
+    ("openUserTasks", array o.openUserTasks openUserTaskJson),
+    ("openMessageSubscriptions", array o.openMessageSubscriptions fun subscription =>
+      Json.mkObj [("id", occurrenceJson subscription.id), ("channel", Codec.channelToJson subscription.channel)]),
+    ("openTimers", array o.openTimers fun timer =>
+      Json.mkObj [("id", occurrenceJson timer.id), ("deadlineMs", toJson timer.deadlineMs)]),
+    ("openEffects", array o.openEffects openEffectJson),
+    ("openIncidents", array o.openIncidents fun incident => Json.mkObj [("kind", "effectExecutionFailed"),
+      ("id", incidentIdJson incident.effect.id incident.generation), ("effect", openEffectJson incident.effect)]),
     ("variables", Codec.bindingsToJson o.variables),
-    ("enabledInteractions", Json.arr (o.enabledInteractions.map fun interaction => Json.mkObj [
-      ("kind", Json.str interaction.kind), ("taskId", taskRefJson interaction.taskId)]).toArray),
+    ("enabledInteractions", array o.enabledInteractions (interactionJson o.instanceId)),
     ("logicalTimeMs", toJson o.logicalTimeMs)]
 
 def commandJson (commandId outcome : String) : Json :=
