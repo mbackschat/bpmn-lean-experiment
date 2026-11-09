@@ -186,7 +186,7 @@ test("serves a generated presentation while retaining exact admitted M3 source",
   try {
     assert.equal(await runtime.listen(), origin);
     const deploy = await fetch(
-      `${origin}/api/v1/definitions?sourceId=m3.bpmn&semanticProfile=cibseven-2.2.0-user-task-assignment-form-metadata-draft`,
+      `${origin}/api/v1/definitions?sourceId=m3.bpmn&semanticProfile=cibseven-2.2.0`,
       {
         method: "POST",
         headers: { "content-type": "application/bpmn+xml" },
@@ -382,7 +382,7 @@ function platformConfig(
     temporalNamespace: "default",
     temporalTaskQueue: "bpmn-semantic",
     temporalConnectTimeoutMs: 5_000,
-    engineDeployment: { profiles: { "cibseven-2.2.0-user-task-assignment-form-metadata-draft": [] }, servedRequirements: { timers: true, messages: true, effects: true, userTasks: true, calls: true }, effectStartToCloseMs: 30_000 },
+    engineDeployment: { profiles: { "cibseven-2.2.0": [] }, servedRequirements: { timers: true, messages: true, effects: true, userTasks: true, calls: true }, effectStartToCloseMs: 30_000 },
     fakeActorId: "demo-user",
     fakeActorGroups: ["reviewers", "operators"],
     operationsGroupId: "operators",

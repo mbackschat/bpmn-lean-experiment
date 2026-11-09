@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "event-based-gateway-message-wins",
-  "profile": "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "event-based-gateway-message-timer",
     "relativePath": "scenarios/event-based-gateway-message-timer/process.bpmn",

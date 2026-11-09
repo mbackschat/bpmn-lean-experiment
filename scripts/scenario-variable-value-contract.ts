@@ -1,28 +1,52 @@
 import { requireUnicodeScalarString } from "./strict-json.ts";
 
-const structuredHumanWorkProfile =
-  "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
-const sequentialMultiInstanceProfile =
-  "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
-const parallelMultiInstanceProfile =
-  "bpmn-2.0.2-parallel-multi-instance-user-task-draft";
-const messagePayloadCatchProfile =
-  "bpmn-2.0.2-message-payload-catch-draft";
-const portableHandoffProfile =
-  "bpmn-2.0.2-portable-business-values-handoff-draft";
-const portableEffectDataProfile =
-  "cibseven-2.2.0-portable-business-effect-data-draft";
-const nestedScopeDataProfile =
-  "cibseven-2.2.0-nested-embedded-scope-data-draft";
-const portableMessagePayloadProfile =
-  "bpmn-2.0.2-portable-business-message-payload-draft";
+/**
+ * A scenario's profile-local value surface. The consolidated profiles carry no per-variant identity, so a surface is
+ * named by the one BPMN process its scenarios bind, except the nested scope data surface, which every scenario of the
+ * scope-chain profile takes (that profile exists for exactly the scenarios that selected it).
+ */
+const structuredHumanWorkFamily = "structuredHumanWork";
+const sequentialMultiInstanceFamily = "sequentialMultiInstance";
+const parallelMultiInstanceFamily = "parallelMultiInstance";
+const messagePayloadCatchFamily = "messagePayloadCatch";
+const portableHandoffFamily = "portableHandoff";
+const portableEffectDataFamily = "portableEffectData";
+const nestedScopeDataFamily = "nestedScopeData";
+const portableMessagePayloadFamily = "portableMessagePayload";
+type ValueFamily =
+  | typeof structuredHumanWorkFamily
+  | typeof sequentialMultiInstanceFamily
+  | typeof parallelMultiInstanceFamily
+  | typeof messagePayloadCatchFamily
+  | typeof portableHandoffFamily
+  | typeof portableEffectDataFamily
+  | typeof nestedScopeDataFamily
+  | typeof portableMessagePayloadFamily
+  | "none";
+
+const familyByProcess: ReadonlyMap<string, ValueFamily> = new Map([
+  ["expense-exception-review", structuredHumanWorkFamily],
+  ["sequential-multi-instance-review", sequentialMultiInstanceFamily],
+  ["parallel-multi-instance-risk-review", parallelMultiInstanceFamily],
+  ["message-payload-catch-process", messagePayloadCatchFamily],
+  ["portable-handoff-order", portableHandoffFamily],
+  ["shipment-manifest-intake", portableMessagePayloadFamily],
+  ["credit-decision", portableEffectDataFamily],
+]);
+
+function valueFamily(scenario: ScenarioVariableValueContractInput): ValueFamily {
+  if (scenario.profile === "cibseven-2.2.0-scope-chain") return nestedScopeDataFamily;
+  return familyByProcess.get(scenario.bpmn.id) ?? "none";
+}
+
 // SingletonBusinessItem root String bound of the serial handoff's Process Start and User Task completion, which the
-// effect-data profile also applies to its String/Null Process Start and its effect results, and the Message-payload
-// profile to its payload. The nested scope-data profile applies it to Start, User Task completion and effect results.
+// effect-data surface also applies to its String/Null Process Start and its effect results, the Message-payload surface
+// to its payload, and the nested scope data surface to Start, User Task completion and effect results.
 const portableHandoffRootStringBytes = 1_024;
 
 export type ScenarioVariableValueContractInput = Readonly<{
   profile: string;
+  bpmn: Readonly<{ id: string }>;
   stimuli: ReadonlyArray<Readonly<Record<string, unknown>>>;
 }>;
 
@@ -30,11 +54,12 @@ export type ScenarioVariableValueContractInput = Readonly<{
 export function verifyScenarioVariableValueContract(
   scenario: ScenarioVariableValueContractInput,
 ): void {
+  const family = valueFamily(scenario);
   for (const stimulus of scenario.stimuli) {
-    if (scenario.profile === sequentialMultiInstanceProfile) {
+    if (family === sequentialMultiInstanceFamily) {
       verifySequentialMultiInstanceStimulus(stimulus);
     }
-    if (scenario.profile === parallelMultiInstanceProfile) {
+    if (family === parallelMultiInstanceFamily) {
       verifyParallelMultiInstanceStimulus(stimulus);
     }
     for (const patch of variablePatches(stimulus)) {
@@ -52,7 +77,7 @@ export function verifyScenarioVariableValueContract(
             readonly kind?: unknown;
             readonly value?: unknown;
           };
-          verifyProfileValue(scenario.profile, patch.surface, tagged);
+          verifyFamilyValue(family, patch.surface, tagged);
           requireByteCeiling(tagged, 16_384, "tagged value");
         }
         requireByteCeiling(binding, 20_480, "binding");
@@ -208,23 +233,23 @@ function requireExactBinding(
   }
 }
 
-function verifyProfileValue(
-  profile: string,
+function verifyFamilyValue(
+  family: ValueFamily,
   surface: "start" | "completion" | "effect" | "payload",
   tagged: Readonly<{ kind?: unknown; value?: unknown }>,
 ): void {
   if (surface === "payload") {
-    verifyMessagePayloadValue(profile, tagged);
+    verifyMessagePayloadValue(family, tagged);
     return;
   }
-  const portableHandoffSurface = (profile === portableHandoffProfile && (surface === "start" || surface === "completion")) ||
-    (profile === portableEffectDataProfile && surface === "effect") || profile === nestedScopeDataProfile;
-  const boundedRootString = portableHandoffSurface || (profile === portableEffectDataProfile && surface === "start");
+  const portableHandoffSurface = (family === portableHandoffFamily && (surface === "start" || surface === "completion")) ||
+    (family === portableEffectDataFamily && surface === "effect") || family === nestedScopeDataFamily;
+  const boundedRootString = portableHandoffSurface || (family === portableEffectDataFamily && surface === "start");
   switch (tagged.kind) {
     case "integer":
       if (portableHandoffSurface) return;
       if (
-        profile !== structuredHumanWorkProfile ||
+        family !== structuredHumanWorkFamily ||
         surface !== "completion"
       ) {
         throw new TypeError(
@@ -241,15 +266,15 @@ function verifyProfileValue(
       return;
     case "stringList":
       if (
-        profile === structuredHumanWorkProfile &&
+        family === structuredHumanWorkFamily &&
         surface === "completion"
       ) {
         verifyStructuredValue(tagged);
         return;
       }
       if (
-        (profile === sequentialMultiInstanceProfile ||
-          profile === parallelMultiInstanceProfile) &&
+        (family === sequentialMultiInstanceFamily ||
+          family === parallelMultiInstanceFamily) &&
         surface === "start"
       ) {
         verifySequentialMultiInstanceInput(tagged);
@@ -260,7 +285,7 @@ function verifyProfileValue(
       );
     case "decimal":
     case "map":
-      // The recursive portable arms are well-formed wire values; only the serial handoff and effect-data profiles select them.
+      // The recursive portable arms are well-formed wire values; only the serial handoff and effect-data and nested scope data surfaces select them.
       if (portableHandoffSurface) return;
       throw new TypeError(
         `${tagged.kind} values are admitted by no registered scenario profile`,
@@ -276,14 +301,14 @@ function verifyProfileValue(
 }
 
 function verifyMessagePayloadValue(
-  profile: string,
+  family: ValueFamily,
   tagged: Readonly<{ kind?: unknown; value?: unknown }>,
 ): void {
-  if (profile === portableMessagePayloadProfile) {
+  if (family === portableMessagePayloadFamily) {
     verifySingletonBusinessPayload(tagged);
     return;
   }
-  if (profile !== messagePayloadCatchProfile) {
+  if (family !== messagePayloadCatchFamily) {
     throw new TypeError(
       "payload-bearing Message delivery is only admitted for the Message payload catch profile or the structured Message payload profile",
     );

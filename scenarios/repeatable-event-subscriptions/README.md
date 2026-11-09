@@ -1,6 +1,6 @@
 # Repeatable Event subscription scenarios
 
-These answer-free scenarios use the [bounded subscription profile](../../profiles/bpmn-2.0.2-repeatable-event-subscriptions-draft/README.md) to review an application while independent audit proceeds. Each model supplies a complete business outcome, including review cancellation, exact subscription withdrawal, surviving outside work and archival completion. Related models retain the existing `subprocess-termination` clone family; source variants do not inflate independent business-family reach.
+These answer-free scenarios use the [bounded subscription profile](../../profiles/cibseven-2.2.0/README.md) to review an application while independent audit proceeds. Each model supplies a complete business outcome, including review cancellation, exact subscription withdrawal, surviving outside work and archival completion. Related models retain the existing `subprocess-termination` clone family; source variants do not inflate independent business-family reach.
 
 | Model | Scenario inputs | Business purpose |
 |---|---|---|

@@ -15,7 +15,7 @@ import { EffectResultKind } from "@bpmn-lean/temporal-host/worker";
 import type { EffectHandler } from "../src/host-worker.ts";
 import { processWorkflowId } from "../src/process-address.ts";
 
-export const compensationProfile = "bpmn-2.0.2-compensation-source-checkpoint-draft";
+export const compensationProfile = "bpmn-2.0.2";
 export const compensationSourceSha256 = "516073af27fbe95c319918b248c2563c2505263e7542db6f3e8d981f82d8dc93";
 export const failureCode = "undo-failed";
 export const failureMessage = "Travel cancellation handler failed — réservation 😀";

@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "parallel-multi-instance-interrupted",
-  "profile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "parallel-multi-instance-risk-review",
     "relativePath": "scenarios/parallel-multi-instance/process.bpmn",

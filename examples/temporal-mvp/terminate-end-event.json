@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/terminate-end-event/process.bpmn",
     "sourceId": "terminate-end-event-process",
-    "semanticProfile": "bpmn-2.0.2-terminate-end-event-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

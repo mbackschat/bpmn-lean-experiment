@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "concurrent-scope-effects-claim-fetch-first",
-  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "claim-intake",
     "relativePath": "scenarios/concurrent-scope-service-tasks/claim-intake.bpmn",
     "sha256": "e7b930e7a73ee1b82327556d0f08f1b242a04dc9654cc8e1f7b5e83a98a239d6",
     "sourceOverlay": {
       "id": "claim-intake-handlers",
-      "sha256": "656118dde8b2bb3e02db03072dbb92ccad56d817ba09a482ace0990eaf362f29"
+      "sha256": "9cadb870917f12d8db711118fe57497b66135a7f936afa71ee956b3c7b1f4431"
     }
   },
   "stimuli": [

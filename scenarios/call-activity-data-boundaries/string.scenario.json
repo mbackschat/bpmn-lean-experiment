@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "call-data-supplier-string",
-  "profile": "bpmn-2.0.2-call-activity-data-boundaries-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "supplier-call-recovery",
     "relativePath": "scenarios/call-activity-data-boundaries/process.bpmn",

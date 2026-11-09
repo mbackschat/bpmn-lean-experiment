@@ -14,7 +14,7 @@ import type {
 
 export const sharedDefinitionProcessId = "Process_ExpenseExceptionReview";
 export const sharedDefinitionProfile =
-  "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
+  "bpmn-2.0.2";
 export const sharedTimerStartCapability = Object.freeze({
   startEventId: "Timer_Start",
   durationMs: 60_000,

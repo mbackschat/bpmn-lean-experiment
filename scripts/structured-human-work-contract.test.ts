@@ -8,8 +8,9 @@ import type { SchemaObject } from "ajv/dist/2020.js";
 import {
   verifyScenarioVariableValueContract,
 } from "./contract-artifacts.ts";
-const structuredProfile =
-  "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
+// The consolidated standards profile names no family; the scenario's BPMN process selects the value surface.
+const structuredIdentity = { profile: "bpmn-2.0.2", bpmn: { id: "expense-exception-review" } } as const;
+const otherIdentity = { profile: "bpmn-2.0.2", bpmn: { id: "user-task-boolean-completion-process" } } as const;
 
 async function schemaDefinition(
   schemaName: string,
@@ -32,10 +33,10 @@ function validateDefinition(definition: SchemaObject, value: unknown): boolean {
 
 function completionScenario(
   submittedValues: ReadonlyArray<unknown>,
-  profile = structuredProfile,
+  identity: { profile: string; bpmn: { id: string } } = structuredIdentity,
 ): unknown {
   return {
-    profile,
+    ...identity,
     stimuli: [{
       kind: "command",
       action: { kind: "completeUserTask", values: submittedValues },
@@ -84,12 +85,12 @@ test("semantic stimulus validation rejects negative zero and new values on every
     assert.throws(
       () => verifyScenarioVariableValueContract(completionScenario([
         binding("value", value),
-      ], "cibseven-2.2.0-user-task-boolean-completion-data-draft") as never),
+      ], otherIdentity) as never),
       /only admitted for structured Human Work completion/u,
     );
     assert.throws(
       () => verifyScenarioVariableValueContract({
-        profile: structuredProfile,
+        ...structuredIdentity,
         stimuli: [{
           kind: "start",
           variables: [binding("value", value)],
@@ -99,7 +100,7 @@ test("semantic stimulus validation rejects negative zero and new values on every
     );
     assert.throws(
       () => verifyScenarioVariableValueContract({
-        profile: structuredProfile,
+        ...structuredIdentity,
         stimuli: [{
           kind: "effectResult",
           outcome: { kind: "success", outputs: [binding("value", value)] },

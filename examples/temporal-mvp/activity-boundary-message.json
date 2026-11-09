@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/activity-boundary-message/process.bpmn",
     "sourceId": "activity-boundary-message",
-    "semanticProfile": "bpmn-2.0.2-activity-boundary-message-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

@@ -19,8 +19,8 @@ test("reuses the exact incident source with both graduated profiles", async () =
     retryProfile,
     cancellationProfile,
   ], [
-    "cibseven-2.2.0-service-task-incident-draft",
-    "cibseven-2.2.0-service-task-incident-cancellation-draft",
+    "cibseven-2.2.0",
+    "cibseven-2.2.0",
   ]);
 });
 

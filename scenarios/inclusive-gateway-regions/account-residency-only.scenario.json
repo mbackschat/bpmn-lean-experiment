@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "inclusive-gateway-regions-account-residency-only",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "account-opening",
     "relativePath": "scenarios/inclusive-gateway-regions/account-opening.bpmn",
     "sha256": "978c15bedb190c5961cfc4897a6d65b00496d3df7ebb7177cba0c301e8c81e8e",
     "sourceOverlay": {
       "id": "account-opening-handlers",
-      "sha256": "e5207d32461c6821394dc608bd1f70635a737b82bcf340c3babe7d148b081b4e"
+      "sha256": "97e760a0df690ba7a33af214471b14dd2c20e0a3fd592bfb4bd584aad533938a"
     }
   },
   "stimuli": [

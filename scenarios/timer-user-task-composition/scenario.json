@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "timer-user-task-composition",
-  "profile": "bpmn-2.0.2-timer-user-task-composition-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "timer-user-task-composition-process",
     "relativePath": "scenarios/timer-user-task-composition/process.bpmn",

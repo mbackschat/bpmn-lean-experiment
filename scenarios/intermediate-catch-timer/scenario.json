@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "intermediate-catch-timer-pt1s",
-  "profile": "cibseven-2.2.0-intermediate-catch-timer-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "intermediate-catch-timer-pt1s-process",
     "relativePath": "scenarios/intermediate-catch-timer/process.bpmn",

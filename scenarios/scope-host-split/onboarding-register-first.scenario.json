@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "scope-host-split-onboarding-register-first",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "employee-onboarding",
     "relativePath": "scenarios/scope-host-split/employee-onboarding.bpmn",
     "sha256": "263d9a9586009359bba3d2268286a5febac9623a0c023d788e01fb13af90398f",
     "sourceOverlay": {
       "id": "employee-onboarding-handlers",
-      "sha256": "41fe67efbbd42ff15fc8ab74c36e9d5317e790b5377b146a35be9f0bdd7893d0"
+      "sha256": "342606850c2addacead14c70e34449b408a832171fd1faf64da2c84155379620"
     }
   },
   "stimuli": [

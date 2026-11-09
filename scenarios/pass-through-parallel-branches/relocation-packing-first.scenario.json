@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "pass-through-parallel-branches-relocation-packing-first",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "office-relocation",
     "relativePath": "scenarios/pass-through-parallel-branches/office-relocation.bpmn",
     "sha256": "c560d61a57ed2666736be695e8352c04d343e3d1a83c7b5213ff318271c15147",
     "sourceOverlay": {
       "id": "office-relocation-handlers",
-      "sha256": "7f35fbc240e37b6f8340b4e59140baac91e1320c3fae8b5f75caa10c9e27ca08"
+      "sha256": "70f0fa18249539567d25c000f04528401461b0f2efd6d7a20b3e8d5f1519d9be"
     }
   },
   "stimuli": [

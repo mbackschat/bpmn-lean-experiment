@@ -89,8 +89,9 @@ test("operates both graduated current incidents through the production boundary"
     ({ hostingInstance }) =>
       hostingInstance.processInstanceId === cancellationStarted.processInstanceId,
   );
+  // CIB always offers public deletion, so the cumulative profile publishes cancellation on every incident.
   expect(retryIncident?.availableInteractions.map(({ kind }) => kind))
-    .toEqual(["retryIncident"]);
+    .toEqual(["retryIncident", "cancelIncidentProcess"]);
   expect(cancellationIncident?.availableInteractions.map(({ kind }) => kind))
     .toEqual(["retryIncident", "cancelIncidentProcess"]);
   if (retryIncident === undefined || cancellationIncident === undefined) {

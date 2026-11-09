@@ -457,8 +457,8 @@ function reportPreparedDemo(
 ): void {
   writeLine(`LIVE_DEMO_READY origin=${session.origin}`);
   writeLine(`LIVE_DEMO_MODE mode=${mode} revision=${session.sourceRevision} sourceTreeSha256=${session.sourceTreeSha256}`);
-  writeLine("LIVE_DEMO_SCENARIO structured-human-work file=scenarios/expense-exception-review/process.bpmn profile=bpmn-2.0.2-bpmn-lean-structured-human-work-draft");
-  writeLine("LIVE_DEMO_SCENARIO incident-operations file=scenarios/service-task-effect/process.bpmn profiles=cibseven-2.2.0-service-task-incident-draft,cibseven-2.2.0-service-task-incident-cancellation-draft");
+  writeLine("LIVE_DEMO_SCENARIO structured-human-work file=scenarios/expense-exception-review/process.bpmn profile=bpmn-2.0.2");
+  writeLine("LIVE_DEMO_SCENARIO incident-operations file=scenarios/service-task-effect/process.bpmn profile=cibseven-2.2.0");
   writeLine("LIVE_DEMO_HEADLINE command=./scripts/pnpm.sh run demo:mue-headline");
   writeLine("LIVE_DEMO_ALPHA command=./scripts/pnpm.sh run demo:mue-preview-alpha");
 }

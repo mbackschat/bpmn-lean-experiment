@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/message-start-event/process.bpmn",
     "sourceId": "message-start-event",
-    "semanticProfile": "bpmn-2.0.2-message-start-event-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

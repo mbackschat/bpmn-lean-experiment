@@ -1,13 +1,13 @@
 {
   "kind": "scenario",
   "id": "invoice-rework",
-  "profile": "cibseven-2.2.0-mixed-task-control-flow-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "reviewed-invoice",
     "sha256": "e70fd9df07f1febc20a0600d822194b5fe5a1100279882866d769ff4274abae0",
     "sourceOverlay": {
       "id": "invoice-handlers",
-      "sha256": "cd9fa32a59aa8af2d39cefff9d1162e9958c2838eebee13b2f22e5dfd4a0060a"
+      "sha256": "466302458623119c5d1cd2d17a78ab2f7bce692e3ad4467f8a2870277b64ec3c"
     },
     "relativePath": "packages/bpmn-source/test/fixtures/mixed-task-invoice-rework.bpmn"
   },

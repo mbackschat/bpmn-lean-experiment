@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "portable-handoff-order-revised",
-  "profile": "bpmn-2.0.2-portable-business-values-handoff-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "portable-handoff-order",
     "sha256": "88fc959b7dbef9365b02330dae3ac7b802b7162c73b351acc293c8a5e1d37923",

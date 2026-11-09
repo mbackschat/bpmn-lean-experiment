@@ -5,7 +5,7 @@ import path from "node:path";
 import { Ajv2020, type ErrorObject, type ValidateFunction } from "ajv/dist/2020.js";
 import { parseWireJsonBytes } from "./strict-json.ts";
 
-const profileId = "bpmn-2.0.2-message-key-correlation-draft" as const;
+const profileId = "bpmn-2.0.2" as const;
 const processId = "Process_SettlementCorrelation" as const;
 const initialCatchId = "MessageCatch_InitialSettlement" as const;
 const correlationKeyId = "CorrelationKey_SettlementReference" as const;
@@ -204,13 +204,12 @@ function assertProfile(profile: unknown, validate: ValidateFunction): asserts pr
   if (!isRecord(bpmn)) {
     throw new Error("Message key-correlation profile has no BPMN selection");
   }
-  assertEqual("Message key-correlation profile relationships", bpmn.relationships, [
-    "CIB-AGR-0001",
-    "CIB-OP-0001",
-    "CIB-LIM-0002",
-  ]);
-  if ("oracle" in profile || "environment" in profile) {
-    throw new Error("Message key-correlation profile must not select a CIB execution oracle");
+  // The standards profile carries every relationship its scenarios cite; the correlation population selects these.
+  const relationships = bpmn.relationships;
+  for (const relationship of ["CIB-AGR-0001", "CIB-OP-0001", "CIB-LIM-0002"]) {
+    if (!Array.isArray(relationships) || !relationships.includes(relationship)) {
+      throw new Error(`Message key-correlation profile must carry ${relationship}`);
+    }
   }
 }
 

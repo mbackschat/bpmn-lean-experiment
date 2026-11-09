@@ -1,7 +1,7 @@
 {
   "kind": "populationScenario",
   "id": "message-key-correlation-ambiguous",
-  "profile": "bpmn-2.0.2-message-key-correlation-draft",
+  "profile": "bpmn-2.0.2",
   "definitions": [
     {
       "definitionRef": "message-key-correlation-process",

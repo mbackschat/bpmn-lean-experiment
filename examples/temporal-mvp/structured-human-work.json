@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/expense-exception-review/process.bpmn",
     "sourceId": "expense-exception-review",
-    "semanticProfile": "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

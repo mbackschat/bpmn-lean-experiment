@@ -1,6 +1,6 @@
 # Structured Process composition scenarios
 
-The [profile](../../profiles/bpmn-2.0.2-structured-process-composition-draft/README.md) and [semantics specification](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md) own the bounded account. [invoice.bpmn](invoice.bpmn) and [serial.bpmn](serial.bpmn) retain the exact project-authored source bytes from the approved private execution and hosting witnesses. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
+The [profile](../../profiles/bpmn-2.0.2/README.md) and [semantics specification](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md) own the bounded account. [invoice.bpmn](invoice.bpmn) and [serial.bpmn](serial.bpmn) retain the exact project-authored source bytes from the approved private execution and hosting witnesses. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
 
 | Scenario | Journey |
 |---|---|

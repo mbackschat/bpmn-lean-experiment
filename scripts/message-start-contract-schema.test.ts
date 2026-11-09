@@ -81,7 +81,7 @@ test("requires one exact Process-start variant first and forbids every later sta
   const scenario = {
     kind: "scenario",
     id: "message-start-event",
-    profile: "bpmn-2.0.2-message-start-event-draft",
+    profile: "bpmn-2.0.2",
     bpmn: {
       id: "message-start-event",
       relativePath: "scenarios/message-start-event/process.bpmn",
@@ -115,7 +115,7 @@ test("requires one exact Process-start variant first and forbids every later sta
     validate({
       ...scenario,
       id: "timer-start-event",
-      profile: "bpmn-2.0.2-timer-start-event-draft",
+      profile: "bpmn-2.0.2",
       stimuli: [timerStart],
     }),
     true,

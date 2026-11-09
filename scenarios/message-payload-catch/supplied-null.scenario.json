@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "message-payload-catch-supplied-null",
-  "profile": "bpmn-2.0.2-message-payload-catch-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "message-payload-catch-process",
     "relativePath": "scenarios/message-payload-catch/process.bpmn",

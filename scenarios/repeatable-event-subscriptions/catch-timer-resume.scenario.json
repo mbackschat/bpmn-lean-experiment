@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "subscription-catch-timer-resume",
-  "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "subscription-catch-timer",
     "relativePath": "scenarios/repeatable-event-subscriptions/catch-timer.bpmn",

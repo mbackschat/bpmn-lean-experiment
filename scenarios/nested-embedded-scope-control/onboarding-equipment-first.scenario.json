@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "nested-scope-control-onboarding-equipment-first",
-  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "employee-onboarding",
     "relativePath": "scenarios/nested-embedded-scope-control/employee-onboarding.bpmn",

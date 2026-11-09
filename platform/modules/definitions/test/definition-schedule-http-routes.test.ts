@@ -32,7 +32,7 @@ const definition = {
     declaredEncoding: null,
     decodedAs: "UTF-8",
   },
-  semanticProfile: "bpmn-2.0.2-timer-start-event-draft",
+  semanticProfile: "bpmn-2.0.2",
   startCapabilities: {
     messageStarts: [],
     timerStarts: [{ startEventId: "TimerStart_PT1S", durationMs: 1_000 }],

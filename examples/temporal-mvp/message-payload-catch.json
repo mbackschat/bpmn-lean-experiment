@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/message-payload-catch/process.bpmn",
     "sourceId": "message-payload-catch-process",
-    "semanticProfile": "bpmn-2.0.2-message-payload-catch-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

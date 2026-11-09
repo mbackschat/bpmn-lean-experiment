@@ -6,7 +6,7 @@
 
 ## Contract boundary
 
-The implemented profile is `cibseven-2.2.0-user-task-process-data-preserved-notation-draft`. It preserves the selected standard notation only in exact source bytes while executing the predecessor CIB Seven User Task Process-data graph and String/Null data account unchanged. Both predecessor profiles remain separating negatives, and all five reclassified external CIB rows remain rejected for independent unsupported content.
+The implemented profile is `cibseven-2.2.0`. It preserves the selected standard notation only in exact source bytes while executing the predecessor CIB Seven User Task Process-data graph and String/Null data account unchanged. Both predecessor profiles remain separating negatives, and all five reclassified external CIB rows remain rejected for independent unsupported content.
 
 The prerequisite total profile-by-surface value-domain contract rejects every undeclared external write. Four immutable legacy profile declarations remain digest-bound to the cyclic-control-flow baseline, every other nonempty cell requires its exact profile-artifact feature atom, and an empty cell admits only an empty patch. The first exact interchange requirement is `BPMN-STRUCT-DIAGRAM-INTERCHANGE-01` in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md#reviewed-requirements), with consequence **preserve**.
 
@@ -14,10 +14,10 @@ The prerequisite total profile-by-surface value-domain contract rejects every un
 
 ## Decision
 
-Add one named profile, `cibseven-2.2.0-user-task-process-data-preserved-notation-draft`, that composes:
+Add one named profile, `cibseven-2.2.0`, that composes:
 
-- the exact executable operation, graph, string/null Process-start data, string/null User Task completion data, observation, environment, and CIB relationship boundary of `cibseven-2.2.0-user-task-process-data-draft`; and
-- the exact standard preservation capability of `bpmn-2.0.2-user-task-preserved-notation-draft`.
+- the exact executable operation, graph, string/null Process-start data, string/null User Task completion data, observation, environment, and CIB relationship boundary of `cibseven-2.2.0`; and
+- the exact standard preservation capability of `bpmn-2.0.2`.
 
 The composition is registered as one closed profile identity. A caller does not select an execution profile and an independent preservation overlay. This prevents unreviewed arbitrary combinations and keeps admitted meaning content-bound to one profile ID.
 
@@ -27,18 +27,18 @@ This table is the complete nonempty matrix. Every omitted profile/surface cell i
 
 | Registered profile | Surface | Admitted value kinds | Exact public declaration after prerequisite reconciliation |
 |---|---|---|---|
-| `cibseven-2.0.0-mapped-success-service-task-draft` | Effect completion | String | Frozen artifact features `string-variable`, `local-variable-output-mapping`, and `successful-effect-result`, plus the exact profile README declaration |
-| `cibseven-2.0.0-mapped-boundary-error-service-task-draft` | Effect completion | String, Null | Frozen artifact features `string-and-null-variables`, `local-variable-output-mapping`, and `typed-bpmn-error-result`, plus the exact profile README declaration |
-| `bpmn-2.0.2-simple-boolean-exclusive-gateway-draft` | Process start | String, Null | Frozen artifact feature `simple-boolean-expression-v1`, exclusions of Boolean, number, and nested Process values, plus the exact profile README declaration |
-| `bpmn-2.0.2-inclusive-gateway-selected-branches-draft` | Process start | String, Null | Frozen artifact feature `simple-boolean-expression-v1`, exclusions of data writes and non-selected value families, plus the exact profile README declaration |
-| `cibseven-2.2.0-service-task-incident-cancellation-draft` | Process start | String | `string-process-start-variable` |
-| `cibseven-2.2.0-user-task-process-data-draft` and the new preserved-notation successor | Process start | String, Null | `process-start-string-null-data` |
-| `cibseven-2.2.0-user-task-process-data-draft` and the new preserved-notation successor | User Task completion | String, Null | `user-task-string-null-completion-data` |
-| `bpmn-2.0.2-user-task-cycle-draft` | User Task completion | String, Null | `user-task-string-null-completion-data` |
-| `cibseven-2.2.0-user-task-boolean-completion-data-draft` and `cibseven-2.2.0-user-task-assignment-form-metadata-draft` | Process start | String, Null | `process-start-string-null-data` |
-| `cibseven-2.2.0-user-task-boolean-completion-data-draft`, `cibseven-2.2.0-user-task-assignment-form-metadata-draft`, and `cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft` | User Task completion | String, Null, Boolean | `user-task-string-null-boolean-completion-data` |
-| `bpmn-2.0.2-bpmn-lean-structured-human-work-draft` | Process start | String, Null | `process-start-string-null-data` |
-| `bpmn-2.0.2-bpmn-lean-structured-human-work-draft` | User Task completion | String, Null, Boolean, Integer, StringList | `user-task-string-null-boolean-completion-data`, `user-task-integer-completion-data`, and `user-task-ordered-string-list-completion-data` |
+| `cibseven-2.2.0` | Effect completion | String | Frozen artifact features `string-variable`, `local-variable-output-mapping`, and `successful-effect-result`, plus the exact profile README declaration |
+| `cibseven-2.2.0` | Effect completion | String, Null | Frozen artifact features `string-and-null-variables`, `local-variable-output-mapping`, and `typed-bpmn-error-result`, plus the exact profile README declaration |
+| `bpmn-2.0.2` | Process start | String, Null | Frozen artifact feature `simple-boolean-expression-v1`, exclusions of Boolean, number, and nested Process values, plus the exact profile README declaration |
+| `bpmn-2.0.2` | Process start | String, Null | Frozen artifact feature `simple-boolean-expression-v1`, exclusions of data writes and non-selected value families, plus the exact profile README declaration |
+| `cibseven-2.2.0` | Process start | String | `string-process-start-variable` |
+| `cibseven-2.2.0` and the new preserved-notation successor | Process start | String, Null | `process-start-string-null-data` |
+| `cibseven-2.2.0` and the new preserved-notation successor | User Task completion | String, Null | `user-task-string-null-completion-data` |
+| `bpmn-2.0.2` | User Task completion | String, Null | `user-task-string-null-completion-data` |
+| `cibseven-2.2.0` and `cibseven-2.2.0` | Process start | String, Null | `process-start-string-null-data` |
+| `cibseven-2.2.0`, `cibseven-2.2.0`, and `cibseven-2.2.0` | User Task completion | String, Null, Boolean | `user-task-string-null-boolean-completion-data` |
+| `bpmn-2.0.2` | Process start | String, Null | `process-start-string-null-data` |
+| `bpmn-2.0.2` | User Task completion | String, Null, Boolean, Integer, StringList | `user-task-string-null-boolean-completion-data`, `user-task-integer-completion-data`, and `user-task-ordered-string-list-completion-data` |
 
 The table does not infer capability from scenario payloads. Each cell restates an already-approved owner: the Simple Boolean language's String/Null Process context for Exclusive and Inclusive selection, the cyclic-control-flow specification's String/Null completion patch, the two mapped-effect specifications' Activity-local results, the incident-cancellation specification's selected String start binding, and the existing Process-data and Human Work accounts. The Structured Human Work artifact currently records only the negative Process-start exclusion for Integer and StringList; prerequisite reconciliation adds the exact positive `process-start-string-null-data` atom required by its existing String/Null account before executable dispatch changes. This declaration repair does not add a value kind or write surface to any approved semantic account. In particular, the preserved-notation and Timer/User Task composition profiles remain empty at all three surfaces, and the parallel metadata profile remains empty at Process start.
 
@@ -111,7 +111,7 @@ The only new public value is the registered semantic profile ID:
 
 ```ts
 type InterchangeAdmissionProfile =
-  "cibseven-2.2.0-user-task-process-data-preserved-notation-draft";
+  "cibseven-2.2.0";
 ```
 
 No compilation-result union changes. An accepted result still has empty diagnostics and exposes only exact source identity plus the executed project-owned representation. Preserved material remains reachable only through the already-retained exact source bytes.
@@ -120,7 +120,7 @@ No Product 1 start, command, observation, terminal result, Workflow, Run, or rec
 
 ## Corpus consequence
 
-The external CIB model rows move from `cibseven-2.2.0-user-task-process-data-draft` to the new closest profile and receive freshly generated normalized diagnostic digests. This is an admission-analysis change, not an acceptance claim.
+The external CIB model rows move from `cibseven-2.2.0` to the new closest profile and receive freshly generated normalized diagnostic digests. This is an admission-analysis change, not an acceptance claim.
 
 The expected global mechanism reach and the narrower CIB diagnostic effect are exact and separately counted:
 

@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "nested-scope-data-claim-limits",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "expense-claim",
     "relativePath": "scenarios/nested-embedded-scope-data/expense-claim.bpmn",
     "sha256": "9bf2da91734cbabcec42d0dca35ce4a2f24d2e8030dea94a197b5656ab1706bb",
     "sourceOverlay": {
       "id": "expense-claim-handlers",
-      "sha256": "b835229ab56834b6bd8ababbfac48c1d24eba8277623d84265671b7b2b88106d"
+      "sha256": "c84fbb115c81ae011694cb92fbbf04e1acf953422d93635c2cf419b460330e7f"
     }
   },
   "stimuli": [

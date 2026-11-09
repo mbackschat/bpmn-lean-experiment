@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/user-task-discovery-completion/process.bpmn",
     "sourceId": "sequential-user-task-process",
-    "semanticProfile": "cibseven-2.2.0-user-task-process-data-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

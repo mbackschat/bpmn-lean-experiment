@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "user-task-assignment-form-metadata",
-  "profile": "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "user-task-assignment-form-metadata",
     "relativePath": "scenarios/user-task-assignment-form-metadata/process.bpmn",

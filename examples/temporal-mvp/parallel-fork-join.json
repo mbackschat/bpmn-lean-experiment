@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/parallel-fork-join/process.bpmn",
     "sourceId": "parallel-two-user-tasks-process",
-    "semanticProfile": "parallel-fork-join-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

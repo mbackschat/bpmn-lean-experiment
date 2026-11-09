@@ -20,7 +20,7 @@ const exactDefinition = {
     declaredEncoding: "UTF-8",
     decodedAs: "UTF-8",
   },
-  semanticProfile: "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+  semanticProfile: "bpmn-2.0.2",
   sourceOverlay: null,
   startCapabilities: { messageStarts: [], timerStarts: [] },
 } as const satisfies DeployedDefinitionVersion;
@@ -59,7 +59,7 @@ test("does not infer the Alpha preset from exact content admitted under another 
 test("exposes one exact profile predicate for every Alpha-only surface", () => {
   assert.equal(isMuePreviewAlphaProfile(muePreviewAlphaSemanticProfile), true);
   assert.equal(
-    isMuePreviewAlphaProfile("bpmn-2.0.2-parallel-multi-instance-user-task-draft"),
+    isMuePreviewAlphaProfile("cibseven-2.2.0"),
     false,
   );
 });

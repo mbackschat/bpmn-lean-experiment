@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "inclusive-gateway-regions-booking-extras-venue-last",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "event-booking",
     "relativePath": "scenarios/inclusive-gateway-regions/event-booking.bpmn",
     "sha256": "3473e077fffba315202161234dd9a09d1a462a38e6b5ce13896ab4511ed5bc2d",
     "sourceOverlay": {
       "id": "event-booking-handlers",
-      "sha256": "1dee28624390cbbbbb7ba5345593628664dc095f11806935dd134ccfc43bdc8c"
+      "sha256": "e292adcbdd60d4add161c6f9682d8394b49dfe466979996adacc6e584007351d"
     }
   },
   "stimuli": [

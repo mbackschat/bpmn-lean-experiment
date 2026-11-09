@@ -51,7 +51,7 @@
         "scenarioRelativePath": "scenarios/user-task-assignment-form-metadata/scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -89,7 +89,7 @@
         "scenarioRelativePath": "scenarios/parallel-user-task-metadata-composition/content-then-risk.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -126,7 +126,7 @@
         "scenarioRelativePath": "scenarios/parallel-fork-join/a-then-b.scenario.json",
         "license": "MIT"
       },
-      "profile": "parallel-fork-join-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "accepted"
       },
@@ -166,7 +166,7 @@
         "scenarioRelativePath": "scenarios/expense-exception-review/approve.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "accepted"
       },
@@ -203,7 +203,7 @@
         "scenarioRelativePath": "scenarios/exclusive-gateway-simple-boolean/scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "accepted"
       },
@@ -240,7 +240,7 @@
         "scenarioRelativePath": "scenarios/called-process-call-activity/scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-called-process-call-activity-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "accepted"
       },
@@ -277,7 +277,7 @@
         "scenarioRelativePath": "scenarios/call-activity-data-boundaries/string.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-call-activity-data-boundaries-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "accepted"
       },
@@ -316,7 +316,7 @@
         "scenarioRelativePath": "scenarios/structured-process-composition/invoice-approve.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-structured-process-composition-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "accepted"
       },
@@ -353,7 +353,7 @@
         "scenarioRelativePath": "scenarios/structured-process-composition/serial-string.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-structured-process-composition-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "accepted"
       },
@@ -390,7 +390,7 @@
         "scenarioRelativePath": "scenarios/portable-business-values-handoff/order-nested.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-portable-business-values-handoff-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "accepted"
       },
@@ -426,7 +426,7 @@
         "scenarioRelativePath": "scenarios/portable-business-effect-data/credit-assessed.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-portable-business-effect-data-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -467,7 +467,7 @@
         "scenarioRelativePath": "scenarios/nested-embedded-scope-data/order-approved.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": {
         "kind": "accepted"
       },
@@ -508,7 +508,7 @@
         "scenarioRelativePath": "scenarios/nested-embedded-scope-data/claim-limits.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": {
         "kind": "accepted"
       },
@@ -549,7 +549,7 @@
         "scenarioRelativePath": "scenarios/nested-embedded-scope-data/quote-signed.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": {
         "kind": "accepted"
       },
@@ -592,7 +592,7 @@
         "scenarioRelativePath": "scenarios/call-variable-mapping/loan-approved.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": {
         "kind": "accepted"
       },
@@ -626,7 +626,7 @@
         "scenarioRelativePath": "scenarios/service-task-effect/scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-service-task-effect-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -665,7 +665,7 @@
         "scenarioRelativePath": "scenarios/embedded-subprocess-completion/a-then-b.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "embedded-subprocess-completion-a-then-b",
       "product2": {
@@ -702,7 +702,7 @@
         "scenarioRelativePath": "scenarios/nested-embedded-scope-control/onboarding-setup-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "nested-scope-control-onboarding-setup-first",
       "product2": {
@@ -739,7 +739,7 @@
         "scenarioRelativePath": "scenarios/nested-embedded-scope-control/audit-early-and-stale.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "nested-scope-control-audit-early-and-stale",
       "product2": {
@@ -777,7 +777,7 @@
         "scenarioRelativePath": "scenarios/concurrent-embedded-activations/audit-interleaved-and-stale.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "concurrent-activations-audit-interleaved-and-stale",
       "product2": {
@@ -815,7 +815,7 @@
         "scenarioRelativePath": "scenarios/concurrent-embedded-activations/intake-reverse-assessments.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "concurrent-activations-intake-reverse-assessments",
       "product2": {
@@ -854,7 +854,7 @@
         "scenarioRelativePath": "scenarios/concurrent-scope-service-tasks/supplier-review-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "concurrent-scope-effects-supplier-review-first",
       "product2": {
@@ -894,7 +894,7 @@
         "scenarioRelativePath": "scenarios/concurrent-scope-service-tasks/claim-price-two-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "concurrent-scope-effects-claim-price-two-first",
       "product2": {
@@ -936,7 +936,7 @@
         "scenarioRelativePath": "scenarios/concurrent-scope-data/claim-fetch-one-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "concurrent-scope-data-claim-fetch-one-first",
       "product2": {
@@ -977,7 +977,7 @@
         "scenarioRelativePath": "scenarios/concurrent-scope-data/facility-inspection.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "concurrent-scope-data-facility-inspection",
       "product2": {
@@ -1018,7 +1018,7 @@
         "scenarioRelativePath": "scenarios/concurrent-mapped-calls/supplier-compliance-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "concurrent-mapped-calls-supplier-compliance-first",
       "product2": {
@@ -1059,7 +1059,7 @@
         "scenarioRelativePath": "scenarios/concurrent-mapped-calls/travel-request.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "concurrent-mapped-calls-travel-request",
       "product2": {
@@ -1100,7 +1100,7 @@
         "scenarioRelativePath": "scenarios/concurrent-structured-scope-data/order-review-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "concurrent-structured-scope-data-order-review-first",
       "product2": {
@@ -1141,7 +1141,7 @@
         "scenarioRelativePath": "scenarios/concurrent-structured-scope-data/loan-credit-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "concurrent-structured-scope-data-loan-credit-first",
       "product2": {
@@ -1183,7 +1183,7 @@
         "scenarioRelativePath": "scenarios/scope-reentry/claim-rework-then-approve.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "scope-reentry-claim-rework-then-approve",
       "product2": {
@@ -1227,7 +1227,7 @@
         "scenarioRelativePath": "scenarios/scope-reentry/contract-revise-then-sign.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "scope-reentry-contract-revise-then-sign",
       "product2": {
@@ -1267,7 +1267,7 @@
         "scenarioRelativePath": "scenarios/pass-through-task/equipment-return.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "pass-through-task-equipment-return",
       "product2": {
@@ -1312,7 +1312,7 @@
         "scenarioRelativePath": "scenarios/pass-through-task/intake-illegible-twice-then-paper.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "pass-through-task-intake-illegible-twice-then-paper",
       "product2": {
@@ -1353,7 +1353,7 @@
         "scenarioRelativePath": "scenarios/root-parallel-forks/onboarding-documents-while-laptop-open.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "root-parallel-forks-onboarding-documents-while-laptop-open",
       "product2": {
@@ -1394,7 +1394,7 @@
         "scenarioRelativePath": "scenarios/terminal-forks/offboarding-equipment-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "terminal-forks-offboarding-equipment-first",
       "product2": {
@@ -1438,7 +1438,7 @@
         "scenarioRelativePath": "scenarios/terminal-forks/office-move.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "terminal-forks-office-move",
       "product2": {
@@ -1482,7 +1482,7 @@
         "scenarioRelativePath": "scenarios/data-declaring-terminal-branches/expense-claim.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "data-declaring-terminal-branches-expense-claim",
       "product2": {
@@ -1524,7 +1524,7 @@
         "scenarioRelativePath": "scenarios/inclusive-gateway-regions/account-residency-only.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "inclusive-gateway-regions-account-residency-only",
       "product2": {
@@ -1566,7 +1566,7 @@
         "scenarioRelativePath": "scenarios/inclusive-gateway-regions/booking-no-extras.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "inclusive-gateway-regions-booking-no-extras",
       "product2": {
@@ -1607,7 +1607,7 @@
         "scenarioRelativePath": "scenarios/exclusive-choice-arity/complaint-delivery.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "exclusive-choice-arity-complaint-delivery",
       "product2": {
@@ -1648,7 +1648,7 @@
         "scenarioRelativePath": "scenarios/none-end-fan-in/travel-booked.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "none-end-fan-in-travel-booked",
       "product2": {
@@ -1692,7 +1692,7 @@
         "scenarioRelativePath": "scenarios/pass-through-parallel-branches/relocation-packing-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "pass-through-parallel-branches-relocation-packing-first",
       "product2": {
@@ -1735,7 +1735,7 @@
         "scenarioRelativePath": "scenarios/pass-through-parallel-branches/invoice-settled.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "pass-through-parallel-branches-invoice-settled",
       "product2": {
@@ -1778,7 +1778,7 @@
         "scenarioRelativePath": "scenarios/none-intermediate-throw/warranty-passed.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "none-intermediate-throw-warranty-passed",
       "product2": {
@@ -1820,7 +1820,7 @@
         "scenarioRelativePath": "scenarios/none-intermediate-throw/onboarding-account-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "none-intermediate-throw-onboarding-account-first",
       "product2": {
@@ -1861,7 +1861,7 @@
         "scenarioRelativePath": "scenarios/pass-through-implicit-split-merge/claim-approved.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "pass-through-implicit-split-merge-claim-approved",
       "product2": {
@@ -1902,7 +1902,7 @@
         "scenarioRelativePath": "scenarios/pass-through-implicit-split-merge/dispatch-packed-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "pass-through-implicit-split-merge-dispatch-packed-first",
       "product2": {
@@ -1946,7 +1946,7 @@
         "scenarioRelativePath": "scenarios/link-events/warranty-rework.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "link-events-warranty-rework",
       "product2": {
@@ -1989,7 +1989,7 @@
         "scenarioRelativePath": "scenarios/link-events/onboarding-laptop-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "link-events-onboarding-laptop-first",
       "product2": {
@@ -2028,7 +2028,7 @@
         "scenarioRelativePath": "scenarios/activity-host-merge/claim-expert.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "activity-host-merge-claim-expert",
       "product2": {
@@ -2069,7 +2069,7 @@
         "scenarioRelativePath": "scenarios/scope-host-split/onboarding-register-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "scope-host-split-onboarding-register-first",
       "product2": {
@@ -2111,7 +2111,7 @@
         "scenarioRelativePath": "scenarios/activity-host-split/intake-archive-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "activity-host-split-intake-archive-first",
       "product2": {
@@ -2154,7 +2154,7 @@
         "scenarioRelativePath": "scenarios/single-scope-models/purchase-approval-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "single-scope-models-purchase-approval-first",
       "product2": {
@@ -2197,7 +2197,7 @@
         "scenarioRelativePath": "scenarios/single-scope-models/invoice-valid.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "single-scope-models-invoice-valid",
       "product2": {
@@ -2233,7 +2233,7 @@
         "scenarioRelativePath": "scenarios/send-task/shipping-notice.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "send-task-shipping-notice",
       "product2": {
@@ -2273,7 +2273,7 @@
         "scenarioRelativePath": "scenarios/send-task/claim-assessed-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "send-task-claim-assessed-first",
       "product2": {
@@ -2312,7 +2312,7 @@
         "scenarioRelativePath": "scenarios/exclusive-choice-without-default/urgent-travel.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "exclusive-choice-without-default-urgent-travel",
       "product2": {
@@ -2353,7 +2353,7 @@
         "scenarioRelativePath": "scenarios/exclusive-choice-without-default/medium-triage.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "exclusive-choice-without-default-medium-triage",
       "product2": {
@@ -2390,7 +2390,7 @@
         "scenarioRelativePath": "scenarios/repeated-nested-concurrent-calls/natural-order.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "repeated-nested-calls-natural-order",
       "product2": {
@@ -2431,7 +2431,7 @@
         "scenarioRelativePath": "scenarios/repeated-nested-concurrent-calls/guarantor-verified.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+      "profile": "cibseven-2.2.0-scope-chain",
       "admission": {
         "kind": "accepted"
       },
@@ -2473,7 +2473,7 @@
         "scenarioRelativePath": "scenarios/subprocess-error-propagation/trigger-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-subprocess-error-propagation-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "subprocess-error-propagation-trigger-first",
       "product2": {
@@ -2508,7 +2508,7 @@
         "scenarioRelativePath": "scenarios/timer-user-task-composition/scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-timer-user-task-composition-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "timer-user-task-composition",
       "product2": {
@@ -2543,7 +2543,7 @@
         "scenarioRelativePath": "scenarios/intermediate-catch-message/scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-intermediate-catch-message-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "intermediate-catch-message",
       "product2": {
@@ -2579,7 +2579,7 @@
         "scenarioRelativePath": "scenarios/message-payload-catch/supplied-scalar.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-message-payload-catch-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "message-payload-catch-supplied-scalar",
       "product2": {
@@ -2615,7 +2615,7 @@
         "scenarioRelativePath": "scenarios/portable-business-message-payload/manifest-delivered.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-portable-business-message-payload-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "portable-message-payload-manifest-delivered",
       "product2": {
@@ -2654,7 +2654,7 @@
         "scenarioRelativePath": "scenarios/message-key-correlation/unique.population-scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-message-key-correlation-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "message-key-correlation-unique",
       "product2": {
@@ -2686,7 +2686,7 @@
         "scenarioRelativePath": "scenarios/message-addressed-receive-task/scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-message-addressed-receive-task-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "message-addressed-receive-task",
       "product2": {
@@ -2718,7 +2718,7 @@
         "scenarioRelativePath": "scenarios/addressless-receive-task/scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-addressless-receive-task-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "addressless-receive-task",
       "product2": {
@@ -2754,7 +2754,7 @@
         "scenarioRelativePath": "scenarios/inclusive-gateway-selected-branches/both-true-a-then-b.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "inclusive-gateway-both-true-a-then-b",
       "product2": {
@@ -2792,7 +2792,7 @@
         "scenarioRelativePath": "scenarios/event-based-gateway-message-timer/message-wins.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "event-based-gateway-message-wins",
       "product2": {
@@ -2828,7 +2828,7 @@
         "scenarioRelativePath": "scenarios/activity-boundary-timer/deadline-wins.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-activity-boundary-timer-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "activity-boundary-timer-deadline-wins",
       "product2": {
@@ -2864,7 +2864,7 @@
         "scenarioRelativePath": "scenarios/activity-boundary-message/message-wins.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-activity-boundary-message-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "activity-boundary-message-message-wins",
       "product2": {
@@ -2902,7 +2902,7 @@
         "scenarioRelativePath": "scenarios/subprocess-boundary-timer/deadline-wins.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-subprocess-boundary-timer-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "subprocess-boundary-timer-deadline-wins",
       "product2": {
@@ -2938,7 +2938,7 @@
         "scenarioRelativePath": "scenarios/non-interrupting-boundary-timer/deadline-then-both-branches.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "non-interrupting-boundary-timer-deadline-then-both-branches",
       "product2": {
@@ -2974,7 +2974,7 @@
         "scenarioRelativePath": "scenarios/user-task-cycle/scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-user-task-cycle-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "user-task-cycle-repeat-rework-exit",
       "product2": {
@@ -3008,7 +3008,7 @@
         "scenarioRelativePath": "scenarios/message-start-event/scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-message-start-event-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "message-start-event",
       "product2": {
@@ -3043,7 +3043,7 @@
         "scenarioRelativePath": "scenarios/timer-start-event/scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-timer-start-event-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "timer-start-event",
       "product2": {
@@ -3081,7 +3081,7 @@
         "scenarioRelativePath": "scenarios/terminate-end-event/trigger-first.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-terminate-end-event-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "terminate-end-event-trigger-first",
       "product2": {
@@ -3117,7 +3117,7 @@
         "scenarioRelativePath": "scenarios/configured-task/scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "configured-task",
       "product2": {
@@ -3150,7 +3150,7 @@
         "scenarioRelativePath": "scenarios/mapped-success-service-task/scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.0.0-mapped-success-service-task-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "mapped-success-service-task",
       "product2": {
@@ -3188,7 +3188,7 @@
         "scenarioRelativePath": "scenarios/mapped-boundary-error-service-task/scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+      "profile": "cibseven-2.2.0",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "mapped-boundary-error-service-task-caught",
       "product2": {
@@ -3226,7 +3226,7 @@
         "scenarioRelativePath": "scenarios/sequential-multi-instance/natural.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "sequential-multi-instance-natural",
       "product2": {
@@ -3264,7 +3264,7 @@
         "scenarioRelativePath": "scenarios/sequential-multi-instance/interrupted.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "sequential-multi-instance-interrupted",
       "product2": {
@@ -3303,7 +3303,7 @@
         "scenarioRelativePath": "scenarios/parallel-multi-instance/all.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "parallel-multi-instance-all",
       "product2": {
@@ -3343,7 +3343,7 @@
         "scenarioRelativePath": "scenarios/parallel-multi-instance/first.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "parallel-multi-instance-first",
       "product2": {
@@ -3382,7 +3382,7 @@
         "scenarioRelativePath": "scenarios/parallel-multi-instance/interrupted.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "parallel-multi-instance-interrupted",
       "product2": {
@@ -3416,7 +3416,7 @@
         "scenarioRelativePath": "scenarios/activity-data-input-user-task/present.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-activity-data-input-user-task-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "activity-data-input-present",
       "product2": {
@@ -3450,7 +3450,7 @@
         "scenarioRelativePath": "scenarios/activity-data-output-user-task/supplied.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-activity-data-output-user-task-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "activity-data-output-supplied",
       "product2": {
@@ -3485,7 +3485,7 @@
         "scenarioRelativePath": "scenarios/activity-data-input-output-user-task/present.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-activity-data-input-output-user-task-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "activity-data-input-output-present",
       "product2": {
@@ -3525,7 +3525,7 @@
         "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/boundary-message-repeat.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -3568,7 +3568,7 @@
         "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/boundary-timer-repeat.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -3611,7 +3611,7 @@
         "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer-repeat.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -3654,7 +3654,7 @@
         "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-one-shot-fire.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -3696,7 +3696,7 @@
         "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/message-host-with-child-entry-repeat.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -3738,7 +3738,7 @@
         "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/catch-message-resume.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -3780,7 +3780,7 @@
         "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/catch-timer-resume.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -3823,7 +3823,7 @@
         "scenarioRelativePath": "scenarios/repeatable-event-subscriptions/receive-task-resume.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -3867,7 +3867,7 @@
         "scenarioRelativePath": "scenarios/compensation/success-b-c-a.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-compensation-source-checkpoint-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "accepted"
       },
@@ -3908,7 +3908,7 @@
         "scenarioRelativePath": "scenarios/transaction-cancellation/retained-active.scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-transaction-cancellation-checkpoint-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "accepted"
       },
@@ -3947,7 +3947,7 @@
         "scenarioRelativePath": "scenarios/serial-business-task-composition/scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-serial-business-tasks-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -3990,7 +3990,7 @@
         "scenarioRelativePath": "scenarios/mixed-task-control-flow/scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-mixed-task-control-flow-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -4035,7 +4035,7 @@
         "scenarioRelativePath": "scenarios/mixed-task-business-error/scenario.json",
         "license": "MIT"
       },
-      "profile": "cibseven-2.2.0-mixed-task-business-error-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "accepted"
       },
@@ -4072,7 +4072,7 @@
         "scenarioRelativePath": "scenarios/intermediate-catch-timer-alarm-debounce/scenario.json",
         "license": "MIT"
       },
-      "profile": "bpmn-2.0.2-timer-user-task-composition-draft",
+      "profile": "bpmn-2.0.2",
       "admission": { "kind": "accepted" },
       "pipelineCaseId": "intermediate-catch-timer-alarm-debounce",
       "product2": {
@@ -4109,7 +4109,7 @@
         "relativePath": "webapps/assembly/src/main/runtime/develop/resources/pa1/order-process.bpmn",
         "sha256": "5868192ac735538edc6b087e72459d63e20261f2854057c4c0216f30414377d6"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "rejected",
         "diagnosticDigest": "e80c279c0942d19f8617aacd341935d7eeb156935707c16ed172d329ad60b2d4"
@@ -4147,7 +4147,7 @@
         "relativePath": "examples/invoice/src/main/resources/reviewInvoice.bpmn",
         "sha256": "da8ca354b4c56afff9962041fdeb3127529a8c2fe02b2f8714b60a6c2c74c929"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "rejected",
         "diagnosticDigest": "0825d27d25f9ec58368a43afb2613ad2eec045cb2a839170893007daf85a0c7c"
@@ -4199,7 +4199,7 @@
         "relativePath": "examples/invoice/src/main/resources/invoice.v1.bpmn",
         "sha256": "65882530f1be2d0e094b34ab4bb4bb01b22603f35c1d2bf36425421274cb29f8"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "rejected",
         "diagnosticDigest": "42edf6576be3ffdf0455057e9b1bde2d6cb529e1ded80bd4766d95b70ca1780d"
@@ -4251,7 +4251,7 @@
         "relativePath": "examples/invoice/src/main/resources/invoice.v2.bpmn",
         "sha256": "229b3db18f9fc99db7078e4142938a1c8a533a8a3ebca68d1cc46ed6eb5546cb"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "rejected",
         "diagnosticDigest": "42edf6576be3ffdf0455057e9b1bde2d6cb529e1ded80bd4766d95b70ca1780d"
@@ -4291,7 +4291,7 @@
         "relativePath": "engine/src/test/resources/org/cibseven/bpm/engine/test/api/form/util/VacationRequest.bpmn20.xml",
         "sha256": "5e6d9f3367c314f6375c908a996a70da60bd6550177cda45c345badf0c3bf121"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "rejected",
         "diagnosticDigest": "42edf6576be3ffdf0455057e9b1bde2d6cb529e1ded80bd4766d95b70ca1780d"
@@ -4346,7 +4346,7 @@
         "relativePath": "2010-06-03/Incident Management/Incident Management(Process Engine Executable).bpmn",
         "sha256": "d3fe409262aa380289cc93bb8871ea7a48e1251bca5b77f78fa007f7c6ea734b"
       },
-      "profile": "cibseven-2.2.0-user-task-process-data-draft",
+      "profile": "cibseven-2.2.0",
       "admission": {
         "kind": "rejected",
         "diagnosticDigest": "21c5b00d5880f49c254509302b10b6a5b671b0dff3684b2c3da49d791e4bb225"
@@ -4391,7 +4391,7 @@
         "relativePath": "pebl-builder/src/main/resources/files/bpmn/cfpatterns/WCP16_DeferredChoice.bpmn",
         "sha256": "eef0551b234e71da1c55daca2a0c9ebbe4fa174e8c7605b512abad4430ed44f8"
       },
-      "profile": "bpmn-2.0.2-event-based-gateway-message-timer-draft",
+      "profile": "bpmn-2.0.2",
       "admission": {
         "kind": "rejected",
         "diagnosticDigest": "42edf6576be3ffdf0455057e9b1bde2d6cb529e1ded80bd4766d95b70ca1780d"

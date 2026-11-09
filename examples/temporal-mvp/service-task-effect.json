@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/service-task-effect/process.bpmn",
     "sourceId": "service-task-effect-phase-zero-probe",
-    "semanticProfile": "cibseven-2.2.0-service-task-effect-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

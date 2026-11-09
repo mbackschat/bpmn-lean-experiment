@@ -34,7 +34,7 @@ async function correlatedProgram(): Promise<JsonValue> {
   const read = await readKernelProgram({
     bytes: await readFile(new URL("../../../scenarios/message-key-correlation/process.bpmn", import.meta.url)),
     overlay: null,
-    profile: "bpmn-2.0.2-message-key-correlation-draft",
+    profile: "bpmn-2.0.2",
     limits: { maxBytes: 1_048_576, parserDeadlineMs: 1_000 },
   }, kernelProfileOptions(["CIB-AGR-0001", "CIB-OP-0001", "CIB-LIM-0002"]));
   if (read.kind !== "read") throw new Error(`reader refused ${read.code}`);

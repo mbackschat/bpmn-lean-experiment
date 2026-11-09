@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "concurrent-structured-scope-data-loan-credit-first",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "loan-assessment",
     "relativePath": "scenarios/concurrent-structured-scope-data/loan-assessment.bpmn",
     "sha256": "2564e4b1636d94b6edc519227291dce39cd459249fe59ab26c4604ea4c8bc062",
     "sourceOverlay": {
       "id": "loan-assessment-handlers",
-      "sha256": "bc5a6777bb01e3762d3596b398540897610dd2f770752a38e0005361407fa02b"
+      "sha256": "ba3419f4f5bcf2fd51ad27e728e0624eff61f174f2b4c9ef2db9d89a35bbe19b"
     }
   },
   "stimuli": [

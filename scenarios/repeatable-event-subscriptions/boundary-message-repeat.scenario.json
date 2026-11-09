@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "subscription-boundary-message-repeat",
-  "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "subscription-boundary-message",
     "relativePath": "scenarios/repeatable-event-subscriptions/boundary-message.bpmn",

@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/intermediate-catch-message/process.bpmn",
     "sourceId": "intermediate-catch-message-process",
-    "semanticProfile": "bpmn-2.0.2-intermediate-catch-message-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

@@ -27,9 +27,9 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 
 const apiOrigin = requireApiOrigin();
-const directProfile = "bpmn-2.0.2-user-task-preserved-notation-draft";
-const timerProfile = "bpmn-2.0.2-timer-start-event-draft";
-const messageProfile = "bpmn-2.0.2-message-start-event-draft";
+const directProfile = "bpmn-2.0.2";
+const timerProfile = "bpmn-2.0.2";
+const messageProfile = "bpmn-2.0.2";
 const directTemplateUrl = new URL(
   "../../../scenarios/user-task-preserved-notation/process.bpmn",
   import.meta.url,

@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "structured-composition-invoice-approve",
-  "profile": "bpmn-2.0.2-structured-process-composition-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "structured-composition-invoice",
     "sha256": "651892cef41f300febdfca5b6839fad7ebe2f55343775e483ed996f223606342",

@@ -48,7 +48,7 @@ test("retains the exact Alpha input and does not offer generic edits for that pr
   const alpha = {
     ...definition,
     processId: "Process_SequentialMultiInstanceReview",
-    semanticProfile: "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+    semanticProfile: "bpmn-2.0.2",
     source: { ...definition.source, sha256: "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff" },
     sourceOverlay: null,
   };

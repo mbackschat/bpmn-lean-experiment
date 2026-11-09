@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "single-scope-models-invoice-corrected",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "invoice-clearing",
     "relativePath": "scenarios/single-scope-models/invoice-clearing.bpmn",
     "sha256": "108edfa52846cc38a957fe498e17ec6f4059aad53daa7a6dc7f079542b3d1744",
     "sourceOverlay": {
       "id": "invoice-clearing-handlers",
-      "sha256": "820bff563c6ed1edca4fcc37ac9f0b81e1d9f2b253d96af7201599d7638ee688"
+      "sha256": "424a9ce15da8ae1329d28dfc6f86c25703e51d936e00cdd49672299996ed7967"
     }
   },
   "stimuli": [

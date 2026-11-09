@@ -17,7 +17,7 @@ import type {
 import { CorrelatedMessageShowcaseRuntime } from "../src/showcase-runtime.ts";
 
 const processId = "Process_SettlementCorrelation";
-const profileId = "bpmn-2.0.2-message-key-correlation-draft";
+const profileId = "bpmn-2.0.2";
 const modelPath = fileURLToPath(new URL(
   "../../../scenarios/message-key-correlation/process.bpmn",
   import.meta.url,

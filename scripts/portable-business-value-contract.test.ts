@@ -136,16 +136,16 @@ test("keeps the root String arm unbounded while nested Strings carry the portabl
   assert.equal(validate(list(text("a".repeat(1025)))), false);
 });
 
-test("scenario verification refuses the recursive arms on every surface of every profile", () => {
-  const profiles = [
-    "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
-    "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
-    "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
-    "bpmn-2.0.2-message-payload-catch-draft",
-    "bpmn-2.0.2-user-task-draft",
-    "not-a-registered-profile",
+test("scenario verification refuses the recursive arms on every surface of every value family that does not select them", () => {
+  // The consolidated standards profile names no family; the scenario's BPMN process selects the value surface.
+  const processes = [
+    "expense-exception-review",
+    "sequential-multi-instance-review",
+    "parallel-multi-instance-risk-review",
+    "message-payload-catch-process",
+    "not-a-registered-process",
   ];
-  for (const profile of profiles) {
+  for (const process of processes) {
     for (const value of [order, decimal("1", 0), list(), map()]) {
       const binding = { name: "candidate", value };
       for (const stimulus of [
@@ -155,9 +155,9 @@ test("scenario verification refuses the recursive arms on every surface of every
         { kind: "deliver", payload: value },
       ]) {
         assert.throws(
-          () => verifyScenarioVariableValueContract({ profile, stimuli: [stimulus] }),
+          () => verifyScenarioVariableValueContract({ profile: "bpmn-2.0.2", bpmn: { id: process }, stimuli: [stimulus] }),
           TypeError,
-          `${profile} ${stimulus.kind} ${value.kind}`,
+          `${process} ${stimulus.kind} ${value.kind}`,
         );
       }
     }

@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "exclusive-choice-without-default-medium-triage",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "ticket-triage",
     "relativePath": "scenarios/exclusive-choice-without-default/ticket-triage.bpmn",
     "sha256": "875311920a4f8be261e4e244c07bf006f6b6ca9b7d3667e62a1b81eff810ebd5",
     "sourceOverlay": {
       "id": "ticket-triage-handlers",
-      "sha256": "7e66c3b066b040dcadb26f0adf8980ec5effa0c672a81080050a8c1e5a8fddf8"
+      "sha256": "ff12480979bec21e6eae2cedb563aece8816b660ac0cf9d943029926c72115d6"
     }
   },
   "stimuli": [

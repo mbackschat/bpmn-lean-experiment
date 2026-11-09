@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/user-task-preserved-notation/process.bpmn",
     "sourceId": "user-task-preserved-notation-process",
-    "semanticProfile": "bpmn-2.0.2-user-task-preserved-notation-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

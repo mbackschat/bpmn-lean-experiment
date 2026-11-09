@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "subprocess-error-propagation-trigger-first",
-  "profile": "cibseven-2.2.0-subprocess-error-propagation-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "subprocess-error-propagation-process",
     "relativePath": "scenarios/subprocess-error-propagation/process.bpmn",

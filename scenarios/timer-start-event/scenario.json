@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "timer-start-event",
-  "profile": "bpmn-2.0.2-timer-start-event-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "timer-start-event",
     "relativePath": "scenarios/timer-start-event/process.bpmn",

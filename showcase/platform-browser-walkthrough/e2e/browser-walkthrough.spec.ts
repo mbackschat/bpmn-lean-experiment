@@ -23,10 +23,10 @@ const incidentBpmnPath = resolve(
 );
 const expenseProcessId = "Process_ExpenseExceptionReview";
 const incidentProcessId = "Process_ServiceTaskEffectProbe";
-const expenseProfile = "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
-const retryProfile = "cibseven-2.2.0-service-task-incident-draft";
+const expenseProfile = "bpmn-2.0.2";
+const retryProfile = "cibseven-2.2.0";
 const cancellationProfile =
-  "cibseven-2.2.0-service-task-incident-cancellation-draft";
+  "cibseven-2.2.0";
 const instanceIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
 test("captures the ordered text-first platform walkthrough landmarks", async ({ page }) => {
@@ -171,7 +171,7 @@ test("captures the ordered text-first platform walkthrough landmarks", async ({ 
   const cancellationRow = currentIncidents.getByRole("row")
     .filter({ hasText: cancellationInstanceId });
   await expect(retryRow).toContainText("Retry");
-  await expect(retryRow).not.toContainText("Cancel Process");
+  await expect(retryRow).toContainText("Cancel Process");
   await expect(cancellationRow).toContainText("Retry");
   await expect(cancellationRow).toContainText("Cancel Process");
   await capture(

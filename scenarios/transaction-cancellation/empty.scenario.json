@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "transaction-cancellation-empty",
-  "profile": "bpmn-2.0.2-transaction-cancellation-checkpoint-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "reservation-withdrawal",
     "relativePath": "scenarios/transaction-cancellation/reservation-withdrawal.bpmn",

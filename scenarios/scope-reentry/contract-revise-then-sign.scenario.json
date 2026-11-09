@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "scope-reentry-contract-revise-then-sign",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "contract-revision",
     "relativePath": "scenarios/scope-reentry/contract-revision.bpmn",
     "sha256": "772941c232e3392cfe914c72d6a708b0aae04623b61d10161c1fdd04051547e2",
     "sourceOverlay": {
       "id": "contract-revision-handlers",
-      "sha256": "c1c6a1e8cddf5ca1b860b9559e6102ccd63375d1c0658dc40ea8facb9f99ee54"
+      "sha256": "072f5cb54dda570a973b9ece27f5e62a6b9021d352fc4a454f8fa2e65bc917f1"
     }
   },
   "stimuli": [

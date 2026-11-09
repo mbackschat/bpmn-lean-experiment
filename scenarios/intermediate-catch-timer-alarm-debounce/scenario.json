@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "intermediate-catch-timer-alarm-debounce",
-  "profile": "bpmn-2.0.2-timer-user-task-composition-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "intermediate-catch-timer-alarm-debounce-process",
     "relativePath": "scenarios/intermediate-catch-timer-alarm-debounce/process.bpmn",

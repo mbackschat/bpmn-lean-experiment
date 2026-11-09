@@ -6,7 +6,7 @@ test("reviewed invoice is validated, classified and finalized through public Wor
   await completeInvoiceJourney(page, {
     fixture: "serial-invoice",
     scenario: "serial-business-task-composition",
-    profile: "cibseven-2.2.0-serial-business-tasks-draft",
+    profile: "cibseven-2.2.0",
     processId: "Process_InvoiceValidation",
     initialVariables: [["payload", "parent-payload"], ["request", "initial"], ["result", "parent-result"]],
     tasks: [
@@ -22,7 +22,7 @@ test("invoice rework creates a fresh review occurrence before finalization", asy
   await completeInvoiceJourney(page, {
     fixture: "invoice-rework",
     scenario: "mixed-task-control-flow",
-    profile: "cibseven-2.2.0-mixed-task-control-flow-draft",
+    profile: "cibseven-2.2.0",
     processId: "Invoice",
     initialVariables: [["request", "initial"]],
     tasks: [

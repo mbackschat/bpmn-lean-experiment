@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/subprocess-error-propagation/process.bpmn",
     "sourceId": "subprocess-error-propagation-process",
-    "semanticProfile": "cibseven-2.2.0-subprocess-error-propagation-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

@@ -3,11 +3,11 @@
   "bpmn": {
     "file": "../../scenarios/nested-embedded-scope-data/expense-claim.bpmn",
     "sourceId": "expense-claim",
-    "semanticProfile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+    "semanticProfile": "cibseven-2.2.0-scope-chain",
     "sourceOverlay": {
       "file": "../../scenarios/nested-embedded-scope-data/expense-claim-overlay.json",
       "id": "expense-claim-handlers",
-      "sha256": "b835229ab56834b6bd8ababbfac48c1d24eba8277623d84265671b7b2b88106d"
+      "sha256": "c84fbb115c81ae011694cb92fbbf04e1acf953422d93635c2cf419b460330e7f"
     },
     "limits": {
       "maxBytes": 1048576,

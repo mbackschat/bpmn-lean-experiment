@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/configured-task/process.bpmn",
     "sourceId": "configured-task",
-    "semanticProfile": "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

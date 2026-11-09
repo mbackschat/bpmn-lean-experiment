@@ -199,7 +199,7 @@ function structuredForm(): PublicStructuredTaskFormV1 {
       processId: "Process_ExpenseExceptionReview",
       version: 1,
       sourceSha256: "a".repeat(64),
-      semanticProfile: "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+      semanticProfile: "bpmn-2.0.2",
     },
     taskDefinition: {
       elementId: "ReviewException",

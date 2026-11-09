@@ -3,11 +3,11 @@
   "bpmn": {
     "file": "../../scenarios/portable-business-effect-data/credit-decision.bpmn",
     "sourceId": "credit-decision",
-    "semanticProfile": "cibseven-2.2.0-portable-business-effect-data-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "sourceOverlay": {
       "file": "../../scenarios/portable-business-effect-data/source-overlay.json",
       "id": "credit-handlers",
-      "sha256": "a211570d2aed1dff31be9caa8f12227fc308ecf7975c8099a0d96cd838566eba"
+      "sha256": "9e2b8231e27b48e45b0f975842a37aaa5dcce6c53a0122b267260f309f0fd2ac"
     },
     "limits": {
       "maxBytes": 1048576,

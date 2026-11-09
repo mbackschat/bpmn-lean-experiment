@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "classification",
-  "profile": "cibseven-2.2.0-serial-business-tasks-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "classified-invoice",
     "relativePath": "packages/bpmn-source/test/fixtures/serial-invoice-classification.bpmn",
     "sha256": "e0fb2d20e42bf41b2fa008d919cd485e6057394bfac918c765b4b561baa4862d",
     "sourceOverlay": {
       "id": "invoice-handlers",
-      "sha256": "b4a778099c78ae9cda0074b2e79ea6ce12b76ff95ce1f983cebde460d106dc75"
+      "sha256": "4d4c3d17416b6b0e32d5e91a0868c43e9d5698865583043d430d1376b3e0f02c"
     }
   },
   "stimuli": [

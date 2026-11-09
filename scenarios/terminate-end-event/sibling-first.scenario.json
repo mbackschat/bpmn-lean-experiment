@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "terminate-end-event-sibling-first",
-  "profile": "bpmn-2.0.2-terminate-end-event-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "terminate-end-event-process",
     "relativePath": "scenarios/terminate-end-event/process.bpmn",

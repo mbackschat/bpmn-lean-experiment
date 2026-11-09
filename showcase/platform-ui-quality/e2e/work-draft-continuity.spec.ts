@@ -139,7 +139,7 @@ function task(activation: number): PublicWorkTask {
       name: `Review ${activation}`, state: "active",
       metadata: { assignment: { candidates: [{ kind: "group", id: "reviewers" }] } } },
     hostingInstance: { processInstanceId: "draft-instance", definition: {
-      processId: "DraftReview", version: 1, semanticProfile: "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+      processId: "DraftReview", version: 1, semanticProfile: "bpmn-2.0.2",
       source: { kind: "bpmnSource", id: "draft-review", sha256: "a".repeat(64), byteLength: 100,
         declaredEncoding: "UTF-8", decodedAs: "UTF-8" },
       sourceOverlay: null,

@@ -6,7 +6,7 @@ test("caught invoice and policy errors return to fresh reviews and complete publ
   await completeInvoiceJourney(page, {
     fixture: "invoice-error-recovery",
     scenario: "mixed-task-business-error",
-    profile: "cibseven-2.2.0-mixed-task-business-error-draft",
+    profile: "cibseven-2.2.0",
     processId: "Invoice",
     initialVariables: [["request", "initial"], ["result", "parent-result"]],
     tasks: [

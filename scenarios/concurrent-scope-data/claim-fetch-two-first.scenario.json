@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "concurrent-scope-data-claim-fetch-two-first",
-  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "claim-damage-assessment",
     "relativePath": "scenarios/concurrent-scope-data/claim-damage-assessment.bpmn",
     "sha256": "25b1d522b7233f3bd398f6620a6d2ab448eec71124b33a344c56de3a5ff95cb8",
     "sourceOverlay": {
       "id": "claim-damage-assessment-handlers",
-      "sha256": "e5d8a85644223c8fb4fdfc059452c03d6f8515647752b8b6dd9e89b68b517c65"
+      "sha256": "d29d71eaf6b70ca10782faf86629f6fc45bcf7b7f69cd882517d0ca2a5421850"
     }
   },
   "stimuli": [

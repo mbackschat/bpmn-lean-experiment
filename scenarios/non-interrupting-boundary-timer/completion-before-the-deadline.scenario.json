@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "non-interrupting-boundary-timer-completion-before-the-deadline",
-  "profile": "bpmn-2.0.2-non-interrupting-boundary-timer-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "non-interrupting-boundary-timer",
     "relativePath": "scenarios/non-interrupting-boundary-timer/process.bpmn",

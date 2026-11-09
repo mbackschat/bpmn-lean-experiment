@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/inclusive-gateway-selected-branches/process.bpmn",
     "sourceId": "inclusive-gateway-test",
-    "semanticProfile": "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

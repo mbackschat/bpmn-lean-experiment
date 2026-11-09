@@ -3,11 +3,11 @@
   "bpmn": {
     "file": "../../scenarios/mixed-task-control-flow/process.bpmn",
     "sourceId": "reviewed-invoice",
-    "semanticProfile": "cibseven-2.2.0-mixed-task-control-flow-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "sourceOverlay": {
       "file": "../../scenarios/mixed-task-control-flow/source-overlay.json",
       "id": "invoice-handlers",
-      "sha256": "cd9fa32a59aa8af2d39cefff9d1162e9958c2838eebee13b2f22e5dfd4a0060a"
+      "sha256": "466302458623119c5d1cd2d17a78ab2f7bce692e3ad4467f8a2870277b64ec3c"
     },
     "limits": { "maxBytes": 1048576, "parserDeadlineMs": 1000 }
   },

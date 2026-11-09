@@ -53,9 +53,9 @@ import {
 } from "./temporal-support.ts";
 import type { TemporalWorkflowExecution } from "./temporal-support.ts";
 
-const directProfile = "bpmn-2.0.2-user-task-preserved-notation-draft";
-const timerProfile = "bpmn-2.0.2-timer-start-event-draft";
-const messageProfile = "bpmn-2.0.2-message-start-event-draft";
+const directProfile = "bpmn-2.0.2";
+const timerProfile = "bpmn-2.0.2";
+const messageProfile = "bpmn-2.0.2";
 const taskQueue = "bpmn-m2-process-instance-search";
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;

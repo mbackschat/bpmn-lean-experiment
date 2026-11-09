@@ -41,7 +41,7 @@ const definition = {
     declaredEncoding: null,
     decodedAs: "UTF-8",
   },
-  semanticProfile: "bpmn-2.0.2-message-start-event-draft",
+  semanticProfile: "bpmn-2.0.2",
   startCapabilities: { messageStarts: [messageStart], timerStarts: [] },
   sourceOverlay: null,
 } as const;

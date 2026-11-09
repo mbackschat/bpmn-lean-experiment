@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "pass-through-task-intake-illegible-twice-then-paper",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "document-intake",
     "relativePath": "scenarios/pass-through-task/document-intake.bpmn",
     "sha256": "09900df1dae11f1f2b9ba1ec3518460a21f42cce3cbd0411b79399c421d57c8e",
     "sourceOverlay": {
       "id": "document-intake-handlers",
-      "sha256": "5f385b54c23f5e37abfc0b70e5ccd528980e644e9091f6873b86f859117273b2"
+      "sha256": "3a13de4f78fa19ee0cc9fa8085692c8c5790efca1a545bef4e7954ca05d407fb"
     }
   },
   "stimuli": [

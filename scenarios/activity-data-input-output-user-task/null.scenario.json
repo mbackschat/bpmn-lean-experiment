@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "activity-data-input-output-null",
-  "profile": "bpmn-2.0.2-activity-data-input-output-user-task-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "activity-data-input-output-user-task",
     "relativePath": "scenarios/activity-data-input-output-user-task/process.bpmn",

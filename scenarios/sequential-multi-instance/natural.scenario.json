@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "sequential-multi-instance-natural",
-  "profile": "bpmn-2.0.2-sequential-multi-instance-user-task-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "sequential-multi-instance-review",
     "relativePath": "scenarios/sequential-multi-instance/process.bpmn",

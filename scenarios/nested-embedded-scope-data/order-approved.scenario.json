@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "nested-scope-data-order-approved",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "purchase-order",
     "relativePath": "scenarios/nested-embedded-scope-data/purchase-order.bpmn",
     "sha256": "cdf02a871ba3a36f4e3c937d8b64dda74d63da10903b894b2079344b2be72e3b",
     "sourceOverlay": {
       "id": "purchase-order-handlers",
-      "sha256": "3951d791bcbc6852abe3828c72a7c9f706efa2802427ee3a1deaa3e214f9c655"
+      "sha256": "856af0e0ca8027ebab1241c4a3182ab027559cd8246a1b103222e0d172ac74e2"
     }
   },
   "stimuli": [

@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "mapped-success-service-task",
-  "profile": "cibseven-2.0.0-mapped-success-service-task-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "mapped-success-service-task",
     "relativePath": "scenarios/mapped-success-service-task/process.bpmn",
@@ -43,7 +43,7 @@
       "BPMN 2.0.2 §10.3.4",
       "BPMN 2.0.2 §13.3.3"
     ],
-    "cibRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "cibRefs": [
       "CIB-EXT-0007",
       "CIB-OP-0006",

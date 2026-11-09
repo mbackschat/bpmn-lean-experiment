@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "user-task-cycle-repeat-rework-exit",
-  "profile": "bpmn-2.0.2-user-task-cycle-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "cyclic-control-flow",
     "relativePath": "scenarios/user-task-cycle/process.bpmn",

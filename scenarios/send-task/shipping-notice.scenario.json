@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "send-task-shipping-notice",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "shipping-notice",
     "relativePath": "scenarios/send-task/shipping-notice.bpmn",
     "sha256": "ce50fc42cc585fb76c6488d24ac3d35a4ba34b37687fe4cca135a00d49bbb515",
     "sourceOverlay": {
       "id": "shipping-notice-handlers",
-      "sha256": "0711fc6a663e435ba69be514e555cfb6ae39d5143a5d543934668e0355053567"
+      "sha256": "16bc88651de48d0f393afc8d68288ef4e3374cd00dc0ae661e42280dc9f42bec"
     }
   },
   "stimuli": [

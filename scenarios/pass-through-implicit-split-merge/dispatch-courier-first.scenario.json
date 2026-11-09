@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "pass-through-implicit-split-merge-dispatch-courier-first",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "equipment-dispatch",
     "relativePath": "scenarios/pass-through-implicit-split-merge/equipment-dispatch.bpmn",
     "sha256": "dfbd69e8140d4e465b2dd02daad584801121d3e66b73af729dad661a0a3544ed",
     "sourceOverlay": {
       "id": "equipment-dispatch-handlers",
-      "sha256": "426426aa305556cba08c87d23717b0301661537d70076c3a6b63f6831aa86b8a"
+      "sha256": "74297357a76abc9fb2729c47c98a278eab0f3162ab291510ddf1fbdda6fb8414"
     }
   },
   "stimuli": [

@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "mapped-boundary-error-service-task-caught",
-  "profile": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "mapped-boundary-error-service-task",
     "relativePath": "scenarios/mapped-boundary-error-service-task/process.bpmn",
@@ -57,7 +57,7 @@
       "BPMN 2.0.2 §10.4.3",
       "BPMN 2.0.2 §13.5.3"
     ],
-    "cibRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "cibRefs": [
       "CIB-AGR-0010",
       "CIB-EXT-0008",

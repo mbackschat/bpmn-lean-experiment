@@ -34,7 +34,7 @@ import {
 import { cloneDefinitionStartCapabilities } from "./definition-capabilities.js";
 
 const structuredHumanWorkProfile =
-  "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
+  "bpmn-2.0.2";
 
 type HumanTaskCatalogProjector = Readonly<{
   project(

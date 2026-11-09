@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "none-intermediate-throw-warranty-rework",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "warranty-repair",
     "relativePath": "scenarios/none-intermediate-throw/warranty-repair.bpmn",
     "sha256": "3217004955a13104fc95098f9f5e39a0decc7bb8f61ee8595949804aef386b97",
     "sourceOverlay": {
       "id": "warranty-repair-handlers",
-      "sha256": "b6727cc1cd4879d24a91cf27654a8a3034469994894014d6ec4a0e6a5f7da01e"
+      "sha256": "bb61062b3bd9603d5aaf605add47a9899b669100426d475dc114d91b5f518bd3"
     }
   },
   "stimuli": [

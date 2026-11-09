@@ -1,6 +1,6 @@
 # Portable business values handoff scenarios
 
-The [profile](../../profiles/bpmn-2.0.2-portable-business-values-handoff-draft/README.md) and [semantics specification](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) own the bounded account. [order-handoff.bpmn](order-handoff.bpmn) is the retained project-authored order review and archive model under the BPMN default expression language. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
+The [profile](../../profiles/bpmn-2.0.2/README.md) and [semantics specification](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) own the bounded account. [order-handoff.bpmn](order-handoff.bpmn) is the retained project-authored order review and archive model under the BPMN default expression language. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
 
 | Scenario | Journey |
 |---|---|

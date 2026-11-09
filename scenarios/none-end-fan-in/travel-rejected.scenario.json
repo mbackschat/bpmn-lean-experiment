@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "none-end-fan-in-travel-rejected",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "travel-request",
     "relativePath": "scenarios/none-end-fan-in/travel-request.bpmn",
     "sha256": "229fbc8355bd03bfab48547d01a0ef4b2369b941a574d6f888a4115dccff39a0",
     "sourceOverlay": {
       "id": "travel-request-handlers",
-      "sha256": "106fc5ca4d341e7b92c2f3a52cf4ee683d87e9ec2df0e98590953cd1c8c0cd78"
+      "sha256": "cb1c1f4f8ae46feaa4982b7857935451ac9ca62325c0543650a2571465e327dd"
     }
   },
   "stimuli": [

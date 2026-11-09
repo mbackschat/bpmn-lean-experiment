@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "configured-task",
-  "profile": "bpmn-2.0.2-bpmn-lean-configured-task-effect-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "configured-task",
     "relativePath": "scenarios/configured-task/process.bpmn",

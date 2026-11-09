@@ -2,7 +2,7 @@
   "identity": {
     "processId": "Process_SimpleBooleanChoice",
     "sourceSha256": "a57b7fe4919ff3cf0806f22e16fc05f4c37ecd326ffc97d8d66cbf693b53c21b",
-    "profile": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft"
+    "profile": "bpmn-2.0.2"
   },
   "options": {
     "relations": [

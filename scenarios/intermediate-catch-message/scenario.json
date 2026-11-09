@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "intermediate-catch-message",
-  "profile": "bpmn-2.0.2-intermediate-catch-message-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "intermediate-catch-message-process",
     "relativePath": "scenarios/intermediate-catch-message/process.bpmn",

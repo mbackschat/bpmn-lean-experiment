@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "activity-host-split-intake-broker-first",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "insurance-claim-intake",
     "relativePath": "scenarios/activity-host-split/insurance-claim-intake.bpmn",
     "sha256": "6e068b442f647e2ec6a38e77ef467517736df6381b501b4d5c7b7d6a56384dc6",
     "sourceOverlay": {
       "id": "insurance-claim-intake-handlers",
-      "sha256": "f7f8cbaf5571ea047dee4cf4bd2618091c6c347737256e4eb7a1e6915625f31b"
+      "sha256": "fad2c42422b0a3d0f9e9a037f115d2079d531d8d8ed8f08ec5fec0daa733bb95"
     }
   },
   "stimuli": [

@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import { expect, test } from "@playwright/test";
 
-const profileId = "bpmn-2.0.2-user-task-preserved-notation-draft";
+const profileId = "bpmn-2.0.2";
 const templateUrl = new URL(
   "../../../scenarios/user-task-preserved-notation/process.bpmn",
   import.meta.url,

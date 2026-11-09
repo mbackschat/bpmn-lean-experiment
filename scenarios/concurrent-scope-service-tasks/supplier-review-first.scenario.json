@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "concurrent-scope-effects-supplier-review-first",
-  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "supplier-screening",
     "relativePath": "scenarios/concurrent-scope-service-tasks/supplier-screening.bpmn",
     "sha256": "204e8a37f5455d9da2da9c98345f0a334dd8f6db678a9f8a23a2ff3d3b5d5b53",
     "sourceOverlay": {
       "id": "supplier-screening-handlers",
-      "sha256": "30fa3251a5696d52d99a45a6ee53bcc19e5766dd6f79ee191bfd5de02a1790f3"
+      "sha256": "74414877762a15ff88aa942ca13a1f9f7c65f9cc4b2d5f4477e693fc94a39859"
     }
   },
   "stimuli": [

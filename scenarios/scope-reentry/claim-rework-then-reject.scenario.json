@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "scope-reentry-claim-rework-then-reject",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "claim-rework",
     "relativePath": "scenarios/scope-reentry/claim-rework.bpmn",
     "sha256": "7c5a4b8173f6781da38549d27ebe05ccce152a9526fcad4f154e87bcb98e5c31",
     "sourceOverlay": {
       "id": "claim-rework-handlers",
-      "sha256": "7bb98ec13dc7e40fed3162b15ba5095ac60c5713d5e58cb5080133c59a58721f"
+      "sha256": "2a9aa212286fb9e74d5a7836ce9e3f1137b14128bb7b0e9c960c34ce0f822e71"
     }
   },
   "stimuli": [

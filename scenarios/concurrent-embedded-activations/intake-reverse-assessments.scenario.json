@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "concurrent-activations-intake-reverse-assessments",
-  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "credit-intake",
     "relativePath": "scenarios/concurrent-embedded-activations/credit-intake.bpmn",

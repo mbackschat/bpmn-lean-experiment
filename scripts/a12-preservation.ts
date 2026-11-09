@@ -91,20 +91,19 @@ export async function verifyA12LegacyManifest(
   await verifyLegacyDependencyClosure(projectRoot, manifest);
 }
 
+/**
+ * The payload-free Service Task source stays byte-identical to the legacy baseline. Its per-variant profile retired
+ * into `profiles/cibseven-2.2.0` at the profile consolidation (#42), so only the BPMN source is compared; the
+ * baseline profile bytes stay reachable at the legacy Git target.
+ */
 export async function verifyPayloadFreeServiceTaskPreservation(
   projectRoot: string,
 ): Promise<void> {
-  const profilePath =
-    "profiles/cibseven-2.2.0-service-task-effect-draft/profile.json";
   const bpmnPath = "scenarios/service-task-effect/process.bpmn";
-  const [baselineProfile, currentProfile, baselineBpmn, currentBpmn] =
-    await Promise.all([
-      Promise.resolve(readLegacyBytes(projectRoot, profilePath)),
-      readFile(path.join(projectRoot, profilePath)),
-      Promise.resolve(readLegacyBytes(projectRoot, bpmnPath)),
-      readFile(path.join(projectRoot, bpmnPath)),
-    ]);
-  assert.ok(currentProfile.equals(baselineProfile), `${profilePath} changed`);
+  const [baselineBpmn, currentBpmn] = await Promise.all([
+    Promise.resolve(readLegacyBytes(projectRoot, bpmnPath)),
+    readFile(path.join(projectRoot, bpmnPath)),
+  ]);
   assert.ok(currentBpmn.equals(baselineBpmn), `${bpmnPath} changed`);
 }
 

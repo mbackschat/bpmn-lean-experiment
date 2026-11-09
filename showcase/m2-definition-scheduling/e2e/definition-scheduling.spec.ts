@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-const profileId = "bpmn-2.0.2-timer-start-event-draft";
+const profileId = "bpmn-2.0.2";
 const templateUrl = new URL(
   "../../../scenarios/timer-start-event/process.bpmn",
   import.meta.url,

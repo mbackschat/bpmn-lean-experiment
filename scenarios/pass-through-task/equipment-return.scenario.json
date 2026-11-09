@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "pass-through-task-equipment-return",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "equipment-return",
     "relativePath": "scenarios/pass-through-task/equipment-return.bpmn",
     "sha256": "b063d05b2bfa7cd20a2825dd1ba67ce56f88bcb7174f1f3eb1cf4b60d0e3496f",
     "sourceOverlay": {
       "id": "equipment-return-handlers",
-      "sha256": "0029df9555e48e562d7629831658030e5cef1ab1785986649272c3ef2b415bc6"
+      "sha256": "8548a69527138e13fe8da535c3a9ae287c6913c191b719b99047fac7380e482a"
     }
   },
   "stimuli": [

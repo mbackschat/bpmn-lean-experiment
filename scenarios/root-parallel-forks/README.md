@@ -1,6 +1,6 @@
 # Root Parallel forks scenarios
 
-The [root Parallel forks specification](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md) owns the bounded account; the model is a witness for the [nested scope-data profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json), with an exact source overlay binding its one Service Task to a caller-supplied Activity handler.
+The [root Parallel forks specification](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md) owns the bounded account; the model is a witness for the [nested scope-data profile](../../profiles/cibseven-2.2.0-scope-chain/profile.json), with an exact source overlay binding its one Service Task to a caller-supplied Activity handler.
 
 The [employee onboarding](employee-onboarding.bpmn) with its [handler](employee-onboarding-overlay.json) forks its Process root at *Start onboarding*. One branch prepares the workstation and orders a laptop, whose Service Task reads the structured `employee` and writes `assetTag` and `onboardingStage`; the other runs the Sub-Process *Collect documents*, which copies `employee` into its local `record`, lets *Confirm documents* amend it and copies it back out with its own `onboardingStage`. *Onboarding ready* joins both before *Hold welcome meeting*.
 

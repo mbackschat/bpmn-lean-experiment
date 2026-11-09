@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/embedded-subprocess-completion/process.bpmn",
     "sourceId": "embedded-subprocess-completion-process",
-    "semanticProfile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

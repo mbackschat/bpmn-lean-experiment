@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "portable-message-payload-manifest-delivered",
-  "profile": "bpmn-2.0.2-portable-business-message-payload-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "shipment-manifest-intake",
     "relativePath": "scenarios/portable-business-message-payload/process.bpmn",

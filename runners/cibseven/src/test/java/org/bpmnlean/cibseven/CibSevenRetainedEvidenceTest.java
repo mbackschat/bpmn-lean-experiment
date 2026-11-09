@@ -57,13 +57,19 @@ public class CibSevenRetainedEvidenceTest {
     assertFalse("no retained evidence of CIB Seven " + version, compared == 0);
   }
 
-  /** The harness schedule an evidence run used: incidents select the incident schedule of their cancellability. */
+  /**
+   * The harness schedule an evidence run used: a scenario without incident options runs the plain schedule, and one
+   * with them runs the cancellation schedule when its stimuli cancel the incident's Process and the retry schedule
+   * otherwise. Cancellability itself is no schedule input, because CIB always offers public deletion.
+   */
   private static CibEffectExecutionSchedule schedule(ScenarioProtocol.ScenarioDefinition scenario) {
-    var options = scenario.declaredOptions();
-    if (!options.incidentsEnabled()) {
+    if (!scenario.declaredOptions().incidentsEnabled()) {
       return CibEffectExecutionSchedule.PLAIN_SUCCESS;
     }
-    return options.incidentsCancellable()
+    var cancels = scenario.stimuli().stream()
+        .anyMatch(stimulus -> stimulus instanceof ScenarioProtocol.Command command
+            && command.action() instanceof ScenarioProtocol.CancelIncidentProcess);
+    return cancels
         ? CibEffectExecutionSchedule.INCIDENT_REPORT_CANCEL
         : CibEffectExecutionSchedule.INCIDENT_REPORT_RETRY_SUCCESS;
   }

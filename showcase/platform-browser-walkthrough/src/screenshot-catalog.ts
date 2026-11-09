@@ -74,7 +74,7 @@ export const screenshotCatalog = Object.freeze([
   }),
   screenshot({
     filename: "15-current-incidents.png",
-    alt: "Operations workspace showing Retry-only and cancellable current Service Task incidents",
+    alt: "Operations workspace showing current Service Task incidents with Retry and Cancel Process",
   }),
   screenshot({
     filename: "16-cancel-process-confirmation.png",

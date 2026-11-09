@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "service-task-effect-incident-retry-success",
-  "profile": "cibseven-2.2.0-service-task-incident-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "service-task-effect-phase-zero-probe",
     "relativePath": "scenarios/service-task-effect/process.bpmn",
@@ -56,7 +56,7 @@
   ],
   "options": {
     "incidents": {
-      "cancellable": false
+      "cancellable": true
     }
   },
   "provenance": {

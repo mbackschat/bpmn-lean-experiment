@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "subscription-subprocess-boundary-timer-completion-first",
-  "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "subscription-subprocess-boundary-timer",
     "relativePath": "scenarios/repeatable-event-subscriptions/subprocess-boundary-timer.bpmn",

@@ -74,24 +74,15 @@ test("binds repeated Sub-Process relationships to the live register", async () =
 });
 
 /**
- * A scenario's provenance may name a relationship its profile artifact omits only through a recorded substitution:
- * the `SCOPE` artifact's digest is pinned by the immutable cyclic preservation baseline, so the owner accepted naming
- * `CIB-EXT-0021` in the profile README and the Call scenarios instead (repeated, nested and concurrent Calls specification,
- * Versioning consequences). The concurrent scope Service Tasks family substitutes `CIB-EXT-0015` and `CIB-OP-0010` the
- * same way (its proposal's Normative basis and CIB classification), and the concurrent scope data family substitutes
- * `CIB-EXT-0020`, `CIB-EXT-0005` and `CIB-EXT-0006` for data-bearing Programs (its proposal's same section). The entry
- * also requires the artifact to still omit it, so a re-pin retires the entry.
+ * A scenario's provenance may name a relationship its profile omits only through a recorded substitution: the concurrent
+ * mapped Calls and concurrent scope data scenarios (formerly under the embedded completion profile, which did not select
+ * `CIB-EXT-0020`) cite it for their data-bearing Programs, an account whose submission restriction only the scope-chain
+ * profile selects. The entry also requires the profile to still omit it and the register to state the boundary, so moving
+ * those scenarios to the scope-chain profile retires it.
  */
 const relationshipSubstitutions: ReadonlyArray<Readonly<{ profile: string; relationship: string; boundary: string }>> = [
-  { profile: "cibseven-2.2.0-embedded-subprocess-completion-draft", relationship: "CIB-EXT-0021",
-    boundary: "Under the embedded completion profile only the key clause applies" },
-  { profile: "cibseven-2.2.0-embedded-subprocess-completion-draft", relationship: "CIB-EXT-0015",
-    boundary: "Under the embedded completion profile only the binding clause applies" },
-  { profile: "cibseven-2.2.0-embedded-subprocess-completion-draft", relationship: "CIB-OP-0010",
-    boundary: "Under the embedded completion profile only" },
-  ...["CIB-EXT-0020", "CIB-EXT-0005", "CIB-EXT-0006"].map(relationship => ({
-    profile: "cibseven-2.2.0-embedded-subprocess-completion-draft", relationship,
-    boundary: "Under the embedded completion profile, in data-bearing Programs" })),
+  { profile: "cibseven-2.2.0", relationship: "CIB-EXT-0020",
+    boundary: "Under the embedded completion profile, in data-bearing Programs" },
 ];
 
 test("binds every scenario CIB relationship to its profile artifact or a recorded substitution", async () => {
@@ -114,7 +105,7 @@ test("binds every scenario CIB relationship to its profile artifact or a recorde
   for (const { profile, relationship, boundary } of relationshipSubstitutions) {
     assert.ok(substituted.has(`${profile} ${relationship}`), `unused substitution ${relationship}`);
     const entry = new RegExp(`^### ${relationship}\\b[\\s\\S]*?^\\*\\*Boundary:\\*\\*(.*)$`, "mu").exec(register);
-    assert.ok(entry?.[1]?.includes(boundary), `${relationship} Boundary does not name ${profile}`);
+    assert.ok(entry?.[1]?.includes(boundary), `${relationship} Boundary does not state the boundary for ${profile}`);
     const readme = await readFile(new URL(`profiles/${profile}/README.md`, `file://${projectRoot}`), "utf8");
     assert.ok(readme.includes(`\`${relationship}\``), `${profile} README does not name ${relationship}`);
   }

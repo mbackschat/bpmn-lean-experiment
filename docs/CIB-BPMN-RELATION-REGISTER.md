@@ -62,7 +62,7 @@ None recorded.
 
 **Classification rationale:** This is more than a representation difference because it changes the publicly observable point at which downstream BPMN work becomes active. The normative account now has answer-free content-bound balanced evidence, a mutation-sensitive raw-to-canonical projection, and complete balanced Lean, CIB, TypeScript, and Temporal impact evidence. The entry remains a candidate rather than a confirmed deviation because the separating duplicate-left/no-right CIB probe itself is not yet an immutable answer-free evidence artifact with a retained negative-result projection.
 
-**Profile decision:** The [parallel fork/join spec](kernel/semantics/FLOW-SEMANTICS-SPEC.md) follows normative per-incoming-Sequence-Flow behavior. The current `cibseven-2.2.0-user-task-process-data-draft` profile is not expanded to claim parallel compatibility. Pinned CIB count-based behavior may be retained later only in an explicitly separate compatibility profile; one behavior cannot be claimed as both exact CIB compatibility and BPMN conformance.
+**Profile decision:** The [parallel fork/join spec](kernel/semantics/FLOW-SEMANTICS-SPEC.md) follows normative per-incoming-Sequence-Flow behavior. The current `cibseven-2.2.0` profile is not expanded to claim parallel compatibility. Pinned CIB count-based behavior may be retained later only in an explicitly separate compatibility profile; one behavior cannot be claimed as both exact CIB compatibility and BPMN conformance.
 
 **Capsule and semantic rule IDs:** The [parallel fork/join spec](kernel/semantics/FLOW-SEMANTICS-SPEC.md) owns `PAR-JOIN-READY-01` and `PAR-JOIN-CONSUME-01`. Its balanced evidence lanes are closed as a draft; immutable negative-probe evidence remains pending.
 
@@ -86,7 +86,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Pinned CIB observation:** CIB Seven `2.2.0` deploys and starts the exact plain BPMN fixture, exposes exactly one active `UserTask_Approve`, completes it through the public task service, and reports the Process complete at unchanged controlled logical time.
 
-**Evidence:** [BPMN fixture and scenarios](../scenarios/user-task-discovery-completion/README.md), [exact-completion CIB evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), oracle runner test (`CibSevenScenarioRunnerTest`, removed at W0.3b), and [the current draft profile](../profiles/cibseven-2.2.0-user-task-process-data-draft/README.md).
+**Evidence:** [BPMN fixture and scenarios](../scenarios/user-task-discovery-completion/README.md), [exact-completion CIB evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), oracle runner test (`CibSevenScenarioRunnerTest`, removed at W0.3b), and [the current draft profile](../profiles/cibseven-2.2.0/README.md).
 
 **Boundary:** This establishes agreement only for one private executable `None Start Event → User Task → None End Event` Process and its declared observation surface. It says nothing yet about assignment, variables, repeated activation, concurrency, errors, or general Process Execution Conformance.
 
@@ -98,7 +98,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Pinned CIB observation:** The public CIB task query exposes the active task and its BPMN definition key and name; completing the corresponding live host task removes the wait and completes the admitted Process.
 
-**Evidence:** [User Task interaction capsule](kernel/semantics/WORK-SEMANTICS-SPEC.md), [exact-completion evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), [interaction scenarios](../scenarios/user-task-discovery-completion/README.md), and [the current draft profile](../profiles/cibseven-2.2.0-user-task-process-data-draft/README.md).
+**Evidence:** [User Task interaction capsule](kernel/semantics/WORK-SEMANTICS-SPEC.md), [exact-completion evidence](../scenarios/user-task-discovery-completion/cibseven-evidence.json), [interaction scenarios](../scenarios/user-task-discovery-completion/README.md), and [the current draft profile](../profiles/cibseven-2.2.0/README.md).
 
 **Boundary:** People assignment, ownership, authorization, forms, input/output data, and general User Task lifecycle are excluded. The project’s structured activation ordinal and refusal of a mismatched semantic occurrence are an operational mapping under `CIB-OP-0001`, not a claim that BPMN prescribes that identity representation.
 
@@ -110,7 +110,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Pinned CIB observation:** CIB Seven `2.2.0` starts the exact balanced fork/join Process with simultaneous `UserTask_A` and `UserTask_B` waits. Completing either task first leaves only the other task active; completing both joins once and completes the Process. A-then-B and B-then-A have the same initial and final canonical states.
 
-**Evidence:** [Parallel scenarios](../scenarios/parallel-fork-join/README.md), [A-then-B evidence](../scenarios/parallel-fork-join/a-then-b.cibseven-evidence.json), [B-then-A evidence](../scenarios/parallel-fork-join/b-then-a.cibseven-evidence.json), oracle runner test (`CibSevenScenarioRunnerTest`, removed at W0.3b), and [the parallel draft profile](../profiles/parallel-fork-join-draft/README.md).
+**Evidence:** [Parallel scenarios](../scenarios/parallel-fork-join/README.md), [A-then-B evidence](../scenarios/parallel-fork-join/a-then-b.cibseven-evidence.json), [B-then-A evidence](../scenarios/parallel-fork-join/b-then-a.cibseven-evidence.json), oracle runner test (`CibSevenScenarioRunnerTest`, removed at W0.3b), and [the parallel draft profile](../profiles/bpmn-2.0.2/README.md).
 
 **Boundary:** This agreement is limited to one balanced two-branch shape with distinct User Task elements. It does not distinguish normative per-incoming-flow synchronization from CIB's count-based join implementation and therefore does not weaken or resolve candidate `CIB-DEV-0001`. Repeated task elements, activation-ordinal derivation, excess same-input arrivals, more branches, nested gateways, and general parallel compatibility remain outside this agreement.
 
@@ -122,7 +122,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Pinned CIB observation:** With CIB Seven `2.2.0` at the pinned revision, automatic job execution disabled, and the engine clock fixed at epoch zero, the exact `PT1S` fixture creates one wait-state timer job due at epoch plus 1000 ms. The executable-job query excludes that job before its due date, includes the same job when the controlled clock reaches the due date, and public job execution then removes the wait and completes the Process.
 
-**Evidence:** [Intermediate Catch Timer scenario](../scenarios/intermediate-catch-timer/README.md), controlled-clock oracle test (`CibSevenIntermediateCatchTimerTest`, removed at W0.3b), [immutable profile](../profiles/cibseven-2.2.0-intermediate-catch-timer-draft/README.md), and the content-bound retained evidence generated only through the explicit replacement command.
+**Evidence:** [Intermediate Catch Timer scenario](../scenarios/intermediate-catch-timer/README.md), controlled-clock oracle test (`CibSevenIntermediateCatchTimerTest`, removed at W0.3b), [immutable profile](../profiles/cibseven-2.2.0/README.md), and the content-bound retained evidence generated only through the explicit replacement command.
 
 **Fidelity boundary:** Job existence, scheduler ineligibility before due time, scheduler eligibility at due time, the due transition, and Process completion are engine-observed. The canonical logical deadline `1000` is adapter-derived by subtracting the fixed controlled-clock epoch from the engine job due date; it is not an independent CIB derivation of the project's logical-time representation.
 
@@ -162,7 +162,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **Pinned CIB observation:** CIB Seven `2.2.0` at revision `834a9874760de8a0107f7c1b32806e37f17fb017` starts the exact project-authored one-level ordinary Sub-Process with simultaneous `UserTask_ChildA` and `UserTask_ChildB` waits. Completing either child first leaves only its sibling active and does not expose the enclosing `UserTask_AfterScope`; completing both children destroys the child work and exposes exactly the enclosing task. A-then-B and B-then-A reach the same public post-child state, and completing the enclosing task completes the Process.
 
-**Evidence:** [Ordinary embedded Sub-Process completion scenarios](../scenarios/embedded-subprocess-completion/README.md), content-bound evidence for [A then B](../scenarios/embedded-subprocess-completion/a-then-b.cibseven-evidence.json) and [B then A](../scenarios/embedded-subprocess-completion/b-then-a.cibseven-evidence.json), public-service oracle test (`CibSevenScenarioRunnerTest`, removed at W0.3b), and the [draft profile](../profiles/cibseven-2.2.0-embedded-subprocess-completion-draft/README.md).
+**Evidence:** [Ordinary embedded Sub-Process completion scenarios](../scenarios/embedded-subprocess-completion/README.md), content-bound evidence for [A then B](../scenarios/embedded-subprocess-completion/a-then-b.cibseven-evidence.json) and [B then A](../scenarios/embedded-subprocess-completion/b-then-a.cibseven-evidence.json), public-service oracle test (`CibSevenScenarioRunnerTest`, removed at W0.3b), and the [draft profile](../profiles/cibseven-2.2.0/README.md).
 
 **Boundary:** This agreement is limited to one ordinary embedded Sub-Process, one child scope level, one diverging Parallel Gateway, two distinct child User Tasks, separate child None End Events, and one enclosing User Task. Project semantic occurrence identity and stale-command refusal remain operational mappings under `CIB-OP-0001`. Arbitrary nesting, repeated activation, Event Sub-Processes, implicit completion, boundary handling, Error propagation, Terminate End Events, child-local data, loops, multi-instance, Call Activities, transactions, compensation, and internal CIB scope representation remain outside this agreement.
 
@@ -200,9 +200,9 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 **BPMN basis:** BPMN 2.0.2 Clauses 13.3.3 and 13.5.3 plus Table 8.41 and Tables 10.90, 10.91, and 10.92 require one matching Error to interrupt the attached Service Task and continue only through the Error Boundary Event's outgoing Sequence Flow.
 
-**Pinned CIB observation:** CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371` catches the exact `MappedBusinessError` raised by the neutral mapped-boundary Service Task, exposes only `ReviewMappedError`, and reaches Process completion only after that User Task completes.
+**Pinned CIB observation:** CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371` catches the exact `MappedBusinessError` raised by the neutral mapped-boundary Service Task, exposes only `ReviewMappedError`, and reaches Process completion only after that User Task completes. The CIB Seven `2.0.0` profiles retired into the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/README.md) at the profile consolidation (#42), and their evidence is regenerated on `2.2.0` in the hosted lane.
 
-**Evidence:** [Mapped-boundary-Error scenario](../scenarios/mapped-boundary-error-service-task/README.md), [content-bound CIB evidence](../scenarios/mapped-boundary-error-service-task/cibseven-evidence.json), scenario runner test (`CibSevenMappedBoundaryErrorScenarioRunnerTest`, removed at W0.3b), and [product-neutral profile](../profiles/cibseven-2.0.0-mapped-boundary-error-service-task-draft/README.md).
+**Evidence:** [Mapped-boundary-Error scenario](../scenarios/mapped-boundary-error-service-task/README.md), [content-bound CIB evidence](../scenarios/mapped-boundary-error-service-task/cibseven-evidence.json), scenario runner test (`CibSevenMappedBoundaryErrorScenarioRunnerTest`, removed at W0.3b), and [product-neutral profile](../profiles/cibseven-2.2.0/README.md).
 
 **Boundary:** This establishes one exact code, one attached interrupting handler, one flat Process, and one synchronous CIB host realization. Catch-all handling, nested propagation, Error End Events, multiple handlers, general faults, and unhandled Error behavior remain excluded. The caught-path mapping is classified separately by `CIB-EXT-0009`.
 
@@ -256,7 +256,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0015 — uncontrolled incoming Sequence Flow at a None End Event ends each token separately
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [None End fan-in account](kernel/semantics/FLOW-SEMANTICS-SPEC.md), whose proposal review is approved; closure qualification pending.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) for the [None End fan-in account](kernel/semantics/FLOW-SEMANTICS-SPEC.md), whose proposal review is approved; closure qualification pending.
 
 **BPMN basis:** Clause 10.5.3 lets an End Event have several incoming Sequence Flows and makes it a sink for every arriving token; Clause 13.5.6 ends each arriving token and completes the Process once no token remains. Nothing joins the arrivals.
 
@@ -266,7 +266,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0016 — a None Intermediate Throw Event passes its token on at once and records one activity instance
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [None Throw account](kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md), whose proposal review is approved; closure qualification pending.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) for the [None Throw account](kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md), whose proposal review is approved; closure qualification pending.
 
 **BPMN basis:** Clause 10.5.4 and its Table 10.89 make the None Intermediate Event a normal-flow throw Event without an EventDefinition, whose token moves down the outgoing Sequence Flow as soon as it arrives, with a separate instance of the Event per arriving token.
 
@@ -276,7 +276,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0017 — a structured Inclusive join fires when every selected branch has arrived
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Inclusive regions specification](kernel/semantics/FLOW-SEMANTICS-SPEC.md), whose proposal and closure reviews are approved.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) for the [Inclusive regions specification](kernel/semantics/FLOW-SEMANTICS-SPEC.md), whose proposal and closure reviews are approved.
 
 **BPMN basis:** Clause 13.4.3 with Table 13.3 activates a converging Inclusive Gateway once at least one incoming flow holds a token and no token that can still reach an empty incoming flow without visiting the Gateway is missing, the Structured Synchronizing Merge (WCP-7). In an acyclic structured region the tokens that can still arrive are exactly the selected branches still live.
 
@@ -286,7 +286,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0018 — a Link pair continues the token as the Sequence Flow it replaces
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Link Events account](kernel/semantics/FLOW-SEMANTICS-SPEC.md), whose proposal review is approved; closure qualification pending.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) for the [Link Events account](kernel/semantics/FLOW-SEMANTICS-SPEC.md), whose proposal review is approved; closure qualification pending.
 
 **BPMN basis:** Clause 10.5.5 makes a Link a jump between two sections of one Process level: the Process continues as if the Sequence Flow had connected the throw's predecessor to the catch's successor, and both forms behave equivalently. One target Link Event takes a name; Clause 10.5.4 keeps a catching Link without incoming and a throwing Link without outgoing Sequence Flow. The machine-readable `LinkEventDefinition` makes `source` and `target` optional (`BPMN20.cmof:384-385`).
 
@@ -296,7 +296,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0019 — a pass-through node passes each arriving token on its own and one activation starts every outgoing flow
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [pass-through implicit split and merge account](kernel/semantics/FLOW-SEMANTICS-SPEC.md), whose proposal review is approved; closure qualification pending.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) for the [pass-through implicit split and merge account](kernel/semantics/FLOW-SEMANTICS-SPEC.md), whose proposal review is approved; closure qualification pending.
 
 **BPMN basis:** Clause 13.3.1 makes an Activity that is the target of several Sequence Flows participate in uncontrolled flow, enabled for each arriving token independently of the others as an Exclusive Gateway would be, and gives every unconditioned outgoing flow a token when it completes, as a parallel split. The Activity notes of Clause 10.3 and, for an Intermediate Event, Clause 10.5.4 state the same: a further token creates a separate instance, and each outgoing flow a separate parallel path.
 
@@ -306,7 +306,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0020 — a User, Service or Send Task starts one occurrence per arriving token
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Activity host account](kernel/semantics/FLOW-SEMANTICS-SPEC.md), whose proposal review is approved; closure qualification pending. It is the waiting-Task instance of `CIB-AGR-0019` and admits several `CIB-AGR-0018` throws into such a Task.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) for the [Activity host account](kernel/semantics/FLOW-SEMANTICS-SPEC.md), whose proposal review is approved; closure qualification pending. It is the waiting-Task instance of `CIB-AGR-0019` and admits several `CIB-AGR-0018` throws into such a Task.
 
 **BPMN basis:** Clause 13.3.1 makes an Activity that is the target of several Sequence Flows participate in uncontrolled flow, enabled for each arriving token independently of the others, and the Activity notes of Clause 10.3 make a further arriving token create a separate instance of the Activity.
 
@@ -316,7 +316,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0021 — exact Intermediate Catch Timer durations
 
-**Status:** Selected by the [Intermediate Catch Timer](../profiles/cibseven-2.2.0-intermediate-catch-timer-draft/profile.json) and [Timer/User Task composition](../profiles/bpmn-2.0.2-timer-user-task-composition-draft/profile.json) profiles for the [Timer exact durations](kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md) account.
+**Status:** Selected by the [Intermediate Catch Timer](../profiles/cibseven-2.2.0/profile.json) and [Timer/User Task composition](../profiles/bpmn-2.0.2/profile.json) profiles for the [Timer exact durations](kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md) account.
 
 **BPMN basis:** Clause 10.5.5 and Tables 10.101 and 10.122 make `timeDuration` the relative-duration Timer form; Clause 10.5.4 and Table 10.89 hold the token at the Intermediate Catch Timer until its trigger.
 
@@ -330,7 +330,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0022 — a None Start's start and an embedded Sub-Process's completion take every unconditioned outgoing flow in their one step
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [scope host account](kernel/semantics/SCOPES-SEMANTICS-SPEC.md), implemented and closure-reviewed. It is the Start and Sub-Process instance of `CIB-AGR-0019`'s split.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) for the [scope host account](kernel/semantics/SCOPES-SEMANTICS-SPEC.md), implemented and closure-reviewed. It is the Start and Sub-Process instance of `CIB-AGR-0019`'s split.
 
 **BPMN basis:** Clause 10.5.1 generates a token for each outgoing Sequence Flow of a triggered Start Event, which Clause 13.2 restates for the Process; Clause 13.3.1 gives every outgoing flow of a completing Activity a token, a parallel split; Clause 13.3.4 instantiates an embedded Sub-Process when a token arrives and completes it when no token remains inside.
 
@@ -340,7 +340,7 @@ The repository-wide audit on 2026-07-24 found no previously visited observation 
 
 ### CIB-AGR-0023 — a User, Service or Send Task's completion takes every unconditioned outgoing flow in its one step
 
-**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) for the [Activity host split account](kernel/semantics/FLOW-SEMANTICS-SPEC.md), implemented, awaiting closure review. It is the Task instance of `CIB-AGR-0019`'s split, beside `CIB-AGR-0022`'s Start and Sub-Process instances, and the split counterpart of `CIB-AGR-0020`'s merge at the same Tasks.
+**Status:** Selected by the [nested scope-data profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) for the [Activity host split account](kernel/semantics/FLOW-SEMANTICS-SPEC.md), implemented, awaiting closure review. It is the Task instance of `CIB-AGR-0019`'s split, beside `CIB-AGR-0022`'s Start and Sub-Process instances, and the split counterpart of `CIB-AGR-0020`'s merge at the same Tasks.
 
 **BPMN basis:** Clause 13.3.1 gives every outgoing Sequence Flow of a completing Activity a token, a parallel split, and Clause 10.3 restates it for Activities with several outgoing flows; Clause 13.3.3 applies it to User, Service and Send Tasks.
 
@@ -418,7 +418,7 @@ The project standards profile does not adopt that counter identity. It keeps nor
 
 ### CIB-INT-0007 — a Sub-Process left abnormally completes normally
 
-**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.abnormalScopeEnd`; no calibration probe yet
+**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.abnormalScopeEnd` through the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json); no calibration probe yet
 
 BPMN says a Sub-Process left by a Terminate End or by an interrupting Event Sub-Process is "abnormally terminated" (§13.3.4, §13.5.6) and leaves the parent's continuation open. CIB Seven `2.2.0` completes such a Sub-Process normally and takes its outgoing flows.
 
@@ -530,7 +530,7 @@ The Service Task effect profile admits exactly the paired standard protocol URI 
 
 The selected extension is a host realization, not an independent derivation of the project's activated effect intent. CIB exposes a pre-activation continuation wait followed by atomic delegate invocation and Service Task completion. The project adapter maps that wait to the one bounded semantic effect occurrence and descriptor, with activation ordinal `1` decided from the required singleton job count.
 
-**Evidence:** [Service Task effect scenario](../scenarios/service-task-effect/README.md), [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.java), [immutable profile](../profiles/cibseven-2.2.0-service-task-effect-draft/README.md), and content-bound retained evidence produced only by the explicit replacement command.
+**Evidence:** [Service Task effect scenario](../scenarios/service-task-effect/README.md), [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskPhaseZeroProbeTest.java), [immutable profile](../profiles/cibseven-2.2.0/README.md), and content-bound retained evidence produced only by the explicit replacement command.
 
 **Boundary:** This entry claims no general JUEL, arbitrary bean, Java class, `JavaDelegate`, `DelegateExecution`, field injection, listener, variable, service-fault, incident, external-task, or Process Engine API compatibility.
 
@@ -600,9 +600,9 @@ This is a CIB public-service extension over Process instantiation, not general B
 
 **Status:** Selected bounded extension
 
-The product-neutral mapped-success profile admits exactly one Activity binding, one literal `requestValue = "example-input"` input parameter, and one `resultValue = ${result}` output parameter. CIB Seven `2.0.0` resolves the exact profile-owned binding, provides the mapped literal to the test delegate, reads the delegate-written Activity-local `result`, and maps it into Process variable `resultValue`.
+The product-neutral mapped-success profile admits exactly one Activity binding, one literal `requestValue = "example-input"` input parameter, and one `resultValue = ${result}` output parameter. CIB Seven `2.0.0` resolves the exact profile-owned binding, provides the mapped literal to the test delegate, reads the delegate-written Activity-local `result`, and maps it into Process variable `resultValue`. The CIB Seven `2.0.0` profiles retired into the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/README.md) at the profile consolidation (#42), and their evidence is regenerated on `2.2.0` in the hosted lane.
 
-**Evidence:** [Mapped-success scenario](../scenarios/mapped-success-service-task/README.md), [content-bound CIB evidence](../scenarios/mapped-success-service-task/cibseven-evidence.json), scenario runner test (`CibSevenMappedSuccessScenarioRunnerTest`, removed at W0.3b), and [product-neutral profile](../profiles/cibseven-2.0.0-mapped-success-service-task-draft/README.md).
+**Evidence:** [Mapped-success scenario](../scenarios/mapped-success-service-task/README.md), [content-bound CIB evidence](../scenarios/mapped-success-service-task/cibseven-evidence.json), scenario runner test (`CibSevenMappedSuccessScenarioRunnerTest`, removed at W0.3b), and [product-neutral profile](../profiles/cibseven-2.2.0/README.md).
 
 **Boundary:** This selects one successful string-valued path. It does not select general input/output mapping, expression evaluation, arbitrary variables, beans, delegates, Java compatibility, failure, rollback, scripts, listeners, or engine APIs.
 
@@ -610,9 +610,9 @@ The product-neutral mapped-success profile admits exactly one Activity binding, 
 
 **Status:** Selected bounded extension
 
-The product-neutral mapped-boundary profile admits exactly one Activity binding and maps the Worker-facing typed result to a CIB `BpmnError` carrying nonempty code `MappedBusinessError` and the reviewed message. The project result remains a language-neutral value; Java exception transport and bean resolution are CIB host mechanisms.
+The product-neutral mapped-boundary profile admits exactly one Activity binding and maps the Worker-facing typed result to a CIB `BpmnError` carrying nonempty code `MappedBusinessError` and the reviewed message. The project result remains a language-neutral value; Java exception transport and bean resolution are CIB host mechanisms. The CIB Seven `2.0.0` profiles retired into the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/README.md) at the profile consolidation (#42), and their evidence is regenerated on `2.2.0` in the hosted lane.
 
-**Evidence:** [Mapped-boundary-Error scenario](../scenarios/mapped-boundary-error-service-task/README.md), [content-bound CIB evidence](../scenarios/mapped-boundary-error-service-task/cibseven-evidence.json), scenario runner test (`CibSevenMappedBoundaryErrorScenarioRunnerTest`, removed at W0.3b), and [product-neutral profile](../profiles/cibseven-2.0.0-mapped-boundary-error-service-task-draft/README.md).
+**Evidence:** [Mapped-boundary-Error scenario](../scenarios/mapped-boundary-error-service-task/README.md), [content-bound CIB evidence](../scenarios/mapped-boundary-error-service-task/cibseven-evidence.json), scenario runner test (`CibSevenMappedBoundaryErrorScenarioRunnerTest`, removed at W0.3b), and [product-neutral profile](../profiles/cibseven-2.2.0/README.md).
 
 **Boundary:** This selects one exact handler token and one Error code. It does not select arbitrary expressions, handlers, Java delegate compatibility, Process-scope Worker writes, technical failures as business Errors, or other Error codes.
 
@@ -622,7 +622,7 @@ The product-neutral mapped-boundary profile admits exactly one Activity binding 
 
 CIB Seven `2.0.0` applies the selected `resultValue = ${result}` output parameter on the matching interrupting Error path before clearing Activity-local state. The reviewed null patch therefore creates a present null-valued Process variable before `ReviewMappedError` is exposed. The project semantic program remains mapping authority and applies patch, mapping, cleanup, and boundary routing atomically.
 
-**Evidence:** [Mapped-boundary-Error scenario](../scenarios/mapped-boundary-error-service-task/README.md), [content-bound CIB evidence](../scenarios/mapped-boundary-error-service-task/cibseven-evidence.json), scenario runner test (`CibSevenMappedBoundaryErrorScenarioRunnerTest`, removed at W0.3b), and [product-neutral profile](../profiles/cibseven-2.0.0-mapped-boundary-error-service-task-draft/README.md).
+**Evidence:** [Mapped-boundary-Error scenario](../scenarios/mapped-boundary-error-service-task/README.md), [content-bound CIB evidence](../scenarios/mapped-boundary-error-service-task/cibseven-evidence.json), scenario runner test (`CibSevenMappedBoundaryErrorScenarioRunnerTest`, removed at W0.3b), and [product-neutral profile](../profiles/cibseven-2.2.0/README.md).
 
 **Boundary:** BPMN does not define this extension mapping during cancellation. Arbitrary mappings, expressions beyond one local reference, value kinds beyond string/null, nested scopes, general fault propagation, and a broader cancellation claim remain excluded.
 
@@ -670,7 +670,7 @@ CIB Seven `2.2.0` decrements the selected async-before Service Task job after fa
 
 This is a CIB job-management extension, not general BPMN service-fault meaning. BPMN 2.0.2 does not define engine job retry counts, failed-job incidents, Management Service retry reset, or incident identity. The project therefore names the public semantic fact `effectExecutionFailed` and does not expose CIB job or incident IDs, retry count, exception details, or administrative retry policy.
 
-**Evidence:** The [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) uses the exact selected Service Task source, public job execution, public incident query, and public retry reset. Under `createIncidentOnFailedJobEnabled = true`, it proves `3 -> 2 -> 1 -> 0`, one self-rooted public `failedJob` incident configured by the same job, incident removal after reset to one retry, replacement by a new raw incident after another failure, and later success through the same job and Process. The disabled-setting control reaches retries zero with no incident. The [registered profile](../profiles/cibseven-2.2.0-service-task-incident-draft/profile.json), [retained evidence](../scenarios/service-task-incident/cibseven-evidence.json), incident runner test (`CibSevenIncidentRunnerTest`, removed at W0.3b), and schedule-alignment test (`CibSevenIncidentScheduleAlignmentTest`, removed at W0.3b) bind the selected first literal-generation incident and one retry; the later raw incident remains research evidence outside its canonical mapping. The [Service Task incident capsule](kernel/semantics/WORK-SEMANTICS-SPEC.md) owns that boundary.
+**Evidence:** The [packaged-engine phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) uses the exact selected Service Task source, public job execution, public incident query, and public retry reset. Under `createIncidentOnFailedJobEnabled = true`, it proves `3 -> 2 -> 1 -> 0`, one self-rooted public `failedJob` incident configured by the same job, incident removal after reset to one retry, replacement by a new raw incident after another failure, and later success through the same job and Process. The disabled-setting control reaches retries zero with no incident. The [registered profile](../profiles/cibseven-2.2.0/profile.json), [retained evidence](../scenarios/service-task-incident/cibseven-evidence.json), incident runner test (`CibSevenIncidentRunnerTest`, removed at W0.3b), and schedule-alignment test (`CibSevenIncidentScheduleAlignmentTest`, removed at W0.3b) bind the selected first literal-generation incident and one retry; the later raw incident remains research evidence outside its canonical mapping. The [Service Task incident capsule](kernel/semantics/WORK-SEMANTICS-SPEC.md) owns that boundary.
 
 **Boundary:** One failed async-before job, one `failedJob` incident, one public retry reset, same job and Process retention, literal generation 1, and later success are selected. A second failed execution may occur only as raw CIB research evidence or a Temporal host failure and creates no second canonical incident. General incidents, further retry cycles, backoff, due dates, incident messages, job deletion, batch retry, arbitrary Management Service operations, external tasks, Process cancellation, BPMN Error, compensation, and production operator UI remain excluded.
 
@@ -682,7 +682,7 @@ CIB Seven `2.2.0` accepts public `RuntimeService.deleteProcessInstance(processIn
 
 This is a CIB public lifecycle extension beyond bare BPMN Process execution. BPMN 2.0.2 does not define an incident-addressed external root-deletion API, delete reason, or externally terminated historic-state code. The project profile maps one exact published generation-1 incident and root semantic Process identity to a typed cancelled terminal state without exposing CIB identity or making runtime absence sufficient evidence.
 
-**Evidence:** The [Service Task incident phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) starts the exact selected Process with one string variable, drives the configured job to one `failedJob` incident, invokes the public deletion operation, and checks zero live Process/job/incident/execution/task state, historic `EXTERNALLY_TERMINATED`, and the preserved historic variable. Its successful control separately requires historic `COMPLETED`. The [registered successor profile](../profiles/cibseven-2.2.0-service-task-incident-cancellation-draft/profile.json), [retained evidence](../scenarios/service-task-incident-cancellation/cibseven-evidence.json), cancellation runner test (`CibSevenIncidentCancellationRunnerTest`, removed at W0.3b), and [incident-scoped Process cancellation specification](kernel/semantics/WORK-SEMANTICS-SPEC.md) bind the project command, typed state, cleanup, historic-state discriminator, and evidence boundary.
+**Evidence:** The [Service Task incident phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) starts the exact selected Process with one string variable, drives the configured job to one `failedJob` incident, invokes the public deletion operation, and checks zero live Process/job/incident/execution/task state, historic `EXTERNALLY_TERMINATED`, and the preserved historic variable. Its successful control separately requires historic `COMPLETED`. The [registered successor profile](../profiles/cibseven-2.2.0/profile.json), [retained evidence](../scenarios/service-task-incident-cancellation/cibseven-evidence.json), cancellation runner test (`CibSevenIncidentCancellationRunnerTest`, removed at W0.3b), and [incident-scoped Process cancellation specification](kernel/semantics/WORK-SEMANTICS-SPEC.md) bind the project command, typed state, cleanup, historic-state discriminator, and evidence boundary.
 
 **Boundary:** Only the exact incident-bearing root Process, one exact public deletion call, cascade cleanup, externally terminated history, and one retained string Process variable are selected. Arbitrary Process deletion, nested-scope cancellation, deletion reason, listener or I/O-mapping policy, compensation, Transaction Cancel, modeled Terminate, batch deletion, process modification, suspension, activation, restart, job deletion, Product 2 authorization, and general Runtime Service compatibility remain excluded.
 
@@ -753,7 +753,7 @@ CIB Seven `2.2.0` evaluates a `${name}` input or output parameter to the raw var
 
 ### CIB-EXT-0020 — nested embedded scope locals and nearest-owner writes
 
-**Status:** Selected bounded extension under the implemented [nested embedded scope data specification](kernel/semantics/DATA-SEMANTICS-SPEC.md), widened to concurrent occurrences by the [concurrent scope data specification](kernel/semantics/DATA-SEMANTICS-SPEC.md) and, under its own profile, by [concurrent structured scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md) and [root Parallel forks](kernel/semantics/FLOW-SEMANTICS-SPEC.md), and from one activation to each activation by [scope re-entry](kernel/semantics/SCOPES-SEMANTICS-SPEC.md); the concurrent and re-entry widenings are calibrated, the nested-depth calibration pending.
+**Status:** Selected bounded extension under the implemented [nested embedded scope data specification](kernel/semantics/DATA-SEMANTICS-SPEC.md), widened to concurrent occurrences by the [concurrent scope data specification](kernel/semantics/DATA-SEMANTICS-SPEC.md) and, under its own profile, by [concurrent structured scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md) and [root Parallel forks](kernel/semantics/FLOW-SEMANTICS-SPEC.md), and from one activation to each activation by [scope re-entry](kernel/semantics/SCOPES-SEMANTICS-SPEC.md); the concurrent and re-entry widenings are calibrated, the nested-depth calibration pending. It is selected by the [cibseven-2.2.0-scope-chain profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) and by no other profile: its scope-chain submission restriction (NSD-TASK-01) is a project admission restriction that is exclusive with the root install of `CIB-EXT-0005`, hence the separate profile.
 
 CIB Seven `2.2.0` accepts `camunda:inputOutput` on an ordinary embedded `subProcess` (`BpmnParse.checkActivityInputOutputSupported`), runs its input parameters at entry in the outer scope (`PvmExecutionImpl.executeIoMapping`, `IoParameter.execute`, `InputParameter`) and its output parameters when the scope is destroyed in the inner scope (`ExecutionEntity.destroy`, `OutputParameter`). `AbstractVariableScope.setVariable` updates the nearest scope that has the name locally, walking parent by parent, and creates the binding at the root otherwise; a present null is a local binding and shadows.
 
@@ -847,7 +847,7 @@ This mapping preserves the BPMN-visible lifecycle under `CIB-AGR-0002` while avo
 
 **Status:** Reviewed operational mapping
 
-CIB Seven `2.0.0` executes the selected CreateDocument delegate and its input/output mappings synchronously inside the command transaction. It exposes no committed intermediate state corresponding to the project's effect intent or in-flight Temporal Activity. The project semantic core instead commits an effect wait and immutable arguments before the Temporal adapter performs the external effect, then applies one validated result patch and output mapping.
+CIB Seven `2.0.0` executes the selected CreateDocument delegate and its input/output mappings synchronously inside the command transaction. It exposes no committed intermediate state corresponding to the project's effect intent or in-flight Temporal Activity. The project semantic core instead commits an effect wait and immutable arguments before the Temporal adapter performs the external effect, then applies one validated result patch and output mapping. This `2.0.0` observation is the frozen A12 CreateDocument evidence, which the profile consolidation (#42) neither retires nor regenerates.
 
 For the approved success-only capsule, both accounts agree on admitted input and final Process variables. The CIB execution is a host-realization check for those boundary observations, not an independent derivation of the project intermediate state. Failure atomicity, rollback after an external mutation, cancellation, and fault delivery are deliberately excluded and require separate semantic decisions.
 
@@ -903,7 +903,7 @@ CIB Seven `2.0.0` invokes the neutral mapped-success delegate and its input/outp
 
 **Status:** Reviewed operational mapping
 
-CIB Seven `2.0.0` invokes the neutral mapped-boundary delegate, catches its Java `BpmnError`, applies `CIB-EXT-0009`, clears Activity-local state, and exposes `ReviewMappedError` in one engine command. The project commits an effect intent, executes a Temporal Activity, receives a typed business result, then performs the selected atomic patch, mapping, cleanup, and boundary transition.
+CIB Seven `2.0.0` invokes the neutral mapped-boundary delegate, catches its Java `BpmnError`, applies `CIB-EXT-0009`, clears Activity-local state, and exposes `ReviewMappedError` in one engine command. The project commits an effect intent, executes a Temporal Activity, receives a typed business result, then performs the selected atomic patch, mapping, cleanup, and boundary transition. The CIB Seven `2.0.0` profiles retired into the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/README.md) at the profile consolidation (#42), and their evidence is regenerated on `2.2.0` in the hosted lane.
 
 **Evidence:** [Mapped-boundary-Error scenario](../scenarios/mapped-boundary-error-service-task/README.md), its content-bound CIB evidence, the product-neutral Lean and TypeScript fixtures, and Temporal Activity history/replay.
 
@@ -943,7 +943,7 @@ The project instead commits one effect wait per occurrence, runs one Temporal Ac
 
 **Evidence:** Pinned checkout `5a45b47ea2` source cited above; the [concurrent scope Service Task schedules](../scenarios/concurrent-scope-service-tasks/README.md) in both completion orders of each retained model, registered as standards-only pipeline cases; and the [recovery witness](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/packages/temporal-adapter/testkit/test/concurrent-scope-service-tasks-recovery.temporal-test.ts) through Continue-As-New, Worker replacement and replay. No CIB run is retained; a probe of one retained model would be optional calibration. Under the nested scope-data profile the [order fulfilment schedules](../scenarios/concurrent-structured-scope-data/README.md), registered as standards-only pipeline cases, the [recovery witness](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/packages/temporal-adapter/testkit/test/concurrent-structured-scope-data-recovery.temporal-test.ts) and the [concurrent structured scope data probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenConcurrentStructuredScopeDataProbeTest.java) along its released-job schedule apply the same mapping to data-bearing effects.
 
-**Boundary:** Under the embedded completion profile only, for data-free overlay-bound Service Tasks admitted by the [concurrent scope Service Tasks](kernel/semantics/WORK-SEMANTICS-SPEC.md) family under the default job-acquisition configuration. The nested scope-data profile lists this relationship for its data-bearing Service Tasks on Parallel branches in Sub-Process bodies ([concurrent structured scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)), under the same configuration; for them, argument agreement holds only on schedules where each continuation job runs before the next command commits. No job, transaction-timing, exclusive-lock, retry, incident or exactly-once external-effect equivalence is claimed, and no claim covers asynchronous continuation of other activity kinds.
+**Boundary:** Under the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/profile.json), for data-free overlay-bound Service Tasks admitted by the [concurrent scope Service Tasks](kernel/semantics/WORK-SEMANTICS-SPEC.md) family under the default job-acquisition configuration, and under the [cibseven-2.2.0-scope-chain profile](../profiles/cibseven-2.2.0-scope-chain/profile.json) for its data-bearing Service Tasks on Parallel branches in Sub-Process bodies ([concurrent structured scope data](kernel/semantics/DATA-SEMANTICS-SPEC.md)), under the same configuration; for them, argument agreement holds only on schedules where each continuation job runs before the next command commits. No job, transaction-timing, exclusive-lock, retry, incident or exactly-once external-effect equivalence is claimed, and no claim covers asynchronous continuation of other activity kinds.
 
 ### CIB-OP-0011: CIB execution waiting at an addressless Receive Task mapped to the project occurrence
 
@@ -975,7 +975,7 @@ CIB generates a process instance identifier per Call. BPMN prescribes no host id
 
 The current draft profile pins CIB Seven `2.2.0` at revision `834a9874760de8a0107f7c1b32806e37f17fb017`, Java 21, H2 `2.3.232`, disabled automatic job execution, an explicit logical clock, audit history, and default history TTL `P180D`. CIB deployment required the TTL in this environment; audit history remains outside the canonical observation boundary, while controlled time and scheduling prevent accidental host nondeterminism from entering the current capsule.
 
-This is a profile constraint, not evidence that CIB differs from BPMN. It does not claim that another database, history level, scheduler setting, plugin set, or engine configuration produces the same observations. The machine-readable declarations are in the [current profile](../profiles/cibseven-2.2.0-user-task-process-data-draft/profile.json).
+This is a profile constraint, not evidence that CIB differs from BPMN. It does not claim that another database, history level, scheduler setting, plugin set, or engine configuration produces the same observations. The machine-readable declarations are in the [current profile](../profiles/cibseven-2.2.0/profile.json).
 
 ### CIB-CFG-0002 — explicit release of the Service Task continuation job
 
@@ -1021,13 +1021,13 @@ The admitted source has exactly two non-default conditions and one conditionless
 
 **Status:** Reviewed configuration dependency
 
-The product-neutral mapped-success profile pins CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371`, Java 21, H2 `2.3.232`, disabled automatic job execution, an explicit clock, audit history, and default history TTL `P180D`. Its synchronous path uses no continuation job, but the full environment remains pinned for reproducible deployment, history, cleanup, and evidence identity.
+The product-neutral mapped-success profile pins CIB Seven `2.0.0` at revision `57ed69550f1c9c2619b9711d8877418bb084a371`, Java 21, H2 `2.3.232`, disabled automatic job execution, an explicit clock, audit history, and default history TTL `P180D`. Its synchronous path uses no continuation job, but the full environment remains pinned for reproducible deployment, history, cleanup, and evidence identity. The CIB Seven `2.0.0` profiles retired into the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/README.md) at the profile consolidation (#42), and their evidence is regenerated on `2.2.0` in the hosted lane.
 
 ### CIB-CFG-0007 - pinned mapped-boundary-Error CIB Seven 2.0.0 environment
 
 **Status:** Reviewed configuration dependency
 
-The product-neutral mapped-boundary-Error profile pins the same CIB Seven `2.0.0` revision, Java, H2, scheduler, clock, history, and TTL settings as a distinct profile identity. Evidence for another release or another profile does not establish this configuration-specific claim.
+The product-neutral mapped-boundary-Error profile pins the same CIB Seven `2.0.0` revision, Java, H2, scheduler, clock, history, and TTL settings as a distinct profile identity. Evidence for another release or another profile does not establish this configuration-specific claim. The CIB Seven `2.0.0` profiles retired into the [cibseven-2.2.0 cumulative profile](../profiles/cibseven-2.2.0/README.md) at the profile consolidation (#42), and their evidence is regenerated on `2.2.0` in the hosted lane.
 
 ### CIB-CFG-0008 - explicit failed-job incident creation
 
@@ -1035,7 +1035,7 @@ The product-neutral mapped-boundary-Error profile pins the same CIB Seven `2.0.0
 
 The registered Service Task incident profile explicitly sets `createIncidentOnFailedJobEnabled` to `true`. Pinned CIB Seven creates the public `failedJob` incident only under that setting. Relying on the engine default would make the profile's public incident fact depend on an undeclared host choice.
 
-**Evidence:** The [Service Task incident phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) runs the same exact BPMN and failure schedule under both values. The enabled engine exposes and resolves the failed-job incident while retaining the job and Process; the disabled engine reaches retries zero with no incident. The [registered profile](../profiles/cibseven-2.2.0-service-task-incident-draft/profile.json), [engine-bundle factory](../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineBundleFactory.java), and schedule-alignment test (`CibSevenIncidentScheduleAlignmentTest`, removed at W0.3b) bind the enabled configuration to the successor schedule and exclude it from predecessor schedules.
+**Evidence:** The [Service Task incident phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenServiceTaskIncidentPhaseZeroProbeTest.java) runs the same exact BPMN and failure schedule under both values. The enabled engine exposes and resolves the failed-job incident while retaining the job and Process; the disabled engine reaches retries zero with no incident. The [registered profile](../profiles/cibseven-2.2.0/profile.json), [engine-bundle factory](../runners/cibseven/src/main/java/org/bpmnlean/cibseven/CibSevenEngineBundleFactory.java), and schedule-alignment test (`CibSevenIncidentScheduleAlignmentTest`, removed at W0.3b) bind the enabled configuration to the successor schedule and exclude it from predecessor schedules.
 
 **Boundary:** This setting selects only creation of the one failed-job incident used by `CIB-EXT-0013`. It does not authorize other incident handlers, automatic execution, retry scheduling, arbitrary configuration, or semantic use of CIB retry counts and identities.
 

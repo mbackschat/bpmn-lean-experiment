@@ -1,6 +1,6 @@
 # Portable business Message payload scenarios
 
-The [profile](../../profiles/bpmn-2.0.2-portable-business-message-payload-draft/README.md) and [semantics specification](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) own the bounded account. [process.bpmn](process.bpmn) is the retained project-authored shipment-manifest intake: a shipment Process starts, waits at the Intermediate Catch Message Event *Manifest received* whose payload is one structured manifest, and the User Task *Review manifest* sees that manifest in public Process data before the Process ends. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
+The [profile](../../profiles/bpmn-2.0.2/README.md) and [semantics specification](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) own the bounded account. [process.bpmn](process.bpmn) is the retained project-authored shipment-manifest intake: a shipment Process starts, waits at the Intermediate Catch Message Event *Manifest received* whose payload is one structured manifest, and the User Task *Review manifest* sees that manifest in public Process data before the Process ends. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
 
 | Scenario | Journey |
 |---|---|

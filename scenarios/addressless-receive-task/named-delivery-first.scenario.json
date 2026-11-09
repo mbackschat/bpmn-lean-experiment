@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "addressless-receive-task-named-delivery-first",
-  "profile": "cibseven-2.2.0-addressless-receive-task-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "addressless-receive-task-process",
     "relativePath": "scenarios/addressless-receive-task/process.bpmn",

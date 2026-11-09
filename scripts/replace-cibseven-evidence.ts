@@ -201,17 +201,20 @@ async function runCibBatch(
       ));
 }
 
+/**
+ * The harness schedule a scenario's evidence run uses. A scenario without incident options runs the plain schedule; one
+ * with them runs the cancellation schedule when its stimuli cancel the incident's Process and the retry schedule
+ * otherwise. Cancellability is no input, because CIB always offers public deletion. The consolidated profiles carry no
+ * per-scenario identity, so the schedule follows the scenario itself, in step with `CibSevenRetainedEvidenceTest`.
+ */
 export function cibEvidenceEffectSchedule(
-  profileId: string,
+  scenario: Pick<ScenarioDocument, "options" | "stimuli">,
 ): "plainSuccess" | "incidentReportRetrySuccess" | "incidentReportCancel" {
-  switch (profileId) {
-    case "cibseven-2.2.0-service-task-incident-draft":
-      return "incidentReportRetrySuccess";
-    case "cibseven-2.2.0-service-task-incident-cancellation-draft":
-      return "incidentReportCancel";
-    default:
-      return "plainSuccess";
-  }
+  if (scenario.options?.incidents === undefined) return "plainSuccess";
+  const cancels = scenario.stimuli.some((stimulus) =>
+    stimulus.kind === "command" &&
+    (stimulus["action"] as { readonly kind?: unknown } | undefined)?.kind === "cancelIncidentProcess");
+  return cancels ? "incidentReportCancel" : "incidentReportRetrySuccess";
 }
 
 async function replaceEvidence() {
@@ -232,9 +235,9 @@ async function replaceEvidence() {
   try {
     const sourcesByVersion = Map.groupBy(
       sources,
-      ({ profile }) => JSON.stringify([
+      ({ profile, scenario }) => JSON.stringify([
         profile.value.oracle.version,
-        cibEvidenceEffectSchedule(profile.value.id),
+        cibEvidenceEffectSchedule(scenario.value),
       ]),
     );
     const results: CibRunnerResult[] = [];

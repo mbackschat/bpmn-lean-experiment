@@ -12,7 +12,8 @@ import { isRecord } from "./schema-structure.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-const profile = "bpmn-2.0.2-message-payload-catch-draft";
+// The consolidated standards profile names no family; the scenario's BPMN process selects the value surface.
+const scenarioIdentity = { profile: "bpmn-2.0.2", bpmn: { id: "message-payload-catch-process" } } as const;
 
 function payloadStimulus(payload: unknown, commandId = "deliver-payload") {
   return {
@@ -36,9 +37,9 @@ function payloadStimulus(payload: unknown, commandId = "deliver-payload") {
   } as const;
 }
 
-function verifyPayload(payload: unknown, selectedProfile = profile): void {
+function verifyPayload(payload: unknown, identity: { profile: string; bpmn: { id: string } } = scenarioIdentity): void {
   verifyScenarioVariableValueContract({
-    profile: selectedProfile,
+    ...identity,
     stimuli: [payloadStimulus(payload)],
   });
 }
@@ -64,7 +65,7 @@ test("refuses collection, wrong-profile, invalid-integer, and oversized payload 
   assert.throws(
     () => verifyPayload(
       { kind: "string", value: "settlement-reference-123" },
-      "bpmn-2.0.2-intermediate-catch-message-draft",
+      { profile: "bpmn-2.0.2", bpmn: { id: "intermediate-catch-message-process" } },
     ),
     /only admitted for the Message payload catch profile/u,
   );
@@ -81,7 +82,7 @@ test("refuses collection, wrong-profile, invalid-integer, and oversized payload 
   assert.throws(
     () =>
       verifyScenarioVariableValueContract({
-        profile,
+        ...scenarioIdentity,
         stimuli: [payloadStimulus({ kind: "null" }, "x".repeat(65_537))],
       }),
     /stimulus exceeds 65536 UTF-8 bytes/u,

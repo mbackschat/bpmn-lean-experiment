@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/repeatable-event-subscriptions/boundary-message.bpmn",
     "sourceId": "subscription-boundary-message",
-    "semanticProfile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

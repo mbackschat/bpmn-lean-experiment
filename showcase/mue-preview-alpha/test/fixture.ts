@@ -19,7 +19,7 @@ const bpmnSourceUrl = new URL(
 );
 
 export const semanticProfile =
-  "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
+  "bpmn-2.0.2";
 export const processId = "Process_SequentialMultiInstanceReview";
 export const exactSourceSha256 =
   "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff";

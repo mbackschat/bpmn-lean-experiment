@@ -6,20 +6,13 @@ import {
   requireReplacementAuthorization,
 } from "./replace-cibseven-evidence.ts";
 
-test("routes only the two incident profiles to their exact CIB schedules", () => {
-  assert.equal(
-    cibEvidenceEffectSchedule(
-      "cibseven-2.2.0-service-task-incident-draft",
-    ),
-    "incidentReportRetrySuccess",
-  );
-  assert.equal(
-    cibEvidenceEffectSchedule(
-      "cibseven-2.2.0-service-task-incident-cancellation-draft",
-    ),
-    "incidentReportCancel",
-  );
-  assert.equal(cibEvidenceEffectSchedule("old-profile"), "plainSuccess");
+test("routes a scenario to its CIB schedule by its incident options and its cancel command", () => {
+  const retry = { kind: "command", commandId: "retry", action: { kind: "retryIncident", generation: 1 } };
+  const cancel = { kind: "command", commandId: "cancel", action: { kind: "cancelIncidentProcess", generation: 1 } };
+  const incidents = { incidents: { cancellable: true } };
+  assert.equal(cibEvidenceEffectSchedule({ options: incidents, stimuli: [retry] }), "incidentReportRetrySuccess");
+  assert.equal(cibEvidenceEffectSchedule({ options: incidents, stimuli: [retry, cancel] }), "incidentReportCancel");
+  assert.equal(cibEvidenceEffectSchedule({ stimuli: [retry, cancel] }), "plainSuccess");
 });
 
 test("requires explicit authorization before replacing CIB evidence", () => {

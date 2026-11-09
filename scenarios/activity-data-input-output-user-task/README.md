@@ -2,7 +2,7 @@
 
 This directory contains the exact BPMN 2.0.2 claim-assessment source for the [Activity data-input/output mediation specification](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md). The User Task declares one required scalar `DataInput` in one `InputSet`, one required scalar `DataOutput` in one `OutputSet`, and two direct associations connecting distinct Process-owned Properties to the two ends of one Activity lifetime.
 
-The [registered profile](../../profiles/bpmn-2.0.2-activity-data-input-output-user-task-draft/README.md) binds four answer-free schedules to these exact source bytes:
+The [registered profile](../../profiles/bpmn-2.0.2/README.md) binds four answer-free schedules to these exact source bytes:
 
 - [Present input and output](present.scenario.json): copy `claim-4711` into the open task and route the submitted `approve` decision into the Process Property on completion.
 - [Explicit null](null.scenario.json): treat null as an available input and a supplied output, preserving it at both lifecycle boundaries.

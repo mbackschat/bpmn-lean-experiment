@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "message-addressed-receive-task",
-  "profile": "cibseven-2.2.0-message-addressed-receive-task-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "message-addressed-receive-task-process",
     "relativePath": "scenarios/message-addressed-receive-task/process.bpmn",

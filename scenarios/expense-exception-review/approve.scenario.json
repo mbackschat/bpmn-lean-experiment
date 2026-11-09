@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "expense-exception-review-approve",
-  "profile": "bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "expense-exception-review",
     "relativePath": "scenarios/expense-exception-review/process.bpmn",

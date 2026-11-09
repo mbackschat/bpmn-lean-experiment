@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "pass-through-parallel-branches-invoice-settled",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "invoice-settlement",
     "relativePath": "scenarios/pass-through-parallel-branches/invoice-settlement.bpmn",
     "sha256": "ae08baca46a46c7c5b9ef4c978c102326fe6c1ddd25d9a9bdc722791cdf4bd31",
     "sourceOverlay": {
       "id": "invoice-settlement-handlers",
-      "sha256": "a32d95def7c2705cf320a7817134dae37b567c37b239040e2b031a7222f3b851"
+      "sha256": "3b6389929b127f1e8174b872a9350ab8129c7d3744d2675695df811a35f67b00"
     }
   },
   "stimuli": [

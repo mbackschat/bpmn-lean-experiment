@@ -23,7 +23,7 @@ import {
 import type { InteractionEvent, InteractionPort, InteractionResponse } from "./host-interactions.ts";
 
 const alphaProcessId = "Process_SequentialMultiInstanceReview";
-const alphaSemanticProfile = "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
+const alphaSemanticProfile = "bpmn-2.0.2";
 const alphaSourceSha256 = "982f77f7fcca2d01bd2357c11057c5fdb6aaf3b383ac351a93aa32ab1bbca3ff";
 const interactionDelayMs = 1;
 /** The Timer's duration in the retained source (`PT5S`); the host states deadlines in Workflow epoch time. */

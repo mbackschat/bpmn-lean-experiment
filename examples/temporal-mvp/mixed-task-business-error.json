@@ -3,11 +3,11 @@
   "bpmn": {
     "file": "../../scenarios/mixed-task-business-error/process.bpmn",
     "sourceId": "invoice-business-error",
-    "semanticProfile": "cibseven-2.2.0-mixed-task-business-error-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "sourceOverlay": {
       "file": "../../scenarios/mixed-task-business-error/source-overlay.json",
       "id": "invoice-handlers",
-      "sha256": "078fb081badfc264e638492d7cfe32c0c6d7d0f6f5e290d3c28e15c3b9cd1fe6"
+      "sha256": "a4cdddb70514053358a10ae15fd439a0c3ed115b3d2b7bba2eac6f7c732c695a"
     },
     "limits": { "maxBytes": 1048576, "parserDeadlineMs": 1000 }
   },

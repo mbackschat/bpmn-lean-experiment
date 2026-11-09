@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "call-variable-mapping-loan-unset-verdict",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "loan-application",
     "relativePath": "scenarios/call-variable-mapping/loan-application.bpmn",
     "sha256": "05fdf3ac371230c8deaee5ff0c6d62b904af9c11e866c2936a04170480f2844f",
     "sourceOverlay": {
       "id": "loan-application-handlers",
-      "sha256": "f95f96f2fb0cd324abb17d043f72d3d32a271ec34110e02f246f2a3692c3b3f3"
+      "sha256": "9fc6f1e4d1c466389c65b814e42b6c6c76f4e5a9f745cec6b1cf35958f4e0ea1"
     }
   },
   "stimuli": [

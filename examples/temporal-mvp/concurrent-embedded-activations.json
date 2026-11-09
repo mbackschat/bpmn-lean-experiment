@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/concurrent-embedded-activations/audit-remediation.bpmn",
     "sourceId": "audit-remediation",
-    "semanticProfile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

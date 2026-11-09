@@ -14,7 +14,7 @@ const read = await readKernelProgram(
     bytes,
     expectedSha256: undefined,
     overlay: null,
-    profile: "bpmn-2.0.2-draft",
+    profile: "bpmn-2.0.2",
     limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
   },
   kernelProfileOptions(["CIB-EXT-0005"]),

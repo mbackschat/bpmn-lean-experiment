@@ -9,7 +9,7 @@ const sourcePath = new URL(
   "../../../../scenarios/expense-exception-review/process.bpmn",
   import.meta.url,
 );
-const semanticProfile = "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
+const semanticProfile = "bpmn-2.0.2";
 
 function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");

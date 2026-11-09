@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "send-task-claim-assessed-first",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "claim-acknowledgement",
     "relativePath": "scenarios/send-task/claim-acknowledgement.bpmn",
     "sha256": "1d338b6e941126d2858b33d213d772dffece09029d28df06a4d547902ba308fb",
     "sourceOverlay": {
       "id": "claim-acknowledgement-handlers",
-      "sha256": "21d71426b30eb928daebc85df57b3d0c162b183346ffc7fe7f1d611a1b718878"
+      "sha256": "abb272e625b524156b5a0fa637f2c2b7c8a89b397fc53f87ed125794bab59561"
     }
   },
   "stimuli": [

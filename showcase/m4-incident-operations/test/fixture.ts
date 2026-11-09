@@ -6,9 +6,9 @@ const bpmnSourceUrl = new URL(
   import.meta.url,
 );
 
-export const retryProfile = "cibseven-2.2.0-service-task-incident-draft";
+export const retryProfile = "cibseven-2.2.0";
 export const cancellationProfile =
-  "cibseven-2.2.0-service-task-incident-cancellation-draft";
+  "cibseven-2.2.0";
 export const exactSourceSha256 =
   "669083696c1706836fcaa487f7f5623408f658fb721145a8111a8b00b7fd7c7d";
 export const effectElementId = "ServiceTask_Record";

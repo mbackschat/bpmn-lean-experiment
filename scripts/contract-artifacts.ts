@@ -47,6 +47,7 @@ export type ScenarioDocument = Readonly<{
     sourceOverlay: unknown;
   }>;
   stimuli: ReadonlyArray<Readonly<{ kind: string; commandId: string } & Record<string, unknown>>>;
+  options?: Readonly<{ incidents?: Readonly<{ cancellable: boolean }> }>;
   provenance: Readonly<{
     normativeRefs: ReadonlyArray<string>;
     cibRevision: string;
@@ -64,38 +65,33 @@ type JsonDocument<Value> = Readonly<{
   value: Value;
 }>;
 
-type SemanticProfileBase = Readonly<{
+/**
+ * A profile as the artifact reader sees it: the members this module and its tests read.
+ * `contracts/schemas/semantic-profile.schema.json` owns the whole shape, and every value read here has passed it.
+ */
+type SemanticProfile = Readonly<{
   kind: "semanticProfile";
   id: string;
   bpmn: Readonly<{
     relationships: ReadonlyArray<string>;
   }>;
-  observations: ReadonlyArray<string>;
-  effectBindings?: unknown;
-}>;
-
-type CibSemanticProfile = SemanticProfileBase & Readonly<{
-  oracle: Readonly<{
-    version: string;
-    revision: string;
-  }>;
-  environment: Readonly<Record<string, unknown>>;
-}>;
-
-type NormativeSemanticProfile = SemanticProfileBase & Readonly<{
   normativeAuthority: Readonly<{
     name: string;
     version: string;
     references: ReadonlyArray<string>;
   }>;
+  // A profile claims an oracle only while retained CIB evidence binds it (the schema ties both members together).
+  oracle?: Readonly<{
+    version: string;
+    revision: string;
+  }>;
+  environment?: Readonly<Record<string, unknown>>;
 }>;
-
-type SemanticProfile = CibSemanticProfile | NormativeSemanticProfile;
 
 export type ArtifactSet = ArtifactCase & Readonly<{
   validator: Ajv2020;
   registeredRelationshipIds: ReadonlySet<string>;
-  profile: CibSemanticProfile;
+  profile: SemanticProfile;
   profileBytes: Buffer;
   scenario: ScenarioDocument;
   scenarioBytes: Buffer;
@@ -107,8 +103,6 @@ export type NormativeArtifactSet =
   NormativeArtifactCase & Readonly<{
     validator: Ajv2020;
     registeredRelationshipIds: ReadonlySet<string>;
-    // A cumulative CIB profile grown with standards-only schedules binds evidence-free scenarios too,
-    // so evidence absence does not imply normative authority (contracts/README.md, cumulative profiles).
     profile: SemanticProfile;
     scenario: ScenarioDocument;
     scenarioBytes: Buffer;
@@ -256,6 +250,9 @@ export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
   if (evidence.profile.sha256 !== sha256(profileBytes)) {
     throw new Error("evidence profile digest does not match");
   }
+  if (profile.oracle === undefined) {
+    throw new Error("retained evidence binds a profile without an oracle");
+  }
   if (
     evidence.producer.engineVersion !== profile.oracle.version ||
     evidence.producer.engineRevision !== profile.oracle.revision ||
@@ -355,7 +352,7 @@ async function readArtifactSet(
     scenarioDocument.value.bpmn.relativePath,
   );
   const [profileDocument, bpmnBytes] = await Promise.all([
-    readJsonDocument<CibSemanticProfile>(profilePath),
+    readJsonDocument<SemanticProfile>(profilePath),
     readFile(bpmnPath),
   ]);
   return verifyArtifactSet({

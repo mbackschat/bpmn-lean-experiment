@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "exclusive-gateway-simple-boolean-first-true",
-  "profile": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "simple-boolean-exclusive-gateway-process",
     "relativePath": "scenarios/exclusive-gateway-simple-boolean/process.bpmn",

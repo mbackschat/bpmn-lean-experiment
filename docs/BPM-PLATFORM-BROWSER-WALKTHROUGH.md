@@ -194,7 +194,7 @@ The following steps exercise the alternative upload route with the same expense-
 
 1. Open **Definitions** and choose **Add BPMN definition**. A modal dialog opens; **Cancel**, Escape or clicking its backdrop dismisses it before submission.
 2. Select [`scenarios/expense-exception-review/process.bpmn`](../scenarios/expense-exception-review/process.bpmn).
-3. Enter semantic profile ID `bpmn-2.0.2-bpmn-lean-structured-human-work-draft`.
+3. Enter semantic profile ID `bpmn-2.0.2`.
 4. Choose **Deploy definition**. Successful deployment closes the dialog.
 
 ![Add BPMN definition dialog showing the selected XML file, semantic profile and explicit dismissal](assets/bpm-platform-browser-walkthrough/05-deploy-definition-dialog.png)
@@ -278,13 +278,13 @@ Metrics come from complete engine-published flow-node occurrences for one exact-
 
 Use [`scenarios/service-task-effect/process.bpmn`](../scenarios/service-task-effect/process.bpmn) twice:
 
-1. Deploy it with profile `cibseven-2.2.0-service-task-incident-draft`, then start that exact version.
-2. Deploy the same exact source with profile `cibseven-2.2.0-service-task-incident-cancellation-draft`, then start its new exact version.
+1. Deploy it with profile `cibseven-2.2.0`, then start that exact version.
+2. Deploy the same exact source with profile `cibseven-2.2.0`, then start its new exact version.
 3. Open **Operations**, select **Incidents**, and switch between visible Operations tabs until both current incidents appear.
 
-The retry profile publishes only **Retry**. The cancellation profile additionally publishes **Cancel Process**. These controls reflect exact engine-published interactions rather than generic actions inferred from an error state.
+Both incidents publish **Retry** and **Cancel Process**, because the CIB Seven profile offers public deletion on every incident. These controls reflect exact engine-published interactions rather than generic actions inferred from an error state.
 
-![Operations workspace showing Retry-only and cancellable current Service Task incidents](assets/bpm-platform-browser-walkthrough/15-current-incidents.png)
+![Operations workspace showing current Service Task incidents with Retry and Cancel Process](assets/bpm-platform-browser-walkthrough/15-current-incidents.png)
 
 ## 9. Retry and cancel
 

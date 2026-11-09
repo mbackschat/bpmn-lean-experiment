@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "terminal-forks-office-move",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "office-move",
     "relativePath": "scenarios/terminal-forks/office-move.bpmn",
     "sha256": "91f43a815727a161bb288127989611885607959498a352071caf5b88d6bf652d",
     "sourceOverlay": {
       "id": "office-move-handlers",
-      "sha256": "98016beb5f7dac49c7eb40f6a05f7bbec44371a2e77dec3bbfad75b13d3a084b"
+      "sha256": "6e8370481975b10df2fbcfc8e367f6ab0d5cf463e9c80eff4406acade2090580"
     }
   },
   "stimuli": [

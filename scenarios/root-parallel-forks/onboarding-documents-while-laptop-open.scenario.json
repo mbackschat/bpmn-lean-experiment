@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "root-parallel-forks-onboarding-documents-while-laptop-open",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "employee-onboarding",
     "relativePath": "scenarios/root-parallel-forks/employee-onboarding.bpmn",
     "sha256": "03b727103fdb14cdd88b67f71c15b29f2863f420f1a408f0a3d9db471343fff7",
     "sourceOverlay": {
       "id": "employee-onboarding-handlers",
-      "sha256": "d445c5e77d3cf785a4c7b14f94dc3adf9ac41d56e5f60cc120f063d30e045d85"
+      "sha256": "b053932d653484247d9f8cc91d9edf4948ca891eed54210ae09d8f9807612120"
     }
   },
   "stimuli": [

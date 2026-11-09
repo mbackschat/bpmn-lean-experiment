@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "user-task-process-data-preserved-notation",
-  "profile": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "user-task-process-data-preserved-notation-source",
     "relativePath": "scenarios/user-task-preserved-notation/process.bpmn",

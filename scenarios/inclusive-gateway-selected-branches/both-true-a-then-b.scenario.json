@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "inclusive-gateway-both-true-a-then-b",
-  "profile": "bpmn-2.0.2-inclusive-gateway-selected-branches-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "inclusive-gateway-test",
     "relativePath": "scenarios/inclusive-gateway-selected-branches/process.bpmn",

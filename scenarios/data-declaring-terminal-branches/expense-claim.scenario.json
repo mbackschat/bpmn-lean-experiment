@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "data-declaring-terminal-branches-expense-claim",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "expense-claim",
     "relativePath": "scenarios/data-declaring-terminal-branches/expense-claim.bpmn",
     "sha256": "8d140b7ad4817f33baa3b6ef545727184c5e3bffc4fc435ba0134d2eeddd4f69",
     "sourceOverlay": {
       "id": "expense-claim-handlers",
-      "sha256": "5a06e2118339668149b72502459a98f7cebb08a74be9b54207d0156dc338f550"
+      "sha256": "843c398bc89d3082e61f778130b77d88bd1d964596e93b6fd40ae94721829ca0"
     }
   },
   "stimuli": [

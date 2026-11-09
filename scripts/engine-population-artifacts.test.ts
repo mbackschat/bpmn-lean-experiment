@@ -33,7 +33,7 @@ test("registers the four answer-free Message-correlation population schedules", 
     artifacts.scenarios.map(({ relativePath }) => relativePath),
     enginePopulationScenarioRelativePaths,
   );
-  assert.equal(artifacts.profile.id, "bpmn-2.0.2-message-key-correlation-draft");
+  assert.equal(artifacts.profile.id, "bpmn-2.0.2");
   for (const { document } of artifacts.scenarios) {
     assert.equal(document.kind, "populationScenario");
   }

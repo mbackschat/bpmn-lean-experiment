@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "concurrent-mapped-calls-supplier-financial-first",
-  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "supplier-onboarding",
     "relativePath": "scenarios/concurrent-mapped-calls/supplier-onboarding.bpmn",

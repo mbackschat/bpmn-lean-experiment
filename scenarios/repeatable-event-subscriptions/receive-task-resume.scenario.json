@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "subscription-receive-task-resume",
-  "profile": "bpmn-2.0.2-repeatable-event-subscriptions-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "subscription-receive-task",
     "relativePath": "scenarios/repeatable-event-subscriptions/receive-task.bpmn",

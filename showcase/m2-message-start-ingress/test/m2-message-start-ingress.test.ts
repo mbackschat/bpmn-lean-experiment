@@ -53,7 +53,7 @@ import {
 } from "./temporal-support.ts";
 import type { TemporalHistory } from "./temporal-support.ts";
 
-const profileId = "bpmn-2.0.2-message-start-event-draft";
+const profileId = "bpmn-2.0.2";
 const taskQueue = "bpmn-m2-message-start-ingress";
 const operationDeadlineMs = 10_000;
 const environmentStartupDeadlineMs = 40_000;

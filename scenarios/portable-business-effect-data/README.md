@@ -1,6 +1,6 @@
 # Portable business effect-data scenarios
 
-The [profile](../../profiles/cibseven-2.2.0-portable-business-effect-data-draft/profile.json) and [semantics specification](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) own the bounded account. [credit-decision.bpmn](credit-decision.bpmn) is the retained project-authored credit decision: Service Task *Assess credit* returns one structured assessment, which Service Task *Notify applicant* receives as its input. The exact [source overlay](source-overlay.json) binds both operations to caller-supplied Activity handlers. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
+The [profile](../../profiles/cibseven-2.2.0/profile.json) and [semantics specification](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) own the bounded account. [credit-decision.bpmn](credit-decision.bpmn) is the retained project-authored credit decision: Service Task *Assess credit* returns one structured assessment, which Service Task *Notify applicant* receives as its input. The exact [source overlay](source-overlay.json) binds both operations to caller-supplied Activity handlers. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
 
 | Scenario | Journey |
 |---|---|

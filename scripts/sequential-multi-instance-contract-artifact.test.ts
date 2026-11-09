@@ -3,11 +3,12 @@ import { test } from "node:test";
 
 import { verifyScenarioVariableValueContract } from "./contract-artifacts.ts";
 
-const profile = "bpmn-2.0.2-sequential-multi-instance-user-task-draft";
+// The consolidated standards profile names no family; the scenario's BPMN process selects the value surface.
+const scenarioIdentity = { profile: "bpmn-2.0.2", bpmn: { id: "sequential-multi-instance-review" } } as const;
 
 function startScenario(items: ReadonlyArray<string>) {
   return {
-    profile,
+    ...scenarioIdentity,
     stimuli: [{
       kind: "start",
       variables: [{
@@ -47,7 +48,7 @@ test("admits only the operation-bound Process input name and cardinality", () =>
     assert.throws(
       () =>
         verifyScenarioVariableValueContract({
-          profile,
+          ...scenarioIdentity,
           stimuli: [{ kind: "start", variables: initialVariables }],
         }),
       /exactly one DataObjectReference_InputItems stringList binding/u,
@@ -58,7 +59,7 @@ test("admits only the operation-bound Process input name and cardinality", () =>
 test("admits only the task-local scalar result and an empty escalation patch", () => {
   assert.doesNotThrow(() =>
     verifyScenarioVariableValueContract({
-      profile,
+      ...scenarioIdentity,
       stimuli: [{
         kind: "command",
         occurrence: { elementId: "UserTask_Review" },
@@ -88,7 +89,7 @@ test("admits only the task-local scalar result and an empty escalation patch", (
     assert.throws(
       () =>
         verifyScenarioVariableValueContract({
-          profile,
+          ...scenarioIdentity,
           stimuli: [{
             kind: "command",
             occurrence: { elementId: "UserTask_Review" },
@@ -102,7 +103,7 @@ test("admits only the task-local scalar result and an empty escalation patch", (
   assert.throws(
     () =>
       verifyScenarioVariableValueContract({
-        profile,
+        ...scenarioIdentity,
         stimuli: [{
           kind: "command",
           occurrence: { elementId: "UserTask_Escalation" },
@@ -118,7 +119,7 @@ test("admits only the task-local scalar result and an empty escalation patch", (
 
 test("rejects a sequential Multi-Instance list on the completion surface", () => {
   const completion = {
-    profile,
+    ...scenarioIdentity,
     stimuli: [{
       kind: "command",
       occurrence: { elementId: "UserTask_Review" },

@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/intermediate-catch-timer/process.bpmn",
     "sourceId": "intermediate-catch-timer-pt1s-process",
-    "semanticProfile": "cibseven-2.2.0-intermediate-catch-timer-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

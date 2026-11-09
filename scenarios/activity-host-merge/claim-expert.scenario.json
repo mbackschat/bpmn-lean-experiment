@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "activity-host-merge-claim-expert",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "claim-review",
     "relativePath": "scenarios/activity-host-merge/claim-review.bpmn",
     "sha256": "39d5f35418f14edc60dce5392cb08030ded454df49cdc2ebff2b4ff05b56c680",
     "sourceOverlay": {
       "id": "claim-review-handlers",
-      "sha256": "daf02fc795b867dc85bb3deaaefcb938577409d5928b8edce224a6a8e5ddd302"
+      "sha256": "b16612c3075b92188473fe2a7157d08f48b1693c3f063a4eb83390ecb2737ce4"
     }
   },
   "stimuli": [

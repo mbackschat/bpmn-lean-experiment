@@ -25,7 +25,7 @@ test("discovers every profile, scenario, and evidence artifact through the regis
   );
   assert.equal(
     inventory.referencedProfileRelativePaths.includes(
-      "profiles/bpmn-2.0.2-message-key-correlation-draft/profile.json",
+      "profiles/bpmn-2.0.2/profile.json",
     ),
     true,
   );

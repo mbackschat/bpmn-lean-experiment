@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/exclusive-gateway-simple-boolean/process.bpmn",
     "sourceId": "simple-boolean-exclusive-gateway-process",
-    "semanticProfile": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "activity-boundary-timer-deadline-wins",
-  "profile": "bpmn-2.0.2-activity-boundary-timer-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "activity-boundary-timer",
     "relativePath": "scenarios/activity-boundary-timer/process.bpmn",

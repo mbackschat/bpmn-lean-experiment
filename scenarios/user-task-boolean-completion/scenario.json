@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "user-task-boolean-completion",
-  "profile": "cibseven-2.2.0-user-task-boolean-completion-data-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "sequential-user-task-process",
     "relativePath": "scenarios/user-task-discovery-completion/process.bpmn",

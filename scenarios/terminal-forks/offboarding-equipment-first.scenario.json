@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "terminal-forks-offboarding-equipment-first",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "employee-offboarding",
     "relativePath": "scenarios/terminal-forks/employee-offboarding.bpmn",
     "sha256": "a14daa897c726bf34b18a9e43b5e6260c74ba687e3cbf149bf86457e269dd086",
     "sourceOverlay": {
       "id": "employee-offboarding-handlers",
-      "sha256": "6e27440caf0944df9e7c00e32c5382432f6c70bbe55a1e41f8c2fe65c721f71d"
+      "sha256": "2d8dedadc3487531d48b8cf86707016860129db4059b44ad82d193c18010033e"
     }
   },
   "stimuli": [

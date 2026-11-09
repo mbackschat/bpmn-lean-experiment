@@ -26,60 +26,43 @@ import {
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
-test("separates normative profile authority from executable CIB oracle authority", async () => {
+test("binds every profile to the BPMN normative authority and every oracle to retained CIB evidence", async () => {
   const [artifactSets, evidenceSets] = await Promise.all([
     readAndVerifyNormativeArtifactSets(projectRoot),
     readAndVerifyArtifactSets(projectRoot),
   ]);
   assert.equal(artifactSets.length, normativeArtifactCases.length);
+  // A profile that carries an oracle while no retained evidence binds it would assert an oracle nobody observed.
   const evidenceBoundProfiles = new Set(evidenceSets.map(({ profile }) => profile.id));
-  for (const artifactSet of artifactSets) {
+  for (const artifactSet of [...artifactSets, ...evidenceSets]) {
     assert.equal("calibration" in artifactSet.scenario, false);
-    if (!("normativeAuthority" in artifactSet.profile)) {
-      // An evidence-free scenario may grow a cumulative CIB profile only while retained evidence
-      // elsewhere still binds that profile's oracle claim; a CIB profile with no evidence at all
-      // would assert an oracle nobody observed.
-      assert.ok(
-        evidenceBoundProfiles.has(artifactSet.profile.id),
-        `${artifactSet.scenarioRelativePath} binds CIB profile ${artifactSet.profile.id} without retained evidence`,
-      );
-      continue;
-    }
     assert.equal(
       artifactSet.profile.normativeAuthority.name,
       "OMG Business Process Model and Notation",
     );
-    assert.equal(
-      "oracle" in artifactSet.profile,
-      false,
-    );
-    assert.equal(
-      "environment" in artifactSet.profile,
-      false,
+    assert.ok(
+      !("oracle" in artifactSet.profile) || evidenceBoundProfiles.has(artifactSet.profile.id),
+      `${artifactSet.scenarioRelativePath} binds profile ${artifactSet.profile.id}, which claims an oracle without retained evidence`,
     );
   }
 
   const artifactSet = requiredAt(
-    artifactSets.filter(({ profile }) => "normativeAuthority" in profile),
+    artifactSets.filter(({ profile }) => "oracle" in profile),
     0,
-    "normative artifact sets",
+    "normative artifact sets under a profile with an oracle",
   );
-  const mixedAuthority = {
-    ...artifactSet,
-    profile: {
-      ...artifactSet.profile,
-      oracle: {
-        name: "forbidden second authority",
-        version: "1",
-        revision: "0".repeat(40),
-      },
-      environment: {},
-    },
-  };
+  for (const member of ["normativeAuthority", "oracle", "environment"] as const) {
+    const incomplete = { ...artifactSet, profile: { ...artifactSet.profile } } as Record<string, unknown> & typeof artifactSet;
+    delete (incomplete.profile as Record<string, unknown>)[member];
+    assert.throws(
+      () => verifyNormativeArtifactSet(incomplete),
+      /profile schema validation failed/,
+      member,
+    );
+  }
+  const retired = { ...artifactSet, profile: { ...artifactSet.profile, features: [] } };
   assert.throws(
-    () => verifyNormativeArtifactSet(
-      mixedAuthority as unknown as typeof artifactSet,
-    ),
+    () => verifyNormativeArtifactSet(retired as unknown as typeof artifactSet),
     /profile schema validation failed/,
   );
 });

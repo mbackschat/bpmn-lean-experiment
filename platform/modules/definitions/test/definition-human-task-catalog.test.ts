@@ -27,7 +27,7 @@ import {
 } from "@bpmn-lean/platform-definitions";
 import type { ExactArtifactStore } from "@bpmn-lean/platform-definitions";
 
-const profile = "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
+const profile = "bpmn-2.0.2";
 const source = new TextEncoder().encode("<exact-source/>");
 const sourceSha256 = createHash("sha256").update(source).digest("hex");
 

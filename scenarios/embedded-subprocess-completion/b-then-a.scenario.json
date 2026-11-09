@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "embedded-subprocess-completion-b-then-a",
-  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "embedded-subprocess-completion-process",
     "relativePath": "scenarios/embedded-subprocess-completion/process.bpmn",

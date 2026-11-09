@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/parallel-multi-instance/process.bpmn",
     "sourceId": "parallel-multi-instance-risk-review",
-    "semanticProfile": "bpmn-2.0.2-parallel-multi-instance-user-task-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

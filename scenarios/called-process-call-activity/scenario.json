@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "called-process-call-activity",
-  "profile": "bpmn-2.0.2-called-process-call-activity-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "called-process-call-activity",
     "relativePath": "scenarios/called-process-call-activity/process.bpmn",

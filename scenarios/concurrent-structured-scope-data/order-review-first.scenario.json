@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "concurrent-structured-scope-data-order-review-first",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "order-fulfilment",
     "relativePath": "scenarios/concurrent-structured-scope-data/order-fulfilment.bpmn",
     "sha256": "71f4011dab50293ae1b3849f808bdda49dc78680ecd61ad1245a116df433565a",
     "sourceOverlay": {
       "id": "order-fulfilment-handlers",
-      "sha256": "691fc0614eac5f83e6976e6d3064186ab115062a676cf12ddf87e9e12629e01c"
+      "sha256": "1718e6ab3e580fc091c207e4874326a1345f7027502f31604289c2a2dc3c288a"
     }
   },
   "stimuli": [

@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "nested-scope-data-quote-signed",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "bulk-quote",
     "relativePath": "scenarios/nested-embedded-scope-data/bulk-quote.bpmn",
     "sha256": "0698681f9a0745d7c614d340ed822a5a083e5fa2195240719ae9a2dd165459fe",
     "sourceOverlay": {
       "id": "bulk-quote-handlers",
-      "sha256": "cc140b9d7c19be7749b0515addc402569debbc6353485205cdca09d26360208e"
+      "sha256": "3307c856502dc97fdcf27a81c7b62655ed6ac338b3f94e936c403872029d204e"
     }
   },
   "stimuli": [

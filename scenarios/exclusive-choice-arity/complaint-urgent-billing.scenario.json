@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "exclusive-choice-arity-complaint-urgent-billing",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "complaint-handling",
     "relativePath": "scenarios/exclusive-choice-arity/complaint-handling.bpmn",
     "sha256": "50ed1d56e15df84b807324cebba195192f42405bdd2a3e581c85bbdbbb89bc74",
     "sourceOverlay": {
       "id": "complaint-handling-handlers",
-      "sha256": "a97a2e3531d35958d4f9174f818a052df8963e37b518ef003cf80808573bf333"
+      "sha256": "22a248c4df64e07b97271a272fd61c8cc16239dd25ecb84c007a3c6f5fd7eb6c"
     }
   },
   "stimuli": [

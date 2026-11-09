@@ -20,7 +20,7 @@ import type { ModdleElement } from "./presentation-model.js";
 import { hasChildlessCatalogTextContainers } from "./catalog-xml-shape.js";
 
 const structuredHumanWorkProfile =
-  "bpmn-2.0.2-bpmn-lean-structured-human-work-draft";
+  "bpmn-2.0.2";
 const structuredFormSourceVersion =
   "bpmn-lean-structured-human-work-source/v1";
 const maximumSourceBytes = 1_048_576;

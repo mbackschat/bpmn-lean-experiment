@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "pass-through-implicit-split-merge-claim-rejected",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "claim-archiving",
     "relativePath": "scenarios/pass-through-implicit-split-merge/claim-archiving.bpmn",
     "sha256": "76ad8309a3af93d4355a4f7f0bdd53042f9ed088053bd7d1a64e95ff3147e35d",
     "sourceOverlay": {
       "id": "claim-archiving-handlers",
-      "sha256": "303c2269870db5830e210bf4c2224c4f8b20a280be97ac7594d38c0acb2aeef3"
+      "sha256": "bebd164633943815cb219ea2e2c93bf174108990a85a900cb88982df4c45bf51"
     }
   },
   "stimuli": [

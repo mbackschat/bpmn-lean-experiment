@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "repeated-nested-calls-guarantor-absent",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "guarantor-loan",
     "relativePath": "scenarios/repeated-nested-concurrent-calls/guarantor-loan.bpmn",
     "sha256": "f5647d8bc3457960d9525b4d167f5665ebf2b9e1622abfda17a68e7c28691abb",
     "sourceOverlay": {
       "id": "guarantor-loan-handlers",
-      "sha256": "d5523873a4bff4351b14dcdb873967d6e243532c6b2622bfaab2c38cc2b993db"
+      "sha256": "3d65a9ff688a7464774170d47ead0b89ed59c3e8d5662d320e3fb1393e8e9a4d"
     }
   },
   "stimuli": [

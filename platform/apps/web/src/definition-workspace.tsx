@@ -124,7 +124,7 @@ export function DefinitionWorkspace({
           </label>
           <label>
             Semantic profile ID
-            <input disabled={deploying} name="semanticProfile" type="text" placeholder="parallel-fork-join-draft" required />
+            <input disabled={deploying} name="semanticProfile" type="text" placeholder="bpmn-2.0.2" required />
           </label>
           <label>
             Source overlay JSON file (optional)

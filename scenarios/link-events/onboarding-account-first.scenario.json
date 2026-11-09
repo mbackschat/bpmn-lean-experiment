@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "link-events-onboarding-account-first",
-  "profile": "cibseven-2.2.0-nested-embedded-scope-data-draft",
+  "profile": "cibseven-2.2.0-scope-chain",
   "bpmn": {
     "id": "onboarding-milestones-links",
     "relativePath": "scenarios/link-events/onboarding-milestones-links.bpmn",
     "sha256": "70c4842b74b704ee4d5ced2cd8bf1d6e3e73b3ce3111f4465f189705a765d11e",
     "sourceOverlay": {
       "id": "onboarding-milestones-handlers",
-      "sha256": "84aec2bd8b74dacad46644d7f8f2e8705e856b443d36c9e24217ec14905eaeba"
+      "sha256": "de136fda80f39ce184ec961cf60704962d61fc5f37ff49827c75d9b820d9615b"
     }
   },
   "stimuli": [

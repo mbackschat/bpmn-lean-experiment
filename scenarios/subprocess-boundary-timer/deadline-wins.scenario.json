@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "subprocess-boundary-timer-deadline-wins",
-  "profile": "bpmn-2.0.2-subprocess-boundary-timer-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "subprocess-boundary-timer",
     "relativePath": "scenarios/subprocess-boundary-timer/process.bpmn",

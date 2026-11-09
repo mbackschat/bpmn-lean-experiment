@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "activity-boundary-message-task-wins",
-  "profile": "bpmn-2.0.2-activity-boundary-message-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "activity-boundary-message",
     "relativePath": "scenarios/activity-boundary-message/process.bpmn",

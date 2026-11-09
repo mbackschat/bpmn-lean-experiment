@@ -1,7 +1,7 @@
 {
   "kind": "scenario",
   "id": "parallel-fork-join-stale-a-while-b-active",
-  "profile": "parallel-fork-join-draft",
+  "profile": "bpmn-2.0.2",
   "bpmn": {
     "id": "parallel-two-user-tasks-process",
     "relativePath": "scenarios/parallel-fork-join/process.bpmn",

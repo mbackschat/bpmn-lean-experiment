@@ -1,14 +1,14 @@
 {
   "kind": "scenario",
   "id": "concurrent-scope-data-facility-inspection",
-  "profile": "cibseven-2.2.0-embedded-subprocess-completion-draft",
+  "profile": "cibseven-2.2.0",
   "bpmn": {
     "id": "facility-inspection",
     "relativePath": "scenarios/concurrent-scope-data/facility-inspection.bpmn",
     "sha256": "2d759a7ded2111cd3fde5e9f98d4b3011ba426602dc75482a82a88c0917e64e9",
     "sourceOverlay": {
       "id": "facility-inspection-handlers",
-      "sha256": "2f2a2083e6597f7360a356d7b3beb70bdbfe09469654c625e057af4d5addac23"
+      "sha256": "a5e3de3e08e3853c024a83241ffcf0542e5d9e6eba6f898faeee35264f569559"
     }
   },
   "stimuli": [

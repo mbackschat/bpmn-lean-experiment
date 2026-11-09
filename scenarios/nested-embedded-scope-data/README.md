@@ -1,6 +1,6 @@
 # Nested embedded scope data scenarios
 
-The [profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) and the [nested embedded scope data semantics](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) own the bounded account. Three retained project-authored models share one profile, each with its own exact source overlay that binds the Service Task operations to caller-supplied Activity handlers. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
+The [profile](../../profiles/cibseven-2.2.0-scope-chain/profile.json) and the [nested embedded scope data semantics](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) own the bounded account. Three retained project-authored models share one profile, each with its own exact source overlay that binds the Service Task operations to caller-supplied Activity handlers. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
 
 | Model | Journey |
 |---|---|

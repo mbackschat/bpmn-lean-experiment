@@ -417,7 +417,7 @@ async function deploySharedDefinition(
 }>> {
   const response = await requestJson(
     origin,
-    "/api/v1/definitions?sourceId=shared-definition.bpmn&semanticProfile=bpmn-2.0.2-bpmn-lean-structured-human-work-draft",
+    "/api/v1/definitions?sourceId=shared-definition.bpmn&semanticProfile=bpmn-2.0.2",
     201,
     {
       method: "POST",

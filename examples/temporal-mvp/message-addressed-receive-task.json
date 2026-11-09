@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/message-addressed-receive-task/process.bpmn",
     "sourceId": "message-addressed-receive-task-process",
-    "semanticProfile": "cibseven-2.2.0-message-addressed-receive-task-draft",
+    "semanticProfile": "cibseven-2.2.0",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000

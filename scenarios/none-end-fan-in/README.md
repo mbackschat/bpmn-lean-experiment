@@ -1,6 +1,6 @@
 # None End fan-in scenarios
 
-The [None End fan-in specification](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md) owns the bounded account; the model is a witness for the [nested scope-data profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json), with an exact source overlay binding its one Service Task to a caller-supplied Activity handler.
+The [None End fan-in specification](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md) owns the bounded account; the model is a witness for the [nested scope-data profile](../../profiles/cibseven-2.2.0-scope-chain/profile.json), with an exact source overlay binding its one Service Task to a caller-supplied Activity handler.
 
 The [travel request](travel-request.bpmn) with its [handler](travel-request-overlay.json) assesses a request in the Sub-Process *Assess request*, which copies `decision` and `channel` to the Process. *Route request* then sends a rejection straight to the None End *Request closed*, a phone request to *Call traveller* and otherwise books the travel through a mapped Service Task; *Call traveller* and *Book travel* also flow to *Request closed*, which so has three incoming flows.
 

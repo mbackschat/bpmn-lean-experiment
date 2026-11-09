@@ -3,7 +3,7 @@
   "bpmn": {
     "file": "../../scenarios/portable-business-message-payload/process.bpmn",
     "sourceId": "shipment-manifest-intake",
-    "semanticProfile": "bpmn-2.0.2-portable-business-message-payload-draft",
+    "semanticProfile": "bpmn-2.0.2",
     "limits": {
       "maxBytes": 1048576,
       "parserDeadlineMs": 1000
