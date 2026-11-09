@@ -17,6 +17,10 @@ on:
         description: Verify without the Lean build cache
         type: boolean
         default: false
+      replace_cib_evidence:
+        description: Regenerate every retained CIB evidence file, upload it, and verify the runtime against it
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -298,6 +302,21 @@ jobs:
 
       - name: Require clean committed HEAD
         run: node scripts/clean-committed-head.ts
+
+      # Evidence pins its scenario and profile bytes, so a profile change needs fresh CIB runs; the oracle runs here
+      # because its suites stay off the development computer. The runtime step below then verifies the new evidence.
+      - name: Replace retained CIB evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.replace_cib_evidence == true
+        run: ./scripts/pnpm.sh run replace:cib-evidence
+
+      - name: Upload replaced CIB evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.replace_cib_evidence == true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: replaced-cib-evidence
+          if-no-files-found: error
+          retention-days: 14
+          path: scenarios/**/*cibseven-evidence.json
 
       - name: Verify runtime
         env:
