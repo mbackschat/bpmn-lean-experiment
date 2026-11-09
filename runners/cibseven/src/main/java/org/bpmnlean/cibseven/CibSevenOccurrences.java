@@ -163,6 +163,11 @@ final class CibSevenOccurrences {
       return boundary.getAttachedTo().getId();
     }
     if (element instanceof StartEvent start && start.getParentElement() instanceof SubProcess scope) {
+      if (scope.triggeredByEvent()) {
+        // CIB declares an Event Sub-Process start's subscription on the scope that contains the Event Sub-Process,
+        // which has no activity instance of its own until the event arrives (BpmnParse#parseStartEvents).
+        return scope.getParentElement() instanceof SubProcess parent ? parent.getId() : null;
+      }
       return scope.getId();
     }
     if (element instanceof FlowNode node) {
