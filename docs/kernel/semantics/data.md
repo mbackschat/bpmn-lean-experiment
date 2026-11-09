@@ -1,0 +1,199 @@
+# Data semantics
+
+How values are carried, read, copied into Activities and Scopes and written back. [`Kernel.Feature.Data`](../../../Kernel/Feature/Data.lean) owns expression evaluation and is the only writer of variables; it matches on the guarded type `Expression` (`literal`, `simpleBoolean`, `variable`, `foreign`). [`Ctx.evaluateMappings`](../../../Kernel/Hooks.lean) evaluates a mapping list by its `MappingDialect` (`dataAssociation`, `ioParameter`, `callVariable`) for every feature. [`Kernel.Admission.Data`](../../../Kernel/Admission/Data.lean) admits expressions and mappings. Activity mediation runs in [`Kernel.Feature.Work`](../../../Kernel/Feature/Work.lean) (see [work semantics](work.md)), Scope mappings in the [scope semantics](scopes.md).
+
+## Interpretation
+
+### Values
+
+- One closed, tagged, recursive value type: String, Null, Boolean, Integer, Decimal, List and Map; each node carries its own type, so heterogeneous collections are values; absence of a variable or Map entry is never Null; it is not arbitrary JSON, a field-schema language or host-object serialization ([decision][pbv-decision], [contract][pbv-contract]). Boolean is distinct from the strings `"true"` and `"false"`, from null and from absence in every decoder, comparator and identity ([BVAL-WIRE-01][bval-rules]); it was chosen as the first non-string value because it widens the union without reinterpreting any accepted value ([selection basis][bval-basis]). The kernel's [`Value`](../../../Kernel/IL/Types.lean) carries these arms and the legacy `stringList`, which stays outside the portable domain at every depth ([contract][pbv-contract]).
+- Domains: String is unnormalized Unicode of at most 1,024 UTF-8 bytes; Integer is `0..9007199254740991`; Decimal is `coefficient × 10^-scale` with a signed 64-bit coefficient in canonical spelling and scale `0..6`; Map keys are unique and in strictly increasing Unicode-scalar order. A root value has at most four container levels, 32 members per container, 256 nodes and 16,384 canonical JSON bytes; one over a limit is refused, never truncated ([contract][pbv-contract]). The kernel's `Value` does not re-check these bounds; the wire schemas carry them.
+- Canonical value JSON has no whitespace, fields in code-point order, unchanged List order and specified Map order; command identity extends the typed tuple recursively ([contract][pbv-contract]). [`Submission.valueBytes`](../../../Kernel/Feature/Work/Submission.lean) measures exactly this encoding.
+- Wire integer tokens match `0|[1-9][0-9]*` and their field bound before conversion; malformed encoding, unknown fields, duplicates and noncanonical Decimals or Maps are wire-boundary errors with no typed stimulus ([raw-wire checkpoint][pbv-rawwire], [ingress][pbv-ingress]).
+- Eligibility is per surface: Start, human completion, payload Message, effect result and Call interface may each take the whole domain; expression evaluation is not widened by it. A well-formed value outside a profile's surface domain is unsupported in a scenario and rejected as a command; absence fails a required input while Null succeeds only where the port permits it; nothing is coerced or defaulted ([ingress][pbv-ingress]). A profile admitting Boolean only at User Task completion is such a surface selection ([BVAL-PROFILE-01][bval-rules]) (kernel differs; reported: no per-surface value domain exists in `ProfileOptions`).
+- CIB evaluates `${name}` mappings to the stored Java object by reference; the project copies by value, and in-place aliasing is outside the domain. Under the default Java serialization a CIB Map, List, Integer or BigDecimal result projects to the portable value of the same mathematical value; other types are outside the domain ([CIB relationship][pbv-cib], [authority][bval-cib]).
+
+### Process data and Start
+
+- A valid Start installs exactly its initial bindings in the fresh root scope before internal closure, and no Activity-local scope; a refused Start installs nothing ([PSTART-INSTALL-01, PSTART-REFUSE-01][pstart-rules], [`State.initial`](../../../Kernel/State.lean)). Binding names are nonempty, unique and canonically ordered at the wire boundary ([data contract][pstart-contract]). Start data changes no node, operation or wait ([consequence][pstart-consequence]).
+- Published `variables` are the root scope's bindings only; they survive local cleanup until the instance ends ([SDATA-PROCESS-01, SDATA-OBSERVE-01][sdata-rules]). An Activity-local binding is projected only as an open effect's arguments or an open User Task's inputs ([SDATA-OBSERVE-02][sdata-rules], [required scope][sdata-required]).
+- A read resolves from the reading scope occurrence outward; the first scope declaring the name decides, a present null included, otherwise the root ([NSD-READ-01][nsd-rules]). An unknown variable is no value (`unknown-variable`), which each mapping dialect reads below.
+- A write resolves outward to the nearest scope occurrence that declares the name, otherwise the instance root when its process declares the name (§10.4.1); it never creates a local or touches another frame ([NSD-WRITE-01][nsd-rules], [`Data.write`](../../../Kernel/Feature/Data.lean)). Any other name is the profile's `UndeclaredWrite`: `refused` (`undeclared-write`) or `atInstanceRoot`, the CIB write.
+- The old profiles derived required Start bindings statically: every read not declared by an enclosing input or definitely produced earlier on every path became a required Start binding, and Start without one was `rejected`, so no unavailable read was reachable after an accepted Start ([SBT-AVAILABLE-01][sbt-rules], [NSD-AVAILABLE-01][nsd-profile], [CSD-AVAILABLE-01][csd-admission], [CVM-START-01, CVM-AVAILABLE-01][cvm-profile], [UTL-AVAILABLE-01][utl-admission]) (kernel differs; reported: `State.initial` accepts any binding list and an absent source surfaces at run time by its dialect).
+
+### Activity data
+
+- When an Activity is ready its inputs are evaluated once, all against the same enclosing context, before the occurrence's local scope exists, so no input reads a sibling input; declaration order does not matter (§10.4.2, §13.3.2) ([normative account][adin-norm], [SBT-INPUT-01][sbt-rules], [UTL-INIT-01][utl-rules], [`Work.arriveActivity`](../../../Kernel/Feature/Work.lean)).
+- A missing binding is unavailable; a present null and an empty string are available and copied unchanged ([normative account][adin-norm]).
+- A Data Association whose source is unavailable makes the InputSet unavailable: an occurrence a token began holds that token and waits, with no reevaluation ingress and no progress claim ([runtime contract][adin-runtime], [runtime contract][adio-runtime]). The old account published no started occurrence while waiting ([runtime contract][adin-runtime]) (kernel differs; reported: the occurrence begins before its inputs are evaluated and is held in `FeatureSlots.held`). An occurrence no token began cannot wait (`started-activity-input-unavailable`).
+- An unresolved `camunda:inputParameter` or `outputParameter` expression rolls the command back (`mapping-source-unavailable`), never a wait ([CIB-EXT-0024](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0024--an-unresolved-input-or-output-parameter-expression-fails-its-evaluation)).
+- Non-empty inputs fill one local scope owned by the complete occurrence identity, never by element, activation, host identity or name; it is disposed with the occurrence, and each activation gets a fresh one ([SDATA-ACTIVITY-01, SDATA-REFUSE-01][sdata-rules], [owner decision][sdata-owner], [UTL-FRESH-01][utl-rules], [`Work.enterLocal`](../../../Kernel/Feature/Work.lean)).
+- An effect's arguments are the inputs committed when it opens; a later write, also by a sibling branch, changes no open snapshot ([SBT-SNAPSHOT-01][sbt-rules], [CSSD-SNAPSHOT-01][cssd-rules]). CIB evaluates an `asyncBefore` Service Task's inputs when its job runs, so arguments agree only on schedules where the job runs before the next command commits ([effect argument timing][cssd-norm]).
+- Activation does not depend on outputs: an OutputSet constrains completion, not entry ([runtime contract][adout-runtime]). An empty OutputSet means the Activity produces no data and its completion submits nothing ([normative account][adin-norm]).
+- A completion or effect result submits exactly the OutputSet: every output mapping evaluates against the submitted values alone, never a captured input or a parent namesake; a missing source is `output-unavailable`, a repeated name `duplicate-output`, a superfluous name `undeclared-output`, each rejected with the state unchanged ([unavailable output][adout-norm], [runtime contract][adio-runtime], [SBT-RESULT-01][sbt-rules], [public contract][sbt-contract], [`Work.outputs`](../../../Kernel/Feature/Work.lean)). One source feeding two targets is one submitted entry; no output mapping means the empty patch ([public contract][sbt-contract]).
+- Outputs are copied to the containing context (§10.4.2), reading §13.3.2's "context of the Activity" as loose wording for it ([normative account][adout-norm], [normative account][adio-norm]). The selected representation is "materialize then copy": the output belongs to the occurrence before it is associated outward, which while-executing outputs and Multi-Instance need; while no construct reads it in between, fill and association are one step ([competing accounts][adout-accounts]).
+- A business Error result writes outputs only under `ErrorPathOutputs.mapped`; otherwise its patch must be empty (`error-path-outputs-not-accepted`) ([work](work.md#service-tasks-and-effects)).
+- Standard Data Associations select no CIB relation; the reused User Task lifecycle is all CIB contributes ([CIB boundary][adin-cib], [CIB boundary][adio-cib], [CIB boundary][adout-cib]).
+- The A12 `CreateDocument` profile (CIB Seven `2.0.0`, distinct from every `2.2.0` profile) binds one delegate expression to a neutral operation: a literal input fills one local binding and the effect's arguments, a successful result carries exactly the one local patch, the output mapping writes one Process variable and the locals stay unobserved; a wrong patch is rejected unchanged. Success alone refines CIB's one-command transaction; no equivalence is claimed for failure, rollback or cancellation ([CDATA rules][cdata-rules], [approved decisions][cdata-approved], [source admission][cdata-source], [required scope][cdata-required]). The A12 source stays outside the repository under EUPL-1.2; repository gates use a project-authored equivalent ([license boundary][cdata-license]).
+
+### User Task completion data
+
+- `SubmissionRule.outputSet` (§10.4.1) applies the OutputSet rule above. Under `SubmissionRule.installsVariables` a User Task without output mappings writes its submitted values outward as Process data, the CIB public completion ([`Work.completeUserTask`](../../../Kernel/Feature/Work.lean)). Submitted data cannot change which step is enabled before completion commits ([runtime consequence][utc-runtime]).
+- Under the scope-chain rule (`scopeChainSubmissionBytes`) a submission may name only variables a scope occurrence on the task's chain declares below the instance root, or in a called instance the Call's input targets and output sources, each once; its canonical JSON takes at most the selected bytes (16,384 in the old profile). Anything else is rejected (`submission-duplicate-name`, `submission-undeclared-name`, `submission-value-domain`, `submission-too-large`). The name restriction is profile admission, not CIB behaviour, which would create a root binding ([NSD-TASK-01][nsd-profile], [CVM-TASK-01][cvm-rules], [`Submission.check`](../../../Kernel/Feature/Work/Submission.lean)).
+- A mapped User Task's completion may also name its own locals, the task's frame first, and its outputs read the task's own locals, retiring the frame in the same step ([UTL-TASK-01, UTL-OUTPUT-01][utl-rules], [public contract][utl-contract]) (kernel differs; reported: `Submission.declared` starts at the item's scope occurrence, outside the task's local scope, and `Work.outputs` reads the submitted values only). A completion naming an earlier activation is rejected ([UTL-STALE-01][utl-rules]).
+- The kernel publishes an open task's evaluated inputs; name lookup for hosted task detail is a host query, resolving through the task's frame chain and, for a called task, the called root only ([UTL-DETAIL-01][utl-rules], [CVM-OBSERVE-01][cvm-rules]).
+- Forms, validation, assignment, task-local transient variables, deletion and A12 task-list behaviour are not completion data ([exclusions][utc-excl], [exclusions][pstart-excl]).
+
+### Scope data
+
+- Each embedded Sub-Process occurrence is a contextual scope whose data lives and is visible within that occurrence and its descendants; two occurrences of one definition own separate data (§10.3.5, §10.4.1). BPMN references data by element identity; name-based declaration, shadowing and nearest-owner writes are the CIB extension [CIB-EXT-0020](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0020--nested-embedded-scope-locals-and-nearest-owner-writes) ([normative basis][nsd-norm], [normative basis][csd-norm]).
+- Entry evaluates the Scope's inputs against the parent occurrence's chain before its frame exists; an empty input list installs no frame. Normal completion writes outputs through the nearest-owner rule from the parent and disposes exactly the completing frame; ancestors keep their bindings ([NSD-INIT-01, NSD-OUTPUT-01, NSD-RETIRE-01][nsd-rules], [CSD-INIT-01, CSD-RETIRE-01][csd-rules]).
+- The chain is the live occurrence chain, never the definition chain: a read, write, input or output never consults a frame off the performer's chain, and two live occurrences never share a frame ([CSD-CHAIN-01, CSD-ISOLATE-01][csd-rules], [CSSD-REUSE-01][cssd-rules]).
+- Structured values keep multiplicity, order, Map keys, Decimal scale and present nulls through every frame, snapshot, result, called root and restoration; every copy across a boundary is by value ([CSSD-VALUE-01][cssd-rules], [NSD-VALUE-01][nsd-rules], [normative basis][cssd-norm]).
+- CIB also runs outputs when a scope is destroyed abnormally; outputs at normal completion only is a restriction, and the abnormal-exit output policy belongs to the interruption and Error rows ([normative basis][nsd-norm]).
+- An End and a sibling path's declared Scope entry are unordered by BPMN (§10.5.3, §13.5.6); both orders give one state, data or not ([normative basis][dtb-norm], [DTB-ADMIT-01, DTB-COMMUTE-01][dtb-rules]).
+- Every refusal leaves state, frames, waits and snapshots unchanged ([NSD-REFUSE-01][nsd-rules], [CSD-REFUSE-01][csd-rules], [CSSD-REFUSE-01][cssd-rules]).
+
+### Source mapping grammar
+
+- A Service Task binds through its delegate token `${identifier}` to the operation of the same name. An input source is a nonempty literal without `${` or `#{`, or exactly `${identifier}`, read in the containing context before the Activity's own inputs exist; an output source is exactly `${identifier}`. Identifiers exclude the JUEL keywords, the engine-context names (`execution`, `caseExecution`, `task`, `externalTask`, `authenticatedUserId`) and every delegate identifier, which would shadow the handler ([public contract][sbt-contract]). Any other expression is refused (`mapping.expression`) until the M2 JUEL level.
+- The serial, mixed-task and business-Error compositions select BPMN authority with classified extensions: [CIB-EXT-0015](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0015--serial-business-task-enclosing-inputs-and-local-results) for enclosing inputs and local results, [CIB-EXT-0016](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0016--cib7-220-caught-business-error-output-mapping) for the caught path ([registration boundary][sbt-registration]).
+
+### Call variable mappings
+
+- BPMN moves data across a Call only through matching Data Inputs and Outputs and gives the called Process its own instance; name-based `camunda:in` and `camunda:out` are the CIB extension [CIB-EXT-0021](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0021--call-variable-mappings-by-name-across-the-instance-boundary), composed with the nearest-owner write ([normative basis][cvm-norm]).
+- Invocation evaluates every input against the Call's enclosing chain before the called instance exists; a present value or null is copied, an absent source gives a present null; the called root holds exactly the input targets ([CVM-IN-01][cvm-rules], [`Call.invoke`](../../../Kernel/Feature/Work/Call.lean)).
+- While the call is live, called reads and writes end at the called root and never change a caller frame ([CVM-ISOLATE-01][cvm-rules]).
+- At normal return every output reads its source from the called root, an absent source giving a present null, and writes by the nearest-owner rule from the Call's enclosing occurrence; all reads precede all writes and the whole return is atomic ([CVM-OUT-01][cvm-rules], [`Call.complete`](../../../Kernel/Feature/Work/Call.lean)). No called variable stays readable from the caller ([CVM-RETIRE-01][cvm-rules]). Every copy is by value ([value domain][cvm-profile]).
+- `calledElement` is bound once, at program assembly, to a carried Process and recorded; recovery and later commands never re-resolve it ([CVM-RESOLVE-01][cvm-profile]).
+- No invocation or return can fail after an accepted command; a wrong Start, patch or addressed completion is rejected unchanged ([CVM-REFUSE-01][cvm-rules]).
+
+### Superseded first-profile restrictions
+
+The deleted implementation admitted data only in exact shapes: one Property, one input or output, one InputSet and OutputSet, one Activity type, String or null values, Boolean at completion only, serial chains, definition depth three, eight mappings per Scope, one or two Calls, no forks beside data, mapped User Tasks off forked and called Processes, and `variables="all"`, `sourceExpression`, `local`, business keys and reserved Multi-Instance output targets refused ([input scope][adin-scope], [input/output scope][adio-scope], [output scope][adout-scope], [Boolean scope][bval-scope], [Call mapping scope][cvm-scope], [nested scope][nsd-scope], [concurrent scope][csd-scope], [concurrent scope contract][csd-contract], [concurrent structured scope][cssd-scope], [concurrent structured contract][cssd-contract], [concurrent structured admission][cssd-admission], [terminal branches scope][dtb-scope], [terminal branches admission][dtb-admission], [User Task local scope][utl-scope], [User Task local data][utl-norm], [CreateDocument exclusions][cdata-excluded], [scoped data exclusions][sdata-excluded], [serial scope][sbt-scope], [CVM-ADMIT-01][cvm-rules]). The kernel admits every shape its codes below do not refuse: any number of mappings and values of every arm, mappings only on User and Service Tasks and Scopes, `variables="all"` and business keys refused by [work](work.md#restrictions) codes. It does not refuse an output targeting `nrOfInstances`, `nrOfActiveInstances` or `nrOfCompletedInstances`, which CIB drops (kernel differs; reported).
+
+## CIB relations
+
+| Register entry | Role in the kernel |
+|---|---|
+| [CIB-EXT-0002](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0002--exact-a12-createdocument-delegate-and-inputoutput-mapping) | extension: A12 `CreateDocument` delegate and mapping (CIB 2.0.0) |
+| [CIB-EXT-0004](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0004--caught-error-output-mapping-before-activity-cleanup) | `ErrorPathOutputs.mapped` |
+| [CIB-EXT-0005](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0005--public-user-task-completion-installs-submitted-process-variables) | `SubmissionRule.installsVariables`, `UndeclaredWrite.atInstanceRoot` |
+| [CIB-EXT-0006](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0006--public-process-start-installs-initial-process-variables) | extension: Start installs initial Process variables |
+| [CIB-EXT-0007](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0007---bounded-mapped-success-service-task-input-and-output-mapping) | `UndeclaredWrite.atInstanceRoot`: mapped-success Service Task mappings (CIB 2.0.0) |
+| [CIB-EXT-0009](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0009---bounded-caught-error-output-mapping-before-activity-cleanup) | `ErrorPathOutputs.mapped`, `UndeclaredWrite.atInstanceRoot` |
+| [CIB-EXT-0010](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0010--public-user-task-completion-preserves-a-boolean-process-variable) | `SubmissionRule.installsVariables` with Boolean values |
+| [CIB-EXT-0015](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0015--serial-business-task-enclosing-inputs-and-local-results) | extension: Activity-local inputs and local results |
+| [CIB-EXT-0016](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0016--cib7-220-caught-business-error-output-mapping) | `ErrorPathOutputs.mapped` (CIB 2.2.0) |
+| [CIB-EXT-0017](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0017--repeated-sub-process-body-local-mapping-and-enclosing-writes) | extension: Multi-Instance body locals; the kernel reads [Multi-Instance mappings](multi-instance.md) instead |
+| [CIB-EXT-0018](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0018--parallel-body-mappings-and-post-disposal-condition-context) | extension: parallel body mappings; the kernel reads [Multi-Instance mappings](multi-instance.md) instead |
+| [CIB-EXT-0019](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0019--structured-business-task-inputs-and-local-results) | classified difference: CIB stores by reference, the kernel copies |
+| [CIB-EXT-0020](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0020--nested-embedded-scope-locals-and-nearest-owner-writes) | nearest-owner writes, `scopeChainSubmissionBytes`, `UndeclaredWrite.atInstanceRoot` |
+| [CIB-EXT-0021](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0021--call-variable-mappings-by-name-across-the-instance-boundary) | `MappingDialect.callVariable` |
+| [CIB-EXT-0024](../../CIB-BPMN-RELATION-REGISTER.md#cib-ext-0024--an-unresolved-input-or-output-parameter-expression-fails-its-evaluation) | `MappingDialect.ioParameter`: unresolved expression rolls back |
+| [CIB-OP-0002](../../CIB-BPMN-RELATION-REGISTER.md#cib-op-0002--synchronous-cib-delegate-transaction-mapped-to-a-durable-effect-boundary) | operational mapping: CIB delegate transaction to the effect boundary |
+| [CIB-OP-0004](../../CIB-BPMN-RELATION-REGISTER.md#cib-op-0004--synchronous-juel-command-rollback-mapped-to-speculative-semantic-commitment) | `ContinuationFailure.rolledBack`: an evaluation failure rolls the command back |
+| [CIB-OP-0006](../../CIB-BPMN-RELATION-REGISTER.md#cib-op-0006---synchronous-mapped-success-transaction-mapped-to-a-durable-effect-boundary) | operational mapping: mapped-success transaction to the effect boundary |
+| [CIB-CFG-0003](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0003--pinned-a12-cib-seven-200-oracle-environment) | oracle environment for the A12 `CreateDocument` mapping |
+| [CIB-CFG-0005](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0005--pinned-read-only-juel-condition-environment) | oracle environment for read-only JUEL evaluation (PC-DATA-07) |
+| [CIB-CFG-0006](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0006---pinned-mapped-success-cib-seven-200-environment) | oracle environment for mapped-success Service Task mappings |
+| [CIB-CFG-0009](../../CIB-BPMN-RELATION-REGISTER.md#cib-cfg-0009--default-java-serialization-of-structured-business-values) | oracle environment for structured values |
+
+## Restrictions
+
+| Refusal code | Refused | Reason or owning row |
+|---|---|---|
+| `mapping.expression` | a mapping source outside literal, variable and Simple Boolean | PC-DATA-05, PC-DATA-07 (M2 JUEL core level) |
+| `expression.outsideSimpleBoolean`, `flow.condition.foreign` | a condition outside the Simple Boolean subset | PC-DATA-07, PC-DATA-08 |
+| `activity.inputMappings`, `activity.outputMappings` | mappings on work other than User and Service Tasks | nothing would carry or submit them |
+| `activity.defaultFlow` | an Activity's default flow | PC-CF-07 |
+| `element.origin.sourceId`, `element.origin.definition` | an element whose origin is not its own source element | no reviewed copy semantics |
+| dynamic: `undeclared-write` | a write to a name nothing declares, under `UndeclaredWrite.refused` | §10.4.1 |
+| dynamic: `mapping-source-unavailable` | an unresolved parameter expression (rolled back); an unavailable Scope input or output (semantic failure) | CIB-EXT-0024; PC-DATA-09 |
+| dynamic: `started-activity-input-unavailable` | an unavailable InputSet at an occurrence no token began | PC-DATA-09 |
+
+Rejected commands: `output-unavailable`, `duplicate-output`, `undeclared-output`, `submission-duplicate-name`, `submission-undeclared-name`, `submission-value-domain`, `submission-too-large`, `error-path-outputs-not-accepted`, `unknown-occurrence`.
+
+## Open rows
+
+| Row | Decision owed or not yet implemented |
+|---|---|
+| PC-DATA-03 | structured values through every mapping, observation and restoration, with the portable bounds |
+| PC-DATA-04 | visibility, shadowing, nearest writes and lifetime for Activity, embedded, called and Multi-Instance owners, concurrent mapped Calls |
+| PC-DATA-05 | literal, reference, structured and expression inputs at every entry |
+| PC-DATA-06 | multi-source and multi-target outputs to local and enclosing targets |
+| PC-DATA-07 | the read-only JUEL subset in the kernel, grown by levels per the [proposal's Evaluation decision](../../LEAN-KERNEL-REWRITE-PROPOSAL.md#runtime-state-and-step) |
+| PC-DATA-08 | branch, collection and Multi-Instance completion expressions |
+| PC-DATA-09 | absence, null, type error and evaluator failure at entry and completion, including the static Start availability rule and the Call Data Association source |
+
+## Sources
+
+[pbv-decision]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#decision-and-delivery-boundary
+[pbv-contract]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#public-value-contract
+[pbv-ingress]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#ingress-eligibility-and-refusal
+[pbv-rawwire]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#raw-wire-admission-checkpoint
+[pbv-cib]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/PORTABLE-BUSINESS-VALUES-PROPOSAL.md#cib-relationship
+[bval-basis]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/BOOLEAN-PROCESS-DATA-SPEC.md#selection-basis-and-dependency-order
+[bval-cib]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/BOOLEAN-PROCESS-DATA-SPEC.md#authority-and-cib-relationship
+[bval-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/BOOLEAN-PROCESS-DATA-SPEC.md#stable-semantic-rules
+[bval-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/BOOLEAN-PROCESS-DATA-SPEC.md#required-optional-and-excluded-functionality
+[pstart-contract]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/PROCESS-START-DATA-SPEC.md#data-and-command-contract
+[pstart-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/PROCESS-START-DATA-SPEC.md#stable-rules
+[pstart-consequence]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/PROCESS-START-DATA-SPEC.md#semantic-process-and-admission-consequence
+[pstart-excl]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/PROCESS-START-DATA-SPEC.md#explicit-exclusions
+[sdata-required]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/SCOPED-DATA-SPEC.md#required-scope
+[sdata-excluded]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/SCOPED-DATA-SPEC.md#excluded-scope
+[sdata-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/SCOPED-DATA-SPEC.md#stable-rules
+[sdata-owner]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/SCOPED-DATA-SPEC.md#owner-decision
+[adin-norm]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md#normative-account-and-selected-interpretation
+[adin-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md#required-optional-and-excluded
+[adin-runtime]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md#runtime-command-stable-state-and-observation-contract
+[adin-cib]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md#cib-seven-relationship-boundary
+[adio-norm]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md#normative-account-and-selected-interpretation
+[adio-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md#required-optional-and-excluded-scope
+[adio-runtime]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md#runtime-command-stable-state-and-observation-contract
+[adio-cib]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md#cib-seven-relationship-boundary
+[adout-norm]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md#normative-account-and-selected-interpretation
+[adout-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md#required-optional-and-excluded
+[adout-accounts]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md#competing-accounts-and-the-account-this-proposal-selects
+[adout-runtime]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md#runtime-command-stable-state-and-observation-contract
+[adout-cib]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md#cib-seven-relationship-boundary
+[cdata-required]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CREATE-DOCUMENT-DATA-SPEC.md#required-scope
+[cdata-excluded]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CREATE-DOCUMENT-DATA-SPEC.md#excluded-scope
+[cdata-license]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CREATE-DOCUMENT-DATA-SPEC.md#source-and-license-boundary
+[cdata-source]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CREATE-DOCUMENT-DATA-SPEC.md#source-admission
+[cdata-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CREATE-DOCUMENT-DATA-SPEC.md#stable-semantic-rules
+[cdata-approved]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CREATE-DOCUMENT-DATA-SPEC.md#approved-decisions
+[utc-runtime]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/USER-TASK-COMPLETION-DATA-SPEC.md#semantic-process-and-runtime-consequence
+[utc-excl]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/USER-TASK-COMPLETION-DATA-SPEC.md#explicit-exclusions
+[utl-norm]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md#normative-basis-and-cib-classification
+[utl-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md#required-optional-and-excluded-scope
+[utl-contract]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md#profile-and-public-contract
+[utl-admission]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md#admission
+[utl-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/USER-TASK-LOCAL-DATA-PROPOSAL.md#stable-rules
+[nsd-norm]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#normative-basis-and-cib-classification
+[nsd-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#required-optional-and-excluded-scope
+[nsd-profile]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#profile-and-value-domain
+[nsd-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#stable-rules
+[csd-norm]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#normative-basis-and-cib-classification
+[csd-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#required-optional-and-excluded-scope
+[csd-contract]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#profile-and-public-contract
+[csd-admission]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#admission
+[csd-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CONCURRENT-SCOPE-DATA-SPEC.md#stable-rules
+[cssd-norm]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md#normative-basis-and-cib-classification
+[cssd-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md#required-optional-and-excluded-scope
+[cssd-contract]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md#profile-and-public-contract
+[cssd-admission]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md#admission
+[cssd-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CONCURRENT-STRUCTURED-SCOPE-DATA-SPEC.md#stable-rules
+[dtb-norm]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/DATA-DECLARING-TERMINAL-BRANCHES-SPEC.md#normative-basis-and-cib-classification
+[dtb-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/DATA-DECLARING-TERMINAL-BRANCHES-SPEC.md#required-optional-and-excluded-scope
+[dtb-admission]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/DATA-DECLARING-TERMINAL-BRANCHES-SPEC.md#admission
+[dtb-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/DATA-DECLARING-TERMINAL-BRANCHES-SPEC.md#stable-rules
+[sbt-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#scope
+[sbt-contract]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-contract
+[sbt-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#admission-and-execution-rules
+[sbt-registration]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/SERIAL-BUSINESS-TASK-COMPOSITION-PROPOSAL.md#public-registration-boundary
+[cvm-norm]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CALL-VARIABLE-MAPPING-SPEC.md#normative-basis-and-cib-classification
+[cvm-scope]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CALL-VARIABLE-MAPPING-SPEC.md#required-optional-and-excluded-scope
+[cvm-profile]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CALL-VARIABLE-MAPPING-SPEC.md#profile-and-value-domain
+[cvm-rules]: https://github.com/mbackschat/bpmn-lean-experiment/blob/38e4ba63/docs/capsules/CALL-VARIABLE-MAPPING-SPEC.md#stable-rules
