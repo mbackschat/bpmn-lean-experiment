@@ -101,3 +101,23 @@ test("a time before the clock is rejected", () => {
   const outcome = run(committed(run(null, start(1_000))), complete(500));
   assert.deepEqual(outcome.ok ? null : outcome.failure, { tag: "rejected", code: "logical-time-backward" });
 });
+
+const fire = (logicalTimeMs: number, at?: number): Json => ({
+  kind: "fireTimer", commandId: "fire", logicalTimeMs, ...(at === undefined ? {} : { at }),
+  timerId: { processInstanceId: "Instance_1", elementId: "Timer", activation: 1 },
+});
+
+// A host applies a firing when it wakes, at or after the deadline the firing names; the Timer is due, so the late
+// firing commits at the host's time rather than being refused as `timer-not-due`.
+test("a Timer firing applied after its deadline commits at the later time", () => {
+  const waited = committed(run(committed(run(null, start(1_000))), complete(1_000)));
+  const fired = committed(run(waited, fire(3_000, 3_005)));
+  assert.equal(fired.logicalTimeMs, 3_005);
+  assert.equal(fired.status, "completed");
+});
+
+test("a Timer firing applied before its deadline is not due", () => {
+  const waited = committed(run(committed(run(null, start(1_000))), complete(1_000)));
+  const outcome = run(waited, fire(3_000, 2_999));
+  assert.deepEqual(outcome.ok ? null : outcome.failure, { tag: "rejected", code: "timer-not-due" });
+});

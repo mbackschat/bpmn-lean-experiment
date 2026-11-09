@@ -515,11 +515,19 @@ function advanceClock(atMs: number | null, state: State): Outcome {
   return atMs < state.logicalTimeMs ? failed(FailureTag.Rejected, "logical-time-backward") : committed({ ...state, logicalTimeMs: atMs });
 }
 
+/**
+ * An input's logical time. A Timer firing without its own time happens at the deadline it names; a host that wakes
+ * later states the later time.
+ */
+function inputAt(input: Input): number | null {
+  return input.tag === InputTag.TimerFire ? (input.payload.atMs ?? input.payload.logicalTimeMs) : input.payload.atMs;
+}
+
 /** Run an input's transition on a running instance, then settle. */
 function onRunning(hooks: Hooks, ctx: Ctx, input: Input, before: State | null, transition: (state: State) => Outcome): Outcome {
   if (before === null) return failed(FailureTag.Rejected, "instance-not-started");
   if (before.status !== InstanceStatus.Running) return failed(FailureTag.Rejected, "instance-not-running");
-  const advanced = advanceClock(input.payload.atMs, { ...before, journal: [] });
+  const advanced = advanceClock(inputAt(input), { ...before, journal: [] });
   if (!advanced.ok) return advanced;
   const started = microStep(hooks, ctx, { tag: CauseTag.Input, input: input.tag }, null, root, transition, advanced.value);
   return started.ok ? settle(hooks, ctx, closureBound, started.value) : started;

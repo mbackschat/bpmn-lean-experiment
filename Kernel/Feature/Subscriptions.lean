@@ -193,7 +193,7 @@ def admitFiring (ctx : Ctx) (subscription : Subscription) (item : OpenItem) (fir
   | .timer at_ =>
     match view.deadlineMs with
     | some deadlineMs =>
-      if at_ == deadlineMs && state.logicalTimeMs ≤ at_ then .ok ({ state with logicalTimeMs := at_ }, [])
+      if at_ == deadlineMs && deadlineMs ≤ state.logicalTimeMs then .ok (state, [])
       else .error (.rejected "timer-not-due")
     | none => .error (.rejected "not-a-timer")
   | .message delivery =>

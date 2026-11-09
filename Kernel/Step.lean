@@ -49,12 +49,13 @@ def advanceClock (at? : Option Nat) (state : State) : Outcome :=
     if atMs < state.logicalTimeMs then .error (.rejected "logical-time-backward")
     else .ok { state with logicalTimeMs := atMs }
 
-/-- What every input states besides its payload: its tag and its logical time. -/
+/-- What every input states besides its payload: its tag and its logical time. A Timer firing without its own time
+happens at the deadline it names; a host that wakes later states the later time. -/
 def inputHead : Input → InputTag × Option Nat
   | .start payload => (.start, payload.atMs)
   | .command payload => (.command, payload.atMs)
   | .deliver payload => (.deliver, payload.atMs)
-  | .timerFire payload => (.timerFire, payload.atMs)
+  | .timerFire payload => (.timerFire, some (payload.atMs.getD payload.logicalTimeMs))
   | .effectResult payload => (.effectResult, payload.atMs)
 
 /-- The loop characteristics of a body occurrence, read from any element's envelope. -/

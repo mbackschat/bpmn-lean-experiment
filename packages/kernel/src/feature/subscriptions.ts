@@ -384,8 +384,8 @@ function admitFiring(ctx: Ctx, subscription: Subscription, item: OpenItem, fired
   switch (fired.tag) {
     case FiredTag.Timer:
       if (view.deadlineMs === null) return failed(FailureTag.Rejected, "not-a-timer");
-      return fired.logicalTimeMs === view.deadlineMs && state.logicalTimeMs <= fired.logicalTimeMs
-        ? committed([{ ...state, logicalTimeMs: fired.logicalTimeMs }, []])
+      return fired.logicalTimeMs === view.deadlineMs && view.deadlineMs <= state.logicalTimeMs
+        ? committed([state, []])
         : failed(FailureTag.Rejected, "timer-not-due");
     case FiredTag.Message: {
       const delivery = fired.delivery;
