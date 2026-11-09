@@ -270,6 +270,7 @@ final class CibSevenCommandExecutor {
       try {
         management.executeJob(job.jobId());
       } catch (RuntimeException expected) {
+        CibSevenEngineScenarioRunner.requireNoIntegrityViolation(expected);
         var failed = management.createJobQuery().jobId(job.jobId()).singleResult();
         if (failed == null || failed.getRetries() != before - 1) {
           throw new IllegalStateException("CIB did not decrement the failed public job", expected);

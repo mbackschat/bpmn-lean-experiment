@@ -11,8 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import org.bpmnlean.cibseven.CibSevenCommandExecutor.Execution;
 import org.bpmnlean.cibseven.ScenarioDiagnosticsProtocol.CleanupProjection;
@@ -67,7 +67,6 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
   private final PvmDefinitionProjector pvmProjector;
   private final CibSevenScriptedEffect effects;
   private final CibSevenEngineBundleFactory.ScenarioIds ids;
-  private final Map<String, Long> bootTables;
   private final boolean incidentCreationEnabled;
   private final long startupNanos;
   private boolean closed;
@@ -80,7 +79,6 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
     this.pvmProjector = new PvmDefinitionProjector();
     this.effects = bundle.effects();
     this.ids = bundle.ids();
-    this.bootTables = processEngine.getManagementService().getTableCount();
     this.incidentCreationEnabled = bundle.incidentCreationEnabled();
     this.startupNanos = bundle.startupNanos();
   }
@@ -113,11 +111,6 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
       ScenarioDefinition scenario, Path projectRoot, CibEffectExecutionSchedule effectSchedule)
       throws IOException {
     var validated = scenarioValidator.validate(scenario, projectRoot);
-    // Restarting the identifiers reuses ones an earlier scenario issued, which is sound only on the boot database.
-    var tables = processEngine.getManagementService().getTableCount();
-    if (!tables.equals(bootTables)) {
-      throw new IllegalStateException("The engine database is not in its boot state: " + tables);
-    }
     ids.restart();
     var options = scenario.declaredOptions();
     var projector =
@@ -148,6 +141,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
                 .deploy()
                 .getId();
       } catch (ProcessEngineException refused) {
+        requireNoIntegrityViolation(refused);
         // CIB refusing the model at deployment is the oracle's admission answer: like the kernel's refused program,
         // only an unsupported deployment is observed and no stimulus runs (canonical-result trace rule).
         timings.deploymentNanos = positiveElapsedSince(deploymentStartedAt);
@@ -189,6 +183,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
               }
             }
           } catch (ProcessEngineException failed) {
+            requireNoIntegrityViolation(failed);
             // An engine exception inside the command rolls back its transaction; the runner's own harness exceptions are
             // never ProcessEngineException and stay harness failures.
             outcome = ROLLED_BACK;
@@ -401,6 +396,19 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
         ClockUtil.reset();
         processEngine.close();
         closed = true;
+      }
+    }
+  }
+
+  /**
+   * Fails the run as a harness failure when an engine exception stems from a database integrity violation. Every
+   * scenario reuses the boot identifiers (`ScenarioIds`), so a row an earlier scenario left behind collides on its
+   * primary key, a defect of this harness and never CIB's answer to the scenario.
+   */
+  static void requireNoIntegrityViolation(RuntimeException failure) {
+    for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+      if (cause instanceof SQLIntegrityConstraintViolationException) {
+        throw new IllegalStateException("An engine write violated database integrity", failure);
       }
     }
   }

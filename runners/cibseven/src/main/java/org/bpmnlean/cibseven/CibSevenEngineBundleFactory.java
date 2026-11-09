@@ -77,7 +77,10 @@ final class CibSevenEngineBundleFactory {
       firstScenarioId = next.get();
     }
 
-    /** Restarts after the boot identifiers; sound only while the database holds exactly its boot rows. */
+    /**
+     * Restarts after the boot identifiers. A row an earlier scenario left behind would collide, which
+     * `CibSevenEngineScenarioRunner#requireNoIntegrityViolation` turns into a harness failure.
+     */
     void restart() {
       next.set(firstScenarioId);
     }
