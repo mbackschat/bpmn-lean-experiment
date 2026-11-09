@@ -175,4 +175,9 @@ export interface KernelPort<P, S, I> {
   readonly decodeState: (json: JsonValue) => S;
   /** The Script Task an effect wait runs, `null` for any other effect. */
   readonly scriptOf: (program: P, wait: WaitView) => ScriptSource | null;
+  /**
+   * The open waits of `state` that a delivery on `channel` carrying `correlation` (the scenario contract's members)
+   * reaches, as the kernel matches them against the instance's current values (`Kernel.Population.matching`).
+   */
+  readonly matching: (program: P, state: S, channel: JsonValue, correlation: JsonValue) => readonly OccurrenceId[];
 }

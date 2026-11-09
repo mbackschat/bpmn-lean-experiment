@@ -432,7 +432,7 @@ async function createMigrationPrefixThrough0005(): Promise<string> {
       import.meta.url,
     )),
     fileURLToPath(new URL(
-      "../../../../modules/operate/migrations/0003_operate__e171ce2e666fa1727a616f2d8dffe3a61bcddf3a46246e267ecdb57dc4aca153.sql",
+      "../../../../modules/operate/migrations/0003_operate__6ca859cfc09c957bfa8a864724f53ca5cb95fa5eccdad2d3fbbb58fb2cee02ed.sql",
       import.meta.url,
     )),
     fileURLToPath(new URL(

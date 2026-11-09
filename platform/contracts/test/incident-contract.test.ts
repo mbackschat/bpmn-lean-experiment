@@ -67,11 +67,37 @@ const incident = {
   availableInteractions: [retry, cancel],
 } as const;
 
-test("decodes the exact generation-1 incident and canonical snapshot", () => {
+test("decodes the exact incident and canonical snapshot", () => {
   assert.deepEqual(decodePublicIncident(incident), incident);
   assert.deepEqual(decodePublicIncidentSnapshot({ incidents: [incident] }), {
     incidents: [incident],
   });
+});
+
+test("decodes an incident of any positive generation and ties its interactions to that generation", () => {
+  const generation = 3;
+  const laterId = { effectId: occurrence, generation } as const;
+  const later = {
+    ...incident,
+    incident: { ...incident.incident, id: laterId },
+    availableInteractions: [
+      { ...retry, incidentId: laterId },
+      { ...cancel, incidentId: laterId },
+    ],
+  } as const;
+  assert.deepEqual(decodePublicIncident(later), later);
+  assert.deepEqual(decodeIncidentActionRequest(later.availableInteractions[0]), later.availableInteractions[0]);
+  assert.throws(
+    () => decodePublicIncident({ ...later, availableInteractions: [retry, cancel] }),
+    /incident identity/u,
+  );
+  for (const invalid of [0, -1, 1.5, "1", null, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(
+      () => decodePublicIncident({ ...later, incident: { ...later.incident, id: { ...laterId, generation: invalid } } }),
+      /generation must be a positive safe integer/u,
+      String(invalid),
+    );
+  }
 });
 
 test("rejects nested identity drift and private locator fields", () => {
@@ -239,6 +265,16 @@ test("decodes canonical incident audit and rejects partial exact identity filter
     () => decodeIncidentAuditRequest({ incidentElementId: "ServiceTask_Fail" }),
     /all be present or all be absent/u,
   );
+  const identity = {
+    incidentProcessInstanceId: "process-1",
+    incidentElementId: "ServiceTask_Fail",
+    incidentActivation: 1,
+  } as const;
+  assert.deepEqual(decodeIncidentAuditRequest({ ...identity, incidentGeneration: 7 }),
+    { ...identity, incidentGeneration: 7 });
+  for (const incidentGeneration of [0, -1, 1.5, "2", Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => decodeIncidentAuditRequest({ ...identity, incidentGeneration }), /positive safe integer/u);
+  }
   assert.throws(
     () => decodeIncidentAuditPage({
       events: [{ ...auditEvent, recordedAt: "2026-08-14T09:30:00Z" }],

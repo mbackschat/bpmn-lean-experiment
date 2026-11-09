@@ -303,10 +303,13 @@ function snapshotEffectIncident(value: unknown, hostingProcessInstanceId: string
 }
 
 function snapshotIncidentId(value: unknown): IncidentId {
-  if (!isRecord(value) || !hasOnlyKeys(value, ["effectId", "generation"]) || value.generation !== 1) {
-    throw new TypeError("incident ID must be exact generation 1");
+  if (!isRecord(value) || !hasOnlyKeys(value, ["effectId", "generation"])) {
+    throw new TypeError("incident ID must be exact");
   }
-  return { effectId: snapshotOccurrenceId(value.effectId), generation: 1 };
+  return {
+    effectId: snapshotOccurrenceId(value.effectId),
+    generation: requirePositiveSafeInteger(value.generation, "incident generation"),
+  };
 }
 
 function snapshotOccurrenceId(value: unknown) {
@@ -337,7 +340,7 @@ function compareIncidentIds(left: IncidentId, right: IncidentId): number {
   if (process !== 0) return process;
   const element = compareCanonicalStrings(left.effectId.elementId, right.effectId.elementId);
   if (element !== 0) return element;
-  return left.effectId.activation - right.effectId.activation;
+  return left.effectId.activation - right.effectId.activation || left.generation - right.generation;
 }
 
 function snapshotRejectedEngineResult(

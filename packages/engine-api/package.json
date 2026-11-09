@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
     }
   },
   "files": [
@@ -20,10 +24,7 @@
   },
   "dependencies": {
     "@bpmn-lean/bpmn-source": "workspace:*",
-    "@bpmn-lean/semantic-core": "workspace:*",
-    "@bpmn-lean/temporal-client": "workspace:*"
-  },
-  "devDependencies": {
-    "@bpmn-lean/temporal-protocol": "workspace:*"
+    "@bpmn-lean/kernel": "workspace:*",
+    "@bpmn-lean/temporal-host": "workspace:*"
   }
 }

@@ -246,7 +246,7 @@ function DeploymentResult({ result }: Readonly<{ result: DefinitionDeployResult 
               <li key={`${diagnostic.code}:${index}`}>
                 <code>{diagnostic.code}</code>: {diagnostic.evidence}
                 {diagnostic.element === null ? null : (
-                  <small>Element {diagnostic.element.id ?? "without ID"}, {diagnostic.element.containmentPath}</small>
+                  <small>Element <code>{diagnostic.element}</code></small>
                 )}
               </li>
             ))}

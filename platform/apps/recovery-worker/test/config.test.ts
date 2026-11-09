@@ -10,6 +10,11 @@ const required = {
   PLATFORM_POSTGRESQL_RUNTIME_URL: "postgresql://runtime:secret@127.0.0.1/platform",
   PLATFORM_RECOVERY_WORKER_ID: "worker-a",
   PLATFORM_PROJECTION_REFRESH_AFTER_MS: "3000",
+  PLATFORM_ENGINE_DEPLOYMENT_JSON: JSON.stringify({
+    profiles: { standard: [] },
+    servedRequirements: { timers: true, messages: true, effects: true, userTasks: true, calls: true },
+    effectStartToCloseMs: 30_000,
+  }),
 };
 
 test("requires the runtime credential, worker identity, and projection refresh age without migration fallback", () => {
@@ -43,6 +48,12 @@ test("requires the runtime credential, worker identity, and projection refresh a
     (error: unknown) => error instanceof Error &&
       !error.message.includes("runtime:secret"),
   );
+});
+
+test("requires the engine deployment the server reads too", () => {
+  const { PLATFORM_ENGINE_DEPLOYMENT_JSON: _deployment, ...withoutDeployment } = required;
+  assert.throws(() => readRecoveryWorkerConfig(withoutDeployment), /PLATFORM_ENGINE_DEPLOYMENT_JSON is required/u);
+  assert.deepEqual(readRecoveryWorkerConfig(required).engineDeployment.profiles, { standard: [] });
 });
 
 test("uses bounded local defaults and snapshots the caller environment", () => {

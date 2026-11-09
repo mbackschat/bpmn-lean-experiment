@@ -64,8 +64,11 @@ const panelModule = await import(
   CorrelatedMessagePublicationResult: ComponentType<Readonly<{
     publication: DefinitionCorrelatedMessagePublication;
   }>>;
+  CorrelatedMessageFailureNotice: ComponentType<Readonly<{
+    failure: Readonly<{ kind: "unavailable" | "error"; message: string }>;
+  }>>;
 }>;
-const { CorrelatedMessagePublicationResult } = panelModule;
+const { CorrelatedMessageFailureNotice, CorrelatedMessagePublicationResult } = panelModule;
 
 const base = {
   definition: {
@@ -168,6 +171,22 @@ test("renders capacity and infrastructure uncertainty without claiming semantic 
   assert.match(uncertainHtml, /Delivery indeterminate/u);
   assert.match(uncertainHtml, /Retry the same command/u);
   assert.doesNotMatch(`${capacityHtml}${uncertainHtml}`, /No matching subscription/u);
+});
+
+test("shows correlation unavailability as a status distinct from a failed request", () => {
+  const unavailable = renderToStaticMarkup(createElement(CorrelatedMessageFailureNotice, {
+    failure: { kind: "unavailable", message: "Message correlation is unavailable." },
+  }));
+  const failed = renderToStaticMarkup(createElement(CorrelatedMessageFailureNotice, {
+    failure: { kind: "error", message: "public conflict" },
+  }));
+
+  assert.match(unavailable, /role="status"/u);
+  assert.match(unavailable, /Message correlation unavailable/u);
+  assert.match(unavailable, /Message correlation is unavailable\./u);
+  assert.doesNotMatch(unavailable, /role="alert"/u);
+  assert.match(failed, /role="alert"/u);
+  assert.doesNotMatch(failed, /Message correlation unavailable/u);
 });
 
 test("places correlated Message publication in the exact-definition Triggers workspace", async () => {

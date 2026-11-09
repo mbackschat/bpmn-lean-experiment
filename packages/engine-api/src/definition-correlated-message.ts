@@ -1,223 +1,126 @@
-/** Public definition-scoped correlated Message command and closed result projection. */
+/**
+ * Correlated Message ingress: a Message published to a definition version, without a process target, is delivered to
+ * the one open correlated wait of that version's instances whose correlation the kernel matches at delivery time, as
+ * CIB Seven correlates; no match is `message.notCorrelated` and several are `message.correlationAmbiguous` (root
+ * decision, WP2, 2026-11-09). The host routes it through the ingress of the version's correlation scope
+ * (`engineCorrelationScope`), which every instance the version starts registers its correlated waits with, and the
+ * target instance rechecks the delivery before it consumes the wait.
+ *
+ * The publication's payload is the correlation value: the delivery carries `[{processVariable correlationKey, payload}]`
+ * as its correlation and no payload, since a correlated catch writes none (`message.correlation.output`).
+ */
 import {
-  VariableValueKind,
-} from "@bpmn-lean/semantic-core";
-import type {
-  CorrelatedMessageAddress,
-  DeepReadonly,
-  MessageSubscriptionId,
-} from "@bpmn-lean/semantic-core";
-import {
-  BpmnCorrelatedMessageIdentityConflict,
-  BpmnCorrelatedMessageIngressInvalid,
-  TemporalCorrelatedMessagePublishResolutionKind,
-  publishTemporalCorrelatedMessage,
-} from "@bpmn-lean/temporal-client/correlation-publication";
-import type {
-  TemporalCorrelatedMessageClient,
-} from "@bpmn-lean/temporal-client/correlation-publication";
+  PublicationOutcome,
+  correlationAmbiguousCode,
+  notCorrelatedCode,
+  type PublicationResult,
+} from "@bpmn-lean/temporal-host/host";
 
-export enum EngineCorrelatedMessagePublishResolutionKind {
-  Semantic = "semantic",
-  Capacity = "capacity",
-  InfrastructureIndeterminate = "infrastructureIndeterminate",
+import {
+  requireWireString,
+  type EngineDefinitionIdentity,
+  type EngineFailure,
+  type EngineValue,
+  type JsonValue,
+} from "./common.js";
+import { engineHostRefusalCodes, type EngineMessageChannel } from "./definition.js";
+import { engineCorrelationScope, type EngineHost } from "./host.js";
+import { engineProcessLocatorForWorkflowId, type EngineProcessLocator } from "./process-locator.js";
+
+export const engineNotCorrelatedCode = notCorrelatedCode;
+export const engineCorrelationAmbiguousCode = correlationAmbiguousCode;
+
+export enum EngineCorrelatedMessageStatus {
+  Delivered = "delivered",
+  /** No single wait took the publication, or the sole matching instance refused it; no instance changed. */
+  Rejected = "rejected",
+  /** The command identifier already settled a publication with other content. */
+  IdentityConflict = "identityConflict",
+  /** The deployment does not serve Messages. */
+  Refused = "refused",
 }
 
-export enum EngineCorrelatedMessageSemanticOutcomeKind {
-  Committed = "committed",
-  RejectedNoMatch = "rejectedNoMatch",
-  RejectedAmbiguous = "rejectedAmbiguous",
-}
-
-export type EngineCorrelatedMessageTarget = DeepReadonly<{
-  processInstanceId: string;
-  subscriptionId: MessageSubscriptionId;
-}>;
-
-export type EngineCorrelatedMessageSemanticOutcome = DeepReadonly<
-  | { kind: EngineCorrelatedMessageSemanticOutcomeKind.RejectedNoMatch }
-  | { kind: EngineCorrelatedMessageSemanticOutcomeKind.RejectedAmbiguous }
-  | {
-      kind: EngineCorrelatedMessageSemanticOutcomeKind.Committed;
-      target: EngineCorrelatedMessageTarget;
-    }
->;
-
-export type EngineCorrelatedMessagePublishRequest = Readonly<{
-  temporalClient: TemporalCorrelatedMessageClient;
+export type EngineCorrelatedMessageRequest = Readonly<{
+  host: EngineHost;
+  definition: EngineDefinitionIdentity;
+  channel: EngineMessageChannel;
+  /** The correlation key a correlated catch of the channel names (`EngineCorrelationCriterion.key`). */
+  correlationKey: string;
   commandId: string;
-  address: CorrelatedMessageAddress;
-  payload: Readonly<{ kind: VariableValueKind.String; value: string }>;
-  taskQueue: string;
+  /** The Message payload, which is the correlation value. */
+  payload: EngineValue;
 }>;
 
-export type EngineCorrelatedMessagePublishResolution =
-  | DeepReadonly<{
-      kind: EngineCorrelatedMessagePublishResolutionKind.Semantic;
-      commandId: string;
-      address: CorrelatedMessageAddress;
+/** The instance a publication reached: its semantic identity and the opaque locator of the chain hosting it. */
+export type EngineCorrelationTarget = Readonly<{ processInstanceId: string; locator: EngineProcessLocator }>;
+
+/** `ingressOrdinal` numbers the publications to one definition version and channel in arrival order from 1. */
+export type EngineCorrelatedMessageResult =
+  | Readonly<{ status: EngineCorrelatedMessageStatus.Delivered; ingressOrdinal: number; target: EngineCorrelationTarget }>
+  | Readonly<{
+      status: EngineCorrelatedMessageStatus.Rejected;
       ingressOrdinal: number;
-      outcome: EngineCorrelatedMessageSemanticOutcome;
+      /** The sole matching instance when it refused the delivery; `null` when no single instance matched. */
+      target: EngineCorrelationTarget | null;
+      failure: EngineFailure;
     }>
-  | DeepReadonly<{
-      kind: EngineCorrelatedMessagePublishResolutionKind.Capacity;
-      commandId: string;
-      address: CorrelatedMessageAddress;
-      ingressOrdinal: null;
-      failure: {
-        kind: "publicationQueue" | "publicationLedger";
-        measure: "count" | "canonicalBytes";
-        configuredBound: number;
-        observedValue: number;
-      };
-    }>
-  | DeepReadonly<{
-      kind: EngineCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate;
-      commandId: string;
-      address: CorrelatedMessageAddress;
-      ingressOrdinal: number | null;
-      phase:
-        | "ingressResolution"
-        | "candidateFanout"
-        | "targetDelivery"
-        | "resultRecovery";
-      target: null;
-      failure:
-        | { kind: "unconfirmed" }
-        | {
-            kind: "capacity";
-            boundary:
-              | "activityRequest"
-              | "activityResult"
-              | "queryResponse"
-              | "continuation";
-            configuredBound: number;
-            observedValue: number;
-          }
-        | {
-            kind: "runCapacity";
-            configuredBound: number;
-            observedValue: number;
-          };
-    }>
-  | DeepReadonly<{
-      kind: EngineCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate;
-      commandId: string;
-      address: CorrelatedMessageAddress;
-      ingressOrdinal: number | null;
-      phase: "targetDelivery";
-      target: EngineCorrelatedMessageTarget;
-      failure: { kind: "targetInconsistent" };
-    }>;
+  | Readonly<{ status: EngineCorrelatedMessageStatus.IdentityConflict }>
+  | Readonly<{ status: EngineCorrelatedMessageStatus.Refused; failure: EngineFailure }>;
 
-export class EngineCorrelatedMessageIngressInvalid extends Error {
-  override readonly name = "EngineCorrelatedMessageIngressInvalid";
-}
-
-export class EngineCorrelatedMessageIdentityConflict extends Error {
-  override readonly name = "EngineCorrelatedMessageIdentityConflict";
-}
-
-/** Publishes one content-bound command without accepting a Process locator or target. */
-export async function publishBpmnDefinitionCorrelatedMessage(
-  request: EngineCorrelatedMessagePublishRequest,
-): Promise<EngineCorrelatedMessagePublishResolution> {
-  let result;
-  try {
-    result = await publishTemporalCorrelatedMessage(
-      request.temporalClient,
-      {
-        command: {
-          commandId: request.commandId,
-          address: request.address,
-          payload: request.payload,
-        },
-        taskQueue: request.taskQueue,
-      },
-    );
-  } catch (error: unknown) {
-    if (error instanceof BpmnCorrelatedMessageIdentityConflict) {
-      throw new EngineCorrelatedMessageIdentityConflict(
-        "Correlated Message command identity conflicts with retained content",
-        { cause: error },
-      );
-    }
-    if (error instanceof BpmnCorrelatedMessageIngressInvalid) {
-      throw new EngineCorrelatedMessageIngressInvalid(
-        "Correlated Message command is invalid",
-        { cause: error },
-      );
-    }
-    throw error;
+export async function publishEngineCorrelatedMessage(
+  request: EngineCorrelatedMessageRequest,
+): Promise<EngineCorrelatedMessageResult> {
+  const commandId = requireWireString(request.commandId, "commandId");
+  const correlationKey = requireWireString(request.correlationKey, "correlationKey");
+  if (!request.host.served.messages) {
+    return {
+      status: EngineCorrelatedMessageStatus.Refused,
+      failure: { code: engineHostRefusalCodes.messages, evidence: "The deployment does not serve Messages." },
+    };
   }
+  const result = await request.host.processes.publish({
+    correlationScope: engineCorrelationScope(request.definition),
+    channel: { ...request.channel },
+    commandId,
+    correlation: [{ target: { kind: "processVariable", name: correlationKey }, expected: request.payload as JsonValue }],
+    payload: null,
+  });
+  return engineResult(result);
+}
+
+function target(result: Extract<PublicationResult, { readonly target: unknown }>): EngineCorrelationTarget {
+  return {
+    processInstanceId: result.target.occurrence.processInstanceId,
+    locator: engineProcessLocatorForWorkflowId(result.target.workflowId),
+  };
+}
+
+function engineResult(result: PublicationResult): EngineCorrelatedMessageResult {
   switch (result.kind) {
-    case TemporalCorrelatedMessagePublishResolutionKind.Semantic:
+    case PublicationOutcome.Delivered:
+      return { status: EngineCorrelatedMessageStatus.Delivered, ingressOrdinal: result.ordinal, target: target(result) };
+    case PublicationOutcome.TargetRefused:
       return {
-        kind: EngineCorrelatedMessagePublishResolutionKind.Semantic,
-        commandId: result.commandId,
-        address: result.address,
-        ingressOrdinal: result.ingressOrdinal,
-        outcome: projectSemanticOutcome(result.outcome),
+        status: EngineCorrelatedMessageStatus.Rejected,
+        ingressOrdinal: result.ordinal,
+        target: target(result),
+        failure: { code: result.code, evidence: `The matching instance refused the delivery (${result.outcome}).` },
       };
-    case TemporalCorrelatedMessagePublishResolutionKind.Capacity:
+    case PublicationOutcome.NotCorrelated:
       return {
-        kind: EngineCorrelatedMessagePublishResolutionKind.Capacity,
-        commandId: result.commandId,
-        address: result.address,
-        ingressOrdinal: null,
-        failure: result.failure,
+        status: EngineCorrelatedMessageStatus.Rejected,
+        ingressOrdinal: result.ordinal,
+        target: null,
+        failure: { code: result.code, evidence: "No open correlated wait of the definition matches the publication." },
       };
-    case TemporalCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate:
-      switch (result.failure.kind) {
-        case "targetInconsistent":
-          if (result.target === null) {
-            throw new TypeError(
-              "Target-inconsistent correlated Message result lost its target",
-            );
-          }
-          return {
-            kind: EngineCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate,
-            commandId: result.commandId,
-            address: result.address,
-            ingressOrdinal: result.ingressOrdinal,
-            phase: "targetDelivery",
-            target: result.target,
-            failure: result.failure,
-          };
-        case "unconfirmed":
-        case "capacity":
-        case "runCapacity":
-          return {
-            kind: EngineCorrelatedMessagePublishResolutionKind.InfrastructureIndeterminate,
-            commandId: result.commandId,
-            address: result.address,
-            ingressOrdinal: result.ingressOrdinal,
-            phase: result.phase,
-            target: null,
-            failure: result.failure,
-          };
-      }
-  }
-}
-
-function projectSemanticOutcome(
-  outcome: Readonly<{
-    kind: "committed" | "rejectedNoMatch" | "rejectedAmbiguous";
-    target?: EngineCorrelatedMessageTarget;
-  }>,
-): EngineCorrelatedMessageSemanticOutcome {
-  switch (outcome.kind) {
-    case "rejectedNoMatch":
-      return { kind: EngineCorrelatedMessageSemanticOutcomeKind.RejectedNoMatch };
-    case "rejectedAmbiguous":
-      return { kind: EngineCorrelatedMessageSemanticOutcomeKind.RejectedAmbiguous };
-    case "committed":
-      if (outcome.target === undefined) {
-        throw new TypeError("Committed correlated Message result lost its target");
-      }
+    case PublicationOutcome.Ambiguous:
       return {
-        kind: EngineCorrelatedMessageSemanticOutcomeKind.Committed,
-        target: outcome.target,
+        status: EngineCorrelatedMessageStatus.Rejected,
+        ingressOrdinal: result.ordinal,
+        target: null,
+        failure: { code: result.code, evidence: `${String(result.matches)} open correlated waits match the publication.` },
       };
+    case PublicationOutcome.IdentityConflict:
+      return { status: EngineCorrelatedMessageStatus.IdentityConflict };
   }
 }

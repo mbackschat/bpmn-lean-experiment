@@ -2,16 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import type { CurrentCommittedExecution } from "@bpmn-lean/platform-contracts";
+import type { CurrentCommittedExecution, StateOpenWait } from "@bpmn-lean/platform-contracts";
 import { createElement } from "react";
 import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { transformWithEsbuild } from "vite";
 
-import {
-  executionScopeKey,
-  executionTokenKey,
-} from "../src/process-instance-position-identity.ts";
+import { openWaitKey } from "../src/process-instance-position-identity.ts";
 
 const diagramSource = await readFile(
   new URL("../src/process-instance-execution-diagram.tsx", import.meta.url),
@@ -38,10 +35,9 @@ const runnableDiagramSource = diagramSource
     'const BpmnDiagramMarkerKind = { Current: "current" };',
   )
   .replace(
-    /import \{\s*displayScopeOccurrence,\s*executionScopeKey,\s*executionTokenKey,\s*\} from "\.\/process-instance-position-identity\.ts";/u,
-    `const displayScopeOccurrence = (id) => JSON.stringify(id);
-     const executionScopeKey = (scope) => JSON.stringify(scope);
-     const executionTokenKey = (token) => JSON.stringify(token);`,
+    /import \{\s*displayOccurrence,\s*openWaitKey,\s*\} from "\.\/process-instance-position-identity\.ts";/u,
+    `const displayOccurrence = (id) => JSON.stringify(id);
+     const openWaitKey = (wait) => JSON.stringify(wait);`,
   )
   .replace(
     'import styles from "./process-instance-execution-diagram.module.css";',
@@ -72,34 +68,23 @@ const diagramModule = await import(
 const diagramApi = { async getPresentation(): Promise<never> { throw new Error("unused"); } };
 const diagramDefinition = {} as never;
 
-test("position React keys stay collision-free when identity components contain delimiters", () => {
-  const ownerA = {
-    processInstanceId: "instance:scope",
-    definitionScopeId: "child/one",
-    activation: 1,
-  } as const;
-  const ownerB = {
-    processInstanceId: "instance",
-    definitionScopeId: "scope:child/one",
-    activation: 1,
-  } as const;
-
+test("open-wait React keys stay collision-free when identity components contain delimiters", () => {
   assert.notEqual(
-    executionTokenKey({ sequenceFlowId: "flow", owner: ownerA, multiplicity: 1 }),
-    executionTokenKey({ sequenceFlowId: "flow", owner: ownerB, multiplicity: 1 }),
+    openWaitKey(openWait({ processInstanceId: "instance:task", elementId: "child/one" }, "userTask")),
+    openWaitKey(openWait({ processInstanceId: "instance", elementId: "task:child/one" }, "userTask")),
   );
   assert.notEqual(
-    executionScopeKey({ id: ownerA, parent: null, bpmnElementId: "Process" }),
-    executionScopeKey({ id: ownerB, parent: null, bpmnElementId: "Process" }),
+    openWaitKey(openWait({ processInstanceId: "instance", elementId: "Task" }, "userTask")),
+    openWaitKey(openWait({ processInstanceId: "instance", elementId: "Task" }, "timer")),
   );
 });
 
-test("projects only one token and its active Service Task wait, never the live root Process scope", () => {
-  const current = executionCurrent({
-    activeWaitElementId: "ServiceTask_ChargeCard",
-    scopeElementIds: ["Process_Order"],
-    tokenElementId: "Flow_ToChargeCard",
-  });
+test("highlights every open wait of the root instance once, with no token or scope presentation", () => {
+  const current = executionCurrent([
+    openWait({ processInstanceId: "Instance_Order", elementId: "ServiceTask_ChargeCard" }, "effect"),
+    openWait({ processInstanceId: "Instance_Order", elementId: "Task_Review" }, "userTask"),
+    openWait({ processInstanceId: "Instance_Order", elementId: "Task_Review" }, "timer"),
+  ]);
 
   const markup = renderToStaticMarkup(createElement(diagramModule.ProcessInstanceExecutionDiagram, {
     api: diagramApi,
@@ -108,31 +93,36 @@ test("projects only one token and its active Service Task wait, never the live r
   }));
 
   assert.deepEqual(diagramModule.readCapturedHighlight(), {
-    elementIds: ["Flow_ToChargeCard", "ServiceTask_ChargeCard"],
+    elementIds: ["ServiceTask_ChargeCard", "Task_Review"],
     markerKind: "current",
   });
   assert.match(markup, /aria-label="Diagram position guide"/u);
-  assert.match(markup, /Current control token/u);
-  assert.match(markup, /Active wait/u);
+  assert.match(markup, /Open wait/u);
+  assert.match(markup, /Task_Review<\/code>, kind <code>timer/u);
+  assert.doesNotMatch(markup, /control token|Live scopes/iu);
 });
 
-test("projects a called-Process active wait without marking either live scope container", () => {
-  const current = executionCurrent({
-    activeWaitElementId: "CalledServiceTask_MissingFromParentDiagram",
-    scopeElementIds: ["Process_Order", "CallActivity_Fulfilment"],
-    tokenElementId: "Flow_ToFulfilment",
-  });
+test("lists a called-instance open wait without drawing it on this diagram", () => {
+  const current = executionCurrent([
+    openWait({ processInstanceId: "Instance_Order", elementId: "BoundaryTimer_Fulfilment" }, "timer"),
+    {
+      ...openWait({ processInstanceId: "Instance_Called", elementId: "CalledTask" }, "userTask"),
+      definition: { definitionKey: "Fulfilment", version: 1 },
+    },
+  ]);
 
-  renderToStaticMarkup(createElement(diagramModule.ProcessInstanceExecutionDiagram, {
+  const markup = renderToStaticMarkup(createElement(diagramModule.ProcessInstanceExecutionDiagram, {
     api: diagramApi,
     current,
     definition: diagramDefinition,
   }));
 
   assert.deepEqual(diagramModule.readCapturedHighlight(), {
-    elementIds: ["Flow_ToFulfilment", "CalledServiceTask_MissingFromParentDiagram"],
+    elementIds: ["BoundaryTimer_Fulfilment"],
     markerKind: "current",
   });
+  assert.match(markup, /CalledTask/u);
+  assert.match(markup, /called instance/iu);
 });
 
 test("styles only the exact marked BPMN element visual, never descendant elements", () => {
@@ -174,45 +164,29 @@ test("styles only the exact marked BPMN element visual, never descendant element
   assert.doesNotMatch(selectedRules, /fill: var\(--ui-color-accent-soft\)/u);
 });
 
-function executionCurrent({
-  activeWaitElementId,
-  scopeElementIds,
-  tokenElementId,
-}: Readonly<{
-  activeWaitElementId: string;
-  scopeElementIds: readonly string[];
-  tokenElementId: string;
-}>): CurrentCommittedExecution {
-  const root = {
-    processInstanceId: "Instance_Order",
-    definitionScopeId: "Scope_Process",
-    activation: 1,
-  } as const;
+function openWait(
+  { processInstanceId, elementId }: Readonly<{ processInstanceId: string; elementId: string }>,
+  kind: string,
+): StateOpenWait {
+  return {
+    id: { processInstanceId, elementId, activation: 1 },
+    definition: null,
+    input: kind === "userTask" ? "command" : null,
+    detail: { kind },
+  };
+}
+
+function executionCurrent(openWaits: readonly StateOpenWait[]): CurrentCommittedExecution {
   return {
     revision: 3,
     state: {
       kind: "state",
       instanceId: "Instance_Order",
       status: "running",
-      activeWaits: [{ elementId: activeWaitElementId, kind: "effect", multiplicity: 1 }],
-      openUserTasks: [],
-      openMessageSubscriptions: [],
-      openTimers: [],
-      openEffects: [],
-      openIncidents: [],
-      variables: [],
-      enabledInteractions: [],
       logicalTimeMs: 0,
+      variables: [],
+      scopes: [],
+      openWaits: [...openWaits],
     },
-    controlTokens: [{ sequenceFlowId: tokenElementId, owner: root, multiplicity: 1 }],
-    scopes: scopeElementIds.map((bpmnElementId, index) => ({
-      id: index === 0 ? root : {
-        processInstanceId: "Instance_Order",
-        definitionScopeId: `Scope_Called_${String(index)}`,
-        activation: 1,
-      },
-      parent: index === 0 ? null : root,
-      bpmnElementId,
-    })),
   };
 }

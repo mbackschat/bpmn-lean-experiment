@@ -43,7 +43,13 @@ export class ScheduleClient implements ScheduleHost {
           workflowType,
           taskQueue: this.taskQueue,
           workflowId: request.workflowIdBase,
-          args: [{ kind: RunKind.Start, program: request.program, config: request.config, start: request.start }],
+          args: [{
+            kind: RunKind.Start,
+            program: request.program,
+            config: request.config,
+            correlationScope: request.correlationScope,
+            start: request.start,
+          }],
           memo: request.memo,
         },
         policies: {

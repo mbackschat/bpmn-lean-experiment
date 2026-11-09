@@ -477,6 +477,9 @@ function createFixture(
           temporalNamespace: "default",
           temporalTaskQueue: "unused-test-queue",
           temporalConnectTimeoutMs: 100,
+          profileRelations: () => [],
+          servedRequirements: { timers: true, messages: true, effects: true, userTasks: true, calls: true },
+          effectStartToCloseMs: 1_000,
         });
         try {
           const result = await runtime.gateway.compileDefinition(request);

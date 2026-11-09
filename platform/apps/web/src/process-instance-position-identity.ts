@@ -1,28 +1,18 @@
-import type {
-  PublicControlTokenPosition,
-  PublicScopePosition,
-  ScopeOccurrenceId,
-} from "@bpmn-lean/platform-contracts";
+import type { StateOccurrenceId, StateOpenWait } from "@bpmn-lean/platform-contracts";
 
-/** Structural React identity for one exact published control-token position. */
-export function executionTokenKey(token: PublicControlTokenPosition): string {
+/**
+ * Structural React identity for one open wait. The detail kind is part of it because the canonical state orders
+ * waits by occurrence and then detail kind, so one occurrence may hold waits of different kinds.
+ */
+export function openWaitKey(wait: StateOpenWait): string {
   return JSON.stringify([
-    token.sequenceFlowId,
-    token.owner.processInstanceId,
-    token.owner.definitionScopeId,
-    token.owner.activation,
+    wait.id.processInstanceId,
+    wait.id.elementId,
+    wait.id.activation,
+    wait.detail.kind,
   ]);
 }
 
-/** Structural React identity for one exact published scope position. */
-export function executionScopeKey(scope: PublicScopePosition): string {
-  return JSON.stringify([
-    scope.id.processInstanceId,
-    scope.id.definitionScopeId,
-    scope.id.activation,
-  ]);
-}
-
-export function displayScopeOccurrence(id: ScopeOccurrenceId): string {
-  return `${id.processInstanceId} / ${id.definitionScopeId} / activation ${id.activation}`;
+export function displayOccurrence(id: StateOccurrenceId): string {
+  return `${id.processInstanceId} / ${id.elementId} / activation ${id.activation}`;
 }

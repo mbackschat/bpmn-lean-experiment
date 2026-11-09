@@ -278,7 +278,7 @@ test("rejects methods, malformed paths and queries before protected access", asy
   assert.equal(actionMethod?.headers.get("allow"), "PUT");
 
   for (const path of [
-    "/api/v1/incidents/process-1/ServiceTask_Fail/1/generations/2",
+    "/api/v1/incidents/process-1/ServiceTask_Fail/1/generations/0",
     "/api/v1/incident-audit?actorId=one&actorId=two",
     "/api/v1/incident-audit?incidentElementId=ServiceTask_Fail",
   ]) {

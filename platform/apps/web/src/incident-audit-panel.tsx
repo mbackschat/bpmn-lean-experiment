@@ -165,7 +165,7 @@ function AuditFilters({
       <label>Incident Process instance<input disabled={disabled} name="incidentProcessInstanceId" /></label>
       <label>Service Task element<input disabled={disabled} name="incidentElementId" /></label>
       <label>Activation<input disabled={disabled} min={1} name="incidentActivation" type="number" /></label>
-      <label>Generation<input disabled={disabled} min={1} max={1} name="incidentGeneration" type="number" /></label>
+      <label>Generation<input disabled={disabled} min={1} name="incidentGeneration" type="number" /></label>
       <label>
         Action
         <select disabled={disabled} name="actionKind" defaultValue="">
@@ -244,9 +244,6 @@ export function auditRequestFromForm(form: FormData): IncidentAuditRequest {
   if (suppliedIncidentFields !== 0 && suppliedIncidentFields !== 4) {
     throw new TypeError("Supply all four incident identity filters together.");
   }
-  if (generation !== undefined && generation !== 1) {
-    throw new TypeError("Incident generation must be 1.");
-  }
   const actionKind = optionalText(form, "actionKind");
   if (
     actionKind !== undefined &&
@@ -262,7 +259,7 @@ export function auditRequestFromForm(form: FormData): IncidentAuditRequest {
       incidentProcessInstanceId,
       incidentElementId: incidentElementId!,
       incidentActivation: activation!,
-      incidentGeneration: 1,
+      incidentGeneration: generation!,
     }),
     ...(actionKind === undefined ? {} : { actionKind }),
   };

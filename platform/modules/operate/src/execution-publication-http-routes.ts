@@ -144,7 +144,6 @@ export class ExecutionPublicationHttpRoutes {
       switch (reconciled.kind) {
         case ExecutionPublicationReconciliationKind.NotFound:
           return notFound();
-        case ExecutionPublicationReconciliationKind.NotReady:
         case ExecutionPublicationReconciliationKind.Unavailable:
         case ExecutionPublicationReconciliationKind.Gap:
           return publicationUnavailable();
@@ -179,7 +178,6 @@ export class ExecutionPublicationHttpRoutes {
     if (publication === null) return publicationUnavailable();
     const bytes = serializeExecutionPublicationExport(publication, {
       definition: publication.definition,
-      processId: publication.processId,
       processInstanceId: publication.processInstanceId,
     });
     return new Response(bytes, {
@@ -233,7 +231,6 @@ function exportResponse(
   const publication = read.value;
   const bytes = serializeExecutionPublicationExport(publication, {
     definition: publication.definition,
-    processId: publication.processId,
     processInstanceId: publication.processInstanceId,
   });
   const response = new Response(bytes, {

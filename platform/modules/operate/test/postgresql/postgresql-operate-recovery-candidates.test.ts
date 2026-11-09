@@ -251,11 +251,8 @@ async function insertExecution(
         status,
         head_revision,
         producer_head_revision,
-        last_logical_time_ms,
-        control_tokens_json,
-        scopes_json,
         current_json
-      ) VALUES ($1, '{}', $2, 0, 0, NULL, '[]', '[]', NULL)
+      ) VALUES ($1, '{}', $2, 0, 0, NULL)
     `,
     values: [Buffer.from(processInstanceId, "utf8"), status],
   });
@@ -271,7 +268,6 @@ async function markFinalExecution(
       UPDATE bpmn_platform.operate_execution_publications
       SET head_revision = 1,
           producer_head_revision = 1,
-          last_logical_time_ms = 0,
           current_json = $2,
           current_process_status = $3,
           last_complete_observed_at_epoch_ms = 0
@@ -293,10 +289,8 @@ async function insertFinalOccurrence(
         status,
         head_revision,
         producer_head_revision,
-        last_committed_at_epoch_ms,
-        current_open_json,
         last_complete_observed_at_epoch_ms
-      ) VALUES ($1, '{}', 'healthy', 1, 1, 0, '[]', 0)
+      ) VALUES ($1, '{}', 'healthy', 1, 1, 0)
     `,
     values: [Buffer.from(processInstanceId, "utf8")],
   });

@@ -1,4 +1,14 @@
 import { definitionVersionsPath } from "./definition-routes.js";
+import { LegacyPublicApiErrorCodes, PublicApiErrorCode } from "./definitions.js";
+
+/**
+ * The error codes of the correlated Message routes: the ordinary set, and `correlationUnavailable` (503) while the
+ * engine cannot match a Message to an open wait by its correlation.
+ */
+export const CorrelatedMessageApiErrorCodes = [
+  ...LegacyPublicApiErrorCodes,
+  PublicApiErrorCode.CorrelationUnavailable,
+] as const;
 
 const correlatedMessagesRoute =
   /^\/api\/v1\/definitions\/([^/]*)\/versions\/([^/]*)\/correlated-messages$/u;

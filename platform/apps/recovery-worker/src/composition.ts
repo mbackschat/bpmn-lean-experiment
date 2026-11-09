@@ -20,6 +20,7 @@ import {
 } from "@bpmn-lean/platform-definitions";
 import {
   createBpmnEngineGatewayRuntime,
+  engineDeploymentRuntimeOptions,
 } from "@bpmn-lean/platform-engine-gateway";
 import type {
   BpmnEngineGatewayRuntime,
@@ -167,6 +168,7 @@ function createEngineGatewayRuntime(
     temporalNamespace: config.temporalNamespace,
     temporalTaskQueue: config.temporalTaskQueue,
     temporalConnectTimeoutMs: config.temporalConnectTimeoutMs,
+    ...engineDeploymentRuntimeOptions(config.engineDeployment),
   });
 }
 

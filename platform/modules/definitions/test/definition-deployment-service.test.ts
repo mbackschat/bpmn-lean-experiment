@@ -325,6 +325,9 @@ test("returns exact engine rejection diagnostics and performs zero writes", asyn
       temporalNamespace: "default",
       temporalTaskQueue: "unused-test-queue",
       temporalConnectTimeoutMs: 100,
+      profileRelations: () => [],
+      servedRequirements: { timers: true, messages: true, effects: true, userTasks: true, calls: true },
+      effectStartToCloseMs: 1_000,
     });
     const rejectedCompilation = await runtime.gateway.compileDefinition({
       bytes: encoder.encode("<not-bpmn>"),

@@ -7,40 +7,33 @@ import {
   requirePositiveSafeInteger,
 } from "./decoder-primitives.js";
 import {
+  ExecutionInputKind,
   ExecutionPublicationResultKind,
+  ExecutionRoleKind,
   ProcessStatus,
-  SemanticTransitionKind,
   executionPublicationExportFormat,
 } from "./execution-publications.js";
 import type {
   CommittedTransitionBatch,
-  CommittedTransitionRecord,
-  CurrentCommittedExecution,
   ExecutionPublicationDecodeContext,
   ExecutionPublicationExport,
-  ExecutionPublicationIdentity,
   ExecutionPublicationPage,
   ExecutionPublicationRequest,
   ExecutionPublicationResult,
-  PublicControlTokenPosition,
-  PublicScopePosition,
+  ExecutionState,
 } from "./execution-publications.js";
+import { isDenseArray, requirePublicJsonObject } from "./public-json-value.js";
 import {
   requirePublicationDefinitionIdentity,
-  requirePublicationInternalTransition,
-  requirePublicationPositionDelta,
-  requirePublicationScopePositions,
-  requirePublicationState,
-  requirePublicationStimulus,
-  requirePublicationTokenPositions,
+  requirePublicationIdentity,
   samePublicationDefinition,
-  samePublicationScope,
-  samePublicationScopePosition,
-  samePublicationToken,
-} from "./execution-publication-semantic-value-decoders.js";
+} from "./publication-identity.js";
+import type { PublicationIdentity } from "./publication-identity.js";
 
 const defaultLimit = 50;
 const maximumLimit = 100;
+const inputKinds: ReadonlySet<unknown> = new Set(Object.values(ExecutionInputKind));
+const statuses: ReadonlySet<unknown> = new Set(Object.values(ProcessStatus));
 
 export function decodeExecutionPublicationRequest(
   value: unknown,
@@ -79,10 +72,10 @@ export function decodeExecutionPublicationResult(
       exact(value, "available execution publication result", ["kind", "page"]);
       requirePage(readOwn(value, "page"), context, true);
       return value as ExecutionPublicationResult;
-    case ExecutionPublicationResultKind.NotReady:
     case ExecutionPublicationResultKind.NotFound:
     case ExecutionPublicationResultKind.Unavailable:
     case ExecutionPublicationResultKind.Gap:
+    case ExecutionPublicationResultKind.IntegrityFailure:
       exact(value, "execution publication result", ["kind"]);
       return value as ExecutionPublicationResult;
     default:
@@ -92,13 +85,12 @@ export function decodeExecutionPublicationResult(
 
 export function decodeExecutionPublicationExport(
   value: unknown,
-  identity: ExecutionPublicationIdentity,
+  identity: PublicationIdentity,
 ): ExecutionPublicationExport {
-  requireIdentity(identity, "expected execution publication");
+  requirePublicationIdentity(identity, "expected execution publication");
   requireObject(value, "execution publication export");
   exact(value, "execution publication export", [
-    "format", "definition", "processId", "processInstanceId", "headRevision",
-    "batches", "current",
+    "format", "definition", "processInstanceId", "headRevision", "batches", "current",
   ]);
   if (readOwn(value, "format") !== executionPublicationExportFormat) {
     throw new TypeError("execution publication export has an unknown format");
@@ -109,7 +101,6 @@ export function decodeExecutionPublicationExport(
   }
   requirePage({
     definition: readOwn(value, "definition"),
-    processId: readOwn(value, "processId"),
     processInstanceId: readOwn(value, "processInstanceId"),
     requestedAfterRevision: 0,
     pageThroughRevision: readOwn(value, "headRevision"),
@@ -117,6 +108,9 @@ export function decodeExecutionPublicationExport(
     batches,
     current: readOwn(value, "current"),
   }, { ...identity, afterRevision: 0 }, false);
+  if (readOwn(value, "current") === null) {
+    throw new TypeError("execution publication export must carry the state committed at its head");
+  }
   return value as ExecutionPublicationExport;
 }
 
@@ -127,8 +121,8 @@ function requirePage(
 ): void {
   requireObject(value, "execution publication page");
   exact(value, "execution publication page", [
-    "definition", "processId", "processInstanceId", "requestedAfterRevision",
-    "pageThroughRevision", "headRevision", "batches", "current",
+    "definition", "processInstanceId", "requestedAfterRevision", "pageThroughRevision", "headRevision",
+    "batches", "current",
   ]);
   const definition = requirePublicationDefinitionIdentity(
     readOwn(value, "definition"),
@@ -137,12 +131,10 @@ function requirePage(
   if (!samePublicationDefinition(definition, context.definition)) {
     throw new TypeError("execution publication definition identity does not match the expected definition identity");
   }
-  requireEqualString(readOwn(value, "processId"), context.processId, "Process identity");
-  requireEqualString(
-    readOwn(value, "processInstanceId"),
-    context.processInstanceId,
-    "Process-instance identity",
-  );
+  if (requireNonemptyString(readOwn(value, "processInstanceId"), "Process-instance identity") !==
+      context.processInstanceId) {
+    throw new TypeError("Process-instance identity does not match");
+  }
   const requested = requireNonnegativeSafeInteger(
     readOwn(value, "requestedAfterRevision"),
     "execution publication page.requestedAfterRevision",
@@ -174,45 +166,23 @@ function requirePage(
     throw new TypeError("execution publication page batch count contradicts its range");
   }
   let cursor = requested;
-  let logicalTime: number | undefined;
-  const records: CommittedTransitionRecord[] = [];
   for (const [index, batch] of batches.entries()) {
-    const checked = requireBatch(
-      batch,
-      context,
-      cursor,
-      logicalTime,
-      `execution publication page.batches[${index}]`,
-    );
-    cursor = checked.throughRevision;
-    logicalTime = checked.transitions.at(-1)?.logicalTimeMs;
-    records.push(...checked.transitions);
+    cursor = requireBatch(batch, cursor, `execution publication page.batches[${index}]`).throughRevision;
   }
   if (cursor !== through) {
     throw new TypeError("execution publication page batches do not reach pageThroughRevision");
   }
   const current = readOwn(value, "current");
-  if ((current !== null) !== (through === head)) {
-    throw new TypeError("execution publication current presence does not match the head range");
-  }
   if (current !== null) {
-    requireCurrent(current, context, head, logicalTime);
-    if (requested === 0 && !foldMatchesCurrent(records, current as CurrentCommittedExecution)) {
-      throw new TypeError("execution publication position deltas do not reconstruct current");
-    }
+    if (through !== head) throw new TypeError("execution publication current appears before the head");
+    requireCurrent(current, context.processInstanceId, head);
   }
 }
 
-function requireBatch(
-  value: unknown,
-  identity: ExecutionPublicationIdentity,
-  expectedFrom: number,
-  priorTime: number | undefined,
-  label: string,
-): CommittedTransitionBatch {
+function requireBatch(value: unknown, expectedFrom: number, label: string): CommittedTransitionBatch {
   requireObject(value, label);
   exact(value, label, ["commandId", "fromRevision", "throughRevision", "transitions"]);
-  const commandId = requireNonemptyString(readOwn(value, "commandId"), `${label}.commandId`);
+  requireNonemptyString(readOwn(value, "commandId"), `${label}.commandId`);
   const from = requireNonnegativeSafeInteger(readOwn(value, "fromRevision"), `${label}.fromRevision`);
   const through = requirePositiveSafeInteger(readOwn(value, "throughRevision"), `${label}.throughRevision`);
   const transitions = readOwn(value, "transitions");
@@ -223,126 +193,129 @@ function requireBatch(
   if (through - from !== transitions.length) {
     throw new TypeError(`${label} range does not equal its transition count`);
   }
-  let time = priorTime;
   transitions.forEach((record, index) => {
-    time = requireTransitionRecord(
-      record,
-      identity,
-      commandId,
-      from + index + 1,
-      index === 0,
-      time,
-      `${label}.transitions[${index}]`,
-    );
+    requireTransitionRecord(record, from + index + 1, `${label}.transitions[${index}]`);
   });
   return value as CommittedTransitionBatch;
 }
 
-function requireTransitionRecord(
-  value: unknown,
-  identity: ExecutionPublicationIdentity,
-  commandId: string,
-  revision: number,
-  external: boolean,
-  priorTime: number | undefined,
-  label: string,
-): number {
+function requireTransitionRecord(value: unknown, revision: number, label: string): void {
   requireObject(value, label);
-  exact(value, label, ["revision", "logicalTimeMs", "transition", "positionDelta"]);
+  exact(value, label, ["revision", "role", "element", "sourceType", "owner"]);
   if (readOwn(value, "revision") !== revision) {
     throw new TypeError(`${label}.revision is not contiguous`);
   }
-  const logicalTime = requireNonnegativeSafeInteger(
-    readOwn(value, "logicalTimeMs"),
-    `${label}.logicalTimeMs`,
-  );
-  if (priorTime !== undefined && logicalTime < priorTime) {
-    throw new TypeError(`${label}.logicalTimeMs regresses`);
-  }
-  const delta = requirePublicationPositionDelta(
-    readOwn(value, "positionDelta"),
-    `${label}.positionDelta`,
-  );
-  const transition = readOwn(value, "transition");
-  requireObject(transition, `${label}.transition`);
-  if (external) {
-    exact(transition, `${label}.transition`, ["kind", "stimulus"]);
-    if (readOwn(transition, "kind") !== SemanticTransitionKind.ExternalStimulus) {
-      throw new TypeError(`${label} first transition must be the external stimulus`);
-    }
-    requirePublicationStimulus(
-      readOwn(transition, "stimulus"),
-      identity,
-      commandId,
-      revision,
-      logicalTime,
-      `${label}.transition.stimulus`,
-    );
+  requireRole(readOwn(value, "role"), `${label}.role`);
+  const element = readOwn(value, "element");
+  const sourceType = readOwn(value, "sourceType");
+  if (element === null) {
+    if (sourceType !== null) throw new TypeError(`${label}.sourceType must be null without an element`);
   } else {
-    requirePublicationInternalTransition(transition, delta, `${label}.transition`);
+    requireNonemptyString(element, `${label}.element`);
+    if (sourceType !== null) requireNonemptyString(sourceType, `${label}.sourceType`);
   }
-  return logicalTime;
+  requireNonnegativeSafeInteger(readOwn(value, "owner"), `${label}.owner`);
 }
 
-function requireCurrent(
-  value: unknown,
-  identity: ExecutionPublicationIdentity,
-  head: number,
-  lastTime: number | undefined,
-): void {
+function requireRole(value: unknown, label: string): void {
+  requireObject(value, label);
+  switch (readOwn(value, "kind")) {
+    case ExecutionRoleKind.Input:
+      exact(value, label, ["kind", "input"]);
+      if (!inputKinds.has(readOwn(value, "input"))) throw new TypeError(`${label}.input is not a kernel input`);
+      return;
+    case ExecutionRoleKind.Signal:
+      exact(value, label, ["kind", "signal"]);
+      requireNonemptyString(readOwn(value, "signal"), `${label}.signal`);
+      return;
+    case ExecutionRoleKind.Arrive:
+      exact(value, label, ["kind", "flow"]);
+      requireNonemptyString(readOwn(value, "flow"), `${label}.flow`);
+      return;
+    case ExecutionRoleKind.Idle:
+      exact(value, label, ["kind", "scope"]);
+      requireNonnegativeSafeInteger(readOwn(value, "scope"), `${label}.scope`);
+      return;
+    default:
+      throw new TypeError(`${label} has an unknown kind`);
+  }
+}
+
+function requireCurrent(value: unknown, processInstanceId: string, head: number): void {
   requireObject(value, "execution publication current");
-  exact(value, "execution publication current", ["revision", "state", "controlTokens", "scopes"]);
+  exact(value, "execution publication current", ["revision", "state"]);
   if (readOwn(value, "revision") !== head) {
     throw new TypeError("execution publication current revision does not equal head");
   }
-  const state = requirePublicationState(readOwn(value, "state"), identity.processInstanceId);
-  if (lastTime !== undefined && state.logicalTimeMs !== lastTime) {
-    throw new TypeError("execution publication current logical time does not equal the head record");
-  }
-  const tokens = requirePublicationTokenPositions(
-    readOwn(value, "controlTokens"),
-    "execution publication current.controlTokens",
-  );
-  const scopes = requirePublicationScopePositions(
-    readOwn(value, "scopes"),
-    true,
-    "execution publication current.scopes",
-  );
-  if (state.status === ProcessStatus.Failed && (tokens.length !== 0 || scopes.length !== 0)) {
-    throw new TypeError("failed execution publication must have no control positions");
-  }
-  for (const token of tokens) {
-    if (!scopes.some(({ id }) => samePublicationScope(id, token.owner))) {
-      throw new TypeError("execution publication current token owner is not a live scope");
-    }
-  }
-  for (const scope of scopes) {
-    if (scope.bpmnElementId === identity.processId &&
-      scope.id.processInstanceId !== identity.processInstanceId) {
-      throw new TypeError("execution publication current root scope has the wrong Process instance");
-    }
-  }
+  requireState(readOwn(value, "state"), processInstanceId, "execution publication current.state");
 }
 
-function requireIdentity(value: ExecutionPublicationIdentity, label: string): void {
+function requireState(value: unknown, processInstanceId: string, label: string): ExecutionState {
   requireObject(value, label);
-  exact(value, label, ["definition", "processId", "processInstanceId"]);
-  requirePublicationDefinitionIdentity(readOwn(value, "definition"), `${label}.definition`);
-  requireNonemptyString(readOwn(value, "processId"), `${label}.processId`);
-  requireNonemptyString(readOwn(value, "processInstanceId"), `${label}.processInstanceId`);
+  const status = readOwn(value, "status");
+  if (!statuses.has(status)) throw new TypeError(`${label}.status is unknown`);
+  // canonical-result.schema.json#/$defs/state: a failed state carries its failure and no open wait; no other does.
+  const failed = status === ProcessStatus.Failed;
+  exact(value, label, [
+    "kind", "instanceId", "status", "logicalTimeMs", "variables", "scopes", "openWaits",
+    ...(failed ? ["failure"] : []),
+  ]);
+  if (readOwn(value, "kind") !== "state") throw new TypeError(`${label}.kind must be state`);
+  if (readOwn(value, "instanceId") !== processInstanceId) {
+    throw new TypeError(`${label}.instanceId does not match the Process instance`);
+  }
+  requireNonnegativeSafeInteger(readOwn(value, "logicalTimeMs"), `${label}.logicalTimeMs`);
+  requireList(readOwn(value, "variables"), `${label}.variables`, (binding, itemLabel) => {
+    requireObject(binding, itemLabel);
+    exact(binding, itemLabel, ["name", "value"]);
+    requireNonemptyString(readOwn(binding, "name"), `${itemLabel}.name`);
+    requireKinded(readOwn(binding, "value"), `${itemLabel}.value`);
+  });
+  requireList(readOwn(value, "scopes"), `${label}.scopes`, requirePublicJsonObject);
+  requireList(readOwn(value, "openWaits"), `${label}.openWaits`, (wait, itemLabel) => {
+    requireObject(wait, itemLabel);
+    exact(wait, itemLabel, ["id", "definition", "input", "detail"]);
+    const id = readOwn(wait, "id");
+    requireObject(id, `${itemLabel}.id`);
+    exact(id, `${itemLabel}.id`, ["processInstanceId", "elementId", "activation"]);
+    requireNonemptyString(readOwn(id, "processInstanceId"), `${itemLabel}.id.processInstanceId`);
+    requireNonemptyString(readOwn(id, "elementId"), `${itemLabel}.id.elementId`);
+    requirePositiveSafeInteger(readOwn(id, "activation"), `${itemLabel}.id.activation`);
+    const definition = readOwn(wait, "definition");
+    if (definition !== null) requirePublicJsonObject(definition, `${itemLabel}.definition`);
+    const input = readOwn(wait, "input");
+    if (input !== null) requireNonemptyString(input, `${itemLabel}.input`);
+    requireKinded(readOwn(wait, "detail"), `${itemLabel}.detail`);
+  });
+  if (failed) {
+    requirePublicJsonObject(readOwn(value, "failure"), `${label}.failure`);
+    if ((readOwn(value, "openWaits") as readonly unknown[]).length > 0) {
+      throw new TypeError(`${label}.openWaits must be empty when the instance failed`);
+    }
+  }
+  return value as ExecutionState;
+}
+
+/** An engine-typed object: plain JSON whose `kind` names its form. */
+function requireKinded(value: unknown, label: string): void {
+  requireNonemptyString(readOwn(requirePublicJsonObject(value, label), "kind"), `${label}.kind`);
+}
+
+function requireList(value: unknown, label: string, item: (value: unknown, label: string) => unknown): void {
+  if (!isDenseArray(value)) throw new TypeError(`${label} must be a dense array`);
+  value.forEach((entry, index) => item(entry, `${label}[${index}]`));
 }
 
 function requireContext(value: ExecutionPublicationDecodeContext): void {
   requireObject(value, "execution publication decode context");
   const hasLimit = Object.hasOwn(value, "limit");
   exact(value, "execution publication decode context", hasLimit
-    ? ["definition", "processId", "processInstanceId", "afterRevision", "limit"]
-    : ["definition", "processId", "processInstanceId", "afterRevision"]);
+    ? ["definition", "processInstanceId", "afterRevision", "limit"]
+    : ["definition", "processInstanceId", "afterRevision"]);
   requirePublicationDefinitionIdentity(
     readOwn(value, "definition"),
     "execution publication decode context.definition",
   );
-  requireNonemptyString(readOwn(value, "processId"), "execution publication decode context.processId");
   requireNonemptyString(
     readOwn(value, "processInstanceId"),
     "execution publication decode context.processInstanceId",
@@ -354,48 +327,6 @@ function requireContext(value: ExecutionPublicationDecodeContext): void {
   if (hasLimit) requirePublicationLimit(readOwn(value, "limit"));
 }
 
-function foldMatchesCurrent(
-  records: CommittedTransitionRecord[],
-  current: CurrentCommittedExecution,
-): boolean {
-  const scopes: PublicScopePosition[] = [];
-  const tokens: PublicControlTokenPosition[] = [];
-  for (const { positionDelta: delta } of records) {
-    for (const scope of delta.enteredScopes) {
-      if (scopes.some(({ id }) => samePublicationScope(id, scope.id))) return false;
-      scopes.push(scope);
-    }
-    for (const token of delta.consumedTokens) {
-      const existing = tokens.find((item) => samePublicationToken(item, token));
-      if (existing === undefined || existing.multiplicity < token.multiplicity) return false;
-      const remaining = existing.multiplicity - token.multiplicity;
-      tokens.splice(tokens.indexOf(existing), 1);
-      if (remaining > 0) tokens.push({ ...existing, multiplicity: remaining });
-    }
-    for (const token of delta.producedTokens) {
-      const existing = tokens.find((item) => samePublicationToken(item, token));
-      if (existing === undefined) tokens.push(token);
-      else {
-        const multiplicity = existing.multiplicity + token.multiplicity;
-        if (!Number.isSafeInteger(multiplicity)) return false;
-        tokens.splice(tokens.indexOf(existing), 1, { ...existing, multiplicity });
-      }
-    }
-    for (const scope of delta.exitedScopes) {
-      const existing = scopes.find(({ id }) => samePublicationScope(id, scope.id));
-      if (existing === undefined || tokens.some(({ owner }) => samePublicationScope(owner, scope.id))) {
-        return false;
-      }
-      scopes.splice(scopes.indexOf(existing), 1);
-    }
-  }
-  return sameSet(
-    tokens,
-    current.controlTokens,
-    (left, right) => samePublicationToken(left, right) && left.multiplicity === right.multiplicity,
-  ) && sameSet(scopes, current.scopes, samePublicationScopePosition);
-}
-
 function requirePublicationLimit(value: unknown): number {
   const limit = requirePositiveSafeInteger(value, "execution publication limit");
   if (limit > maximumLimit) {
@@ -404,25 +335,6 @@ function requirePublicationLimit(value: unknown): number {
   return limit;
 }
 
-function requireEqualString(value: unknown, expected: string, label: string): void {
-  if (requireNonemptyString(value, label) !== expected) throw new TypeError(`${label} does not match`);
-}
-
 function exact(value: object, label: string, keys: string[]): void {
   requireExactKeys(value, label, keys);
-}
-
-function isDenseArray(value: unknown): value is unknown[] {
-  return Array.isArray(value) && Reflect.ownKeys(value).length === value.length + 1 &&
-    Reflect.ownKeys(value).every((key) => key === "length" ||
-      (typeof key === "string" && /^(?:0|[1-9][0-9]*)$/u.test(key) && Number(key) < value.length));
-}
-
-function sameSet<T>(
-  left: readonly T[],
-  right: readonly T[],
-  same: (a: T, b: T) => boolean,
-): boolean {
-  return left.length === right.length &&
-    left.every((item) => right.some((candidate) => same(item, candidate)));
 }

@@ -6,16 +6,16 @@ import {
   decodeExecutionPublicationRequest,
   decodePublicProcessInstanceIdentity,
   executionPublicationExportFormat,
-  executionPublicationIdentityForPublicProcessInstance,
+  publicationIdentityForPublicProcessInstance,
   serializeCanonicalExecutionPublicationValue,
 } from "@bpmn-lean/platform-contracts";
 import type {
   CommittedTransitionBatch,
   CurrentCommittedExecution,
   ExecutionPublicationExport,
-  ExecutionPublicationIdentity,
   ExecutionPublicationPage,
   ExecutionPublicationRequest,
+  PublicationIdentity,
 } from "@bpmn-lean/platform-contracts";
 import type {
   PostgresqlRow,
@@ -27,8 +27,8 @@ import {
 } from "./execution-publication-contracts.js";
 import {
   FlowNodeOccurrenceProjectionStatus,
+  occurrenceIdentityText,
 } from "./flow-node-occurrence-projection.js";
-import { occurrenceIdentityText } from "./flow-node-occurrence-storage.js";
 import {
   PostgresqlProjectionReadKind,
   requireProjectionMaximumAge,
@@ -151,9 +151,6 @@ const executionReadSql = `
     e.status,
     e.head_revision::text,
     e.producer_head_revision::text,
-    e.last_logical_time_ms::text,
-    e.control_tokens_json,
-    e.scopes_json,
     e.current_json,
     e.last_complete_observed_at_epoch_ms::text,
     e.current_process_status,
@@ -161,8 +158,13 @@ const executionReadSql = `
     o.status AS occurrence_status,
     o.head_revision::text AS occurrence_head_revision,
     o.producer_head_revision::text AS occurrence_producer_head_revision,
-    o.current_open_json AS occurrence_current_open_json,
     o.last_complete_observed_at_epoch_ms::text AS occurrence_observed_at_epoch_ms,
+    (
+      SELECT count(*)
+      FROM bpmn_platform.operate_flow_node_occurrences AS n
+      WHERE n.hosting_process_instance_id = p.process_instance_id
+        AND n.occurrence_json::jsonb ->> 'terminal' IS NULL
+    )::text AS occurrence_open_count,
     b.from_revision::text,
     b.through_revision::text,
     b.command_id,
@@ -202,7 +204,7 @@ function decodeRead(
     return { kind: PostgresqlProjectionReadKind.NotFound };
   }
   const instance = decodeExactRegistration(first, populationHead);
-  const identity = executionPublicationIdentityForPublicProcessInstance(instance);
+  const identity = publicationIdentityForPublicProcessInstance(instance);
   const headRevision = positive(first.head_revision, "execution head");
   const producerHead = positive(first.producer_head_revision, "execution producer head");
   const observedAfterEpochMs = nonnegative(
@@ -224,10 +226,7 @@ function decodeRead(
   const current = decodeExactJson<CurrentCommittedExecution>(first.current_json);
   if (
     current.revision !== headRevision ||
-    current.state.status !== first.current_process_status ||
-    current.state.logicalTimeMs !== nonnegative(first.last_logical_time_ms, "logical time") ||
-    canonicalText(current.controlTokens) !== exactText(first.control_tokens_json, "tokens") ||
-    canonicalText(current.scopes) !== exactText(first.scopes_json, "scopes")
+    current.state.status !== first.current_process_status
   ) {
     throw new TypeError("execution current image drifted from redundant columns");
   }
@@ -295,7 +294,7 @@ function decodeExactRegistration(row: ExecutionReadRow, populationHead: number) 
 
 function requireAlignedOccurrence(
   row: ExecutionReadRow,
-  identity: ExecutionPublicationIdentity,
+  identity: PublicationIdentity,
   executionHead: number,
   nowEpochMs: number,
   maxAgeMs: number,
@@ -312,18 +311,12 @@ function requireAlignedOccurrence(
     observedAt > nowEpochMs ||
     (!terminal && nowEpochMs - observedAt > maxAgeMs) ||
     exactText(row.occurrence_identity_json, "occurrence identity") !==
-      occurrenceIdentityText({ identity })
+      occurrenceIdentityText(identity)
   ) {
     throw new TypeError("occurrence projection is not aligned and fresh");
   }
-  const currentOpenText = exactText(
-    row.occurrence_current_open_json,
-    "occurrence current-open",
-  );
-  const currentOpen = JSON.parse(currentOpenText) as unknown;
-  if (!Array.isArray(currentOpen) || JSON.stringify(currentOpen) !== currentOpenText ||
-      (terminal && currentOpen.length !== 0)) {
-    throw new TypeError("occurrence current-open is invalid");
+  if (terminal && nonnegative(row.occurrence_open_count, "open occurrence count") !== 0) {
+    throw new TypeError("terminal occurrence projection retains an open occurrence");
   }
 }
 
@@ -436,9 +429,6 @@ type ExecutionReadRow = PostgresqlRow & Readonly<{
   status: unknown;
   head_revision: unknown;
   producer_head_revision: unknown;
-  last_logical_time_ms: unknown;
-  control_tokens_json: unknown;
-  scopes_json: unknown;
   current_json: unknown;
   last_complete_observed_at_epoch_ms: unknown;
   current_process_status: unknown;
@@ -446,8 +436,8 @@ type ExecutionReadRow = PostgresqlRow & Readonly<{
   occurrence_status: unknown;
   occurrence_head_revision: unknown;
   occurrence_producer_head_revision: unknown;
-  occurrence_current_open_json: unknown;
   occurrence_observed_at_epoch_ms: unknown;
+  occurrence_open_count: unknown;
   from_revision: unknown;
   through_revision: unknown;
   command_id: unknown;

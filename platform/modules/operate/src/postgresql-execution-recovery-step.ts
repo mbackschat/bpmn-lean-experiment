@@ -54,8 +54,9 @@ export type PostgresqlExecutionRecoveryStepOptions = Readonly<{
  * and returns a closed Complete, Retry, or Fail result. A Complete result carries the only mutation;
  * the recovery loop must invoke that callback inside its current-token lease fence. The callback
  * revalidates the prepared image before applying the suffix, so a stale lease or competing writer
- * cannot commit an obsolete page. Stored gaps and changed overlap are permanent failures, while
- * producer readiness and gateway availability are retryable.
+ * cannot commit an obsolete page. Stored gaps, changed overlap and an engine integrity failure are
+ * permanent failures, while gateway availability and a head page whose committed state the engine could
+ * not read at a moving head are retryable.
  */
 export class PostgresqlExecutionRecoveryStep {
   readonly #options: PostgresqlExecutionRecoveryStepOptions;
@@ -109,7 +110,6 @@ export class PostgresqlExecutionRecoveryStep {
       observed = await this.#options.gateway.observe({
         locator: registration.locator,
         definition: identity.definition,
-        processId: identity.processId,
         processInstanceId: identity.processInstanceId,
         afterRevision,
         limit: 100,
@@ -133,8 +133,6 @@ export class PostgresqlExecutionRecoveryStep {
     switch (result.kind) {
       case ExecutionPublicationResultKind.Available:
         return prepareAvailable(registration, image, structuredClone(result.page));
-      case ExecutionPublicationResultKind.NotReady:
-        return retry(PostgresqlOperateRecoveryRetryReason.ProducerNotReady);
       case ExecutionPublicationResultKind.Unavailable:
         return retry(PostgresqlOperateRecoveryRetryReason.GatewayUnavailable);
       case ExecutionPublicationResultKind.Gap:
@@ -143,6 +141,7 @@ export class PostgresqlExecutionRecoveryStep {
           PostgresqlOperateRecoveryFailureEvidence.ProducerResult,
         );
       case ExecutionPublicationResultKind.NotFound:
+      case ExecutionPublicationResultKind.IntegrityFailure:
         return fail(
           PostgresqlOperateRecoveryFailureCode.ImpossibleAuthority,
           PostgresqlOperateRecoveryFailureEvidence.ProducerResult,
@@ -156,6 +155,14 @@ function prepareAvailable(
   image: ExecutionPublicationProjectionImage | null,
   page: ExecutionPublicationPage,
 ): PostgresqlOperateRecoveryStepResult {
+  if (
+    page.batches.length === 0 &&
+    page.current === null &&
+    (image?.current ?? null) === null
+  ) {
+    // The head moved while the engine read its state and this page adds nothing to apply.
+    return retry(PostgresqlOperateRecoveryRetryReason.ProducerNotReady);
+  }
   const prior = image ?? createEmptyExecutionPublicationProjection(
     projectionIdentityFromRegistration(registration),
   );

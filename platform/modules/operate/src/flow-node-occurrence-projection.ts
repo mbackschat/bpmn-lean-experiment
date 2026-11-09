@@ -1,17 +1,15 @@
 import {
   decodeFlowNodeOccurrencePublicationPage,
-  flowNodeOccurrencePublicationIdentityForPublicProcessInstance,
+  flowNodeOccurrenceKeyText,
+  publicationIdentityForPublicProcessInstance,
+  samePublicationIdentity,
 } from "@bpmn-lean/platform-contracts";
 import type {
-  ExecutionPublicationPage,
-  ExecutionPublicationIdentity,
   FlowNodeOccurrenceBatch,
-  FlowNodeOccurrenceId,
+  FlowNodeOccurrenceKey,
   FlowNodeOccurrencePage,
-  FlowNodeOccurrencePublicationIdentity,
-  FlowNodeOccurrenceScopeId,
   FlowNodeOccurrenceTerminalKind,
-  OpenFlowNodeOccurrence,
+  PublicationIdentity,
 } from "@bpmn-lean/platform-contracts";
 
 import {
@@ -19,7 +17,7 @@ import {
 } from "./execution-publication-contracts.js";
 import type {
   ExecutionPublicationProjectionImage,
-  ExecutionPublicationRepository,
+  PublicationObservationRequest,
 } from "./execution-publication-contracts.js";
 import type { OperateProcessRegistration } from "./incident-contracts.js";
 
@@ -29,25 +27,26 @@ export enum FlowNodeOccurrenceProjectionStatus {
   Unavailable = "unavailable",
 }
 
+/**
+ * One projected occurrence, identified by the kernel's occurrence key. `startRevision` and `startIndex` (its index
+ * among that transition's starts) are only its publication position, which orders and stores the occurrences.
+ */
 export type ProjectedFlowNodeOccurrence = Readonly<{
-  id: FlowNodeOccurrenceId;
-  processId: string;
-  elementId: string;
-  owner: FlowNodeOccurrenceScopeId;
-  startedAtEpochMs: number;
+  occurrence: FlowNodeOccurrenceKey;
+  startRevision: number;
+  startIndex: number;
+  owner: number;
+  sourceType: string;
   terminal: FlowNodeOccurrenceTerminalKind | null;
-  terminalAtEpochMs: number | null;
 }>;
 
 export type FlowNodeOccurrenceProjectionImage = Readonly<{
-  identity: FlowNodeOccurrencePublicationIdentity;
+  identity: PublicationIdentity;
   status: FlowNodeOccurrenceProjectionStatus;
   headRevision: number;
   producerHeadRevision: number | null;
-  lastCommittedAtEpochMs: number | null;
   batches: readonly FlowNodeOccurrenceBatch[];
   occurrences: readonly ProjectedFlowNodeOccurrence[];
-  currentOpen: readonly OpenFlowNodeOccurrence[];
 }>;
 
 export interface FlowNodeOccurrenceRepository {
@@ -69,14 +68,7 @@ export interface FlowNodeOccurrenceRepository {
 }
 
 export interface FlowNodeOccurrenceGateway {
-  observe(request: Readonly<{
-    locator: string;
-    definition: FlowNodeOccurrencePublicationIdentity["definition"];
-    processId: string;
-    processInstanceId: string;
-    afterRevision: number;
-    limit?: number;
-  }>): Promise<unknown>;
+  observe(request: PublicationObservationRequest): Promise<unknown>;
 }
 
 export class FlowNodeOccurrenceIntegrityError extends Error {
@@ -97,28 +89,37 @@ export class FlowNodeOccurrenceStoredValueError extends Error {
 
 export function occurrenceIdentityFromRegistration(
   registration: Pick<OperateProcessRegistration, "instance">,
-): FlowNodeOccurrencePublicationIdentity {
-  return flowNodeOccurrencePublicationIdentityForPublicProcessInstance(
-    registration.instance,
-  );
+): PublicationIdentity {
+  return publicationIdentityForPublicProcessInstance(registration.instance);
+}
+
+/** The stored text of a projection's identity, in one fixed key order. */
+export function occurrenceIdentityText(identity: PublicationIdentity): string {
+  const { ref, profile, sourceOverlay } = identity.definition;
+  return JSON.stringify({
+    definition: {
+      ref: { definitionKey: ref.definitionKey, version: ref.version, sha256: ref.sha256 },
+      profile,
+      sourceOverlay: sourceOverlay === null ? null : { id: sourceOverlay.id, sha256: sourceOverlay.sha256 },
+    },
+    processInstanceId: identity.processInstanceId,
+  });
 }
 
 export function createEmptyFlowNodeOccurrenceProjection(
-  identity: FlowNodeOccurrencePublicationIdentity,
+  identity: PublicationIdentity,
 ): FlowNodeOccurrenceProjectionImage {
   return {
     identity: structuredClone(identity),
     status: FlowNodeOccurrenceProjectionStatus.Healthy,
     headRevision: 0,
     producerHeadRevision: null,
-    lastCommittedAtEpochMs: null,
     batches: [],
     occurrences: [],
-    currentOpen: [],
   };
 }
 
-/** Folds one strict page from the retained open set and checks its E1 authority. */
+/** Folds one strict page from the retained occurrences and checks its E1 authority. */
 export function applyFlowNodeOccurrencePage(
   priorValue: FlowNodeOccurrenceProjectionImage,
   pageValue: FlowNodeOccurrencePage,
@@ -143,9 +144,11 @@ export function applyFlowNodeOccurrencePage(
 
   const batches = [...prior.batches];
   const occurrences = prior.occurrences.map((value) => structuredClone(value));
-  const byId = new Map(occurrences.map((occurrence) => [idKey(occurrence.id), occurrence]));
+  const indexByKey = new Map(occurrences.map((occurrence, index) => [
+    flowNodeOccurrenceKeyText(occurrence.occurrence),
+    index,
+  ]));
   let headRevision = prior.headRevision;
-  let lastCommittedAtEpochMs = prior.lastCommittedAtEpochMs;
   for (const batch of page.batches) {
     requireAlignedBatch(batch, execution);
     if (batch.throughRevision <= prior.headRevision) {
@@ -160,51 +163,33 @@ export function applyFlowNodeOccurrencePage(
       }
       continue;
     }
-    if (
-      batch.fromRevision !== headRevision ||
-      (lastCommittedAtEpochMs !== null &&
-        batch.committedAtEpochMs < lastCommittedAtEpochMs)
-    ) {
-      throw integrity("occurrence suffix skipped a batch or regressed time");
+    if (batch.fromRevision !== headRevision) {
+      throw integrity("occurrence suffix skipped a batch");
     }
     for (const transition of batch.transitions) {
-      if (transition.revision !== headRevision + 1) {
-        throw integrity("occurrence transition revision is not contiguous");
-      }
-      for (const started of transition.lifecycle.started) {
-        const key = idKey(started.id);
-        if (byId.has(key)) throw integrity("occurrence start identity was reused");
-        const occurrence: ProjectedFlowNodeOccurrence = {
-          ...structuredClone(started),
-          startedAtEpochMs: batch.committedAtEpochMs,
+      transition.started.forEach((started, startIndex) => {
+        const key = flowNodeOccurrenceKeyText(started.occurrence);
+        if (indexByKey.has(key)) throw integrity("occurrence key was started again");
+        indexByKey.set(key, occurrences.length);
+        occurrences.push({
+          occurrence: structuredClone(started.occurrence),
+          startRevision: transition.revision,
+          startIndex,
+          owner: started.owner,
+          sourceType: started.sourceType,
           terminal: null,
-          terminalAtEpochMs: null,
-        };
-        occurrences.push(occurrence);
-        byId.set(key, occurrence);
-      }
-      for (const ended of transition.lifecycle.ended) {
-        const key = idKey(ended.id);
-        const existing = byId.get(key);
-        if (existing === undefined || existing.terminal !== null) {
+        });
+      });
+      for (const ended of transition.ended) {
+        const index = indexByKey.get(flowNodeOccurrenceKeyText(ended.occurrence));
+        const existing = index === undefined ? undefined : occurrences[index];
+        if (index === undefined || existing === undefined || existing.terminal !== null) {
           throw integrity("occurrence terminal does not resolve one retained open start");
         }
-        const terminal: ProjectedFlowNodeOccurrence = {
-          ...existing,
-          terminal: ended.terminal,
-          terminalAtEpochMs: batch.committedAtEpochMs,
-        };
-        const index = occurrences.findIndex((candidate) => idKey(candidate.id) === key);
-        if (index < 0) throw integrity("occurrence index is inconsistent");
-        occurrences.splice(index, 1, terminal);
-        byId.set(key, terminal);
+        occurrences.splice(index, 1, { ...existing, terminal: ended.terminal });
       }
-      headRevision = transition.revision;
     }
-    if (headRevision !== batch.throughRevision) {
-      throw integrity("occurrence batch range disagrees with its transitions");
-    }
-    lastCommittedAtEpochMs = batch.committedAtEpochMs;
+    headRevision = batch.throughRevision;
     batches.push(structuredClone(batch));
   }
   if (headRevision !== page.pageThroughRevision) {
@@ -213,31 +198,19 @@ export function applyFlowNodeOccurrencePage(
   if (page.headRevision > headRevision && page.batches.length === 0) {
     throw integrity("occurrence producer omitted an available suffix");
   }
-  const currentOpen = occurrences
-    .filter((occurrence) => occurrence.terminal === null)
-    .map(toOpen)
-    .sort((left, right) => compareId(left.id, right.id));
-  if (
-    page.currentOpen !== null &&
-    canonicalOpenText(currentOpen) !== canonicalOpenText(page.currentOpen)
-  ) {
-    throw integrity("occurrence currentOpen disagrees with the retained fold");
-  }
   return {
     identity,
     status: FlowNodeOccurrenceProjectionStatus.Healthy,
     headRevision,
     producerHeadRevision: page.headRevision,
-    lastCommittedAtEpochMs,
     batches,
     occurrences,
-    currentOpen,
   };
 }
 
 function requireHealthyExecution(
   execution: ExecutionPublicationProjectionImage,
-  identity: FlowNodeOccurrencePublicationIdentity,
+  identity: PublicationIdentity,
   producerHead: number,
   executionHead: "exact" | "mayBeAhead",
 ): void {
@@ -254,6 +227,7 @@ function requireHealthyExecution(
   }
 }
 
+/** Every committed input has one occurrence batch over the same command and revisions as its execution batch. */
 function requireAlignedBatch(
   occurrence: FlowNodeOccurrenceBatch,
   execution: ExecutionPublicationProjectionImage,
@@ -264,39 +238,10 @@ function requireAlignedBatch(
   if (
     retained === undefined ||
     retained.commandId !== occurrence.commandId ||
-    retained.fromRevision !== occurrence.fromRevision ||
-    retained.throughRevision !== occurrence.throughRevision ||
-    retained.transitions.length !== occurrence.transitions.length ||
-    retained.transitions.some((transition, index) =>
-      transition.revision !== occurrence.transitions[index]?.revision
-    )
+    retained.throughRevision !== occurrence.throughRevision
   ) {
     throw integrity("occurrence batch is not aligned to retained E1");
   }
-}
-
-function samePublicationIdentity(
-  execution: ExecutionPublicationIdentity,
-  occurrence: FlowNodeOccurrencePublicationIdentity,
-): boolean {
-  return execution.processId === occurrence.processId &&
-    execution.processInstanceId === occurrence.processInstanceId &&
-    execution.definition.compiler === occurrence.definition.compiler &&
-    execution.definition.semanticProfile === occurrence.definition.semanticProfile &&
-    execution.definition.sourceId === occurrence.definition.sourceId &&
-    execution.definition.sourceSha256 === occurrence.definition.sourceSha256 &&
-    JSON.stringify(execution.definition.sourceOverlay) ===
-      JSON.stringify(occurrence.definition.sourceOverlay);
-}
-
-function toOpen(occurrence: ProjectedFlowNodeOccurrence): OpenFlowNodeOccurrence {
-  return {
-    id: structuredClone(occurrence.id),
-    processId: occurrence.processId,
-    elementId: occurrence.elementId,
-    owner: structuredClone(occurrence.owner),
-    startedAtEpochMs: occurrence.startedAtEpochMs,
-  };
 }
 
 export function canonicalBatchText(batch: FlowNodeOccurrenceBatch): string {
@@ -304,21 +249,17 @@ export function canonicalBatchText(batch: FlowNodeOccurrenceBatch): string {
     commandId: batch.commandId,
     fromRevision: batch.fromRevision,
     throughRevision: batch.throughRevision,
-    committedAtEpochMs: batch.committedAtEpochMs,
     transitions: batch.transitions.map((transition) => ({
       revision: transition.revision,
-      lifecycle: {
-        started: transition.lifecycle.started.map((started) => ({
-          id: { ...started.id },
-          processId: started.processId,
-          elementId: started.elementId,
-          owner: { ...started.owner },
-        })),
-        ended: transition.lifecycle.ended.map((ended) => ({
-          id: { ...ended.id },
-          terminal: ended.terminal,
-        })),
-      },
+      started: transition.started.map((started) => ({
+        occurrence: keyValue(started.occurrence),
+        owner: started.owner,
+        sourceType: started.sourceType,
+      })),
+      ended: transition.ended.map((ended) => ({
+        occurrence: keyValue(ended.occurrence),
+        terminal: ended.terminal,
+      })),
     })),
   });
 }
@@ -327,45 +268,22 @@ export function canonicalOccurrenceText(
   occurrence: ProjectedFlowNodeOccurrence,
 ): string {
   return JSON.stringify({
-    id: { ...occurrence.id },
-    processId: occurrence.processId,
-    elementId: occurrence.elementId,
-    owner: { ...occurrence.owner },
-    startedAtEpochMs: occurrence.startedAtEpochMs,
+    occurrence: keyValue(occurrence.occurrence),
+    startRevision: occurrence.startRevision,
+    startIndex: occurrence.startIndex,
+    owner: occurrence.owner,
+    sourceType: occurrence.sourceType,
     terminal: occurrence.terminal,
-    terminalAtEpochMs: occurrence.terminalAtEpochMs,
   });
 }
 
-function canonicalOpenText(open: readonly OpenFlowNodeOccurrence[]): string {
-  return JSON.stringify(open.map((occurrence) => ({
-    id: { ...occurrence.id },
-    processId: occurrence.processId,
-    elementId: occurrence.elementId,
-    owner: { ...occurrence.owner },
-    startedAtEpochMs: occurrence.startedAtEpochMs,
-  })));
-}
-
-function compareId(left: FlowNodeOccurrenceId, right: FlowNodeOccurrenceId): number {
-  // Code-unit order, never `localeCompare`: this ordering reaches a public projection, so a
-  // locale-sensitive comparison would order the same occurrences differently on two hosts.
-  const byInstance = left.processInstanceId < right.processInstanceId
-    ? -1
-    : left.processInstanceId > right.processInstanceId
-    ? 1
-    : 0;
-  return byInstance ||
-    left.startRevision - right.startRevision ||
-    left.startIndex - right.startIndex;
-}
-
-function idKey(id: FlowNodeOccurrenceId): string {
-  return JSON.stringify([
-    id.processInstanceId,
-    id.startRevision,
-    id.startIndex,
-  ]);
+function keyValue(key: FlowNodeOccurrenceKey): FlowNodeOccurrenceKey {
+  return {
+    processInstanceId: key.processInstanceId,
+    elementId: key.elementId,
+    activation: key.activation,
+    role: key.role,
+  };
 }
 
 function integrity(message: string): FlowNodeOccurrenceIntegrityError {

@@ -3,12 +3,13 @@ import {
   decodeExecutionPublicationExport,
   decodeExecutionPublicationPage,
   decodePublicApiErrorResponse,
+  executionPublicationExportFormat,
   executionPublicationExportPath,
-  executionPublicationIdentityForPublicProcessInstance,
   executionPublicationPath,
   ExecutionPublicationApiErrorCodes,
   ExecutionPublicationUnavailableMessage,
   parseWireJson,
+  publicationIdentityForPublicProcessInstance,
 } from "@bpmn-lean/platform-contracts";
 import type {
   CommittedTransitionBatch,
@@ -19,6 +20,12 @@ import type {
 import { LatestRequest } from "./latest-request.ts";
 
 const publicationPageLimit = 100;
+/**
+ * A head page without `current` means an input committed between the engine's publication and state reads, so the
+ * client re-reads from the same cursor. Two re-reads absorb an isolated concurrent commit; a head that still moves
+ * on the third read is committing faster than one read completes, so the view reports unavailable instead of spinning.
+ */
+const movedHeadRereadLimit = 2;
 const jsonMediaType = "application/json";
 
 export type ExecutionPublicationDownload = Readonly<{
@@ -78,11 +85,12 @@ export class ProcessExecutionApiClient implements ProcessExecutionApi {
     requestedInstance: PublicProcessInstanceIdentity,
   ): Promise<ExecutionPublicationExport> {
     const instance = snapshotInstance(requestedInstance);
-    const identity = executionPublicationIdentityForPublicProcessInstance(instance);
+    const identity = publicationIdentityForPublicProcessInstance(instance);
     const generation = this.#publicationRequests.begin();
     const batches: CommittedTransitionBatch[] = [];
     let afterRevision = 0;
     let observedHead = 0;
+    let movedHeadReads = 0;
 
     while (true) {
       const response = await this.#fetch(this.#url(executionPublicationPath({
@@ -111,10 +119,15 @@ export class ProcessExecutionApiClient implements ProcessExecutionApi {
         throw new ProcessExecutionProtocolError("execution publication head revision regressed");
       }
       observedHead = page.headRevision;
+      if (page.pageThroughRevision === page.headRevision && page.current === null) {
+        movedHeadReads += 1;
+        if (movedHeadReads > movedHeadRereadLimit) throw new ProcessExecutionUnavailableError();
+        continue;
+      }
       batches.push(...page.batches);
       if (page.current !== null) {
         const candidate = {
-          format: "bpmn-lean.execution-publication.v1",
+          format: executionPublicationExportFormat,
           ...identity,
           headRevision: page.headRevision,
           batches,
@@ -140,7 +153,7 @@ export class ProcessExecutionApiClient implements ProcessExecutionApi {
     requestedInstance: PublicProcessInstanceIdentity,
   ): Promise<ExecutionPublicationDownload> {
     const instance = snapshotInstance(requestedInstance);
-    const identity = executionPublicationIdentityForPublicProcessInstance(instance);
+    const identity = publicationIdentityForPublicProcessInstance(instance);
     const generation = this.#exportRequests.begin();
     const response = await this.#fetch(this.#url(
       executionPublicationExportPath(identity.processInstanceId),

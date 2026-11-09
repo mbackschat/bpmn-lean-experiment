@@ -1,7 +1,5 @@
-import {
-  temporalDefinitionScheduleId,
-  temporalDefinitionScheduleWorkflowIdBase,
-} from "@bpmn-lean/temporal-client/definition-schedule";
+/** The private host addresses of a platform Schedule, derived inside Product 1 from its public tuple. */
+import { engineDefinitionMessageStartWorkflowId, engineDefinitionScheduleId } from "@bpmn-lean/engine-api";
 
 export type DefinitionSchedulePublicReference = Readonly<{
   processId: string;
@@ -9,16 +7,12 @@ export type DefinitionSchedulePublicReference = Readonly<{
   scheduleId: string;
 }>;
 
-/** Derives a collision-resistant private Schedule address from the complete public tuple. */
-export function definitionScheduleHostId(
-  reference: DefinitionSchedulePublicReference,
-): string {
-  return temporalDefinitionScheduleId(reference);
+/** A collision-resistant Schedule address from the complete public tuple. */
+export function definitionScheduleHostId(reference: DefinitionSchedulePublicReference): string {
+  return engineDefinitionScheduleId(reference);
 }
 
-/** Uses the Process host-address domain while keeping semantic identity opaque. */
-export function definitionScheduleWorkflowIdBase(
-  processInstanceId: string,
-): string {
-  return temporalDefinitionScheduleWorkflowIdBase(processInstanceId);
+/** The Workflow ID base of the Schedule's action, in the process host-address domain. */
+export function definitionScheduleWorkflowIdBase(processInstanceId: string): string {
+  return engineDefinitionMessageStartWorkflowId(processInstanceId);
 }

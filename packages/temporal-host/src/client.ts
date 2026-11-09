@@ -4,9 +4,13 @@
  *
  * A refused Update comes back as the kernel's `rejected` outcome with the validator's code; an Update sent to a
  * chain that has ended is `rejected` too, since no instance is running to take it.
+ *
+ * A correlated publication goes to the ingress of its address by Update-with-Start, so the first publication or
+ * registration at an address starts its ingress and every later one reaches the running one.
  */
 import {
   ApplicationFailure,
+  WithStartWorkflowOperation,
   WorkflowExecutionAlreadyStartedError,
   WorkflowNotFoundError,
   WorkflowUpdateFailedError,
@@ -14,6 +18,7 @@ import {
   type WorkflowHandle,
 } from "@temporalio/client";
 
+import { ingressWorkflowId, publicationUpdateId } from "./correlation-address.js";
 import type { PublicationPage } from "./publication.js";
 import type { JsonValue } from "./port.js";
 import type { ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
@@ -24,23 +29,35 @@ import {
   deliverUpdate,
   effectResultUpdate,
   hostViewQuery,
+  ingressWorkflowType,
   observationQuery,
   publicationQuery,
+  publishUpdate,
   rejectionType,
+  settleUpdate,
   timerFireUpdate,
   workflowType,
   type CommandResult,
+  type CorrelatedPublication,
   type HostSnapshot,
+  type IngressArgs,
   type ProcessResult,
+  type PublicationResult,
   type RunProcessArgs,
 } from "./protocol.js";
 import { assertNever } from "./host-machine.js";
 
 export {
+  PublicationOutcome,
   ResultKind,
   Scheduling,
+  correlationAmbiguousCode,
+  notCorrelatedCode,
   workflowType,
   type CommandResult,
+  type CorrelatedPublication,
+  type CorrelationTarget,
+  type PublicationResult,
   type Halt,
   type HostConfig,
   type HostSnapshot,
@@ -51,8 +68,34 @@ export { PageKind, type Batch, type ExecutionTransition, type OccurrenceTransiti
 export type { HostView, JsonValue, OccurrenceId, Requirements, WaitView } from "./port.js";
 export type { ProcessDescription, ProcessHost, StartRequest } from "./process-port.js";
 export { ScheduleClient } from "./schedule-client.js";
+export { ingressWorkflowId } from "./correlation-address.js";
 
 type ProcessWorkflow = (args: RunProcessArgs) => Promise<ProcessResult>;
+type IngressWorkflow = (args: IngressArgs) => Promise<void>;
+
+/**
+ * Submits `stimulus` as `update` to the chain `workflowId`. `updateId`, when given, makes a repeated submission the
+ * same Update, answered with its first result within a Run.
+ */
+export async function submitUpdate(
+  client: Client,
+  workflowId: string,
+  update: typeof commandUpdate,
+  stimulus: JsonValue,
+  updateId?: string,
+): Promise<CommandResult> {
+  try {
+    return await client.workflow.getHandle<ProcessWorkflow>(workflowId)
+      .executeUpdate(update, { args: [stimulus], ...(updateId === undefined ? {} : { updateId }) });
+  } catch (error) {
+    if (error instanceof WorkflowUpdateFailedError && error.cause instanceof ApplicationFailure &&
+        error.cause.type === rejectionType) {
+      return { outcome: "rejected", code: error.cause.message, revision: null };
+    }
+    if (error instanceof WorkflowNotFoundError) return { outcome: "rejected", code: "workflow-closed", revision: null };
+    throw error;
+  }
+}
 
 export class ProcessClient implements ProcessHost {
   constructor(private readonly client: Client, private readonly taskQueue: string) {}
@@ -68,7 +111,13 @@ export class ProcessClient implements ProcessHost {
         taskQueue: this.taskQueue,
         workflowId: request.workflowId,
         workflowIdReusePolicy: "REJECT_DUPLICATE",
-        args: [{ kind: RunKind.Start, program: request.program, config: request.config, start: request.start }],
+        args: [{
+          kind: RunKind.Start,
+          program: request.program,
+          config: request.config,
+          correlationScope: request.correlationScope ?? null,
+          start: request.start,
+        }],
         ...(request.memo === undefined ? {} : { memo: request.memo }),
       });
     } catch (error) {
@@ -78,7 +127,8 @@ export class ProcessClient implements ProcessHost {
       throw error;
     }
     const snapshot = await handle.query(hostViewQuery);
-    if (snapshot.view !== null) return { outcome: "committed", code: null, revision: snapshot.revision };
+    if (snapshot.view !== null && !snapshot.registering) return { outcome: "committed", code: null, revision: snapshot.revision };
+    if (snapshot.view !== null) return { outcome: "committed", code: null, revision: await handle.executeUpdate(settleUpdate) };
     const result = await handle.result();
     switch (result.kind) {
       case ResultKind.NotStarted: return { outcome: result.outcome, code: result.code, revision: null };
@@ -120,6 +170,24 @@ export class ProcessClient implements ProcessHost {
     return this.handle(workflowId).query(publicationQuery, afterRevision, limit);
   }
 
+  /**
+   * Routes `publication` through the ingress of its address. A publication the ingress refuses to carry (the kernel's
+   * codec cannot read its delivery) is a caller fault and throws.
+   */
+  async publish(publication: CorrelatedPublication): Promise<PublicationResult> {
+    const start = new WithStartWorkflowOperation<IngressWorkflow>(ingressWorkflowType, {
+      workflowId: ingressWorkflowId(publication.correlationScope, publication.channel),
+      taskQueue: this.taskQueue,
+      workflowIdConflictPolicy: "USE_EXISTING",
+      args: [{ correlationScope: publication.correlationScope, channel: publication.channel, carried: null }],
+    });
+    return this.client.workflow.executeUpdateWithStart(publishUpdate, {
+      args: [publication],
+      updateId: publicationUpdateId(publication),
+      startWorkflowOperation: start,
+    });
+  }
+
   result(workflowId: string): Promise<ProcessResult> {
     return this.handle(workflowId).result();
   }
@@ -144,20 +212,7 @@ export class ProcessClient implements ProcessHost {
     return this.client.workflow.getHandle<ProcessWorkflow>(workflowId);
   }
 
-  private async submit(
-    workflowId: string,
-    update: typeof commandUpdate,
-    stimulus: JsonValue,
-  ): Promise<CommandResult> {
-    try {
-      return await this.handle(workflowId).executeUpdate(update, { args: [stimulus] });
-    } catch (error) {
-      if (error instanceof WorkflowUpdateFailedError && error.cause instanceof ApplicationFailure &&
-          error.cause.type === rejectionType) {
-        return { outcome: "rejected", code: error.cause.message, revision: null };
-      }
-      if (error instanceof WorkflowNotFoundError) return { outcome: "rejected", code: "workflow-closed", revision: null };
-      throw error;
-    }
+  private submit(workflowId: string, update: typeof commandUpdate, stimulus: JsonValue): Promise<CommandResult> {
+    return submitUpdate(this.client, workflowId, update, stimulus);
   }
 }

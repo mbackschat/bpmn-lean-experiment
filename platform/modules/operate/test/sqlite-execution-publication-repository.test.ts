@@ -16,8 +16,11 @@ import type { ExecutionPublicationPage } from "@bpmn-lean/platform-contracts";
 import { serializeCanonicalExecutionPublicationValue } from "@bpmn-lean/platform-contracts";
 
 import {
-  firstPage,
+  current,
   failedPage,
+  firstPage,
+  headOnlyPage,
+  headPageWithoutCurrent,
   registration,
   secondPage,
 } from "./execution-publication-fixture.ts";
@@ -112,6 +115,25 @@ for (const suffix of [secondPage, failedPage]) {
     }
   });
 }
+
+test("retains a projected head whose committed state is not yet read, then completes it", async () => {
+  await withRepositories(async (_, publications, registered) => {
+    const advanced = await publications.applyPage(registered, headPageWithoutCurrent(firstPage()));
+    assert.equal(advanced.headRevision, 2);
+    assert.equal(advanced.current, null);
+    assert.deepEqual(await publications.get("Instance_1"), advanced);
+    assert.equal(await publications.page("Instance_1", { afterRevision: 0 }), null);
+    assert.equal(await publications.export("Instance_1"), null);
+
+    const completed = await publications.applyPage(registered, headOnlyPage(2, true));
+    assert.deepEqual(completed.current, current(2));
+    assert.deepEqual(await publications.get("Instance_1"), completed);
+    assert.deepEqual(
+      (await publications.page("Instance_1", { afterRevision: 0 }))?.current,
+      current(2),
+    );
+  });
+});
 
 test("suppresses every read after a durable gap or unavailable classification", async () => {
   await withRepositories(async (_, publications, registered) => {

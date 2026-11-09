@@ -1,151 +1,153 @@
 /**
- * Narrow product-facing engine entry point.
- *
- * It projects admission identity and diagnostics while keeping the checked graph and Semantic
- * Process program inside product 1. Additional start, observation, and command operations join this
- * same entry point as their M1 consumers land.
+ * Product 1's narrow entry point for Product 2: compilation through the kernel reader and admission, starts, Timer
+ * start Schedules, human work, incident operations and committed publication, over the generic Temporal host. No
+ * kernel program, kernel state or Temporal identity crosses it; Product 2 holds opaque locators and intents.
  */
-import {
-  BpmnCompilationStatus,
-  compileBpmnToSemanticProcess,
-} from "@bpmn-lean/bpmn-source";
-import type {
-  BpmnSourceDiagnostic,
-  BpmnSourceIdentity,
-  BpmnSourceLimits,
-  SourceOverlaySelection,
-} from "@bpmn-lean/bpmn-source";
-import type { DeepReadonly, SourceOverlayIdentity } from "@bpmn-lean/semantic-core";
-import { snapshotSourceOverlay } from "./source-overlay.js";
-
-import {
-  engineDefinitionCorrelationCapabilities,
-  engineDefinitionStartCapabilities,
-} from "./definition-capabilities.js";
-import type {
-  EngineDefinitionCorrelationCapabilities,
-  EngineDefinitionStartCapabilities,
-} from "./definition-capabilities.js";
-
-export const EngineDefinitionCompilationStatus = {
-  Accepted: "accepted",
-  Rejected: "rejected",
-} as const;
-
-export type EngineDefinitionCompilationStatus =
-  typeof EngineDefinitionCompilationStatus[
-    keyof typeof EngineDefinitionCompilationStatus
-  ];
-
-/** Compilation snapshots BPMN and selected overlay bytes before asynchronous parsing. */
-export type EngineDefinitionCompilationRequest = Readonly<{
-  bytes: Uint8Array;
-  sourceId: string;
-  semanticProfile: string;
-  expectedSha256: string | undefined;
-  sourceOverlay?: SourceOverlaySelection | null;
-  limits: BpmnSourceLimits;
-}>;
-
-export type EngineDefinitionIdentity = DeepReadonly<{
-  processId: string;
-  semanticProfile: string;
-  sourceOverlay: SourceOverlayIdentity | null;
-}>;
-
-export type EngineAcceptedDefinitionCompilation = DeepReadonly<{
-  status: typeof EngineDefinitionCompilationStatus.Accepted;
-  source: BpmnSourceIdentity;
-  diagnostics: readonly [];
-  definition: EngineDefinitionIdentity;
-  startCapabilities: EngineDefinitionStartCapabilities;
-  correlationCapabilities: EngineDefinitionCorrelationCapabilities;
-}>;
-
-export type EngineRejectedDefinitionCompilation = DeepReadonly<{
-  status: typeof EngineDefinitionCompilationStatus.Rejected;
-  source: BpmnSourceIdentity;
-  diagnostics: BpmnSourceDiagnostic[];
-  definition: undefined;
-}>;
-
-export type EngineDefinitionCompilationResult =
-  | EngineAcceptedDefinitionCompilation
-  | EngineRejectedDefinitionCompilation;
-
-export async function compileBpmnDefinition(
-  request: EngineDefinitionCompilationRequest,
-): Promise<EngineDefinitionCompilationResult> {
-  if (!(request.bytes instanceof Uint8Array)) {
-    throw new TypeError("bytes must be a Uint8Array");
-  }
-  const snapshot = {
-    bytes: Uint8Array.from(request.bytes),
-    sourceId: request.sourceId,
-    semanticProfile: request.semanticProfile,
-    expectedSha256: request.expectedSha256,
-    sourceOverlay: snapshotSourceOverlay(request.sourceOverlay),
-    limits: { ...request.limits },
-  };
-  const compilation = await compileBpmnToSemanticProcess({
-    bytes: snapshot.bytes,
-    sourceId: snapshot.sourceId,
-    expectedSha256: snapshot.expectedSha256,
-    semanticProfile: snapshot.semanticProfile,
-    sourceOverlay: snapshot.sourceOverlay,
-    limits: snapshot.limits,
-  });
-  switch (compilation.status) {
-    case BpmnCompilationStatus.Accepted:
-      return {
-        status: EngineDefinitionCompilationStatus.Accepted,
-        source: compilation.source,
-        diagnostics: [],
-        definition: {
-          processId: compilation.semanticProcess.processId,
-          semanticProfile: compilation.semanticProcess.identity.semanticProfile,
-          sourceOverlay: compilation.semanticProcess.identity.sourceOverlay,
-        },
-        startCapabilities: engineDefinitionStartCapabilities(
-          compilation.semanticProcess,
-        ),
-        correlationCapabilities: engineDefinitionCorrelationCapabilities(
-          compilation.semanticProcess,
-        ),
-      };
-    case BpmnCompilationStatus.Rejected:
-      return {
-        status: EngineDefinitionCompilationStatus.Rejected,
-        source: compilation.source,
-        diagnostics: compilation.diagnostics,
-        definition: undefined,
-      };
-    default:
-      return assertNever(compilation);
-  }
-}
-
-function assertNever(value: never): never {
-  throw new TypeError(`Unsupported BPMN compilation result: ${String(value)}`);
-}
-
-export * from "./definition-start.js";
-export * from "./definition-capabilities.js";
-export * from "./definition-correlated-message.js";
-export * from "./definition-message-start.js";
-export * from "./definition-schedule.js";
+export {
+  type EngineBinding,
+  type EngineDefinitionIdentity,
+  type EngineDefinitionRef,
+  type EngineFailure,
+  type EngineIntent,
+  type EngineLimits,
+  type EngineOccurrenceId,
+  type EngineProfile,
+  type EngineSourceIdentity,
+  type EngineSourceOverlayIdentity,
+  type EngineSourceOverlaySelection,
+  type EngineValue,
+  type JsonValue,
+} from "./common.js";
+export {
+  EngineDefinitionCompilationStatus,
+  compileBpmnDefinition,
+  engineHostRefusal,
+  engineHostRefusalCodes,
+  type EngineAcceptedDefinitionCompilation,
+  type EngineCorrelatedChannel,
+  type EngineCorrelationCriterion,
+  type EngineDefinitionCapabilities,
+  type EngineDefinitionCompilationRequest,
+  type EngineDefinitionCompilationResult,
+  type EngineDiagnostic,
+  type EngineHostCapability,
+  type EngineHostRequirements,
+  type EngineMessageChannel,
+  type EngineRejectedDefinitionCompilation,
+  type EngineServedRequirements,
+  type EngineStartCapability,
+  type EngineTimerSchedule,
+} from "./definition.js";
+export {
+  createEngineHostRuntime,
+  engineCorrelationScope,
+  engineDefinitionScheduleId,
+  type EngineHost,
+  type EngineHostRuntime,
+  type EngineHostRuntimeOptions,
+  type EngineScheduleReference,
+} from "./host.js";
 export {
   engineProcessLocatorForCanonicalProcess,
-  engineProcessWorkLocatorForCanonicalProcess,
+  engineProcessLocatorForWorkflowId,
   parseEngineProcessLocator,
-  parseEngineProcessWorkLocator,
   serializeEngineProcessLocator,
-  serializeEngineProcessWorkLocator,
+  type EngineProcessLocator,
 } from "./process-locator.js";
-export type {
-  EngineProcessLocator,
-  EngineProcessWorkLocator,
-} from "./process-locator.js";
-export * from "./process-operations.js";
-export * from "./process-observation.js";
-export * from "./process-work.js";
+export { EngineStartDescriptionStatus } from "./start-dispatch.js";
+export {
+  EngineDefinitionStartIntegrityCode,
+  EngineDefinitionStartStatus,
+  describeBpmnDefinitionVersionStart,
+  engineDirectStartProtocol,
+  prepareBpmnDefinitionVersionStart,
+  startBpmnDefinitionVersion,
+  startPreparedBpmnDefinitionVersion,
+  type EngineDefinitionStartDescriptionRequest,
+  type EngineDefinitionStartPreparationRequest,
+  type EngineDefinitionStartPreparationResult,
+  type EngineDefinitionStartRefusal,
+  type EngineDefinitionStartRequest,
+  type EngineDefinitionStartResult,
+  type EnginePreparedDefinitionStart,
+  type EnginePreparedDefinitionStartRequest,
+  type EngineStartedDefinition,
+} from "./definition-start.js";
+export {
+  EngineDefinitionMessageStartFailureCode,
+  EngineDefinitionMessageStartStatus,
+  describeBpmnDefinitionMessageStart,
+  engineDefinitionMessageStartWorkflowId,
+  engineMessageStartProtocol,
+  prepareBpmnDefinitionMessageStart,
+  startBpmnDefinitionMessageStart,
+  type EngineDefinitionMessageStartDescriptionRequest,
+  type EngineDefinitionMessageStartPreparationRequest,
+  type EngineDefinitionMessageStartPreparationResult,
+  type EngineDefinitionMessageStartRequest,
+  type EngineDefinitionMessageStartResult,
+  type EngineMessageStartSelection,
+} from "./definition-message-start.js";
+export {
+  EngineCorrelatedMessageStatus,
+  engineCorrelationAmbiguousCode,
+  engineNotCorrelatedCode,
+  publishEngineCorrelatedMessage,
+  type EngineCorrelatedMessageRequest,
+  type EngineCorrelatedMessageResult,
+  type EngineCorrelationTarget,
+} from "./definition-correlated-message.js";
+export {
+  EngineDefinitionScheduleIntegrityCode,
+  EngineDefinitionScheduleStatus,
+  createBpmnDefinitionSchedule,
+  deleteBpmnDefinitionSchedule,
+  engineTimerStartProtocol,
+  inspectBpmnDefinitionSchedule,
+  pauseBpmnDefinitionSchedule,
+  type EngineDefinitionScheduleAddressRequest,
+  type EngineDefinitionScheduleBindingRequest,
+  type EngineDefinitionScheduleResult,
+  type EngineTimerStartSelection,
+} from "./definition-schedule.js";
+export {
+  type EngineCommandResult,
+  type EngineOpenWait,
+  type EngineStateObservation,
+} from "./process-observation.js";
+export {
+  EngineOpenWorkStatus,
+  EngineWorkDetailStatus,
+  completeWork,
+  observeOpenWork,
+  readWorkDetail,
+  type EngineCompleteWorkRequest,
+  type EngineOpenWorkRequest,
+  type EngineOpenWorkResult,
+  type EngineWorkCompletion,
+  type EngineWorkDetail,
+  type EngineWorkDetailRequest,
+  type EngineWorkDetailResult,
+} from "./process-work.js";
+export {
+  EngineIncidentObservationStatus,
+  EngineIncidentOperationKind,
+  observeEngineProcessIncidents,
+  submitEngineIncidentOperation,
+  type EngineIncidentId,
+  type EngineIncidentObservationRequest,
+  type EngineIncidentObservationResult,
+  type EngineIncidentOperation,
+  type EngineIncidentOperationRequest,
+} from "./process-operations.js";
+export {
+  EnginePublicationStatus,
+  observeEngineProcessExecution,
+  observeEngineProcessFlowNodeOccurrences,
+  type EngineCommittedState,
+  type EngineExecutionBatch,
+  type EngineExecutionPublicationResult,
+  type EngineOccurrenceBatch,
+  type EnginePublicationRequest,
+  type EnginePublicationResult,
+} from "./process-publication.js";

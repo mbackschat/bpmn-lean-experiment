@@ -262,9 +262,11 @@ function requireCompleteIncidentFilter(value: object): void {
   }
 }
 
-function decodeGeneration(value: unknown, label: string): 1 {
-  if (value !== 1) throw new TypeError(`${label} must be 1`);
-  return 1;
+function decodeGeneration(value: unknown, label: string): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) {
+    throw new TypeError(`${label} must be a positive safe integer`);
+  }
+  return value;
 }
 
 function decodeIncidentAuditLimit(value: unknown): number {

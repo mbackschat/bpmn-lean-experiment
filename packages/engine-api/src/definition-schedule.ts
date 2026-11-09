@@ -1,494 +1,248 @@
+/**
+ * Timer Start Schedules: one Temporal Schedule per platform Schedule fires the selected Timer start once at its due
+ * instant. Every operation recompiles the stored bytes and checks the selected Timer start, so the stored Schedule is
+ * compared with what the definition produces now; its memo carries the start's intent, which the started process
+ * inherits.
+ *
+ * The caller computes the due instant from the Timer start's resolved schedule (`EngineTimerSchedule`); the engine API
+ * checks that the selected start and its schedule are what the definition compiles to now.
+ */
 import {
-  BpmnCompilationStatus,
-  compileBpmnToSemanticProcess,
-} from "@bpmn-lean/bpmn-source";
-import type {
-  AcceptedBpmnCompilation,
-  BpmnSourceLimits,
-  SourceOverlaySelection,
-} from "@bpmn-lean/bpmn-source";
-import {
-  StimulusKind,
-  isWellFormedWireString,
-  sameSourceOverlayIdentity,
-} from "@bpmn-lean/semantic-core";
-import type {
-  DeepReadonly,
-  TriggerTimerStartStimulus,
-} from "@bpmn-lean/semantic-core";
-import {
-  TemporalDefinitionScheduleCreateResultKind,
-  createTemporalDefinitionSchedule,
-  deleteTemporalDefinitionSchedule,
-  describeTemporalDefinitionSchedule,
-  pauseTemporalDefinitionSchedule,
-} from "@bpmn-lean/temporal-client/definition-schedule";
-import type {
-  TemporalDefinitionScheduleClient,
-} from "@bpmn-lean/temporal-client/definition-schedule";
+  SchedulePhase,
+  ScheduleCreation,
+  assessSchedule,
+  type ExpectedSchedule,
+} from "@bpmn-lean/temporal-host/host";
 
 import {
-  engineDefinitionStartCapabilities,
-} from "./definition-capabilities.js";
-import type {
-  EngineDefinitionStartCapabilities,
-  EngineTimerStartCapability,
-} from "./definition-capabilities.js";
+  requireWireString,
+  sameJson,
+  snapshotOverlay,
+  snapshotProfile,
+  type EngineFailure,
+  type EngineLimits,
+  type EngineProfile,
+  type EngineSourceOverlaySelection,
+  type JsonValue,
+} from "./common.js";
 import {
-  assessDefinitionScheduleDescription,
-} from "./definition-schedule-description.js";
-import {
-  engineProcessLocatorForScheduleExecution,
-} from "./process-locator.js";
-import type {
-  EngineProcessLocator,
-} from "./process-locator.js";
-import { snapshotSourceOverlay } from "./source-overlay.js";
+  atVersion,
+  compileProgram,
+  type CompiledDefinition,
+  type EngineStartCapability,
+  type EngineTimerSchedule,
+} from "./definition.js";
+import { engineCorrelationScope, engineHostConfig, type EngineHost } from "./host.js";
+import { engineProcessLocatorForWorkflowId, type EngineProcessLocator } from "./process-locator.js";
+import { prepareStart, startMemo, type PreparedStart } from "./start-dispatch.js";
 
-export const EngineDefinitionScheduleStatus = {
-  Pending: "pending",
-  Started: "started",
-  Missed: "missed",
-  Rejected: "rejected",
-  IntegrityFailure: "integrityFailure",
-} as const;
+export const engineTimerStartProtocol = "bpmn-kernel-timer-start";
 
-export type EngineDefinitionScheduleStatus =
-  typeof EngineDefinitionScheduleStatus[
-    keyof typeof EngineDefinitionScheduleStatus
-  ];
+export enum EngineDefinitionScheduleStatus {
+  Pending = "pending",
+  Started = "started",
+  Missed = "missed",
+  Rejected = "rejected",
+  IntegrityFailure = "integrityFailure",
+}
 
-export const EngineDefinitionScheduleIntegrityCode = {
-  CompilationRejected: "definitionCompilationRejected",
-  IdentityDrift: "definitionIdentityDrift",
-  CapabilityDrift: "definitionStartCapabilityDrift",
-  ScheduleDrift: "temporalScheduleDrift",
-  InvalidSchedulePhase: "temporalSchedulePhaseInvalid",
-} as const;
+export enum EngineDefinitionScheduleIntegrityCode {
+  CompilationRejected = "definitionCompilationRejected",
+  IdentityDrift = "definitionIdentityDrift",
+  CapabilityDrift = "definitionStartCapabilityDrift",
+  ScheduleDrift = "temporalScheduleDrift",
+  InvalidSchedulePhase = "temporalSchedulePhaseInvalid",
+  ScheduleMissing = "temporalScheduleMissing",
+}
 
-export type EngineDefinitionScheduleIntegrityCode =
-  typeof EngineDefinitionScheduleIntegrityCode[
-    keyof typeof EngineDefinitionScheduleIntegrityCode
-  ];
+export type EngineTimerStartSelection = Readonly<{ startEventId: string; timer: EngineTimerSchedule }>;
 
 export type EngineDefinitionScheduleBindingRequest = Readonly<{
+  host: EngineHost;
   bytes: Uint8Array;
-  sourceOverlay?: SourceOverlaySelection | null;
+  sourceOverlay?: EngineSourceOverlaySelection | null;
   sourceId: string;
   expectedSha256: string;
   expectedByteLength: number;
-  semanticProfile: string;
+  profile: EngineProfile;
   expectedProcessId: string;
-  expectedStartCapabilities: EngineDefinitionStartCapabilities;
-  expectedTimerStart: EngineTimerStartCapability;
+  /** The deployed version the platform stored the definition under. */
+  version: number;
+  expectedStarts: readonly EngineStartCapability[];
+  timerStart: EngineTimerStartSelection;
   processInstanceId: string;
   scheduleId: string;
-  configuredWorkflowId: string;
-  activationAtEpochMs: number;
+  workflowIdBase: string;
+  /** A whole UTC second, the unit of a Schedule's calendar. */
   dueAtEpochMs: number;
-  limits: BpmnSourceLimits;
-  temporalClient: TemporalDefinitionScheduleClient;
-  taskQueue: string;
-}>;
-
-export type EngineDefinitionScheduleFailure = DeepReadonly<{
-  code: string;
-  evidence: string;
+  limits: EngineLimits;
 }>;
 
 export type EngineDefinitionScheduleResult =
+  | Readonly<{ status: EngineDefinitionScheduleStatus.Pending; paused: boolean }>
+  | Readonly<{ status: EngineDefinitionScheduleStatus.Started; paused: boolean; locator: EngineProcessLocator }>
+  | Readonly<{ status: EngineDefinitionScheduleStatus.Missed; paused: boolean }>
   | Readonly<{
-      status: typeof EngineDefinitionScheduleStatus.Pending;
-      paused: boolean;
-    }>
-  | Readonly<{
-      status: typeof EngineDefinitionScheduleStatus.Started;
-      paused: boolean;
-      locator: EngineProcessLocator;
-    }>
-  | Readonly<{
-      status: typeof EngineDefinitionScheduleStatus.Missed;
-      paused: boolean;
-    }>
-  | Readonly<{
-      status: typeof EngineDefinitionScheduleStatus.Rejected;
-      failure: EngineDefinitionScheduleFailure;
-    }>
-  | Readonly<{
-      status: typeof EngineDefinitionScheduleStatus.IntegrityFailure;
-      failure: EngineDefinitionScheduleFailure;
+      status: EngineDefinitionScheduleStatus.Rejected | EngineDefinitionScheduleStatus.IntegrityFailure;
+      failure: EngineFailure;
     }>;
 
-export type EngineDefinitionScheduleAddressRequest = Readonly<{
-  scheduleId: string;
-  temporalClient: TemporalDefinitionScheduleClient;
-}>;
+export type EngineDefinitionScheduleAddressRequest = Readonly<{ host: EngineHost; scheduleId: string }>;
 
+/** Creates the Schedule, or finds the one already created under its identifier, and reports its phase. */
 export async function createBpmnDefinitionSchedule(
   request: EngineDefinitionScheduleBindingRequest,
 ): Promise<EngineDefinitionScheduleResult> {
-  const prepared = await prepareBoundSchedule(request);
-  if ("status" in prepared) {
-    return prepared;
-  }
-  const created = await createTemporalDefinitionSchedule(
-    prepared.snapshot.temporalClient,
-    prepared.expected,
-  );
-  switch (created.kind) {
-    case TemporalDefinitionScheduleCreateResultKind.Created:
-    case TemporalDefinitionScheduleCreateResultKind.AlreadyExists:
-      return inspectPreparedSchedule(prepared, false);
-    case TemporalDefinitionScheduleCreateResultKind.Rejected:
-      return {
-        status: EngineDefinitionScheduleStatus.Rejected,
-        failure: created.failure,
-      };
-    default:
-      return assertNever(created);
+  const prepared = await prepare(snapshot(request), request.host);
+  if ("status" in prepared) return prepared;
+  const created = await request.host.schedules.create({
+    scheduleId: prepared.expected.scheduleId,
+    dueAtEpochMs: prepared.expected.dueAtEpochMs,
+    workflowIdBase: prepared.expected.workflowIdBase,
+    program: prepared.start.compiled.program,
+    config: engineHostConfig(request.host),
+    start: prepared.start.stimulus,
+    correlationScope: engineCorrelationScope(prepared.start.compiled.compilation.definition),
+    memo: prepared.expected.memo,
+  });
+  switch (created) {
+    case ScheduleCreation.Created:
+    case ScheduleCreation.AlreadyExists:
+      return inspect(request.host, prepared, false);
   }
 }
 
 export async function inspectBpmnDefinitionSchedule(
   request: EngineDefinitionScheduleBindingRequest,
 ): Promise<EngineDefinitionScheduleResult> {
-  const prepared = await prepareBoundSchedule(request);
-  return "status" in prepared
-    ? prepared
-    : inspectPreparedSchedule(prepared, false);
+  const prepared = await prepare(snapshot(request), request.host);
+  return "status" in prepared ? prepared : inspect(request.host, prepared, false);
 }
 
 export async function pauseBpmnDefinitionSchedule(
   request: EngineDefinitionScheduleBindingRequest,
 ): Promise<EngineDefinitionScheduleResult> {
-  const prepared = await prepareBoundSchedule(request);
-  if ("status" in prepared) {
-    return prepared;
-  }
-  await pauseTemporalDefinitionSchedule(
-    prepared.snapshot.temporalClient,
-    prepared.snapshot.scheduleId,
-  );
-  return inspectPreparedSchedule(prepared, true);
+  const prepared = await prepare(snapshot(request), request.host);
+  if ("status" in prepared) return prepared;
+  await request.host.schedules.pause(prepared.expected.scheduleId);
+  return inspect(request.host, prepared, true);
 }
 
-export function deleteBpmnDefinitionSchedule(
-  request: EngineDefinitionScheduleAddressRequest,
-): Promise<void> {
-  requireNonemptyWireString(request.scheduleId, "scheduleId");
-  return deleteTemporalDefinitionSchedule(
-    request.temporalClient,
-    request.scheduleId,
-  );
+export function deleteBpmnDefinitionSchedule(request: EngineDefinitionScheduleAddressRequest): Promise<void> {
+  return request.host.schedules.delete(requireWireString(request.scheduleId, "scheduleId"));
 }
 
-type ScheduleSnapshot = Readonly<{
-  bytes: Uint8Array;
-  sourceOverlay: SourceOverlaySelection | null;
-  sourceId: string;
-  expectedSha256: string;
-  expectedByteLength: number;
-  semanticProfile: string;
-  expectedProcessId: string;
-  expectedStartCapabilities: EngineDefinitionStartCapabilities;
-  expectedTimerStart: EngineTimerStartCapability;
-  processInstanceId: string;
-  scheduleId: string;
-  configuredWorkflowId: string;
-  activationAtEpochMs: number;
-  dueAtEpochMs: number;
-  limits: BpmnSourceLimits;
-  temporalClient: TemporalDefinitionScheduleClient;
-  taskQueue: string;
+type Snapshot = Omit<EngineDefinitionScheduleBindingRequest, "host" | "sourceOverlay"> & Readonly<{
+  sourceOverlay: EngineSourceOverlaySelection | null;
 }>;
 
-type PreparedSchedule = Readonly<{
-  snapshot: ScheduleSnapshot;
-  expected: Readonly<{
-    scheduleId: string;
-    dueAtEpochMs: number;
-    start: TriggerTimerStartStimulus;
-    semanticProcess: AcceptedBpmnCompilation["semanticProcess"];
-    configuredWorkflowId: string;
-    taskQueue: string;
-  }>;
-}>;
+type PreparedSchedule = Readonly<{ start: PreparedStart; expected: ExpectedSchedule }>;
 
-async function prepareBoundSchedule(
-  request: EngineDefinitionScheduleBindingRequest,
-): Promise<PreparedSchedule | EngineDefinitionScheduleResult> {
-  const snapshot = snapshotRequest(request);
-  const compilation = await compileBpmnToSemanticProcess({
-    bytes: snapshot.bytes,
-    sourceId: snapshot.sourceId,
-    expectedSha256: snapshot.expectedSha256,
-    semanticProfile: snapshot.semanticProfile,
-    sourceOverlay: snapshot.sourceOverlay,
-    limits: snapshot.limits,
-  });
-  if (compilation.status === BpmnCompilationStatus.Rejected) {
-    return integrityFailure(
-      EngineDefinitionScheduleIntegrityCode.CompilationRejected,
-      compilation.diagnostics[0]?.evidence ??
-        "Stored definition recompilation was rejected.",
-    );
-  }
-  if (!compiledIdentityMatches(compilation, snapshot)) {
-    return integrityFailure(
-      EngineDefinitionScheduleIntegrityCode.IdentityDrift,
-      "Compiled source and definition identity did not match the stored definition version.",
-    );
-  }
-  const capabilities = engineDefinitionStartCapabilities(
-    compilation.semanticProcess,
-  );
-  if (
-    !sameStartCapabilities(
-      capabilities,
-      snapshot.expectedStartCapabilities,
-    ) ||
-    capabilities.timerStarts.length !== 1 ||
-    capabilities.timerStarts[0]?.startEventId !==
-      snapshot.expectedTimerStart.startEventId ||
-    capabilities.timerStarts[0]?.durationMs !==
-      snapshot.expectedTimerStart.durationMs
-  ) {
-    return integrityFailure(
-      EngineDefinitionScheduleIntegrityCode.CapabilityDrift,
-      "Compiled Timer Start capability did not match the stored definition version.",
-    );
-  }
-  const start = timerStartStimulus(snapshot);
-  return {
-    snapshot,
-    expected: {
-      scheduleId: snapshot.scheduleId,
-      dueAtEpochMs: snapshot.dueAtEpochMs,
-      start,
-      semanticProcess: compilation.semanticProcess,
-      configuredWorkflowId: snapshot.configuredWorkflowId,
-      taskQueue: snapshot.taskQueue,
-    },
-  };
-}
-
-async function inspectPreparedSchedule(
-  prepared: PreparedSchedule,
-  expectedPaused: boolean,
-): Promise<EngineDefinitionScheduleResult> {
-  const description = await describeTemporalDefinitionSchedule(
-    prepared.snapshot.temporalClient,
-    prepared.snapshot.scheduleId,
-  );
-  const assessment = assessDefinitionScheduleDescription(
-    description,
-    prepared.expected,
-  );
-  switch (assessment.kind) {
-    case "pending":
-      return assessment.paused === expectedPaused
-        ? {
-            status: EngineDefinitionScheduleStatus.Pending,
-            paused: assessment.paused,
-          }
-        : unexpectedPauseState(expectedPaused);
-    case "started":
-      return assessment.paused === expectedPaused
-        ? {
-            status: EngineDefinitionScheduleStatus.Started,
-            paused: assessment.paused,
-            locator: engineProcessLocatorForScheduleExecution(
-              assessment.workflowId,
-            ),
-          }
-        : unexpectedPauseState(expectedPaused);
-    case "missed":
-      return assessment.paused === expectedPaused
-        ? {
-            status: EngineDefinitionScheduleStatus.Missed,
-            paused: assessment.paused,
-          }
-        : unexpectedPauseState(expectedPaused);
-    case "drift":
-      return integrityFailure(
-        EngineDefinitionScheduleIntegrityCode.ScheduleDrift,
-        assessment.evidence,
-      );
-    case "invalidPhase":
-      return integrityFailure(
-        EngineDefinitionScheduleIntegrityCode.InvalidSchedulePhase,
-        assessment.evidence,
-      );
-    default:
-      return assertNever(assessment);
-  }
-}
-
-function unexpectedPauseState(
-  expectedPaused: boolean,
-): EngineDefinitionScheduleResult {
-  return integrityFailure(
-    EngineDefinitionScheduleIntegrityCode.InvalidSchedulePhase,
-    `Temporal Schedule paused state did not equal ${String(expectedPaused)}.`,
-  );
-}
-
-function snapshotRequest(
-  request: EngineDefinitionScheduleBindingRequest,
-): ScheduleSnapshot {
-  if (!(request.bytes instanceof Uint8Array)) {
-    throw new TypeError("bytes must be a Uint8Array");
-  }
-  requireNonemptyWireString(request.sourceId, "sourceId");
-  requireNonemptyWireString(request.semanticProfile, "semanticProfile");
-  requireNonemptyWireString(request.expectedProcessId, "expectedProcessId");
-  requireNonemptyWireString(
-    request.expectedTimerStart.startEventId,
-    "expectedTimerStart.startEventId",
-  );
-  requireNonemptyWireString(request.processInstanceId, "processInstanceId");
-  requireNonemptyWireString(request.scheduleId, "scheduleId");
-  requireNonemptyWireString(
-    request.configuredWorkflowId,
-    "configuredWorkflowId",
-  );
-  requireNonemptyWireString(request.taskQueue, "taskQueue");
-  requirePositiveSafeInteger(request.expectedByteLength, "expectedByteLength");
-  requirePositiveSafeInteger(
-    request.expectedTimerStart.durationMs,
-    "expectedTimerStart.durationMs",
-  );
-  requireWholeUtcSecond(request.activationAtEpochMs, "activationAtEpochMs");
-  requireWholeUtcSecond(request.dueAtEpochMs, "dueAtEpochMs");
-  if (
-    request.activationAtEpochMs + request.expectedTimerStart.durationMs !==
-    request.dueAtEpochMs
-  ) {
-    throw new RangeError(
-      "dueAtEpochMs must equal activationAtEpochMs plus the Timer Start duration",
-    );
+function snapshot(request: EngineDefinitionScheduleBindingRequest): Snapshot {
+  if (!(request.bytes instanceof Uint8Array)) throw new TypeError("bytes must be a Uint8Array");
+  if (!Number.isSafeInteger(request.dueAtEpochMs) || request.dueAtEpochMs <= 0 || request.dueAtEpochMs % 1_000 !== 0) {
+    throw new RangeError("dueAtEpochMs must be a positive whole UTC second");
   }
   return {
     bytes: Uint8Array.from(request.bytes),
-    sourceOverlay: snapshotSourceOverlay(request.sourceOverlay),
-    sourceId: request.sourceId,
-    expectedSha256: request.expectedSha256,
+    sourceOverlay: snapshotOverlay(request.sourceOverlay),
+    sourceId: requireWireString(request.sourceId, "sourceId"),
+    expectedSha256: requireWireString(request.expectedSha256, "expectedSha256"),
     expectedByteLength: request.expectedByteLength,
-    semanticProfile: request.semanticProfile,
-    expectedProcessId: request.expectedProcessId,
-    expectedStartCapabilities: {
-      messageStarts: request.expectedStartCapabilities.messageStarts.map(
-        ({ startEventId, channel }) => ({
-          startEventId,
-          channel: { ...channel },
-        }),
-      ),
-      timerStarts: request.expectedStartCapabilities.timerStarts.map(
-        ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
-      ),
-    },
-    expectedTimerStart: { ...request.expectedTimerStart },
-    processInstanceId: request.processInstanceId,
-    scheduleId: request.scheduleId,
-    configuredWorkflowId: request.configuredWorkflowId,
-    activationAtEpochMs: request.activationAtEpochMs,
+    profile: snapshotProfile(request.profile),
+    expectedProcessId: requireWireString(request.expectedProcessId, "expectedProcessId"),
+    version: request.version,
+    expectedStarts: structuredClone(request.expectedStarts),
+    timerStart: structuredClone(request.timerStart),
+    processInstanceId: requireWireString(request.processInstanceId, "processInstanceId"),
+    scheduleId: requireWireString(request.scheduleId, "scheduleId"),
+    workflowIdBase: requireWireString(request.workflowIdBase, "workflowIdBase"),
     dueAtEpochMs: request.dueAtEpochMs,
-    limits: { ...request.limits },
-    temporalClient: request.temporalClient,
-    taskQueue: request.taskQueue,
+    limits: { maxBytes: request.limits.maxBytes, parserDeadlineMs: request.limits.parserDeadlineMs },
   };
 }
 
-function sameStartCapabilities(
-  left: EngineDefinitionStartCapabilities,
-  right: EngineDefinitionStartCapabilities,
-): boolean {
-  return (
-    left.messageStarts.length === right.messageStarts.length &&
-    left.messageStarts.every((capability, index) => {
-      const expected = right.messageStarts[index];
-      return capability.startEventId === expected?.startEventId &&
-        capability.channel.kind === expected.channel.kind &&
-        capability.channel.interfaceId === expected.channel.interfaceId &&
-        capability.channel.interfaceOperationId ===
-          expected.channel.interfaceOperationId &&
-        capability.channel.messageId === expected.channel.messageId;
-    }) &&
-    left.timerStarts.length === right.timerStarts.length &&
-    left.timerStarts.every((capability, index) => {
-      const expected = right.timerStarts[index];
-      return (
-        capability.startEventId === expected?.startEventId &&
-        capability.durationMs === expected.durationMs
-      );
-    })
-  );
-}
-
-function timerStartStimulus(
-  snapshot: ScheduleSnapshot,
-): TriggerTimerStartStimulus {
-  return {
-    kind: StimulusKind.TriggerTimerStart,
+async function prepare(snapshot: Snapshot, host: EngineHost): Promise<PreparedSchedule | EngineDefinitionScheduleResult> {
+  const read = await compileProgram(snapshot);
+  if (!("program" in read)) {
+    return integrityFailure(EngineDefinitionScheduleIntegrityCode.CompilationRejected, read.diagnostics[0].evidence);
+  }
+  const compiled = atVersion(read, snapshot.version);
+  if (!identityMatches(compiled, snapshot)) {
+    return integrityFailure(EngineDefinitionScheduleIntegrityCode.IdentityDrift,
+      "Compiled source and definition identity did not match the stored definition version.");
+  }
+  const starts = compiled.compilation.capabilities.starts;
+  const selected = starts.filter((start) =>
+    start.startEventId === snapshot.timerStart.startEventId && start.timer !== null && sameJson(start.timer, snapshot.timerStart.timer));
+  if (!sameJson(starts, snapshot.expectedStarts) || selected.length !== 1) {
+    return integrityFailure(EngineDefinitionScheduleIntegrityCode.CapabilityDrift,
+      "The compiled Timer start did not match the stored definition version.");
+  }
+  const stimulus: JsonValue = {
+    kind: "start",
     commandId: `timer-start:${snapshot.processInstanceId}`,
-    processId: snapshot.expectedProcessId,
     instanceId: snapshot.processInstanceId,
-    startEventId: snapshot.expectedTimerStart.startEventId,
+    startEvent: snapshot.timerStart.startEventId,
+    trigger: { kind: "timer", logicalTimeMs: snapshot.dueAtEpochMs },
+    variables: [],
   };
-}
-
-function compiledIdentityMatches(
-  compilation: AcceptedBpmnCompilation,
-  snapshot: ScheduleSnapshot,
-): boolean {
-  return (
-    compilation.source.id === snapshot.sourceId &&
-    compilation.source.sha256 === snapshot.expectedSha256 &&
-    compilation.source.byteLength === snapshot.expectedByteLength &&
-    compilation.semanticProcess.identity.sourceId === snapshot.sourceId &&
-    compilation.semanticProcess.identity.sourceSha256 === snapshot.expectedSha256 &&
-    sameSourceOverlayIdentity(
-      compilation.semanticProcess.identity.sourceOverlay,
-      snapshot.sourceOverlay,
-    ) &&
-    compilation.semanticProcess.identity.semanticProfile ===
-      snapshot.semanticProfile &&
-    compilation.semanticProcess.processId === snapshot.expectedProcessId
-  );
-}
-
-function integrityFailure(
-  code: EngineDefinitionScheduleIntegrityCode,
-  evidence: string,
-): EngineDefinitionScheduleResult {
+  const start = prepareStart(host, engineTimerStartProtocol, compiled, snapshot.workflowIdBase, snapshot.processInstanceId,
+    stimulus);
+  if ("code" in start) return { status: EngineDefinitionScheduleStatus.Rejected, failure: start };
   return {
-    status: EngineDefinitionScheduleStatus.IntegrityFailure,
-    failure: { code, evidence },
+    start,
+    expected: {
+      scheduleId: snapshot.scheduleId,
+      dueAtEpochMs: snapshot.dueAtEpochMs,
+      workflowIdBase: snapshot.workflowIdBase,
+      taskQueue: host.taskQueue,
+      memo: startMemo(start) as unknown as Readonly<Record<string, JsonValue>>,
+    },
   };
 }
 
-function requireNonemptyWireString(value: string, name: string): void {
-  if (
-    typeof value !== "string" ||
-    value.length === 0 ||
-    !isWellFormedWireString(value)
-  ) {
-    throw new TypeError(`${name} must be a nonempty well-formed Unicode string`);
+async function inspect(host: EngineHost, prepared: PreparedSchedule, expectedPaused: boolean): Promise<EngineDefinitionScheduleResult> {
+  const stored = await host.schedules.describe(prepared.expected.scheduleId);
+  if (stored === null) {
+    return integrityFailure(EngineDefinitionScheduleIntegrityCode.ScheduleMissing, "No Temporal Schedule holds the identifier.");
+  }
+  const assessment = assessSchedule(stored, prepared.expected);
+  switch (assessment.phase) {
+    case SchedulePhase.Drift:
+      return integrityFailure(EngineDefinitionScheduleIntegrityCode.ScheduleDrift, assessment.evidence);
+    case SchedulePhase.InvalidPhase:
+      return integrityFailure(EngineDefinitionScheduleIntegrityCode.InvalidSchedulePhase, assessment.evidence);
+    case SchedulePhase.Pending:
+    case SchedulePhase.Started:
+    case SchedulePhase.Missed:
+      break;
+  }
+  if (assessment.paused !== expectedPaused) {
+    return integrityFailure(EngineDefinitionScheduleIntegrityCode.InvalidSchedulePhase,
+      `The Schedule's paused state was not ${String(expectedPaused)}.`);
+  }
+  switch (assessment.phase) {
+    case SchedulePhase.Pending:
+      return { status: EngineDefinitionScheduleStatus.Pending, paused: assessment.paused };
+    case SchedulePhase.Started:
+      return {
+        status: EngineDefinitionScheduleStatus.Started,
+        paused: assessment.paused,
+        locator: engineProcessLocatorForWorkflowId(assessment.workflowId),
+      };
+    case SchedulePhase.Missed:
+      return { status: EngineDefinitionScheduleStatus.Missed, paused: assessment.paused };
   }
 }
 
-function requirePositiveSafeInteger(value: number, name: string): void {
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new RangeError(`${name} must be a positive safe integer`);
-  }
+function identityMatches(compiled: CompiledDefinition, snapshot: Snapshot): boolean {
+  const { source, definition } = compiled.compilation;
+  return source.id === snapshot.sourceId && source.sha256 === snapshot.expectedSha256 &&
+    source.byteLength === snapshot.expectedByteLength && definition.ref.definitionKey === snapshot.expectedProcessId &&
+    definition.profile === snapshot.profile.id;
 }
 
-function requireWholeUtcSecond(value: number, name: string): void {
-  if (!Number.isSafeInteger(value) || value <= 0 || value % 1_000 !== 0) {
-    throw new RangeError(`${name} must be a positive whole UTC second`);
-  }
-}
-
-function assertNever(value: never): never {
-  throw new TypeError(`Unsupported definition Schedule result: ${String(value)}`);
+function integrityFailure(code: EngineDefinitionScheduleIntegrityCode, evidence: string): EngineDefinitionScheduleResult {
+  return { status: EngineDefinitionScheduleStatus.IntegrityFailure, failure: { code, evidence } };
 }

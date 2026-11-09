@@ -1,3 +1,9 @@
+import {
+  decodeEngineDeployment,
+  readEngineDeploymentEnvironment,
+  type EngineDeployment,
+} from "@bpmn-lean/platform-engine-gateway";
+
 const defaults = Object.freeze({
   maxSourceBytes: 1_048_576,
   parserDeadlineMs: 1_000,
@@ -47,6 +53,8 @@ export type RecoveryWorkerConfig = Readonly<{
   temporalNamespace: string;
   temporalTaskQueue: string;
   temporalConnectTimeoutMs: number;
+  /** Required: the profile catalog, served requirements and effect bound have no safe default. */
+  engineDeployment: EngineDeployment;
   postgresqlMaxConnections: number;
   postgresqlConnectionTimeoutMs: number;
   postgresqlIdleTimeoutMs: number;
@@ -218,6 +226,8 @@ export function readRecoveryWorkerConfig(
       defaults.maxIncidentsPerProcess,
       limits.projectionItems,
     ),
+    // Read last, so a malformed ordinary setting is reported before a missing deployment.
+    engineDeployment: readEngineDeploymentEnvironment(environment),
   };
   return snapshotRecoveryWorkerConfig(config);
 }
@@ -265,7 +275,7 @@ export function snapshotRecoveryWorkerConfig(
   if (value.itemDeadlineMs >= value.leaseDurationMs) {
     throw new RangeError("itemDeadlineMs must be less than leaseDurationMs");
   }
-  return Object.freeze({ ...value });
+  return Object.freeze({ ...value, engineDeployment: decodeEngineDeployment(structuredClone(value.engineDeployment)) });
 }
 
 function readRequired(environment: NodeJS.ProcessEnv, name: string): string {

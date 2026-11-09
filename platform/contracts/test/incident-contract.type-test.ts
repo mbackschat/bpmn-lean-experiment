@@ -26,6 +26,8 @@ incident.availableInteractions.push(action);
 snapshot.incidents.push(incident);
 // @ts-expect-error action incident identity is immutable
 action.incidentId.generation = 2;
+// The generation is the engine's failure count for the effect, not a closed literal.
+action.incidentId.generation satisfies number;
 // @ts-expect-error action results are deeply immutable
 result.interaction.incidentId.effectId.elementId = "changed";
 // @ts-expect-error audit filters are immutable

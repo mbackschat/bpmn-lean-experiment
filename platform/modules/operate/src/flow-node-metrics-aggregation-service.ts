@@ -1,6 +1,7 @@
 import {
   decodeFlowNodeMetricsResult,
   FlowNodeMetricsResultKind,
+  FlowNodeOccurrenceRole,
   FlowNodeOccurrenceTerminalKind,
 } from "@bpmn-lean/platform-contracts";
 import type {
@@ -73,9 +74,9 @@ export class FlowNodeMetricsAggregationService {
         if (occurrences.kind !== FlowNodeOccurrenceReconciliationKind.Available) {
           return unavailable();
         }
-        projected.push(...occurrences.projection.occurrences.map((value) =>
-          structuredClone(value)
-        ));
+        projected.push(...occurrences.projection.occurrences
+          .filter((value) => counted(value, registration.instance.processInstanceId))
+          .map((value) => structuredClone(value)));
       } catch {
         return unavailable();
       }
@@ -89,7 +90,7 @@ export class FlowNodeMetricsAggregationService {
             processInstances: population.length,
             label: "allRetainedEvidence",
           },
-          flowNodes: aggregate(projected, definition.processId),
+          flowNodes: aggregate(projected),
         },
       };
       return decodeFlowNodeMetricsResult(result, definition);
@@ -103,50 +104,35 @@ type MutableMetric = {
   running: bigint;
   completed: bigint;
   cancelled: bigint;
-  totalDuration: bigint;
-  minimumDuration: bigint | null;
-  maximumDuration: bigint | null;
 };
 
-function aggregate(
-  occurrences: readonly ProjectedFlowNodeOccurrence[],
-  processId: string,
-): FlowNodeMetric[] {
+/**
+ * Counts an occurrence of the hosting instance's own diagram: a called process's interior runs under its own instance
+ * key and stays out, and a Multi-Instance body shares its Activity's element id, so only the instances count as that
+ * element's executions.
+ */
+function counted(occurrence: ProjectedFlowNodeOccurrence, hostingProcessInstanceId: string): boolean {
+  return occurrence.occurrence.processInstanceId === hostingProcessInstanceId &&
+    occurrence.occurrence.role === FlowNodeOccurrenceRole.Element;
+}
+
+function aggregate(occurrences: readonly ProjectedFlowNodeOccurrence[]): FlowNodeMetric[] {
   const metrics = new Map<string, MutableMetric>();
   for (const occurrence of occurrences) {
-    if (occurrence.processId !== processId) continue;
-    const metric = metrics.get(occurrence.elementId) ?? emptyMetric();
+    const elementId = occurrence.occurrence.elementId;
+    const metric = metrics.get(elementId) ?? emptyMetric();
     switch (occurrence.terminal) {
       case null:
         metric.running += 1n;
         break;
-      case FlowNodeOccurrenceTerminalKind.Completed: {
-        if (occurrence.terminalAtEpochMs === null) {
-          throw new TypeError("completed occurrence has no terminal time");
-        }
-        const duration = BigInt(occurrence.terminalAtEpochMs) -
-          BigInt(occurrence.startedAtEpochMs);
-        if (duration < 0n) throw new RangeError("completed occurrence time regressed");
+      case FlowNodeOccurrenceTerminalKind.Completed:
         metric.completed += 1n;
-        metric.totalDuration += duration;
-        metric.minimumDuration = metric.minimumDuration === null ||
-            duration < metric.minimumDuration
-          ? duration
-          : metric.minimumDuration;
-        metric.maximumDuration = metric.maximumDuration === null ||
-            duration > metric.maximumDuration
-          ? duration
-          : metric.maximumDuration;
         break;
-      }
       case FlowNodeOccurrenceTerminalKind.Cancelled:
-        if (occurrence.terminalAtEpochMs === null) {
-          throw new TypeError("cancelled occurrence has no terminal time");
-        }
         metric.cancelled += 1n;
         break;
     }
-    metrics.set(occurrence.elementId, metric);
+    metrics.set(elementId, metric);
   }
   return [...metrics.entries()]
     .sort(([left], [right]) => compareCanonicalStrings(left, right))
@@ -158,33 +144,19 @@ function emptyMetric(): MutableMetric {
     running: 0n,
     completed: 0n,
     cancelled: 0n,
-    totalDuration: 0n,
-    minimumDuration: null,
-    maximumDuration: null,
   };
 }
 
 function toPublicMetric(elementId: string, metric: MutableMetric): FlowNodeMetric {
   const frequency = metric.running + metric.completed + metric.cancelled;
-  const running = safeNumber(metric.running);
-  const completed = safeNumber(metric.completed);
-  const cancelled = safeNumber(metric.cancelled);
-  const completedDuration = metric.completed === 0n
-    ? null
-    : {
-        sampleCount: completed,
-        minimumMs: safeNumber(metric.minimumDuration!),
-        maximumMs: safeNumber(metric.maximumDuration!),
-        averageMs: safeNumber(metric.totalDuration / metric.completed),
-      };
-  safeNumber(metric.totalDuration);
   return {
     elementId,
     frequency: safeNumber(frequency),
-    running,
-    completed,
-    cancelled,
-    completedDuration,
+    running: safeNumber(metric.running),
+    completed: safeNumber(metric.completed),
+    cancelled: safeNumber(metric.cancelled),
+    // Neither publication carries a timestamp, so no elapsed duration can be derived from the projection.
+    completedDuration: null,
   };
 }
 

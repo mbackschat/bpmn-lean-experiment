@@ -36,7 +36,9 @@ CREATE TABLE bpmn_platform.operate_incident_actions (
   incident_activation bigint NOT NULL CHECK (
     incident_activation > 0 AND incident_activation <= 9007199254740991
   ),
-  incident_generation integer NOT NULL CHECK (incident_generation = 1),
+  incident_generation bigint NOT NULL CHECK (
+    incident_generation BETWEEN 1 AND 9007199254740991
+  ),
   action_kind text NOT NULL CHECK (action_kind IN ('retryIncident', 'cancelIncidentProcess')),
   binding_json text NOT NULL CHECK (length(binding_json) > 0),
   state text NOT NULL CHECK (state IN ('reserved', 'submitting', 'committed', 'rejected', 'indeterminate')),
@@ -69,16 +71,7 @@ CREATE TABLE bpmn_platform.operate_execution_publications (
   producer_head_revision bigint CHECK (
     producer_head_revision >= head_revision AND producer_head_revision <= 9007199254740991
   ),
-  last_logical_time_ms bigint CHECK (
-    last_logical_time_ms >= 0 AND last_logical_time_ms <= 9007199254740991
-  ),
-  control_tokens_json text NOT NULL CHECK (length(control_tokens_json) > 0),
-  scopes_json text NOT NULL CHECK (length(scopes_json) > 0),
-  current_json text,
-  CHECK (
-    (head_revision = 0 AND last_logical_time_ms IS NULL)
-    OR (head_revision > 0 AND last_logical_time_ms IS NOT NULL)
-  )
+  current_json text
 );
 
 CREATE TABLE bpmn_platform.operate_execution_publication_batches (
@@ -112,14 +105,6 @@ CREATE TABLE bpmn_platform.operate_flow_node_occurrence_publications (
   head_revision bigint NOT NULL CHECK (head_revision >= 0 AND head_revision <= 9007199254740991),
   producer_head_revision bigint CHECK (
     producer_head_revision >= head_revision AND producer_head_revision <= 9007199254740991
-  ),
-  last_committed_at_epoch_ms bigint CHECK (
-    last_committed_at_epoch_ms >= 0 AND last_committed_at_epoch_ms <= 9007199254740991
-  ),
-  current_open_json text NOT NULL CHECK (length(current_open_json) > 0),
-  CHECK (
-    (head_revision = 0 AND last_committed_at_epoch_ms IS NULL)
-    OR (head_revision > 0 AND last_committed_at_epoch_ms IS NOT NULL)
   )
 );
 
@@ -130,9 +115,6 @@ CREATE TABLE bpmn_platform.operate_flow_node_occurrence_batches (
     through_revision > from_revision AND through_revision <= 9007199254740991
   ),
   command_id bytea NOT NULL CHECK (octet_length(command_id) > 0),
-  committed_at_epoch_ms bigint NOT NULL CHECK (
-    committed_at_epoch_ms >= 0 AND committed_at_epoch_ms <= 9007199254740991
-  ),
   batch_json text NOT NULL CHECK (length(batch_json) > 0),
   PRIMARY KEY (process_instance_id, from_revision),
   UNIQUE (process_instance_id, through_revision)

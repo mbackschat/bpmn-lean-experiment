@@ -16,6 +16,7 @@ export type {
   DefinitionRepository,
   DefinitionStartCapabilities,
   DefinitionSourceIdentity,
+  DefinitionScheduledTimerStart,
   DefinitionTimerStartCapability,
   DefinitionStartFailure,
   DefinitionVersionStartResult,
@@ -33,6 +34,7 @@ export type { ProcessInstanceIdGenerator } from "./definition-start-service.js";
 export {
   DefinitionCorrelatedMessageIntegrityError,
   DefinitionCorrelatedMessagePublishStatus,
+  DefinitionCorrelatedMessageUnavailableError,
 } from "./definition-correlated-message-contracts.js";
 export type {
   DefinitionCorrelatedMessageOperations,

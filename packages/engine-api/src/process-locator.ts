@@ -1,103 +1,43 @@
-/** Product 1 ownership of the opaque Process hosting address persisted by Product 2. */
-import { isWellFormedWireString } from "@bpmn-lean/semantic-core";
-import {
-  temporalCanonicalProcessWorkAddress,
-} from "@bpmn-lean/temporal-client/process-work";
+/** The opaque process locator Product 2 persists: a token only Product 1 interprets. */
+import { requireWireString } from "./common.js";
+import { engineProcessWorkflowId } from "./host.js";
 
-const locatorPrefix = "bpmn-process-work-v1:";
+const locatorPrefix = "bpmn-process:";
 declare const engineProcessLocatorBrand: unique symbol;
 
-/** Opaque, privately persisted address token interpreted only by Product 1 operations. */
-export type EngineProcessLocator = string & Readonly<{
-  [engineProcessLocatorBrand]: "EngineProcessLocator";
-}>;
+export type EngineProcessLocator = string & Readonly<{ [engineProcessLocatorBrand]: "EngineProcessLocator" }>;
 
-/** Mints the canonical direct or Message Start locator from semantic Process identity. */
-export function engineProcessLocatorForCanonicalProcess(
-  processInstanceId: string,
-): EngineProcessLocator {
-  requireNonemptyWireString(processInstanceId, "processInstanceId");
-  return engineProcessLocatorForWorkflowId(
-    temporalCanonicalProcessWorkAddress(processInstanceId),
-  );
+/** The locator of a directly started or Message-started instance, from its semantic identity. */
+export function engineProcessLocatorForCanonicalProcess(processInstanceId: string): EngineProcessLocator {
+  return engineProcessLocatorForWorkflowId(engineProcessWorkflowId(processInstanceId));
 }
 
-/** Mints a Timer Schedule locator only from the service-returned execution Workflow ID. */
-export function engineProcessLocatorForScheduleExecution(
-  executionWorkflowId: string,
-): EngineProcessLocator {
-  return engineProcessLocatorForWorkflowId(
-    requireNonemptyWireString(executionWorkflowId, "executionWorkflowId"),
-  );
+/** The locator of a host Workflow ID, such as the one a Schedule's action reports. */
+export function engineProcessLocatorForWorkflowId(workflowId: string): EngineProcessLocator {
+  return `${locatorPrefix}${encodeURIComponent(requireWireString(workflowId, "workflowId"))}` as EngineProcessLocator;
 }
 
-/** Mints the stable private token from one exact Product 1 hosting Workflow address. */
-export function engineProcessLocatorForWorkflowId(
-  workflowId: string,
-): EngineProcessLocator {
-  requireNonemptyWireString(workflowId, "workflowId");
-  return `${locatorPrefix}${encodeURIComponent(workflowId)}` as
-    EngineProcessLocator;
-}
-
-/** Returns the exact stable private token for durable Product 2 persistence. */
-export function serializeEngineProcessLocator(
-  locator: EngineProcessLocator,
-): string {
-  requireLocator(locator);
-  return locator;
-}
-
-/** Strictly restores one canonical locator token from private persistence. */
-export function parseEngineProcessLocator(
-  serialized: string,
-): EngineProcessLocator {
-  requireLocator(serialized);
+/** Strictly restores a locator from Product 2's storage. */
+export function parseEngineProcessLocator(serialized: string): EngineProcessLocator {
+  engineProcessLocatorWorkflowId(serialized);
   return serialized as EngineProcessLocator;
 }
 
-/** Decodes the exact hosting Workflow address for use only inside Product 1. */
-export function engineProcessWorkflowIdFromLocator(
-  locator: EngineProcessLocator,
-): string {
-  requireLocator(locator);
-  return decodeURIComponent(locator.slice(locatorPrefix.length));
+export function serializeEngineProcessLocator(locator: EngineProcessLocator): string {
+  return parseEngineProcessLocator(locator);
 }
 
-function requireLocator(value: string): void {
-  if (typeof value !== "string" || !value.startsWith(locatorPrefix)) {
-    throw new TypeError("Engine Process locator is not a canonical v1 token");
-  }
-  const encoded = value.slice(locatorPrefix.length);
+/** The host Workflow ID a locator names; for use inside Product 1 only. */
+export function engineProcessLocatorWorkflowId(locator: string): string {
+  const invalid = new TypeError("Engine process locator is not a canonical token");
+  if (typeof locator !== "string" || !locator.startsWith(locatorPrefix)) throw invalid;
+  const encoded = locator.slice(locatorPrefix.length);
   let workflowId: string;
   try {
     workflowId = decodeURIComponent(encoded);
   } catch {
-    throw new TypeError("Engine Process locator is not a canonical v1 token");
+    throw invalid;
   }
-  if (
-    workflowId.length === 0 ||
-    !isWellFormedWireString(workflowId) ||
-    encodeURIComponent(workflowId) !== encoded
-  ) {
-    throw new TypeError("Engine Process locator is not a canonical v1 token");
-  }
+  if (workflowId.length === 0 || !workflowId.isWellFormed() || encodeURIComponent(workflowId) !== encoded) throw invalid;
+  return workflowId;
 }
-
-function requireNonemptyWireString(value: string, name: string): string {
-  if (
-    typeof value !== "string" ||
-    value.length === 0 ||
-    !isWellFormedWireString(value)
-  ) {
-    throw new TypeError(`${name} must be a nonempty well-formed Unicode string`);
-  }
-  return value;
-}
-
-/** Compatibility names retained while Work delegates to the neutral Process locator owner. */
-export type EngineProcessWorkLocator = EngineProcessLocator;
-export const engineProcessWorkLocatorForCanonicalProcess =
-  engineProcessLocatorForCanonicalProcess;
-export const serializeEngineProcessWorkLocator = serializeEngineProcessLocator;
-export const parseEngineProcessWorkLocator = parseEngineProcessLocator;

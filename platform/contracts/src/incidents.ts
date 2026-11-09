@@ -16,10 +16,10 @@ export type PublicEffectOccurrenceId = DeepReadonly<{
   activation: number;
 }>;
 
-/** Exact identity of the only currently admitted incident generation. */
+/** Exact identity of one incident: its effect occurrence and the failure generation the engine counts from 1. */
 export type PublicEffectIncidentId = DeepReadonly<{
   effectId: PublicEffectOccurrenceId;
-  generation: 1;
+  generation: number;
 }>;
 
 /** Exact payload-free failed effect published by the engine. */

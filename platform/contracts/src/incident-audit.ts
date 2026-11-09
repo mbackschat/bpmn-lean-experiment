@@ -29,7 +29,7 @@ export type IncidentAuditRequest = DeepReadonly<{
   incidentProcessInstanceId?: string;
   incidentElementId?: string;
   incidentActivation?: number;
-  incidentGeneration?: 1;
+  incidentGeneration?: number;
   actionKind?: IncidentAuditActionKind;
   cursor?: string;
   limit?: number;

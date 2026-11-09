@@ -281,6 +281,7 @@ if (baseUrl === undefined) {
           kind: "semantic",
           commandId: binding.actionId,
           outcome: "committed",
+          code: null,
         };
       },
     };

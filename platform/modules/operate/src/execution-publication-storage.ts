@@ -8,7 +8,7 @@ import {
 import type {
   CommittedTransitionBatch,
   CurrentCommittedExecution,
-  ExecutionPublicationIdentity,
+  PublicationIdentity,
 } from "@bpmn-lean/platform-contracts";
 import type {
   PostgresqlRow,
@@ -64,24 +64,20 @@ export async function writeExecutionPublicationHeader(
     text: `
       INSERT INTO bpmn_platform.operate_execution_publications (
         process_instance_id, identity_json, status, head_revision,
-        producer_head_revision, last_logical_time_ms, control_tokens_json,
-        scopes_json, current_json, last_complete_observed_at_epoch_ms,
+        producer_head_revision, current_json, last_complete_observed_at_epoch_ms,
         current_process_status
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9,
-        CASE WHEN $10 THEN
+        $1, $2, $3, $4, $5, $6,
+        CASE WHEN $7 THEN
           floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint
         ELSE NULL END,
-        $11
+        $8
       )
       ON CONFLICT (process_instance_id) DO UPDATE SET
         identity_json = excluded.identity_json,
         status = excluded.status,
         head_revision = excluded.head_revision,
         producer_head_revision = excluded.producer_head_revision,
-        last_logical_time_ms = excluded.last_logical_time_ms,
-        control_tokens_json = excluded.control_tokens_json,
-        scopes_json = excluded.scopes_json,
         current_json = excluded.current_json,
         last_complete_observed_at_epoch_ms = excluded.last_complete_observed_at_epoch_ms,
         current_process_status = excluded.current_process_status
@@ -92,9 +88,6 @@ export async function writeExecutionPublicationHeader(
       image.status,
       image.headRevision,
       image.producerHeadRevision,
-      image.lastLogicalTimeMs,
-      canonicalText(image.controlTokens),
-      canonicalText(image.scopes),
       image.current === null ? null : canonicalText(image.current),
       completeObservation,
       image.current?.state.status ?? null,
@@ -201,9 +194,6 @@ function publicationReadSql(lockRegistration: boolean): string {
       e.status,
       e.head_revision,
       e.producer_head_revision,
-      e.last_logical_time_ms,
-      e.control_tokens_json,
-      e.scopes_json,
       e.current_json,
       b.from_revision,
       b.through_revision,
@@ -232,8 +222,7 @@ function decodeStoredPublication(
   const registration = decodeRegistration(first);
   if (first.identity_json === null) {
     requireAllNull(first, [
-      "status", "head_revision", "producer_head_revision", "last_logical_time_ms",
-      "control_tokens_json", "scopes_json", "current_json", "from_revision",
+      "status", "head_revision", "producer_head_revision", "current_json", "from_revision",
       "through_revision", "command_id", "batch_json", "revision",
       "batch_from_revision", "record_json",
     ]);
@@ -286,7 +275,7 @@ function decodeImage(
   const identity = projectionIdentityFromRegistration(registration);
   const storedIdentity = decodeExactJson(
     requireText(first.identity_json, "identity_json"),
-    (value) => value as ExecutionPublicationIdentity,
+    (value) => value as PublicationIdentity,
   );
   if (!sameCanonicalValue(identity, storedIdentity)) {
     throw new TypeError("stored publication identity disagrees with registration");
@@ -323,9 +312,6 @@ function decodeImage(
   }
   if (
     image.headRevision !== header.headRevision ||
-    image.lastLogicalTimeMs !== header.lastLogicalTimeMs ||
-    !sameCanonicalValue(image.controlTokens, header.controlTokens) ||
-    !sameCanonicalValue(image.scopes, header.scopes) ||
     !sameCanonicalValue(image.current, header.current)
   ) {
     throw new TypeError("stored publication projection columns disagree");
@@ -337,9 +323,6 @@ function decodeHeader(row: PostgresqlRow): Readonly<{
   status: ExecutionPublicationProjectionStatus;
   headRevision: number;
   producerHeadRevision: number | null;
-  lastLogicalTimeMs: number | null;
-  controlTokens: readonly unknown[];
-  scopes: readonly unknown[];
   current: CurrentCommittedExecution | null;
 }> {
   return {
@@ -348,14 +331,6 @@ function decodeHeader(row: PostgresqlRow): Readonly<{
     producerHeadRevision: row.producer_head_revision === null
       ? null
       : requirePositive(row.producer_head_revision, "producer_head_revision"),
-    lastLogicalTimeMs: row.last_logical_time_ms === null
-      ? null
-      : requireNonnegative(row.last_logical_time_ms, "last_logical_time_ms"),
-    controlTokens: decodeExactJson(
-      requireText(row.control_tokens_json, "control_tokens_json"),
-      requireArray,
-    ),
-    scopes: decodeExactJson(requireText(row.scopes_json, "scopes_json"), requireArray),
     current: row.current_json === null
       ? null
       : decodeExactJson(
@@ -442,11 +417,6 @@ function decodeExactJson<T>(
     throw new TypeError("stored publication JSON is not canonical");
   }
   return decoded;
-}
-
-function requireArray(value: unknown): readonly unknown[] {
-  if (!Array.isArray(value)) throw new TypeError("stored publication collection is invalid");
-  return value;
 }
 
 function decodeByteText(value: unknown, name: string): string {

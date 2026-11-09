@@ -1,32 +1,45 @@
+/**
+ * Product 2's representation-free gateway for current human work: the engine's open User Task waits as Work tasks,
+ * one task's detail with selected process variables, and completion.
+ */
 import {
+  completeWork,
+  engineProcessLocatorForCanonicalProcess,
+  observeOpenWork,
+  parseEngineProcessLocator,
+  readWorkDetail,
+  serializeEngineProcessLocator,
   EngineOpenWorkStatus,
-  EngineVariableValueKind,
   EngineWorkDetailStatus,
-  completeWork as completeEngineWork,
-  engineProcessWorkLocatorForCanonicalProcess,
-  observeOpenWork as observeEngineOpenWork,
-  parseEngineProcessWorkLocator,
-  readWorkDetail as readEngineWorkDetail,
-  serializeEngineProcessWorkLocator,
+  type EngineBinding,
+  type EngineHost,
+  type EngineOccurrenceId,
+  type EngineOpenWait,
 } from "@bpmn-lean/engine-api";
-import type {
-  EngineCompleteWorkRequest,
-  EngineOpenWorkResult,
-  EngineProcessWorkLocator,
-  EngineWorkCompletionStimulus,
-  EngineWorkDetailRequest,
-  EngineWorkDetailResult,
-} from "@bpmn-lean/engine-api";
-import type {
-  ProcessCommandResult,
-  TemporalProcessWorkClient,
-} from "@bpmn-lean/temporal-client/process-work";
+import type { PublicWorkTask, VariableBinding as PlatformVariableBinding } from "@bpmn-lean/platform-contracts";
+
+import { engineBindings } from "./gateway-context.js";
+import { processCommandResult, type ProcessCommandResult } from "./process-command-result.js";
 
 export const ProcessWorkObservationStatus = EngineOpenWorkStatus;
-export type ProcessWorkObservationResult = EngineOpenWorkResult;
-
 export const ProcessWorkDetailStatus = EngineWorkDetailStatus;
-export type ProcessWorkDetailResult = EngineWorkDetailResult;
+
+/** One open User Task as the Work contract presents it. */
+export type ProcessWorkTask = PublicWorkTask["task"];
+
+export type ProcessWorkObservationResult =
+  | Readonly<{ status: EngineOpenWorkStatus.Open; openUserTasks: readonly ProcessWorkTask[] }>
+  | Readonly<{ status: EngineOpenWorkStatus.Closed | EngineOpenWorkStatus.Unknown | EngineOpenWorkStatus.Unavailable }>;
+
+export type ProcessWorkDetailResult =
+  | Readonly<{
+      status: EngineWorkDetailStatus.Found;
+      detail: Readonly<{ task: ProcessWorkTask; inputVariables: readonly EngineBinding[] }>;
+    }>
+  | Readonly<{
+      status: EngineWorkDetailStatus.NotFound | EngineWorkDetailStatus.Closed | EngineWorkDetailStatus.Unknown |
+        EngineWorkDetailStatus.Unavailable;
+    }>;
 
 /** Private stored form of a Product 1 locator. It carries no public host identity. */
 export type SerializedProcessWorkLocator = string;
@@ -36,91 +49,116 @@ export type ProcessWorkObservationRequest = Readonly<{
   hostingProcessInstanceId: string;
 }>;
 
-export type ProcessWorkDetailRequest = Omit<
-  EngineWorkDetailRequest,
-  "temporalClient" | "locator"
-> & Readonly<{ locator: SerializedProcessWorkLocator }>;
-
-type EngineWorkValue =
-  EngineWorkCompletionStimulus["submittedValues"][number]["value"];
+export type ProcessWorkDetailRequest = ProcessWorkObservationRequest & Readonly<{
+  taskId: EngineOccurrenceId;
+  inputVariableNames: readonly string[];
+}>;
 
 /**
- * Closed allow-list of the value arms Product 2 Work forms can carry. The engine's recursive Decimal, List and Map arms
- * stay out of this type until a Product 2 form journey selects them, so they cannot reach the engine through Work.
+ * The value arms Product 2 Work forms carry. The engine's Decimal, List and Map arms stay out until a Product 2 form
+ * journey selects them, so they cannot reach the engine through Work.
  */
-export type ProcessWorkCompletionValue = Extract<
-  EngineWorkValue,
-  Readonly<{
-    kind:
-      | typeof EngineVariableValueKind.Boolean
-      | typeof EngineVariableValueKind.Integer
-      | typeof EngineVariableValueKind.String
-      | typeof EngineVariableValueKind.StringList
-      | typeof EngineVariableValueKind.Null;
-  }>
->;
+export type ProcessWorkCompletionValue = PlatformVariableBinding["value"];
 
-export type ProcessWorkCompletionRequest = Omit<
-  EngineCompleteWorkRequest,
-  "temporalClient" | "locator" | "stimulus"
-> & Readonly<{
-  locator: SerializedProcessWorkLocator;
-  stimulus: Omit<EngineWorkCompletionStimulus, "submittedValues"> & Readonly<{
-    submittedValues: ReadonlyArray<Readonly<{
-      name: string;
-      value: ProcessWorkCompletionValue;
-    }>>;
+export type ProcessWorkCompletionRequest = ProcessWorkObservationRequest & Readonly<{
+  stimulus: Readonly<{
+    kind: "completeUserTaskInstance";
+    commandId: string;
+    taskId: EngineOccurrenceId;
+    submittedValues: ReadonlyArray<Readonly<{ name: string; value: ProcessWorkCompletionValue }>>;
   }>;
 }>;
 
-/** Product 2's representation-free gateway for current Work observation and command. */
-export class BpmnProcessWorkGateway {
-  readonly #temporalClient: TemporalProcessWorkClient;
+/** The kernel's User Task detail (`canonical-result.schema.json#/$defs/userTaskDetail`). */
+type UserTaskDetail = Readonly<{
+  name: string | null;
+  assignee: string | null;
+  candidateUsers: readonly string[];
+  candidateGroups: readonly string[];
+  formKey: string | null;
+  formFields: readonly Readonly<{ key: string; type: string }>[];
+}>;
 
-  constructor(temporalClient: TemporalProcessWorkClient) {
-    this.#temporalClient = temporalClient;
+/**
+ * The Work task of one open User Task wait. Work presents a task's name, its one candidate group and its one string
+ * or boolean form field; due dates, priority and Activity inputs are not part of it. A task whose assignment or form
+ * Work cannot present faithfully (an assignee, candidate users, several groups, a form key or another form) is refused
+ * here rather than shown with less authority attached than the engine assigned.
+ */
+export function processWorkTask(wait: EngineOpenWait): ProcessWorkTask {
+  const detail = wait.detail as unknown as UserTaskDetail;
+  const refuse = (fact: string): never => {
+    throw new TypeError(`User Task ${wait.id.elementId} carries ${fact}, which the Work contract cannot present`);
+  };
+  if (detail.assignee !== null) refuse("an assignee");
+  if (detail.candidateUsers.length > 0) refuse("candidate users");
+  if (detail.candidateGroups.length > 1) refuse("several candidate groups");
+  if (detail.formKey !== null) refuse("a form key");
+  if (detail.formFields.length > 1) refuse("several form fields");
+  const [group] = detail.candidateGroups;
+  const [field] = detail.formFields;
+  if (field !== undefined && group === undefined) refuse("a form without a candidate group");
+  const id = { ...wait.id };
+  if (group === undefined) return { id, name: detail.name, state: "active" };
+  const assignment = { candidates: [{ kind: "group", id: group }] } as const;
+  if (field === undefined) return { id, name: detail.name, state: "active", metadata: { assignment } };
+  if (field.type !== "string" && field.type !== "boolean") refuse(`a ${field.type} form field`);
+  return {
+    id,
+    name: detail.name,
+    state: "active",
+    metadata: { assignment, form: { fields: [{ key: field.key, type: field.type as "string" | "boolean" }] } },
+  };
+}
+
+export class BpmnProcessWorkGateway {
+  readonly #host: EngineHost;
+
+  constructor(host: EngineHost) {
+    this.#host = host;
   }
 
   canonicalLocator(processInstanceId: string): SerializedProcessWorkLocator {
-    return serializeEngineProcessWorkLocator(
-      engineProcessWorkLocatorForCanonicalProcess(processInstanceId),
-    );
+    return serializeEngineProcessLocator(engineProcessLocatorForCanonicalProcess(processInstanceId));
   }
 
-  observeOpenWork(
-    request: ProcessWorkObservationRequest,
-  ): Promise<ProcessWorkObservationResult> {
-    return observeEngineOpenWork({
-      temporalClient: this.#temporalClient,
-      locator: this.#parse(request.locator),
+  async observeOpenWork(request: ProcessWorkObservationRequest): Promise<ProcessWorkObservationResult> {
+    const result = await observeOpenWork({
+      host: this.#host,
+      locator: parseEngineProcessLocator(request.locator),
       hostingProcessInstanceId: request.hostingProcessInstanceId,
     });
+    return result.status === EngineOpenWorkStatus.Open
+      ? { status: result.status, openUserTasks: result.openUserTasks.map(processWorkTask) }
+      : result;
   }
 
-  readWorkDetail(
-    request: ProcessWorkDetailRequest,
-  ): Promise<ProcessWorkDetailResult> {
-    return readEngineWorkDetail({
-      temporalClient: this.#temporalClient,
-      locator: this.#parse(request.locator),
+  async readWorkDetail(request: ProcessWorkDetailRequest): Promise<ProcessWorkDetailResult> {
+    const result = await readWorkDetail({
+      host: this.#host,
+      locator: parseEngineProcessLocator(request.locator),
       hostingProcessInstanceId: request.hostingProcessInstanceId,
       taskId: request.taskId,
       inputVariableNames: request.inputVariableNames,
     });
+    return result.status === EngineWorkDetailStatus.Found
+      ? {
+          status: result.status,
+          detail: { task: processWorkTask(result.detail.task), inputVariables: result.detail.inputVariables },
+        }
+      : result;
   }
 
-  completeWork(
-    request: ProcessWorkCompletionRequest,
-  ): Promise<ProcessCommandResult> {
-    return completeEngineWork({
-      temporalClient: this.#temporalClient,
-      locator: this.#parse(request.locator),
+  async completeWork(request: ProcessWorkCompletionRequest): Promise<ProcessCommandResult> {
+    return processCommandResult(await completeWork({
+      host: this.#host,
+      locator: parseEngineProcessLocator(request.locator),
       hostingProcessInstanceId: request.hostingProcessInstanceId,
-      stimulus: request.stimulus,
-    });
-  }
-
-  #parse(locator: SerializedProcessWorkLocator): EngineProcessWorkLocator {
-    return parseEngineProcessWorkLocator(locator);
+      completion: {
+        commandId: request.stimulus.commandId,
+        taskId: request.stimulus.taskId,
+        values: engineBindings(request.stimulus.submittedValues),
+      },
+    }));
   }
 }

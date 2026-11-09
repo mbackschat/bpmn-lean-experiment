@@ -8,57 +8,40 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 const definition = {
-  compiler: "bpmn-source-semantic-process",
-  semanticProfile: "profile-publication",
-  sourceId: "source-publication",
-  sourceSha256: "a".repeat(64),
+  ref: { definitionKey: "Process_1", version: 1, sha256: "a".repeat(64) },
+  profile: "profile-publication",
   sourceOverlay: null,
 } as const;
 
-const owner = {
+const occurrence = {
   processInstanceId: "Instance_1",
-  definitionScopeId: "Scope_Process_1",
+  elementId: "StartEvent_1",
   activation: 1,
+  role: "element",
 } as const;
 
 function page() {
   return {
     definition,
-    processId: "Process_1",
     processInstanceId: "Instance_1",
     requestedAfterRevision: 0,
-    pageThroughRevision: 1,
-    headRevision: 1,
+    pageThroughRevision: 2,
+    headRevision: 2,
     batches: [{
       commandId: "command-start",
       fromRevision: 0,
       throughRevision: 1,
-      committedAtEpochMs: 1_000,
       transitions: [{
         revision: 1,
-        lifecycle: {
-          started: [{
-            id: {
-              processInstanceId: "Instance_1",
-              startRevision: 1,
-              startIndex: 0,
-            },
-            processId: "Process_1",
-            elementId: "StartEvent_1",
-            owner,
-          }],
-          ended: [{
-            id: {
-              processInstanceId: "Instance_1",
-              startRevision: 1,
-              startIndex: 0,
-            },
-            terminal: "completed",
-          }],
-        },
+        started: [{ occurrence, owner: 0, sourceType: "startEvent" }],
+        ended: [{ occurrence, terminal: "completed" }],
       }],
+    }, {
+      commandId: "command-again",
+      fromRevision: 1,
+      throughRevision: 2,
+      transitions: [],
     }],
-    currentOpen: [],
   } as const;
 }
 
@@ -70,58 +53,63 @@ test("validates the strict request, page, and five closed result arms", async ()
     { afterRevision: Number.MAX_SAFE_INTEGER, limit: 100 },
     validPage,
     { kind: "available", page: validPage },
-    { kind: "notReady" },
     { kind: "notFound" },
     { kind: "unavailable" },
     { kind: "gap" },
+    { kind: "integrityFailure" },
   ]) {
     assert.equal(validate(document), true, JSON.stringify(validate.errors));
   }
+  const [first] = validPage.batches;
   for (const malformed of [
     { afterRevision: 0, limit: 0 },
     { afterRevision: 0, limit: 101 },
     { ...validPage, privateAnchor: "forbidden" },
-    { ...validPage, currentOpen: undefined },
+    { ...validPage, currentOpen: [] },
     { ...validPage, headRevision: Number.MAX_SAFE_INTEGER + 1 },
+    { ...validPage, batches: [{ ...first, committedAtEpochMs: 0 }] },
+    { ...validPage, batches: [{ ...first, transitions: [{ revision: 1, started: [{ occurrence: { ...occurrence, role: "body" }, owner: 0, sourceType: "task" }], ended: [] }] }] },
+    { kind: "notReady" },
     { kind: "partial", page: validPage },
   ]) {
-    assert.equal(validate(malformed), false);
+    assert.equal(validate(malformed), false, JSON.stringify(malformed));
   }
 });
 
-test("covers safe integers, terminal kinds, and forbids semantic anchors", async () => {
-  const schema = await readSchema(
-    "flow-node-occurrence-publication.schema.json",
-  );
+test("covers safe integers, terminal kinds, the kernel's occurrence roles, and forbids position identities", async () => {
+  const [schema, kernelState] = await Promise.all([
+    readSchema("flow-node-occurrence-publication.schema.json"),
+    readFile(`${projectRoot}/packages/kernel/src/state.ts`, "utf8"),
+  ]);
   const text = JSON.stringify(schema);
   for (const expected of [
-    "completed",
-    "cancelled",
+    ...inlineEnumValues(kernelState, "Terminal"),
+    ...inlineEnumValues(kernelState, "ActivationRole"),
     "available",
-    "notReady",
     "notFound",
     "unavailable",
     "gap",
+    "integrityFailure",
   ]) {
     assert.ok(text.includes(`\"${expected}\"`), `schema omits ${expected}`);
   }
-  assert.doesNotMatch(
-    text,
-    /SemanticFlowNodeOccurrenceAnchor|transitionIndex|localIndex/u,
-  );
+  assert.doesNotMatch(text, /startRevision|startIndex|transitionIndex|localIndex/u);
   for (const integer of collectIntegerSchemas(schema)) {
     assert.equal(typeof integer.maximum, "number");
     assert.ok(Number(integer.maximum) <= Number.MAX_SAFE_INTEGER);
   }
 });
 
+/** The members of a one-line TypeScript string enum, as the kernel declares its small vocabularies. */
+function inlineEnumValues(source: string, enumName: string): ReadonlyArray<string> {
+  const match = new RegExp(`export enum ${enumName} \\{([^}]*)\\}`, "u").exec(source);
+  assert.ok(match?.[1] !== undefined, `${enumName} is not declared as a one-line enum`);
+  return [...match[1].matchAll(/[A-Za-z0-9_]+ = "([A-Za-z0-9_]+)"/gu)].map((member) => member[1] ?? "");
+}
+
 async function validator() {
-  const [program, publication] = await Promise.all([
-    readSchema("semantic-process.schema.json"),
-    readSchema("flow-node-occurrence-publication.schema.json"),
-  ]);
+  const publication = await readSchema("flow-node-occurrence-publication.schema.json");
   const ajv = new Ajv2020({ strict: true, strictTuples: false });
-  ajv.addSchema(program);
   return ajv.compile(publication);
 }
 

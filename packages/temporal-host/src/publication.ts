@@ -3,9 +3,11 @@
  * ([proposal](../../../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#temporal-hosting-and-refinement-preflight)).
  *
  * Every micro-step of a committed input is one revision, numbered across the whole Workflow chain. Each input yields
- * an execution batch, one transition per micro-step with its cause as role, and a flow-node-occurrence batch of the
- * micro-steps that started or ended occurrences. A Run retains the batches it published; the cursor alone crosses
- * Continue-As-New, so a reader asking for a revision before the Run's first is told it is a gap.
+ * an execution batch, one transition per micro-step with its cause as role, and a flow-node-occurrence batch over the
+ * same revisions holding the micro-steps that started or ended occurrences, empty when none did, so both publications
+ * page in step. Occurrences keep the kernel's `OccurrenceKey` as their identity; revisions only position them. A Run
+ * retains the batches it published; the cursor alone crosses Continue-As-New, so a reader asking for a revision before
+ * the Run's first is told it is a gap.
  */
 import type { CauseView, EndedView, StartedView, TransitionView } from "./port.js";
 
@@ -79,7 +81,7 @@ export function appendJournal(log: PublicationLog, commandId: string, journal: r
     base: log.base,
     cursor: { revision: throughRevision, sourceTypes: [...sourceTypes] },
     execution: [...log.execution, batch(execution)],
-    occurrences: occurrences.length === 0 ? log.occurrences : [...log.occurrences, batch(occurrences)],
+    occurrences: [...log.occurrences, batch(occurrences)],
   };
 }
 
@@ -100,9 +102,11 @@ export type PublicationPage =
 /** The first `limit` input batches with revisions after `afterRevision`; a batch is never split. */
 export function readPage(log: PublicationLog, afterRevision: number, limit: number): PublicationPage {
   if (afterRevision < log.base) return { kind: PageKind.Gap, retainedAfterRevision: log.base };
-  const execution = log.execution.filter((batch) => batch.throughRevision > afterRevision).slice(0, limit);
-  const last = execution.at(-1)?.throughRevision ?? afterRevision;
-  const occurrences = log.occurrences.filter((batch) =>
-    batch.throughRevision > afterRevision && batch.throughRevision <= last);
-  return { kind: PageKind.Available, headRevision: log.cursor.revision, execution, occurrences };
+  const after = (batch: Batch<unknown>) => batch.throughRevision > afterRevision;
+  return {
+    kind: PageKind.Available,
+    headRevision: log.cursor.revision,
+    execution: log.execution.filter(after).slice(0, limit),
+    occurrences: log.occurrences.filter(after).slice(0, limit),
+  };
 }

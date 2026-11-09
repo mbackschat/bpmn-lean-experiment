@@ -67,10 +67,13 @@ test("decodes the exact closed Timer Start capability and activation request", (
     () => decodePublicTimerStartCapability({ ...capability, startEventId: "" }),
     /startEventId must not be empty/u,
   );
-  assert.throws(
-    () => decodePublicTimerStartCapability({ ...capability, durationMs: -1 }),
-    /durationMs must be a nonnegative safe integer/u,
-  );
+  for (const durationMs of [-1, 1.5, "1000", Number.MAX_SAFE_INTEGER + 1, undefined]) {
+    assert.throws(
+      () => decodePublicTimerStartCapability({ ...capability, durationMs }),
+      /durationMs must be a positive safe integer/u,
+      String(durationMs),
+    );
+  }
   assert.throws(
     () => decodePublicDefinitionStartCapabilities({
       messageStarts: [],
@@ -85,6 +88,31 @@ test("decodes the exact closed Timer Start capability and activation request", (
       taskQueue: "private",
     }),
     /start capabilities must contain exactly its public fields/u,
+  );
+});
+
+test("decodes a Timer Start whose duration the engine resolves to none, but derives no Schedule from it", () => {
+  const unresolved = { startEventId: "TimerStart_1", durationMs: null };
+  assert.deepEqual(decodePublicTimerStartCapability(unresolved), unresolved);
+  assert.deepEqual(
+    decodePublicDefinitionStartCapabilities({ messageStarts: [], timerStarts: [unresolved] }),
+    { messageStarts: [], timerStarts: [unresolved] },
+  );
+  const unresolvedDefinition = {
+    ...definition,
+    startCapabilities: { messageStarts: [], timerStarts: [unresolved] },
+  };
+  assert.throws(
+    () => decodeDefinitionSchedule({ ...scheduled, definition: unresolvedDefinition, timerStart: unresolved }),
+    /dueAt must equal activationAt plus timerStart.durationMs/u,
+  );
+  assert.throws(
+    () => decodeDefinitionSchedule({ ...scheduled, definition: unresolvedDefinition }),
+    /timerStart must be published by definition.startCapabilities/u,
+  );
+  assert.throws(
+    () => decodeDefinitionSchedule({ ...scheduled, timerStart: unresolved }),
+    /timerStart must be published by definition.startCapabilities/u,
   );
 });
 

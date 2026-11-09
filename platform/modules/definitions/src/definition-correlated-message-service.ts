@@ -29,6 +29,7 @@ import type {
 import {
   DefinitionCorrelatedMessageIntegrityError,
   DefinitionCorrelatedMessagePublishStatus,
+  DefinitionCorrelatedMessageUnavailableError,
 } from "./definition-correlated-message-contracts.js";
 import type {
   DefinitionCorrelatedMessageOperations,
@@ -90,7 +91,7 @@ export class DefinitionCorrelatedMessageService
     }
     const result = await this.#dependencies.host.publish({
       ...hostDescribeRequest(loaded),
-      catchEventId: snapshot.catchEventId,
+      message: cloneCapability(selected),
       commandId: snapshot.commandId,
       payload: { ...snapshot.payload },
     });
@@ -115,6 +116,8 @@ export class DefinitionCorrelatedMessageService
         throw new DefinitionCorrelatedMessageIntegrityError(
           "correlated Message capability disappeared between reconstruction and publication",
         );
+      case DefinitionCorrelatedMessagePublicationStatus.Unavailable:
+        throw new DefinitionCorrelatedMessageUnavailableError(result.code, result.evidence);
       case DefinitionCorrelatedMessagePublicationStatus.IntegrityFailure:
         throw new DefinitionCorrelatedMessageIntegrityError(result.evidence);
       default:
@@ -150,6 +153,8 @@ export class DefinitionCorrelatedMessageService
     switch (result.status) {
       case DefinitionCorrelatedMessageCapabilityStatus.Available:
         return result.messages.map(cloneCapability);
+      case DefinitionCorrelatedMessageCapabilityStatus.Unavailable:
+        throw new DefinitionCorrelatedMessageUnavailableError(result.code, result.evidence);
       case DefinitionCorrelatedMessageCapabilityStatus.IntegrityFailure:
         throw new DefinitionCorrelatedMessageIntegrityError(result.evidence);
       default:
@@ -166,12 +171,14 @@ function hostDescribeRequest(
     sourceOverlay: loaded.sourceOverlay,
     definition: {
       processId: loaded.definition.processId,
+      version: loaded.definition.version,
       source: {
         id: loaded.definition.source.id,
         sha256: loaded.definition.source.sha256,
         byteLength: loaded.definition.source.byteLength,
       },
       semanticProfile: loaded.definition.semanticProfile,
+      startCapabilities: loaded.definition.startCapabilities,
       sourceOverlay: loaded.definition.sourceOverlay,
     },
   };

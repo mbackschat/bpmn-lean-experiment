@@ -12,6 +12,11 @@ const config = readRecoveryWorkerConfig({
   PLATFORM_POSTGRESQL_RUNTIME_URL: "postgresql://runtime@127.0.0.1/platform",
   PLATFORM_RECOVERY_WORKER_ID: "worker-a",
   PLATFORM_PROJECTION_REFRESH_AFTER_MS: "3000",
+  PLATFORM_ENGINE_DEPLOYMENT_JSON: JSON.stringify({
+    profiles: {},
+    servedRequirements: { timers: true, messages: true, effects: true, userTasks: true, calls: true },
+    effectStartToCloseMs: 30_000,
+  }),
 });
 
 test("creates one PostgreSQL owner and one engine owner before bounded readiness", async () => {

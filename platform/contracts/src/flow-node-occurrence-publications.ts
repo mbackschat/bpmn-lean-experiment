@@ -1,42 +1,6 @@
 import type { DeepReadonly } from "@bpmn-lean/contract-types";
-import type { PublicProcessInstanceIdentity } from "./process-instances.js";
 
-export type FlowNodeOccurrencePublicationSourceOverlayIdentity = DeepReadonly<{
-  id: string;
-  sha256: string;
-}>;
-
-/** Product 2's separate mirror of the public semantic definition identity. */
-export type FlowNodeOccurrencePublicationDefinitionIdentity = DeepReadonly<{
-  compiler: "bpmn-source-semantic-process";
-  semanticProfile: string;
-  sourceId: string;
-  sourceSha256: string;
-  sourceOverlay: FlowNodeOccurrencePublicationSourceOverlayIdentity | null;
-}>;
-
-export type FlowNodeOccurrencePublicationIdentity = DeepReadonly<{
-  definition: FlowNodeOccurrencePublicationDefinitionIdentity;
-  processId: string;
-  processInstanceId: string;
-}>;
-
-/** Maps one exact deployed Process instance to Product 1's occurrence identity. */
-export function flowNodeOccurrencePublicationIdentityForPublicProcessInstance(
-  instance: PublicProcessInstanceIdentity,
-): FlowNodeOccurrencePublicationIdentity {
-  return {
-    definition: {
-      compiler: "bpmn-source-semantic-process",
-      semanticProfile: instance.definition.semanticProfile,
-      sourceId: instance.definition.source.id,
-      sourceSha256: instance.definition.source.sha256,
-      sourceOverlay: instance.definition.sourceOverlay === null ? null : { ...instance.definition.sourceOverlay },
-    },
-    processId: instance.definition.processId,
-    processInstanceId: instance.processInstanceId,
-  };
-}
+import type { PublicationIdentity } from "./publication-identity.js";
 
 export type FlowNodeOccurrencePublicationRequest = DeepReadonly<{
   afterRevision: number;
@@ -44,14 +8,8 @@ export type FlowNodeOccurrencePublicationRequest = DeepReadonly<{
 }>;
 
 export type FlowNodeOccurrencePublicationDecodeContext = DeepReadonly<
-  FlowNodeOccurrencePublicationIdentity & FlowNodeOccurrencePublicationRequest
+  PublicationIdentity & FlowNodeOccurrencePublicationRequest
 >;
-
-export type FlowNodeOccurrenceScopeId = DeepReadonly<{
-  processInstanceId: string;
-  definitionScopeId: string;
-  activation: number;
-}>;
 
 export const FlowNodeOccurrenceTerminalKind = {
   Completed: "completed",
@@ -61,66 +19,70 @@ export const FlowNodeOccurrenceTerminalKind = {
 export type FlowNodeOccurrenceTerminalKind =
   typeof FlowNodeOccurrenceTerminalKind[keyof typeof FlowNodeOccurrenceTerminalKind];
 
-export type FlowNodeOccurrenceId = DeepReadonly<{
+/** Whether an occurrence is the element itself or the body of a Multi-Instance Activity, which number apart. */
+export const FlowNodeOccurrenceRole = {
+  Element: "element",
+  MultiInstanceBody: "multiInstanceBody",
+} as const;
+
+export type FlowNodeOccurrenceRole = typeof FlowNodeOccurrenceRole[keyof typeof FlowNodeOccurrenceRole];
+
+/**
+ * The kernel's identity of one flow-node occurrence (`Kernel.Run.keyJson`): `activation` counts the element's
+ * activations under `role` in its process instance, so the key never repeats within the instance.
+ */
+export type FlowNodeOccurrenceKey = DeepReadonly<{
   processInstanceId: string;
-  startRevision: number;
-  startIndex: number;
+  elementId: string;
+  activation: number;
+  role: FlowNodeOccurrenceRole;
 }>;
 
+/** An occurrence began: its key, the scope occurrence that owns it and its element's BPMN source type. */
 export type FlowNodeOccurrenceStart = DeepReadonly<{
-  id: FlowNodeOccurrenceId;
-  processId: string;
-  elementId: string;
-  owner: FlowNodeOccurrenceScopeId;
+  occurrence: FlowNodeOccurrenceKey;
+  owner: number;
+  sourceType: string;
 }>;
 
 export type FlowNodeOccurrenceEnd = DeepReadonly<{
-  id: FlowNodeOccurrenceId;
+  occurrence: FlowNodeOccurrenceKey;
   terminal: FlowNodeOccurrenceTerminalKind;
 }>;
 
-export type FlowNodeOccurrenceDelta = DeepReadonly<{
+/** The occurrences one micro-step began and ended; `revision` positions it in the publication. */
+export type FlowNodeOccurrenceTransition = DeepReadonly<{
+  revision: number;
   started: FlowNodeOccurrenceStart[];
   ended: FlowNodeOccurrenceEnd[];
 }>;
 
-export type FlowNodeOccurrenceTransition = DeepReadonly<{
-  revision: number;
-  lifecycle: FlowNodeOccurrenceDelta;
-}>;
-
+/**
+ * The occurrence facts of one committed input, over the same revisions as its execution batch; `transitions` is
+ * empty when the input began and ended no occurrence.
+ */
 export type FlowNodeOccurrenceBatch = DeepReadonly<{
   commandId: string;
   fromRevision: number;
   throughRevision: number;
-  committedAtEpochMs: number;
-  transitions: [FlowNodeOccurrenceTransition, ...FlowNodeOccurrenceTransition[]];
-}>;
-
-export type OpenFlowNodeOccurrence = DeepReadonly<{
-  id: FlowNodeOccurrenceId;
-  processId: string;
-  elementId: string;
-  owner: FlowNodeOccurrenceScopeId;
-  startedAtEpochMs: number;
+  transitions: FlowNodeOccurrenceTransition[];
 }>;
 
 export type FlowNodeOccurrencePage = DeepReadonly<
-  FlowNodeOccurrencePublicationIdentity & {
+  PublicationIdentity & {
     requestedAfterRevision: number;
     pageThroughRevision: number;
     headRevision: number;
     batches: FlowNodeOccurrenceBatch[];
-    currentOpen: OpenFlowNodeOccurrence[] | null;
   }
 >;
 
 export const FlowNodeOccurrencePublicationResultKind = {
   Available: "available",
-  NotReady: "notReady",
   NotFound: "notFound",
   Unavailable: "unavailable",
   Gap: "gap",
+  IntegrityFailure: "integrityFailure",
 } as const;
 
 export type FlowNodeOccurrencePublicationResult = DeepReadonly<
@@ -128,8 +90,8 @@ export type FlowNodeOccurrencePublicationResult = DeepReadonly<
       kind: typeof FlowNodeOccurrencePublicationResultKind.Available;
       page: FlowNodeOccurrencePage;
     }
-  | { kind: typeof FlowNodeOccurrencePublicationResultKind.NotReady }
   | { kind: typeof FlowNodeOccurrencePublicationResultKind.NotFound }
   | { kind: typeof FlowNodeOccurrencePublicationResultKind.Unavailable }
   | { kind: typeof FlowNodeOccurrencePublicationResultKind.Gap }
+  | { kind: typeof FlowNodeOccurrencePublicationResultKind.IntegrityFailure }
 >;

@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CorrelatedMessageApiErrorCodes,
   decodeDefinitionCorrelatedMessageCapabilities,
   decodeDefinitionCorrelatedMessagePublication,
+  decodePublicApiErrorResponse,
   decodePutDefinitionCorrelatedMessagePublicationRequest,
   definitionCorrelatedMessagePublicationPath,
   definitionCorrelatedMessagesPath,
@@ -11,6 +13,7 @@ import {
   DefinitionCorrelatedMessageSemanticOutcomeKind,
   matchDefinitionCorrelatedMessagePublicationPath,
   matchDefinitionCorrelatedMessagesPath,
+  PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
   DefinitionCorrelatedMessageCapabilities,
@@ -383,5 +386,36 @@ test("rejects malformed or noncanonical correlated Message route identities", ()
       "/api/v1/definitions/process/versions/1/correlated-messages/%E0%A4%A/publications/command",
     ),
     /catchEventId segment must be valid URI encoding/u,
+  );
+});
+
+test("answers 503 correlationUnavailable on top of the ordinary route errors, and only there", () => {
+  assert.deepEqual(CorrelatedMessageApiErrorCodes, [
+    PublicApiErrorCode.InvalidRequest,
+    PublicApiErrorCode.MethodNotAllowed,
+    PublicApiErrorCode.UnsupportedMediaType,
+    PublicApiErrorCode.PayloadTooLarge,
+    PublicApiErrorCode.NotFound,
+    PublicApiErrorCode.InternalFailure,
+    PublicApiErrorCode.Conflict,
+    PublicApiErrorCode.CorrelationUnavailable,
+  ]);
+  for (const code of CorrelatedMessageApiErrorCodes) {
+    const input = { error: { code, message: `${code} response` } };
+    assert.deepEqual(decodePublicApiErrorResponse(input, CorrelatedMessageApiErrorCodes), input);
+  }
+  assert.throws(
+    () => decodePublicApiErrorResponse(
+      { error: { code: PublicApiErrorCode.Forbidden, message: "Not a correlated Message error." } },
+      CorrelatedMessageApiErrorCodes,
+    ),
+    /not allowed by this route/u,
+  );
+  assert.throws(
+    () => decodePublicApiErrorResponse(
+      { error: { code: PublicApiErrorCode.CorrelationUnavailable, message: "Not a Definition error." } },
+      CorrelatedMessageApiErrorCodes.filter((code) => code !== PublicApiErrorCode.CorrelationUnavailable),
+    ),
+    /not allowed by this route/u,
   );
 });

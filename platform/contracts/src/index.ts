@@ -25,6 +25,8 @@ export * from "./execution-publication-decoders.js";
 export * from "./execution-publication-routes.js";
 export * from "./execution-publication-canonical-json.js";
 export * from "./flow-node-occurrence-publications.js";
+export * from "./publication-identity.js";
+export * from "./public-json-value.js";
 export * from "./flow-node-occurrence-publication-decoders.js";
 export * from "./flow-node-metrics.js";
 export * from "./flow-node-metrics-decoders.js";

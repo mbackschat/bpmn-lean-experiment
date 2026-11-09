@@ -17,28 +17,71 @@ import type {
 import { serializeCanonicalExecutionPublicationValue } from "@bpmn-lean/platform-contracts";
 
 import {
+  current,
   firstPage,
+  headOnlyPage,
+  headPageWithoutCurrent,
   registration,
   secondPage,
 } from "./execution-publication-fixture.ts";
 
-test("retries only notReady to its bound without persisting a gap", async () => {
+test("re-reads a head without committed state to its bound, then classifies unavailable", async () => {
   await withService(
     [
-      { kind: "notReady" },
-      { kind: "notReady" },
-      { kind: "notReady" },
+      { kind: "available", page: headPageWithoutCurrent(firstPage()) },
+      { kind: "available", page: headOnlyPage(2, false) },
+      { kind: "available", page: headOnlyPage(2, false) },
     ],
     async ({ service, publications, calls, retryAttempts }) => {
       assert.deepEqual(
         await service.reconcile("Instance_1"),
-        { kind: ExecutionPublicationReconciliationKind.NotReady },
+        { kind: ExecutionPublicationReconciliationKind.Unavailable },
       );
-      assert.equal(calls.length, 3);
+      assert.deepEqual(calls.map((call) => (call as { afterRevision: number }).afterRevision), [0, 2, 2]);
       assert.deepEqual(retryAttempts, [1, 2]);
-      assert.equal(await publications.get("Instance_1"), null);
+      const retained = await publications.get("Instance_1");
+      assert.equal(retained?.status, ExecutionPublicationProjectionStatus.Unavailable);
+      assert.equal(retained?.headRevision, 2);
+      assert.deepEqual(retained?.batches, firstPage().batches);
+      assert.equal(await publications.page("Instance_1", { afterRevision: 0 }), null);
     },
   );
+});
+
+test("re-reads a moving head until its committed state arrives", async () => {
+  await withService(
+    [
+      { kind: "available", page: headPageWithoutCurrent(firstPage()) },
+      { kind: "available", page: headOnlyPage(2, true) },
+    ],
+    async ({ service, retryAttempts }) => {
+      const result = await service.reconcile("Instance_1");
+      assert.equal(result.kind, ExecutionPublicationReconciliationKind.Available);
+      if (result.kind !== ExecutionPublicationReconciliationKind.Available) return;
+      assert.deepEqual(result.projection.current, current(2));
+      assert.deepEqual(retryAttempts, [1]);
+    },
+  );
+});
+
+test("classifies an engine integrity failure as a gap", async () => {
+  for (const method of ["reconcile", "rebuild"] as const) {
+    await withService(
+      [{ kind: "integrityFailure" }],
+      async ({ service, publications }) => {
+        assert.deepEqual(
+          await service[method]("Instance_1"),
+          { kind: ExecutionPublicationReconciliationKind.Gap },
+          method,
+        );
+        assert.equal(
+          (await publications.get("Instance_1"))?.status,
+          ExecutionPublicationProjectionStatus.Gap,
+          method,
+        );
+      },
+    );
+  }
 });
 
 test("continues from the committed boundary until a complete producer head is local", async () => {
@@ -53,14 +96,12 @@ test("continues from the committed boundary until a complete producer head is lo
       assert.deepEqual(calls, [{
         locator: "opaque-private-locator",
         definition: firstPage().definition,
-        processId: "Process_1",
         processInstanceId: "Instance_1",
         afterRevision: 0,
         limit: 100,
       }, {
         locator: "opaque-private-locator",
         definition: firstPage().definition,
-        processId: "Process_1",
         processInstanceId: "Instance_1",
         afterRevision: 2,
         limit: 100,
@@ -69,37 +110,24 @@ test("continues from the committed boundary until a complete producer head is lo
   );
 });
 
-test("classifies a forged positive-cursor delta as gap and keeps its page atomic", async () => {
+test("classifies a malformed suffix as gap and keeps its page atomic", async () => {
   const source = secondPage();
   const batch = source.batches[0]!;
-  const record = batch.transitions[0]!;
   const forged = {
     ...source,
-    batches: [{
-      ...batch,
-      transitions: [{
-        ...record,
-        positionDelta: {
-          ...record.positionDelta,
-          consumedTokens: [{
-            sequenceFlowId: "Flow_1",
-            owner: source.current!.controlTokens[0]!.owner,
-            multiplicity: 1,
-          }],
-        },
-      }],
-    }],
+    batches: [{ ...batch, transitions: [{ ...batch.transitions[0]!, revision: 4 }] }],
   };
   await withService(
     [
       { kind: "available", page: firstPage(3) },
       { kind: "available", page: forged },
     ],
-    async ({ service, publications }) => {
+    async ({ service, publications, calls }) => {
       assert.deepEqual(
         await service.reconcile("Instance_1"),
         { kind: ExecutionPublicationReconciliationKind.Gap },
       );
+      assert.equal(calls.length, 2);
       const retained = await publications.get("Instance_1");
       assert.equal(retained?.headRevision, 2);
       assert.equal(retained?.status, ExecutionPublicationProjectionStatus.Gap);
@@ -126,30 +154,6 @@ test("maps a missing confirmed producer to unavailable rather than public absenc
       );
     },
   );
-});
-
-test("rejects failed producer pages without applying or replacing them", async () => {
-  for (const method of ["reconcile", "rebuild"] as const) {
-    await withService(
-      [{ kind: "available", page: failedProducerPage() }],
-      async ({ service, publications, applyCalls, replaceCalls }) => {
-        assert.deepEqual(
-          await service[method]("Instance_1"),
-          { kind: ExecutionPublicationReconciliationKind.Gap },
-          method,
-        );
-        const marker = await publications.get("Instance_1");
-        assert.equal(marker?.status, ExecutionPublicationProjectionStatus.Gap, method);
-        assert.equal(marker?.headRevision, 0, method);
-        assert.deepEqual(marker?.batches, [], method);
-        assert.equal(marker?.current, null, method);
-        assert.deepEqual(applyCalls, [], method);
-        assert.deepEqual(replaceCalls, [], method);
-        assert.equal(await publications.page("Instance_1", { afterRevision: 0 }), null, method);
-        assert.equal(await publications.export("Instance_1"), null, method);
-      },
-    );
-  }
 });
 
 test("rebuild ignores retained state and replaces it only after the authoritative head is complete", async () => {
@@ -180,14 +184,12 @@ test("rebuild ignores retained state and replaces it only after the authoritativ
       assert.deepEqual(calls, [{
         locator: "opaque-private-locator",
         definition: firstPage().definition,
-        processId: "Process_1",
         processInstanceId: "Instance_1",
         afterRevision: 0,
         limit: 100,
       }, {
         locator: "opaque-private-locator",
         definition: firstPage().definition,
-        processId: "Process_1",
         processInstanceId: "Instance_1",
         afterRevision: 2,
         limit: 100,
@@ -227,8 +229,8 @@ test("late rebuild failures classify the stale image without retaining partial p
       reconciliation: ExecutionPublicationReconciliationKind.Unavailable,
     },
     {
-      name: "positive-cursor notReady",
-      result: { kind: "notReady" },
+      name: "engine integrity failure",
+      result: { kind: "integrityFailure" },
       status: ExecutionPublicationProjectionStatus.Gap,
       reconciliation: ExecutionPublicationReconciliationKind.Gap,
     },
@@ -269,9 +271,29 @@ test("late rebuild failures classify the stale image without retaining partial p
   }
 });
 
-test("rebuild bounds notReady at revision zero without touching retained state", async () => {
+test("rebuild re-reads a head without committed state before replacing", async () => {
   await withService(
-    [{ kind: "notReady" }, { kind: "notReady" }, { kind: "notReady" }],
+    [
+      { kind: "available", page: headPageWithoutCurrent(firstPage()) },
+      { kind: "available", page: headOnlyPage(2, true) },
+    ],
+    async ({ service, publications, replaceCalls, retryAttempts }) => {
+      const result = await service.rebuild("Instance_1");
+      assert.equal(result.kind, ExecutionPublicationReconciliationKind.Available);
+      assert.deepEqual(replaceCalls, [[headPageWithoutCurrent(firstPage()), headOnlyPage(2, true)]]);
+      assert.deepEqual(retryAttempts, [1]);
+      assert.deepEqual((await publications.get("Instance_1"))?.current, current(2));
+    },
+  );
+});
+
+test("rebuild bounds a head without committed state and keeps retained state", async () => {
+  await withService(
+    [
+      { kind: "available", page: headPageWithoutCurrent(firstPage()) },
+      { kind: "available", page: headOnlyPage(2, false) },
+      { kind: "available", page: headOnlyPage(2, false) },
+    ],
     async ({
       service,
       publications,
@@ -280,21 +302,21 @@ test("rebuild bounds notReady at revision zero without touching retained state",
       replaceCalls,
       retryAttempts,
     }) => {
-      await publications.applyPage(registered, changedFirstPage("retained-command"));
+      await publications.applyPage(registered, changedFirstPage("Flow_retained"));
       const staleBytes = await retainedSemanticBytes(publications);
 
       assert.deepEqual(
         await service.rebuild("Instance_1"),
-        { kind: ExecutionPublicationReconciliationKind.NotReady },
+        { kind: ExecutionPublicationReconciliationKind.Unavailable },
       );
       assert.deepEqual(calls.map((call) => (
         call as { afterRevision: number }
-      ).afterRevision), [0, 0, 0]);
+      ).afterRevision), [0, 2, 2]);
       assert.deepEqual(retryAttempts, [1, 2]);
       assert.deepEqual(replaceCalls, []);
       assert.equal(
         (await publications.get("Instance_1"))?.status,
-        ExecutionPublicationProjectionStatus.Healthy,
+        ExecutionPublicationProjectionStatus.Unavailable,
       );
       assert.deepEqual(await retainedSemanticBytes(publications), staleBytes);
     },
@@ -357,8 +379,8 @@ async function withService(
           return structuredClone(result);
         },
       },
-      notReadyAttempts: 3,
-      beforeNotReadyRetry: async (attempt) => {
+      currentReadAttempts: 3,
+      beforeCurrentReread: async (attempt) => {
         retryAttempts.push(attempt);
       },
     });
@@ -381,47 +403,16 @@ async function withService(
   }
 }
 
-function failedProducerPage(): unknown {
-  const page = firstPage();
-  assert.ok(page.current);
-  const handlerId = {
-    processInstanceId: "Instance_1",
-    elementId: "UndoCharge",
-    activation: 1,
-  };
-  return {
-    ...page,
-    current: {
-      ...page.current,
-      controlTokens: [],
-      state: {
-        ...page.current.state,
-        status: "failed",
-        failure: {
-          kind: "compensationHandlerFailure",
-          triggerId: { ...handlerId, elementId: "ThrowCompensation" },
-          handlerId,
-          effectId: { ...handlerId, elementId: "Effect_UndoCharge" },
-          code: "compensation-rejected",
-          message: null,
-        },
-      },
-    },
-  };
-}
-
-function changedFirstPage(operationId: string): ExecutionPublicationPage {
+function changedFirstPage(flow: string): ExecutionPublicationPage {
   const page = firstPage();
   const batch = page.batches[0]!;
-  const operation = batch.transitions[1]!;
-  assert.equal(operation.transition.kind, "internalOperation");
   return {
     ...page,
     batches: [{
       ...batch,
       transitions: [batch.transitions[0]!, {
-        ...operation,
-        transition: { ...operation.transition, operationId },
+        ...batch.transitions[1]!,
+        role: { kind: "arrive", flow },
       }],
     }],
   };
@@ -436,9 +427,6 @@ async function retainedSemanticBytes(
     identity: retained.identity,
     headRevision: retained.headRevision,
     producerHeadRevision: retained.producerHeadRevision,
-    lastLogicalTimeMs: retained.lastLogicalTimeMs,
-    controlTokens: retained.controlTokens,
-    scopes: retained.scopes,
     batches: retained.batches,
     current: retained.current,
   });

@@ -1,93 +1,95 @@
 /** Product 2's only entry into the BPMN engine contract. */
 import {
   EngineDefinitionCompilationStatus,
-  EngineDefinitionStartDescriptionStatus,
   EngineDefinitionStartStatus,
-  EngineVariableValueKind,
+  EngineStartDescriptionStatus,
   compileBpmnDefinition,
+  createEngineHostRuntime,
   describeBpmnDefinitionVersionStart,
   prepareBpmnDefinitionVersionStart,
-  serializeEngineProcessWorkLocator,
-  startPreparedBpmnDefinitionVersion,
+  serializeEngineProcessLocator,
   startBpmnDefinitionVersion,
+  startPreparedBpmnDefinitionVersion,
+  type EngineDefinitionStartPreparationResult,
+  type EngineDefinitionStartRequest,
+  type EngineDefinitionStartResult,
+  type EngineDiagnostic,
+  type EngineHost,
+  type EngineHostRuntime,
+  type EngineIntent,
+  type EngineServedRequirements,
+  type EngineSourceOverlaySelection,
 } from "@bpmn-lean/engine-api";
 import type {
-  EngineDefinitionCompilationResult,
-  EngineDefinitionCompilationRequest,
-  EngineDefinitionStartDescriptionResult,
-  EngineDefinitionStartIntent,
-  EngineDefinitionStartPreparationRequest,
-  EngineDefinitionStartPreparationResult,
-  EngineDefinitionStartResult,
-} from "@bpmn-lean/engine-api";
-import type {
+  ExactPublicSourceIdentity,
   VariableBinding as PlatformVariableBinding,
-  VariableValue as PlatformVariableValue,
 } from "@bpmn-lean/platform-contracts";
-import {
-  createLazyTemporalClientRuntime,
-} from "@bpmn-lean/temporal-client/definition-start";
 
+import { mapDefinitionStartCapabilities, type DefinitionStartCapabilities } from "./definition-capabilities.js";
+import { BpmnDefinitionCorrelatedMessageGateway } from "./definition-correlated-message-host.js";
+import { BpmnDefinitionMessageStartGateway } from "./definition-message-start-gateway.js";
+import { BpmnDefinitionScheduleGateway } from "./definition-schedule-gateway.js";
 import {
-  BpmnDefinitionScheduleGateway,
-} from "./definition-schedule-gateway.js";
-import type {
-  BpmnDefinitionScheduleGatewayOptions,
-} from "./definition-schedule-gateway.js";
-import {
-  mapDefinitionStartCapabilities,
-} from "./definition-capabilities.js";
-import type {
-  DefinitionStartCapabilities,
-} from "./definition-capabilities.js";
-import {
-  BpmnDefinitionCorrelatedMessageGateway,
-} from "./definition-correlated-message-gateway.js";
-import type {
-  BpmnDefinitionCorrelatedMessageGatewayOptions,
-} from "./definition-correlated-message-gateway.js";
-import {
-  BpmnDefinitionMessageStartGateway,
-} from "./definition-message-start-gateway.js";
-import type {
-  BpmnDefinitionMessageStartGatewayOptions,
-} from "./definition-message-start-gateway.js";
-import type {
-  LazyTemporalClientRuntime,
-  TemporalDefinitionStartClient,
-} from "@bpmn-lean/temporal-client/definition-start";
-import type {
-  TemporalProcessWorkClient,
-} from "@bpmn-lean/temporal-client/process-work";
-import { BpmnProcessWorkGateway } from "./process-work-gateway.js";
+  engineBindings,
+  gatewayContext,
+  platformIdentity,
+  platformSource,
+  requireNonempty,
+  resolveProfile,
+  storedProfile,
+  type DefinitionIdentity,
+  type GatewayContext,
+  type GatewayLimits,
+  type ProfileRelations,
+} from "./gateway-context.js";
 import { BpmnProcessOperationsGateway } from "./process-operations-gateway.js";
-import { BpmnProcessExecutionPublicationGateway } from "./process-execution-publication-gateway.js";
-import { BpmnProcessFlowNodeOccurrenceGateway } from "./process-flow-node-occurrence-gateway.js";
+import {
+  BpmnProcessExecutionPublicationGateway,
+  BpmnProcessFlowNodeOccurrenceGateway,
+} from "./process-publication-gateway.js";
+import { BpmnProcessWorkGateway } from "./process-work-gateway.js";
 
 export const DefinitionCompilationStatus = EngineDefinitionCompilationStatus;
+export const DefinitionStartStatus = EngineDefinitionStartStatus;
+export const DefinitionStartDescriptionStatus = EngineStartDescriptionStatus;
+
+export type DefinitionSourceOverlaySelection = EngineSourceOverlaySelection;
+export type DefinitionStartIntent = EngineIntent;
+export type DefinitionDiagnostic = EngineDiagnostic;
+export type { DefinitionIdentity, ProfileRelations };
+
+/** The refusal of a definition whose profile the deployment's catalog does not hold. */
+export const unknownProfileCode = "platform.profileUnknown";
 
 export type DefinitionCompilationResult =
-  | (Omit<
-      Extract<EngineDefinitionCompilationResult, { status: "accepted" }>,
-      "correlationCapabilities" | "startCapabilities"
-    > & Readonly<{ startCapabilities: DefinitionStartCapabilities }>)
-  | Extract<EngineDefinitionCompilationResult, { status: "rejected" }>;
+  | Readonly<{
+      status: EngineDefinitionCompilationStatus.Accepted;
+      source: ExactPublicSourceIdentity;
+      diagnostics: readonly [];
+      definition: DefinitionIdentity;
+      startCapabilities: DefinitionStartCapabilities;
+    }>
+  | Readonly<{
+      status: EngineDefinitionCompilationStatus.Rejected;
+      source: ExactPublicSourceIdentity;
+      diagnostics: readonly DefinitionDiagnostic[];
+      definition: undefined;
+    }>;
 
-export const DefinitionStartStatus = EngineDefinitionStartStatus;
-export const DefinitionStartDescriptionStatus = EngineDefinitionStartDescriptionStatus;
+/** An engine start result in Product 2's terms: the source and definition identity as Product 2 names them. */
+type PlatformStart<R> = R extends Readonly<{ definition: unknown }>
+  ? Omit<R, "definition" | "locator" | "source"> &
+    Readonly<{ source: ExactPublicSourceIdentity; definition: DefinitionIdentity }>
+  : never;
 
-export type DefinitionStartResult = EngineDefinitionStartResult;
-export type DefinitionStartIntent = EngineDefinitionStartIntent;
-export type DefinitionStartDescriptionResult = EngineDefinitionStartDescriptionResult;
+export type DefinitionStartResult = PlatformStart<EngineDefinitionStartResult>;
 
 export type DefinitionStartPreparationResult =
-  | (Omit<
-      Extract<EngineDefinitionStartPreparationResult, { status: "admitted" }>,
-      "locator"
-    > & Readonly<{ locator: string }>)
-  | Exclude<EngineDefinitionStartPreparationResult, { status: "admitted" }>;
+  | (PlatformStart<Extract<EngineDefinitionStartPreparationResult, { status: EngineDefinitionStartStatus.Admitted }>> &
+      Readonly<{ locator: string }>)
+  | PlatformStart<Exclude<EngineDefinitionStartPreparationResult, { status: EngineDefinitionStartStatus.Admitted }>>;
 
-export type DefinitionSourceOverlaySelection = NonNullable<EngineDefinitionCompilationRequest["sourceOverlay"]>;
+export type DefinitionStartDescriptionResult = Readonly<{ status: EngineStartDescriptionStatus }>;
 
 export type DefinitionCompilationRequest = Readonly<{
   bytes: Uint8Array;
@@ -97,207 +99,172 @@ export type DefinitionCompilationRequest = Readonly<{
   sourceOverlay?: DefinitionSourceOverlaySelection | null;
 }>;
 
-export type EngineGatewayLimits = Readonly<{
-  maxSourceBytes: number;
-  parserDeadlineMs: number;
-}>;
-
 export type DefinitionVersionStartRequest = Readonly<{
   bytes: Uint8Array;
   sourceId: string;
   expectedSha256: string;
   semanticProfile: string;
   expectedProcessId: string;
+  /** The deployed version Product 2 stored the definition under; the engine names the started definition by it. */
+  version: number;
   processInstanceId: string;
   initialVariables: readonly PlatformVariableBinding[];
   sourceOverlay?: DefinitionSourceOverlaySelection | null;
 }>;
 
-export type PreparedDefinitionVersionStartRequest =
-  DefinitionVersionStartRequest & Readonly<{
-    expectedIntent: DefinitionStartIntent;
-  }>;
+export type PreparedDefinitionVersionStartRequest = DefinitionVersionStartRequest & Readonly<{
+  expectedIntent: DefinitionStartIntent;
+}>;
 
 export type DefinitionVersionStartDescriptionRequest = Readonly<{
   processInstanceId: string;
   expectedIntent: DefinitionStartIntent;
 }>;
 
-export type BpmnEngineGatewayOptions = EngineGatewayLimits & Readonly<{
-  temporalClient: TemporalDefinitionStartClient;
-  temporalTaskQueue: string;
+export interface DefinitionCompiler {
+  compileDefinition(request: DefinitionCompilationRequest): Promise<DefinitionCompilationResult>;
+}
+
+export interface DefinitionVersionStarter {
+  prepareDefinitionVersion(request: DefinitionVersionStartRequest): Promise<DefinitionStartPreparationResult>;
+  startPreparedDefinitionVersion(request: PreparedDefinitionVersionStartRequest): Promise<DefinitionStartResult>;
+  describeDefinitionVersionStart(request: DefinitionVersionStartDescriptionRequest): Promise<DefinitionStartDescriptionResult>;
+  startDefinitionVersion(request: DefinitionVersionStartRequest): Promise<DefinitionStartResult>;
+}
+
+export type BpmnEngineGatewayOptions = GatewayLimits & Readonly<{
+  host: EngineHost;
+  profileRelations: ProfileRelations;
 }>;
 
-export type BpmnEngineGatewayRuntimeOptions = EngineGatewayLimits & Readonly<{
+export class BpmnEngineGateway implements DefinitionCompiler, DefinitionVersionStarter {
+  readonly #context: GatewayContext;
+
+  constructor(options: BpmnEngineGatewayOptions) {
+    this.#context = gatewayContext(options, options.host, options.profileRelations);
+  }
+
+  async compileDefinition(request: DefinitionCompilationRequest): Promise<DefinitionCompilationResult> {
+    const profile = resolveProfile(this.#context, request.semanticProfile);
+    const bytes = Uint8Array.from(request.bytes);
+    if (profile === null) {
+      return rejected({
+        kind: "bpmnSource", id: request.sourceId, sha256: "", byteLength: bytes.byteLength, declaredEncoding: null, decodedAs: null,
+      },
+        { code: unknownProfileCode, element: null, evidence: `The profile catalog does not hold ${request.semanticProfile}.` });
+    }
+    const result = await compileBpmnDefinition({
+      bytes,
+      sourceId: request.sourceId,
+      ...(request.expectedSha256 === undefined ? {} : { expectedSha256: request.expectedSha256 }),
+      profile,
+      sourceOverlay: request.sourceOverlay ?? null,
+      limits: this.#context.limits,
+    });
+    switch (result.status) {
+      case EngineDefinitionCompilationStatus.Accepted: {
+        const mapped = mapDefinitionStartCapabilities(result.capabilities);
+        if (mapped.kind === "refused") {
+          return rejected(platformSource(result.source), { code: mapped.code, element: mapped.element, evidence: mapped.evidence });
+        }
+        return {
+          status: EngineDefinitionCompilationStatus.Accepted,
+          source: platformSource(result.source),
+          diagnostics: [],
+          definition: platformIdentity(result.definition),
+          startCapabilities: mapped.capabilities,
+        };
+      }
+      case EngineDefinitionCompilationStatus.Rejected:
+        return {
+          status: result.status,
+          source: platformSource(result.source),
+          diagnostics: result.diagnostics,
+          definition: undefined,
+        };
+    }
+  }
+
+  async startDefinitionVersion(request: DefinitionVersionStartRequest): Promise<DefinitionStartResult> {
+    return platformStart(await startBpmnDefinitionVersion(this.#engineRequest(request)));
+  }
+
+  async prepareDefinitionVersion(request: DefinitionVersionStartRequest): Promise<DefinitionStartPreparationResult> {
+    const result = await prepareBpmnDefinitionVersionStart(this.#engineRequest(request));
+    if (result.status !== EngineDefinitionStartStatus.Admitted) return platformStart(result);
+    const { locator, definition, source, ...admitted } = result;
+    return {
+      ...admitted,
+      source: platformSource(source),
+      definition: platformIdentity(definition),
+      locator: serializeEngineProcessLocator(locator),
+    };
+  }
+
+  async startPreparedDefinitionVersion(request: PreparedDefinitionVersionStartRequest): Promise<DefinitionStartResult> {
+    return platformStart(await startPreparedBpmnDefinitionVersion({
+      ...this.#engineRequest(request),
+      expectedIntent: request.expectedIntent,
+    }));
+  }
+
+  async describeDefinitionVersionStart(
+    request: DefinitionVersionStartDescriptionRequest,
+  ): Promise<DefinitionStartDescriptionResult> {
+    return {
+      status: await describeBpmnDefinitionVersionStart({
+        host: this.#context.host,
+        processInstanceId: request.processInstanceId,
+        expectedIntent: request.expectedIntent,
+      }),
+    };
+  }
+
+  #engineRequest(request: DefinitionVersionStartRequest): EngineDefinitionStartRequest {
+    return {
+      host: this.#context.host,
+      bytes: request.bytes,
+      sourceId: request.sourceId,
+      expectedSha256: request.expectedSha256,
+      profile: storedProfile(this.#context, request.semanticProfile),
+      sourceOverlay: request.sourceOverlay ?? null,
+      expectedProcessId: request.expectedProcessId,
+      version: request.version,
+      processInstanceId: request.processInstanceId,
+      initialVariables: engineBindings(request.initialVariables),
+      limits: this.#context.limits,
+    };
+  }
+}
+
+function rejected(source: ExactPublicSourceIdentity, diagnostic: DefinitionDiagnostic): DefinitionCompilationResult {
+  return { status: EngineDefinitionCompilationStatus.Rejected, source, diagnostics: [diagnostic], definition: undefined };
+}
+
+function platformStart<R extends EngineDefinitionStartResult | EngineDefinitionStartPreparationResult>(
+  result: R & Readonly<{ status: Exclude<EngineDefinitionStartStatus, EngineDefinitionStartStatus.Admitted> }>,
+): PlatformStart<R> {
+  return {
+    ...result,
+    source: platformSource(result.source),
+    definition: platformIdentity(result.definition),
+  } as PlatformStart<R>;
+}
+
+export type BpmnEngineGatewayRuntimeOptions = GatewayLimits & Readonly<{
   temporalAddress: string;
   temporalNamespace: string;
   temporalTaskQueue: string;
   temporalConnectTimeoutMs: number;
+  /** The deployment's profile catalog. */
+  profileRelations: ProfileRelations;
+  /** What the deployment's Workers serve; a definition needing more is refused before it starts. */
+  servedRequirements: EngineServedRequirements;
+  /** The transport bound of one effect Activity attempt. */
+  effectStartToCloseMs: number;
 }>;
 
-export interface DefinitionCompiler {
-  compileDefinition(
-    request: DefinitionCompilationRequest,
-  ): Promise<DefinitionCompilationResult>;
-}
-
-export interface DefinitionVersionStarter {
-  prepareDefinitionVersion(
-    request: DefinitionVersionStartRequest,
-  ): Promise<DefinitionStartPreparationResult>;
-  startPreparedDefinitionVersion(
-    request: PreparedDefinitionVersionStartRequest,
-  ): Promise<DefinitionStartResult>;
-  describeDefinitionVersionStart(
-    request: DefinitionVersionStartDescriptionRequest,
-  ): Promise<DefinitionStartDescriptionResult>;
-  startDefinitionVersion(
-    request: DefinitionVersionStartRequest,
-  ): Promise<DefinitionStartResult>;
-}
-
-export class BpmnEngineGateway
-  implements DefinitionCompiler, DefinitionVersionStarter
-{
-  private readonly limits: EngineGatewayLimits;
-  private readonly temporalClient: TemporalDefinitionStartClient;
-  private readonly temporalTaskQueue: string;
-
-  constructor(options: BpmnEngineGatewayOptions) {
-    requirePositiveSafeInteger(options.maxSourceBytes, "maxSourceBytes");
-    requirePositiveSafeInteger(options.parserDeadlineMs, "parserDeadlineMs");
-    requireNonempty(options.temporalTaskQueue, "temporalTaskQueue");
-    this.limits = {
-      maxSourceBytes: options.maxSourceBytes,
-      parserDeadlineMs: options.parserDeadlineMs,
-    };
-    this.temporalClient = options.temporalClient;
-    this.temporalTaskQueue = options.temporalTaskQueue;
-  }
-
-  compileDefinition(
-    request: DefinitionCompilationRequest,
-  ): Promise<DefinitionCompilationResult> {
-    return this.compileAndMapDefinition(request);
-  }
-
-  private async compileAndMapDefinition(
-    request: DefinitionCompilationRequest,
-  ): Promise<DefinitionCompilationResult> {
-    const result = await compileBpmnDefinition({
-      ...request,
-      limits: {
-        maxBytes: this.limits.maxSourceBytes,
-        parserDeadlineMs: this.limits.parserDeadlineMs,
-      },
-    });
-    switch (result.status) {
-      case EngineDefinitionCompilationStatus.Accepted:
-        const { correlationCapabilities: _correlationCapabilities, ...accepted } =
-          result;
-        return {
-          ...accepted,
-          startCapabilities: mapDefinitionStartCapabilities(
-            result.startCapabilities,
-          ),
-        };
-      case EngineDefinitionCompilationStatus.Rejected:
-        return result;
-      default:
-        return assertNever(result);
-    }
-  }
-
-  startDefinitionVersion(
-    request: DefinitionVersionStartRequest,
-  ): Promise<DefinitionStartResult> {
-    return startBpmnDefinitionVersion({
-      ...request,
-      initialVariables: toEngineVariableBindings(request.initialVariables),
-      limits: {
-        maxBytes: this.limits.maxSourceBytes,
-        parserDeadlineMs: this.limits.parserDeadlineMs,
-      },
-      temporalClient: this.temporalClient,
-      taskQueue: this.temporalTaskQueue,
-    });
-  }
-
-  async prepareDefinitionVersion(
-    request: DefinitionVersionStartRequest,
-  ): Promise<DefinitionStartPreparationResult> {
-    const result = await prepareBpmnDefinitionVersionStart({
-      ...request,
-      initialVariables: toEngineVariableBindings(request.initialVariables),
-      limits: {
-        maxBytes: this.limits.maxSourceBytes,
-        parserDeadlineMs: this.limits.parserDeadlineMs,
-      },
-      taskQueue: this.temporalTaskQueue,
-    });
-    return result.status === EngineDefinitionStartStatus.Admitted
-      ? {
-          ...result,
-          locator: serializeEngineProcessWorkLocator(result.locator),
-        }
-      : result;
-  }
-
-  startPreparedDefinitionVersion(
-    request: PreparedDefinitionVersionStartRequest,
-  ): Promise<DefinitionStartResult> {
-    return startPreparedBpmnDefinitionVersion({
-      ...request,
-      initialVariables: toEngineVariableBindings(request.initialVariables),
-      limits: {
-        maxBytes: this.limits.maxSourceBytes,
-        parserDeadlineMs: this.limits.parserDeadlineMs,
-      },
-      temporalClient: this.temporalClient,
-      taskQueue: this.temporalTaskQueue,
-    });
-  }
-
-  describeDefinitionVersionStart(
-    request: DefinitionVersionStartDescriptionRequest,
-  ): Promise<DefinitionStartDescriptionResult> {
-    return describeBpmnDefinitionVersionStart({
-      ...request,
-      temporalClient: this.temporalClient,
-      taskQueue: this.temporalTaskQueue,
-    });
-  }
-}
-
-function toEngineVariableBindings(
-  bindings: readonly PlatformVariableBinding[],
-): EngineDefinitionStartPreparationRequest["initialVariables"] {
-  return bindings.map(({ name, value }) => ({
-    name,
-    value: toEngineVariableValue(value),
-  }));
-}
-
-function toEngineVariableValue(
-  value: PlatformVariableValue,
-): EngineDefinitionStartPreparationRequest["initialVariables"][number]["value"] {
-  switch (value.kind) {
-    case "boolean":
-      return { kind: EngineVariableValueKind.Boolean, value: value.value };
-    case "integer":
-      return { kind: EngineVariableValueKind.Integer, value: value.value };
-    case "string":
-      return { kind: EngineVariableValueKind.String, value: value.value };
-    case "stringList":
-      return { kind: EngineVariableValueKind.StringList, value: [...value.value] };
-    case "null":
-      return { kind: EngineVariableValueKind.Null };
-    default:
-      return assertNever(value);
-  }
-}
-
-/** Composition-facing owner of one gateway and its lazy Temporal connection lifecycle. */
+/** Composition-facing owner of the gateway's collaborators and their shared lazy Temporal connection. */
 export class BpmnEngineGatewayRuntime {
   readonly gateway: BpmnEngineGateway;
   readonly scheduleHost: BpmnDefinitionScheduleGateway;
@@ -307,104 +274,135 @@ export class BpmnEngineGatewayRuntime {
   readonly processOperations: BpmnProcessOperationsGateway;
   readonly processExecution: BpmnProcessExecutionPublicationGateway;
   readonly processFlowNodeOccurrences: BpmnProcessFlowNodeOccurrenceGateway;
-  readonly #temporalRuntime: LazyTemporalClientRuntime;
+  readonly #runtime: EngineHostRuntime;
 
   constructor(options: BpmnEngineGatewayRuntimeOptions) {
-    const snapshot = { ...options };
-    requirePositiveSafeInteger(snapshot.maxSourceBytes, "maxSourceBytes");
-    requirePositiveSafeInteger(snapshot.parserDeadlineMs, "parserDeadlineMs");
-    requireNonempty(snapshot.temporalTaskQueue, "temporalTaskQueue");
-    this.#temporalRuntime = createLazyTemporalClientRuntime({
-      address: snapshot.temporalAddress,
-      namespace: snapshot.temporalNamespace,
-      connectTimeoutMs: snapshot.temporalConnectTimeoutMs,
+    requireNonempty(options.temporalTaskQueue, "temporalTaskQueue");
+    this.#runtime = createEngineHostRuntime({
+      address: options.temporalAddress,
+      namespace: options.temporalNamespace,
+      taskQueue: options.temporalTaskQueue,
+      connectTimeoutMs: options.temporalConnectTimeoutMs,
+      served: options.servedRequirements,
+      effectStartToCloseMs: options.effectStartToCloseMs,
     });
-    this.gateway = new BpmnEngineGateway({
-      maxSourceBytes: snapshot.maxSourceBytes,
-      parserDeadlineMs: snapshot.parserDeadlineMs,
-      temporalClient: this.#temporalRuntime.client,
-      temporalTaskQueue: snapshot.temporalTaskQueue,
-    });
-    this.scheduleHost = new BpmnDefinitionScheduleGateway({
-      maxSourceBytes: snapshot.maxSourceBytes,
-      parserDeadlineMs: snapshot.parserDeadlineMs,
-      temporalClient: this.#temporalRuntime.client as unknown as
-        BpmnDefinitionScheduleGatewayOptions["temporalClient"],
-      temporalTaskQueue: snapshot.temporalTaskQueue,
-    });
-    this.messageStartHost = new BpmnDefinitionMessageStartGateway({
-      maxSourceBytes: snapshot.maxSourceBytes,
-      parserDeadlineMs: snapshot.parserDeadlineMs,
-      temporalClient: this.#temporalRuntime.client as unknown as
-        BpmnDefinitionMessageStartGatewayOptions["temporalClient"],
-      temporalTaskQueue: snapshot.temporalTaskQueue,
-    });
-    this.correlatedMessageHost = new BpmnDefinitionCorrelatedMessageGateway({
-      maxSourceBytes: snapshot.maxSourceBytes,
-      parserDeadlineMs: snapshot.parserDeadlineMs,
-      temporalClient: this.#temporalRuntime.client as unknown as
-        BpmnDefinitionCorrelatedMessageGatewayOptions["temporalClient"],
-      temporalTaskQueue: snapshot.temporalTaskQueue,
-    });
-    this.processWork = new BpmnProcessWorkGateway(
-      this.#temporalRuntime.client as unknown as TemporalProcessWorkClient,
-    );
-    this.processOperations = new BpmnProcessOperationsGateway(
-      this.#temporalRuntime.client as unknown as ConstructorParameters<
-        typeof BpmnProcessOperationsGateway
-      >[0],
-    );
-    this.processExecution = new BpmnProcessExecutionPublicationGateway(
-      this.#temporalRuntime.client as unknown as ConstructorParameters<
-        typeof BpmnProcessExecutionPublicationGateway
-      >[0],
-    );
-    this.processFlowNodeOccurrences = new BpmnProcessFlowNodeOccurrenceGateway(
-      this.#temporalRuntime.client as unknown as ConstructorParameters<
-        typeof BpmnProcessFlowNodeOccurrenceGateway
-      >[0],
-    );
+    const host = this.#runtime.host;
+    const context = gatewayContext(options, host, options.profileRelations);
+    this.gateway = new BpmnEngineGateway({ ...options, host });
+    this.scheduleHost = new BpmnDefinitionScheduleGateway(context);
+    this.messageStartHost = new BpmnDefinitionMessageStartGateway(context);
+    this.correlatedMessageHost = new BpmnDefinitionCorrelatedMessageGateway(context);
+    this.processWork = new BpmnProcessWorkGateway(host);
+    this.processOperations = new BpmnProcessOperationsGateway(host);
+    this.processExecution = new BpmnProcessExecutionPublicationGateway(host);
+    this.processFlowNodeOccurrences = new BpmnProcessFlowNodeOccurrenceGateway(host);
   }
 
   /** Proves the shared lazy Temporal connection before this runtime is declared ready. */
   ensureConnected(): Promise<void> {
-    return this.#temporalRuntime.ensureConnected();
+    return this.#runtime.ensureConnected();
   }
 
   close(): Promise<void> {
-    return this.#temporalRuntime.close();
+    return this.#runtime.close();
   }
 }
 
-function assertNever(value: never): never {
-  throw new TypeError(`Unsupported engine gateway result: ${String(value)}`);
-}
-
-export * from "./definition-schedule-gateway.js";
-export * from "./definition-schedule-address.js";
-export * from "./definition-capabilities.js";
-export * from "./definition-message-start-gateway.js";
-export * from "./definition-correlated-message-gateway.js";
-export * from "./message-start-publication-address.js";
-export * from "./process-work-gateway.js";
-export * from "./process-operations-gateway.js";
-export * from "./process-execution-publication-gateway.js";
-export * from "./process-flow-node-occurrence-gateway.js";
-
-export function createBpmnEngineGatewayRuntime(
-  options: BpmnEngineGatewayRuntimeOptions,
-): BpmnEngineGatewayRuntime {
+export function createBpmnEngineGatewayRuntime(options: BpmnEngineGatewayRuntimeOptions): BpmnEngineGatewayRuntime {
   return new BpmnEngineGatewayRuntime(options);
 }
 
-function requirePositiveSafeInteger(value: number, name: string): void {
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new RangeError(`${name} must be a positive safe integer`);
-  }
-}
-
-function requireNonempty(value: string, name: string): void {
-  if (typeof value !== "string" || value.length === 0) {
-    throw new TypeError(`${name} must not be empty`);
-  }
-}
+export {
+  engineTimerSchedule,
+  mapDefinitionStartCapabilities,
+  sameStartCapabilities,
+  unaddressableMessageStartCode,
+  type DefinitionMessageStartCapability,
+  type DefinitionOperationMessageChannel,
+  type DefinitionStartCapabilities,
+  type DefinitionTimerStartCapability,
+  type StartCapabilityMapping,
+} from "./definition-capabilities.js";
+export * from "./definition-correlated-message-host.js";
+export {
+  BpmnDefinitionMessageStartGateway,
+  DefinitionMessageStartDescriptionStatus,
+  DefinitionMessageStartStatus,
+  type DefinitionMessageStartDescribeRequest,
+  type DefinitionMessageStartDescriptionResult,
+  type DefinitionMessageStartDispatchRequest,
+  type DefinitionMessageStartHost,
+  type DefinitionMessageStartIntent,
+  type DefinitionMessageStartPreparationResult,
+  type DefinitionMessageStartRequest,
+  type DefinitionMessageStartResult,
+} from "./definition-message-start-gateway.js";
+export {
+  definitionScheduleHostId,
+  definitionScheduleWorkflowIdBase,
+  type DefinitionSchedulePublicReference,
+} from "./definition-schedule-address.js";
+export {
+  BpmnDefinitionScheduleGateway,
+  DefinitionScheduleHostPhase,
+  type DefinitionScheduleHost,
+  type DefinitionScheduleHostRequest,
+  type DefinitionScheduleHostResult,
+  type DefinitionScheduleValidationRequest,
+  type DefinitionScheduleValidationResult,
+} from "./definition-schedule-gateway.js";
+export {
+  decodeEngineDeployment,
+  engineDeploymentEnvironmentVariable,
+  engineDeploymentRuntimeOptions,
+  readEngineDeploymentEnvironment,
+  type EngineDeployment,
+} from "./engine-deployment.js";
+export {
+  engineDefinitionIdentity,
+  gatewayContext,
+  platformSource,
+  type GatewayContext,
+  type GatewayLimits,
+} from "./gateway-context.js";
+export {
+  messageStartPublicationCommandId,
+  messageStartPublicationProcessInstanceId,
+  messageStartPublicationWorkflowId,
+} from "./message-start-publication-address.js";
+export type { ProcessCommandOutcome, ProcessCommandResult } from "./process-command-result.js";
+export {
+  BpmnProcessOperationsGateway,
+  ProcessIncidentObservationStatus,
+  processIncident,
+  type ProcessIncident,
+  type ProcessIncidentId,
+  type ProcessIncidentObservationRequest,
+  type ProcessIncidentObservationResult,
+  type ProcessIncidentOperationRequest,
+  type ProcessIncidentOperationResult,
+  type ProcessIncidentOperationStimulus,
+  type SerializedProcessOperationsLocator,
+} from "./process-operations-gateway.js";
+export {
+  BpmnProcessExecutionPublicationGateway,
+  BpmnProcessFlowNodeOccurrenceGateway,
+  type ProcessExecutionPublicationObservationResult,
+  type ProcessFlowNodeOccurrenceObservationResult,
+  type ProcessPublicationObservationRequest,
+  type SerializedProcessPublicationLocator,
+} from "./process-publication-gateway.js";
+export {
+  BpmnProcessWorkGateway,
+  ProcessWorkDetailStatus,
+  ProcessWorkObservationStatus,
+  processWorkTask,
+  type ProcessWorkCompletionRequest,
+  type ProcessWorkCompletionValue,
+  type ProcessWorkDetailRequest,
+  type ProcessWorkDetailResult,
+  type ProcessWorkObservationRequest,
+  type ProcessWorkObservationResult,
+  type ProcessWorkTask,
+  type SerializedProcessWorkLocator,
+} from "./process-work-gateway.js";

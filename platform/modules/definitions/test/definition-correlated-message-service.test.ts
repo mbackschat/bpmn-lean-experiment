@@ -17,6 +17,7 @@ import {
   DefinitionCorrelatedMessageIntegrityError,
   DefinitionCorrelatedMessagePublishStatus,
   DefinitionCorrelatedMessageService,
+  DefinitionCorrelatedMessageUnavailableError,
 } from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionCorrelatedMessagePublishCommand,
@@ -77,12 +78,14 @@ test("discovers target-free capabilities from exact stored definition bytes", as
     sourceOverlay: null,
     definition: {
       processId: definition.processId,
+      version: definition.version,
       source: {
         id: definition.source.id,
         sha256: definition.source.sha256,
         byteLength: definition.source.byteLength,
       },
       semanticProfile: definition.semanticProfile,
+      startCapabilities: definition.startCapabilities,
       sourceOverlay: null,
     },
   }]);
@@ -113,7 +116,7 @@ test("publishes one selected capability without constructing a Process target", 
   assert.equal(fixture.describes.length, 1);
   assert.deepEqual(fixture.publishes, [{
     ...fixture.describes[0],
-    catchEventId: capability.catchEventId,
+    message: capability,
     commandId: command.commandId,
     payload: command.payload,
   }]);
@@ -222,6 +225,23 @@ test("fails closed on repository, artifact, and engine reconstruction drift", as
       DefinitionCorrelatedMessageIntegrityError,
     );
   }
+});
+
+test("a deployment that serves no Messages is unavailable, never a semantic outcome", async () => {
+  const unavailable = { code: "host.messages", evidence: "The deployment does not serve Messages." };
+  const describing = createFixture({
+    describeResult: { status: DefinitionCorrelatedMessageCapabilityStatus.Unavailable, ...unavailable },
+  });
+  await assert.rejects(describing.service.describe(reference), (error: unknown) =>
+    error instanceof DefinitionCorrelatedMessageUnavailableError && error.code === unavailable.code);
+  await assert.rejects(describing.service.publish(command), DefinitionCorrelatedMessageUnavailableError);
+  assert.equal(describing.publishes.length, 0);
+
+  const publishing = createFixture({
+    publishResult: { status: DefinitionCorrelatedMessagePublicationStatus.Unavailable, ...unavailable },
+  });
+  await assert.rejects(publishing.service.publish(command), (error: unknown) =>
+    error instanceof DefinitionCorrelatedMessageUnavailableError && error.code === unavailable.code);
 });
 
 type FixtureOptions = Readonly<{

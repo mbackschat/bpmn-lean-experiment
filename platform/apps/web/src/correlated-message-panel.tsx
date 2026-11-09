@@ -13,8 +13,19 @@ import type {
 } from "@bpmn-lean/platform-contracts";
 import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
 
+import { CorrelatedMessageUnavailableError } from "./correlated-message-api.ts";
 import type { CorrelatedMessageApi } from "./correlated-message-api.ts";
 import styles from "./correlated-message-panel.module.css";
+
+const CorrelatedMessageFailureKind = {
+  Unavailable: "unavailable",
+  Error: "error",
+} as const;
+
+type CorrelatedMessageFailure = Readonly<{
+  kind: typeof CorrelatedMessageFailureKind[keyof typeof CorrelatedMessageFailureKind];
+  message: string;
+}>;
 
 export type CorrelatedMessagePanelProps = Readonly<{
   api: CorrelatedMessageApi;
@@ -36,21 +47,21 @@ export function CorrelatedMessagePanel({
   const [publication, setPublication] =
     useState<DefinitionCorrelatedMessagePublication | null>(null);
   const [busy, setBusy] = useState<"load" | "publish" | null>("load");
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<CorrelatedMessageFailure | null>(null);
 
   useEffect(() => {
     let current = true;
     setCapabilities(null);
     setSelectedCatchEventId("");
     setPublication(null);
-    setError(null);
+    setFailure(null);
     setBusy("load");
     void api.getCapabilities(definition).then((result) => {
       if (!current) return;
       setCapabilities(result);
       setSelectedCatchEventId(result.messages[0]?.catchEventId ?? "");
     }).catch((cause: unknown) => {
-      if (current) setError(errorMessage(cause));
+      if (current) setFailure(failureOf(cause));
     }).finally(() => {
       if (current) setBusy(null);
     });
@@ -67,7 +78,7 @@ export function CorrelatedMessagePanel({
     event.preventDefault();
     if (capabilities === null || selected === undefined) return;
     setBusy("publish");
-    setError(null);
+    setFailure(null);
     try {
       setPublication(await api.publish(
         commandId,
@@ -76,7 +87,7 @@ export function CorrelatedMessagePanel({
         { payload: { kind: "string", value: messageValue } },
       ));
     } catch (cause: unknown) {
-      setError(errorMessage(cause));
+      setFailure(failureOf(cause));
     } finally {
       setBusy(null);
     }
@@ -84,7 +95,7 @@ export function CorrelatedMessagePanel({
 
   async function refreshCapabilities(): Promise<void> {
     setBusy("load");
-    setError(null);
+    setFailure(null);
     try {
       const result = await api.getCapabilities(definition);
       setCapabilities(result);
@@ -94,7 +105,7 @@ export function CorrelatedMessagePanel({
           : result.messages[0]?.catchEventId ?? ""
       );
     } catch (cause: unknown) {
-      setError(errorMessage(cause));
+      setFailure(failureOf(cause));
     } finally {
       setBusy(null);
     }
@@ -103,7 +114,7 @@ export function CorrelatedMessagePanel({
   function beginNewCommand(): void {
     setCommandId(globalThis.crypto.randomUUID());
     setPublication(null);
-    setError(null);
+    setFailure(null);
   }
 
   return (
@@ -204,7 +215,7 @@ export function CorrelatedMessagePanel({
         </>
       )}
 
-      {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
+      {failure === null ? null : <CorrelatedMessageFailureNotice failure={failure} />}
       {publication === null ? null : (
         <CorrelatedMessagePublicationResult publication={publication} />
       )}
@@ -322,8 +333,30 @@ function ResultFrame({
   );
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unknown platform failure";
+/** Pure renderer that keeps the engine's correlation unavailability apart from a failed request. */
+export function CorrelatedMessageFailureNotice({
+  failure,
+}: Readonly<{ failure: CorrelatedMessageFailure }>) {
+  switch (failure.kind) {
+    case CorrelatedMessageFailureKind.Unavailable:
+      return (
+        <p className={styles.notice} role="status">
+          <strong>Message correlation unavailable</strong> {failure.message}
+        </p>
+      );
+    case CorrelatedMessageFailureKind.Error:
+      return <p className={styles.error} role="alert">{failure.message}</p>;
+  }
+}
+
+function failureOf(cause: unknown): CorrelatedMessageFailure {
+  if (cause instanceof CorrelatedMessageUnavailableError) {
+    return { kind: CorrelatedMessageFailureKind.Unavailable, message: cause.message };
+  }
+  return {
+    kind: CorrelatedMessageFailureKind.Error,
+    message: cause instanceof Error ? cause.message : "Unknown platform failure",
+  };
 }
 
 function assertNever(value: never): never {

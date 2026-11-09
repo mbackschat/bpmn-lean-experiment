@@ -7,9 +7,9 @@ import {
 import type {
   CurrentCommittedExecution,
   ExecutionPublicationExport,
-  ExecutionPublicationIdentity,
   ExecutionPublicationPage,
   ExecutionPublicationRequest,
+  PublicationIdentity,
 } from "@bpmn-lean/platform-contracts";
 import type {
   PostgresqlRuntime,
@@ -225,7 +225,7 @@ function snapshotRegistration(
 
 function snapshotPage(
   page: ExecutionPublicationPage,
-  identity: ExecutionPublicationIdentity,
+  identity: PublicationIdentity,
 ): ExecutionPublicationPage {
   const batchCount = Array.isArray(page.batches) ? page.batches.length : 0;
   const decoded = decodeExecutionPublicationPage(page, {

@@ -3,9 +3,13 @@ import test from "node:test";
 
 import {
   decodeCanonicalExecutionPublicationExport,
+  executionPublicationExportFormat,
+  publicationIdentityForPublicProcessInstance,
   serializeExecutionPublicationExport,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  CommittedTransitionBatch,
+  CurrentCommittedExecution,
   ExecutionPublicationPage,
   PublicProcessInstanceIdentity,
 } from "@bpmn-lean/platform-contracts";
@@ -37,23 +41,7 @@ const instance = {
   definition,
 } as const satisfies PublicProcessInstanceIdentity;
 
-const identity = {
-  definition: {
-    compiler: "bpmn-source-semantic-process",
-    semanticProfile: definition.semanticProfile,
-    sourceId: definition.source.id,
-    sourceSha256: definition.source.sha256,
-    sourceOverlay: null,
-  },
-  processId: definition.processId,
-  processInstanceId: instance.processInstanceId,
-} as const;
-
-const rootScope = {
-  processInstanceId: instance.processInstanceId,
-  definitionScopeId: "Scope_Process_1",
-  activation: 1,
-} as const;
+const identity = publicationIdentityForPublicProcessInstance(instance);
 
 const startBatch = {
   commandId: "command-start",
@@ -61,56 +49,53 @@ const startBatch = {
   throughRevision: 2,
   transitions: [{
     revision: 1,
-    logicalTimeMs: 0,
-    transition: {
-      kind: "externalStimulus",
-      stimulus: {
-        kind: "startProcess",
-        commandId: "command-start",
-        processId: identity.processId,
-        instanceId: identity.processInstanceId,
-        initialVariables: [],
-      },
-    },
-    positionDelta: emptyDelta(),
+    role: { kind: "input", input: "start" },
+    element: "StartEvent_1",
+    sourceType: "startEvent",
+    owner: 0,
   }, {
     revision: 2,
-    logicalTimeMs: 0,
-    transition: {
-      kind: "internalOperation",
-      operationId: "Operation_Start",
-      operationKind: "initiate",
-      origin: { kind: "bpmnElement", elementId: "StartEvent_1" },
-      owner: rootScope,
-    },
-    positionDelta: {
-      consumedTokens: [],
-      producedTokens: [{ sequenceFlowId: "Flow_1", owner: rootScope, multiplicity: 1 }],
-      enteredScopes: [{ id: rootScope, parent: null, bpmnElementId: identity.processId }],
-      exitedScopes: [],
-    },
+    role: { kind: "arrive", flow: "Flow_1" },
+    element: "Task_1",
+    sourceType: "userTask",
+    owner: 0,
   }],
-} as const;
+} as const satisfies CommittedTransitionBatch;
 
-const current = {
-  revision: 2,
-  state: {
-    kind: "state",
-    instanceId: identity.processInstanceId,
-    status: "running",
-    activeWaits: [],
-    openUserTasks: [],
-    openMessageSubscriptions: [],
-    openTimers: [],
-    openEffects: [],
-    openIncidents: [],
-    variables: [],
-    enabledInteractions: [],
-    logicalTimeMs: 0,
-  },
-  controlTokens: [{ sequenceFlowId: "Flow_1", owner: rootScope, multiplicity: 1 }],
-  scopes: [{ id: rootScope, parent: null, bpmnElementId: identity.processId }],
-} as const;
+const completeBatch = {
+  commandId: "command-complete",
+  fromRevision: 2,
+  throughRevision: 3,
+  transitions: [{
+    revision: 3,
+    role: { kind: "input", input: "command" },
+    element: "Task_1",
+    sourceType: "userTask",
+    owner: 0,
+  }],
+} as const satisfies CommittedTransitionBatch;
+
+const current = currentAt(2);
+
+function currentAt(revision: number): CurrentCommittedExecution {
+  return {
+    revision,
+    state: {
+      kind: "state",
+      instanceId: instance.processInstanceId,
+      status: "running",
+      logicalTimeMs: 0,
+      variables: [],
+      scopes: [],
+      openWaits: [{
+        id: { processInstanceId: instance.processInstanceId, elementId: "Task_1", activation: 1 },
+        definition: null,
+        input: "command",
+        detail: { kind: "userTask" },
+      }],
+    },
+  };
+}
 
 function page(): ExecutionPublicationPage {
   return {
@@ -123,13 +108,9 @@ function page(): ExecutionPublicationPage {
   };
 }
 
-function emptyDelta() {
-  return {
-    consumedTokens: [],
-    producedTokens: [],
-    enteredScopes: [],
-    exitedScopes: [],
-  } as const;
+/** The head page as read while a new input committed between the publication read and the state read. */
+function movedHeadPage(): ExecutionPublicationPage {
+  return { ...page(), current: null };
 }
 
 function jsonResponse(value: unknown, status = 200): Response {
@@ -148,6 +129,7 @@ test("reads one complete publication only from contiguous HTTP pages", async () 
 
   const result = await api.getComplete(instance);
 
+  assert.equal(result.format, "bpmn-lean.execution-publication");
   assert.equal(result.headRevision, 2);
   assert.equal(result.current.revision, 2);
   assert.deepEqual(result.batches, [startBatch]);
@@ -156,12 +138,46 @@ test("reads one complete publication only from contiguous HTTP pages", async () 
   ]);
 });
 
-test("rejects absent semantic owners and recursive private or duplicate fields", async () => {
-  const absentOwner = structuredClone(page()) as any;
-  absentOwner.batches[0].transitions[1].positionDelta.enteredScopes = [];
-  absentOwner.batches[0].transitions[1].positionDelta.producedTokens = [];
+test("re-reads the moved head from the same cursor without repeating its batches", async () => {
+  const requests: string[] = [];
+  const responses = [
+    movedHeadPage(),
+    {
+      ...page(),
+      pageThroughRevision: 3,
+      headRevision: 3,
+      batches: [startBatch, completeBatch],
+      current: currentAt(3),
+    },
+  ];
+  const api = new ProcessExecutionApiClient("https://platform.test", async (input) => {
+    requests.push(new URL(String(input)).search);
+    return jsonResponse(responses[requests.length - 1]);
+  });
+
+  const result = await api.getComplete(instance);
+
+  assert.deepEqual(result.batches, [startBatch, completeBatch]);
+  assert.equal(result.current.revision, 3);
+  assert.deepEqual(requests, ["?afterRevision=0&limit=100", "?afterRevision=0&limit=100"]);
+});
+
+test("reports the publication unavailable when the head keeps moving past the re-read bound", async () => {
+  let calls = 0;
+  const api = new ProcessExecutionApiClient("https://platform.test", async () => {
+    calls += 1;
+    return jsonResponse(movedHeadPage());
+  });
+
+  await assert.rejects(api.getComplete(instance), ProcessExecutionUnavailableError);
+  assert.equal(calls, 3);
+});
+
+test("rejects private or duplicate fields and inconsistent transition records", async () => {
+  const sourceTypeWithoutElement = structuredClone(page()) as any;
+  sourceTypeWithoutElement.batches[0].transitions[1].element = null;
   const cases = [
-    JSON.stringify(absentOwner),
+    JSON.stringify(sourceTypeWithoutElement),
     JSON.stringify({
       ...page(),
       current: {
@@ -170,8 +186,8 @@ test("rejects absent semantic owners and recursive private or duplicate fields",
       },
     }),
     JSON.stringify(page()).replace(
-      '"definitionScopeId":"Scope_Process_1"',
-      '"definitionScopeId":"Scope_Process_1","definitionScopeId":"Private_Scope"',
+      '"elementId":"Task_1"',
+      '"elementId":"Task_1","elementId":"Private_Task"',
     ),
   ];
 
@@ -201,7 +217,7 @@ test("treats a gapped 503 as one fail-closed unavailable outcome", async () => {
 
 test("validates canonical export metadata while returning untouched exact bytes", async () => {
   const publication = {
-    format: "bpmn-lean.execution-publication.v1",
+    format: executionPublicationExportFormat,
     ...identity,
     headRevision: 2,
     batches: [startBatch],
@@ -243,7 +259,7 @@ test("a delayed response cannot satisfy a superseded complete-history request", 
 
 function exportResponse(): Response {
   const bytes = serializeExecutionPublicationExport({
-    format: "bpmn-lean.execution-publication.v1",
+    format: executionPublicationExportFormat,
     ...identity,
     headRevision: 2,
     batches: [startBatch],

@@ -181,6 +181,23 @@ test("rejects a derived due instant outside the public four-digit year domain", 
   assert.equal(await fixture.schedules.get(reference()), null);
 });
 
+test("a Timer Start whose delay the engine does not resolve is refused before any Schedule exists", async () => {
+  const unresolved = timerDefinition();
+  const fixture = createFixture({
+    ...unresolved,
+    startCapabilities: { messageStarts: [], timerStarts: [{ startEventId: "TimerStart", durationMs: null }] },
+  });
+
+  await assert.rejects(
+    fixture.service.put({ ...reference(), activationAt }),
+    (error: unknown) => error instanceof DefinitionScheduleValidationError,
+  );
+
+  assert.equal(fixture.host.validationCalls.length, 1);
+  assert.deepEqual(fixture.host.scheduleCalls, []);
+  assert.equal(await fixture.schedules.get(reference()), null);
+});
+
 test("rechecks future activation after asynchronous definition validation", async () => {
   const fixture = createFixture();
   fixture.host.beforeValidationResult = () => fixture.setNow(activationAt);
@@ -294,8 +311,7 @@ test("missing exact definition remains distinct from validation failure", async 
   assert.deepEqual(fixture.host.scheduleCalls, []);
 });
 
-function createFixture() {
-  const definition = timerDefinition();
+function createFixture(definition: DefinitionMetadata = timerDefinition()) {
   const definitions = new MemoryDefinitionRepository(definition);
   const schedules = new MemoryScheduleRepository();
   const host = new MemoryHost(definition);

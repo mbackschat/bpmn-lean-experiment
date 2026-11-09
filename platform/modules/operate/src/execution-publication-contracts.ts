@@ -2,15 +2,13 @@ import type {
   CommittedTransitionBatch,
   CurrentCommittedExecution,
   ExecutionPublicationExport,
-  ExecutionPublicationIdentity,
   ExecutionPublicationPage,
   ExecutionPublicationRequest,
+  PublicationDefinitionIdentity,
+  PublicationIdentity,
 } from "@bpmn-lean/platform-contracts";
 
 import type { OperateProcessRegistration } from "./incident-contracts.js";
-
-type PublicControlTokenPosition = CurrentCommittedExecution["controlTokens"][number];
-type PublicScopePosition = CurrentCommittedExecution["scopes"][number];
 
 export enum ExecutionPublicationProjectionStatus {
   Healthy = "healthy",
@@ -19,13 +17,10 @@ export enum ExecutionPublicationProjectionStatus {
 }
 
 export type ExecutionPublicationProjectionImage = Readonly<{
-  identity: ExecutionPublicationIdentity;
+  identity: PublicationIdentity;
   status: ExecutionPublicationProjectionStatus;
   headRevision: number;
   producerHeadRevision: number | null;
-  lastLogicalTimeMs: number | null;
-  controlTokens: readonly PublicControlTokenPosition[];
-  scopes: readonly PublicScopePosition[];
   batches: readonly CommittedTransitionBatch[];
   current: CurrentCommittedExecution | null;
 }>;
@@ -53,15 +48,17 @@ export interface ExecutionPublicationRepository {
   export(processInstanceId: string): Promise<ExecutionPublicationExport | null>;
 }
 
+/** The engine's publication read for one process instance, as the gateway's `processExecution` port offers it. */
+export type PublicationObservationRequest = Readonly<{
+  locator: string;
+  definition: PublicationDefinitionIdentity;
+  processInstanceId: string;
+  afterRevision: number;
+  limit?: number;
+}>;
+
 export interface ExecutionPublicationGateway {
-  observe(request: Readonly<{
-    locator: string;
-    definition: ExecutionPublicationIdentity["definition"];
-    processId: string;
-    processInstanceId: string;
-    afterRevision: number;
-    limit?: number;
-  }>): Promise<unknown>;
+  observe(request: PublicationObservationRequest): Promise<unknown>;
 }
 
 export class ExecutionPublicationIntegrityError extends Error {

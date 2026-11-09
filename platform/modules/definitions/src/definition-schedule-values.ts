@@ -1,7 +1,7 @@
 import type {
   DefinitionMetadata,
   DefinitionReference,
-  DefinitionTimerStartCapability,
+  DefinitionScheduledTimerStart,
 } from "./contracts.js";
 import {
   decodeCanonicalWholeSecondUtcInstant,
@@ -25,7 +25,7 @@ import type {
 export function requireSameScheduleIntent(
   record: DefinitionScheduleRecord,
   definition: DefinitionMetadata,
-  timerStart: DefinitionTimerStartCapability,
+  timerStart: DefinitionScheduledTimerStart,
   activationAt: string,
   dueAt: string,
 ): void {

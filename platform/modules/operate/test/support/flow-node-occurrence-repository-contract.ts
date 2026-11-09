@@ -17,6 +17,8 @@ import {
   occurrenceFirstPage,
   occurrenceRegistration,
   occurrenceSecondPage,
+  startEventOccurrence,
+  taskOccurrence,
 } from "../flow-node-occurrence-fixture.ts";
 
 export type OccurrenceRepositoryContractFixture = Readonly<{
@@ -61,8 +63,14 @@ export function registerFlowNodeOccurrenceRepositoryContract(
         occurrenceSecondPage(),
       );
       assert.equal(terminal.headRevision, 3);
-      assert.equal(terminal.occurrences[0]?.terminal, "completed");
-      assert.deepEqual(terminal.currentOpen, []);
+      assert.deepEqual(
+        terminal.occurrences.map(({ occurrence, startRevision, startIndex, terminal: end }) =>
+          [occurrence, startRevision, startIndex, end]),
+        [
+          [startEventOccurrence, 1, 0, "completed"],
+          [taskOccurrence, 2, 0, "completed"],
+        ],
+      );
     } finally {
       await fixture.dispose();
     }
@@ -89,7 +97,6 @@ export function registerFlowNodeOccurrenceRepositoryContract(
           pageThroughRevision: 3,
           headRevision: 3,
           batches: [...first.batches, ...second.batches],
-          currentOpen: [],
         }],
       );
       assert.equal(rebuilt.headRevision, 3);

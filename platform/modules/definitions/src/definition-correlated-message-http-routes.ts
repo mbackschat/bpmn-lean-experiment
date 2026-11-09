@@ -1,4 +1,5 @@
 import {
+  CorrelatedMessageApiErrorCodes,
   decodePutDefinitionCorrelatedMessagePublicationRequest,
   matchDefinitionCorrelatedMessagePublicationPath,
   matchDefinitionCorrelatedMessagesPath,
@@ -6,12 +7,13 @@ import {
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
 import type {
+  PublicApiErrorResponse,
   PutDefinitionCorrelatedMessagePublicationRequest,
 } from "@bpmn-lean/platform-contracts";
 
 import {
-  DefinitionCorrelatedMessageIntegrityError,
   DefinitionCorrelatedMessagePublishStatus,
+  DefinitionCorrelatedMessageUnavailableError,
 } from "./definition-correlated-message-contracts.js";
 import type {
   DefinitionCorrelatedMessageOperations,
@@ -140,10 +142,24 @@ function correlatedMessageErrorResponse(error: unknown): Response {
   if (error instanceof HttpRequestFailure) {
     return errorResponse(error.status, error.code, error.message);
   }
-  if (error instanceof DefinitionCorrelatedMessageIntegrityError) {
-    return internalFailure();
+  // The engine's refusal code stays server-side: the public code names the condition, not the engine's vocabulary.
+  if (error instanceof DefinitionCorrelatedMessageUnavailableError) {
+    return correlationUnavailable();
   }
   return internalFailure();
+}
+
+function correlationUnavailable(): Response {
+  const body = {
+    error: {
+      code: PublicApiErrorCode.CorrelationUnavailable,
+      message: "The deployment does not serve correlated Messages.",
+    },
+  } as const satisfies PublicApiErrorResponse<typeof CorrelatedMessageApiErrorCodes[number]>;
+  return new Response(JSON.stringify(body), {
+    status: 503,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
 }
 
 function invalidRequest(message: string): HttpRequestFailure {

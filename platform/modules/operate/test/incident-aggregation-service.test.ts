@@ -102,6 +102,47 @@ test("sorts by exact scalar identity and enforces both positive ceilings", async
   );
 });
 
+test("accepts any positive engine generation and orders by it after the effect occurrence", async () => {
+  await withRepository(async (repository) => {
+    await repository.recordConfirmed(publication("instance"));
+    const service = new IncidentAggregationService({
+      repository,
+      gateway: {
+        observeIncidents: async () => ({
+          status: "observed",
+          incidents: [operationsIncident("instance", "Task", 2), operationsIncident("instance", "Task", 3)],
+        }),
+      },
+    });
+    assert.deepEqual(
+      (await service.currentSnapshot()).incidents.map(({ incident }) => incident.id.generation),
+      [2, 3],
+    );
+    const unordered = new IncidentAggregationService({
+      repository,
+      gateway: {
+        observeIncidents: async () => ({
+          status: "observed",
+          incidents: [operationsIncident("instance", "Task", 3), operationsIncident("instance", "Task", 2)],
+        }),
+      },
+    });
+    await assert.rejects(unordered.currentSnapshot(), IncidentSnapshotUnavailableError);
+    for (const generation of [0, 1.5]) {
+      const malformed = new IncidentAggregationService({
+        repository,
+        gateway: {
+          observeIncidents: async () => ({
+            status: "observed",
+            incidents: [operationsIncident("instance", "Task", generation)],
+          }),
+        },
+      });
+      await assert.rejects(malformed.currentSnapshot(), IncidentSnapshotUnavailableError);
+    }
+  });
+});
+
 test("classifies exact closed results and rejects malformed Product 1 incident bytes", async () => {
   await withRepository(async (repository) => {
     await repository.recordConfirmed(publication("closed"));
@@ -140,9 +181,9 @@ function publication(processInstanceId: string) {
   } as const;
 }
 
-function operationsIncident(processInstanceId: string, elementId: string) {
+function operationsIncident(processInstanceId: string, elementId: string, generation = 1) {
   const effectId = { processInstanceId, elementId, activation: 1 } as const;
-  const incidentId = { effectId, generation: 1 } as const;
+  const incidentId = { effectId, generation } as const;
   return {
     incident: {
       kind: "effectExecutionFailed",

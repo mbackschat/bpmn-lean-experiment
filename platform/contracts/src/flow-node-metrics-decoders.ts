@@ -122,10 +122,7 @@ function requireMetric(value: unknown, label: string): FlowNodeMetric {
     if (durationValue !== null) {
       throw new TypeError(`${label}.completedDuration must be null when completed is zero`);
     }
-  } else {
-    if (durationValue === null) {
-      throw new TypeError(`${label}.completedDuration is required when completed is positive`);
-    }
+  } else if (durationValue !== null) {
     const duration = requireDuration(durationValue, `${label}.completedDuration`);
     if (duration.sampleCount !== completed) {
       throw new TypeError(`${label}.completedDuration.sampleCount must equal completed`);

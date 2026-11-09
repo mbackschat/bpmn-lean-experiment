@@ -15,13 +15,14 @@ import type { FlowNodeOccurrencePage } from "@bpmn-lean/platform-contracts";
 
 import { firstPage, secondPage } from "./execution-publication-fixture.ts";
 import {
-  occurrenceRootScope,
   occurrenceFirstPage,
   occurrenceRegistration,
   occurrenceSecondPage,
+  startEventOccurrence,
+  taskOccurrence,
 } from "./flow-node-occurrence-fixture.ts";
 
-test("rejects positive-cursor unknown terminals and prior-time regression atomically", async () => {
+test("rejects a positive-cursor terminal or start that does not fit the retained keys atomically", async () => {
   await withRepositories(async ({ instances, executions, occurrences, databaseFile }) => {
     const registration = await recordRegistration(instances);
     await executions.applyPage(registration, firstPage(3));
@@ -29,24 +30,18 @@ test("rejects positive-cursor unknown terminals and prior-time regression atomic
     await occurrences.applyPage(registration, occurrenceFirstPage(3));
     const before = semanticRows(databaseFile);
 
-    const unknownTerminal = occurrenceSecondPage();
-    const unknownBatch = unknownTerminal.batches[0];
-    const unknownTransition = unknownBatch?.transitions[0];
-    const unknownEnd = unknownTransition?.lifecycle.ended[0];
-    assert.ok(unknownEnd);
-    Reflect.set(unknownEnd, "id", {
-      processInstanceId: registration.instance.processInstanceId,
-      startRevision: 1,
-      startIndex: 0,
-    });
-    await assert.rejects(() => occurrences.applyPage(registration, unknownTerminal));
-    assert.deepEqual(semanticRows(databaseFile), before);
-
-    await assert.rejects(() => occurrences.applyPage(
-      registration,
-      occurrenceSecondPage(99),
-    ));
-    assert.deepEqual(semanticRows(databaseFile), before);
+    for (const transition of [
+      { revision: 3, started: [], ended: [{ occurrence: { ...taskOccurrence, activation: 2 }, terminal: "completed" }] },
+      { revision: 3, started: [], ended: [{ occurrence: startEventOccurrence, terminal: "cancelled" }] },
+      { revision: 3, started: [{ occurrence: taskOccurrence, owner: 0, sourceType: "userTask" }], ended: [] },
+    ] as const) {
+      const page = occurrenceSecondPage();
+      await assert.rejects(() => occurrences.applyPage(registration, {
+        ...page,
+        batches: [{ ...page.batches[0]!, transitions: [transition] }],
+      }), { name: "FlowNodeOccurrenceIntegrityError" });
+      assert.deepEqual(semanticRows(databaseFile), before);
+    }
     assert.equal((await occurrences.get(registration.instance.processInstanceId))?.headRevision, 2);
   });
 });
@@ -127,9 +122,11 @@ test("appends, advances, and marks occurrences without deleting accepted rows", 
     const image = await occurrences.get(registration.instance.processInstanceId);
     assert.equal(image?.headRevision, 3);
     assert.equal(image?.status, FlowNodeOccurrenceProjectionStatus.Gap);
-    assert.equal(image?.occurrences.length, 2);
-    assert.equal(image?.occurrences[0]?.terminal, "completed");
-    assert.equal(image?.occurrences[1]?.terminal, null);
+    assert.deepEqual(
+      image?.occurrences.map(({ occurrence, startRevision, terminal }) =>
+        [occurrence.elementId, startRevision, terminal]),
+      [["StartEvent_1", 1, "completed"], ["Task_1", 2, "completed"], ["Task_2", 3, null]],
+    );
     assert.deepEqual(semanticRows(databaseFile)[0].slice(0, prefixBatches.length), prefixBatches);
   });
 });
@@ -193,30 +190,19 @@ function occurrenceSuffixWithSuccessor(): FlowNodeOccurrencePage {
   const transition = batch?.transitions[0];
   assert.ok(batch);
   assert.ok(transition);
-  const id = {
-    processInstanceId: occurrenceRegistration.instance.processInstanceId,
-    startRevision: 3,
-    startIndex: 0,
-  } as const;
-  const started = {
-    id,
-    processId: occurrenceRegistration.instance.definition.processId,
-    elementId: "Task_2",
-    owner: occurrenceRootScope,
-  } as const;
   return {
     ...page,
     batches: [{
       ...batch,
       transitions: [{
         ...transition,
-        lifecycle: {
-          started: [started],
-          ended: transition.lifecycle.ended,
-        },
+        started: [{
+          occurrence: { ...taskOccurrence, elementId: "Task_2" },
+          owner: 0,
+          sourceType: "userTask",
+        }],
       }],
     }],
-    currentOpen: [{ ...started, startedAtEpochMs: batch.committedAtEpochMs }],
   };
 }
 

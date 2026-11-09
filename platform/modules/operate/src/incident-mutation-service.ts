@@ -367,7 +367,9 @@ function classifyEngineResult(
   }
   switch (value.kind) {
     case "semantic":
-      if (!hasOnlyKeys(value, ["kind", "commandId", "outcome"])) {
+      // The engine's refusal `code` is accepted and not recorded: the public result names only the outcome class.
+      if (!hasOnlyKeys(value, ["kind", "commandId", "outcome", "code"]) ||
+          (value.code !== null && typeof value.code !== "string")) {
         return indeterminateResult(binding);
       }
       switch (value.outcome) {
@@ -393,11 +395,11 @@ function classifyEngineResult(
     case "processClosed": {
       if (!hasOnlyKeys(value, ["kind", "commandId", "receipt"]) ||
           !isRecord(value.receipt) ||
-          value.receipt.processInstanceId !== binding.hostingInstance.processInstanceId ||
-          !isRecord(value.receipt.finalState)) {
+          !hasOnlyKeys(value.receipt, ["processInstanceId", "status"]) ||
+          value.receipt.processInstanceId !== binding.hostingInstance.processInstanceId) {
         return indeterminateResult(binding);
       }
-      const status = value.receipt.finalState.status;
+      const status = value.receipt.status;
       return status === "completed" || status === "cancelled" || status === "failed"
         ? {
             state: "rejected",
@@ -407,11 +409,6 @@ function classifyEngineResult(
           }
         : indeterminateResult(binding);
     }
-    case "processUnknown":
-      return hasOnlyKeys(value, ["kind", "commandId", "processInstanceId"]) &&
-          value.processInstanceId === binding.hostingInstance.processInstanceId
-        ? indeterminateResult(binding)
-        : indeterminateResult(binding);
     default:
       return indeterminateResult(binding);
   }

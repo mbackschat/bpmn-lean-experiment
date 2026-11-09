@@ -147,6 +147,24 @@ test("rejects wrong route-specific error codes and status/result disagreements",
   );
 });
 
+test("reads an incident of a later failure generation by its exact route", async () => {
+  const laterId = { effectId: occurrence, generation: 3 } as const;
+  const laterRetry = { kind: "retryIncident", incidentId: laterId } as const;
+  const later = {
+    ...incident,
+    incident: { ...incident.incident, id: laterId },
+    availableInteractions: [laterRetry],
+  } as const;
+  const paths: string[] = [];
+  const client = new IncidentOperationsApiClient("https://platform.example", async (input) => {
+    paths.push(new URL(String(input)).pathname);
+    return json(later);
+  });
+
+  assert.deepEqual(await client.getIncident(laterId), later);
+  assert.deepEqual(paths, ["/api/v1/incidents/process-1/ServiceTask_Fail/1/generations/3"]);
+});
+
 function clientReturning(status: number, body: unknown): IncidentOperationsApiClient {
   return new IncidentOperationsApiClient("https://platform.example", async () =>
     json(body, status));

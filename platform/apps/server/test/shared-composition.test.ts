@@ -142,6 +142,7 @@ function sharedConfig() {
     temporalNamespace: "default",
     temporalTaskQueue: "bpmn-semantic",
     temporalConnectTimeoutMs: 5_000,
+    engineDeployment: { profiles: {}, servedRequirements: { timers: true, messages: true, effects: true, userTasks: true, calls: true }, effectStartToCloseMs: 30_000 },
     fakeActorId: "demo-user",
     fakeActorGroups: ["reviewers", "operators"],
     operationsGroupId: "operators",

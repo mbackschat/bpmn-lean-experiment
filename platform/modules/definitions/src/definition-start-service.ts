@@ -102,6 +102,7 @@ export class DefinitionStartService {
       expectedSha256: definition.source.sha256,
       semanticProfile: definition.semanticProfile,
       expectedProcessId: definition.processId,
+      version: definition.version,
       processInstanceId,
       initialVariables: capturedCommand.initialVariables,
       ...(sourceOverlay === null ? {} : { sourceOverlay }),
@@ -226,6 +227,7 @@ export class DefinitionStartService {
           expectedSha256: definition.source.sha256,
           semanticProfile: definition.semanticProfile,
           expectedProcessId: definition.processId,
+          version: definition.version,
           processInstanceId: reservation.instance.processInstanceId,
           initialVariables,
         } satisfies DefinitionVersionStartRequest;

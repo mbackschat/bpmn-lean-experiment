@@ -4,11 +4,17 @@
  * so its declarations type-check without the SDK's; `client` adds the SDK realizations.
  */
 export {
+  PublicationOutcome,
   ResultKind,
   RunKind,
   Scheduling,
+  correlationAmbiguousCode,
+  notCorrelatedCode,
   workflowType,
   type CommandResult,
+  type CorrelatedPublication,
+  type CorrelationTarget,
+  type PublicationResult,
   type Halt,
   type HostConfig,
   type HostSnapshot,

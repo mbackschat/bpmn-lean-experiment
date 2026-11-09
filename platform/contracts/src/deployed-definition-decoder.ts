@@ -147,10 +147,9 @@ export function decodePublicTimerStartCapability(
       readOwn(value, "startEventId"),
       `${label}.startEventId`,
     ),
-    durationMs: requireNonnegativeSafeInteger(
-      readOwn(value, "durationMs"),
-      `${label}.durationMs`,
-    ),
+    durationMs: readOwn(value, "durationMs") === null
+      ? null
+      : requirePositiveSafeInteger(readOwn(value, "durationMs"), `${label}.durationMs`),
   };
 }
 

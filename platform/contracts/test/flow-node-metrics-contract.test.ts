@@ -105,7 +105,6 @@ test("rejects inconsistent frequency and independent duration inconsistencies", 
   const first = available.snapshot.flowNodes[0]!;
   const invalidMetrics = [
     { ...first, frequency: 4 },
-    { ...first, completedDuration: null },
     { ...first, completedDuration: { ...first.completedDuration!, sampleCount: 1 } },
     {
       ...first,
@@ -125,6 +124,14 @@ test("rejects inconsistent frequency and independent duration inconsistencies", 
       snapshot: { ...available.snapshot, flowNodes: [metric] },
     }, definition));
   }
+});
+
+// The engine's publications carry no completion times, so counted completions may have no duration.
+test("accepts completed occurrences without a completion duration", () => {
+  const available = availableMetrics();
+  const untimed = { ...available.snapshot.flowNodes[0]!, completedDuration: null };
+  const result = { ...available, snapshot: { ...available.snapshot, flowNodes: [untimed] } };
+  assert.deepEqual(decodeFlowNodeMetricsResult(result, definition), result);
 });
 
 test("requires canonical element order and exact completed-duration bounds", () => {

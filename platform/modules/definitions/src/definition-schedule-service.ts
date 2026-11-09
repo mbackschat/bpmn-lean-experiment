@@ -3,7 +3,7 @@ import type { RetainedDefinitionArtifacts } from "./definition-artifacts.js";
 import type {
   DefinitionMetadata,
   DefinitionReference,
-  DefinitionTimerStartCapability,
+  DefinitionScheduledTimerStart,
 } from "./contracts.js";
 import {
   cloneDefinitionStartCapabilities,
@@ -186,7 +186,7 @@ export class DefinitionScheduleService {
   async #reserve(
     reference: DefinitionScheduleReference,
     definition: DefinitionMetadata,
-    timerStart: DefinitionTimerStartCapability,
+    timerStart: DefinitionScheduledTimerStart,
     activationAt: string,
     dueAt: string,
   ) {
@@ -232,7 +232,7 @@ export class DefinitionScheduleService {
 
   async #validateDefinition(
     loaded: LoadedDefinition,
-  ): Promise<DefinitionTimerStartCapability> {
+  ): Promise<DefinitionScheduledTimerStart> {
     const result = await this.#dependencies.host.validateDefinition({
       bytes: Uint8Array.from(loaded.bytes),
       sourceOverlay: loaded.sourceOverlay,
@@ -270,7 +270,12 @@ export class DefinitionScheduleService {
     if (timerStart === undefined) {
       throw new DefinitionScheduleIntegrityError("Timer Start capability disappeared");
     }
-    return { ...timerStart };
+    if (timerStart.durationMs === null) {
+      throw new DefinitionScheduleValidationError(
+        "the engine resolves no delay for this definition's Timer Start yet",
+      );
+    }
+    return { startEventId: timerStart.startEventId, durationMs: timerStart.durationMs };
   }
 
   async #reconcile(

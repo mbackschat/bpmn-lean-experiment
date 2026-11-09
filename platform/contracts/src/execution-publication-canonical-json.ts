@@ -1,8 +1,6 @@
 import { decodeExecutionPublicationExport } from "./execution-publication-decoders.js";
-import type {
-  ExecutionPublicationExport,
-  ExecutionPublicationIdentity,
-} from "./execution-publications.js";
+import type { ExecutionPublicationExport } from "./execution-publications.js";
+import type { PublicationIdentity } from "./publication-identity.js";
 import {
   sameCanonicalJsonBytes,
   serializeCanonicalJsonValue,
@@ -19,7 +17,7 @@ export function serializeCanonicalExecutionPublicationValue(
 /** Validates and emits the selected exact UTF-8 execution export representation. */
 export function serializeExecutionPublicationExport(
   value: unknown,
-  identity: ExecutionPublicationIdentity,
+  identity: PublicationIdentity,
 ): Uint8Array {
   const publication = decodeExecutionPublicationExport(value, identity);
   return serializeCanonicalExecutionPublicationValue(publication);
@@ -28,7 +26,7 @@ export function serializeExecutionPublicationExport(
 /** Accepts only strict JSON bytes that already equal the canonical export bytes. */
 export function decodeCanonicalExecutionPublicationExport(
   bytes: Uint8Array,
-  identity: ExecutionPublicationIdentity,
+  identity: PublicationIdentity,
 ): ExecutionPublicationExport {
   try {
     const parsed = parseWireJson(bytes);

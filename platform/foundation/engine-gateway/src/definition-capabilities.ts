@@ -1,50 +1,78 @@
-/** Platform-owned copy of the exact Product 1 definition-start capability contract. */
+/**
+ * Product 2's view of a definition's starts: Message starts on an operation channel, which its publication contract
+ * addresses, and Timer starts with the delay the engine resolves for them. A Message start on another channel is
+ * outside that contract, so a definition with one is refused at the gateway with a stable code.
+ */
+import type { EngineDefinitionCapabilities, EngineStartCapability, EngineTimerSchedule } from "@bpmn-lean/engine-api";
 import type {
-  EngineDefinitionCompilationResult,
-} from "@bpmn-lean/engine-api";
+  PublicDefinitionStartCapabilities,
+  PublicMessageStartCapability,
+  PublicOperationMessageChannel,
+  PublicTimerStartCapability,
+} from "@bpmn-lean/platform-contracts";
 
-type AcceptedCompilation = Extract<
-  EngineDefinitionCompilationResult,
-  { status: "accepted" }
->;
+export type DefinitionOperationMessageChannel = PublicOperationMessageChannel;
+export type DefinitionMessageStartCapability = PublicMessageStartCapability;
+export type DefinitionTimerStartCapability = PublicTimerStartCapability;
+export type DefinitionStartCapabilities = PublicDefinitionStartCapabilities;
 
-export type DefinitionOperationMessageChannel = Readonly<{
-  kind: "operationMessage";
-  interfaceId: string;
-  interfaceOperationId: string;
-  messageId: string;
-}>;
+/** The refusal of a definition whose start Product 2 cannot address. */
+export const unaddressableMessageStartCode = "platform.messageStartChannel";
 
-export type DefinitionMessageStartCapability = Readonly<{
-  startEventId: string;
-  channel: DefinitionOperationMessageChannel;
-}>;
+export type StartCapabilityMapping =
+  | Readonly<{ kind: "mapped"; capabilities: DefinitionStartCapabilities }>
+  | Readonly<{ kind: "refused"; code: string; element: string; evidence: string }>;
 
-export type DefinitionTimerStartCapability = Readonly<{
-  startEventId: string;
-  durationMs: number;
-}>;
+function operationChannel(start: EngineStartCapability): DefinitionOperationMessageChannel | null {
+  const channel = start.channel;
+  return channel !== null && channel.kind === "operationMessage" ? { ...channel } : null;
+}
 
-export type DefinitionStartCapabilities = Readonly<{
-  messageStarts: readonly DefinitionMessageStartCapability[];
-  timerStarts: readonly DefinitionTimerStartCapability[];
-}>;
+export function mapDefinitionStartCapabilities(capabilities: EngineDefinitionCapabilities): StartCapabilityMapping {
+  const messageStarts: DefinitionMessageStartCapability[] = [];
+  const timerStarts: DefinitionTimerStartCapability[] = [];
+  for (const start of capabilities.starts) {
+    if (start.channel !== null) {
+      const channel = operationChannel(start);
+      if (channel === null) {
+        return {
+          kind: "refused",
+          code: unaddressableMessageStartCode,
+          element: start.startEventId,
+          evidence: "A Message start that names no Operation cannot be addressed by a Product 2 publication.",
+        };
+      }
+      messageStarts.push({ startEventId: start.startEventId, channel });
+    }
+    // A one-shot Schedule realizes a delay; a cycle has none, and admission refuses it on a root start.
+    if (start.timer !== null) {
+      timerStarts.push({ startEventId: start.startEventId, durationMs: "durationMs" in start.timer ? start.timer.durationMs : null });
+    }
+  }
+  return { kind: "mapped", capabilities: { messageStarts, timerStarts } };
+}
 
-export function mapDefinitionStartCapabilities(
-  capabilities: AcceptedCompilation["startCapabilities"],
-): DefinitionStartCapabilities {
-  return {
-    messageStarts: capabilities.messageStarts.map((capability) => ({
-      startEventId: capability.startEventId,
-      channel: {
-        kind: capability.channel.kind,
-        interfaceId: capability.channel.interfaceId,
-        interfaceOperationId: capability.channel.interfaceOperationId,
-        messageId: capability.channel.messageId,
-      },
-    })),
-    timerStarts: capabilities.timerStarts.map(
-      ({ startEventId, durationMs }) => ({ startEventId, durationMs }),
-    ),
-  };
+/** The resolved schedule of the Timer start `startEventId`, `null` when the definition publishes no such start. */
+export function engineTimerSchedule(capabilities: EngineDefinitionCapabilities, startEventId: string): EngineTimerSchedule | null {
+  const selected = capabilities.starts.filter((start) => start.startEventId === startEventId && start.timer !== null);
+  return selected.length === 1 ? selected[0]!.timer : null;
+}
+
+/** The value with every object's keys sorted, so stored and recompiled capabilities compare by content. */
+function sortedKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortedKeys);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).sort()
+      .map((key) => [key, sortedKeys((value as Record<string, unknown>)[key])]));
+  }
+  return value;
+}
+
+function canonical(value: unknown): string {
+  return JSON.stringify(sortedKeys(value));
+}
+
+/** Whether the stored capabilities are what the definition compiles to now. */
+export function sameStartCapabilities(left: DefinitionStartCapabilities, right: DefinitionStartCapabilities): boolean {
+  return canonical(left) === canonical(right);
 }

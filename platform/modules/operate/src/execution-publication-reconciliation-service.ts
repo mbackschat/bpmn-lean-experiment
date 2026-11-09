@@ -23,7 +23,6 @@ import type { OperateProcessRegistration } from "./incident-contracts.js";
 export enum ExecutionPublicationReconciliationKind {
   Available = "available",
   NotFound = "notFound",
-  NotReady = "notReady",
   Unavailable = "unavailable",
   Gap = "gap",
 }
@@ -36,7 +35,6 @@ export type ExecutionPublicationReconciliationResult =
   | Readonly<{
       kind:
         | ExecutionPublicationReconciliationKind.NotFound
-        | ExecutionPublicationReconciliationKind.NotReady
         | ExecutionPublicationReconciliationKind.Unavailable
         | ExecutionPublicationReconciliationKind.Gap;
     }>;
@@ -45,24 +43,34 @@ export type ExecutionPublicationReconciliationServiceOptions = Readonly<{
   registrations: Pick<ProcessInstanceRepository, "getRegistration">;
   publications: ExecutionPublicationRepository;
   gateway: ExecutionPublicationGateway;
-  notReadyAttempts?: number;
+  /** How many head pages without a committed state are read before the projection is classified unavailable. */
+  currentReadAttempts?: number;
   maxPagesPerReconciliation?: number;
-  beforeNotReadyRetry?: (attempt: number) => Promise<void>;
+  beforeCurrentReread?: (attempt: number) => Promise<void>;
 }>;
 
-/** Pulls only the authoritative cursor suffix and classifies every incomplete result. */
+/**
+ * Pulls only the authoritative cursor suffix and classifies every incomplete result.
+ *
+ * A head page whose `current` is null means the engine's head moved while it read the state, so the head is re-read
+ * a bounded number of times. Exhausting the bound classifies the projection `unavailable`, not `gap`: every retained
+ * batch is still a verified prefix and nothing was lost or contradicted, only the state at a moving head could not be
+ * confirmed yet, which is the transient condition a later reconciliation resolves without a rebuild. An engine
+ * `integrityFailure` (the instance's chain runs another definition or instance) is classified `gap`, like a local
+ * integrity failure: the retained prefix cannot be continued from that producer.
+ */
 export class ExecutionPublicationReconciliationService {
   readonly #options: Required<
-    Omit<ExecutionPublicationReconciliationServiceOptions, "beforeNotReadyRetry">
-  > & Pick<ExecutionPublicationReconciliationServiceOptions, "beforeNotReadyRetry">;
+    Omit<ExecutionPublicationReconciliationServiceOptions, "beforeCurrentReread">
+  > & Pick<ExecutionPublicationReconciliationServiceOptions, "beforeCurrentReread">;
 
   constructor(options: ExecutionPublicationReconciliationServiceOptions) {
     this.#options = {
       ...options,
-      notReadyAttempts: options.notReadyAttempts ?? 3,
+      currentReadAttempts: options.currentReadAttempts ?? 3,
       maxPagesPerReconciliation: options.maxPagesPerReconciliation ?? 100,
     };
-    requirePositive(this.#options.notReadyAttempts, "notReadyAttempts");
+    requirePositive(this.#options.currentReadAttempts, "currentReadAttempts");
     requirePositive(
       this.#options.maxPagesPerReconciliation,
       "maxPagesPerReconciliation",
@@ -76,7 +84,7 @@ export class ExecutionPublicationReconciliationService {
     if (registration === null) {
       return { kind: ExecutionPublicationReconciliationKind.NotFound };
     }
-    let notReadyAttempts = 0;
+    let currentReads = 0;
     let pageCount = 0;
     while (pageCount < this.#options.maxPagesPerReconciliation) {
       const prior = await this.#options.publications.get(processInstanceId);
@@ -118,34 +126,30 @@ export class ExecutionPublicationReconciliationService {
             }
             throw error;
           }
-          if (
-            projection.current !== null &&
-            projection.headRevision === projection.producerHeadRevision
-          ) {
+          if (projection.headRevision !== projection.producerHeadRevision) {
+            pageCount += 1;
+            break;
+          }
+          if (projection.current !== null) {
             return {
               kind: ExecutionPublicationReconciliationKind.Available,
               projection,
             };
           }
-          pageCount += 1;
+          currentReads += 1;
+          if (currentReads >= this.#options.currentReadAttempts) {
+            await this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
+            return { kind: ExecutionPublicationReconciliationKind.Unavailable };
+          }
+          await this.#options.beforeCurrentReread?.(currentReads);
           break;
         }
-        case ExecutionPublicationResultKind.NotReady:
-          if (afterRevision > 0) {
-            await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
-            return { kind: ExecutionPublicationReconciliationKind.Gap };
-          }
-          notReadyAttempts += 1;
-          if (notReadyAttempts >= this.#options.notReadyAttempts) {
-            return { kind: ExecutionPublicationReconciliationKind.NotReady };
-          }
-          await this.#options.beforeNotReadyRetry?.(notReadyAttempts);
-          break;
         case ExecutionPublicationResultKind.NotFound:
         case ExecutionPublicationResultKind.Unavailable:
           await this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
           return { kind: ExecutionPublicationReconciliationKind.Unavailable };
         case ExecutionPublicationResultKind.Gap:
+        case ExecutionPublicationResultKind.IntegrityFailure:
           await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
           return { kind: ExecutionPublicationReconciliationKind.Gap };
       }
@@ -163,7 +167,7 @@ export class ExecutionPublicationReconciliationService {
     }
     const pages: ExecutionPublicationPage[] = [];
     let afterRevision = 0;
-    let notReadyAttempts = 0;
+    let currentReads = 0;
     while (pages.length < this.#options.maxPagesPerReconciliation) {
       const observed = await this.#observe(registration, afterRevision);
       if (observed.kind === ExecutionPublicationReconciliationKind.Unavailable) {
@@ -186,7 +190,15 @@ export class ExecutionPublicationReconciliationService {
         case ExecutionPublicationResultKind.Available:
           pages.push(result.page);
           afterRevision = result.page.pageThroughRevision;
-          if (result.page.current !== null) {
+          if (result.page.pageThroughRevision !== result.page.headRevision) break;
+          if (result.page.current === null) {
+            currentReads += 1;
+            if (currentReads >= this.#options.currentReadAttempts) {
+              await this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
+              return { kind: ExecutionPublicationReconciliationKind.Unavailable };
+            }
+            await this.#options.beforeCurrentReread?.(currentReads);
+          } else {
             try {
               const projection = await this.#options.publications.replaceFromPages(
                 registration,
@@ -209,22 +221,12 @@ export class ExecutionPublicationReconciliationService {
             }
           }
           break;
-        case ExecutionPublicationResultKind.NotReady:
-          if (afterRevision > 0) {
-            await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
-            return { kind: ExecutionPublicationReconciliationKind.Gap };
-          }
-          notReadyAttempts += 1;
-          if (notReadyAttempts >= this.#options.notReadyAttempts) {
-            return { kind: ExecutionPublicationReconciliationKind.NotReady };
-          }
-          await this.#options.beforeNotReadyRetry?.(notReadyAttempts);
-          break;
         case ExecutionPublicationResultKind.NotFound:
         case ExecutionPublicationResultKind.Unavailable:
           await this.#mark(registration, ExecutionPublicationProjectionStatus.Unavailable);
           return { kind: ExecutionPublicationReconciliationKind.Unavailable };
         case ExecutionPublicationResultKind.Gap:
+        case ExecutionPublicationResultKind.IntegrityFailure:
           await this.#mark(registration, ExecutionPublicationProjectionStatus.Gap);
           return { kind: ExecutionPublicationReconciliationKind.Gap };
       }
@@ -247,7 +249,6 @@ export class ExecutionPublicationReconciliationService {
         value: await this.#options.gateway.observe({
           locator: registration.locator,
           definition: identity.definition,
-          processId: identity.processId,
           processInstanceId: identity.processInstanceId,
           afterRevision,
           limit: 100,

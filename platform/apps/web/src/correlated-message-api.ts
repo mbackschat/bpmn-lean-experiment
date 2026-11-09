@@ -4,9 +4,9 @@ import {
   decodePublicApiErrorResponse,
   decodePublicCorrelatedMessageCapability,
   decodePutDefinitionCorrelatedMessagePublicationRequest,
+  CorrelatedMessageApiErrorCodes,
   definitionCorrelatedMessagePublicationPath,
   definitionCorrelatedMessagesPath,
-  LegacyPublicApiErrorCodes,
   parseWireJson,
   PublicApiErrorCode,
 } from "@bpmn-lean/platform-contracts";
@@ -29,6 +29,14 @@ import {
 
 const jsonMediaType = "application/json";
 const responseByteLimit = 1_048_576;
+
+/** The deployment serves no correlated Messages (503 `correlationUnavailable`). */
+export class CorrelatedMessageUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CorrelatedMessageUnavailableError";
+  }
+}
 
 export interface CorrelatedMessageApi {
   getCapabilities(
@@ -142,7 +150,7 @@ export class CorrelatedMessageApiClient implements CorrelatedMessageApi {
     }
     const decoded = decodeResponse(
       await readStrictJson(response),
-      (value) => decodePublicApiErrorResponse(value, LegacyPublicApiErrorCodes),
+      (value) => decodePublicApiErrorResponse(value, CorrelatedMessageApiErrorCodes),
       "correlated Message API error response",
     );
     if (!statusMatchesCode(response.status, decoded.error.code)) {
@@ -150,11 +158,11 @@ export class CorrelatedMessageApiClient implements CorrelatedMessageApi {
         "correlated Message API error status does not match its public code",
       );
     }
-    throw new DefinitionApiError(
-      response.status,
-      decoded.error.code,
-      decoded.error.message,
-    );
+    const { code, message } = decoded.error;
+    if (code === PublicApiErrorCode.CorrelationUnavailable) {
+      throw new CorrelatedMessageUnavailableError(message);
+    }
+    throw new DefinitionApiError(response.status, code, message);
   }
 }
 
@@ -287,6 +295,7 @@ function isApprovedErrorStatus(status: number): boolean {
     case 413:
     case 415:
     case 500:
+    case 503:
       return true;
     default:
       return false;
@@ -295,7 +304,7 @@ function isApprovedErrorStatus(status: number): boolean {
 
 function statusMatchesCode(
   status: number,
-  code: typeof LegacyPublicApiErrorCodes[number],
+  code: typeof CorrelatedMessageApiErrorCodes[number],
 ): boolean {
   switch (status) {
     case 400:
@@ -312,6 +321,8 @@ function statusMatchesCode(
       return code === PublicApiErrorCode.UnsupportedMediaType;
     case 500:
       return code === PublicApiErrorCode.InternalFailure;
+    case 503:
+      return code === PublicApiErrorCode.CorrelationUnavailable;
     default:
       return false;
   }

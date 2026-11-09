@@ -12,12 +12,14 @@ import {
   SqliteFlowNodeOccurrenceRepository,
   SqliteProcessInstanceRepository,
 } from "@bpmn-lean/platform-operate";
+import type { FlowNodeOccurrenceReconciliationResult } from "@bpmn-lean/platform-operate";
 
 import { firstPage, secondPage } from "./execution-publication-fixture.ts";
 import {
   occurrenceFirstPage,
   occurrenceRegistration,
   occurrenceSecondPage,
+  occurrenceSecondPageWithoutLifecycle,
 } from "./flow-node-occurrence-fixture.ts";
 
 test("revision-zero rebuild retains prior semantic bytes after a late public failure", async () => {
@@ -80,7 +82,7 @@ test("revision-zero rebuild retains prior semantic bytes after a late public fai
   }
 });
 
-test("classifies positive-cursor notReady as a gap without retrying or repairing", async () => {
+test("classifies an engine integrity failure as a gap without repairing", async () => {
   const publications = {
     get: async () => ({ headRevision: 2 }),
     applyPage: async () => { throw new Error("must not apply"); },
@@ -88,7 +90,7 @@ test("classifies positive-cursor notReady as a gap without retrying or repairing
     markCalls: [] as string[],
     async mark(_registration: unknown, status: string) { this.markCalls.push(status); },
   };
-  const gateway = new QueueGateway([{ kind: "notReady" }]);
+  const gateway = new QueueGateway([{ kind: "integrityFailure" }]);
   const service = new FlowNodeOccurrenceReconciliationService({
     publications: publications as never,
     gateway,
@@ -97,6 +99,54 @@ test("classifies positive-cursor notReady as a gap without retrying or repairing
     FlowNodeOccurrenceReconciliationKind.Gap);
   assert.deepEqual(gateway.cursors, [2]);
   assert.deepEqual(publications.markCalls, ["gap"]);
+});
+
+test("completes paging when a page reaches the producer head, empty batches included", async () => {
+  const root = await mkdtemp(join(tmpdir(), "bpmn-lean-occurrence-paging-"));
+  const databaseFile = join(root, "operate.sqlite");
+  const instances = new SqliteProcessInstanceRepository(databaseFile);
+  const executions = new SqliteExecutionPublicationRepository(databaseFile);
+  const occurrences = new SqliteFlowNodeOccurrenceRepository(databaseFile, executions);
+  try {
+    await instances.recordConfirmed({
+      instance: occurrenceRegistration.instance,
+      locator: occurrenceRegistration.locator,
+    });
+    const registration = await instances.getRegistration("Instance_1");
+    assert.ok(registration);
+    await executions.applyPage(registration, firstPage(3));
+    await executions.applyPage(registration, secondPage());
+    for (const method of ["reconcile", "rebuild"] as const) {
+      const gateway = new QueueGateway([
+        { kind: "available", page: occurrenceFirstPage(3) },
+        { kind: "available", page: occurrenceSecondPageWithoutLifecycle() },
+      ]);
+      const service = new FlowNodeOccurrenceReconciliationService({
+        publications: occurrences,
+        gateway,
+      });
+      const result: FlowNodeOccurrenceReconciliationResult = await service[method](registration);
+      assert.equal(result.kind, FlowNodeOccurrenceReconciliationKind.Available, method);
+      if (result.kind !== FlowNodeOccurrenceReconciliationKind.Available) return;
+      assert.deepEqual(gateway.cursors, [0, 2], method);
+      assert.equal(result.projection.headRevision, 3, method);
+      assert.deepEqual(
+        result.projection.batches.map(({ transitions }) => transitions.length),
+        [2, 0],
+        method,
+      );
+      assert.deepEqual(
+        result.projection.occurrences.map(({ occurrence, terminal }) => [occurrence.elementId, terminal]),
+        [["StartEvent_1", "completed"], ["Task_1", null]],
+        method,
+      );
+    }
+  } finally {
+    occurrences.close();
+    executions.close();
+    instances.close();
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("reads its retained occurrence cursor after E1 has advanced and applies the suffix", async () => {

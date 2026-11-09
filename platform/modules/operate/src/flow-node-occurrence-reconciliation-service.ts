@@ -19,7 +19,6 @@ import type { OperateProcessRegistration } from "./incident-contracts.js";
 
 export enum FlowNodeOccurrenceReconciliationKind {
   Available = "available",
-  NotReady = "notReady",
   Unavailable = "unavailable",
   Gap = "gap",
 }
@@ -31,7 +30,6 @@ export type FlowNodeOccurrenceReconciliationResult =
     }>
   | Readonly<{
       kind:
-        | FlowNodeOccurrenceReconciliationKind.NotReady
         | FlowNodeOccurrenceReconciliationKind.Unavailable
         | FlowNodeOccurrenceReconciliationKind.Gap;
     }>;
@@ -39,24 +37,21 @@ export type FlowNodeOccurrenceReconciliationResult =
 export type FlowNodeOccurrenceReconciliationServiceOptions = Readonly<{
   publications: FlowNodeOccurrenceRepository;
   gateway: FlowNodeOccurrenceGateway;
-  notReadyAttempts?: number;
   maxPagesPerReconciliation?: number;
-  beforeNotReadyRetry?: (attempt: number) => Promise<void>;
 }>;
 
-/** Reconciles only strict public suffixes from the exact retained occurrence cursor. */
+/**
+ * Reconciles only strict public suffixes from the exact retained occurrence cursor; paging is complete when a page
+ * reaches the producer head. An engine `integrityFailure` is classified `gap`, like a local integrity failure.
+ */
 export class FlowNodeOccurrenceReconciliationService {
-  readonly #options: Required<
-    Omit<FlowNodeOccurrenceReconciliationServiceOptions, "beforeNotReadyRetry">
-  > & Pick<FlowNodeOccurrenceReconciliationServiceOptions, "beforeNotReadyRetry">;
+  readonly #options: Required<FlowNodeOccurrenceReconciliationServiceOptions>;
 
   constructor(options: FlowNodeOccurrenceReconciliationServiceOptions) {
     this.#options = {
       ...options,
-      notReadyAttempts: options.notReadyAttempts ?? 3,
       maxPagesPerReconciliation: options.maxPagesPerReconciliation ?? 100,
     };
-    requirePositive(this.#options.notReadyAttempts, "notReadyAttempts");
     requirePositive(
       this.#options.maxPagesPerReconciliation,
       "maxPagesPerReconciliation",
@@ -93,7 +88,6 @@ export class FlowNodeOccurrenceReconciliationService {
       }
       afterRevision = retained?.headRevision ?? 0;
     }
-    let notReadyAttempts = 0;
     let pageCount = 0;
     while (pageCount < this.#options.maxPagesPerReconciliation) {
       const observed = await this.#observe(registration, afterRevision);
@@ -115,12 +109,16 @@ export class FlowNodeOccurrenceReconciliationService {
       switch (result.kind) {
         case FlowNodeOccurrencePublicationResultKind.Available: {
           pages.push(result.page);
+          const complete = result.page.pageThroughRevision === result.page.headRevision;
+          if (rebuild && !complete) {
+            afterRevision = result.page.pageThroughRevision;
+            pageCount += 1;
+            break;
+          }
           let projection: FlowNodeOccurrenceProjectionImage;
           try {
             projection = rebuild
-              ? result.page.currentOpen === null
-                ? await this.#preview(registration, pages)
-                : await this.#options.publications.replaceFromPages(registration, pages)
+              ? await this.#options.publications.replaceFromPages(registration, pages)
               : await this.#options.publications.applyPage(registration, result.page);
           } catch (error: unknown) {
             if (isIntegrityFailure(error)) {
@@ -129,10 +127,7 @@ export class FlowNodeOccurrenceReconciliationService {
             }
             throw error;
           }
-          if (
-            projection.headRevision === projection.producerHeadRevision &&
-            result.page.currentOpen !== null
-          ) {
+          if (complete) {
             return {
               kind: FlowNodeOccurrenceReconciliationKind.Available,
               projection,
@@ -142,49 +137,18 @@ export class FlowNodeOccurrenceReconciliationService {
           pageCount += 1;
           break;
         }
-        case FlowNodeOccurrencePublicationResultKind.NotReady:
-          if (afterRevision > 0) {
-            await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
-            return { kind: FlowNodeOccurrenceReconciliationKind.Gap };
-          }
-          notReadyAttempts += 1;
-          if (notReadyAttempts >= this.#options.notReadyAttempts) {
-            return { kind: FlowNodeOccurrenceReconciliationKind.NotReady };
-          }
-          await this.#options.beforeNotReadyRetry?.(notReadyAttempts);
-          break;
         case FlowNodeOccurrencePublicationResultKind.NotFound:
         case FlowNodeOccurrencePublicationResultKind.Unavailable:
           await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Unavailable);
           return { kind: FlowNodeOccurrenceReconciliationKind.Unavailable };
         case FlowNodeOccurrencePublicationResultKind.Gap:
+        case FlowNodeOccurrencePublicationResultKind.IntegrityFailure:
           await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Gap);
           return { kind: FlowNodeOccurrenceReconciliationKind.Gap };
       }
     }
     await this.#mark(registration, FlowNodeOccurrenceProjectionStatus.Unavailable);
     return { kind: FlowNodeOccurrenceReconciliationKind.Unavailable };
-  }
-
-  async #preview(
-    registration: OperateProcessRegistration,
-    pages: readonly FlowNodeOccurrencePage[],
-  ): Promise<FlowNodeOccurrenceProjectionImage> {
-    const retained = await this.#options.publications.get(
-      registration.instance.processInstanceId,
-    );
-    if (retained !== null) return retained;
-    return {
-      identity: occurrenceIdentityFromRegistration(registration),
-      status: FlowNodeOccurrenceProjectionStatus.Healthy,
-      headRevision: pages.at(-1)?.pageThroughRevision ?? 0,
-      producerHeadRevision: pages.at(-1)?.headRevision ?? null,
-      lastCommittedAtEpochMs:
-        pages.at(-1)?.batches.at(-1)?.committedAtEpochMs ?? null,
-      batches: [],
-      occurrences: [],
-      currentOpen: [],
-    };
   }
 
   async #observe(
@@ -201,7 +165,6 @@ export class FlowNodeOccurrenceReconciliationService {
         value: await this.#options.gateway.observe({
           locator: registration.locator,
           definition: identity.definition,
-          processId: identity.processId,
           processInstanceId: identity.processInstanceId,
           afterRevision,
           limit: 100,

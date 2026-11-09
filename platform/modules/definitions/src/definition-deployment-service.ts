@@ -244,10 +244,7 @@ function cloneDiagnostic(diagnostic: DefinitionDiagnostic): DefinitionDiagnostic
       evidence: diagnostic.evidence,
     };
   }
-  return {
-    ...diagnostic,
-    element: diagnostic.element === null ? null : { ...diagnostic.element },
-  };
+  return { code: diagnostic.code, element: diagnostic.element, evidence: diagnostic.evidence };
 }
 
 function assertNever(value: never): never {

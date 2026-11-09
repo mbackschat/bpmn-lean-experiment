@@ -34,7 +34,10 @@ import {
   PostgresqlOperateRecoveryStepKind,
 } from "@bpmn-lean/platform-operate";
 import {
+  current,
   firstPage,
+  headOnlyPage,
+  headPageWithoutCurrent,
   registration,
   secondPage,
 } from "../execution-publication-fixture.ts";
@@ -185,7 +188,7 @@ if (baseUrl === undefined) {
     const gateway = {
       observe: async () => {
         gatewayCalls += 1;
-        return { kind: ExecutionPublicationResultKind.NotReady };
+        return { kind: ExecutionPublicationResultKind.Unavailable };
       },
     };
     const step = new PostgresqlExecutionRecoveryStep({ runtime, gateway });
@@ -197,16 +200,16 @@ if (baseUrl === undefined) {
     const exactRegistration = await register(runtime);
     await closeRegistration(runtime, exactRegistration);
     const closed = await step.prepare(candidateKey(exactRegistration));
-    assertRetry(closed, PostgresqlOperateRecoveryRetryReason.ProducerNotReady);
+    assertRetry(closed, PostgresqlOperateRecoveryRetryReason.GatewayUnavailable);
     assert.equal(gatewayCalls, 1);
 
     await resetOperateDatabase(runtime);
     const active = await register(runtime);
     const outcomes = [
       {
-        value: { kind: ExecutionPublicationResultKind.NotReady },
-        kind: PostgresqlOperateRecoveryStepKind.Retry,
-        detail: PostgresqlOperateRecoveryRetryReason.ProducerNotReady,
+        value: { kind: ExecutionPublicationResultKind.IntegrityFailure },
+        kind: PostgresqlOperateRecoveryStepKind.Fail,
+        detail: PostgresqlOperateRecoveryFailureCode.ImpossibleAuthority,
       },
       {
         value: { kind: ExecutionPublicationResultKind.Unavailable },
@@ -229,7 +232,10 @@ if (baseUrl === undefined) {
         detail: PostgresqlOperateRecoveryFailureCode.DecoderDivergence,
       },
       {
-        value: { kind: ExecutionPublicationResultKind.Available, page: failedProducerPage() },
+        value: {
+          kind: ExecutionPublicationResultKind.Available,
+          page: { ...firstPage(), requestedAfterRevision: 1 },
+        },
         kind: PostgresqlOperateRecoveryStepKind.Fail,
         detail: PostgresqlOperateRecoveryFailureCode.DecoderDivergence,
       },
@@ -264,7 +270,7 @@ if (baseUrl === undefined) {
       gateway: {
         observe: async () => {
           retainedGapGatewayCalls += 1;
-          return { kind: ExecutionPublicationResultKind.NotReady };
+          return { kind: ExecutionPublicationResultKind.Unavailable };
         },
       },
     }).prepare(candidateKey(active));
@@ -300,7 +306,7 @@ if (baseUrl === undefined) {
       gateway: {
         observe: async () => {
           corruptGatewayCalls += 1;
-          return { kind: ExecutionPublicationResultKind.NotReady };
+          return { kind: ExecutionPublicationResultKind.Unavailable };
         },
       },
     }).prepare(candidateKey(active));
@@ -310,6 +316,36 @@ if (baseUrl === undefined) {
       PostgresqlOperateRecoveryFailureCode.StoredCorruption,
     );
     assert.equal(corruptGatewayCalls, 0);
+  });
+
+  test("execution preparation retries a head page whose state the engine could not read yet", async () => {
+    await resetOperateDatabase(runtime);
+    const active = await register(runtime);
+    const repository = new PostgresqlExecutionPublicationRepository(runtime);
+    await repository.applyPage(active, headPageWithoutCurrent(firstPage()));
+    const unread = await new PostgresqlExecutionRecoveryStep({
+      runtime,
+      gateway: {
+        observe: async () => ({
+          kind: ExecutionPublicationResultKind.Available,
+          page: headOnlyPage(2, false),
+        }),
+      },
+    }).prepare(candidateKey(active));
+    assertRetry(unread, PostgresqlOperateRecoveryRetryReason.ProducerNotReady);
+
+    const read = await new PostgresqlExecutionRecoveryStep({
+      runtime,
+      gateway: {
+        observe: async () => ({
+          kind: ExecutionPublicationResultKind.Available,
+          page: headOnlyPage(2, true),
+        }),
+      },
+    }).prepare(candidateKey(active));
+    assertComplete(read);
+    await runtime.transaction(async (session) => await read.apply(session));
+    assert.deepEqual((await repository.get(registration.instance.processInstanceId))?.current, current(2));
   });
 
   test("occurrence preparation makes zero gateway calls until complete healthy E1 exists", async () => {
@@ -492,35 +528,6 @@ async function register(
     locator: registration.locator,
   });
   return { ...registration, ordinal };
-}
-
-function failedProducerPage(): unknown {
-  const page = firstPage();
-  assert.ok(page.current);
-  const handlerId = {
-    processInstanceId: "Instance_1",
-    elementId: "UndoCharge",
-    activation: 1,
-  };
-  return {
-    ...page,
-    current: {
-      ...page.current,
-      controlTokens: [],
-      state: {
-        ...page.current.state,
-        status: "failed",
-        failure: {
-          kind: "compensationHandlerFailure",
-          triggerId: { ...handlerId, elementId: "ThrowCompensation" },
-          handlerId,
-          effectId: { ...handlerId, elementId: "Effect_UndoCharge" },
-          code: "compensation-rejected",
-          message: null,
-        },
-      },
-    },
-  };
 }
 
 async function closeRegistration(

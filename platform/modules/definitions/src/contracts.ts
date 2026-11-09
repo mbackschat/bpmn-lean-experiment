@@ -33,7 +33,14 @@ export type DefinitionReference = Readonly<{
   version: number;
 }>;
 
+/** `durationMs` is the delay the engine resolves for the Timer start, `null` while it resolves none. */
 export type DefinitionTimerStartCapability = Readonly<{
+  startEventId: string;
+  durationMs: number | null;
+}>;
+
+/** A Timer start a Schedule can run: one whose delay the engine resolved. */
+export type DefinitionScheduledTimerStart = Readonly<{
   startEventId: string;
   durationMs: number;
 }>;

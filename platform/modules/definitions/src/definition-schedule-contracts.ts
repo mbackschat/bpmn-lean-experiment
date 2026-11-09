@@ -6,7 +6,7 @@ import type {
   DefinitionRepository,
   DefinitionSourceIdentity,
   DefinitionStartCapabilities,
-  DefinitionTimerStartCapability,
+  DefinitionScheduledTimerStart,
   ExactArtifactStore,
 } from "./contracts.js";
 import type {
@@ -57,7 +57,7 @@ export type DefinitionScheduleCancellationOrigin =
 export type NewDefinitionScheduleRecord = Readonly<{
   reference: DefinitionScheduleReference;
   definition: DefinitionMetadata;
-  timerStart: DefinitionTimerStartCapability;
+  timerStart: DefinitionScheduledTimerStart;
   activationAt: string;
   dueAt: string;
   identity: DefinitionSchedulePrivateIdentity;
@@ -139,7 +139,7 @@ export type DefinitionScheduleHostRequest = Readonly<{
   bytes: Uint8Array;
   sourceOverlay?: DefinitionSourceOverlaySelection | null;
   definition: DefinitionMetadata;
-  timerStart: DefinitionTimerStartCapability;
+  timerStart: DefinitionScheduledTimerStart;
   activationAt: string;
   dueAt: string;
   processInstanceId: string;
@@ -198,7 +198,7 @@ export type DefinitionScheduleIdentityGenerators = Readonly<{
 export type DefinitionScheduleBase = Readonly<{
   scheduleId: string;
   definition: DefinitionMetadata;
-  timerStart: DefinitionTimerStartCapability;
+  timerStart: DefinitionScheduledTimerStart;
   activationAt: string;
   dueAt: string;
 }>;

@@ -69,10 +69,26 @@ test("builds audit filters in canonical order and defaults the limit", () => {
   });
 });
 
-test("rejects wrong generation, partial identity, duplicate fields, and noncanonical integers", () => {
+test("builds and matches the detail route of a later generation", () => {
+  const later = { ...incidentId, generation: 12 } as const;
+  const detail = incidentDetailPath(later);
+  assert.equal(
+    detail,
+    "/api/v1/incidents/process%2Froot%20%F0%9F%9A%80/Service%20Task%2F%3F/7/generations/12",
+  );
+  assert.deepEqual(matchIncidentDetailPath(detail), later);
+});
+
+test("rejects a non-positive generation, partial identity, duplicate fields, and noncanonical integers", () => {
+  assert.throws(() => incidentDetailPath({ ...incidentId, generation: 0 }), /generation must be a positive safe integer/u);
   for (const path of [
-    "/api/v1/incidents/process/Task/1/generations/2",
+    "/api/v1/incidents/process/Task/1/generations/0",
+    "/api/v1/incidents/process/Task/1/generations/02",
+    "/api/v1/incidents/process/Task/1/generations/1.5",
+    "/api/v1/incidents/process/Task/1/generations/-1",
+    "/api/v1/incidents/process/Task/1/generations/9007199254740992",
     "/api/v1/incidents/process/Task/01/generations/1",
+    "/api/v1/incident-audit?incidentProcessInstanceId=p&incidentElementId=t&incidentActivation=1&incidentGeneration=0",
     "/api/v1/incident-audit?incidentElementId=Task",
     "/api/v1/incident-audit?actorId=one&actorId=two",
     "/api/v1/incident-audit?incidentProcessInstanceId=p&incidentElementId=t&incidentActivation=01&incidentGeneration=1",

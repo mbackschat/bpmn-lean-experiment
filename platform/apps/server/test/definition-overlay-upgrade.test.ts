@@ -1,4 +1,4 @@
-import { DefinitionStartDescriptionStatus } from "@bpmn-lean/platform-engine-gateway";
+import { DefinitionStartDescriptionStatus, DefinitionStartStatus } from "@bpmn-lean/platform-engine-gateway";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -61,7 +61,7 @@ test("populated previous SQLite schemas upgrade to strict current Definitions, s
       const starter: DefinitionVersionStarter = {
         prepareDefinitionVersion: async () => { throw new Error("recovery cannot reprepare"); },
         startDefinitionVersion: async () => { throw new Error("recovery cannot unconditionally start"); },
-        startPreparedDefinitionVersion: async (request) => { dispatched.push(request.processInstanceId); return { status: "started", processInstanceId: request.processInstanceId, source, definition: { processId: metadata.processId, semanticProfile: metadata.semanticProfile, sourceOverlay: null } }; },
+        startPreparedDefinitionVersion: async (request) => { dispatched.push(request.processInstanceId); return { status: DefinitionStartStatus.Started, processInstanceId: request.processInstanceId, source, definition: { processId: metadata.processId, semanticProfile: metadata.semanticProfile, sourceOverlay: null } }; },
         describeDefinitionVersionStart: async (request) => { described.push(request.processInstanceId); return { status: DefinitionStartDescriptionStatus.Matching }; },
       };
       const publication = new ConfirmedProcessInstancePublicationService({ repository: confirmed, operate: { recordConfirmedProcessInstance: async () => {} }, work: { recordConfirmedProcessInstance: async () => {} } });

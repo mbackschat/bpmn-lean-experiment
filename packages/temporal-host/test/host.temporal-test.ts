@@ -20,12 +20,18 @@ import type { Worker } from "@temporalio/worker";
 import {
   PageKind,
   ProcessClient,
+  PublicationOutcome,
   ResultKind,
+  ScheduleClient,
   Scheduling,
+  correlationAmbiguousCode,
+  ingressWorkflowId,
+  notCorrelatedCode,
   type HostConfig,
   type HostSnapshot,
   type JsonValue,
 } from "@bpmn-lean/temporal-host/client";
+import { ScheduleCreation } from "@bpmn-lean/temporal-host/host";
 import { createCachedLocalEnvironment, runScenario } from "@bpmn-lean/temporal-host/testing";
 import { EffectResultKind, createHostWorker, replayHistory, type EffectRequest } from "@bpmn-lean/temporal-host/worker";
 
@@ -46,19 +52,23 @@ async function readJson<T>(relativePath: string): Promise<T> {
   return JSON.parse(await readFile(new URL(relativePath, projectRoot), "utf8")) as T;
 }
 
-async function retainedCase(relativePath: string): Promise<Readonly<{ program: JsonValue; scenario: ScenarioDocument }>> {
-  const scenario = await readJson<ScenarioDocument>(relativePath);
+async function programOf(profileId: string, bpmn: ScenarioDocument["bpmn"]): Promise<JsonValue> {
   const profile = await readJson<Readonly<{ bpmn?: Readonly<{ relationships?: ReadonlyArray<string> }> }>>(
-    `profiles/${scenario.profile}/profile.json`);
+    `profiles/${profileId}/profile.json`);
   const read = await readKernelProgram({
-    bytes: await readFile(new URL(scenario.bpmn.relativePath, projectRoot)),
-    expectedSha256: scenario.bpmn.sha256,
+    bytes: await readFile(new URL(bpmn.relativePath, projectRoot)),
+    expectedSha256: bpmn.sha256,
     overlay: null,
-    profile: scenario.profile,
+    profile: profileId,
     limits: { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 },
   }, kernelProfileOptions(profile.bpmn?.relationships ?? []));
-  if (read.kind === "refused") throw new Error(`${relativePath}: kernel reader refused ${read.code}`);
-  return { program: wire(read.program), scenario };
+  if (read.kind === "refused") throw new Error(`${bpmn.relativePath}: kernel reader refused ${read.code}`);
+  return wire(read.program);
+}
+
+async function retainedCase(relativePath: string): Promise<Readonly<{ program: JsonValue; scenario: ScenarioDocument }>> {
+  const scenario = await readJson<ScenarioDocument>(relativePath);
+  return { program: await programOf(scenario.profile, scenario.bpmn), scenario };
 }
 
 function stimulus(scenario: ScenarioDocument, index: number): JsonValue {
@@ -193,6 +203,95 @@ test("chain handoff: a Run past its history budget continues as new with its sta
   const previousRun = handed.events?.[0]?.workflowExecutionStartedEventAttributes?.continuedExecutionRunId ?? "";
   await replayHistory(await environment.client.workflow.getHandle(id, previousRun).fetchHistory(), id);
   finished.push(id);
+});
+
+const settlement = {
+  kind: "operationMessage",
+  interfaceId: "Interface_ClearingHouse",
+  interfaceOperationId: "Operation_ConfirmSettlement",
+  messageId: "Message_SettlementConfirmed",
+} as const;
+
+test("correlated delivery: a publication reaches the one instance whose key matches, else it is refused unchanged", async () => {
+  const population = await readJson<Readonly<{ profile: string; definitions: ReadonlyArray<Readonly<{ bpmn: ScenarioDocument["bpmn"] }>> }>>(
+    "scenarios/message-key-correlation/unique.population-scenario.json");
+  const [definition] = population.definitions;
+  if (definition === undefined) throw new Error("the population names no definition");
+  const program = await programOf(population.profile, definition.bpmn);
+  const correlationScope = `witness-${randomUUID()}`;
+  const config: HostConfig = { scheduling: Scheduling.Durable, effectStartToCloseMs: 10_000, historyEventBudget: null };
+  const instances = new Map<string, string>();
+  const startWith = async (instanceId: string, reference: string): Promise<string> => {
+    const id = workflowId(`correlated-${instanceId}`);
+    instances.set(instanceId, id);
+    const start = { kind: "start", commandId: `start-${instanceId}`, instanceId, variables: [] };
+    assert.equal((await client.start({ workflowId: id, program, config, correlationScope, start })).outcome, "committed");
+    // The Update returns once the correlated wait it opened is registered with the ingress (registration barrier).
+    assert.equal((await client.deliver(id, {
+      kind: "deliver", commandId: `initialize-${instanceId}`, trigger: { kind: "message", channel: settlement },
+      occurrence: { processInstanceId: instanceId, elementId: "MessageCatch_InitialSettlement", activation: 1 },
+      payload: { kind: "string", value: reference },
+    })).outcome, "committed");
+    assert.equal((await client.hostView(id)).registering, false);
+    return id;
+  };
+  const publish = (commandId: string, reference: string) => client.publish({
+    correlationScope, channel: settlement, commandId, payload: null,
+    correlation: [{ target: { kind: "processVariable", name: "CorrelationKey_SettlementReference" },
+      expected: { kind: "string", value: reference } }],
+  });
+
+  const a = await startWith("SettlementA", "ref-42");
+  await startWith("SettlementB", "ref-99");
+  const delivered = await publish("publish-1", "ref-42");
+  assert.equal(delivered.kind, PublicationOutcome.Delivered);
+  assert.ok(delivered.kind === PublicationOutcome.Delivered && delivered.ordinal === 1 &&
+    delivered.target.workflowId === a && delivered.target.occurrence.elementId === "MessageCatch_CorrelatedSettlement");
+  assert.ok(hasUserTask("UserTask_ReviewSettlement")(await client.hostView(a)));
+  assert.deepEqual(await publish("publish-1", "ref-42"), delivered, "a repeated publication answers as its first");
+  assert.deepEqual(await publish("publish-1", "ref-99"), { kind: PublicationOutcome.IdentityConflict });
+
+  const consumed = await publish("publish-2", "ref-42");
+  assert.deepEqual(consumed, { kind: PublicationOutcome.NotCorrelated, ordinal: 2, code: notCorrelatedCode });
+  await startWith("SettlementC", "ref-99");
+  const before = await Promise.all(["SettlementB", "SettlementC"].map((name) => client.hostView(instances.get(name) ?? "")));
+  assert.deepEqual(await publish("publish-3", "ref-99"),
+    { kind: PublicationOutcome.Ambiguous, ordinal: 3, code: correlationAmbiguousCode, matches: 2 });
+  const afterwards = await Promise.all(["SettlementB", "SettlementC"].map((name) => client.hostView(instances.get(name) ?? "")));
+  assert.deepEqual(afterwards.map((snapshot) => snapshot.revision), before.map((snapshot) => snapshot.revision));
+
+  for (const id of instances.values()) {
+    await replayHistory(await environment.client.workflow.getHandle(id).fetchHistory(), id);
+  }
+  const ingress = ingressWorkflowId(correlationScope, settlement);
+  await replayHistory(await environment.client.workflow.getHandle(ingress).fetchHistory(), ingress);
+});
+
+test("schedule start: a one-shot Schedule starts the Timer start at its due instant", async () => {
+  const { program, scenario } = await retainedCase("scenarios/timer-start-event/scenario.json");
+  const schedules = new ScheduleClient(environment.client, taskQueue);
+  // A calendar spec has whole UTC seconds; three seconds ahead leaves the creation call time to land first.
+  const due = Math.ceil(Date.now() / 1_000) * 1_000 + 3_000;
+  const scheduleId = workflowId("schedule");
+  const base = workflowId("scheduled");
+  const start = stimulus(scenario, 0) as Readonly<Record<string, JsonValue>>;
+  assert.equal(await schedules.create({
+    scheduleId, dueAtEpochMs: due, workflowIdBase: base, program, config: durable(scenario),
+    start: { ...start, trigger: { kind: "timer", logicalTimeMs: due } }, correlationScope: `witness-${randomUUID()}`,
+    memo: { witness: scheduleId },
+  }), ScheduleCreation.Created);
+  try {
+    const taken = await until("the Schedule's action", () => schedules.describe(scheduleId),
+      (stored) => (stored?.recentWorkflowIds.length ?? 0) > 0);
+    const id = taken?.recentWorkflowIds[0] ?? "";
+    assert.ok(id.startsWith(base));
+    await until("the started instance", () => client.hostView(id), hasUserTask("UserTask_AfterTimer"));
+    assert.equal((await client.command(id, stimulus(scenario, 1))).outcome, "committed");
+    assert.equal((await client.result(id)).kind, ResultKind.Ended);
+    finished.push(id);
+  } finally {
+    await schedules.delete(scheduleId);
+  }
 });
 
 test("replay: every captured history replays deterministically on the same bundle", async () => {

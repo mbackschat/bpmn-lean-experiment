@@ -418,15 +418,7 @@ function toPublicDiagnostic(
 ): AdmissionDiagnostic {
   return {
     code: diagnostic.code,
-    element: diagnostic.element === null
-      ? null
-      : {
-          id: diagnostic.element.id,
-          type: diagnostic.element.type,
-          containmentPath: diagnostic.element.containmentPath,
-          subject: diagnostic.element.subject,
-          requiredCapability: diagnostic.element.requiredCapability,
-        },
+    element: diagnostic.element,
     evidence: diagnostic.evidence,
   };
 }

@@ -9,6 +9,7 @@ import type {
 import { Button, ButtonVariant } from "@bpmn-lean/platform-ui-kit";
 
 import type { DefinitionScheduleApiClient } from "./definition-schedule-api";
+import { ScheduleCreationKind, scheduleCreation } from "./definition-schedule-creation.ts";
 import styles from "./definition-schedule-panel.module.css";
 
 export type DefinitionSchedulePanelProps = Readonly<{
@@ -21,6 +22,7 @@ export function DefinitionSchedulePanel({
   definition,
 }: DefinitionSchedulePanelProps) {
   const timerStarts = definition.startCapabilities.timerStarts;
+  const creation = scheduleCreation(timerStarts);
   const [schedules, setSchedules] = useState<ReadonlyArray<DefinitionSchedule>>([]);
   const [scheduleId, setScheduleId] = useState<string>(() => globalThis.crypto.randomUUID());
   const [activationAt, setActivationAt] = useState(defaultActivationInstant);
@@ -109,20 +111,20 @@ export function DefinitionSchedulePanel({
         {timerStarts.length === 0 ? (
           <p>This exact version publishes no Timer Start capability.</p>
         ) : timerStarts.map((timerStart) => (
-          <dl key={`${timerStart.startEventId}:${timerStart.durationMs}`}>
+          <dl key={timerStart.startEventId}>
             <div>
               <dt>Start Event</dt>
               <dd><code>{timerStart.startEventId}</code></dd>
             </div>
             <div>
               <dt>Duration</dt>
-              <dd>{timerStart.durationMs} ms</dd>
+              <dd>{timerStart.durationMs === null ? "Unresolved by the engine" : `${timerStart.durationMs} ms`}</dd>
             </div>
           </dl>
         ))}
       </div>
 
-      {timerStarts.length === 1 ? (
+      {creation.kind === ScheduleCreationKind.Available ? (
         <form className={styles.form} onSubmit={(event) => { void create(event); }}>
           <label>
             Schedule ID
@@ -150,11 +152,7 @@ export function DefinitionSchedulePanel({
             {busy === "create" ? "Creating…" : "Create schedule"}
           </Button>
         </form>
-      ) : timerStarts.length > 1 ? (
-        <p className={styles.notice}>
-          Creation is unavailable because this version publishes multiple Timer Start capabilities.
-        </p>
-      ) : null}
+      ) : <ScheduleCreationNotice creation={creation.kind} />}
 
       {error === null ? null : <p className={styles.error} role="alert">{error}</p>}
       {schedules.length === 0 && busy !== "list" ? (
@@ -214,6 +212,27 @@ export function DefinitionSchedulePanel({
       )}
     </section>
   );
+}
+
+function ScheduleCreationNotice({
+  creation,
+}: Readonly<{ creation: Exclude<ScheduleCreationKind, typeof ScheduleCreationKind.Available> }>) {
+  switch (creation) {
+    case ScheduleCreationKind.NoTimerStart:
+      return null;
+    case ScheduleCreationKind.MultipleTimerStarts:
+      return (
+        <p className={styles.notice}>
+          Creation is unavailable because this version publishes multiple Timer Start capabilities.
+        </p>
+      );
+    case ScheduleCreationKind.UnresolvedDuration:
+      return (
+        <p className={styles.notice}>
+          Creation is unavailable because the engine resolves no duration for this Timer Start.
+        </p>
+      );
+  }
 }
 
 function replaceSchedule(

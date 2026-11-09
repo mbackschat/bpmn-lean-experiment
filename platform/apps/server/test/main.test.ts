@@ -9,6 +9,14 @@ import type {
   PlatformServerLifecycle,
 } from "@bpmn-lean/platform-server";
 
+const environment = {
+  PLATFORM_ENGINE_DEPLOYMENT_JSON: JSON.stringify({
+    profiles: {},
+    servedRequirements: { timers: true, messages: true, effects: true, userTasks: true, calls: true },
+    effectStartToCloseMs: 30_000,
+  }),
+};
+
 test("closes once and unregisters both signal listeners", async () => {
   const lifecycle = new EventEmitter();
   let closeCalls = 0;
@@ -21,7 +29,7 @@ test("closes once and unregisters both signal listeners", async () => {
     listening = resolve;
   });
   const origins: string[] = [];
-  const running = runPlatformServer({}, {
+  const running = runPlatformServer(environment, {
     createServer: async () => ({
       listen: async () => {
         listening!();
@@ -52,7 +60,7 @@ test("closes once and unregisters both signal listeners", async () => {
 test("closes once when listen fails", async () => {
   const lifecycle = new EventEmitter();
   let closeCalls = 0;
-  await assert.rejects(runPlatformServer({}, {
+  await assert.rejects(runPlatformServer(environment, {
     createServer: async () => ({
       listen: async () => {
         throw new Error("listen failed");
@@ -72,7 +80,7 @@ test("closes once when listen fails", async () => {
 test("closes when publishing the origin fails", async () => {
   const lifecycle = new EventEmitter();
   let closeCalls = 0;
-  await assert.rejects(runPlatformServer({}, {
+  await assert.rejects(runPlatformServer(environment, {
     createServer: async () => ({
       listen: async () => "http://127.0.0.1:3000",
       close: async () => {

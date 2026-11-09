@@ -1,20 +1,16 @@
 /**
- * Locks the Product 2 boundary against the engine's recursive portable value arms: until a Product 2 journey selects
- * them, every decoder fails closed on a well-formed Decimal, List or Map instead of coercing, flattening or dropping it.
+ * Locks the Product 2 submission boundary against the engine's recursive portable value arms: until a Product 2 journey
+ * selects them, the decoders of values Product 2 sends (a Process start and a Work form value) fail closed on a
+ * well-formed Decimal, List or Map instead of coercing, flattening or dropping it. A published state is the engine's
+ * to type, so its decoder carries those arms unchanged (see the execution publication contract test).
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
   decodeDefinitionVersionStartCommand,
-  decodeExecutionPublicationPage,
   decodePublicFormValue,
 } from "@bpmn-lean/platform-contracts";
-
-import {
-  executionPublicationPage,
-  publicationIdentity,
-} from "./execution-publication-fixture.ts";
 
 const order = {
   kind: "map",
@@ -31,28 +27,10 @@ const portableValues = [
   { kind: "map", value: [] },
 ] as const;
 
-function publicationWithVariable(value: unknown): unknown {
-  const page = executionPublicationPage();
-  return {
-    ...page,
-    current: { ...page.current, state: { ...page.current?.state, variables: [{ name: "order", value }] } },
-  };
-}
-
 test("refuses a recursive portable value in a Process start command", () => {
   for (const value of portableValues) {
     assert.throws(
       () => decodeDefinitionVersionStartCommand({ initialVariables: [{ name: "order", value }] }),
-      /kind is unknown/u,
-      value.kind,
-    );
-  }
-});
-
-test("refuses a recursive portable value in a decoded execution publication", () => {
-  for (const value of portableValues) {
-    assert.throws(
-      () => decodeExecutionPublicationPage(publicationWithVariable(value), { ...publicationIdentity, afterRevision: 0 }),
       /kind is unknown/u,
       value.kind,
     );

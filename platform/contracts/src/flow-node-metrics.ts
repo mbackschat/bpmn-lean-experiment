@@ -8,6 +8,10 @@ export type CompletedFlowNodeDuration = DeepReadonly<{
   averageMs: number;
 }>;
 
+/**
+ * `completedDuration` is `null` when nothing completed, and also when completions are counted but the evidence carries
+ * no completion times: the engine's publications are untimed, so a duration is never derived from them.
+ */
 export type FlowNodeMetric = DeepReadonly<{
   elementId: string;
   frequency: number;

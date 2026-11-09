@@ -15,6 +15,7 @@ import {
   DefinitionCorrelatedMessageHttpRoutes,
   DefinitionCorrelatedMessageIntegrityError,
   DefinitionCorrelatedMessagePublishStatus,
+  DefinitionCorrelatedMessageUnavailableError,
 } from "@bpmn-lean/platform-definitions";
 import type {
   DefinitionCorrelatedMessagePublishCommand,
@@ -183,6 +184,19 @@ test("returns definition absence for capability GET and sanitizes discovery fail
   }).routes.handle(new Request(collectionUrl()));
   assert.equal(failed?.status, 500);
   assert.doesNotMatch(await failed!.text(), /private|drift/u);
+});
+
+test("an engine that cannot correlate answers 503 correlationUnavailable without its private evidence", async () => {
+  const unavailable = new DefinitionCorrelatedMessageUnavailableError("engine.correlationUnavailable", "private evidence");
+  for (const response of [
+    await createFixture({ describeError: unavailable }).routes.handle(new Request(collectionUrl())),
+    await createFixture({ publishError: unavailable }).routes.handle(validPutRequest()),
+  ]) {
+    assert.equal(response?.status, 503);
+    const body = await response!.text();
+    assert.equal(JSON.parse(body).error.code, PublicApiErrorCode.CorrelationUnavailable);
+    assert.doesNotMatch(body, /private|engine\./u);
+  }
 });
 
 test("rejects bodies, queries, malformed identities, and unsupported methods", async () => {

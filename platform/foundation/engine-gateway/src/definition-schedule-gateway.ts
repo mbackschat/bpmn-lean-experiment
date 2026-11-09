@@ -1,6 +1,4 @@
-import type { DefinitionSourceOverlaySelection } from "./index.js";
-import type { PublicSourceOverlayIdentity } from "@bpmn-lean/platform-contracts";
-/** Product 2's cohesive, representation-free definition Schedule host collaborator. */
+/** Product 2's representation-free Timer start Schedule host. */
 import {
   EngineDefinitionCompilationStatus,
   EngineDefinitionScheduleStatus,
@@ -10,22 +8,21 @@ import {
   inspectBpmnDefinitionSchedule,
   pauseBpmnDefinitionSchedule,
   serializeEngineProcessLocator,
+  type EngineDefinitionScheduleBindingRequest,
+  type EngineDefinitionScheduleResult,
+  type EngineSourceOverlayIdentity,
+  type EngineSourceOverlaySelection,
 } from "@bpmn-lean/engine-api";
-import type {
-  EngineDefinitionCompilationResult,
-  EngineDefinitionScheduleResult,
-} from "@bpmn-lean/engine-api";
-import type {
-  TemporalDefinitionScheduleClient,
-} from "@bpmn-lean/temporal-client/definition-schedule";
+import type { ExactPublicSourceIdentity } from "@bpmn-lean/platform-contracts";
 
 import {
+  engineTimerSchedule,
   mapDefinitionStartCapabilities,
+  type DefinitionStartCapabilities,
+  type DefinitionTimerStartCapability,
 } from "./definition-capabilities.js";
-import type {
-  DefinitionStartCapabilities,
-  DefinitionTimerStartCapability,
-} from "./definition-capabilities.js";
+import { platformSource, resolveProfile, storedProfile, type GatewayContext } from "./gateway-context.js";
+import { recompileStoredDefinition, type StoredDefinitionVersion } from "./stored-definition.js";
 
 export type DefinitionScheduleValidationRequest = Readonly<{
   bytes: Uint8Array;
@@ -33,39 +30,26 @@ export type DefinitionScheduleValidationRequest = Readonly<{
   expectedSha256: string;
   semanticProfile: string;
   expectedProcessId: string;
-  sourceOverlay?: DefinitionSourceOverlaySelection | null;
+  sourceOverlay?: EngineSourceOverlaySelection | null;
 }>;
-
-type AcceptedCompilation = Extract<
-  EngineDefinitionCompilationResult,
-  { status: "accepted" }
->;
 
 export type DefinitionScheduleValidationResult =
   | Readonly<{
       status: "accepted";
-      source: AcceptedCompilation["source"];
+      source: ExactPublicSourceIdentity;
       processId: string;
       semanticProfile: string;
       startCapabilities: DefinitionStartCapabilities;
-      sourceOverlay: PublicSourceOverlayIdentity | null;
+      sourceOverlay: EngineSourceOverlayIdentity | null;
     }>
   | Readonly<{ status: "rejected"; evidence: string }>;
 
 export type DefinitionScheduleHostRequest = Readonly<{
   bytes: Uint8Array;
-  sourceOverlay?: DefinitionSourceOverlaySelection | null;
-  definition: Readonly<{
-    processId: string;
-    source: Readonly<{
-      id: string;
-      sha256: string;
-      byteLength: number;
-    }>;
-    semanticProfile: string;
-    startCapabilities: DefinitionStartCapabilities;
-  }>;
+  sourceOverlay?: EngineSourceOverlaySelection | null;
+  definition: StoredDefinitionVersion;
   timerStart: DefinitionTimerStartCapability;
+  /** When the platform activated the Schedule; the due instant is never before it. */
   activationAt: string;
   dueAt: string;
   processInstanceId: string;
@@ -81,200 +65,127 @@ export const DefinitionScheduleHostPhase = {
 } as const;
 
 export type DefinitionScheduleHostResult =
-  | Readonly<{
-      phase: typeof DefinitionScheduleHostPhase.Pending;
-      paused: boolean;
-    }>
-  | Readonly<{
-      phase: typeof DefinitionScheduleHostPhase.Started;
-      processLocator: string;
-    }>
+  | Readonly<{ phase: typeof DefinitionScheduleHostPhase.Pending; paused: boolean }>
+  | Readonly<{ phase: typeof DefinitionScheduleHostPhase.Started; processLocator: string }>
   | Readonly<{ phase: typeof DefinitionScheduleHostPhase.Missed }>
-  | Readonly<{
-      phase: typeof DefinitionScheduleHostPhase.IntegrityFailure;
-      evidence: string;
-    }>;
+  | Readonly<{ phase: typeof DefinitionScheduleHostPhase.IntegrityFailure; evidence: string }>;
 
 export interface DefinitionScheduleHost {
-  validateDefinition(
-    request: DefinitionScheduleValidationRequest,
-  ): Promise<DefinitionScheduleValidationResult>;
-  createOrCompare(
-    request: DefinitionScheduleHostRequest,
-  ): Promise<DefinitionScheduleHostResult>;
-  inspect(
-    request: DefinitionScheduleHostRequest,
-  ): Promise<DefinitionScheduleHostResult>;
-  pause(
-    request: DefinitionScheduleHostRequest,
-  ): Promise<DefinitionScheduleHostResult>;
+  validateDefinition(request: DefinitionScheduleValidationRequest): Promise<DefinitionScheduleValidationResult>;
+  createOrCompare(request: DefinitionScheduleHostRequest): Promise<DefinitionScheduleHostResult>;
+  inspect(request: DefinitionScheduleHostRequest): Promise<DefinitionScheduleHostResult>;
+  pause(request: DefinitionScheduleHostRequest): Promise<DefinitionScheduleHostResult>;
   delete(request: DefinitionScheduleHostRequest): Promise<void>;
 }
 
-export type BpmnDefinitionScheduleGatewayOptions = Readonly<{
-  maxSourceBytes: number;
-  parserDeadlineMs: number;
-  temporalClient: TemporalDefinitionScheduleClient;
-  temporalTaskQueue: string;
-}>;
+type ScheduleOperation = (request: EngineDefinitionScheduleBindingRequest) => Promise<EngineDefinitionScheduleResult>;
 
 export class BpmnDefinitionScheduleGateway implements DefinitionScheduleHost {
-  readonly #limits: Readonly<{
-    maxBytes: number;
-    parserDeadlineMs: number;
-  }>;
-  readonly #temporalClient: TemporalDefinitionScheduleClient;
-  readonly #taskQueue: string;
+  readonly #context: GatewayContext;
 
-  constructor(options: BpmnDefinitionScheduleGatewayOptions) {
-    requirePositiveSafeInteger(options.maxSourceBytes, "maxSourceBytes");
-    requirePositiveSafeInteger(options.parserDeadlineMs, "parserDeadlineMs");
-    requireNonempty(options.temporalTaskQueue, "temporalTaskQueue");
-    this.#limits = {
-      maxBytes: options.maxSourceBytes,
-      parserDeadlineMs: options.parserDeadlineMs,
-    };
-    this.#temporalClient = options.temporalClient;
-    this.#taskQueue = options.temporalTaskQueue;
+  constructor(context: GatewayContext) {
+    this.#context = context;
   }
 
-  async validateDefinition(
-    request: DefinitionScheduleValidationRequest,
-  ): Promise<DefinitionScheduleValidationResult> {
+  async validateDefinition(request: DefinitionScheduleValidationRequest): Promise<DefinitionScheduleValidationResult> {
+    const profile = resolveProfile(this.#context, request.semanticProfile);
+    if (profile === null) return { status: "rejected", evidence: `The profile catalog does not hold ${request.semanticProfile}.` };
     const result = await compileBpmnDefinition({
-      ...request,
-      limits: this.#limits,
+      bytes: request.bytes,
+      sourceId: request.sourceId,
+      expectedSha256: request.expectedSha256,
+      profile,
+      sourceOverlay: request.sourceOverlay ?? null,
+      limits: this.#context.limits,
     });
-    switch (result.status) {
-      case EngineDefinitionCompilationStatus.Accepted:
-        if (result.definition.processId !== request.expectedProcessId) {
-          return {
-            status: "rejected",
-            evidence: "Compiled Process identity did not match the stored definition.",
-          };
-        }
-        return {
-          status: "accepted",
-          source: result.source,
-          processId: result.definition.processId,
-          semanticProfile: result.definition.semanticProfile,
-          sourceOverlay: result.definition.sourceOverlay,
-          startCapabilities: mapDefinitionStartCapabilities(
-            result.startCapabilities,
-          ),
-        };
-      case EngineDefinitionCompilationStatus.Rejected:
-        return {
-          status: "rejected",
-          evidence: result.diagnostics[0]?.evidence ??
-            "Stored definition recompilation was rejected.",
-        };
-      default:
-        return assertNever(result);
+    if (result.status === EngineDefinitionCompilationStatus.Rejected) {
+      return { status: "rejected", evidence: result.diagnostics[0].evidence };
     }
+    if (result.definition.ref.definitionKey !== request.expectedProcessId) {
+      return { status: "rejected", evidence: "Compiled Process identity did not match the stored definition." };
+    }
+    const mapped = mapDefinitionStartCapabilities(result.capabilities);
+    if (mapped.kind === "refused") return { status: "rejected", evidence: mapped.evidence };
+    return {
+      status: "accepted",
+      source: platformSource(result.source),
+      processId: result.definition.ref.definitionKey,
+      semanticProfile: result.definition.profile,
+      startCapabilities: mapped.capabilities,
+      sourceOverlay: result.definition.sourceOverlay,
+    };
   }
 
-  async createOrCompare(
-    request: DefinitionScheduleHostRequest,
-  ): Promise<DefinitionScheduleHostResult> {
-    return mapHostResult(
-      await createBpmnDefinitionSchedule(this.boundRequest(request)),
-    );
+  createOrCompare(request: DefinitionScheduleHostRequest): Promise<DefinitionScheduleHostResult> {
+    return this.#bound(request, createBpmnDefinitionSchedule);
   }
 
-  async inspect(
-    request: DefinitionScheduleHostRequest,
-  ): Promise<DefinitionScheduleHostResult> {
-    return mapHostResult(
-      await inspectBpmnDefinitionSchedule(this.boundRequest(request)),
-    );
+  inspect(request: DefinitionScheduleHostRequest): Promise<DefinitionScheduleHostResult> {
+    return this.#bound(request, inspectBpmnDefinitionSchedule);
   }
 
-  async pause(
-    request: DefinitionScheduleHostRequest,
-  ): Promise<DefinitionScheduleHostResult> {
-    return mapHostResult(
-      await pauseBpmnDefinitionSchedule(this.boundRequest(request)),
-    );
+  pause(request: DefinitionScheduleHostRequest): Promise<DefinitionScheduleHostResult> {
+    return this.#bound(request, pauseBpmnDefinitionSchedule);
   }
 
   delete(request: DefinitionScheduleHostRequest): Promise<void> {
-    return deleteBpmnDefinitionSchedule({
-      scheduleId: request.hostScheduleId,
-      temporalClient: this.#temporalClient,
-    });
+    return deleteBpmnDefinitionSchedule({ host: this.#context.host, scheduleId: request.hostScheduleId });
   }
 
-  private boundRequest(request: DefinitionScheduleHostRequest) {
-    return {
+  async #bound(request: DefinitionScheduleHostRequest, operation: ScheduleOperation): Promise<DefinitionScheduleHostResult> {
+    const activationAtEpochMs = parseUtcInstant(request.activationAt, "activationAt");
+    const dueAtEpochMs = parseUtcInstant(request.dueAt, "dueAt");
+    if (dueAtEpochMs < activationAtEpochMs) throw new RangeError("dueAt must not precede activationAt");
+    const overlay = request.sourceOverlay ?? null;
+    const resolved = await recompileStoredDefinition(this.#context, request.bytes, overlay, request.definition);
+    if (resolved.kind === "integrityFailure") {
+      return { phase: DefinitionScheduleHostPhase.IntegrityFailure, evidence: resolved.evidence };
+    }
+    const definition = request.definition;
+    const timer = engineTimerSchedule(resolved.compilation.capabilities, request.timerStart.startEventId);
+    if (timer === null) {
+      return {
+        phase: DefinitionScheduleHostPhase.IntegrityFailure,
+        evidence: "The definition publishes no Timer start with the selected identity.",
+      };
+    }
+    return mapHostResult(await operation({
+      host: this.#context.host,
       bytes: request.bytes,
-      sourceOverlay: request.sourceOverlay ?? null,
-      sourceId: request.definition.source.id,
-      expectedSha256: request.definition.source.sha256,
-      expectedByteLength: request.definition.source.byteLength,
-      semanticProfile: request.definition.semanticProfile,
-      expectedProcessId: request.definition.processId,
-      expectedStartCapabilities: request.definition.startCapabilities,
-      expectedTimerStart: request.timerStart,
+      sourceOverlay: overlay,
+      sourceId: definition.source.id,
+      expectedSha256: definition.source.sha256,
+      expectedByteLength: definition.source.byteLength,
+      profile: storedProfile(this.#context, definition.semanticProfile),
+      expectedProcessId: definition.processId,
+      version: definition.version,
+      expectedStarts: resolved.compilation.capabilities.starts,
+      timerStart: { startEventId: request.timerStart.startEventId, timer },
       processInstanceId: request.processInstanceId,
       scheduleId: request.hostScheduleId,
-      configuredWorkflowId: request.configuredWorkflowIdBase,
-      activationAtEpochMs: parseUtcInstant(request.activationAt, "activationAt"),
-      dueAtEpochMs: parseUtcInstant(request.dueAt, "dueAt"),
-      limits: this.#limits,
-      temporalClient: this.#temporalClient,
-      taskQueue: this.#taskQueue,
-    };
+      workflowIdBase: request.configuredWorkflowIdBase,
+      dueAtEpochMs,
+      limits: this.#context.limits,
+    }));
   }
 }
 
-function mapHostResult(
-  result: EngineDefinitionScheduleResult,
-): DefinitionScheduleHostResult {
+function mapHostResult(result: EngineDefinitionScheduleResult): DefinitionScheduleHostResult {
   switch (result.status) {
     case EngineDefinitionScheduleStatus.Pending:
-      return {
-        phase: DefinitionScheduleHostPhase.Pending,
-        paused: result.paused,
-      };
+      return { phase: DefinitionScheduleHostPhase.Pending, paused: result.paused };
     case EngineDefinitionScheduleStatus.Started:
-      return {
-        phase: DefinitionScheduleHostPhase.Started,
-        processLocator: serializeEngineProcessLocator(result.locator),
-      };
+      return { phase: DefinitionScheduleHostPhase.Started, processLocator: serializeEngineProcessLocator(result.locator) };
     case EngineDefinitionScheduleStatus.Missed:
       return { phase: DefinitionScheduleHostPhase.Missed };
     case EngineDefinitionScheduleStatus.Rejected:
     case EngineDefinitionScheduleStatus.IntegrityFailure:
-      return {
-        phase: DefinitionScheduleHostPhase.IntegrityFailure,
-        evidence: result.failure.evidence,
-      };
-    default:
-      return assertNever(result);
+      return { phase: DefinitionScheduleHostPhase.IntegrityFailure, evidence: result.failure.evidence };
   }
 }
 
 function parseUtcInstant(value: string, name: string): number {
   const epochMs = Date.parse(value);
-  if (!Number.isSafeInteger(epochMs)) {
-    throw new TypeError(`${name} must be a valid UTC instant`);
-  }
+  if (!Number.isSafeInteger(epochMs)) throw new TypeError(`${name} must be a valid UTC instant`);
   return epochMs;
-}
-
-function requirePositiveSafeInteger(value: number, name: string): void {
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new RangeError(`${name} must be a positive safe integer`);
-  }
-}
-
-function requireNonempty(value: string, name: string): void {
-  if (typeof value !== "string" || value.length === 0) {
-    throw new TypeError(`${name} must not be empty`);
-  }
-}
-
-function assertNever(value: never): never {
-  throw new TypeError(`Unsupported definition Schedule gateway result: ${String(value)}`);
 }

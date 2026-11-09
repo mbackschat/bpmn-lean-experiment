@@ -6,8 +6,15 @@ import {
   readPlatformServerConfig,
 } from "@bpmn-lean/platform-server";
 
+const engineDeployment = {
+  profiles: { standard: [] },
+  servedRequirements: { timers: true, messages: true, effects: true, userTasks: true, calls: true },
+  effectStartToCloseMs: 30_000,
+};
+const PLATFORM_ENGINE_DEPLOYMENT_JSON = JSON.stringify(engineDeployment);
+
 test("provides bounded local-MVP defaults", () => {
-  assert.deepEqual(readPlatformServerConfig({}), {
+  assert.deepEqual(readPlatformServerConfig({ PLATFORM_ENGINE_DEPLOYMENT_JSON }), {
     storageMode: PlatformStorageMode.Local,
     postgresqlRuntimeUrl: null,
     projectionMaxAgeMs: null,
@@ -27,6 +34,7 @@ test("provides bounded local-MVP defaults", () => {
     operationsGroupId: "operators",
     maxWorkProcesses: 100,
     maxWorkTasks: 1000,
+    engineDeployment,
   });
 });
 
@@ -48,6 +56,7 @@ test("snapshots explicit environment configuration", () => {
     PLATFORM_OPERATIONS_GROUP_ID: "process-operators",
     PLATFORM_MAX_WORK_PROCESSES: "40",
     PLATFORM_MAX_WORK_TASKS: "250",
+    PLATFORM_ENGINE_DEPLOYMENT_JSON,
   };
   const config = readPlatformServerConfig(environment);
   environment.PLATFORM_HOST = "attacker.invalid";
@@ -71,7 +80,16 @@ test("snapshots explicit environment configuration", () => {
     operationsGroupId: "process-operators",
     maxWorkProcesses: 40,
     maxWorkTasks: 250,
+    engineDeployment,
   });
+});
+
+test("requires the engine deployment: no profile catalog, served requirement or effect bound is defaulted", () => {
+  assert.throws(() => readPlatformServerConfig({}), /PLATFORM_ENGINE_DEPLOYMENT_JSON is required/u);
+  assert.throws(
+    () => readPlatformServerConfig({ PLATFORM_ENGINE_DEPLOYMENT_JSON: JSON.stringify({ ...engineDeployment, profiles: [] }) }),
+    /profiles must be a JSON object/u,
+  );
 });
 
 test("requires an explicit runtime credential and freshness age in shared mode", () => {
@@ -79,6 +97,7 @@ test("requires an explicit runtime credential and freshness age in shared mode",
     PLATFORM_STORAGE_MODE: "shared",
     PLATFORM_POSTGRESQL_RUNTIME_URL: "postgresql://runtime@localhost/platform",
     PLATFORM_PROJECTION_MAX_AGE_MS: "2500",
+    PLATFORM_ENGINE_DEPLOYMENT_JSON,
   }), {
     storageMode: PlatformStorageMode.Shared,
     postgresqlRuntimeUrl: "postgresql://runtime@localhost/platform",
@@ -99,6 +118,7 @@ test("requires an explicit runtime credential and freshness age in shared mode",
     operationsGroupId: "operators",
     maxWorkProcesses: 100,
     maxWorkTasks: 1000,
+    engineDeployment,
   });
 
   for (const environment of [

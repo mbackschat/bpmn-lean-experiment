@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { decodePublicProcessInstanceIdentity, executionPublicationIdentityForPublicProcessInstance, flowNodeOccurrencePublicationIdentityForPublicProcessInstance } from "@bpmn-lean/platform-contracts";
+import { decodePublicProcessInstanceIdentity, publicationIdentityForPublicProcessInstance } from "@bpmn-lean/platform-contracts";
 
 const overlay = { id: "same-🚀", sha256: "a".repeat(64) };
 const instance = {
@@ -23,13 +23,14 @@ test("public version decoder requires explicit nullable overlay and both exact i
   assert.equal(decodePublicProcessInstanceIdentity({ ...instance, definition: { ...instance.definition, sourceOverlay: null } }).definition.sourceOverlay, null);
 });
 
-test("E1 and E2 expected publication identities preserve the retained overlay ID and digest", () => {
-  for (const expected of [executionPublicationIdentityForPublicProcessInstance, flowNodeOccurrencePublicationIdentityForPublicProcessInstance]) {
-    const exact = expected(instance);
-    assert.deepEqual(exact.definition.sourceOverlay, overlay);
-    const changed = expected({ ...instance, definition: { ...instance.definition, sourceOverlay: { ...overlay, sha256: "c".repeat(64) } } });
-    assert.notDeepEqual(exact, changed);
-    Object.assign(exact.definition.sourceOverlay ?? {}, { sha256: "d".repeat(64) });
-    assert.deepEqual(instance.definition.sourceOverlay, overlay);
-  }
+test("the expected publication identity preserves the retained overlay ID and digest", () => {
+  const exact = publicationIdentityForPublicProcessInstance(instance);
+  assert.deepEqual(exact.definition.sourceOverlay, overlay);
+  const changed = publicationIdentityForPublicProcessInstance({
+    ...instance,
+    definition: { ...instance.definition, sourceOverlay: { ...overlay, sha256: "c".repeat(64) } },
+  });
+  assert.notDeepEqual(exact, changed);
+  Object.assign(exact.definition.sourceOverlay ?? {}, { sha256: "d".repeat(64) });
+  assert.deepEqual(instance.definition.sourceOverlay, overlay);
 });

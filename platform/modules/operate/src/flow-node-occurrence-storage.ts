@@ -8,7 +8,6 @@ import type {
   CurrentCommittedExecution,
   FlowNodeOccurrenceBatch,
   FlowNodeOccurrencePage,
-  OpenFlowNodeOccurrence,
 } from "@bpmn-lean/platform-contracts";
 import type {
   PostgresqlRow,
@@ -35,6 +34,7 @@ import {
   FlowNodeOccurrenceProjectionStatus,
   FlowNodeOccurrenceStoredValueError,
   occurrenceIdentityFromRegistration,
+  occurrenceIdentityText,
 } from "./flow-node-occurrence-projection.js";
 import type {
   FlowNodeOccurrenceProjectionImage,
@@ -66,15 +66,10 @@ export async function readPostgresqlOccurrenceSnapshot(
         o.status AS occurrence_status,
         o.head_revision::text AS occurrence_head_revision,
         o.producer_head_revision::text AS occurrence_producer_head_revision,
-        o.last_committed_at_epoch_ms::text AS occurrence_last_committed_at_epoch_ms,
-        o.current_open_json AS occurrence_current_open_json,
         e.identity_json AS execution_identity_json,
         e.status AS execution_status,
         e.head_revision::text AS execution_head_revision,
         e.producer_head_revision::text AS execution_producer_head_revision,
-        e.last_logical_time_ms::text AS execution_last_logical_time_ms,
-        e.control_tokens_json AS execution_control_tokens_json,
-        e.scopes_json AS execution_scopes_json,
         e.current_json AS execution_current_json,
         COALESCE((
           SELECT jsonb_agg(jsonb_build_object(
@@ -100,7 +95,6 @@ export async function readPostgresqlOccurrenceSnapshot(
             'from_revision', b.from_revision::text,
             'through_revision', b.through_revision::text,
             'command_id_hex', encode(b.command_id, 'hex'),
-            'committed_at_epoch_ms', b.committed_at_epoch_ms::text,
             'batch_json', b.batch_json
           ) ORDER BY b.from_revision)
           FROM bpmn_platform.operate_flow_node_occurrence_batches b
@@ -183,22 +177,6 @@ export function encodePostgresqlText(value: string): Buffer {
   return Buffer.from(exact, "utf8");
 }
 
-export function occurrenceIdentityText(
-  image: Pick<FlowNodeOccurrenceProjectionImage, "identity">,
-): string {
-  return JSON.stringify({
-    definition: {
-      compiler: image.identity.definition.compiler,
-      semanticProfile: image.identity.definition.semanticProfile,
-      sourceId: image.identity.definition.sourceId,
-      sourceSha256: image.identity.definition.sourceSha256,
-      sourceOverlay: image.identity.definition.sourceOverlay,
-    },
-    processId: image.identity.processId,
-    processInstanceId: image.identity.processInstanceId,
-  });
-}
-
 function decodeRegistration(row: PostgresqlRow): OperateProcessRegistration {
   const encoded = requireString(row, "public_identity_json");
   const instance = decodePublicProcessInstanceIdentity(JSON.parse(encoded));
@@ -241,20 +219,6 @@ function decodeExecution(
     row,
     "execution_producer_head_revision",
   );
-  const storedLastLogicalTime = requireNullableNonnegative(
-    row,
-    "execution_last_logical_time_ms",
-  );
-  const storedTokens = decodeExactJson(
-    requireString(row, "execution_control_tokens_json"),
-    requireArray,
-    canonicalText,
-  );
-  const storedScopes = decodeExactJson(
-    requireString(row, "execution_scopes_json"),
-    requireArray,
-    canonicalText,
-  );
   const storedCurrent = row.execution_current_json === null
     ? null
     : decodeExactJson(
@@ -288,9 +252,6 @@ function decodeExecution(
   }
   if (
     image.headRevision !== headRevision ||
-    image.lastLogicalTimeMs !== storedLastLogicalTime ||
-    canonicalText(image.controlTokens) !== canonicalText(storedTokens) ||
-    canonicalText(image.scopes) !== canonicalText(storedScopes) ||
     canonicalText(image.current) !== canonicalText(storedCurrent)
   ) {
     throw new TypeError("stored E1 projection columns disagree");
@@ -351,7 +312,7 @@ function decodeOccurrence(
   const identity = occurrenceIdentityFromRegistration(registration);
   if (
     requireString(row, "occurrence_identity_json") !==
-      occurrenceIdentityText({ identity })
+      occurrenceIdentityText(identity)
   ) {
     throw new TypeError("stored occurrence identity disagrees with registration");
   }
@@ -361,11 +322,6 @@ function decodeOccurrence(
     row,
     "occurrence_producer_head_revision",
   );
-  const storedLastCommittedAt = requireNullableNonnegative(
-    row,
-    "occurrence_last_committed_at_epoch_ms",
-  );
-  const storedCurrentOpenText = requireString(row, "occurrence_current_open_json");
   const batches = decodeOccurrenceBatches(row);
   let image = createEmptyFlowNodeOccurrenceProjection(identity);
   if (headRevision > 0) {
@@ -379,25 +335,15 @@ function decodeOccurrence(
         pageThroughRevision: batch.throughRevision,
         headRevision: producerHeadRevision,
         batches: [batch],
-        currentOpen: batch.throughRevision === producerHeadRevision
-          ? JSON.parse(storedCurrentOpenText) as OpenFlowNodeOccurrence[]
-          : null,
       };
       image = applyFlowNodeOccurrencePage(image, page, execution, "mayBeAhead");
     }
-  } else if (
-    batches.length > 0 ||
-    producerHeadRevision !== null ||
-    storedLastCommittedAt !== null ||
-    storedCurrentOpenText !== "[]"
-  ) {
+  } else if (batches.length > 0 || producerHeadRevision !== null) {
     throw new TypeError("revision-zero occurrence projection retained content");
   }
-  const storedOccurrences = decodeOccurrenceRows(row, identity.processInstanceId);
+  const storedOccurrences = decodeOccurrenceRows(row);
   if (
     image.headRevision !== headRevision ||
-    image.lastCommittedAtEpochMs !== storedLastCommittedAt ||
-    JSON.stringify(image.currentOpen) !== storedCurrentOpenText ||
     storedOccurrences.length !== image.occurrences.length ||
     storedOccurrences.some((occurrence, index) =>
       canonicalOccurrenceText(occurrence) !==
@@ -417,9 +363,7 @@ function decodeOccurrenceBatches(row: PostgresqlRow): FlowNodeOccurrenceBatch[] 
       canonicalBatchText(batch) !== encoded ||
       batch.fromRevision !== requireNonnegative(stored, "from_revision") ||
       batch.throughRevision !== requirePositive(stored, "through_revision") ||
-      batch.commandId !== requireHexByteText(stored, "command_id_hex") ||
-      batch.committedAtEpochMs !==
-        requireNonnegative(stored, "committed_at_epoch_ms")
+      batch.commandId !== requireHexByteText(stored, "command_id_hex")
     ) {
       throw new TypeError("stored occurrence batch columns disagree");
     }
@@ -427,18 +371,14 @@ function decodeOccurrenceBatches(row: PostgresqlRow): FlowNodeOccurrenceBatch[] 
   });
 }
 
-function decodeOccurrenceRows(
-  row: PostgresqlRow,
-  processInstanceId: string,
-): ProjectedFlowNodeOccurrence[] {
+function decodeOccurrenceRows(row: PostgresqlRow): ProjectedFlowNodeOccurrence[] {
   return requireObjectArray(row, "occurrence_rows").map((stored) => {
     const encoded = requireString(stored, "occurrence_json");
     const occurrence = JSON.parse(encoded) as ProjectedFlowNodeOccurrence;
     if (
       canonicalOccurrenceText(occurrence) !== encoded ||
-      occurrence.id.processInstanceId !== processInstanceId ||
-      occurrence.id.startRevision !== requirePositive(stored, "start_revision") ||
-      occurrence.id.startIndex !== requireNonnegative(stored, "start_index")
+      occurrence.startRevision !== requirePositive(stored, "start_revision") ||
+      occurrence.startIndex !== requireNonnegative(stored, "start_index")
     ) {
       throw new TypeError("stored occurrence row columns disagree");
     }
@@ -495,11 +435,6 @@ function requireObjectArray(row: PostgresqlRow, field: string): PostgresqlRow[] 
   return value as PostgresqlRow[];
 }
 
-function requireArray(value: unknown): readonly unknown[] {
-  if (!Array.isArray(value)) throw new TypeError("stored publication value is not an array");
-  return value;
-}
-
 function requireString(row: PostgresqlRow, field: string): string {
   const value = row[field];
   if (typeof value !== "string" || value.length === 0) {
@@ -546,10 +481,6 @@ function requireNonnegative(row: PostgresqlRow, field: string): number {
 
 function requireNullablePositive(row: PostgresqlRow, field: string): number | null {
   return row[field] === null ? null : requirePositive(row, field);
-}
-
-function requireNullableNonnegative(row: PostgresqlRow, field: string): number | null {
-  return row[field] === null ? null : requireNonnegative(row, field);
 }
 
 function requireSafeInteger(row: PostgresqlRow, field: string): number {

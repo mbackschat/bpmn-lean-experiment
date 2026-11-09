@@ -41,6 +41,7 @@ import {
 import {
   occurrenceFirstPage,
   occurrenceSecondPage,
+  taskOccurrence,
 } from "../flow-node-occurrence-fixture.ts";
 import {
   createOperateTestRuntime,
@@ -88,6 +89,9 @@ if (baseUrl === undefined) {
       assert.deepEqual(metrics.read.value.snapshot.definition, definition);
       assert.equal(metrics.read.value.snapshot.population.processInstances, 1);
       assert.deepEqual(metrics.read.value.snapshot.flowNodes, [{
+        elementId: "StartEvent_1", frequency: 1, running: 0, completed: 1,
+        cancelled: 0, completedDuration: null,
+      }, {
         elementId: "Task_1", frequency: 1, running: 1, completed: 0,
         cancelled: 0, completedDuration: null,
       }]);
@@ -299,10 +303,7 @@ if (baseUrl === undefined) {
     const suffix = occurrenceSecondPage();
     await observeOccurrence(runtime, exact, {
       ...suffix,
-      batches: [{ ...suffix.batches[0]!, commandId: "command-failure",
-        transitions: [{ revision: 3, lifecycle: { started: [], ended: [] } }],
-      }],
-      currentOpen: occurrenceFirstPage().currentOpen,
+      batches: [{ ...suffix.batches[0]!, commandId: "command-failure", transitions: [] }],
     });
     assert.equal((await new PostgresqlExecutionProjectionReader({ runtime, maxAgeMs: 60_000 })
       .export(exact.instance.processInstanceId)).kind, PostgresqlProjectionReadKind.Unavailable);
@@ -325,18 +326,15 @@ if (baseUrl === undefined) {
       await observeExecution(runtime, exact, terminal === "failed" ? failedPage() : terminalExecutionPage());
       const occurrence = occurrenceSecondPage();
       const batch = occurrence.batches[0]!;
-      const transition = batch.transitions[0];
       await observeOccurrence(runtime, exact, terminal === "failed" ? {
         ...occurrence,
         batches: [{
           ...batch,
           commandId: "command-failure",
           transitions: [{
-            ...transition,
-            lifecycle: {
-              ...transition.lifecycle,
-              ended: transition.lifecycle.ended.map((ended) => ({ ...ended, terminal: "cancelled" })),
-            },
+            revision: 3,
+            started: [],
+            ended: [{ occurrence: taskOccurrence, terminal: "cancelled" }],
           }],
         }],
       } : occurrence);
@@ -377,6 +375,9 @@ if (baseUrl === undefined) {
         assert.ok(freshness.observedAfterEpochMs > 0);
         if (terminal === "failed" && metrics.read.value.kind === FlowNodeMetricsResultKind.Available) {
           assert.deepEqual(metrics.read.value.snapshot.flowNodes, [{
+            elementId: "StartEvent_1", frequency: 1, running: 0, completed: 1,
+            cancelled: 0, completedDuration: null,
+          }, {
             elementId: "Task_1", frequency: 1, running: 0, completed: 0,
             cancelled: 1, completedDuration: null,
           }]);
@@ -392,7 +393,6 @@ if (baseUrl === undefined) {
         ["operate_flow_node_occurrence_publications", "status = 'unavailable'", "status = 'healthy'"],
         ["operate_flow_node_occurrence_publications", "head_revision = 2", "head_revision = 3"],
         ["operate_flow_node_occurrence_publications", "producer_head_revision = 4", "producer_head_revision = 3"],
-        ["operate_flow_node_occurrence_publications", "current_open_json = '[{}]'", "current_open_json = '[]'"],
       ]) {
         await runtime.query({ text: `UPDATE bpmn_platform.${table} SET ${damage} WHERE process_instance_id = $1`, values: [candidateKey(exact)] });
         assert.equal((await executionReader.export(exact.instance.processInstanceId)).kind, PostgresqlProjectionReadKind.Unavailable, damage);
@@ -492,7 +492,7 @@ function terminalExecutionPage(): ExecutionPublicationPage {
     ...page,
     current: {
       ...page.current,
-      state: { ...page.current.state, status: "completed" },
+      state: { ...page.current.state, status: "completed", openWaits: [] },
     },
   };
 }

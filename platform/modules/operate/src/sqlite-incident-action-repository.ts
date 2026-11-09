@@ -105,7 +105,7 @@ export class SqliteIncidentActionRepository implements IncidentActionRepository 
           binding_json,
           state,
           result_json
-        ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, 'reserved', NULL)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'reserved', NULL)
       `).run(
         binding.actionId,
         binding.actorId,
@@ -113,6 +113,7 @@ export class SqliteIncidentActionRepository implements IncidentActionRepository 
         binding.incident.id.effectId.processInstanceId,
         binding.incident.id.effectId.elementId,
         binding.incident.id.effectId.activation,
+        binding.incident.id.generation,
         binding.interaction.kind,
         JSON.stringify(binding),
       );

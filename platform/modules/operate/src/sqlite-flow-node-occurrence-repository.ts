@@ -3,12 +3,11 @@ import type { SQLOutputValue } from "node:sqlite";
 
 import {
   decodePublicProcessInstanceIdentity,
+  flowNodeOccurrenceKeyText,
 } from "@bpmn-lean/platform-contracts";
 import type {
   FlowNodeOccurrenceBatch,
   FlowNodeOccurrencePage,
-  FlowNodeOccurrencePublicationIdentity,
-  OpenFlowNodeOccurrence,
 } from "@bpmn-lean/platform-contracts";
 
 import type {
@@ -24,6 +23,7 @@ import {
   FlowNodeOccurrenceProjectionStatus,
   FlowNodeOccurrenceStoredValueError,
   occurrenceIdentityFromRegistration,
+  occurrenceIdentityText,
 } from "./flow-node-occurrence-projection.js";
 import type {
   FlowNodeOccurrenceProjectionImage,
@@ -196,8 +196,6 @@ export class SqliteFlowNodeOccurrenceRepository
         o.status,
         o.head_revision,
         o.producer_head_revision,
-        o.last_committed_at_epoch_ms,
-        o.current_open_json,
         p.public_identity_json
       FROM flow_node_occurrence_publications o
       JOIN process_instances p USING (process_instance_id)
@@ -208,7 +206,7 @@ export class SqliteFlowNodeOccurrenceRepository
       JSON.parse(requireText(row.public_identity_json, "public_identity_json")),
     );
     const identity = occurrenceIdentityFromRegistration({ instance: publicInstance });
-    if (requireText(row.identity_json, "identity_json") !== identityText(identity)) {
+    if (requireText(row.identity_json, "identity_json") !== occurrenceIdentityText(identity)) {
       throw new TypeError("stored occurrence identity disagrees with registration");
     }
     const status = requireStatus(row.status);
@@ -216,16 +214,6 @@ export class SqliteFlowNodeOccurrenceRepository
     const producerHeadRevision = row.producer_head_revision === null
       ? null
       : requirePositive(row.producer_head_revision, "producer_head_revision");
-    const lastCommittedAtEpochMs = row.last_committed_at_epoch_ms === null
-      ? null
-      : requireNonnegative(
-          row.last_committed_at_epoch_ms,
-          "last_committed_at_epoch_ms",
-        );
-    const storedCurrentOpenText = requireText(
-      row.current_open_json,
-      "current_open_json",
-    );
     const batches = this.#readBatches(processInstanceId);
     let image = createEmptyFlowNodeOccurrenceProjection(identity);
     if (headRevision > 0) {
@@ -233,16 +221,12 @@ export class SqliteFlowNodeOccurrenceRepository
         throw new TypeError("positive occurrence head has no producer authority");
       }
       for (const batch of batches) {
-        const reachesHead = batch.throughRevision === producerHeadRevision;
         const page: FlowNodeOccurrencePage = {
           ...identity,
           requestedAfterRevision: batch.fromRevision,
           pageThroughRevision: batch.throughRevision,
           headRevision: producerHeadRevision,
           batches: [batch],
-          currentOpen: reachesHead
-            ? JSON.parse(storedCurrentOpenText) as OpenFlowNodeOccurrence[]
-            : null,
         };
         image = applyFlowNodeOccurrencePage(
           image,
@@ -251,19 +235,12 @@ export class SqliteFlowNodeOccurrenceRepository
           "mayBeAhead",
         );
       }
-    } else if (
-      batches.length > 0 ||
-      producerHeadRevision !== null ||
-      lastCommittedAtEpochMs !== null ||
-      storedCurrentOpenText !== "[]"
-    ) {
+    } else if (batches.length > 0 || producerHeadRevision !== null) {
       throw new TypeError("revision-zero occurrence projection retained content");
     }
     const storedOccurrences = this.#readOccurrences(processInstanceId);
     if (
       image.headRevision !== headRevision ||
-      image.lastCommittedAtEpochMs !== lastCommittedAtEpochMs ||
-      JSON.stringify(image.currentOpen) !== storedCurrentOpenText ||
       storedOccurrences.length !== image.occurrences.length ||
       storedOccurrences.some((occurrence, index) =>
         canonicalOccurrenceText(occurrence) !==
@@ -281,7 +258,6 @@ export class SqliteFlowNodeOccurrenceRepository
         from_revision,
         through_revision,
         command_id,
-        committed_at_epoch_ms,
         batch_json
       FROM flow_node_occurrence_batches
       WHERE process_instance_id = ?
@@ -293,11 +269,7 @@ export class SqliteFlowNodeOccurrenceRepository
         canonicalBatchText(batch) !== encoded ||
         batch.fromRevision !== requireNonnegative(row.from_revision, "from_revision") ||
         batch.throughRevision !== requirePositive(row.through_revision, "through_revision") ||
-        batch.commandId !== requireText(row.command_id, "command_id") ||
-        batch.committedAtEpochMs !== requireNonnegative(
-          row.committed_at_epoch_ms,
-          "committed_at_epoch_ms",
-        )
+        batch.commandId !== requireText(row.command_id, "command_id")
       ) {
         throw new TypeError("stored occurrence batch columns disagree");
       }
@@ -316,12 +288,11 @@ export class SqliteFlowNodeOccurrenceRepository
       const occurrence = JSON.parse(encoded) as ProjectedFlowNodeOccurrence;
       if (
         canonicalOccurrenceText(occurrence) !== encoded ||
-        occurrence.id.processInstanceId !== processInstanceId ||
-        occurrence.id.startRevision !== requirePositive(
+        occurrence.startRevision !== requirePositive(
           row.start_revision,
           "start_revision",
         ) ||
-        occurrence.id.startIndex !== requireNonnegative(row.start_index, "start_index")
+        occurrence.startIndex !== requireNonnegative(row.start_index, "start_index")
       ) {
         throw new TypeError("stored occurrence row columns disagree");
       }
@@ -375,25 +346,19 @@ export class SqliteFlowNodeOccurrenceRepository
         identity_json,
         status,
         head_revision,
-        producer_head_revision,
-        last_committed_at_epoch_ms,
-        current_open_json
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        producer_head_revision
+      ) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(process_instance_id) DO UPDATE SET
         identity_json = excluded.identity_json,
         status = excluded.status,
         head_revision = excluded.head_revision,
-        producer_head_revision = excluded.producer_head_revision,
-        last_committed_at_epoch_ms = excluded.last_committed_at_epoch_ms,
-        current_open_json = excluded.current_open_json
+        producer_head_revision = excluded.producer_head_revision
     `).run(
       processInstanceId,
-      identityText(image.identity),
+      occurrenceIdentityText(image.identity),
       image.status,
       image.headRevision,
       image.producerHeadRevision,
-      image.lastCommittedAtEpochMs,
-      JSON.stringify(image.currentOpen),
     );
   }
 
@@ -442,8 +407,8 @@ export class SqliteFlowNodeOccurrenceRepository
         const changes = updateOccurrence.run(
           canonicalOccurrenceText(occurrence),
           processInstanceId,
-          occurrence.id.startRevision,
-          occurrence.id.startIndex,
+          occurrence.startRevision,
+          occurrence.startIndex,
           canonicalOccurrenceText(priorOccurrence),
         ).changes;
         if (changes !== 1) {
@@ -472,9 +437,8 @@ export class SqliteFlowNodeOccurrenceRepository
         from_revision,
         through_revision,
         command_id,
-        committed_at_epoch_ms,
         batch_json
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?)
     `);
     for (const batch of batches) {
       insertBatch.run(
@@ -482,7 +446,6 @@ export class SqliteFlowNodeOccurrenceRepository
         batch.fromRevision,
         batch.throughRevision,
         batch.commandId,
-        batch.committedAtEpochMs,
         canonicalBatchText(batch),
       );
     }
@@ -503,8 +466,8 @@ export class SqliteFlowNodeOccurrenceRepository
     for (const occurrence of occurrences) {
       insertOccurrence.run(
         processInstanceId,
-        occurrence.id.startRevision,
-        occurrence.id.startIndex,
+        occurrence.startRevision,
+        occurrence.startIndex,
         canonicalOccurrenceText(occurrence),
       );
     }
@@ -524,7 +487,7 @@ export class SqliteFlowNodeOccurrenceRepository
 }
 
 function occurrenceKey(occurrence: ProjectedFlowNodeOccurrence): string {
-  return JSON.stringify(occurrence.id);
+  return flowNodeOccurrenceKeyText(occurrence.occurrence);
 }
 
 function requireTerminalSuccessor(
@@ -533,33 +496,16 @@ function requireTerminalSuccessor(
 ): void {
   if (
     prior.terminal !== null ||
-    prior.terminalAtEpochMs !== null ||
     next.terminal === null ||
-    next.terminalAtEpochMs === null ||
     canonicalOccurrenceText(next) !== canonicalOccurrenceText({
       ...prior,
       terminal: next.terminal,
-      terminalAtEpochMs: next.terminalAtEpochMs,
     })
   ) {
     throw new FlowNodeOccurrenceIntegrityError(
       "occurrence suffix changed an accepted occurrence outside terminal closure",
     );
   }
-}
-
-function identityText(identity: FlowNodeOccurrencePublicationIdentity): string {
-  return JSON.stringify({
-    definition: {
-      compiler: identity.definition.compiler,
-      semanticProfile: identity.definition.semanticProfile,
-      sourceId: identity.definition.sourceId,
-      sourceSha256: identity.definition.sourceSha256,
-      sourceOverlay: identity.definition.sourceOverlay,
-    },
-    processId: identity.processId,
-    processInstanceId: identity.processInstanceId,
-  });
 }
 
 function requireStatus(value: SQLOutputValue | undefined): FlowNodeOccurrenceProjectionStatus {

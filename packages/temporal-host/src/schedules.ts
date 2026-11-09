@@ -22,6 +22,8 @@ export interface OneShotScheduleRequest {
   readonly config: HostConfig;
   /** The start stimulus, in the scenario contract's form. */
   readonly start: JsonValue;
+  /** The started instance's correlation scope (`StartRequest.correlationScope`). */
+  readonly correlationScope: string;
   /** Compared verbatim by `assessSchedule`; the caller's fingerprint of everything above. */
   readonly memo: Readonly<Record<string, JsonValue>>;
 }

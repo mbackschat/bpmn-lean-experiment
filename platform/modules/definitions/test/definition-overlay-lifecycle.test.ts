@@ -1,5 +1,5 @@
 import { decodeDefinitionDeployResult } from "@bpmn-lean/platform-contracts";
-import { DefinitionStartDescriptionStatus } from "@bpmn-lean/platform-engine-gateway";
+import { DefinitionCompilationStatus, DefinitionStartDescriptionStatus, DefinitionStartStatus } from "@bpmn-lean/platform-engine-gateway";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -32,7 +32,7 @@ async function fixture() {
     get: async (sha256) => { const retained = content.get(sha256); return retained === undefined ? null : Uint8Array.from(retained); },
   };
   const compiler: DefinitionCompiler = { compileDefinition: async (request) => ({
-    status: "accepted", source: { ...source, id: request.sourceId, sha256: digest(request.bytes), byteLength: request.bytes.length }, diagnostics: [],
+    status: DefinitionCompilationStatus.Accepted, source: { ...source, id: request.sourceId, sha256: digest(request.bytes), byteLength: request.bytes.length }, diagnostics: [],
     definition: { processId: "Process", semanticProfile: request.semanticProfile, sourceOverlay: request.sourceOverlay === undefined || request.sourceOverlay === null ? null : { id: request.sourceOverlay.id, sha256: request.sourceOverlay.sha256 } }, startCapabilities: capabilities,
   }) };
   const calls: DefinitionVersionStartRequest[] = [];
@@ -40,8 +40,8 @@ async function fixture() {
     source: { ...source }, definition: { processId: "Process", semanticProfile: "profile", sourceOverlay: request.sourceOverlay === undefined || request.sourceOverlay === null ? null : { id: request.sourceOverlay.id, sha256: request.sourceOverlay.sha256 } }, processInstanceId: request.processInstanceId,
   });
   const starter: DefinitionVersionStarter = {
-    prepareDefinitionVersion: async (request) => ({ ...engineIdentity(request), status: "admitted", locator: "opaque", intent: { protocol: "bpmn-direct-start-v1", intentSha256: "e".repeat(64) } }),
-    startPreparedDefinitionVersion: async (request) => { calls.push(structuredClone(request)); return { ...engineIdentity(request), status: "started" }; },
+    prepareDefinitionVersion: async (request) => ({ ...engineIdentity(request), status: DefinitionStartStatus.Admitted, locator: "opaque", intent: { protocol: "bpmn-direct-start-v1", intentSha256: "e".repeat(64) } }),
+    startPreparedDefinitionVersion: async (request) => { calls.push(structuredClone(request)); return { ...engineIdentity(request), status: DefinitionStartStatus.Started }; },
     startDefinitionVersion: async () => { throw new Error("unprepared start"); },
     describeDefinitionVersionStart: async () => ({ status: DefinitionStartDescriptionStatus.Matching }),
   };

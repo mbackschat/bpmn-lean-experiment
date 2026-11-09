@@ -112,7 +112,6 @@ export class PostgresqlFlowNodeOccurrenceRecoveryStep {
       observed = await this.#options.gateway.observe({
         locator: snapshot.registration.locator,
         definition: identity.definition,
-        processId: identity.processId,
         processInstanceId: identity.processInstanceId,
         afterRevision,
         limit: 100,
@@ -141,8 +140,6 @@ export class PostgresqlFlowNodeOccurrenceRecoveryStep {
           snapshot.occurrence,
           structuredClone(result.page),
         );
-      case FlowNodeOccurrencePublicationResultKind.NotReady:
-        return retry(PostgresqlOperateRecoveryRetryReason.ProducerNotReady);
       case FlowNodeOccurrencePublicationResultKind.Unavailable:
         return retry(PostgresqlOperateRecoveryRetryReason.GatewayUnavailable);
       case FlowNodeOccurrencePublicationResultKind.Gap:
@@ -151,6 +148,7 @@ export class PostgresqlFlowNodeOccurrenceRecoveryStep {
           PostgresqlOperateRecoveryFailureEvidence.ProducerResult,
         );
       case FlowNodeOccurrencePublicationResultKind.NotFound:
+      case FlowNodeOccurrencePublicationResultKind.IntegrityFailure:
         return fail(
           PostgresqlOperateRecoveryFailureCode.ImpossibleAuthority,
           PostgresqlOperateRecoveryFailureEvidence.ProducerResult,

@@ -24,6 +24,7 @@ import {
   hostRequirements,
   hostView,
   hostViewJson,
+  matching,
   observationJson,
   step,
   stimulusFromJson,
@@ -102,6 +103,23 @@ function scriptOf(program: Program, wait: WaitView): ScriptSource | null {
   return scripts[0] ?? null;
 }
 
+/** A delivery's channel and correlation, read by the kernel's own stimulus codec from the delivery that carries them. */
+function correlatedMatches(program: Program, state: State, channel: JsonValue, correlation: JsonValue): readonly OccurrenceId[] {
+  const delivery = decoded(stimulusFromJson({
+    kind: "deliver",
+    commandId: "correlation-question",
+    occurrence: { processInstanceId: "", elementId: "", activation: 0 },
+    trigger: { kind: "message", channel },
+    correlation,
+  }), "correlation question");
+  const input = delivery[1];
+  if (input.tag !== InputTag.Deliver || !("channel" in input.payload.trigger)) {
+    throw new TypeError("correlation question: not a Message delivery");
+  }
+  return matching(hooks, program, state, input.payload.trigger.channel, input.payload.correlation).map((ref) =>
+    ({ processInstanceId: ref.processInstanceId, elementId: ref.element, activation: ref.activation }));
+}
+
 export const kernelPort: KernelPort<Program, State, Input> = {
   decodeProgram: (json) => decoded(decodeProgram(json), "program"),
   admit,
@@ -133,4 +151,5 @@ export const kernelPort: KernelPort<Program, State, Input> = {
   // The host decodes only what `encodeState` produced for this program.
   decodeState: (json) => fromWire(json) as State,
   scriptOf,
+  matching: correlatedMatches,
 };

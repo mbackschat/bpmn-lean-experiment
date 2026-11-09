@@ -19,7 +19,6 @@ import type {
   DefinitionListResponse,
   DefinitionVersionListResponse,
   DeployedDefinitionVersion,
-  LocatedAdmissionElement,
   PublicApiErrorCatalogCode,
   PublicApiErrorResponse,
   RejectedDefinitionResult,
@@ -171,37 +170,7 @@ function decodeDiagnostic(value: unknown, label: string): AdmissionDiagnostic {
   const element = readOwn(value, "element");
   return {
     code: requireNonemptyString(readOwn(value, "code"), `${label}.code`),
-    element: element === null ? null : decodeLocatedElement(element, `${label}.element`),
+    element: requireNullableNonemptyString(element, `${label}.element`),
     evidence: requireNonemptyString(readOwn(value, "evidence"), `${label}.evidence`),
-  };
-}
-
-function decodeLocatedElement(
-  value: unknown,
-  label: string,
-): LocatedAdmissionElement {
-  requireObject(value, label);
-  requireExactKeys(value, label, [
-    "containmentPath",
-    "id",
-    "requiredCapability",
-    "subject",
-    "type",
-  ]);
-  return {
-    id: requireNullableNonemptyString(readOwn(value, "id"), `${label}.id`),
-    type: requireNullableNonemptyString(readOwn(value, "type"), `${label}.type`),
-    containmentPath: requireNonemptyString(
-      readOwn(value, "containmentPath"),
-      `${label}.containmentPath`,
-    ),
-    subject: requireNullableNonemptyString(
-      readOwn(value, "subject"),
-      `${label}.subject`,
-    ),
-    requiredCapability: requireNullableNonemptyString(
-      readOwn(value, "requiredCapability"),
-      `${label}.requiredCapability`,
-    ),
   };
 }

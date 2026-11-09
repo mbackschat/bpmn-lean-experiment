@@ -139,7 +139,7 @@ export class PostgresqlIncidentActionRepository
             binding_json,
             state,
             result_json
-          ) VALUES ($1, $2, $3, $4, $5, $6, 1, $7, $8, 'reserved', NULL)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'reserved', NULL)
           ON CONFLICT DO NOTHING
           RETURNING ${actionColumns}
         `,
@@ -152,6 +152,7 @@ export class PostgresqlIncidentActionRepository
           ),
           encodePostgresqlByteText(binding.incident.id.effectId.elementId),
           binding.incident.id.effectId.activation,
+          binding.incident.id.generation,
           binding.interaction.kind,
           JSON.stringify(binding),
         ],
@@ -357,7 +358,8 @@ function decodeActionRow(row: PostgresqlRow): StoredIncidentAction {
         action.binding.incident.id.effectId.elementId ||
       requirePostgresqlSafeInteger(row, "incident_activation", 1) !==
         action.binding.incident.id.effectId.activation ||
-      requirePostgresqlSafeInteger(row, "incident_generation", 1) !== 1 ||
+      requirePostgresqlSafeInteger(row, "incident_generation", 1) !==
+        action.binding.incident.id.generation ||
       requirePostgresqlString(row, "action_kind") !==
         action.binding.interaction.kind
     ) {

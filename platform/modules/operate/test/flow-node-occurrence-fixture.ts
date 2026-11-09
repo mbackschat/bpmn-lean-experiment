@@ -1,60 +1,32 @@
 import type {
+  FlowNodeOccurrenceKey,
   FlowNodeOccurrencePage,
 } from "@bpmn-lean/platform-contracts";
 import type { OperateProcessRegistration } from "@bpmn-lean/platform-operate";
 
-export const definitionVersion = {
-  processId: "Process_1",
-  version: 1,
-  source: {
-    kind: "bpmnSource",
-    id: "source-publication",
-    sha256: "a".repeat(64),
-    byteLength: 512,
-    declaredEncoding: "UTF-8",
-    decodedAs: "UTF-8",
-  },
-  semanticProfile: "profile-publication",
-  startCapabilities: { messageStarts: [], timerStarts: [] },
-  sourceOverlay: null,
-} as const;
+import { identity, registration } from "./execution-publication-fixture.ts";
 
-export const occurrenceDefinition = {
-  compiler: "bpmn-source-semantic-process",
-  semanticProfile: definitionVersion.semanticProfile,
-  sourceId: definitionVersion.source.id,
-  sourceSha256: definitionVersion.source.sha256,
-  sourceOverlay: null,
-} as const;
+export const definitionVersion = registration.instance.definition;
 
-export const occurrenceIdentity = {
-  definition: occurrenceDefinition,
-  processId: definitionVersion.processId,
-  processInstanceId: "Instance_1",
-} as const;
+export const occurrenceIdentity = identity;
 
-export const occurrenceRootScope = {
+export const occurrenceRegistration: OperateProcessRegistration = registration;
+
+export const startEventOccurrence = {
   processInstanceId: occurrenceIdentity.processInstanceId,
-  definitionScopeId: "Scope_Process_1",
+  elementId: "StartEvent_1",
   activation: 1,
-} as const;
+  role: "element",
+} as const satisfies FlowNodeOccurrenceKey;
 
-export const occurrenceRegistration: OperateProcessRegistration = {
-  ordinal: 1,
-  locator: "opaque-private-locator",
-  observation: "active",
-  instance: {
-    processInstanceId: occurrenceIdentity.processInstanceId,
-    definition: definitionVersion,
-  },
-};
-
-export const taskOccurrenceId = {
+export const taskOccurrence = {
   processInstanceId: occurrenceIdentity.processInstanceId,
-  startRevision: 2,
-  startIndex: 0,
-} as const;
+  elementId: "Task_1",
+  activation: 1,
+  role: "element",
+} as const satisfies FlowNodeOccurrenceKey;
 
+/** The occurrences of the execution fixture's first batch: the start event passes through, the task stays open. */
 export function occurrenceFirstPage(
   producerHeadRevision: number = 2,
 ): FlowNodeOccurrencePage {
@@ -67,38 +39,20 @@ export function occurrenceFirstPage(
       commandId: "command-start",
       fromRevision: 0,
       throughRevision: 2,
-      committedAtEpochMs: 100,
       transitions: [{
         revision: 1,
-        lifecycle: { started: [], ended: [] },
+        started: [{ occurrence: startEventOccurrence, owner: 0, sourceType: "startEvent" }],
+        ended: [{ occurrence: startEventOccurrence, terminal: "completed" }],
       }, {
         revision: 2,
-        lifecycle: {
-          started: [{
-            id: taskOccurrenceId,
-            processId: definitionVersion.processId,
-            elementId: "Task_1",
-            owner: occurrenceRootScope,
-          }],
-          ended: [],
-        },
+        started: [{ occurrence: taskOccurrence, owner: 0, sourceType: "userTask" }],
+        ended: [],
       }],
     }],
-    currentOpen: producerHeadRevision === 2
-      ? [{
-          id: taskOccurrenceId,
-          processId: definitionVersion.processId,
-          elementId: "Task_1",
-          owner: occurrenceRootScope,
-          startedAtEpochMs: 100,
-        }]
-      : null,
   };
 }
 
-export function occurrenceSecondPage(
-  committedAtEpochMs: number = 150,
-): FlowNodeOccurrencePage {
+export function occurrenceSecondPage(): FlowNodeOccurrencePage {
   return {
     ...occurrenceIdentity,
     requestedAfterRevision: 2,
@@ -108,17 +62,19 @@ export function occurrenceSecondPage(
       commandId: "command-retry",
       fromRevision: 2,
       throughRevision: 3,
-      committedAtEpochMs,
       transitions: [{
         revision: 3,
-        lifecycle: {
-          started: [],
-          ended: [{ id: taskOccurrenceId, terminal: "completed" }],
-        },
+        started: [],
+        ended: [{ occurrence: taskOccurrence, terminal: "completed" }],
       }],
     }],
-    currentOpen: [],
   };
+}
+
+/** An input that began and ended no occurrence: its batch is aligned with E1 and has no transitions. */
+export function occurrenceSecondPageWithoutLifecycle(): FlowNodeOccurrencePage {
+  const page = occurrenceSecondPage();
+  return { ...page, batches: [{ ...page.batches[0]!, transitions: [] }] };
 }
 
 export function occurrencePageAheadOfExecution(): FlowNodeOccurrencePage {
@@ -131,12 +87,7 @@ export function occurrencePageAheadOfExecution(): FlowNodeOccurrencePage {
       commandId: "command-not-yet-in-e1",
       fromRevision: 3,
       throughRevision: 4,
-      committedAtEpochMs: 200,
-      transitions: [{
-        revision: 4,
-        lifecycle: { started: [], ended: [] },
-      }],
+      transitions: [],
     }],
-    currentOpen: [],
   };
 }

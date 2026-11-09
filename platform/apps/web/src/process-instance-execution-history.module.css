@@ -63,17 +63,6 @@
   overflow-wrap: anywhere;
 }
 
-.record details {
-  margin-top: var(--ui-space-3);
-}
-
-.record pre {
-  max-width: 100%;
-  overflow: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
 @container operations (max-width: 44rem) {
   .facts {
     grid-template-columns: 1fr;

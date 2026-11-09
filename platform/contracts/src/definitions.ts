@@ -19,26 +19,20 @@ export type ExactPublicSourceIdentity = Readonly<{
   decodedAs: "UTF-8" | null;
 }>;
 
-/** Source location attached by the engine to one admission diagnostic. */
-export type LocatedAdmissionElement = Readonly<{
-  id: string | null;
-  type: string | null;
-  containmentPath: string;
-  subject: string | null;
-  requiredCapability: string | null;
-}>;
-
-/** One admission fact reported by the engine without platform-side interpretation. */
+/** One admission fact reported by the engine without platform-side interpretation; `element` is the BPMN element id. */
 export type AdmissionDiagnostic = Readonly<{
   code: string;
-  element: LocatedAdmissionElement | null;
+  element: string | null;
   evidence: string;
 }>;
 
-/** Platform-owned projection of one resolved Timer Start capability. */
+/**
+ * Platform-owned projection of one Timer Start capability. `durationMs` is the delay the engine resolved for the
+ * Timer start, `null` when the engine resolves none, so no Schedule can be derived from it.
+ */
 export type PublicTimerStartCapability = Readonly<{
   startEventId: string;
-  durationMs: number;
+  durationMs: number | null;
 }>;
 
 /** Complete operation-addressed public channel of one Message Start capability. */
@@ -117,6 +111,7 @@ export const PublicApiErrorCode = {
   ExecutionPublicationUnavailable: "executionPublicationUnavailable",
   FlowNodeMetricsUnavailable: "flowNodeMetricsUnavailable",
   OperatorAuditUnavailable: "operatorAuditUnavailable",
+  CorrelationUnavailable: "correlationUnavailable",
 } as const;
 
 export type PublicApiErrorCode =

@@ -62,6 +62,20 @@ export interface DefinitionCorrelatedMessageOperations {
   ): Promise<DefinitionCorrelatedMessagePublishResult>;
 }
 
+/**
+ * Raised when the engine cannot serve correlated Messages; `code` is its stable refusal code. The request was not
+ * delivered, so the caller may repeat it once the engine serves correlation.
+ */
+export class DefinitionCorrelatedMessageUnavailableError extends Error {
+  readonly code: string;
+
+  constructor(code: string, evidence: string) {
+    super(evidence);
+    this.name = "DefinitionCorrelatedMessageUnavailableError";
+    this.code = code;
+  }
+}
+
 /** Raised when durable definition state and reconstructed engine state disagree. */
 export class DefinitionCorrelatedMessageIntegrityError extends Error {
   constructor(evidence: string) {

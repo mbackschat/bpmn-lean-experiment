@@ -187,7 +187,7 @@ function recoveryFixture(
     submitIncidentOperation: async (request: unknown) => {
       gatewayCalls.push(structuredClone(request));
       const commandId = (request as { stimulus: { commandId: string } }).stimulus.commandId;
-      return { kind: "semantic", commandId, outcome: "committed" };
+      return { kind: "semantic", commandId, outcome: "committed", code: null };
     },
   };
   const mutations = new IncidentMutationService({

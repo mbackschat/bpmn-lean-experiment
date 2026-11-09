@@ -1,26 +1,18 @@
 import type {
+  CurrentCommittedExecution,
   ExecutionPublicationPage,
 } from "@bpmn-lean/platform-contracts";
 import type { OperateProcessRegistration } from "@bpmn-lean/platform-operate";
 
 export const definition = {
-  compiler: "bpmn-source-semantic-process",
-  semanticProfile: "profile-publication",
-  sourceId: "source-publication",
-  sourceSha256: "a".repeat(64),
+  ref: { definitionKey: "Process_1", version: 1, sha256: "a".repeat(64) },
+  profile: "profile-publication",
   sourceOverlay: null,
 } as const;
 
 export const identity = {
   definition,
-  processId: "Process_1",
   processInstanceId: "Instance_1",
-} as const;
-
-export const rootScope = {
-  processInstanceId: "Instance_1",
-  definitionScopeId: "Scope_Process_1",
-  activation: 1,
 } as const;
 
 export const registration: OperateProcessRegistration = {
@@ -47,26 +39,19 @@ export const registration: OperateProcessRegistration = {
   },
 };
 
-const emptyDelta = {
-  consumedTokens: [],
-  producedTokens: [],
-  enteredScopes: [],
-  exitedScopes: [],
-} as const;
-
 const state = {
   kind: "state",
   instanceId: "Instance_1",
   status: "running",
-  activeWaits: [],
-  openUserTasks: [],
-  openMessageSubscriptions: [],
-  openTimers: [],
-  openEffects: [],
-  openIncidents: [],
-  variables: [],
-  enabledInteractions: [],
   logicalTimeMs: 0,
+  variables: [],
+  scopes: [],
+  openWaits: [{
+    id: { processInstanceId: "Instance_1", elementId: "Task_1", activation: 1 },
+    definition: null,
+    input: "complete",
+    detail: { kind: "userTask" },
+  }],
 } as const;
 
 export function firstPage(
@@ -83,42 +68,16 @@ export function firstPage(
       throughRevision: 2,
       transitions: [{
         revision: 1,
-        logicalTimeMs: 0,
-        transition: {
-          kind: "externalStimulus",
-          stimulus: {
-            kind: "startProcess",
-            commandId: "command-start",
-            processId: "Process_1",
-            instanceId: "Instance_1",
-            initialVariables: [],
-          },
-        },
-        positionDelta: emptyDelta,
+        role: { kind: "input", input: "start" },
+        element: "StartEvent_1",
+        sourceType: "startEvent",
+        owner: 0,
       }, {
         revision: 2,
-        logicalTimeMs: 0,
-        transition: {
-          kind: "internalOperation",
-          operationId: "Operation_Start",
-          operationKind: "initiate",
-          origin: { kind: "bpmnElement", elementId: "StartEvent_1" },
-          owner: rootScope,
-        },
-        positionDelta: {
-          consumedTokens: [],
-          producedTokens: [{
-            sequenceFlowId: "Flow_1",
-            owner: rootScope,
-            multiplicity: 1,
-          }],
-          enteredScopes: [{
-            id: rootScope,
-            parent: null,
-            bpmnElementId: "Process_1",
-          }],
-          exitedScopes: [],
-        },
+        role: { kind: "arrive", flow: "Flow_1" },
+        element: "Task_1",
+        sourceType: "userTask",
+        owner: 0,
       }],
     }],
     current: producerHeadRevision === 2 ? current(2) : null,
@@ -137,31 +96,37 @@ export function secondPage(): ExecutionPublicationPage {
       throughRevision: 3,
       transitions: [{
         revision: 3,
-        logicalTimeMs: 0,
-        transition: {
-          kind: "externalStimulus",
-          stimulus: {
-            kind: "retryIncident",
-            commandId: "command-retry",
-            incidentId: {
-              effectId: {
-                processInstanceId: "Instance_1",
-                elementId: "Process_1",
-                activation: 1,
-              },
-              generation: 1,
-            },
-          },
-        },
-        positionDelta: emptyDelta,
+        role: { kind: "input", input: "command" },
+        element: "Task_1",
+        sourceType: "userTask",
+        owner: 0,
       }],
     }],
     current: current(3),
   };
 }
 
+/** The head page the engine answers when its head moved while it read the state: positioned, without `current`. */
+export function headPageWithoutCurrent(page: ExecutionPublicationPage): ExecutionPublicationPage {
+  return { ...page, current: null };
+}
+
+/** A page that reads at the head with no new batch. */
+export function headOnlyPage(
+  revision: number,
+  withCurrent: boolean,
+): ExecutionPublicationPage {
+  return {
+    ...identity,
+    requestedAfterRevision: revision,
+    pageThroughRevision: revision,
+    headRevision: revision,
+    batches: [],
+    current: withCurrent ? current(revision) : null,
+  };
+}
+
 export function failedPage(message: string | null = "échec 😀\u0000"): ExecutionPublicationPage {
-  const effectId = { processInstanceId: "Instance_1", elementId: "Undo_Service", activation: 3 };
   return {
     ...identity,
     requestedAfterRevision: 2,
@@ -173,22 +138,10 @@ export function failedPage(message: string | null = "échec 😀\u0000"): Execut
       throughRevision: 3,
       transitions: [{
         revision: 3,
-        logicalTimeMs: 0,
-        transition: {
-          kind: "externalStimulus",
-          stimulus: {
-            kind: "completeEffect",
-            commandId: "command-failure",
-            effectId,
-            result: { kind: "bpmnError", code: "undo-échec", message, localPatch: [] },
-          },
-        },
-        positionDelta: {
-          consumedTokens: current(2).controlTokens,
-          producedTokens: [],
-          enteredScopes: [],
-          exitedScopes: current(2).scopes,
-        },
+        role: { kind: "input", input: "effectResult" },
+        element: "Undo_Service",
+        sourceType: "serviceTask",
+        owner: 0,
       }],
     }],
     current: {
@@ -196,34 +149,20 @@ export function failedPage(message: string | null = "échec 😀\u0000"): Execut
       state: {
         ...state,
         status: "failed",
+        openWaits: [],
         failure: {
           kind: "compensationHandlerFailure",
           triggerId: { processInstanceId: "Instance_1", elementId: "Throw", activation: 1 },
           handlerId: { processInstanceId: "Instance_1", elementId: "Undo", activation: 2 },
-          effectId,
+          effectId: { processInstanceId: "Instance_1", elementId: "Undo_Service", activation: 3 },
           code: "undo-échec",
           message,
         },
       },
-      controlTokens: [],
-      scopes: [],
     },
   };
 }
 
-function current(revision: number) {
-  return {
-    revision,
-    state,
-    controlTokens: [{
-      sequenceFlowId: "Flow_1",
-      owner: rootScope,
-      multiplicity: 1,
-    }],
-    scopes: [{
-      id: rootScope,
-      parent: null,
-      bpmnElementId: "Process_1",
-    }],
-  } as const;
+export function current(revision: number): CurrentCommittedExecution {
+  return { revision, state };
 }

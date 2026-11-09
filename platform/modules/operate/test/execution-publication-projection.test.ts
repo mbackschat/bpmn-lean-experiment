@@ -10,6 +10,8 @@ import type { ExecutionPublicationPage } from "@bpmn-lean/platform-contracts";
 
 import {
   firstPage,
+  headOnlyPage,
+  headPageWithoutCurrent,
   identity,
   secondPage,
 } from "./execution-publication-fixture.ts";
@@ -46,41 +48,34 @@ test("rejects a skipped suffix without changing the prior projection", () => {
   assert.deepEqual(projection, before);
 });
 
-test("rejects a positive-cursor delta that does not fold from the retained head", () => {
+test("keeps the state retained at its revision when a head page carries none", () => {
   const prior = applyExecutionPublicationPage(
     createEmptyExecutionPublicationProjection(identity),
     firstPage(),
   );
-  const source = secondPage();
-  const batch = source.batches[0]!;
-  const record = batch.transitions[0]!;
-  const forged = {
-    ...source,
-    batches: [{
-      ...batch,
-      transitions: [{
-        ...record,
-        positionDelta: {
-          ...record.positionDelta,
-          consumedTokens: [{
-            sequenceFlowId: "Flow_1",
-            owner: source.current!.controlTokens[0]!.owner,
-            multiplicity: 1,
-          }],
-        },
-      }],
-    }],
-  };
+  const reread = applyExecutionPublicationPage(prior, headOnlyPage(2, false));
+  assert.deepEqual(reread.current, prior.current);
 
-  assert.throws(
-    () => applyExecutionPublicationPage(
-      prior,
-      forged as unknown as ExecutionPublicationPage,
-    ),
-    /current head disagrees with the folded suffix/u,
+  const advanced = applyExecutionPublicationPage(prior, headPageWithoutCurrent(secondPage()));
+  assert.equal(advanced.headRevision, 3);
+  assert.equal(advanced.producerHeadRevision, 3);
+  assert.equal(advanced.current, null);
+});
+
+test("rejects a state that changed at an accepted revision", () => {
+  const prior = applyExecutionPublicationPage(
+    createEmptyExecutionPublicationProjection(identity),
+    firstPage(),
   );
-  assert.equal(prior.headRevision, 2);
-  assert.equal(prior.controlTokens[0]?.multiplicity, 1);
+  const page = headOnlyPage(2, true);
+  const changed = {
+    ...page,
+    current: { ...page.current!, state: { ...page.current!.state, logicalTimeMs: 1 } },
+  };
+  assert.throws(
+    () => applyExecutionPublicationPage(prior, changed),
+    /current state changed at an accepted revision/u,
+  );
 });
 
 test("treats an exact overlap as a no-op and a changed overlap as integrity failure", () => {

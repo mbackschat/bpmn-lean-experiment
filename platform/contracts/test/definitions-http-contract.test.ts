@@ -86,7 +86,7 @@ test("rejects a malformed digest nested inside a deployed definition", () => {
   );
 });
 
-test("decodes located rejection diagnostics without interpreting engine codes", () => {
+test("decodes rejection diagnostics naming a BPMN element id or none, without interpreting engine codes", () => {
   const input = {
     status: "rejected",
     source,
@@ -94,17 +94,38 @@ test("decodes located rejection diagnostics without interpreting engine codes", 
     diagnostics: [{
       code: "futureEngineDiagnostic",
       evidence: "ScriptTask_1 requires a future capability.",
-      element: {
-        id: "ScriptTask_1",
-        type: "bpmn:ScriptTask",
-        containmentPath: "definitions/rootElements[0]/flowElements[3]",
-        subject: null,
-        requiredCapability: "executeElementType",
-      },
+      element: "ScriptTask_1",
+    }, {
+      code: "parserFailure",
+      evidence: "Malformed XML.",
+      element: null,
     }],
   };
 
   assert.deepEqual(decodeDefinitionDeployResult(input), input);
+});
+
+test("refuses a diagnostic element that is not a nonempty element id", () => {
+  const diagnostic = { code: "futureEngineDiagnostic", evidence: "Unsupported.", element: "ScriptTask_1" };
+  const retiredLocation = {
+    id: "ScriptTask_1",
+    type: "bpmn:ScriptTask",
+    containmentPath: "definitions/rootElements[0]/flowElements[3]",
+    subject: null,
+    requiredCapability: "executeElementType",
+  };
+  for (const element of [retiredLocation, "", 7, undefined, ["ScriptTask_1"]]) {
+    assert.throws(
+      () => decodeDefinitionDeployResult({
+        status: "rejected",
+        source,
+        semanticProfile: "profile",
+        diagnostics: [{ ...diagnostic, element }],
+      }),
+      /diagnostics\[0\]\.element must be a string|must not be empty/u,
+      JSON.stringify(element),
+    );
+  }
 });
 
 test("requires every rejection diagnostic to state its nullable element field", () => {
@@ -189,6 +210,7 @@ test("preserves legacy public API error order and appends route-specific codes",
     "executionPublicationUnavailable",
     "flowNodeMetricsUnavailable",
     "operatorAuditUnavailable",
+    "correlationUnavailable",
   ]);
 });
 
@@ -200,7 +222,7 @@ test("decodes every code in one exact route-owned public API error set", () => {
 });
 
 test("legacy Definition, Schedule, Message, and Search sets reject every later route code", () => {
-  const legacyRoutes = ["Definition", "Schedule", "Message", "Search"];
+  const legacyRoutes = ["Definition", "Schedule", "Message Start", "Search"];
   const laterRouteCodes = [
     PublicApiErrorCode.Forbidden,
     PublicApiErrorCode.FormValidationFailed,
@@ -210,6 +232,7 @@ test("legacy Definition, Schedule, Message, and Search sets reject every later r
     PublicApiErrorCode.ExecutionPublicationUnavailable,
     PublicApiErrorCode.FlowNodeMetricsUnavailable,
     PublicApiErrorCode.OperatorAuditUnavailable,
+    PublicApiErrorCode.CorrelationUnavailable,
   ];
   for (const route of legacyRoutes) {
     for (const code of laterRouteCodes) {

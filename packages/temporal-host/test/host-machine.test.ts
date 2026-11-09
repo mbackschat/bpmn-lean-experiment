@@ -165,6 +165,7 @@ const fakePort: KernelPort<null, FakeState, FakeInput> = {
   encodeState: () => null,
   decodeState: () => ({ view: views.completed }),
   scriptOf: () => null,
+  matching: () => [],
 };
 
 test("a committed input yields the new state and its host view", () => {

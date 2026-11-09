@@ -1,4 +1,10 @@
 import {
+  decodeEngineDeployment,
+  readEngineDeploymentEnvironment,
+  type EngineDeployment,
+} from "@bpmn-lean/platform-engine-gateway";
+
+import {
   validatePublicOrigin,
 } from "./public-origin.js";
 import type { ValidatedPublicOrigin } from "./public-origin.js";
@@ -41,6 +47,8 @@ export type PlatformServerConfig = Readonly<{
   temporalNamespace: string;
   temporalTaskQueue: string;
   temporalConnectTimeoutMs: number;
+  /** Required: the profile catalog, served requirements and effect bound have no safe default. */
+  engineDeployment: EngineDeployment;
   fakeActorId: string;
   fakeActorGroups: readonly string[];
   operationsGroupId: string;
@@ -141,6 +149,8 @@ export function readPlatformServerConfig(
       "PLATFORM_MAX_WORK_TASKS",
       defaultMaxWorkTasks,
     ),
+    // Read last, so a malformed ordinary setting is reported before a missing deployment.
+    engineDeployment: readEngineDeploymentEnvironment(environment),
   };
 }
 
@@ -171,12 +181,13 @@ export function snapshotPlatformServerConfig(
     config.temporalConnectTimeoutMs,
     "temporalConnectTimeoutMs",
   );
+  const engineDeployment = decodeEngineDeployment(structuredClone(config.engineDeployment));
   requireNonempty(config.fakeActorId, "fakeActorId");
   const fakeActorGroups = snapshotFakeActorGroups(config.fakeActorGroups);
   requireIdentifier(config.operationsGroupId, "operationsGroupId");
   requirePositiveSafeInteger(config.maxWorkProcesses, "maxWorkProcesses");
   requirePositiveSafeInteger(config.maxWorkTasks, "maxWorkTasks");
-  return { ...normalized, publicOrigin, fakeActorGroups };
+  return { ...normalized, publicOrigin, engineDeployment, fakeActorGroups };
 }
 
 function readStorageConfig(environment: NodeJS.ProcessEnv): Pick<

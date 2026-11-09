@@ -97,7 +97,9 @@ CREATE TABLE bpmn_platform.operate_incident_snapshot_incidents (
   incident_activation bigint NOT NULL CHECK (
     incident_activation BETWEEN 1 AND 9007199254740991
   ),
-  incident_generation integer NOT NULL CHECK (incident_generation = 1),
+  incident_generation bigint NOT NULL CHECK (
+    incident_generation BETWEEN 1 AND 9007199254740991
+  ),
   incident_json text NOT NULL CHECK (length(incident_json) > 0),
   PRIMARY KEY (
     generation,

@@ -3,15 +3,15 @@ import { useCallback, useMemo, useState } from "react";
 import type {
   CurrentCommittedExecution,
   DeployedDefinitionVersion,
+  StateOpenWait,
 } from "@bpmn-lean/platform-contracts";
 
 import { DefinitionDiagram } from "./definition-diagram.tsx";
 import type { DefinitionApiClient } from "./definitions-api.ts";
 import { BpmnDiagramMarkerKind } from "./bpmn-viewer-contract.ts";
 import {
-  displayScopeOccurrence,
-  executionScopeKey,
-  executionTokenKey,
+  displayOccurrence,
+  openWaitKey,
 } from "./process-instance-position-identity.ts";
 import styles from "./process-instance-execution-diagram.module.css";
 
@@ -21,7 +21,7 @@ export type ProcessInstanceExecutionDiagramProps = Readonly<{
   definition: DeployedDefinitionVersion;
 }>;
 
-/** Exact current published positions over the matching deployed definition presentation. */
+/** The open waits of the committed state over the matching deployed definition presentation. */
 export function ProcessInstanceExecutionDiagram({
   api,
   current,
@@ -37,11 +37,10 @@ export function ProcessInstanceExecutionDiagram({
       <div>
         <p className={styles.eyebrow}>Current committed position</p>
         <h3 id="execution-diagram-heading">Diagram</h3>
-        <p>Highlights combine every published token Sequence Flow and active wait element on the presentation whose source digest matches this confirmed definition.</p>
+        <p>Highlights mark every open wait of this Process instance on the presentation whose source digest matches this confirmed definition. Waits of called instances are listed, never drawn on this diagram.</p>
       </div>
       <div className={styles.guide} aria-label="Diagram position guide">
-        <span><span className={styles.tokenKey} aria-hidden="true" />Current control token</span>
-        <span><span className={styles.waitKey} aria-hidden="true" />Active wait</span>
+        <span><span className={styles.waitKey} aria-hidden="true" />Open wait</span>
       </div>
       <DefinitionDiagram
         api={api}
@@ -55,8 +54,8 @@ export function ProcessInstanceExecutionDiagram({
       <PositionList current={current} />
       {missing.length === 0 ? null : (
         <div className={styles.missing} role="status">
-          <strong>Published positions outside this diagram</strong>
-          <p>These called-Process or missing rendered elements remain part of the committed position and were not guessed onto this diagram.</p>
+          <strong>Open waits outside this diagram</strong>
+          <p>These open-wait elements have no rendered shape in this presentation and were not guessed onto it.</p>
           <ul>{missing.map((elementId) => <li key={elementId}><code>{elementId}</code></li>)}</ul>
         </div>
       )}
@@ -65,45 +64,36 @@ export function ProcessInstanceExecutionDiagram({
 }
 
 function PositionList({ current }: Readonly<{ current: CurrentCommittedExecution }>) {
+  const waits = current.state.openWaits;
   return (
     <div className={styles.positions}>
       <div>
-        <h4>Control tokens</h4>
-        {current.controlTokens.length === 0 ? <p>None.</p> : (
-          <ul>{current.controlTokens.map((token) => (
-            <li key={executionTokenKey(token)}>
-              <code>{token.sequenceFlowId}</code>, multiplicity {token.multiplicity}, owner <code>{displayScopeOccurrence(token.owner)}</code>
-            </li>
-          ))}</ul>
-        )}
+        <h4>Open waits</h4>
+        <OpenWaitList waits={waits.filter(isRootInstanceWait)} />
       </div>
       <div>
-        <h4>Active waits</h4>
-        {current.state.activeWaits.length === 0 ? <p>None.</p> : (
-          <ul>{current.state.activeWaits.map((wait) => (
-            <li key={JSON.stringify(["activeWait", wait.elementId, wait.kind])}>
-              <code>{wait.elementId}</code>, kind {wait.kind}, multiplicity {wait.multiplicity}
-            </li>
-          ))}</ul>
-        )}
-      </div>
-      <div>
-        <h4>Live scopes</h4>
-        {current.scopes.length === 0 ? <p>None.</p> : (
-          <ul>{current.scopes.map((scope) => (
-            <li key={executionScopeKey(scope)}>
-              <code>{scope.bpmnElementId}</code>, occurrence <code>{displayScopeOccurrence(scope.id)}</code>
-            </li>
-          ))}</ul>
-        )}
+        <h4>Open waits in called instances</h4>
+        <OpenWaitList waits={waits.filter((wait) => !isRootInstanceWait(wait))} />
       </div>
     </div>
   );
 }
 
+function OpenWaitList({ waits }: Readonly<{ waits: readonly StateOpenWait[] }>) {
+  return waits.length === 0 ? <p>None.</p> : (
+    <ul>{waits.map((wait) => (
+      <li key={openWaitKey(wait)}>
+        <code>{wait.id.elementId}</code>, kind <code>{wait.detail.kind}</code>, occurrence <code>{displayOccurrence(wait.id)}</code>
+      </li>
+    ))}</ul>
+  );
+}
+
+/** A wait runs in a called instance exactly when the engine names the called definition it runs in. */
+function isRootInstanceWait(wait: StateOpenWait): boolean {
+  return wait.definition === null;
+}
+
 function positionElementIds(current: CurrentCommittedExecution): readonly string[] {
-  return [...new Set([
-    ...current.controlTokens.map(({ sequenceFlowId }) => sequenceFlowId),
-    ...current.state.activeWaits.map(({ elementId }) => elementId),
-  ])];
+  return [...new Set(current.state.openWaits.filter(isRootInstanceWait).map(({ id }) => id.elementId))];
 }

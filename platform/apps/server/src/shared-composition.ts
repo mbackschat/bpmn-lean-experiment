@@ -37,6 +37,7 @@ import {
 } from "@bpmn-lean/platform-definitions";
 import {
   createBpmnEngineGatewayRuntime,
+  engineDeploymentRuntimeOptions,
   definitionScheduleHostId,
   definitionScheduleWorkflowIdBase,
   messageStartPublicationCommandId,
@@ -525,5 +526,6 @@ function createEngineGatewayRuntime(
     temporalNamespace: config.temporalNamespace,
     temporalTaskQueue: config.temporalTaskQueue,
     temporalConnectTimeoutMs: config.temporalConnectTimeoutMs,
+    ...engineDeploymentRuntimeOptions(config.engineDeployment),
   });
 }

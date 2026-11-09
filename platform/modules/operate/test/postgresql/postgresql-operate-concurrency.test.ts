@@ -17,6 +17,7 @@ import {
   occurrenceFirstPage,
   occurrenceRegistration,
   occurrenceSecondPage,
+  taskOccurrence,
 } from "../flow-node-occurrence-fixture.ts";
 import {
   incidentAudit,
@@ -189,16 +190,19 @@ if (baseUrl === undefined) {
     try {
       const outcomes = await Promise.allSettled([
         new PostgresqlFlowNodeOccurrenceRepository(left)
-          .applyPage(exactRegistration, occurrenceSecondPage(150)),
+          .applyPage(exactRegistration, occurrenceSecondPage()),
         new PostgresqlFlowNodeOccurrenceRepository(right)
-          .applyPage(exactRegistration, occurrenceSecondPage(160)),
+          .applyPage(exactRegistration, cancellingSecondPage()),
       ]);
       assert.equal(outcomes.filter(({ status }) => status === "fulfilled").length, 1);
       assert.equal(outcomes.filter(({ status }) => status === "rejected").length, 1);
       const retained = await new PostgresqlFlowNodeOccurrenceRepository(runtime)
         .get(registration.instance.processInstanceId);
-      assert.equal(retained?.occurrences.length, 1);
-      assert.equal(retained?.occurrences[0]?.terminal, "completed");
+      assert.equal(retained?.occurrences.length, 2);
+      assert.equal(
+        retained?.occurrences[1]?.terminal,
+        outcomes[0]?.status === "fulfilled" ? "completed" : "cancelled",
+      );
     } finally {
       await Promise.all([left.close(), right.close()]);
     }
@@ -231,10 +235,17 @@ function withChangedExecutionCommand(
   const batch = changed.batches[0];
   if (batch === undefined) throw new TypeError("fixture has no execution batch");
   (batch as unknown as { commandId: string }).commandId = commandId;
-  const transition = batch.transitions[0]?.transition;
-  if (transition?.kind !== "externalStimulus") {
-    throw new TypeError("fixture has no external stimulus transition");
-  }
-  (transition.stimulus as unknown as { commandId: string }).commandId = commandId;
   return changed;
+}
+
+function cancellingSecondPage(): ReturnType<typeof occurrenceSecondPage> {
+  const page = occurrenceSecondPage();
+  const batch = page.batches[0]!;
+  return {
+    ...page,
+    batches: [{
+      ...batch,
+      transitions: [{ revision: 3, started: [], ended: [{ occurrence: taskOccurrence, terminal: "cancelled" }] }],
+    }],
+  };
 }

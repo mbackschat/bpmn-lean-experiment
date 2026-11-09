@@ -65,7 +65,6 @@ export async function applyPreparedFlowNodeOccurrencePage(
     "mayBeAhead",
   );
   const completeObservation = next.status === FlowNodeOccurrenceProjectionStatus.Healthy &&
-    page.currentOpen !== null &&
     next.headRevision === next.producerHeadRevision;
   if (sameCanonicalValue(prior, next) && !completeObservation) return;
   await writePostgresqlOccurrenceHeader(session, next, completeObservation);

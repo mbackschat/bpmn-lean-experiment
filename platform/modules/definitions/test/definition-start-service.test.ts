@@ -65,6 +65,7 @@ test("starts the exact requested stored version instead of the latest version", 
     expectedSha256: "1".repeat(64),
     semanticProfile: "profile-v1",
     expectedProcessId: "Process_A",
+    version: 1,
     processInstanceId: "instance-1",
     initialVariables: command.initialVariables,
   }]);
@@ -178,6 +179,7 @@ test("snapshots the selected metadata and returned artifact before the starter y
     expectedSha256: "4".repeat(64),
     semanticProfile: "profile-v1",
     expectedProcessId: "Process_A",
+    version: 1,
     processInstanceId: "instance-1",
     initialVariables: [{
       name: "items",

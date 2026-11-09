@@ -13,6 +13,8 @@ declare const capability: PublicTimerStartCapability;
 capability.startEventId = "replacement";
 // @ts-expect-error Timer Start duration is immutable.
 capability.durationMs = 2000;
+// The engine may resolve no duration for a Timer Start.
+capability.durationMs satisfies number | null;
 
 declare const definition: DeployedDefinitionVersion;
 

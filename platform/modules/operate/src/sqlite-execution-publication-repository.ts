@@ -12,9 +12,9 @@ import type {
   CommittedTransitionBatch,
   CurrentCommittedExecution,
   ExecutionPublicationExport,
-  ExecutionPublicationIdentity,
   ExecutionPublicationPage,
   ExecutionPublicationRequest,
+  PublicationIdentity,
 } from "@bpmn-lean/platform-contracts";
 
 import {
@@ -186,9 +186,6 @@ export class SqliteExecutionPublicationRepository
         e.status,
         e.head_revision,
         e.producer_head_revision,
-        e.last_logical_time_ms,
-        e.control_tokens_json,
-        e.scopes_json,
         e.current_json,
         p.public_identity_json
       FROM execution_publications e
@@ -204,7 +201,7 @@ export class SqliteExecutionPublicationRepository
     const identity = projectionIdentityFromRegistration({ instance: publicInstance });
     const storedIdentity = decodeExactJson(
       requireText(row.identity_json, "identity_json"),
-      (value) => value as ExecutionPublicationIdentity,
+      (value) => value as PublicationIdentity,
       canonicalText,
     );
     if (!sameJson(identity, storedIdentity)) {
@@ -215,19 +212,6 @@ export class SqliteExecutionPublicationRepository
     const producerHeadRevision = row.producer_head_revision === null
       ? null
       : requirePositive(row.producer_head_revision, "producer_head_revision");
-    const storedLastLogicalTime = row.last_logical_time_ms === null
-      ? null
-      : requireNonnegative(row.last_logical_time_ms, "last_logical_time_ms");
-    const storedTokens = decodeExactJson(
-      requireText(row.control_tokens_json, "control_tokens_json"),
-      requireArray,
-      canonicalText,
-    );
-    const storedScopes = decodeExactJson(
-      requireText(row.scopes_json, "scopes_json"),
-      requireArray,
-      canonicalText,
-    );
     const storedCurrent = row.current_json === null
       ? null
       : decodeExactJson(
@@ -269,9 +253,6 @@ export class SqliteExecutionPublicationRepository
     }
     if (
       image.headRevision !== headRevision ||
-      image.lastLogicalTimeMs !== storedLastLogicalTime ||
-      !sameJson(image.controlTokens, storedTokens) ||
-      !sameJson(image.scopes, storedScopes) ||
       !sameJson(image.current, storedCurrent)
     ) {
       throw new TypeError("stored publication projection columns disagree");
@@ -336,19 +317,13 @@ export class SqliteExecutionPublicationRepository
         status,
         head_revision,
         producer_head_revision,
-        last_logical_time_ms,
-        control_tokens_json,
-        scopes_json,
         current_json
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(process_instance_id) DO UPDATE SET
         identity_json = excluded.identity_json,
         status = excluded.status,
         head_revision = excluded.head_revision,
         producer_head_revision = excluded.producer_head_revision,
-        last_logical_time_ms = excluded.last_logical_time_ms,
-        control_tokens_json = excluded.control_tokens_json,
-        scopes_json = excluded.scopes_json,
         current_json = excluded.current_json
     `).run(
       id,
@@ -356,9 +331,6 @@ export class SqliteExecutionPublicationRepository
       image.status,
       image.headRevision,
       image.producerHeadRevision,
-      image.lastLogicalTimeMs,
-      canonicalText(image.controlTokens),
-      canonicalText(image.scopes),
       image.current === null ? null : canonicalText(image.current),
     );
   }
@@ -502,11 +474,6 @@ function decodeExactJson<T>(
     throw new TypeError("stored publication JSON is not canonical");
   }
   return decoded;
-}
-
-function requireArray(value: unknown): readonly unknown[] {
-  if (!Array.isArray(value)) throw new TypeError("stored publication collection is invalid");
-  return value;
 }
 
 function requireText(value: SQLOutputValue | undefined, name: string): string {

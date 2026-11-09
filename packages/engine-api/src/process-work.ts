@@ -1,32 +1,23 @@
-/** Product 1 ownership of opaque Process Work addresses and narrowed task operations. */
-import type {
-  CompleteUserTaskInstanceStimulus,
-  OpenUserTask,
-  UserTaskInstanceId,
-} from "@bpmn-lean/semantic-core";
+/**
+ * Human work: the open User Task waits of a process, one task's detail with selected process variables, and task
+ * completion as the kernel's `completeUserTask` command on the task's occurrence.
+ */
+import { requireWireString, type EngineBinding, type EngineOccurrenceId, type JsonValue } from "./common.js";
+import type { EngineHost } from "./host.js";
 import {
-  StimulusKind,
-  cloneVariableBinding,
-  isWellFormedStimulus,
-  isWellFormedWireString,
-} from "@bpmn-lean/semantic-core";
-import {
-  TemporalProcessWorkDetailStatus,
-  TemporalProcessWorkObservationStatus,
-  completeTemporalProcessWork,
-  observeTemporalProcessWork,
-  readTemporalProcessWorkDetail,
-} from "@bpmn-lean/temporal-client/process-work";
-import type {
-  ProcessCommandResult,
-  TemporalProcessWorkClient,
-  UserTaskDetail,
-} from "@bpmn-lean/temporal-client/process-work";
-import {
-  engineProcessWorkflowIdFromLocator,
-  parseEngineProcessLocator,
-} from "./process-locator.js";
-import type { EngineProcessLocator } from "./process-locator.js";
+  ObservedKind,
+  observeProcess,
+  requireOccurrence,
+  sameOccurrence,
+  submitCommand,
+  waitsWithDetail,
+  type EngineCommandResult,
+  type EngineOpenWait,
+} from "./process-observation.js";
+import { parseEngineProcessLocator, type EngineProcessLocator } from "./process-locator.js";
+
+/** The canonical result's detail form of a User Task wait. */
+const userTaskDetail = "userTask";
 
 export enum EngineOpenWorkStatus {
   Open = "open",
@@ -36,16 +27,8 @@ export enum EngineOpenWorkStatus {
 }
 
 export type EngineOpenWorkResult =
-  | Readonly<{
-      status: EngineOpenWorkStatus.Open;
-      openUserTasks: readonly OpenUserTask[];
-    }>
-  | Readonly<{
-      status:
-        | EngineOpenWorkStatus.Closed
-        | EngineOpenWorkStatus.Unknown
-        | EngineOpenWorkStatus.Unavailable;
-    }>;
+  | Readonly<{ status: EngineOpenWorkStatus.Open; openUserTasks: readonly EngineOpenWait[] }>
+  | Readonly<{ status: EngineOpenWorkStatus.Closed | EngineOpenWorkStatus.Unknown | EngineOpenWorkStatus.Unavailable }>;
 
 export enum EngineWorkDetailStatus {
   Found = "found",
@@ -55,151 +38,82 @@ export enum EngineWorkDetailStatus {
   Unavailable = "unavailable",
 }
 
+export type EngineWorkDetail = Readonly<{ task: EngineOpenWait; inputVariables: readonly EngineBinding[] }>;
+
 export type EngineWorkDetailResult =
+  | Readonly<{ status: EngineWorkDetailStatus.Found; detail: EngineWorkDetail }>
   | Readonly<{
-      status: EngineWorkDetailStatus.Found;
-      detail: UserTaskDetail;
-    }>
-  | Readonly<{
-      status:
-        | EngineWorkDetailStatus.NotFound
-        | EngineWorkDetailStatus.Closed
-        | EngineWorkDetailStatus.Unknown
-        | EngineWorkDetailStatus.Unavailable;
+      status: EngineWorkDetailStatus.NotFound | EngineWorkDetailStatus.Closed | EngineWorkDetailStatus.Unknown |
+        EngineWorkDetailStatus.Unavailable;
     }>;
 
+/** `hostingProcessInstanceId` is the instance the locator was minted for; a chain hosting another one is unknown. */
 export type EngineOpenWorkRequest = Readonly<{
-  temporalClient: TemporalProcessWorkClient;
+  host: EngineHost;
   locator: EngineProcessLocator;
   hostingProcessInstanceId: string;
 }>;
 
 export type EngineWorkDetailRequest = EngineOpenWorkRequest & Readonly<{
-  taskId: UserTaskInstanceId;
+  taskId: EngineOccurrenceId;
   inputVariableNames: readonly string[];
 }>;
 
-export type EngineWorkCompletionStimulus = Omit<
-  CompleteUserTaskInstanceStimulus,
-  "kind"
-> & Readonly<{
-  kind: "completeUserTaskInstance";
+export type EngineWorkCompletion = Readonly<{
+  commandId: string;
+  taskId: EngineOccurrenceId;
+  values: readonly EngineBinding[];
 }>;
 
-export type EngineCompleteWorkRequest = EngineOpenWorkRequest & Readonly<{
-  stimulus: EngineWorkCompletionStimulus;
-}>;
+export type EngineCompleteWorkRequest = EngineOpenWorkRequest & Readonly<{ completion: EngineWorkCompletion }>;
 
-/** Reads the exact committed open User Task set without exposing host addressing. */
-export async function observeOpenWork(
-  request: EngineOpenWorkRequest,
-): Promise<EngineOpenWorkResult> {
-  const snapshot = snapshotBaseRequest(request);
-  const observed = await observeTemporalProcessWork(
-    snapshot.temporalClient,
-    engineProcessWorkflowIdFromLocator(snapshot.locator),
-    snapshot.hostingProcessInstanceId,
-  );
-  switch (observed.status) {
-    case TemporalProcessWorkObservationStatus.Open:
-      return {
-        status: EngineOpenWorkStatus.Open,
-        openUserTasks: observed.openUserTasks,
-      };
-    case TemporalProcessWorkObservationStatus.Closed:
+export async function observeOpenWork(request: EngineOpenWorkRequest): Promise<EngineOpenWorkResult> {
+  const observed = await observeProcess(request.host, parseEngineProcessLocator(request.locator), request.hostingProcessInstanceId);
+  switch (observed.kind) {
+    case ObservedKind.Running:
+      return { status: EngineOpenWorkStatus.Open, openUserTasks: waitsWithDetail(observed.state, userTaskDetail) };
+    case ObservedKind.Closed:
       return { status: EngineOpenWorkStatus.Closed };
-    case TemporalProcessWorkObservationStatus.Unknown:
+    case ObservedKind.Unknown:
       return { status: EngineOpenWorkStatus.Unknown };
-    case TemporalProcessWorkObservationStatus.Unavailable:
+    case ObservedKind.Unavailable:
       return { status: EngineOpenWorkStatus.Unavailable };
   }
 }
 
-/** Reads exact task detail and requested Process variables at the stored hosting address. */
-export async function readWorkDetail(
-  request: EngineWorkDetailRequest,
-): Promise<EngineWorkDetailResult> {
-  const snapshot = snapshotBaseRequest(request);
-  const described = await readTemporalProcessWorkDetail(
-    snapshot.temporalClient,
-    engineProcessWorkflowIdFromLocator(snapshot.locator),
-    snapshot.hostingProcessInstanceId,
-    {
-      taskId: cloneTaskId(request.taskId),
-      inputVariableNames: [...request.inputVariableNames],
-    },
-  );
-  switch (described.status) {
-    case TemporalProcessWorkDetailStatus.Found:
-      return { status: EngineWorkDetailStatus.Found, detail: described.detail };
-    case TemporalProcessWorkDetailStatus.NotFound:
-      return { status: EngineWorkDetailStatus.NotFound };
-    case TemporalProcessWorkDetailStatus.Closed:
+/** The task's detail and, in the requested order, those requested instance variables the instance has. */
+export async function readWorkDetail(request: EngineWorkDetailRequest): Promise<EngineWorkDetailResult> {
+  const taskId = requireOccurrence(request.taskId, "taskId");
+  const names = request.inputVariableNames.map((name) => requireWireString(name, "inputVariableNames"));
+  const observed = await observeProcess(request.host, parseEngineProcessLocator(request.locator), request.hostingProcessInstanceId);
+  switch (observed.kind) {
+    case ObservedKind.Running: {
+      const task = waitsWithDetail(observed.state, userTaskDetail).find((wait) => sameOccurrence(wait.id, taskId));
+      if (task === undefined) return { status: EngineWorkDetailStatus.NotFound };
+      const variables = observed.state.variables;
+      const inputVariables = names.flatMap((name) => variables.filter((binding) => binding.name === name));
+      return { status: EngineWorkDetailStatus.Found, detail: { task, inputVariables } };
+    }
+    case ObservedKind.Closed:
       return { status: EngineWorkDetailStatus.Closed };
-    case TemporalProcessWorkDetailStatus.Unknown:
+    case ObservedKind.Unknown:
       return { status: EngineWorkDetailStatus.Unknown };
-    case TemporalProcessWorkDetailStatus.Unavailable:
+    case ObservedKind.Unavailable:
       return { status: EngineWorkDetailStatus.Unavailable };
   }
 }
 
-/** Submits the exact existing content-bound task completion through the private locator. */
-export function completeWork(
-  request: EngineCompleteWorkRequest,
-): Promise<ProcessCommandResult> {
-  const snapshot = snapshotBaseRequest(request);
-  return completeTemporalProcessWork(
-    snapshot.temporalClient,
-    engineProcessWorkflowIdFromLocator(snapshot.locator),
-    snapshot.hostingProcessInstanceId,
-    cloneCompletion(request.stimulus),
-  );
-}
-
-function snapshotBaseRequest(
-  request: EngineOpenWorkRequest,
-): EngineOpenWorkRequest {
-  const locator = parseEngineProcessLocator(request.locator);
-  requireNonemptyWireString(
-    request.hostingProcessInstanceId,
-    "hostingProcessInstanceId",
-  );
-  return {
-    temporalClient: request.temporalClient,
-    locator,
-    hostingProcessInstanceId: request.hostingProcessInstanceId,
-  };
-}
-
-function requireNonemptyWireString(value: string, name: string): string {
-  if (
-    typeof value !== "string" ||
-    value.length === 0 ||
-    !isWellFormedWireString(value)
-  ) {
-    throw new TypeError(`${name} must be a nonempty well-formed Unicode string`);
-  }
-  return value;
-}
-
-function cloneCompletion(
-  stimulus: EngineWorkCompletionStimulus,
-): CompleteUserTaskInstanceStimulus {
-  if (!isWellFormedStimulus(stimulus)) {
-    throw new TypeError("Expected one well-formed completion stimulus");
-  }
-  return {
-    kind: StimulusKind.CompleteUserTaskInstance,
-    commandId: stimulus.commandId,
-    taskId: cloneTaskId(stimulus.taskId),
-    submittedValues: stimulus.submittedValues.map(cloneVariableBinding),
-  };
-}
-
-function cloneTaskId(taskId: UserTaskInstanceId): UserTaskInstanceId {
-  return {
-    processInstanceId: taskId.processInstanceId,
-    elementId: taskId.elementId,
-    activation: taskId.activation,
-  };
+/** Completes the task with the submitted values; the kernel judges the command against the current state. */
+export function completeWork(request: EngineCompleteWorkRequest): Promise<EngineCommandResult> {
+  const taskId = requireOccurrence(request.completion.taskId, "taskId");
+  const values = request.completion.values.map((binding) => ({
+    name: requireWireString(binding.name, "values.name"),
+    value: structuredClone(binding.value),
+  }));
+  return submitCommand(request.host, parseEngineProcessLocator(request.locator), request.hostingProcessInstanceId, {
+    kind: "command",
+    commandId: requireWireString(request.completion.commandId, "commandId"),
+    occurrence: taskId,
+    action: { kind: "completeUserTask", values: values as unknown as JsonValue },
+  });
 }

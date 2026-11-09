@@ -46,7 +46,6 @@ test("serves the exact projected page and canonical export bytes", async () => {
     new Uint8Array(await exportResponse!.arrayBuffer()),
     serializeExecutionPublicationExport(publicationExport(), {
       definition: firstPage().definition,
-      processId: "Process_1",
       processInstanceId: "Instance_1",
     }),
   );
@@ -134,9 +133,8 @@ test("authorizes before reconciliation or any projected repository read", async 
   assert.equal(calls.exports, 0);
 });
 
-test("returns one private 503 body for notReady, unavailable, and gap", async () => {
+test("returns one private 503 body for unavailable and gap", async () => {
   for (const kind of [
-    ExecutionPublicationReconciliationKind.NotReady,
     ExecutionPublicationReconciliationKind.Unavailable,
     ExecutionPublicationReconciliationKind.Gap,
   ] as const) {
@@ -254,7 +252,6 @@ function publicationExport(): ExecutionPublicationExport {
   return {
     format: executionPublicationExportFormat,
     definition: page.definition,
-    processId: page.processId,
     processInstanceId: page.processInstanceId,
     headRevision: page.headRevision,
     batches: [batch],

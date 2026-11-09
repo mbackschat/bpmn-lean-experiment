@@ -1,72 +1,97 @@
-/** Product 1 Process Work locators preserve exact producer addresses behind one private token. */
+/**
+ * Human work through an opaque locator: the open User Task waits of a running process, one task's detail with the
+ * requested instance variables, completion as the kernel's command, and the closed and unknown cases.
+ */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  EngineDefinitionStartStatus,
   EngineOpenWorkStatus,
-  engineProcessWorkLocatorForCanonicalProcess,
+  EngineWorkDetailStatus,
+  completeWork,
+  engineProcessLocatorForCanonicalProcess,
   observeOpenWork,
-  parseEngineProcessWorkLocator,
-  serializeEngineProcessWorkLocator,
+  readWorkDetail,
+  startBpmnDefinitionVersion,
 } from "@bpmn-lean/engine-api";
 
-test("round-trips canonical and service-returned locators without exposing a field shape", () => {
-  const direct = engineProcessWorkLocatorForCanonicalProcess("semantic-instance-42");
-  const schedule = parseEngineProcessWorkLocator(
-    "bpmn-process-work-v1:execution%2Fid%20%E2%9C%93%2042",
-  );
+import { limits, scenarioBytes, sha256, standardProfile, testHost, type TestHost } from "./support.ts";
 
-  assert.match(serializeEngineProcessWorkLocator(direct), /^bpmn-process-work-v1:/u);
-  assert.equal(
-    serializeEngineProcessWorkLocator(schedule),
-    "bpmn-process-work-v1:execution%2Fid%20%E2%9C%93%2042",
-  );
-  assert.equal(
-    serializeEngineProcessWorkLocator(parseEngineProcessWorkLocator(
-      serializeEngineProcessWorkLocator(schedule),
-    )),
-    serializeEngineProcessWorkLocator(schedule),
-  );
-  assert.equal(typeof schedule, "string");
-  assert.throws(
-    () => parseEngineProcessWorkLocator("bpmn-process-work-v1:%2f"),
-    /canonical v1 token/u,
-  );
+const taskId = { processInstanceId: "work-instance", elementId: "UserTask_Approve", activation: 1 };
+const locator = engineProcessLocatorForCanonicalProcess("work-instance");
+
+async function started(): Promise<TestHost> {
+  const host = testHost();
+  const bytes = await scenarioBytes("user-task-preserved-notation/process.bpmn");
+  const start = await startBpmnDefinitionVersion({
+    host,
+    bytes,
+    sourceId: "approval",
+    expectedSha256: await sha256(bytes),
+    profile: standardProfile,
+    expectedProcessId: "Process_SequentialUserTask",
+    version: 1,
+    processInstanceId: "work-instance",
+    initialVariables: [{ name: "requester", value: { kind: "string", value: "ada" } }],
+    limits,
+  });
+  assert.equal(start.status, EngineDefinitionStartStatus.Started);
+  return host;
+}
+
+test("a running process shows its open User Task with the kernel's task detail", async () => {
+  const host = await started();
+  const work = await observeOpenWork({ host, locator, hostingProcessInstanceId: "work-instance" });
+  assert.equal(work.status, EngineOpenWorkStatus.Open);
+  if (work.status !== EngineOpenWorkStatus.Open) return;
+  assert.equal(work.openUserTasks.length, 1);
+  assert.deepEqual(work.openUserTasks[0]?.id, taskId);
+  assert.equal(work.openUserTasks[0]?.detail.kind, "userTask");
 });
 
-test("addresses Schedule work only through the service execution locator", async () => {
-  const configured = parseEngineProcessWorkLocator(
-    "bpmn-process-work-v1:configured-base",
-  );
-  const execution = parseEngineProcessWorkLocator(
-    "bpmn-process-work-v1:service-execution",
-  );
-  const task = {
-    id: { processInstanceId: "host", elementId: "Task", activation: 1 },
-    name: null,
-    state: "active",
-  };
-  const client = {
-    getHandle: (workflowId: string) => ({
-      client: {
-        connection: { withDeadline: async (_deadline: number, invoke: () => Promise<unknown>) => invoke() },
-      },
-      query: async () => {
-        if (workflowId === "service-execution") return [task];
-        throw Object.assign(new Error("not found"), { name: "WorkflowNotFoundError" });
-      },
-      result: async () => {
-        throw Object.assign(new Error("not found"), { name: "WorkflowNotFoundError" });
-      },
-    }),
-  } as never;
+test("task detail carries the requested instance variables that exist, in the requested order", async () => {
+  const host = await started();
+  const detail = await readWorkDetail({
+    host, locator, hostingProcessInstanceId: "work-instance", taskId, inputVariableNames: ["absent", "requester"] });
+  assert.equal(detail.status, EngineWorkDetailStatus.Found);
+  if (detail.status === EngineWorkDetailStatus.Found) {
+    assert.deepEqual(detail.detail.inputVariables, [{ name: "requester", value: { kind: "string", value: "ada" } }]);
+  }
+  const other = await readWorkDetail({
+    host, locator, hostingProcessInstanceId: "work-instance", taskId: { ...taskId, activation: 2 }, inputVariableNames: [] });
+  assert.equal(other.status, EngineWorkDetailStatus.NotFound);
+});
 
-  assert.deepEqual(
-    await observeOpenWork({ temporalClient: client, locator: execution, hostingProcessInstanceId: "host" }),
-    { status: EngineOpenWorkStatus.Open, openUserTasks: [task] },
-  );
-  assert.notDeepEqual(
-    await observeOpenWork({ temporalClient: client, locator: configured, hostingProcessInstanceId: "host" }),
-    { status: EngineOpenWorkStatus.Open, openUserTasks: [task] },
-  );
+test("completion commits through the kernel; the ended process is closed to further work", async () => {
+  const host = await started();
+  const completion = { commandId: "complete-1", taskId, values: [] };
+  assert.deepEqual(await completeWork({ host, locator, hostingProcessInstanceId: "work-instance", completion }),
+    { kind: "semantic", commandId: "complete-1", outcome: "committed", code: null });
+  assert.deepEqual(await observeOpenWork({ host, locator, hostingProcessInstanceId: "work-instance" }),
+    { status: EngineOpenWorkStatus.Closed });
+  assert.deepEqual(await completeWork({ host, locator, hostingProcessInstanceId: "work-instance", completion }),
+    { kind: "processClosed", commandId: "complete-1", receipt: { processInstanceId: "work-instance", status: "completed" } });
+});
+
+test("a stale completion is the kernel's rejection with its code", async () => {
+  const host = await started();
+  const result = await completeWork({
+    host, locator, hostingProcessInstanceId: "work-instance",
+    completion: { commandId: "stale", taskId: { ...taskId, activation: 7 }, values: [] },
+  });
+  assert.equal(result.kind, "semantic");
+  if (result.kind === "semantic") {
+    assert.equal(result.outcome, "rejected");
+    assert.notEqual(result.code, null);
+  }
+});
+
+test("a locator the host does not know, or one minted for another instance, is unknown", async () => {
+  const host = await started();
+  assert.deepEqual(await observeOpenWork({
+    host, locator: engineProcessLocatorForCanonicalProcess("nobody"), hostingProcessInstanceId: "nobody" }),
+    { status: EngineOpenWorkStatus.Unknown });
+  assert.deepEqual(await observeOpenWork({ host, locator, hostingProcessInstanceId: "someone-else" }),
+    { status: EngineOpenWorkStatus.Unknown });
 });

@@ -69,6 +69,7 @@ test("prepares one exact shared incident action without fleet observation", asyn
           kind: "semantic",
           commandId: request.stimulus.commandId,
           outcome: "committed",
+          code: null,
         };
       },
     };

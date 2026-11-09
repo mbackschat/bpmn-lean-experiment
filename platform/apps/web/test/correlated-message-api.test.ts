@@ -14,6 +14,7 @@ import type {
 
 import {
   CorrelatedMessageApiClient,
+  CorrelatedMessageUnavailableError,
 } from "../src/correlated-message-api.ts";
 import {
   DefinitionApiError,
@@ -240,6 +241,37 @@ test("decodes route-owned API errors without collapsing conflict into transport 
       client.publish(commandId, capabilities, correlatedMessage, request),
       (error: unknown) => error instanceof DefinitionApiError &&
         error.status === status && error.code === code,
+    );
+  }
+});
+
+test("surfaces correlationUnavailable as a distinct unavailable outcome of both routes", async () => {
+  const unavailable = () => jsonResponse(503, {
+    error: {
+      code: PublicApiErrorCode.CorrelationUnavailable,
+      message: "Message correlation is unavailable.",
+    },
+  });
+  const client = new CorrelatedMessageApiClient("https://platform.test/", async () => unavailable());
+  const isUnavailable = (error: unknown) => error instanceof CorrelatedMessageUnavailableError &&
+    error.message === "Message correlation is unavailable.";
+
+  await assert.rejects(client.getCapabilities(definition), isUnavailable);
+  await assert.rejects(client.publish(commandId, capabilities, correlatedMessage, request), isUnavailable);
+});
+
+test("rejects a 503 that carries another public code and a correlationUnavailable outside 503", async () => {
+  for (const [status, code] of [
+    [503, PublicApiErrorCode.InternalFailure],
+    [500, PublicApiErrorCode.CorrelationUnavailable],
+  ] as const) {
+    const client = new CorrelatedMessageApiClient(
+      "https://platform.test/",
+      async () => jsonResponse(status, { error: { code, message: `public ${code}` } }),
+    );
+    await assert.rejects(
+      client.publish(commandId, capabilities, correlatedMessage, request),
+      DefinitionProtocolError,
     );
   }
 });

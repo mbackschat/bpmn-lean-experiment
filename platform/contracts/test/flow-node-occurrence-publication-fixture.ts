@@ -1,97 +1,91 @@
-export const occurrenceDefinition = {
-  compiler: "bpmn-source-semantic-process",
-  semanticProfile: "profile",
-  sourceId: "metrics.bpmn",
-  sourceSha256: "a".repeat(64),
-  sourceOverlay: null,
-} as const;
+import type {
+  FlowNodeOccurrenceBatch,
+  FlowNodeOccurrenceKey,
+  FlowNodeOccurrencePage,
+} from "@bpmn-lean/platform-contracts";
 
-export const occurrenceIdentity = {
-  definition: occurrenceDefinition,
-  processId: "MetricsProcess",
-  processInstanceId: "instance-1",
-} as const;
+import {
+  completeBatch,
+  elementFreeBatch,
+  publicationIdentity,
+  startBatch,
+} from "./execution-publication-fixture.ts";
 
-const rootOwner = {
-  processInstanceId: occurrenceIdentity.processInstanceId,
-  definitionScopeId: occurrenceIdentity.processId,
+export const startEvent = {
+  processInstanceId: publicationIdentity.processInstanceId,
+  elementId: "StartEvent_1",
   activation: 1,
-} as const;
+  role: "element",
+} as const satisfies FlowNodeOccurrenceKey;
 
-const startEventId = {
-  processInstanceId: occurrenceIdentity.processInstanceId,
-  startRevision: 1,
-  startIndex: 0,
-} as const;
+export const reviewTask = {
+  processInstanceId: publicationIdentity.processInstanceId,
+  elementId: "UserTask_Review",
+  activation: 1,
+  role: "element",
+} as const satisfies FlowNodeOccurrenceKey;
 
-const userTaskId = {
-  processInstanceId: occurrenceIdentity.processInstanceId,
-  startRevision: 1,
-  startIndex: 1,
-} as const;
+export const endEvent = {
+  processInstanceId: publicationIdentity.processInstanceId,
+  elementId: "EndEvent_1",
+  activation: 1,
+  role: "element",
+} as const satisfies FlowNodeOccurrenceKey;
 
-export function occurrencePage() {
+// The occurrence batches below are aligned with the execution batches of the same names: the same command and the
+// same revision range, one batch per committed input.
+
+export const startOccurrenceBatch = {
+  commandId: startBatch.commandId,
+  fromRevision: startBatch.fromRevision,
+  throughRevision: startBatch.throughRevision,
+  transitions: [
+    { revision: 1, started: [{ occurrence: startEvent, owner: 0, sourceType: "startEvent" }], ended: [] },
+    {
+      revision: 2,
+      started: [{ occurrence: reviewTask, owner: 0, sourceType: "userTask" }],
+      ended: [{ occurrence: startEvent, terminal: "completed" }],
+    },
+  ],
+} as const satisfies FlowNodeOccurrenceBatch;
+
+/** An input that began and ended no occurrence still has its batch, with no transitions. */
+export const emptyOccurrenceBatch = {
+  commandId: elementFreeBatch.commandId,
+  fromRevision: elementFreeBatch.fromRevision,
+  throughRevision: elementFreeBatch.throughRevision,
+  transitions: [],
+} as const satisfies FlowNodeOccurrenceBatch;
+
+export const completeOccurrenceBatch = {
+  commandId: completeBatch.commandId,
+  fromRevision: completeBatch.fromRevision,
+  throughRevision: completeBatch.throughRevision,
+  transitions: [
+    { revision: 5, started: [], ended: [{ occurrence: reviewTask, terminal: "completed" }] },
+    { revision: 6, started: [{ occurrence: endEvent, owner: 0, sourceType: "endEvent" }], ended: [] },
+    { revision: 7, started: [], ended: [{ occurrence: endEvent, terminal: "completed" }] },
+  ],
+} as const satisfies FlowNodeOccurrenceBatch;
+
+/** The page from the first revision to the head at revision 3. */
+export function occurrencePage(): FlowNodeOccurrencePage {
   return {
-    ...occurrenceIdentity,
+    ...publicationIdentity,
     requestedAfterRevision: 0,
-    pageThroughRevision: 1,
-    headRevision: 1,
-    batches: [{
-      commandId: "start",
-      fromRevision: 0,
-      throughRevision: 1,
-      committedAtEpochMs: 100,
-      transitions: [{
-        revision: 1,
-        lifecycle: {
-          started: [{
-            id: startEventId,
-            processId: occurrenceIdentity.processId,
-            elementId: "Start",
-            owner: rootOwner,
-          }, {
-            id: userTaskId,
-            processId: occurrenceIdentity.processId,
-            elementId: "Task",
-            owner: rootOwner,
-          }],
-          ended: [{ id: startEventId, terminal: "completed" }],
-        },
-      }],
-    }],
-    currentOpen: [{
-      id: userTaskId,
-      processId: occurrenceIdentity.processId,
-      elementId: "Task",
-      owner: rootOwner,
-      startedAtEpochMs: 100,
-    }],
-  } as const;
+    pageThroughRevision: 3,
+    headRevision: 3,
+    batches: [startOccurrenceBatch],
+  };
 }
 
-export function positiveCursorPage() {
-  const page = occurrencePage();
+/** A page after revision 3 that ends the task the page's cursor hid the start of. */
+export function positiveCursorPage(): FlowNodeOccurrencePage {
   return {
-    ...occurrenceIdentity,
-    requestedAfterRevision: 1,
-    pageThroughRevision: 2,
-    headRevision: 2,
-    batches: [{
-      commandId: "complete-task",
-      fromRevision: 1,
-      throughRevision: 2,
-      committedAtEpochMs: 140,
-      transitions: [{
-        revision: 2,
-        lifecycle: {
-          started: [],
-          ended: [{
-            id: page.batches[0]!.transitions[0]!.lifecycle.started[1]!.id,
-            terminal: "completed",
-          }],
-        },
-      }],
-    }],
-    currentOpen: [],
-  } as const;
+    ...publicationIdentity,
+    requestedAfterRevision: 3,
+    pageThroughRevision: 7,
+    headRevision: 7,
+    batches: [emptyOccurrenceBatch, completeOccurrenceBatch],
+  };
 }

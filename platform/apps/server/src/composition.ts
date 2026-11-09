@@ -42,6 +42,7 @@ import {
 } from "@bpmn-lean/platform-definitions";
 import {
   createBpmnEngineGatewayRuntime,
+  engineDeploymentRuntimeOptions,
   definitionScheduleHostId,
   definitionScheduleWorkflowIdBase,
   messageStartPublicationCommandId,
@@ -142,6 +143,7 @@ async function createLocalPlatformServer(
     temporalNamespace: snapshot.temporalNamespace,
     temporalTaskQueue: snapshot.temporalTaskQueue,
     temporalConnectTimeoutMs: snapshot.temporalConnectTimeoutMs,
+    ...engineDeploymentRuntimeOptions(snapshot.engineDeployment),
   });
   const artifacts = new FileArtifactStore(
     join(snapshot.dataDirectory, "artifacts"),

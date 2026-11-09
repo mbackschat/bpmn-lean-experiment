@@ -59,22 +59,19 @@ export function decodePublicEffectOccurrenceId(
   };
 }
 
-/** Decodes the closed generation-1 incident identity. */
+/** Decodes one incident identity. */
 export function decodePublicEffectIncidentId(
   value: unknown,
   label = "effect incident identity",
 ): PublicEffectIncidentId {
   requireObject(value, label);
   requireExactKeys(value, label, ["effectId", "generation"]);
-  if (readOwn(value, "generation") !== 1) {
-    throw new TypeError(`${label}.generation must be 1`);
-  }
   return {
     effectId: decodePublicEffectOccurrenceId(
       readOwn(value, "effectId"),
       `${label}.effectId`,
     ),
-    generation: 1,
+    generation: requirePositiveSafeInteger(readOwn(value, "generation"), `${label}.generation`),
   };
 }
 

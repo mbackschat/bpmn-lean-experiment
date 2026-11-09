@@ -3,10 +3,33 @@
  * pure core the Workflow uses (`applyInput`, the publication log, the host clock rule), with no Temporal server.
  *
  * It realizes only what a client observes: start verdicts under a Workflow ID used once, Update verdicts (a rejection
- * carries no revision, as a refused Update never enters history), queries, and the retained description. It drives no
- * timers or Activities; a test that needs them uses the hosted witnesses.
+ * carries no revision, as a refused Update never enters history), queries, correlated publications routed by the same
+ * decisions as the ingress Workflow (`correlation.ts`), and the retained description. Every chain's state is at hand,
+ * so a publication asks the running chains of its scope directly and no registration is needed. It drives no timers or
+ * Activities; a test that needs them uses the hosted witnesses.
  */
-import { Scheduling, workflowType, type CommandResult, type HostConfig, type HostSnapshot } from "./host-contract.js";
+import {
+  deliveryStimulus,
+  delivered,
+  emptyIngress,
+  ingressKey,
+  publicationContent,
+  recorded,
+  route,
+  settle,
+  unrouted,
+  Routing,
+  type IngressState,
+} from "./correlation.js";
+import {
+  Scheduling,
+  workflowType,
+  type CommandResult,
+  type CorrelatedPublication,
+  type HostConfig,
+  type HostSnapshot,
+  type PublicationResult,
+} from "./host-contract.js";
 import { applyInput, assertNever, clockStimulus, hostOwnsLogicalTime } from "./host-machine.js";
 import { kernelPort } from "./kernel-port.js";
 import { Route, type HostView, type JsonValue, type KernelPort } from "./port.js";
@@ -19,6 +42,7 @@ const running = "running";
 interface Chain<P, S> {
   readonly program: P;
   readonly config: HostConfig;
+  readonly correlationScope: string | null;
   readonly memo: Readonly<Record<string, JsonValue>> | null;
   instance: { readonly state: S; readonly view: HostView } | null;
   log: PublicationLog;
@@ -42,6 +66,7 @@ export class UnknownWorkflow extends Error {
 
 class MemoryHost<P, S, I> implements MemoryProcessHost {
   readonly #chains = new Map<string, Chain<P, S>>();
+  readonly #ingresses = new Map<string, IngressState>();
 
   constructor(
     private readonly port: KernelPort<P, S, I>,
@@ -55,6 +80,7 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
     const chain: Chain<P, S> = {
       program,
       config: request.config,
+      correlationScope: request.correlationScope ?? null,
       memo: request.memo ?? null,
       instance: null,
       log: openLog(initialCursor),
@@ -72,6 +98,34 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
 
   deliver(workflowId: string, stimulus: JsonValue): Promise<CommandResult> {
     return this.#submit(workflowId, stimulus, Route.Deliver);
+  }
+
+  async publish(publication: CorrelatedPublication): Promise<PublicationResult> {
+    const key = ingressKey(publication.correlationScope, publication.channel);
+    const ingress = this.#ingresses.get(key) ?? emptyIngress;
+    const content = publicationContent(publication);
+    const known = recorded(ingress, publication.commandId, content);
+    if (known !== null) return known;
+    // The ingress Workflow's validator: a publication the kernel's codec cannot carry is the caller's fault.
+    this.port.decodeStimulus(deliveryStimulus(publication, { processInstanceId: "", elementId: "", activation: 0 }));
+    const ordinal = ingress.ordinal + 1;
+    const scanned = [...this.#chains].filter(([, chain]) => chain.correlationScope === publication.correlationScope)
+      .map(([workflowId, chain]) => ({
+        workflowId,
+        occurrences: chain.instance === null || !this.#running(chain) ? []
+          : this.port.matching(chain.program, chain.instance.state, publication.channel, publication.correlation),
+      }));
+    const routed = route(scanned);
+    let result: PublicationResult;
+    if (routed.kind === Routing.One) {
+      const chain = this.#chain(routed.target.workflowId);
+      result = delivered(ordinal, routed.target,
+        this.#apply(chain, deliveryStimulus(publication, routed.target.occurrence), Route.Deliver));
+    } else {
+      result = unrouted(ordinal, routed);
+    }
+    this.#ingresses.set(key, settle({ ...ingress, ordinal }, { commandId: publication.commandId, content, result }));
+    return result;
   }
 
   async arrive(workflowId: string, stimulus: JsonValue): Promise<CommandResult> {
@@ -97,7 +151,7 @@ class MemoryHost<P, S, I> implements MemoryProcessHost {
 
   async hostView(workflowId: string): Promise<HostSnapshot> {
     const chain = this.#chain(workflowId);
-    return { revision: chain.log.cursor.revision, view: chain.instance?.view ?? null, halt: null };
+    return { revision: chain.log.cursor.revision, view: chain.instance?.view ?? null, halt: null, registering: false };
   }
 
   async publication(workflowId: string, afterRevision: number, limit = 100): Promise<PublicationPage> {

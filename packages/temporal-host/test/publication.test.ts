@@ -41,7 +41,21 @@ test("an element that began in an earlier input keeps the source type its start 
     { cause: { kind: "arrive", flow: "Flow_Again" }, element: "Task_Probe", owner: 0, started: [], ended: [] },
   ]);
   assert.equal(revisit.execution[1]!.transitions[0]!.sourceType, "task");
-  assert.deepEqual(revisit.occurrences.map((batch) => batch.commandId), ["start"]);
+});
+
+test("every execution batch has its occurrence batch over the same revisions, empty when no occurrence started or ended", () => {
+  const started = publication.appendJournal(publication.openLog(publication.initialCursor), "start", views.effectOpen.journal);
+  const revisit = publication.appendJournal(started, "again", [
+    { cause: { kind: "arrive", flow: "Flow_Again" }, element: "Task_Probe", owner: 0, started: [], ended: [] },
+  ]);
+  const positions = (batches: readonly { commandId: string; fromRevision: number; throughRevision: number }[]) =>
+    batches.map(({ commandId, fromRevision, throughRevision }) => [commandId, fromRevision, throughRevision]);
+  assert.deepEqual(positions(revisit.occurrences), positions(revisit.execution));
+  assert.deepEqual(revisit.occurrences[1], { commandId: "again", fromRevision: 3, throughRevision: 4, transitions: [] });
+  const page = publication.readPage(revisit, 3, 10);
+  assert.equal(page.kind, publication.PageKind.Available);
+  if (page.kind !== publication.PageKind.Available) return;
+  assert.deepEqual(positions(page.occurrences), [["again", 3, 4]]);
 });
 
 test("the cursor continues numbering in the next Run, which reports earlier revisions as a gap", () => {

@@ -1,30 +1,27 @@
-/** Product 1 current-incident observation and commands behind one opaque Process locator. */
+/**
+ * Incident operations: the open incident waits of a process, and Retry or Cancel as the kernel's `retryIncident` and
+ * `cancelIncidentProcess` commands on the failed effect's occurrence.
+ *
+ * An operation names the incident by occurrence and generation, and the command carries both: the kernel rejects a
+ * generation that is not the open incident's (`incident-generation-stale`) in the same step that would apply the
+ * command, so no check here can go stale between a read and the command's arrival.
+ */
+import { requireWireString, type EngineOccurrenceId } from "./common.js";
+import type { EngineHost } from "./host.js";
 import {
-  StimulusKind,
-  isWellFormedWireString,
-} from "@bpmn-lean/semantic-core";
-import {
-  TemporalProcessOperationsObservationStatus,
-  observeTemporalProcessIncidents,
-  submitTemporalIncidentOperation,
-} from "@bpmn-lean/temporal-client/process-operations";
-import type {
-  ProcessCommandResult,
-  TemporalIncidentOperationsIncident,
-  TemporalIncidentOperationStimulus,
-  TemporalProcessOperationsClient,
-} from "@bpmn-lean/temporal-client/process-operations";
+  ObservedKind,
+  closed,
+  observeProcess,
+  requireOccurrence,
+  submitCommand,
+  waitsWithDetail,
+  type EngineCommandResult,
+  type EngineOpenWait,
+} from "./process-observation.js";
+import { engineProcessLocatorWorkflowId, parseEngineProcessLocator, type EngineProcessLocator } from "./process-locator.js";
 
-import {
-  engineProcessWorkflowIdFromLocator,
-  parseEngineProcessLocator,
-} from "./process-locator.js";
-import type { EngineProcessLocator } from "./process-locator.js";
-
-export const EngineIncidentOperationKind = {
-  RetryIncident: StimulusKind.RetryIncident,
-  CancelIncidentProcess: StimulusKind.CancelIncidentProcess,
-} as const;
+/** The canonical result's detail form of an incident wait. */
+const incidentDetail = "incident";
 
 export enum EngineIncidentObservationStatus {
   Observed = "observed",
@@ -34,84 +31,61 @@ export enum EngineIncidentObservationStatus {
 }
 
 export type EngineIncidentObservationResult =
+  | Readonly<{ status: EngineIncidentObservationStatus.Observed; incidents: readonly EngineOpenWait[] }>
   | Readonly<{
-      status: EngineIncidentObservationStatus.Observed;
-      incidents: readonly TemporalIncidentOperationsIncident[];
-    }>
-  | Readonly<{
-      status:
-        | EngineIncidentObservationStatus.Closed
-        | EngineIncidentObservationStatus.Unknown
-        | EngineIncidentObservationStatus.Unavailable;
+      status: EngineIncidentObservationStatus.Closed | EngineIncidentObservationStatus.Unknown |
+        EngineIncidentObservationStatus.Unavailable;
     }>;
 
 export type EngineIncidentObservationRequest = Readonly<{
-  temporalClient: TemporalProcessOperationsClient;
+  host: EngineHost;
   locator: EngineProcessLocator;
   hostingProcessInstanceId: string;
 }>;
 
-export type EngineIncidentOperationRequest =
-  EngineIncidentObservationRequest & Readonly<{
-    stimulus: TemporalIncidentOperationStimulus;
-  }>;
+export enum EngineIncidentOperationKind {
+  RetryIncident = "retryIncident",
+  CancelIncidentProcess = "cancelIncidentProcess",
+}
 
-/** Reads the exact committed incident publication without exposing host addressing. */
+export type EngineIncidentId = Readonly<{ occurrence: EngineOccurrenceId; generation: number }>;
+
+export type EngineIncidentOperation = Readonly<{
+  kind: EngineIncidentOperationKind;
+  commandId: string;
+  incident: EngineIncidentId;
+}>;
+
+export type EngineIncidentOperationRequest = EngineIncidentObservationRequest & Readonly<{ operation: EngineIncidentOperation }>;
+
 export async function observeEngineProcessIncidents(
   request: EngineIncidentObservationRequest,
 ): Promise<EngineIncidentObservationResult> {
-  const snapshot = snapshotRequest(request);
-  const observation = await observeTemporalProcessIncidents(
-    snapshot.temporalClient,
-    engineProcessWorkflowIdFromLocator(snapshot.locator),
-    snapshot.hostingProcessInstanceId,
-  );
-  switch (observation.status) {
-    case TemporalProcessOperationsObservationStatus.Observed:
-      return {
-        status: EngineIncidentObservationStatus.Observed,
-        incidents: observation.incidents,
-      };
-    case TemporalProcessOperationsObservationStatus.Closed:
+  const observed = await observeProcess(request.host, parseEngineProcessLocator(request.locator), request.hostingProcessInstanceId);
+  switch (observed.kind) {
+    case ObservedKind.Running:
+      return { status: EngineIncidentObservationStatus.Observed, incidents: waitsWithDetail(observed.state, incidentDetail) };
+    case ObservedKind.Closed:
       return { status: EngineIncidentObservationStatus.Closed };
-    case TemporalProcessOperationsObservationStatus.Unknown:
+    case ObservedKind.Unknown:
       return { status: EngineIncidentObservationStatus.Unknown };
-    case TemporalProcessOperationsObservationStatus.Unavailable:
+    case ObservedKind.Unavailable:
       return { status: EngineIncidentObservationStatus.Unavailable };
   }
 }
 
-/** Submits one exact content-bound Retry or Cancel through the private locator. */
-export function submitEngineIncidentOperation(
-  request: EngineIncidentOperationRequest,
-): Promise<ProcessCommandResult> {
-  const snapshot = snapshotRequest(request);
-  return submitTemporalIncidentOperation(
-    snapshot.temporalClient,
-    engineProcessWorkflowIdFromLocator(snapshot.locator),
-    snapshot.hostingProcessInstanceId,
-    request.stimulus,
-  );
-}
-
-function snapshotRequest(
-  request: EngineIncidentObservationRequest,
-): EngineIncidentObservationRequest {
+/** Submits Retry or Cancel for the named incident generation; the kernel decides whether it is still open. */
+export async function submitEngineIncidentOperation(request: EngineIncidentOperationRequest): Promise<EngineCommandResult> {
   const locator = parseEngineProcessLocator(request.locator);
-  requireNonempty(request.hostingProcessInstanceId, "hostingProcessInstanceId");
-  return {
-    temporalClient: request.temporalClient,
-    locator,
-    hostingProcessInstanceId: request.hostingProcessInstanceId,
-  };
-}
-
-function requireNonempty(value: string, name: string): void {
-  if (
-    typeof value !== "string" ||
-    value.length === 0 ||
-    !isWellFormedWireString(value)
-  ) {
-    throw new TypeError(`${name} must be a nonempty well-formed Unicode string`);
+  const commandId = requireWireString(request.operation.commandId, "commandId");
+  const occurrence = requireOccurrence(request.operation.incident.occurrence, "incident.occurrence");
+  const generation = request.operation.incident.generation;
+  if (!Number.isSafeInteger(generation) || generation < 1) throw new RangeError("incident.generation must be a positive safe integer");
+  const observed = await observeProcess(request.host, locator, request.hostingProcessInstanceId);
+  if (observed.kind === ObservedKind.Closed) {
+    return closed(request.host, engineProcessLocatorWorkflowId(locator), commandId, request.hostingProcessInstanceId);
   }
+  if (observed.kind !== ObservedKind.Running) throw new Error(`The process behind the locator is ${observed.kind}.`);
+  return submitCommand(request.host, locator, request.hostingProcessInstanceId,
+    { kind: "command", commandId, occurrence, action: { kind: request.operation.kind, generation } });
 }

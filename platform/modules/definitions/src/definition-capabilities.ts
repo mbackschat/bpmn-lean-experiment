@@ -66,9 +66,8 @@ function decodeTimerStartCapability(value: unknown): DefinitionTimerStartCapabil
     typeof value.startEventId !== "string" ||
     value.startEventId.length === 0 ||
     !value.startEventId.isWellFormed() ||
-    typeof value.durationMs !== "number" ||
-    !Number.isSafeInteger(value.durationMs) ||
-    value.durationMs <= 0
+    (value.durationMs !== null &&
+      (typeof value.durationMs !== "number" || !Number.isSafeInteger(value.durationMs) || value.durationMs <= 0))
   ) {
     throw new TypeError("definition timerStarts capability is invalid");
   }

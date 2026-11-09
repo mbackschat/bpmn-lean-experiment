@@ -1,73 +1,9 @@
 import type { DeepReadonly } from "@bpmn-lean/contract-types";
-import type { PublicProcessInstanceIdentity } from "./process-instances.js";
 
-export const executionPublicationExportFormat =
-  "bpmn-lean.execution-publication.v1" as const;
+import type { PublicationIdentity } from "./publication-identity.js";
+import type { PublicJsonObject } from "./public-json-value.js";
 
-export type ExecutionPublicationSourceOverlayIdentity = DeepReadonly<{
-  id: string;
-  sha256: string;
-}>;
-
-/** Exact Product 1 semantic definition identity, with no deployed-version or host facts. */
-export type ExecutionPublicationDefinitionIdentity = DeepReadonly<{
-  compiler: "bpmn-source-semantic-process";
-  semanticProfile: string;
-  sourceId: string;
-  sourceSha256: string;
-  sourceOverlay: ExecutionPublicationSourceOverlayIdentity | null;
-}>;
-
-export type ExecutionPublicationIdentity = DeepReadonly<{
-  definition: ExecutionPublicationDefinitionIdentity;
-  processId: string;
-  processInstanceId: string;
-}>;
-
-/** Maps the current exact admitted Product 2 definition to Product 1 publication identity. */
-export function executionPublicationIdentityForPublicProcessInstance(
-  instance: PublicProcessInstanceIdentity,
-): ExecutionPublicationIdentity {
-  return {
-    definition: {
-      compiler: "bpmn-source-semantic-process",
-      semanticProfile: instance.definition.semanticProfile,
-      sourceId: instance.definition.source.id,
-      sourceSha256: instance.definition.source.sha256,
-      sourceOverlay: instance.definition.sourceOverlay === null ? null : { ...instance.definition.sourceOverlay },
-    },
-    processId: instance.definition.processId,
-    processInstanceId: instance.processInstanceId,
-  };
-}
-
-export type ExecutionPublicationRequest = DeepReadonly<{
-  afterRevision: number;
-  limit?: number;
-}>;
-
-export type ExecutionPublicationDecodeContext = DeepReadonly<
-  ExecutionPublicationIdentity & ExecutionPublicationRequest
->;
-
-export type ScopeOccurrenceId = DeepReadonly<{
-  processInstanceId: string;
-  definitionScopeId: string;
-  activation: number;
-}>;
-
-export type OccurrenceId = DeepReadonly<{
-  processInstanceId: string;
-  elementId: string;
-  activation: number;
-}>;
-
-/** Exact Product 1 Activity occurrence identity, distinct from an inner task occurrence. */
-export type ActivityOccurrenceId = DeepReadonly<{
-  processInstanceId: string;
-  activityElementId: string;
-  activation: number;
-}>;
+export const executionPublicationExportFormat = "bpmn-lean.execution-publication" as const;
 
 export const VariableValueKind = {
   Boolean: "boolean",
@@ -77,6 +13,7 @@ export const VariableValueKind = {
   Null: "null",
 } as const;
 
+/** The value arms Product 2 submits to a start or a task completion. */
 export type VariableValue = DeepReadonly<
   | { kind: typeof VariableValueKind.Boolean; value: boolean }
   | { kind: typeof VariableValueKind.Integer; value: number }
@@ -90,221 +27,59 @@ export type VariableBinding = DeepReadonly<{
   value: VariableValue;
 }>;
 
-export const MessageChannelKind = {
-  OperationMessage: "operationMessage",
-  DirectMessage: "directMessage",
-  UnspecifiedMessage: "unspecifiedMessage",
-} as const;
-
-export type MessageChannel = DeepReadonly<
-  | {
-      kind: typeof MessageChannelKind.OperationMessage;
-      interfaceId: string;
-      interfaceOperationId: string;
-      messageId: string;
-    }
-  | { kind: typeof MessageChannelKind.DirectMessage; messageId: string }
-  | { kind: typeof MessageChannelKind.UnspecifiedMessage }
->;
-
-export type EffectIncidentId = DeepReadonly<{
-  effectId: OccurrenceId;
-  generation: 1;
+export type ExecutionPublicationRequest = DeepReadonly<{
+  afterRevision: number;
+  limit?: number;
 }>;
 
-export const EffectExecutionResultKind = {
-  Success: "success",
-  BpmnError: "bpmnError",
-} as const;
-
-export type EffectExecutionResult = DeepReadonly<
-  | {
-      kind: typeof EffectExecutionResultKind.Success;
-      localPatch: VariableBinding[];
-    }
-  | {
-      kind: typeof EffectExecutionResultKind.BpmnError;
-      code: string;
-      message: string | null;
-      localPatch: VariableBinding[];
-    }
+export type ExecutionPublicationDecodeContext = DeepReadonly<
+  PublicationIdentity & ExecutionPublicationRequest
 >;
 
-export const StimulusKind = {
-  StartProcess: "startProcess",
-  TriggerMessageStart: "triggerMessageStart",
-  TriggerTimerStart: "triggerTimerStart",
-  CompleteUserTaskInstance: "completeUserTaskInstance",
-  DeliverMessage: "deliverMessage",
-  DeliverPayloadMessage: "deliverPayloadMessage",
-  FireTimer: "fireTimer",
-  CompleteEffect: "completeEffect",
-  ReportEffectFailure: "reportEffectFailure",
-  RetryIncident: "retryIncident",
-  CancelIncidentProcess: "cancelIncidentProcess",
+/** The kernel input a committed batch began with (`Kernel.Run.causeJson`). */
+export const ExecutionInputKind = {
+  Start: "start",
+  Command: "command",
+  Deliver: "deliver",
+  TimerFire: "timerFire",
+  EffectResult: "effectResult",
 } as const;
 
-export type Stimulus = DeepReadonly<
-  | {
-      kind: typeof StimulusKind.StartProcess;
-      commandId: string;
-      processId: string;
-      instanceId: string;
-      initialVariables: VariableBinding[];
-    }
-  | {
-      kind: typeof StimulusKind.TriggerMessageStart;
-      commandId: string;
-      processId: string;
-      instanceId: string;
-      startEventId: string;
-      channel: Extract<MessageChannel, { kind: "operationMessage" }>;
-    }
-  | {
-      kind: typeof StimulusKind.TriggerTimerStart;
-      commandId: string;
-      processId: string;
-      instanceId: string;
-      startEventId: string;
-    }
-  | {
-      kind: typeof StimulusKind.CompleteUserTaskInstance;
-      commandId: string;
-      taskId: OccurrenceId;
-      submittedValues: VariableBinding[];
-    }
-  | {
-      kind: typeof StimulusKind.DeliverMessage;
-      commandId: string;
-      subscriptionId: OccurrenceId;
-      channel: MessageChannel;
-    }
-  | {
-      kind: typeof StimulusKind.DeliverPayloadMessage;
-      commandId: string;
-      subscriptionId: OccurrenceId;
-      channel: MessageChannel;
-      payload: VariableValue;
-    }
-  | {
-      kind: typeof StimulusKind.FireTimer;
-      commandId: string;
-      timerId: OccurrenceId;
-      logicalTimeMs: number;
-    }
-  | {
-      kind: typeof StimulusKind.CompleteEffect;
-      commandId: string;
-      effectId: OccurrenceId;
-      result: EffectExecutionResult;
-    }
-  | {
-      kind: typeof StimulusKind.ReportEffectFailure;
-      commandId: string;
-      effectId: OccurrenceId;
-      generation: 1;
-    }
-  | {
-      kind: typeof StimulusKind.RetryIncident;
-      commandId: string;
-      incidentId: EffectIncidentId;
-    }
-  | {
-      kind: typeof StimulusKind.CancelIncidentProcess;
-      commandId: string;
-      processInstanceId: string;
-      incidentId: EffectIncidentId;
-    }
+export type ExecutionInputKind = typeof ExecutionInputKind[keyof typeof ExecutionInputKind];
+
+/** What caused one kernel micro-step, published as the transition's role. */
+export const ExecutionRoleKind = {
+  Input: "input",
+  Signal: "signal",
+  Arrive: "arrive",
+  Idle: "idle",
+} as const;
+
+export type ExecutionRole = DeepReadonly<
+  | { kind: typeof ExecutionRoleKind.Input; input: ExecutionInputKind }
+  | { kind: typeof ExecutionRoleKind.Signal; signal: string }
+  | { kind: typeof ExecutionRoleKind.Arrive; flow: string }
+  | { kind: typeof ExecutionRoleKind.Idle; scope: number }
 >;
 
-export const SemanticOperationKind = {
-  Initiate: "initiate",
-  InitiateMessage: "initiateMessage",
-  InitiateTimer: "initiateTimer",
-  EnterScope: "enterScope",
-  EnterSequentialMultiInstanceScope: "enterSequentialMultiInstanceScope",
-  EnterParallelMultiInstanceScope: "enterParallelMultiInstanceScope",
-  CompleteSequentialMultiInstanceScope: "completeSequentialMultiInstanceScope",
-  CompleteParallelMultiInstanceScope: "completeParallelMultiInstanceScope",
-  EnterBoundedScope: "enterBoundedScope",
-  EnterMonitoredScope: "enterMonitoredScope",
-  InvokeProcess: "invokeProcess",
-  ReturnProcess: "returnProcess",
-  AwaitUserTask: "awaitUserTask",
-  AwaitDataInputUserTask: "awaitDataInputUserTask",
-  AwaitDataInputOutputUserTask: "awaitDataInputOutputUserTask",
-  AwaitDataOutputUserTask: "awaitDataOutputUserTask",
-  AwaitBoundedUserTask: "awaitBoundedUserTask",
-  AwaitMessageBoundedUserTask: "awaitMessageBoundedUserTask",
-  AwaitMessageMonitoredUserTask: "awaitMessageMonitoredUserTask",
-  AwaitMonitoredUserTask: "awaitMonitoredUserTask",
-  AwaitSequentialMultiInstanceUserTask: "awaitSequentialMultiInstanceUserTask",
-  AwaitParallelMultiInstanceUserTask: "awaitParallelMultiInstanceUserTask",
-  AwaitMessage: "awaitMessage",
-  AwaitPayloadMessage: "awaitPayloadMessage",
-  AwaitCorrelatedPayloadMessage: "awaitCorrelatedPayloadMessage",
-  AwaitTimer: "awaitTimer",
-  AwaitEffect: "awaitEffect",
-  Duplicate: "duplicate",
-  Synchronize: "synchronize",
-  MergeExclusive: "mergeExclusive",
-  Choose: "choose",
-  SelectMany: "selectMany",
-  SynchronizeSelected: "synchronizeSelected",
-  AwaitEventRace: "awaitEventRace",
-  ThrowError: "throwError",
-  TerminateScope: "terminateScope",
-  ReachNoneEnd: "reachNoneEnd",
-  CompleteScope: "completeScope",
-  CompleteEventSubProcess: "completeEventSubProcess",
-  TriggerCompensation: "triggerCompensation",
-  CancelTransaction: "cancelTransaction",
-} as const;
-
-export type SemanticOperationKind =
-  typeof SemanticOperationKind[keyof typeof SemanticOperationKind];
-
-export type BpmnElementOrigin = DeepReadonly<{
-  kind: "bpmnElement";
-  elementId: string;
+/**
+ * One committed kernel micro-step: the element it acted on with the source type that element began with, and the
+ * scope occurrence that owns it. `element` and `sourceType` are `null` for a step that acts on no element.
+ */
+export type CommittedTransitionRecord = DeepReadonly<{
+  revision: number;
+  role: ExecutionRole;
+  element: string | null;
+  sourceType: string | null;
+  owner: number;
 }>;
 
-export const SemanticTransitionKind = {
-  ExternalStimulus: "externalStimulus",
-  InternalOperation: "internalOperation",
-} as const;
-
-export type CommittedTransition = DeepReadonly<
-  | {
-      kind: typeof SemanticTransitionKind.ExternalStimulus;
-      stimulus: Stimulus;
-    }
-  | {
-      kind: typeof SemanticTransitionKind.InternalOperation;
-      operationId: string;
-      operationKind: SemanticOperationKind;
-      origin: BpmnElementOrigin;
-      owner: ScopeOccurrenceId;
-    }
->;
-
-export type PublicControlTokenPosition = DeepReadonly<{
-  sequenceFlowId: string;
-  owner: ScopeOccurrenceId;
-  multiplicity: number;
-}>;
-
-export type PublicScopePosition = DeepReadonly<{
-  id: ScopeOccurrenceId;
-  parent: ScopeOccurrenceId | null;
-  bpmnElementId: string;
-}>;
-
-export type PublicControlPositionDelta = DeepReadonly<{
-  consumedTokens: PublicControlTokenPosition[];
-  producedTokens: PublicControlTokenPosition[];
-  enteredScopes: PublicScopePosition[];
-  exitedScopes: PublicScopePosition[];
+/** The micro-steps of one committed input, numbered as consecutive revisions. */
+export type CommittedTransitionBatch = DeepReadonly<{
+  commandId: string;
+  fromRevision: number;
+  throughRevision: number;
+  transitions: [CommittedTransitionRecord, ...CommittedTransitionRecord[]];
 }>;
 
 export const ProcessStatus = {
@@ -316,217 +91,83 @@ export const ProcessStatus = {
 
 export type ProcessStatus = typeof ProcessStatus[keyof typeof ProcessStatus];
 
-export type CompensationHandlerFailure = DeepReadonly<{
-  kind: "compensationHandlerFailure";
-  triggerId: OccurrenceId;
-  handlerId: OccurrenceId;
-  effectId: OccurrenceId;
-  code: string;
-  message: string | null;
-}>;
-
-export const WaitKind = {
-  UserTask: "userTask",
-  Message: "message",
-  Timer: "timer",
-  Effect: "effect",
-  Incident: "incident",
-} as const;
-
-export type ActiveWait = DeepReadonly<{
+export type StateOccurrenceId = DeepReadonly<{
+  processInstanceId: string;
   elementId: string;
-  kind: typeof WaitKind[keyof typeof WaitKind];
-  multiplicity: number;
+  activation: number;
 }>;
 
-export type UserTaskMetadata = DeepReadonly<{
-  assignment: { candidates: [{ kind: "group"; id: string }] };
-  form: { fields: [{ key: string; type: "string" | "boolean" }] };
+/*
+ * The state types below are Readonly with readonly arrays rather than DeepReadonly: PublicJsonValue is already
+ * immutable, and mapping DeepReadonly over that recursive alias makes every assignability check instantiate it without
+ * bound (TS2589).
+ */
+
+/** A variable binding as the engine observes it; the value keeps the engine's typed form. */
+export type StateVariableBinding = Readonly<{
+  name: string;
+  value: PublicJsonObject;
 }>;
 
-export type OpenUserTask = DeepReadonly<{
-  id: OccurrenceId;
-  name: string | null;
-  state: "active";
-  metadata?: UserTaskMetadata;
-  /**
-   * The Activity DataInputs the engine copied when this task occurrence became active.
-   *
-   * Published exactly for a task whose program fills an Activity data interface and absent
-   * otherwise, so every other family's publication bytes are unchanged. Each binding's `name` is the
-   * exact BPMN DataInput `id`, and its value is an engine observation of Activity-local data rather
-   * than a form schema, an authorization decision, or a view of the Process variables, which live in
-   * a different scope and may legitimately disagree with it.
-   *
-   * The platform copies this field through. It must not reconstruct the collection from
-   * `variables`, from a start payload, from the definition XML, or from a difference between two
-   * observed states.
-   */
-  inputs?: [VariableBinding];
+/**
+ * One open wait of the committed state: its occurrence, the called definition it runs in (`null` in the root
+ * instance), the input that closes it, and its engine-typed detail, whose `kind` names the detail form.
+ */
+export type StateOpenWait = Readonly<{
+  id: StateOccurrenceId;
+  definition: PublicJsonObject | null;
+  input: string | null;
+  detail: { kind: string } & PublicJsonObject;
 }>;
 
-export type OpenMessageSubscription = DeepReadonly<{
-  id: OccurrenceId;
-  channel: MessageChannel;
-}>;
-
-export type OpenTimer = DeepReadonly<{
-  id: OccurrenceId;
-  deadlineMs: number;
-}>;
-
-export type OpenEffect = DeepReadonly<{
-  id: OccurrenceId;
-  descriptor: { protocol: string; operation: string };
-  arguments: VariableBinding[];
-}>;
-
-export type OpenEffectIncident = DeepReadonly<{
-  kind: "effectExecutionFailed";
-  id: EffectIncidentId;
-  effect: OpenEffect;
-}>;
-
-export type OpenSequentialMultiInstanceIteration = DeepReadonly<{
-  loopCounter: number;
-  taskId: OccurrenceId;
-  taskInput: VariableBinding;
-  completionBindingName: string;
-}>;
-
-export type OpenSequentialMultiInstance = DeepReadonly<{
-  id: ActivityOccurrenceId;
-  mode: "sequential";
-  bodyKind: "userTask";
-  plannedInstanceCount: number;
-  pendingItemCount: number;
-  numberOfInstances: number;
-  numberOfActiveInstances: number;
-  numberOfCompletedInstances: number;
-  numberOfTerminatedInstances: number;
-  activeIterations: OpenSequentialMultiInstanceIteration[];
-}>;
-
-export type OpenParallelMultiInstanceIteration =
-  OpenSequentialMultiInstanceIteration;
-
-export type OpenParallelMultiInstance = DeepReadonly<{
-  id: ActivityOccurrenceId;
-  mode: "parallel";
-  bodyKind: "userTask";
-  plannedInstanceCount: number;
-  pendingItemCount: 0;
-  numberOfInstances: number;
-  numberOfActiveInstances: number;
-  numberOfCompletedInstances: number;
-  numberOfTerminatedInstances: 0;
-  activeIterations: OpenParallelMultiInstanceIteration[];
-}>;
-
-export type OpenMultiInstance =
-  | OpenSequentialMultiInstance
-  | OpenParallelMultiInstance;
-
-export type EnabledInteraction = DeepReadonly<
-  | { kind: typeof StimulusKind.CompleteUserTaskInstance; taskId: OccurrenceId }
-  | {
-      kind: typeof StimulusKind.DeliverMessage;
-      subscriptionId: OccurrenceId;
-      channel: MessageChannel;
-    }
-  | {
-      kind: typeof StimulusKind.DeliverPayloadMessage;
-      subscriptionId: OccurrenceId;
-      channel: MessageChannel;
-    }
-  | { kind: typeof StimulusKind.RetryIncident; incidentId: EffectIncidentId }
-  | {
-      kind: typeof StimulusKind.CancelIncidentProcess;
-      processInstanceId: string;
-      incidentId: EffectIncidentId;
-    }
->;
-
-/** The complete producer-owned state key census accepted by the strict Product 2 decoder. */
-export const executionPublicationStateAcceptedKeys = [
-  "kind", "instanceId", "status", "activeWaits", "openUserTasks",
-  "openMessageSubscriptions", "openTimers", "openEffects", "openIncidents",
-  "openMultiInstances", "variables", "enabledInteractions", "logicalTimeMs", "failure",
-] as const;
-
-export type StateObservation = DeepReadonly<{
+/** The canonical state observation (`canonical-result.schema.json#/$defs/state`); `failure` only when failed. */
+export type ExecutionState = Readonly<{
   kind: "state";
   instanceId: string;
-  activeWaits: ActiveWait[];
-  openUserTasks: OpenUserTask[];
-  openMessageSubscriptions: OpenMessageSubscription[];
-  openTimers: OpenTimer[];
-  openEffects: OpenEffect[];
-  openIncidents: OpenEffectIncident[];
-  openMultiInstances?: OpenMultiInstance[];
-  variables: VariableBinding[];
-  enabledInteractions: EnabledInteraction[];
+  status: ProcessStatus;
   logicalTimeMs: number;
-} & (
-  | { status: Exclude<ProcessStatus, typeof ProcessStatus.Failed>; failure?: never }
-  | { status: typeof ProcessStatus.Failed; failure: CompensationHandlerFailure }
-)>;
+  variables: readonly StateVariableBinding[];
+  scopes: readonly PublicJsonObject[];
+  openWaits: readonly StateOpenWait[];
+  failure?: PublicJsonObject;
+}>;
 
-export type CommittedTransitionRecord = DeepReadonly<{
+export type CurrentCommittedExecution = Readonly<{
   revision: number;
-  logicalTimeMs: number;
-  transition: CommittedTransition;
-  positionDelta: PublicControlPositionDelta;
+  state: ExecutionState;
 }>;
 
-export type CommittedTransitionBatch = DeepReadonly<{
-  commandId: string;
-  fromRevision: number;
-  throughRevision: number;
-  transitions: [CommittedTransitionRecord, ...CommittedTransitionRecord[]];
+/** `current` is present exactly on the page that reaches the head, as the state committed there. */
+export type ExecutionPublicationPage = PublicationIdentity & Readonly<{
+  requestedAfterRevision: number;
+  pageThroughRevision: number;
+  headRevision: number;
+  batches: readonly CommittedTransitionBatch[];
+  current: CurrentCommittedExecution | null;
 }>;
-
-export type CurrentCommittedExecution = DeepReadonly<{
-  revision: number;
-  state: StateObservation;
-  controlTokens: PublicControlTokenPosition[];
-  scopes: PublicScopePosition[];
-}>;
-
-export type ExecutionPublicationPage = DeepReadonly<
-  ExecutionPublicationIdentity & {
-    requestedAfterRevision: number;
-    pageThroughRevision: number;
-    headRevision: number;
-    batches: CommittedTransitionBatch[];
-    current: CurrentCommittedExecution | null;
-  }
->;
 
 export const ExecutionPublicationResultKind = {
   Available: "available",
-  NotReady: "notReady",
   NotFound: "notFound",
   Unavailable: "unavailable",
   Gap: "gap",
+  IntegrityFailure: "integrityFailure",
 } as const;
 
-export type ExecutionPublicationResult = DeepReadonly<
-  | {
-      kind: typeof ExecutionPublicationResultKind.Available;
-      page: ExecutionPublicationPage;
-    }
-  | { kind: typeof ExecutionPublicationResultKind.NotReady }
-  | { kind: typeof ExecutionPublicationResultKind.NotFound }
-  | { kind: typeof ExecutionPublicationResultKind.Unavailable }
-  | { kind: typeof ExecutionPublicationResultKind.Gap }
->;
+/**
+ * `notFound`: the engine holds no committed start for the instance; `gap`: the engine no longer retains the requested
+ * revisions; `integrityFailure`: the instance's chain runs another definition or instance than expected.
+ */
+export type ExecutionPublicationResult =
+  | Readonly<{ kind: typeof ExecutionPublicationResultKind.Available; page: ExecutionPublicationPage }>
+  | Readonly<{ kind: typeof ExecutionPublicationResultKind.NotFound }>
+  | Readonly<{ kind: typeof ExecutionPublicationResultKind.Unavailable }>
+  | Readonly<{ kind: typeof ExecutionPublicationResultKind.Gap }>
+  | Readonly<{ kind: typeof ExecutionPublicationResultKind.IntegrityFailure }>;
 
-export type ExecutionPublicationExport = DeepReadonly<
-  ExecutionPublicationIdentity & {
-    format: typeof executionPublicationExportFormat;
-    headRevision: number;
-    batches: [CommittedTransitionBatch, ...CommittedTransitionBatch[]];
-    current: CurrentCommittedExecution;
-  }
->;
+export type ExecutionPublicationExport = PublicationIdentity & Readonly<{
+  format: typeof executionPublicationExportFormat;
+  headRevision: number;
+  batches: readonly [CommittedTransitionBatch, ...CommittedTransitionBatch[]];
+  current: CurrentCommittedExecution;
+}>;

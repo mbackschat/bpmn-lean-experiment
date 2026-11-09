@@ -15,7 +15,12 @@ import type {
   ExecutionPublicationReconciliationResult,
   FlowNodeOccurrenceReconciliationResult,
   OperateProcessRegistration,
+  ProjectedFlowNodeOccurrence,
 } from "@bpmn-lean/platform-operate";
+import {
+  FlowNodeOccurrenceRole,
+  publicationIdentityForPublicProcessInstance,
+} from "@bpmn-lean/platform-contracts";
 import type {
   DeployedDefinitionVersion,
   PublicProcessInstanceIdentity,
@@ -113,13 +118,7 @@ for (const failure of [
           return occurrenceCalls === 3
             ? { kind: failure }
             : availableOccurrences(registration, [
-                completed(
-                  `Completed_${registration.instance.processInstanceId}`,
-                  definition.processId,
-                  occurrenceCalls,
-                  0,
-                  occurrenceCalls,
-                ),
+                running(registration.instance.processInstanceId, `Running_${occurrenceCalls}`, 1),
               ]);
         },
       });
@@ -202,16 +201,17 @@ test("fails closed when indexed definition columns match but another field drift
   });
 });
 
-test("excludes called-Process interiors and computes exact completed durations", async () => {
+test("counts only the hosting instance's element occurrences and publishes no completed duration", async () => {
   await withPopulation(async (population) => {
     await record(population, "instance-1");
     const occurrences = [
-      completed("A", definition.processId, 1, 100, 100),
-      completed("A", definition.processId, 2, 100, 105),
-      completed("A", definition.processId, 3, 100, 106),
-      running("B", definition.processId, 4, 200),
-      cancelled("C", definition.processId, 5, 200, 220),
-      completed("CalledTask", "Called_Process", 6, 100, 110),
+      completed("instance-1", "A", 1),
+      completed("instance-1", "A", 2),
+      completed("instance-1", "A", 3),
+      completed("instance-1", "A", 1, FlowNodeOccurrenceRole.MultiInstanceBody),
+      running("instance-1", "B", 1),
+      cancelled("instance-1", "C", 1),
+      completed("called-instance", "CalledTask", 1),
     ];
     const service = aggregateService(population, { occurrences });
     const result = await service.get({ processId: definition.processId, version: 7 });
@@ -223,12 +223,7 @@ test("excludes called-Process interiors and computes exact completed durations",
         running: 0,
         completed: 3,
         cancelled: 0,
-        completedDuration: {
-          sampleCount: 3,
-          minimumMs: 0,
-          maximumMs: 6,
-          averageMs: 3,
-        },
+        completedDuration: null,
       },
       {
         elementId: "B",
@@ -250,27 +245,11 @@ test("excludes called-Process interiors and computes exact completed durations",
   });
 });
 
-test("makes the whole result unavailable when the BigInt duration total is unsafe", async () => {
-  await withPopulation(async (population) => {
-    await record(population, "instance-1");
-    const service = aggregateService(population, {
-      occurrences: [
-        completed("A", definition.processId, 1, 0, Number.MAX_SAFE_INTEGER),
-        completed("A", definition.processId, 2, 0, 1),
-      ],
-    });
-    assert.deepEqual(
-      await service.get({ processId: definition.processId, version: 7 }),
-      { kind: "unavailable", reason: "flowNodeMetricsUnavailable" },
-    );
-  });
-});
-
 function aggregateService(
   population: SqliteProcessInstanceRepository,
   options: Readonly<{
     executions?: (processInstanceId: string) => Promise<ExecutionPublicationReconciliationResult>;
-    occurrences?: readonly ReturnType<typeof completed>[];
+    occurrences?: readonly ProjectedFlowNodeOccurrence[];
     occurrenceReconciliation?: (
       registration: OperateProcessRegistration,
     ) => Promise<FlowNodeOccurrenceReconciliationResult>;
@@ -291,29 +270,17 @@ function aggregateService(
 
 function availableOccurrences(
   registration: OperateProcessRegistration,
-  occurrences: readonly ReturnType<typeof completed>[] = [],
+  occurrences: readonly ProjectedFlowNodeOccurrence[] = [],
 ): FlowNodeOccurrenceReconciliationResult {
   return {
     kind: FlowNodeOccurrenceReconciliationKind.Available,
     projection: {
-      identity: {
-        definition: {
-          compiler: "bpmn-source-semantic-process",
-          semanticProfile: definition.semanticProfile,
-          sourceId: definition.source.id,
-          sourceSha256: definition.source.sha256,
-          sourceOverlay: null,
-        },
-        processId: definition.processId,
-        processInstanceId: registration.instance.processInstanceId,
-      },
+      identity: publicationIdentityForPublicProcessInstance(registration.instance),
       status: FlowNodeOccurrenceProjectionStatus.Healthy,
       headRevision: 1,
       producerHeadRevision: 1,
-      lastCommittedAtEpochMs: 0,
       batches: [],
       occurrences: structuredClone(occurrences),
-      currentOpen: [],
     },
   };
 }
@@ -326,69 +293,45 @@ function availableExecution() {
 }
 
 function completed(
+  processInstanceId: string,
   elementId: string,
-  processId: string,
-  startIndex: number,
-  startedAtEpochMs: number,
-  terminalAtEpochMs: number,
-) {
-  return occurrence(
-    elementId,
-    processId,
-    startIndex,
-    startedAtEpochMs,
-    "completed",
-    terminalAtEpochMs,
-  );
+  activation: number,
+  role: FlowNodeOccurrenceRole = FlowNodeOccurrenceRole.Element,
+): ProjectedFlowNodeOccurrence {
+  return occurrence(processInstanceId, elementId, activation, role, "completed");
 }
 
 function cancelled(
+  processInstanceId: string,
   elementId: string,
-  processId: string,
-  startIndex: number,
-  startedAtEpochMs: number,
-  terminalAtEpochMs: number,
-) {
-  return occurrence(
-    elementId,
-    processId,
-    startIndex,
-    startedAtEpochMs,
-    "cancelled",
-    terminalAtEpochMs,
-  );
+  activation: number,
+): ProjectedFlowNodeOccurrence {
+  return occurrence(processInstanceId, elementId, activation, FlowNodeOccurrenceRole.Element, "cancelled");
 }
 
 function running(
+  processInstanceId: string,
   elementId: string,
-  processId: string,
-  startIndex: number,
-  startedAtEpochMs: number,
-) {
-  return occurrence(elementId, processId, startIndex, startedAtEpochMs, null, null);
+  activation: number,
+): ProjectedFlowNodeOccurrence {
+  return occurrence(processInstanceId, elementId, activation, FlowNodeOccurrenceRole.Element, null);
 }
 
 function occurrence(
+  processInstanceId: string,
   elementId: string,
-  processId: string,
-  startIndex: number,
-  startedAtEpochMs: number,
+  activation: number,
+  role: FlowNodeOccurrenceRole,
   terminal: "completed" | "cancelled" | null,
-  terminalAtEpochMs: number | null,
-) {
+): ProjectedFlowNodeOccurrence {
   return {
-    id: { processInstanceId: "instance-1", startRevision: 1, startIndex },
-    processId,
-    elementId,
-    owner: {
-      processInstanceId: "instance-1",
-      definitionScopeId: "root",
-      activation: 1,
-    },
-    startedAtEpochMs,
+    occurrence: { processInstanceId, elementId, activation, role },
+    startRevision: 1,
+    startIndex: 0,
+    owner: 0,
+    sourceType: "task",
     terminal,
-    terminalAtEpochMs,
-  } as const;
+  };
 }
 
 async function record(

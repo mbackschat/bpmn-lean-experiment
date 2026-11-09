@@ -92,7 +92,12 @@ export class PostgresqlOperateRecoveryCandidateSource {
                    OR occurrence.status <> 'healthy'
                    OR occurrence.head_revision <> execution.head_revision
                    OR occurrence.producer_head_revision <> execution.head_revision
-                   OR occurrence.current_open_json <> '[]'
+                   OR EXISTS (
+                     SELECT 1
+                     FROM bpmn_platform.operate_flow_node_occurrences AS open_occurrence
+                     WHERE open_occurrence.hosting_process_instance_id = process.process_instance_id
+                       AND open_occurrence.occurrence_json::jsonb ->> 'terminal' IS NULL
+                   )
                  )
                )
             ORDER BY process.process_instance_id ASC

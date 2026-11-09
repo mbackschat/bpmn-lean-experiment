@@ -175,7 +175,7 @@ function decodeScheduleBase(value: object, label: string): DefinitionScheduleBas
     readOwn(value, "dueAt"),
     `${label}.dueAt`,
   );
-  if (Date.parse(activationAt) + timerStart.durationMs !== Date.parse(dueAt)) {
+  if (timerStart.durationMs === null || Date.parse(activationAt) + timerStart.durationMs !== Date.parse(dueAt)) {
     throw new TypeError(
       "dueAt must equal activationAt plus timerStart.durationMs",
     );

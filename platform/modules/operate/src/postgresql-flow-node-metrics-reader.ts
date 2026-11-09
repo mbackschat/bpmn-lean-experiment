@@ -136,9 +136,6 @@ const metricsReadSql = `
     e.status AS execution_status,
     e.head_revision::text AS execution_head_revision,
     e.producer_head_revision::text AS execution_producer_head_revision,
-    e.last_logical_time_ms::text AS execution_last_logical_time_ms,
-    e.control_tokens_json AS execution_control_tokens_json,
-    e.scopes_json AS execution_scopes_json,
     e.current_json AS execution_current_json,
     e.last_complete_observed_at_epoch_ms::text AS execution_observed_at_epoch_ms,
     e.current_process_status,
@@ -146,8 +143,6 @@ const metricsReadSql = `
     o.status AS occurrence_status,
     o.head_revision::text AS occurrence_head_revision,
     o.producer_head_revision::text AS occurrence_producer_head_revision,
-    o.last_committed_at_epoch_ms::text AS occurrence_last_committed_at_epoch_ms,
-    o.current_open_json AS occurrence_current_open_json,
     o.last_complete_observed_at_epoch_ms::text AS occurrence_observed_at_epoch_ms,
     COALESCE((
       SELECT jsonb_agg(jsonb_build_object(
@@ -173,7 +168,6 @@ const metricsReadSql = `
         'from_revision', b.from_revision::text,
         'through_revision', b.through_revision::text,
         'command_id_hex', encode(b.command_id, 'hex'),
-        'committed_at_epoch_ms', b.committed_at_epoch_ms::text,
         'batch_json', b.batch_json
       ) ORDER BY b.from_revision)
       FROM bpmn_platform.operate_flow_node_occurrence_batches AS b
@@ -251,7 +245,7 @@ async function decodeMetricsRead(
       (snapshot.execution.current.state.status === "completed" ||
         snapshot.execution.current.state.status === "cancelled" ||
         snapshot.execution.current.state.status === "failed") &&
-      snapshot.occurrence.currentOpen.length === 0;
+      snapshot.occurrence.occurrences.every((occurrence) => occurrence.terminal !== null);
     if (snapshot.registration.observation === "closed" && !terminal) {
       throw new TypeError("closed metrics projection pair is not terminal");
     }

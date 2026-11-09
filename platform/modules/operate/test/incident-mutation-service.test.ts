@@ -40,7 +40,7 @@ for (const actionIndex of [0, 1] as const) {
             commandId: stimulus.commandId,
             receipt: {
               processInstanceId: matches ? "instance" : "another-instance",
-              finalState: { status: "failed" },
+              status: "failed",
             },
           }));
           const result = await service(processRepository, reopened, gateway).submitAuthorized(
@@ -73,6 +73,7 @@ test("durably rejects changed nested content under one action ID and forbids ano
       kind: "semantic",
       commandId: stimulus.commandId,
       outcome: "committed",
+      code: null,
     }));
     const first = service(processRepository, actionRepository, gateway);
     assert.equal(
@@ -115,13 +116,13 @@ test("keeps distinct Retry and Cancel action IDs independent without a platform 
     await processRepository.recordConfirmed(publication("instance"));
     const gateway = gatewayFor([published], async ({ stimulus }) =>
       stimulus.kind === "retryIncident"
-        ? { kind: "semantic", commandId: stimulus.commandId, outcome: "committed" }
+        ? { kind: "semantic", commandId: stimulus.commandId, outcome: "committed", code: null }
         : {
             kind: "processClosed",
             commandId: stimulus.commandId,
             receipt: {
               processInstanceId: "instance",
-              finalState: { status: "cancelled" },
+              status: "cancelled",
             },
           });
     const mutations = service(processRepository, actionRepository, gateway);
@@ -159,6 +160,7 @@ test("delivers and acknowledges reserved audit before the first engine action ca
       kind: "semantic",
       commandId: stimulus.commandId,
       outcome: "committed",
+      code: null,
     }));
     const failing = service(processRepository, actionRepository, gateway, {
       record: async () => { throw new Error("audit unavailable"); },
@@ -253,7 +255,7 @@ test("converges response loss and restart and coalesces one in-process same-acti
       const gate = new Promise<void>((resolve) => { release = resolve; });
       const recoveredGateway = gatewayFor([published], async ({ stimulus }) => {
         await gate;
-        return { kind: "semantic", commandId: stimulus.commandId, outcome: "committed" };
+        return { kind: "semantic", commandId: stimulus.commandId, outcome: "committed", code: null };
       });
       const recovered = service(processRepository, reopened, recoveredGateway);
       const left = recovered.submitAuthorized(
@@ -282,13 +284,18 @@ test("maps only exact committed semantic results to committed and every uncertai
     const published = incidentPublication("instance", false);
     await processRepository.recordConfirmed(publication("instance"));
     const outcomes = new Map<string, unknown>([
-      ["committed", { kind: "semantic", commandId: "committed", outcome: "committed" }],
-      ["rolled", { kind: "semantic", commandId: "rolled", outcome: "rolledBack" }],
-      ["rejected", { kind: "semantic", commandId: "rejected", outcome: "rejected" }],
-      ["failure", { kind: "semantic", commandId: "failure", outcome: "semanticFailure" }],
-      ["unsupported", { kind: "semantic", commandId: "unsupported", outcome: "unsupported" }],
-      ["unknown", { kind: "processUnknown", commandId: "unknown", processInstanceId: "instance" }],
-      ["mismatch", { kind: "semantic", commandId: "another-action", outcome: "committed" }],
+      ["committed", { kind: "semantic", commandId: "committed", outcome: "committed", code: null }],
+      ["rolled", { kind: "semantic", commandId: "rolled", outcome: "rolledBack", code: "rolled-back" }],
+      ["rejected", { kind: "semantic", commandId: "rejected", outcome: "rejected", code: "unknown-incident" }],
+      ["failure", { kind: "semantic", commandId: "failure", outcome: "semanticFailure", code: null }],
+      ["unsupported", { kind: "semantic", commandId: "unsupported", outcome: "unsupported", code: null }],
+      ["uncoded", { kind: "semantic", commandId: "uncoded", outcome: "committed" }],
+      ["closedUnreadable", {
+        kind: "processClosed",
+        commandId: "closedUnreadable",
+        receipt: { processInstanceId: "instance", status: null },
+      }],
+      ["mismatch", { kind: "semantic", commandId: "another-action", outcome: "committed", code: null }],
     ]);
     const gateway = gatewayFor([published], async ({ stimulus }) =>
       structuredClone(outcomes.get(stimulus.commandId))
@@ -310,7 +317,8 @@ test("maps only exact committed semantic results to committed and every uncertai
       rejected: "rejected",
       failure: "rejected",
       unsupported: "rejected",
-      unknown: "indeterminate",
+      uncoded: "indeterminate",
+      closedUnreadable: "indeterminate",
       mismatch: "indeterminate",
     });
   });

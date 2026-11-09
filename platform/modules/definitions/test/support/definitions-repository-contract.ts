@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "node:test";
 import { ArtifactConflictError } from "@bpmn-lean/platform-artifact-store";
-import { DefinitionStartDescriptionStatus } from "@bpmn-lean/platform-engine-gateway";
+import { DefinitionStartDescriptionStatus, DefinitionStartStatus } from "@bpmn-lean/platform-engine-gateway";
 import type { DefinitionVersionStarter, PreparedDefinitionVersionStartRequest } from "@bpmn-lean/platform-engine-gateway";
 
 import type { HumanTaskCatalogV1 } from "@bpmn-lean/platform-contracts";
@@ -504,7 +504,7 @@ export function registerRetainedOverlayRecoveryContract(
       startDefinitionVersion: async () => { assert.fail("recovery must not use an unbound start"); },
       startPreparedDefinitionVersion: async (selected) => {
         calls.push(structuredClone(selected));
-        return { status: "started", processInstanceId: selected.processInstanceId, source: definition.source, definition: { processId: definition.processId, semanticProfile: definition.semanticProfile, sourceOverlay: selected.sourceOverlay === undefined || selected.sourceOverlay === null ? null : { id: selected.sourceOverlay.id, sha256: selected.sourceOverlay.sha256 } } };
+        return { status: DefinitionStartStatus.Started, processInstanceId: selected.processInstanceId, source: definition.source, definition: { processId: definition.processId, semanticProfile: definition.semanticProfile, sourceOverlay: selected.sourceOverlay === undefined || selected.sourceOverlay === null ? null : { id: selected.sourceOverlay.id, sha256: selected.sourceOverlay.sha256 } } };
       },
       describeDefinitionVersionStart: async (selected) => { descriptions.push(selected.processInstanceId); assert.deepEqual(selected.expectedIntent, intent); return { status: DefinitionStartDescriptionStatus.Matching }; },
     };

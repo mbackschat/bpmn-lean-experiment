@@ -3,9 +3,15 @@
   "$id": "https://bpmn-lean.local/schemas/flow-node-occurrence-publication.schema.json",
   "title": "Flow-node occurrence publication",
   "oneOf": [
-    { "$ref": "#/$defs/flowNodeOccurrencePublicationRequest" },
-    { "$ref": "#/$defs/flowNodeOccurrencePage" },
-    { "$ref": "#/$defs/flowNodeOccurrencePublicationResult" }
+    {
+      "$ref": "#/$defs/publicationRequest"
+    },
+    {
+      "$ref": "#/$defs/flowNodeOccurrencePage"
+    },
+    {
+      "$ref": "#/$defs/flowNodeOccurrencePublicationResult"
+    }
   ],
   "$defs": {
     "nonemptyString": {
@@ -22,12 +28,20 @@
       "minimum": 1,
       "maximum": 9007199254740991
     },
-    "flowNodeOccurrencePublicationRequest": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "publicationRequest": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["afterRevision"],
+      "required": [
+        "afterRevision"
+      ],
       "properties": {
-        "afterRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "afterRevision": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
         "limit": {
           "type": "integer",
           "minimum": 1,
@@ -35,118 +49,183 @@
         }
       }
     },
-    "scopeOccurrenceId": {
+    "definitionIdentity": {
+      "description": "The engine's identity of the deployed definition: the definition reference (key, stored version, source digest) and the semantic profile, with the admission overlay.",
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "processInstanceId",
-        "definitionScopeId",
-        "activation"
+        "ref",
+        "profile",
+        "sourceOverlay"
       ],
       "properties": {
-        "processInstanceId": { "$ref": "#/$defs/nonemptyString" },
-        "definitionScopeId": { "$ref": "#/$defs/nonemptyString" },
-        "activation": { "$ref": "#/$defs/positiveSafeInteger" }
+        "ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definitionKey",
+            "version",
+            "sha256"
+          ],
+          "properties": {
+            "definitionKey": {
+              "$ref": "#/$defs/nonemptyString"
+            },
+            "version": {
+              "$ref": "#/$defs/positiveSafeInteger"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        },
+        "profile": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "sourceOverlay": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "sha256"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/nonemptyString"
+                },
+                "sha256": {
+                  "$ref": "#/$defs/sha256"
+                }
+              }
+            }
+          ]
+        }
       }
     },
-    "flowNodeOccurrenceId": {
+    "occurrenceKey": {
+      "description": "The kernel's flow-node occurrence identity (`Kernel.Run.keyJson`); revisions only position it.",
       "type": "object",
       "additionalProperties": false,
       "required": [
         "processInstanceId",
-        "startRevision",
-        "startIndex"
+        "elementId",
+        "activation",
+        "role"
       ],
       "properties": {
-        "processInstanceId": { "$ref": "#/$defs/nonemptyString" },
-        "startRevision": { "$ref": "#/$defs/positiveSafeInteger" },
-        "startIndex": { "$ref": "#/$defs/nonnegativeSafeInteger" }
+        "processInstanceId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "elementId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "activation": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "role": {
+          "enum": [
+            "element",
+            "multiInstanceBody"
+          ]
+        }
       }
     },
     "flowNodeOccurrenceStart": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "processId", "elementId", "owner"],
+      "required": [
+        "occurrence",
+        "owner",
+        "sourceType"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/flowNodeOccurrenceId" },
-        "processId": { "$ref": "#/$defs/nonemptyString" },
-        "elementId": { "$ref": "#/$defs/nonemptyString" },
-        "owner": { "$ref": "#/$defs/scopeOccurrenceId" }
+        "occurrence": {
+          "$ref": "#/$defs/occurrenceKey"
+        },
+        "owner": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "sourceType": {
+          "$ref": "#/$defs/nonemptyString"
+        }
       }
     },
     "flowNodeOccurrenceEnd": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "terminal"],
+      "required": [
+        "occurrence",
+        "terminal"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/flowNodeOccurrenceId" },
-        "terminal": {
-          "enum": ["completed", "cancelled"]
-        }
-      }
-    },
-    "flowNodeOccurrenceDelta": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["started", "ended"],
-      "properties": {
-        "started": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/flowNodeOccurrenceStart" }
+        "occurrence": {
+          "$ref": "#/$defs/occurrenceKey"
         },
-        "ended": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/flowNodeOccurrenceEnd" }
+        "terminal": {
+          "enum": [
+            "completed",
+            "cancelled"
+          ]
         }
       }
     },
     "flowNodeOccurrenceTransition": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["revision", "lifecycle"],
+      "required": [
+        "revision",
+        "started",
+        "ended"
+      ],
       "properties": {
-        "revision": { "$ref": "#/$defs/positiveSafeInteger" },
-        "lifecycle": { "$ref": "#/$defs/flowNodeOccurrenceDelta" }
+        "revision": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
+        "started": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/flowNodeOccurrenceStart"
+          }
+        },
+        "ended": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/flowNodeOccurrenceEnd"
+          }
+        }
       }
     },
     "flowNodeOccurrenceBatch": {
+      "description": "The occurrence facts of one committed input, over the same revisions as its execution batch; empty when the input began and ended no occurrence.",
       "type": "object",
       "additionalProperties": false,
       "required": [
         "commandId",
         "fromRevision",
         "throughRevision",
-        "committedAtEpochMs",
         "transitions"
       ],
       "properties": {
-        "commandId": { "$ref": "#/$defs/nonemptyString" },
-        "fromRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
-        "throughRevision": { "$ref": "#/$defs/positiveSafeInteger" },
-        "committedAtEpochMs": { "$ref": "#/$defs/nonnegativeSafeInteger" },
+        "commandId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "fromRevision": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "throughRevision": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
         "transitions": {
           "type": "array",
-          "minItems": 1,
-          "items": { "$ref": "#/$defs/flowNodeOccurrenceTransition" }
+          "items": {
+            "$ref": "#/$defs/flowNodeOccurrenceTransition"
+          }
         }
-      }
-    },
-    "openFlowNodeOccurrence": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "processId",
-        "elementId",
-        "owner",
-        "startedAtEpochMs"
-      ],
-      "properties": {
-        "id": { "$ref": "#/$defs/flowNodeOccurrenceId" },
-        "processId": { "$ref": "#/$defs/nonemptyString" },
-        "elementId": { "$ref": "#/$defs/nonemptyString" },
-        "owner": { "$ref": "#/$defs/scopeOccurrenceId" },
-        "startedAtEpochMs": { "$ref": "#/$defs/nonnegativeSafeInteger" }
       }
     },
     "flowNodeOccurrencePage": {
@@ -154,78 +233,117 @@
       "additionalProperties": false,
       "required": [
         "definition",
-        "processId",
         "processInstanceId",
         "requestedAfterRevision",
         "pageThroughRevision",
         "headRevision",
-        "batches",
-        "currentOpen"
+        "batches"
       ],
       "properties": {
         "definition": {
-          "$ref": "https://bpmn-lean.local/schemas/semantic-process.schema.json#/$defs/programIdentity"
+          "$ref": "#/$defs/definitionIdentity"
         },
-        "processId": { "$ref": "#/$defs/nonemptyString" },
-        "processInstanceId": { "$ref": "#/$defs/nonemptyString" },
-        "requestedAfterRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
-        "pageThroughRevision": { "$ref": "#/$defs/nonnegativeSafeInteger" },
-        "headRevision": { "$ref": "#/$defs/positiveSafeInteger" },
+        "processInstanceId": {
+          "$ref": "#/$defs/nonemptyString"
+        },
+        "requestedAfterRevision": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "pageThroughRevision": {
+          "$ref": "#/$defs/nonnegativeSafeInteger"
+        },
+        "headRevision": {
+          "$ref": "#/$defs/positiveSafeInteger"
+        },
         "batches": {
           "type": "array",
-          "items": { "$ref": "#/$defs/flowNodeOccurrenceBatch" }
-        },
-        "currentOpen": {
-          "oneOf": [
-            {
-              "type": "array",
-              "items": { "$ref": "#/$defs/openFlowNodeOccurrence" }
-            },
-            { "type": "null" }
-          ]
+          "items": {
+            "$ref": "#/$defs/flowNodeOccurrenceBatch"
+          }
         }
       }
     },
     "availableResult": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "page"],
+      "required": [
+        "kind",
+        "page"
+      ],
       "properties": {
-        "kind": { "const": "available" },
-        "page": { "$ref": "#/$defs/flowNodeOccurrencePage" }
+        "kind": {
+          "const": "available"
+        },
+        "page": {
+          "$ref": "#/$defs/flowNodeOccurrencePage"
+        }
       }
-    },
-    "notReadyResult": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["kind"],
-      "properties": { "kind": { "const": "notReady" } }
     },
     "notFoundResult": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind"],
-      "properties": { "kind": { "const": "notFound" } }
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "const": "notFound"
+        }
+      }
     },
     "unavailableResult": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind"],
-      "properties": { "kind": { "const": "unavailable" } }
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "const": "unavailable"
+        }
+      }
     },
     "gapResult": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind"],
-      "properties": { "kind": { "const": "gap" } }
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "const": "gap"
+        }
+      }
+    },
+    "integrityFailureResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "const": "integrityFailure"
+        }
+      }
     },
     "flowNodeOccurrencePublicationResult": {
       "oneOf": [
-        { "$ref": "#/$defs/availableResult" },
-        { "$ref": "#/$defs/notReadyResult" },
-        { "$ref": "#/$defs/notFoundResult" },
-        { "$ref": "#/$defs/unavailableResult" },
-        { "$ref": "#/$defs/gapResult" }
+        {
+          "$ref": "#/$defs/availableResult"
+        },
+        {
+          "$ref": "#/$defs/notFoundResult"
+        },
+        {
+          "$ref": "#/$defs/unavailableResult"
+        },
+        {
+          "$ref": "#/$defs/gapResult"
+        },
+        {
+          "$ref": "#/$defs/integrityFailureResult"
+        }
       ]
     }
   }

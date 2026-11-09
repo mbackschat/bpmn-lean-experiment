@@ -1,5 +1,6 @@
 import {
   decodeFlowNodeOccurrencePublicationPage,
+  flowNodeOccurrenceKeyText,
 } from "@bpmn-lean/platform-contracts";
 import type {
   FlowNodeOccurrenceBatch,
@@ -19,6 +20,7 @@ import {
   FlowNodeOccurrenceProjectionStatus,
   FlowNodeOccurrenceStoredValueError,
   occurrenceIdentityFromRegistration,
+  occurrenceIdentityText,
 } from "./flow-node-occurrence-projection.js";
 import type {
   FlowNodeOccurrenceProjectionImage,
@@ -27,7 +29,6 @@ import type {
 } from "./flow-node-occurrence-projection.js";
 import {
   encodePostgresqlText,
-  occurrenceIdentityText,
   readPostgresqlOccurrenceSnapshot,
   requireMatchingRegistration,
   snapshotProcessInstanceId,
@@ -244,11 +245,10 @@ export async function writePostgresqlOccurrenceHeader(
     text: `
       INSERT INTO bpmn_platform.operate_flow_node_occurrence_publications (
         process_instance_id, identity_json, status, head_revision,
-        producer_head_revision, last_committed_at_epoch_ms, current_open_json,
-        last_complete_observed_at_epoch_ms
+        producer_head_revision, last_complete_observed_at_epoch_ms
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7,
-        CASE WHEN $8 THEN
+        $1, $2, $3, $4, $5,
+        CASE WHEN $6 THEN
           floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint
         ELSE NULL END
       )
@@ -257,18 +257,14 @@ export async function writePostgresqlOccurrenceHeader(
         status = excluded.status,
         head_revision = excluded.head_revision,
         producer_head_revision = excluded.producer_head_revision,
-        last_committed_at_epoch_ms = excluded.last_committed_at_epoch_ms,
-        current_open_json = excluded.current_open_json,
         last_complete_observed_at_epoch_ms = excluded.last_complete_observed_at_epoch_ms
     `,
     values: [
       encodePostgresqlText(image.identity.processInstanceId),
-      occurrenceIdentityText(image),
+      occurrenceIdentityText(image.identity),
       image.status,
       image.headRevision,
       image.producerHeadRevision,
-      image.lastCommittedAtEpochMs,
-      JSON.stringify(image.currentOpen),
       completeObservation,
     ],
   });
@@ -334,8 +330,8 @@ export async function appendPostgresqlOccurrenceSuffix(
         values: [
           canonicalOccurrenceText(occurrence),
           encodePostgresqlText(processInstanceId),
-          occurrence.id.startRevision,
-          occurrence.id.startIndex,
+          occurrence.startRevision,
+          occurrence.startIndex,
           canonicalOccurrenceText(previous),
         ],
       });
@@ -364,16 +360,14 @@ async function insertBatches(
     await session.query({
       text: `
         INSERT INTO bpmn_platform.operate_flow_node_occurrence_batches (
-          process_instance_id, from_revision, through_revision, command_id,
-          committed_at_epoch_ms, batch_json
-        ) VALUES ($1, $2, $3, $4, $5, $6)
+          process_instance_id, from_revision, through_revision, command_id, batch_json
+        ) VALUES ($1, $2, $3, $4, $5)
       `,
       values: [
         encodePostgresqlText(processInstanceId),
         batch.fromRevision,
         batch.throughRevision,
         encodePostgresqlText(batch.commandId),
-        batch.committedAtEpochMs,
         canonicalBatchText(batch),
       ],
     });
@@ -394,8 +388,8 @@ async function insertOccurrences(
       `,
       values: [
         encodePostgresqlText(processInstanceId),
-        occurrence.id.startRevision,
-        occurrence.id.startIndex,
+        occurrence.startRevision,
+        occurrence.startIndex,
         canonicalOccurrenceText(occurrence),
       ],
     });
@@ -403,7 +397,7 @@ async function insertOccurrences(
 }
 
 function occurrenceKey(occurrence: ProjectedFlowNodeOccurrence): string {
-  return JSON.stringify(occurrence.id);
+  return flowNodeOccurrenceKeyText(occurrence.occurrence);
 }
 
 function requireTerminalSuccessor(
@@ -412,13 +406,10 @@ function requireTerminalSuccessor(
 ): void {
   if (
     prior.terminal !== null ||
-    prior.terminalAtEpochMs !== null ||
     next.terminal === null ||
-    next.terminalAtEpochMs === null ||
     canonicalOccurrenceText(next) !== canonicalOccurrenceText({
       ...prior,
       terminal: next.terminal,
-      terminalAtEpochMs: next.terminalAtEpochMs,
     })
   ) {
     throw new FlowNodeOccurrenceIntegrityError(

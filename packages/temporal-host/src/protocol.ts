@@ -8,18 +8,26 @@
  */
 import { defineQuery, defineUpdate } from "@temporalio/workflow";
 
-import type { CommandResult, HostSnapshot } from "./host-contract.js";
+import type { CandidateMatches, CorrelationQuestion, IngressState, Registration, RegistrationRequest, ScanRequest, TargetDelivery } from "./correlation.js";
+import type { CommandResult, CorrelatedPublication, HostSnapshot, PublicationResult } from "./host-contract.js";
 import type { EffectRequest, ScriptRequest } from "./host-machine.js";
 import type { PublicationPage } from "./publication.js";
-import type { EffectResult, JsonValue } from "./port.js";
+import type { EffectResult, JsonValue, OccurrenceId } from "./port.js";
 
 export {
+  PublicationOutcome,
   ResultKind,
   RunKind,
   Scheduling,
+  correlationAmbiguousCode,
+  ingressWorkflowType,
+  notCorrelatedCode,
   rejectionType,
   workflowType,
   type CommandResult,
+  type CorrelatedPublication,
+  type CorrelationTarget,
+  type PublicationResult,
   type Halt,
   type HostConfig,
   type HostSnapshot,
@@ -37,7 +45,28 @@ export const observationQuery = defineQuery<JsonValue>("observation");
 export const hostViewQuery = defineQuery<HostSnapshot>("hostView");
 export const publicationQuery = defineQuery<PublicationPage, [afterRevision: number, limit: number]>("publication");
 
+/** Resolves once the instance's open correlated waits are registered; returns the publication head. */
+export const settleUpdate = defineUpdate<number>("settle");
+/** The open waits of the instance a correlated delivery would reach now (`KernelPort.matching`). */
+export const correlationQuery = defineQuery<readonly OccurrenceId[], [CorrelationQuestion]>("correlationMatches");
+
+/** A correlation ingress's arguments; `carried` is its state across Continue-As-New, `null` on first start. */
+export interface IngressArgs {
+  readonly correlationScope: string;
+  readonly channel: JsonValue;
+  readonly carried: IngressState | null;
+}
+
+export const registerUpdate = defineUpdate<void, [Registration]>("register");
+export const publishUpdate = defineUpdate<PublicationResult, [CorrelatedPublication]>("publish");
+
 export interface HostActivities {
   readonly executeEffect: (request: EffectRequest) => Promise<EffectResult>;
   readonly evaluateScript: (request: ScriptRequest) => Promise<EffectResult>;
+  /** Applies a process's registration at its ingress, starting the ingress if none runs. */
+  readonly registerCorrelation: (request: RegistrationRequest) => Promise<void>;
+  /** Asks every candidate chain which of its open waits match. */
+  readonly scanCorrelation: (request: ScanRequest) => Promise<readonly CandidateMatches[]>;
+  /** Submits the delivery to the sole matching wait's chain and returns that chain's verdict. */
+  readonly deliverCorrelated: (request: TargetDelivery) => Promise<CommandResult>;
 }

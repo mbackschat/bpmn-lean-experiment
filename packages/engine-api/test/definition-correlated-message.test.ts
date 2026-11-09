@@ -1,166 +1,108 @@
+/**
+ * Correlated Message ingress: a Message published to a definition version, without a process target, is delivered to
+ * the one open correlated wait whose correlation key the kernel matches at delivery time among that version's
+ * instances; none is `message.notCorrelated`, several are `message.correlationAmbiguous`, and a deployment that serves
+ * no Messages refuses the publication. The model's first catch writes the settlement reference its correlated catch
+ * then waits on.
+ */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { test } from "node:test";
-import { enrollmentFixture } from "../../temporal-adapter/client/test/worker-deployment-enrollment-fixture.ts";
 
 import {
-  MessageChannelKind,
-  SemanticProcessCompilerId,
-  VariableValueKind,
-} from "@bpmn-lean/semantic-core";
-import {
-  EngineCorrelatedMessageIngressInvalid,
-  EngineCorrelatedMessagePublishResolutionKind,
-  publishBpmnDefinitionCorrelatedMessage,
+  EngineCorrelatedMessageStatus,
+  EngineDefinitionStartStatus,
+  compileBpmnDefinition,
+  engineCorrelationAmbiguousCode,
+  engineNotCorrelatedCode,
+  engineProcessLocatorForCanonicalProcess,
+  publishEngineCorrelatedMessage,
+  startBpmnDefinitionVersion,
+  EngineDefinitionCompilationStatus,
+  type EngineDefinitionIdentity,
+  type EngineProfile,
 } from "@bpmn-lean/engine-api";
-import {
-  CorrelationPublicationLedgerPhase,
-  CorrelationPublicationStatusKind,
-  CorrelationPublicationStoredResolutionKind,
-  bpmnCorrelationIngressConfigurationQueryName,
-  bpmnCorrelationIngressProtocolVersion,
-  bpmnCorrelationPublicationStatusQueryName,
-  correlationPublicationContentSha256,
-  productionCorrelationIngressConfiguration,
-} from "@bpmn-lean/temporal-protocol";
 
-const address = {
-  definition: {
-    compiler: SemanticProcessCompilerId.BpmnSourceSemanticProcess,
-    semanticProfile: "message-key-correlation-checkpoint",
-    sourceId: "settlement-confirmation",
-    sourceSha256: "a".repeat(64),
-    sourceOverlay: null,
-  },
-  processId: "Process_SettlementConfirmation",
-  channel: {
-    kind: MessageChannelKind.OperationMessage,
-    interfaceId: "Interface_Settlement",
-    interfaceOperationId: "Operation_ConfirmSettlement",
-    messageId: "Message_SettlementConfirmed",
-  },
-  correlationKeyId: "CorrelationKey_Settlement",
+import { limits, scenarioBytes, servesEverything, sha256, testHost, type TestHost } from "./support.ts";
+
+const profile: EngineProfile = { id: "test-correlation", relations: ["CIB-AGR-0001", "CIB-OP-0001", "CIB-LIM-0002"] };
+const channel = {
+  kind: "operationMessage",
+  interfaceId: "Interface_ClearingHouse",
+  interfaceOperationId: "Operation_ConfirmSettlement",
+  messageId: "Message_SettlementConfirmed",
 } as const;
+const correlationKey = "CorrelationKey_SettlementReference";
+const workflowIdOf = (instance: string): string =>
+  decodeURIComponent(engineProcessLocatorForCanonicalProcess(instance).slice("bpmn-process:".length));
 
-test("projects the closed definition-scoped correlation result without a host locator", async () => {
-  const calls: unknown[] = [];
-  const command = {
-    commandId: "Publication_1",
-    address,
-    payload: { kind: VariableValueKind.String, value: "settlement-42" },
-  } as const;
-  let statusCalls = 0;
-  const result = await publishBpmnDefinitionCorrelatedMessage({
-    temporalClient: fakeClient(calls, command, () => {
-      statusCalls += 1;
-      return statusCalls === 1
-        ? {
-            kind: CorrelationPublicationStatusKind.Absent,
-            commandId: command.commandId,
-            contentSha256: correlationPublicationContentSha256(command),
-          }
-        : {
-            kind: CorrelationPublicationStatusKind.Accepted,
-            record: {
-              commandId: command.commandId,
-              contentSha256: correlationPublicationContentSha256(command),
-              phase: CorrelationPublicationLedgerPhase.Settled,
-              ordinal: 7,
-              target: null,
-              resolution: {
-                kind: CorrelationPublicationStoredResolutionKind.Semantic,
-                outcome: { kind: "rejectedNoMatch" },
-              },
-            },
-          };
-    }),
-    ...command,
-    taskQueue: "correlation-ingress",
-  });
-
-  assert.deepEqual(result, {
-    kind: EngineCorrelatedMessagePublishResolutionKind.Semantic,
-    commandId: "Publication_1",
-    address,
-    ingressOrdinal: 7,
-    outcome: { kind: "rejectedNoMatch" },
-  });
-  const update = calls.find((call) =>
-    typeof call === "object" && call !== null &&
-    (call as Readonly<{ operation?: unknown }>).operation === "update"
-  ) as Readonly<{ options: Readonly<{ args: readonly unknown[] }> }> | undefined;
-  assert.deepEqual(update?.options.args, [command]);
-  assert.equal(JSON.stringify(result).includes("workflowId"), false);
-  assert.equal(JSON.stringify(result).includes("processLocator"), false);
-});
-
-test("translates malformed publication failures at the Product 1 boundary", async () => {
-  const command = {
-    commandId: "",
-    address,
-    payload: { kind: VariableValueKind.String, value: "settlement-42" },
-  } as const;
-
-  await assert.rejects(
-    publishBpmnDefinitionCorrelatedMessage({
-      temporalClient: fakeClient([], command, () => null),
-      ...command,
-      taskQueue: "correlation-ingress",
-    }),
-    EngineCorrelatedMessageIngressInvalid,
-  );
-});
-
-test("keeps Process locators and Temporal identity out of the public declaration", async () => {
-  const declaration = await readFile(
-    new URL("../dist/definition-correlated-message.d.ts", import.meta.url),
-    "utf8",
-  );
-  assert.deepEqual(
-    declaration.match(
-      /\b(?:processLocator|workflowId|runId|eventHistory|candidateLocator)\b/giu,
-    ) ?? [],
-    [],
-  );
-  assert.match(declaration, /target: null;/u);
-  assert.doesNotMatch(
-    declaration,
-    /target: EngineCorrelatedMessageTarget \| null;/u,
-  );
-});
-
-function fakeClient(
-  calls: unknown[],
-  command: Readonly<Record<string, unknown>>,
-  status: () => unknown,
-): never {
-  const enrollment = enrollmentFixture("correlation-ingress");
-  return {
-    ...enrollment,
-    start: async () => ({}),
-    getHandle: (workflowId: string) => ({
-      client: { connection: enrollment.connection },
-      query: async (name: string) => {
-        if (name === bpmnCorrelationIngressConfigurationQueryName) {
-          return {
-            address: command.address,
-            protocolVersion: bpmnCorrelationIngressProtocolVersion,
-            configuration: productionCorrelationIngressConfiguration,
-          };
-        }
-        assert.equal(name, bpmnCorrelationPublicationStatusQueryName);
-        return status();
-      },
-      executeUpdate: async (_name: string, options: unknown) => {
-        calls.push({ operation: "update", workflowId, options });
-        return {
-          kind: "admitted",
-          commandId: command.commandId,
-          contentSha256: correlationPublicationContentSha256(command as never),
-          phase: CorrelationPublicationLedgerPhase.Queued,
-          ordinal: null,
-        };
-      },
-    }),
-  } as never;
+async function definition(): Promise<EngineDefinitionIdentity> {
+  const bytes = await scenarioBytes("message-key-correlation/process.bpmn");
+  const compiled = await compileBpmnDefinition({ bytes, sourceId: "settlement", profile, limits });
+  assert.equal(compiled.status, EngineDefinitionCompilationStatus.Accepted);
+  if (compiled.status !== EngineDefinitionCompilationStatus.Accepted) throw new Error("not admitted");
+  return { ...compiled.definition, ref: { ...compiled.definition.ref, version: 1 } };
 }
+
+/** Starts one instance of version 1 per reference and lets each wait on its correlated catch for that reference. */
+async function waiting(references: readonly string[], host: TestHost = testHost()): Promise<TestHost> {
+  const bytes = await scenarioBytes("message-key-correlation/process.bpmn");
+  for (const [index, reference] of references.entries()) {
+    const instance = `settlement-${String(index)}`;
+    const started = await startBpmnDefinitionVersion({
+      host, bytes, sourceId: "settlement", expectedSha256: await sha256(bytes), profile,
+      expectedProcessId: "Process_SettlementCorrelation", version: 1, processInstanceId: instance, initialVariables: [], limits,
+    });
+    assert.equal(started.status, EngineDefinitionStartStatus.Started);
+    const initialized = await host.processes.deliver(workflowIdOf(instance), {
+      kind: "deliver", commandId: `initialize-${instance}`,
+      occurrence: { processInstanceId: instance, elementId: "MessageCatch_InitialSettlement", activation: 1 },
+      trigger: { kind: "message", channel }, payload: { kind: "string", value: reference },
+    });
+    assert.equal(initialized.outcome, "committed");
+  }
+  return host;
+}
+
+const publish = async (host: TestHost, commandId: string, reference: string) => publishEngineCorrelatedMessage({
+  host, definition: await definition(), channel, correlationKey, commandId, payload: { kind: "string", value: reference },
+});
+
+test("a publication is delivered to the one instance whose correlation key matches at delivery time", async () => {
+  const host = await waiting(["settlement-42", "settlement-43"]);
+  assert.deepEqual(await publish(host, "publication-1", "settlement-43"), {
+    status: EngineCorrelatedMessageStatus.Delivered,
+    ingressOrdinal: 1,
+    target: { processInstanceId: "settlement-1", locator: engineProcessLocatorForCanonicalProcess("settlement-1") },
+  });
+  assert.deepEqual(await publish(host, "publication-2", "settlement-43"), {
+    status: EngineCorrelatedMessageStatus.Rejected,
+    ingressOrdinal: 2,
+    target: null,
+    failure: { code: engineNotCorrelatedCode, evidence: "No open correlated wait of the definition matches the publication." },
+  });
+  assert.equal(engineNotCorrelatedCode, "message.notCorrelated");
+});
+
+test("several matching instances reject the publication without delivering it", async () => {
+  const host = await waiting(["settlement-42", "settlement-42"]);
+  const result = await publish(host, "publication-1", "settlement-42");
+  assert.equal(result.status, EngineCorrelatedMessageStatus.Rejected);
+  assert.equal(result.status === EngineCorrelatedMessageStatus.Rejected ? result.failure.code : null, engineCorrelationAmbiguousCode);
+  assert.equal(engineCorrelationAmbiguousCode, "message.correlationAmbiguous");
+});
+
+test("a repeated command identifier with other content is an identity conflict", async () => {
+  const host = await waiting(["settlement-42"]);
+  const first = await publish(host, "publication-1", "settlement-42");
+  assert.equal(first.status, EngineCorrelatedMessageStatus.Delivered);
+  assert.deepEqual(await publish(host, "publication-1", "settlement-42"), first);
+  assert.deepEqual(await publish(host, "publication-1", "settlement-7"), { status: EngineCorrelatedMessageStatus.IdentityConflict });
+});
+
+test("a deployment that serves no Messages refuses the publication before it reaches any process", async () => {
+  const host = testHost({ ...servesEverything, messages: false });
+  assert.deepEqual(await publish(host, "publication-1", "settlement-42"), {
+    status: EngineCorrelatedMessageStatus.Refused,
+    failure: { code: "host.messages", evidence: "The deployment does not serve Messages." },
+  });
+});

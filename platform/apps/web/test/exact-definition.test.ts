@@ -96,3 +96,15 @@ test("rejects overlay ID, digest and presence drift in either comparison directi
   }
   assert.equal(sameExactDefinition(selected, structuredClone(selected)), true);
 });
+
+test("keeps an unresolved Timer Start duration exact: null equals only null", () => {
+  const unresolved = createMutableDefinition();
+  unresolved.startCapabilities.timerStarts[0]!.durationMs = null;
+  const zero = createMutableDefinition();
+  zero.startCapabilities.timerStarts[0]!.durationMs = 0;
+
+  assert.deepEqual(snapshotExactDefinition(unresolved), unresolved);
+  assert.equal(sameExactDefinition(unresolved, structuredClone(unresolved)), true);
+  assert.equal(sameExactDefinition(unresolved, definition), false);
+  assert.equal(sameExactDefinition(unresolved, zero), false);
+});
