@@ -170,7 +170,7 @@ function inputKinds(vocabulary: Readonly<Record<string, unknown>>): ReadonlyArra
   return inputKind.enum;
 }
 
-function roleArms(schema: Readonly<Record<string, unknown>>): ReadonlyArray<Readonly<{ kind: string; input?: unknown }>> {
+function roleArms(schema: Readonly<Record<string, unknown>>): ReadonlyArray<Readonly<{ kind: string; input?: ReadonlyArray<unknown> }>> {
   assert.ok(isRecord(schema.$defs));
   const role = schema.$defs.role;
   assert.ok(isRecord(role) && Array.isArray(role.oneOf));
@@ -179,7 +179,9 @@ function roleArms(schema: Readonly<Record<string, unknown>>): ReadonlyArray<Read
     const kind = arm.properties.kind;
     assert.ok(isRecord(kind) && typeof kind.const === "string");
     const input = arm.properties.input;
-    return isRecord(input) ? { kind: kind.const, input: input.enum } : { kind: kind.const };
+    if (!isRecord(input)) return { kind: kind.const };
+    assert.ok(Array.isArray(input.enum));
+    return { kind: kind.const, input: input.enum };
   });
 }
 

@@ -1,4 +1,4 @@
-import { DefinitionStartDescriptionStatus } from "@bpmn-lean/platform-engine-gateway";
+import { DefinitionStartDescriptionStatus, DefinitionStartStatus } from "@bpmn-lean/platform-engine-gateway";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { copyFile, mkdtemp, readdir, rm } from "node:fs/promises";
@@ -125,7 +125,7 @@ if (baseConnectionString === undefined) {
     const dispatched: string[] = []; const described: string[] = [];
     const starter: DefinitionVersionStarter = {
       prepareDefinitionVersion: async () => { throw new Error("recovery cannot reprepare"); }, startDefinitionVersion: async () => { throw new Error("recovery cannot allocate a new start"); },
-      startPreparedDefinitionVersion: async (request) => { dispatched.push(request.processInstanceId); return { status: "started", processInstanceId: request.processInstanceId, source, definition: { processId: definition.processId, semanticProfile: definition.semanticProfile, sourceOverlay: null } }; },
+      startPreparedDefinitionVersion: async (request) => { dispatched.push(request.processInstanceId); return { status: DefinitionStartStatus.Started, processInstanceId: request.processInstanceId, source, definition: { processId: definition.processId, semanticProfile: definition.semanticProfile, sourceOverlay: null } }; },
       describeDefinitionVersionStart: async (request) => { described.push(request.processInstanceId); return { status: DefinitionStartDescriptionStatus.Matching }; },
     };
     const publication = new ConfirmedProcessInstancePublicationService({ repository: confirmed, operate: { recordConfirmedProcessInstance: async () => {} }, work: { recordConfirmedProcessInstance: async () => {} } });
