@@ -259,14 +259,13 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
   private String start(Start start, String definitionId) {
     var runtime = processEngine.getRuntimeService();
     var variables = ScenarioVariableBindings.toEngineMap(start.variables());
-    if (start.businessKey() != null) {
-      throw new IllegalStateException("A start business key has no realization in this runner yet");
-    }
+    var businessKey = start.businessKey();
     return switch (start.trigger() == null ? new NoneStart() : start.trigger()) {
       case NoneStart ignored ->
           start.startEvent() == null
-              ? runtime.startProcessInstanceById(definitionId, variables).getId()
+              ? runtime.startProcessInstanceById(definitionId, businessKey, variables).getId()
               : runtime.createProcessInstanceById(definitionId)
+                  .businessKey(businessKey)
                   .startBeforeActivity(start.startEvent())
                   .setVariables(variables)
                   .execute()
@@ -284,18 +283,64 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
             };
         var model = processEngine.getRepositoryService().getBpmnModelInstance(definitionId);
         var name = ((Message) model.getModelElementById(messageId)).getName();
-        yield runtime.createMessageCorrelation(name)
-            .processDefinitionId(definitionId)
-            .setVariables(variables)
-            .correlateStartMessage()
-            .getId();
+        // CIB's builders refuse a null business key (`ensureNotNull`), so an absent key is left unset.
+        var correlation = runtime.createMessageCorrelation(name).processDefinitionId(definitionId);
+        if (businessKey != null) {
+          correlation.processInstanceBusinessKey(businessKey);
+        }
+        yield correlation.setVariables(variables).correlateStartMessage().getId();
       }
-      case TimerStart timer -> fireTimerStart(start, timer, definitionId);
-      case SignalStart ignored ->
-          throw new IllegalStateException("A Signal start has no realization in this runner yet");
-      case ConditionStart ignored ->
-          throw new IllegalStateException("A conditional start has no realization in this runner yet");
+      case TimerStart timer -> {
+        requireNoBusinessKey(start, "timer");
+        yield fireTimerStart(start, timer, definitionId);
+      }
+      case SignalStart signal -> {
+        requireNoBusinessKey(start, "Signal");
+        // CIB's Signal carries one variable map, so start variables beside the Signal's own have no realization.
+        if (!start.variables().isEmpty()) {
+          throw new IllegalStateException("Start variables beside a Signal start's own have no realization in this runner");
+        }
+        runtime.createSignalEvent(signal.name())
+            .setVariables(ScenarioVariableBindings.toEngineMap(signal.variables()))
+            .send();
+        yield startedAt(start, definitionId, "Signal");
+      }
+      case ConditionStart ignored -> {
+        var evaluation = runtime.createConditionEvaluation().processDefinitionId(definitionId);
+        if (businessKey != null) {
+          evaluation.processInstanceBusinessKey(businessKey);
+        }
+        var started = evaluation.setVariables(variables).evaluateStartConditions();
+        if (started.isEmpty()) {
+          yield null;
+        }
+        yield startedAt(start, definitionId, "conditional");
+      }
     };
+  }
+
+  private static void requireNoBusinessKey(Start start, String trigger) {
+    if (start.businessKey() != null) {
+      throw new IllegalStateException("A business key on a " + trigger + " start has no realization in this runner");
+    }
+  }
+
+  /**
+   * The one instance an event start created, which began at the start input's named Start Event when it names one. CIB
+   * starts one instance per matching start event, so more than one has no single-instance realization.
+   */
+  private String startedAt(Start start, String definitionId, String trigger) {
+    var started = processEngine.getHistoryService().createHistoricProcessInstanceQuery()
+        .processDefinitionId(definitionId).list();
+    if (started.size() != 1) {
+      throw new IllegalStateException("A " + trigger + " start created " + started.size() + " instances, not one");
+    }
+    var instance = started.getFirst();
+    if (start.startEvent() != null && !start.startEvent().equals(instance.getStartActivityId())) {
+      throw new IllegalStateException("A " + trigger + " start began at " + instance.getStartActivityId()
+          + ", not at " + start.startEvent());
+    }
+    return instance.getId();
   }
 
   /** A timer start fires only at its job's due date, by the same controlled-clock rule as a timer wait. */
