@@ -73,7 +73,7 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-MESSAGE-02 | slice | [`message-start-event`](../../scenarios/message-start-event/README.md) | — |
 | PC-MESSAGE-03 | slice | [`intermediate-catch-message`](../../scenarios/intermediate-catch-message/README.md); [`message-payload-catch`](../../scenarios/message-payload-catch/README.md); [`portable-business-message-payload`](../../scenarios/portable-business-message-payload/README.md) | — |
 | PC-MESSAGE-04 | slice | [`activity-boundary-message`](../../scenarios/activity-boundary-message/README.md) | cancellation |
-| PC-MESSAGE-05 | refused | [`repeatable-event-subscriptions`](../../scenarios/repeatable-event-subscriptions/README.md) (refused: `profile.abnormalScopeEnd.withoutOutflow`) | — |
+| PC-MESSAGE-05 | slice | [`repeatable-event-subscriptions`](../../scenarios/repeatable-event-subscriptions/README.md) | — |
 | PC-MESSAGE-06 | absent | — | cancellation |
 | PC-MESSAGE-07 | absent | — | concurrency |
 | PC-MESSAGE-08 | slice | [`message-key-correlation`](../../scenarios/message-key-correlation/README.md) | — |
@@ -93,7 +93,7 @@ The kernel column reads: `accepted`, the row is `done` and the listed kernel sce
 | PC-ESCALATION-01 | absent | — | — |
 | PC-ESCALATION-02 | absent | — | cancellation |
 | PC-ESCALATION-03 | absent | — | cancellation |
-| PC-TERMINATE-01 | refused | [`terminate-end-event`](../../scenarios/terminate-end-event/README.md) (refused: `profile.abnormalScopeEnd.withoutOutflow`) | cancellation |
+| PC-TERMINATE-01 | slice | [`terminate-end-event`](../../scenarios/terminate-end-event/README.md) | cancellation |
 | PC-TERMINATE-02 | absent | — | cancellation, Multi-Instance |
 | PC-COMPENSATION-01 | absent | — | Compensation and Transaction |
 | PC-COMPENSATION-02 | slice | [`compensation`](../../scenarios/compensation/README.md) | Compensation and Transaction |
