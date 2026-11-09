@@ -10,8 +10,15 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
 import org.bpmnlean.cibseven.ScenarioProtocol.Start;
+import org.cibseven.bpm.model.bpmn.Bpmn;
+import org.cibseven.bpm.model.bpmn.instance.BusinessRuleTask;
+import org.cibseven.bpm.model.bpmn.instance.Condition;
+import org.cibseven.bpm.model.bpmn.instance.ConditionExpression;
+import org.cibseven.bpm.model.bpmn.instance.ScriptTask;
+import org.cibseven.bpm.model.bpmn.instance.cibseven.CamundaScript;
 
 /** Validates the closed scenario shape and binds its content-addressed BPMN resource. */
 final class CibSevenScenarioValidator {
@@ -38,7 +45,31 @@ final class CibSevenScenarioValidator {
     var bpmnPath = projectRoot.resolve(scenario.bpmn().relativePath()).normalize();
     requireContainedByProject(projectRoot, bpmnPath);
     verifySha256(bpmnPath, scenario.bpmn().sha256());
+    requireRealizable(bpmnPath);
     return new ValidatedScenario(start, bpmnPath);
+  }
+
+  /**
+   * Refuses a model whose behaviour this runner's environment cannot give faithfully. The engine has no JSR-223 script
+   * engine (adding one is a dependency decision), and a scenario deploys one BPMN resource, so a referenced DMN decision
+   * is never deployed. CIB would answer both with an engine exception that the runner records as a rolled-back command,
+   * an answer of this environment, not of CIB; refusing here keeps them harness failures.
+   */
+  private static void requireRealizable(Path bpmnPath) {
+    var model = Bpmn.readModelFromFile(bpmnPath.toFile());
+    if (!model.getModelElementsByType(ScriptTask.class).isEmpty()
+        || !model.getModelElementsByType(CamundaScript.class).isEmpty()
+        || Stream.concat(
+                model.getModelElementsByType(ConditionExpression.class).stream(),
+                model.getModelElementsByType(Condition.class).stream())
+            .map(condition -> condition.getAttributeValue("language"))
+            .anyMatch(language -> language != null && !"juel".equalsIgnoreCase(language))) {
+      throw new IllegalStateException("A script has no realization in this runner: " + bpmnPath.getFileName());
+    }
+    if (model.getModelElementsByType(BusinessRuleTask.class).stream()
+        .anyMatch(task -> task.getCamundaDecisionRef() != null)) {
+      throw new IllegalStateException("A DMN decision has no realization in this runner: " + bpmnPath.getFileName());
+    }
   }
 
   private static void requireContainedByProject(Path projectRoot, Path resource)
