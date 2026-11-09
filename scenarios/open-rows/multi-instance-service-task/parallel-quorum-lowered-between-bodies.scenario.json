@@ -1,0 +1,172 @@
+{
+  "kind": "scenario",
+  "id": "mi-service-parallel-quorum-lowered-between-bodies",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "mi-service-parallel-quorum",
+    "relativePath": "scenarios/open-rows/multi-instance-service-task/parallel-quorum.bpmn",
+    "sha256": "c7f316992f22f500f24b62efddd40f0da3f5d58ee0f90d83a0911ca899f94870",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "quorum",
+          "value": {
+            "kind": "integer",
+            "value": 3
+          }
+        },
+        {
+          "name": "recipients",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "a",
+              "b",
+              "c"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-effect-ServiceTask_Notify-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Notify",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-set-variables-ServiceTask_Notify-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Notify",
+        "activation": 2
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "quorum",
+            "value": {
+              "kind": "integer",
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s04-effect-ServiceTask_Notify-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Notify",
+        "activation": 2
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r2"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s05-effect-ServiceTask_Notify-3",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Notify",
+        "activation": 3
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "delivered",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "late"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-UserTask_Close-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Close",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.3.8",
+      "BPMN 2.0.2 \u00a713.3.7",
+      "BPMN 2.0.2 Table 10.29",
+      "BPMN 2.0.2 Table 10.30",
+      "BPMN 2.0.2 \u00a710.3.3",
+      "BPMN 2.0.2 \u00a713.3.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelMultiInstanceActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

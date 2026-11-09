@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiServiceSequentialBoundary"
+  targetNamespace="urn:bpmn-lean:scenarios:multi-instance-service-task:sequential-boundary">
+  <bpmn:error id="Error_Rejected" name="Error_Rejected" errorCode="E-REJECTED" />
+  <bpmn:process id="Process_MiServiceSequentialBoundary" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Notify" sourceRef="StartEvent_Start" targetRef="ServiceTask_Notify" />
+    <bpmn:serviceTask
+      id="ServiceTask_Notify"
+      name="Notify recipient"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="address">${recipient}</camunda:inputParameter>
+          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics camunda:asyncBefore="true" isSequential="true" camunda:collection="${recipients}" camunda:elementVariable="recipient" />
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_Notify_Close" sourceRef="ServiceTask_Notify" targetRef="UserTask_Close" />
+    <bpmn:userTask id="UserTask_Close" name="Close notification run" />
+    <bpmn:sequenceFlow id="Flow_Close_End" sourceRef="UserTask_Close" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:boundaryEvent id="BoundaryError_Rejected" attachedToRef="ServiceTask_Notify">
+      <bpmn:errorEventDefinition errorRef="Error_Rejected" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_Rejected_Handle" sourceRef="BoundaryError_Rejected" targetRef="UserTask_Rejected" />
+    <bpmn:userTask id="UserTask_Rejected" name="Handle rejected notification" />
+    <bpmn:sequenceFlow id="Flow_Handle_Rejected_End" sourceRef="UserTask_Rejected" targetRef="EndEvent_Rejected" />
+    <bpmn:endEvent id="EndEvent_Rejected" />
+  </bpmn:process>
+</bpmn:definitions>
