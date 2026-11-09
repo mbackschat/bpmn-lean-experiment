@@ -46,4 +46,27 @@ def cyclePeriodMs? (lexeme : String) : Option Nat :=
   | 'R' :: '/' :: rest => durationMs? (String.ofList rest)
   | _ => none
 
+/-- A Timer schedule resolved to the delays a host arms: one duration, or a cycle's period and its repetitions
+(`none` unbounded). -/
+inductive Resolved where
+  | duration (ms : Nat)
+  | cycle (periodMs : Nat) (repetitions : Option Nat)
+  deriving Repr
+
+/-- The one resolution of a Timer schedule, shared by `Kernel.Feature.Subscriptions`, which arms it, and
+`Kernel.Host.definitionCapabilities`, which offers a Timer start's schedule to its host. Every refused form yields
+its dynamic-only code; admission refuses each of them first (`timer.duration`, `timer.date`, `timer.cycle`,
+`timer.cron`). The grammar admits only unbounded cycles, so `repetitions` is always `none`. -/
+def resolve : TimerSchedule → Except String Resolved
+  | .duration value =>
+    match (ValueSource.literal? value).bind durationMs? with
+    | some ms => .ok (.duration ms)
+    | none => .error "timer-duration"
+  | .date _ => .error "timer-date"
+  | .cycle value dialect =>
+    match dialect, (ValueSource.literal? value).bind cyclePeriodMs? with
+    | .iso8601, some ms => .ok (.cycle ms none)
+    | .iso8601, none => .error "timer-cycle"
+    | .cron, _ => .error "timer-cron"
+
 end Kernel.Timer

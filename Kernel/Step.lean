@@ -313,8 +313,8 @@ def command (hooks : Hooks) (ctx : Ctx) (input : CommandInput) (state : State) :
     | none => .error (.rejected "unknown-user-task")
     | some item => atActivity ctx item fun header payload =>
       hooks.completeUserTask ctx header payload item values state
-  | .retryIncident => incident .retryIncident
-  | .cancelIncidentProcess => incident .cancelIncidentProcess
+  | .retryIncident generation => incident (.retryIncident generation)
+  | .cancelIncidentProcess generation => incident (.cancelIncidentProcess generation)
   | .setVariables values => variables fun occurrence => .write occurrence.scope values .outward
   | .removeVariables names => variables fun occurrence => .remove occurrence.scope names
 

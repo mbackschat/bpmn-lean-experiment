@@ -83,10 +83,14 @@ export enum CommandActionTag {
   RemoveVariables = "removeVariables",
 }
 
+/**
+ * An incident command names the incident's `generation` (`IncidentDetail.generation`) beside its occurrence, so a command
+ * issued against an incident that has since been resolved or reopened is rejected rather than applied to another one.
+ */
 export type CommandAction =
   | { readonly tag: CommandActionTag.CompleteUserTask; readonly values: readonly Binding[] }
-  | { readonly tag: CommandActionTag.RetryIncident }
-  | { readonly tag: CommandActionTag.CancelIncidentProcess }
+  | { readonly tag: CommandActionTag.RetryIncident; readonly generation: number }
+  | { readonly tag: CommandActionTag.CancelIncidentProcess; readonly generation: number }
   | { readonly tag: CommandActionTag.SetVariables; readonly values: readonly Binding[] }
   | { readonly tag: CommandActionTag.RemoveVariables; readonly names: readonly string[] };
 

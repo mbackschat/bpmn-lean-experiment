@@ -695,11 +695,17 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "kind"
+            "kind",
+            "generation"
           ],
           "properties": {
             "kind": {
               "const": "retryIncident"
+            },
+            "generation": {
+              "description": "The generation of the open incident the command resolves; another generation is rejected as stale.",
+              "type": "integer",
+              "minimum": 1
             }
           }
         },
@@ -707,11 +713,17 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "kind"
+            "kind",
+            "generation"
           ],
           "properties": {
             "kind": {
               "const": "cancelIncidentProcess"
+            },
+            "generation": {
+              "description": "The generation of the open incident the command resolves; another generation is rejected as stale.",
+              "type": "integer",
+              "minimum": 1
             }
           }
         },

@@ -703,9 +703,9 @@ export function encodeProgram(value: Program): JsonValue {
   return program.encode(value);
 }
 
-/** Lean's derived `ToJson TimerSchedule`, which the host view publishes for a timer start. */
-export function encodeTimerSchedule(value: TimerSchedule): JsonValue {
-  return timerSchedule.encode(value);
+/** Lean's derived `ToJson Expression`, which the definition capabilities publish for a correlation criterion. */
+export function encodeExpression(value: Expression): JsonValue {
+  return expression.encode(value);
 }
 
 export function decodeValue(json: unknown): Decoded<Value> {

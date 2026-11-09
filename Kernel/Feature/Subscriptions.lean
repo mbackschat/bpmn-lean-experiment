@@ -5,9 +5,9 @@ public import Kernel.IL.Timer
 
 /-! # Subscriptions: catch Events, boundaries, Event Sub-Process starts and Event-Based Gateway arms
 
-Owns matching on `Trigger` and `TimerSchedule`. A Timer or Message trigger opens one item; the triggers that
-`Kernel.Feature.Propagation` delivers (Error, Escalation, Compensation, Cancel) open nothing and are found through
-`catches`.
+Owns matching on `Trigger`; `Kernel.Timer.resolve` owns resolving a `TimerSchedule`. A Timer or Message trigger
+opens one item; the triggers that `Kernel.Feature.Propagation` delivers (Error, Escalation, Compensation, Cancel) open
+nothing and are found through `catches`.
 
 Firing rules: a Timer fires only at exactly its deadline, which becomes the logical time; a Message fires only on its
 own channel, with a payload exactly when the subscription writes one. Anything else is `rejected` and changes nothing.
@@ -21,20 +21,14 @@ public section
 
 namespace Kernel.Feature.Subscriptions
 
-/-- A Timer armed at `now`. A cycle's first deadline is one period after arming (`Kernel.IL.Timer`). Admission refuses
-every form this answers `unsupported` (`timer.duration`, `timer.date`, `timer.cycle`, `timer.cron`). -/
+/-- A Timer armed at `now`, from its one resolution (`Kernel.Timer.resolve`). A cycle's first deadline is one
+period after arming. Admission refuses every form this answers `unsupported`. -/
 def timerDetail (now : Nat) (trigger : TimerTrigger) : Except Failure TimerDetail :=
-  match trigger.schedule with
-  | .duration value =>
-    match (ValueSource.literal? value).bind Timer.durationMs? with
-    | some ms => .ok { deadlineMs := now + ms }
-    | none => .error (.unsupported "timer-duration")
-  | .date _ => .error (.unsupported "timer-date")
-  | .cycle value dialect =>
-    match dialect, (ValueSource.literal? value).bind Timer.cyclePeriodMs? with
-    | .iso8601, some ms => .ok { deadlineMs := now + ms, recurrence := some { periodMs := some ms } }
-    | .iso8601, none => .error (.unsupported "timer-cycle")
-    | .cron, _ => .error (.unsupported "timer-cron")
+  match Timer.resolve trigger.schedule with
+  | .ok (.duration ms) => .ok { deadlineMs := now + ms }
+  | .ok (.cycle periodMs repetitions) =>
+    .ok { deadlineMs := now + periodMs, recurrence := some { periodMs := some periodMs, remaining := repetitions } }
+  | .error code => .error (.unsupported code)
 
 /-- The item a subscription opens, or `none` for a trigger that propagation delivers. -/
 def waitKind (now : Nat) (subscription : Subscription) : Except Failure (Option OpenKind) :=

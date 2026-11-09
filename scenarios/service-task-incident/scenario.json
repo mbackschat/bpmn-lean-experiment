@@ -36,7 +36,8 @@
         "activation": 1
       },
       "action": {
-        "kind": "retryIncident"
+        "kind": "retryIncident",
+        "generation": 1
       }
     },
     {

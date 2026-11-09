@@ -91,8 +91,10 @@ def startTriggerFromJson (json : Json) : Except String StartTrigger := do
 def commandActionFromJson (json : Json) : Except String CommandAction := do
   match ← kindOf json with
   | "completeUserTask" => fields json ["kind", "values"]; pure (.completeUserTask (← bindingsAt json "values"))
-  | "retryIncident" => fields json ["kind"]; pure .retryIncident
-  | "cancelIncidentProcess" => fields json ["kind"]; pure .cancelIncidentProcess
+  | "retryIncident" => fields json ["kind", "generation"]; pure (.retryIncident (← json.getObjValAs? Nat "generation"))
+  | "cancelIncidentProcess" =>
+    fields json ["kind", "generation"]
+    pure (.cancelIncidentProcess (← json.getObjValAs? Nat "generation"))
   | "setVariables" => fields json ["kind", "values"]; pure (.setVariables (← bindingsAt json "values"))
   | "removeVariables" =>
     fields json ["kind", "names"]

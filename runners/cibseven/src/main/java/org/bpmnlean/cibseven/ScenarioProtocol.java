@@ -290,9 +290,11 @@ public final class ScenarioProtocol {
     }
   }
 
-  public record RetryIncident() implements CommandAction {}
+  /** {@code generation} names the open incident the command resolves; another generation is stale. */
+  public record RetryIncident(long generation) implements CommandAction {}
 
-  public record CancelIncidentProcess() implements CommandAction {}
+  /** {@code generation} names the open incident the command resolves; another generation is stale. */
+  public record CancelIncidentProcess(long generation) implements CommandAction {}
 
   public record SetVariables(List<VariableBinding> values) implements CommandAction {
     public SetVariables {

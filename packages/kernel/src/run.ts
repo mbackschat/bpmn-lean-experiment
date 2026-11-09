@@ -17,7 +17,7 @@
  * a population refusal is a harness error, thrown, never a result.
  */
 import { assertNever, compareStrings, mergeSort, type DefinitionRef, type Program } from "./il/types.js";
-import { bindingsToJson, decodeProgram, encodeTimerSchedule, type JsonValue } from "./il/codec.js";
+import { bindingsToJson, decodeProgram, encodeExpression, type JsonValue } from "./il/codec.js";
 import { channelFromJson, channelToJson, failureCode, failureName, stimulusFromJson } from "./il/codec/stimulus.js";
 import {
   CauseTag,
@@ -35,7 +35,17 @@ import {
 } from "./state.js";
 import { step } from "./step.js";
 import { scopeRoleName, scopes, statusName, variables, type PublishedScope } from "./publish.js";
-import { definitionCapabilities, hostRequirements, hostView, type Capabilities, type OpenWait, type Requirements, type View } from "./host.js";
+import {
+  definitionCapabilities,
+  hostRequirements,
+  hostView,
+  type Capabilities,
+  type CorrelatedChannel,
+  type OpenWait,
+  type Requirements,
+  type View,
+} from "./host.js";
+import { ResolvedTag, type Resolved } from "./il/timer.js";
 import {
   ResolutionTag,
   StimulusTag,
@@ -390,14 +400,35 @@ function requirementsJson(requirements: Requirements): JsonValue {
   return { ...requirements };
 }
 
+/** A resolved Timer schedule: `{durationMs}` or `{cycle: {periodMs, repetitions}}`, `repetitions` null when unbounded. */
+function resolvedTimerJson(timer: Resolved): JsonValue {
+  switch (timer.tag) {
+    case ResolvedTag.Duration:
+      return { durationMs: timer.ms };
+    case ResolvedTag.Cycle:
+      return { cycle: { periodMs: timer.periodMs, repetitions: nullable(timer.repetitions, number) } };
+  }
+  return assertNever(timer);
+}
+
+function correlatedChannelJson(group: CorrelatedChannel): JsonValue {
+  return {
+    channel: channelToJson(group.channel),
+    catches: group.catches.map((entry) => ({
+      elementId: entry.element,
+      criteria: entry.criteria.map((criterion) => ({ key: criterion.key, value: encodeExpression(criterion.value) })),
+    })),
+  };
+}
+
 export function capabilitiesJson(capabilities: Capabilities): JsonValue {
   return {
     starts: capabilities.starts.map((start) => ({
       startEventId: start.startEventId,
       ...(start.channel === null ? {} : { channel: channelToJson(start.channel) }),
-      ...(start.timer === null ? {} : { timer: encodeTimerSchedule(start.timer) }),
+      ...(start.timer === null ? {} : { timer: resolvedTimerJson(start.timer) }),
     })),
-    correlatedChannels: capabilities.correlatedChannels.map(channelToJson),
+    correlatedChannels: capabilities.correlatedChannels.map(correlatedChannelJson),
     relations: [...capabilities.relations],
   };
 }

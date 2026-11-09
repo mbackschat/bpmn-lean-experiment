@@ -1,6 +1,7 @@
 module
 
 public import Kernel.Hooks
+public import Kernel.IL.Timer
 
 /-! # Host interface
 
@@ -24,20 +25,22 @@ structure Requirements where
   maxConcurrentWaits : Option Nat
   deriving Repr
 
-/-- Every subscription a program declares: catch Events, boundaries, starts and Event Sub-Process starts. -/
-def subscriptions (program : Program) : List Subscription :=
+/-- Every subscription a program declares, with the element that declares it: catch Events, boundaries, starts and
+Event Sub-Process starts (declared by the Event Sub-Process). -/
+def subscriptions (program : Program) : List (ElementId × Subscription) :=
   program.elements.flatMap fun element =>
-    let boundaries := (element.envelope?.map (·.boundaries)).getD [] |>.map (·.subscription)
+    let boundaries := (element.envelope?.map (·.boundaries)).getD [] |>.map fun boundary =>
+      (boundary.id, boundary.subscription)
     let catching := ((element.event?.bind fun (_, event) => event.catch?)).toList
     let starting := ((element.start?.bind (·.2.subscription))).toList
     let eventStart := ((element.scope?.bind fun (_, scope) => scope.kind.start?)).toList
-    boundaries ++ catching ++ starting ++ eventStart
+    boundaries ++ (catching ++ starting ++ eventStart).map (element.header.id, ·)
 
 def activityWork (program : Program) : List Work :=
   program.elements.filterMap fun element => element.activity?.map (·.2.work)
 
 def hostRequirements (program : Program) : Requirements :=
-  let triggers := (subscriptions program).map (·.trigger)
+  let triggers := (subscriptions program).map (·.2.trigger)
   let work := activityWork program
   let timers := triggers.any (·.timer?.isSome)
   let messages := triggers.any (·.message?.isSome) || work.any (·.receive?.isSome)
@@ -47,30 +50,58 @@ def hostRequirements (program : Program) : Requirements :=
   let waits := timers || messages || effects || userTasks || calls
   { timers, messages, effects, userTasks, calls, maxConcurrentWaits := if waits then none else some 0 }
 
-/-- A start the host can offer: a none start, a Message start on its channel, or a Timer start. -/
+/-- A start the host can offer: a none start, a Message start on its channel, or a Timer start with its resolved
+schedule (`Kernel.Timer.resolve`). -/
 structure StartCapability where
   startEventId : ElementId
   channel : Option MessageChannel := none
-  timer : Option TimerSchedule := none
+  timer : Option Timer.Resolved := none
+  deriving Repr
+
+/-- A correlated Message subscription as its host routes to it: the public identifier of the element that declares it
+and its criteria, each a correlation key and the expression bound to its value, which the kernel evaluates in the
+waiting instance when a delivery is matched (`Hooks.correlates`), never the host. -/
+structure CorrelatedCatch where
+  element : ElementId
+  criteria : List CorrelationCriterion
+  deriving Repr
+
+/-- The correlated subscriptions on one Message channel. -/
+structure CorrelatedChannel where
+  channel : MessageChannel
+  catches : List CorrelatedCatch
   deriving Repr
 
 /-- `relations` are the profile's register entries, as provenance a host can show. -/
 structure Capabilities where
   starts : List StartCapability
-  correlatedChannels : List MessageChannel
+  correlatedChannels : List CorrelatedChannel
   relations : List String
   deriving Repr
 
+/-- `catches` grouped by channel, each channel once, in the order of its first catch. -/
+def byChannel (catches : List (MessageChannel × CorrelatedCatch)) : List CorrelatedChannel :=
+  catches.foldl (fun grouped (channel, entry) =>
+    if grouped.any (·.channel == channel) then
+      grouped.map fun group =>
+        if group.channel == channel then { group with catches := group.catches ++ [entry] } else group
+    else grouped ++ [{ channel, catches := [entry] }]) []
+
+/-- A Timer start whose schedule does not resolve offers nothing: admission refuses it (`timer.*`), so an admitted
+program's every Timer start is offered. -/
 def definitionCapabilities (program : Program) : Capabilities :=
-  let starts := (program.children none).filterMap (·.start?) |>.map fun (header, payload) =>
+  let starts := (program.children none).filterMap (·.start?) |>.filterMap fun (header, payload) =>
     let trigger := payload.subscription.map (·.trigger)
-    { startEventId := header.id
-      channel := (trigger.bind (·.message?)).bind (·.channel?)
-      timer := trigger.bind (·.timer?) |>.map (·.schedule) : StartCapability }
-  let correlated := (subscriptions program).filterMap fun subscription =>
+    let offered (timer : Option Timer.Resolved) : StartCapability :=
+      { startEventId := header.id, channel := (trigger.bind (·.message?)).bind (·.channel?), timer }
+    match trigger.bind (·.timer?) with
+    | none => some (offered none)
+    | some timer => (Timer.resolve timer.schedule).toOption.map (offered ∘ some)
+  let correlated := (subscriptions program).filterMap fun (element, subscription) =>
     subscription.trigger.message?.bind fun trigger =>
-      if trigger.correlation.isEmpty then none else trigger.channel?
-  { starts, correlatedChannels := correlated, relations := program.options.relations }
+      if trigger.correlation.isEmpty then none
+      else trigger.channel?.map ((·, { element := program.publicId element, criteria := trigger.correlation }))
+  { starts, correlatedChannels := byChannel correlated, relations := program.options.relations }
 
 /-- One open wait: its public occurrence identity, the called definition it runs in (`none` in the root instance, whose
 definition is the program's) and its view. -/

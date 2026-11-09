@@ -53,6 +53,7 @@ What an Activity does once its occurrence has begun. [`Kernel.Feature.Work`](../
 - Under `TechnicalFailure.incident`, a technical failure turns the open effect into an incident with the same identity, attachments, descriptor and arguments; the instance keeps running and the incident's scope occurrence is not idle ([INCIDENT-REPORT-01][incident-rules]). A retry restores the same effect occurrence without a new activation ([INCIDENT-RETRY-01][incident-rules]). One incident per effect occurrence is selected: a second technical failure after the retry is outside the profile (`repeated-effect-incident`) ([required functionality][incident-scope]).
 - An incident never enters a BPMN Error route and a business result never creates an incident ([INCIDENT-SEPARATE-01][incident-rules]). The incident publishes as an open incident with a `retryIncident` interaction and no host cause, attempt or retry budget ([INCIDENT-OBSERVE-01][incident-rules]). A later BPMN fault account adds its own route without reinterpreting this one ([authority][incident-authority]).
 - `cancelIncidentProcess` is an extra-model CIB operator command, not BPMN termination or cancellation (§10.5.1). It exists only for an incident of the root process instance, under a profile that selects it, and ends the instance `cancelled`, keeping its Process variables. It uses only the generic subtree removal, which a later standard cancellation must precede with its own compensation or rollback ([authority][icancel-authority], [public contract][icancel-contract]). A wrong root or incident, a duplicate and a command on a non-running instance are `rejected`; removing the incident while its instance keeps running is no transition ([ICANCEL-REFUSE-01][icancel-refuse]).
+- `retryIncident` and `cancelIncidentProcess` carry the incident generation the caller observed; a generation other than the open incident's is `rejected` (`incident-generation-stale`) with the state unchanged, so the check and the operation are one kernel step and no host pre-check decides it.
 
 ### Send Tasks
 
@@ -139,7 +140,7 @@ The deleted implementation admitted each work kind only in exact first-profile t
 | dynamic: `call-input-unavailable`, `call-output-unavailable` | an unavailable Data Association source at a Call | PC-DATA-09 |
 | dynamic: `async-boundary-failure` | a failure after an input crossed `asyncBefore`/`asyncAfter` | PC-AUTO-03 |
 
-Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `unknown-occurrence`, `message-channel-mismatch`, `unexpected-message-payload`, `incident-process-cancellation-unavailable`, `error-path-outputs-not-accepted` and the submission codes of the [data semantics](DATA-SEMANTICS-SPEC.md#restrictions).
+Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `unknown-occurrence`, `message-channel-mismatch`, `unexpected-message-payload`, `incident-process-cancellation-unavailable`, `incident-generation-stale`, `error-path-outputs-not-accepted` and the submission codes of the [data semantics](DATA-SEMANTICS-SPEC.md#restrictions).
 
 ## Open rows
 

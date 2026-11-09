@@ -14,7 +14,7 @@ type Json = Record<string, unknown>;
 const programText = readFileSync(new URL("./fixtures/simple-boolean.program.json", import.meta.url), "utf8");
 const program = JSON.parse(programText) as Json;
 const occurrence = { processInstanceId: "pi-1", elementId: "Task", activation: 1 };
-const command: Json = { kind: "command", commandId: "c-1", occurrence, action: { kind: "retryIncident" } };
+const command: Json = { kind: "command", commandId: "c-1", occurrence, action: { kind: "retryIncident", generation: 1 } };
 
 const code = (refusal: string): string => refusal.split(":")[0] ?? refusal;
 const programRefusal = (json: unknown): string => {
@@ -44,7 +44,7 @@ test("a repeated key is refused as codec.duplicateField", () => {
 test("an unknown key is refused as codec.unknownField", () => {
   assert.equal(programRefusal({ ...program, extra: true }), "codec.unknownField");
   assert.equal(stimulusRefusal({ ...command, extra: true }), "codec.unknownField");
-  assert.equal(stimulusRefusal({ ...command, action: { kind: "retryIncident", values: [] } }), "codec.unknownField");
+  assert.equal(stimulusRefusal({ ...command, action: { kind: "retryIncident", generation: 1, values: [] } }), "codec.unknownField");
   const start = { kind: "start", commandId: "s", instanceId: "pi-1", variables: [{ name: "x", value: { kind: "null", value: 1 } }] };
   assert.equal(stimulusRefusal(start), "codec.unknownField");
 });
@@ -53,6 +53,8 @@ test("a missing key is refused as codec.missingField", () => {
   const { occurrence: _occurrence, ...withoutOccurrence } = command;
   assert.equal(stimulusRefusal(withoutOccurrence), "codec.missingField");
   assert.equal(stimulusRefusal({ ...command, occurrence: { processInstanceId: "pi-1", elementId: "Task" } }), "codec.missingField");
+  assert.equal(stimulusRefusal({ ...command, action: { kind: "cancelIncidentProcess" } }), "codec.missingField",
+    "an incident command names the generation it resolves");
   const [first, ...rest] = program["elements"] as Array<{ gateway: { header: Json } & Json }>;
   const { parent: _parent, ...header } = first!.gateway.header;
   const withoutParent = { ...program, elements: [{ gateway: { ...first!.gateway, header } }, ...rest] };

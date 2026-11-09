@@ -2,9 +2,9 @@
  * Subscriptions: catch Events, boundaries, Event Sub-Process starts and Event-Based Gateway arms, transcribed from
  * `Kernel/Feature/Subscriptions.lean`.
  *
- * Owns matching on `Trigger` and `TimerSchedule`. A Timer or Message trigger opens one item; the triggers that
- * `feature/propagation.ts` delivers (Error, Escalation, Compensation, Cancel) open nothing and are found through
- * `catches`.
+ * Owns matching on `Trigger`; `il/timer.ts#resolve` owns resolving a `TimerSchedule`. A Timer or Message trigger opens
+ * one item; the triggers that `feature/propagation.ts` delivers (Error, Escalation, Compensation, Cancel) open nothing
+ * and are found through `catches`.
  *
  * Firing rules: a Timer fires only at exactly its deadline, which becomes the logical time; a Message fires only on its
  * own channel, with a payload exactly when the subscription writes one. Anything else is `rejected` and changes nothing.
@@ -14,9 +14,7 @@
  * occurrence disarms the siblings of the arm that fired.
  */
 import {
-  CycleDialect,
   ExpressionTag,
-  TimerScheduleTag,
   TriggerTag,
   ValueTag,
   assertNever,
@@ -96,38 +94,26 @@ import {
   type Catch,
   type Ctx,
 } from "../hooks.js";
-import { cyclePeriodMs, durationMs } from "../il/timer.js";
+import { ResolvedTag, resolve } from "../il/timer.js";
 
 /**
- * A Timer armed at `now`. A cycle's first deadline is one period after arming (`il/timer.ts`). Admission refuses every
- * form this answers `unsupported` (`timer.duration`, `timer.date`, `timer.cycle`, `timer.cron`).
+ * A Timer armed at `now`, from its one resolution (`il/timer.ts#resolve`). A cycle's first deadline is one period after
+ * arming. Admission refuses every form this answers `unsupported`.
  */
 function timerDetail(now: number, trigger: TimerTrigger): Result<TimerDetail> {
-  const schedule = trigger.schedule;
-  switch (schedule.tag) {
-    case TimerScheduleTag.Duration: {
-      const literal = valueSourceLiteral(schedule.value);
-      const ms = literal === null ? null : durationMs(literal);
-      return ms === null ? failed(FailureTag.Unsupported, "timer-duration") : committed({ deadlineMs: now + ms, recurrence: null });
-    }
-    case TimerScheduleTag.Date:
-      return failed(FailureTag.Unsupported, "timer-date");
-    case TimerScheduleTag.Cycle: {
-      switch (schedule.dialect) {
-        case CycleDialect.Iso8601: {
-          const literal = valueSourceLiteral(schedule.value);
-          const ms = literal === null ? null : cyclePeriodMs(literal);
-          return ms === null
-            ? failed(FailureTag.Unsupported, "timer-cycle")
-            : committed({ deadlineMs: now + ms, recurrence: { periodMs: ms, cron: null, remaining: null } });
-        }
-        case CycleDialect.Cron:
-          return failed(FailureTag.Unsupported, "timer-cron");
-      }
-      return assertNever(schedule.dialect);
-    }
+  const resolved = resolve(trigger.schedule);
+  if (!resolved.ok) return failed(FailureTag.Unsupported, resolved.code);
+  const timer = resolved.value;
+  switch (timer.tag) {
+    case ResolvedTag.Duration:
+      return committed({ deadlineMs: now + timer.ms, recurrence: null });
+    case ResolvedTag.Cycle:
+      return committed({
+        deadlineMs: now + timer.periodMs,
+        recurrence: { periodMs: timer.periodMs, cron: null, remaining: timer.repetitions },
+      });
   }
-  return assertNever(schedule);
+  return assertNever(timer);
 }
 
 /** The item a subscription opens, or `null` for a trigger that propagation delivers. */

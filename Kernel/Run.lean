@@ -281,12 +281,25 @@ def requirementsJson (requirements : Host.Requirements) : Json :=
     ("calls", toJson requirements.calls),
     ("maxConcurrentWaits", match requirements.maxConcurrentWaits with | some value => toJson value | none => Json.null)]
 
+/-- A resolved Timer schedule: `{durationMs}` or `{cycle: {periodMs, repetitions}}`, `repetitions` null when
+unbounded. -/
+def resolvedTimerJson : Timer.Resolved → Json
+  | .duration ms => Json.mkObj [("durationMs", toJson ms)]
+  | .cycle periodMs repetitions =>
+    Json.mkObj [("cycle", Json.mkObj [("periodMs", toJson periodMs), ("repetitions", nullable repetitions toJson)])]
+
+def correlatedChannelJson (group : Host.CorrelatedChannel) : Json :=
+  Json.mkObj [("channel", Codec.channelToJson group.channel),
+    ("catches", Json.arr (group.catches.map fun entry => Json.mkObj [("elementId", Json.str entry.element.value),
+      ("criteria", Json.arr (entry.criteria.map fun criterion =>
+        Json.mkObj [("key", Json.str criterion.key), ("value", toJson criterion.value)]).toArray)]).toArray)]
+
 def capabilitiesJson (capabilities : Host.Capabilities) : Json :=
   Json.mkObj [("starts", Json.arr (capabilities.starts.map fun start =>
       Json.mkObj ([("startEventId", Json.str start.startEventId.value)] ++
         (start.channel.map fun channel => ("channel", Codec.channelToJson channel)).toList ++
-        (start.timer.map fun schedule => ("timer", toJson schedule)).toList)).toArray),
-    ("correlatedChannels", Json.arr (capabilities.correlatedChannels.map Codec.channelToJson).toArray),
+        (start.timer.map fun timer => ("timer", resolvedTimerJson timer)).toList)).toArray),
+    ("correlatedChannels", Json.arr (capabilities.correlatedChannels.map correlatedChannelJson).toArray),
     ("relations", Json.arr (capabilities.relations.map Json.str).toArray)]
 
 def runHostView (programPath scenarioPath : String) : IO Json := do

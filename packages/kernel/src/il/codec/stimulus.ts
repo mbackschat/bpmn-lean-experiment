@@ -234,11 +234,11 @@ function commandActionFromJson(json: unknown): CommandAction {
       fields(json, ["kind", "values"]);
       return { tag: CommandActionTag.CompleteUserTask, values: bindingsAt(json, "values") };
     case "retryIncident":
-      fields(json, ["kind"]);
-      return { tag: CommandActionTag.RetryIncident };
+      fields(json, ["kind", "generation"]);
+      return { tag: CommandActionTag.RetryIncident, generation: get(nat.decode(objValD(json, "generation"))) };
     case "cancelIncidentProcess":
-      fields(json, ["kind"]);
-      return { tag: CommandActionTag.CancelIncidentProcess };
+      fields(json, ["kind", "generation"]);
+      return { tag: CommandActionTag.CancelIncidentProcess, generation: get(nat.decode(objValD(json, "generation"))) };
     case "setVariables":
       fields(json, ["kind", "values"]);
       return { tag: CommandActionTag.SetVariables, values: bindingsAt(json, "values") };

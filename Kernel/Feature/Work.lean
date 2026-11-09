@@ -160,13 +160,17 @@ def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state 
 
 /-- A retry reopens the failed effect with the same occurrence (CIB-EXT-0013); cancelling the incident's process
 ends the instance as cancelled, keeping its Process variables (CIB-EXT-0014, CIB-OP-0009), and is offered only for
-an incident of the root process instance under a profile that selects it. -/
+an incident of the root process instance under a profile that selects it. A command naming another generation than
+the open incident's is stale and rejected, so it never resolves an incident its issuer did not observe. -/
 def resolveIncident (_ : Ctx) (item : OpenItem) (action : CommandAction) (state : State) : Outcome :=
+  let stale : Outcome := .error (.rejected "incident-generation-stale")
   match item.kind.view.incident, action with
   | none, _ => .error (.semanticFailure "incident-command-without-incident")
-  | some incident, .retryIncident => .ok (reopen state item.id (.effect incident.effect))
-  | some incident, .cancelIncidentProcess =>
-    if !incident.cancellable then .error (.rejected "incident-process-cancellation-unavailable")
+  | some incident, .retryIncident generation =>
+    if generation != incident.generation then stale else .ok (reopen state item.id (.effect incident.effect))
+  | some incident, .cancelIncidentProcess generation =>
+    if generation != incident.generation then stale
+    else if !incident.cancellable then .error (.rejected "incident-process-cancellation-unavailable")
     -- Dynamic-only: whether the incident is in a called instance depends on the run.
     else if state.instanceRoot item.scope != State.root then .error (.unsupported "called-incident-cancellation")
     else .ok (state.signal (.endInstance .cancelled none))

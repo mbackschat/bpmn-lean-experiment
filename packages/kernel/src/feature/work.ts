@@ -295,15 +295,19 @@ function technicalFailure(ctx: Ctx, item: OpenItem, state: State): Outcome {
 /**
  * A retry reopens the failed effect with the same occurrence (CIB-EXT-0013); cancelling the incident's process ends the
  * instance as cancelled, keeping its Process variables (CIB-EXT-0014, CIB-OP-0009), and is offered only for an incident
- * of the root process instance under a profile that selects it.
+ * of the root process instance under a profile that selects it. A command naming another generation than the open
+ * incident's is stale and rejected, so it never resolves an incident its issuer did not observe.
  */
 export function resolveIncident(_ctx: Ctx, item: OpenItem, action: CommandAction, state: State): Outcome {
   const incident = openKindView(item.kind).incident;
   if (incident === null) return failed(FailureTag.SemanticFailure, "incident-command-without-incident");
+  const stale: Outcome = failed(FailureTag.Rejected, "incident-generation-stale");
   switch (action.tag) {
     case CommandActionTag.RetryIncident:
+      if (action.generation !== incident.generation) return stale;
       return committed(reopen(state, item.id, { tag: OpenKindTag.Effect, detail: incident.effect }));
     case CommandActionTag.CancelIncidentProcess:
+      if (action.generation !== incident.generation) return stale;
       if (!incident.cancellable) return failed(FailureTag.Rejected, "incident-process-cancellation-unavailable");
       // Dynamic-only: whether the incident is in a called instance depends on the run.
       if (instanceRoot(state, item.scope) !== root) return failed(FailureTag.Unsupported, "called-incident-cancellation");

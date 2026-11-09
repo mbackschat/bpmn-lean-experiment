@@ -139,6 +139,26 @@ function occurrence(program: Program, state: State, item: OpenItem): OccurrenceR
 }
 
 /**
+ * The open subscriptions of one instance of `program` that `Hooks.correlates` accepts for a delivery on `channel`
+ * carrying `correlation`, by public occurrence identity; a subscription whose key cannot be evaluated is no match. A host
+ * that routes a publication across instances asks it of each instance.
+ */
+export function matching(
+  hooks: Hooks,
+  program: Program,
+  state: State,
+  channel: MessageChannel,
+  correlation: readonly CorrelationMatch[],
+): readonly OccurrenceRef[] {
+  const ctx = context(hooks, program);
+  const accepted = state.openItems.filter((item) => {
+    const accepts = hooks.correlates(ctx, item, channel, correlation, state);
+    return accepts.ok && accepts.value;
+  });
+  return accepted.map((item) => occurrence(program, state, item));
+}
+
+/**
  * The instances at the address's definition and process, by position, with each of their correlated subscriptions that
  * accepts `correlation`.
  */
@@ -153,12 +173,7 @@ function candidates(
     if (!deploymentRefEquals(member.definition.ref, address.definition) || program.identity.processId !== address.processId) {
       return [];
     }
-    const ctx = context(hooks, program);
-    const accepted = member.state.openItems.filter((item) => {
-      const accepts = hooks.correlates(ctx, item, address.channel, correlation, member.state);
-      return accepts.ok && accepts.value;
-    });
-    return accepted.map((item) => [index, occurrence(program, member.state, item)] as const);
+    return matching(hooks, program, member.state, address.channel, correlation).map((ref) => [index, ref] as const);
   });
 }
 

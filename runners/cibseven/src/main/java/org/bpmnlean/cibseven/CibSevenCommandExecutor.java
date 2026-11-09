@@ -95,15 +95,17 @@ final class CibSevenCommandExecutor {
         engine.getTaskService().complete(task.taskId(), ScenarioVariableBindings.toEngineMap(complete.values()));
         yield Execution.of(COMMITTED);
       }
-      case RetryIncident ignored -> {
-        if (!(detail instanceof IncidentDetail) || !(wait.handle() instanceof JobHandle job)) {
+      case RetryIncident retry -> {
+        if (!(detail instanceof IncidentDetail incident) || incident.generation() != retry.generation() ||
+            !(wait.handle() instanceof JobHandle job)) {
           yield Execution.of(REJECTED);
         }
         engine.getManagementService().setJobRetries(job.jobId(), 1);
         yield Execution.of(COMMITTED);
       }
-      case CancelIncidentProcess ignored -> {
-        if (!(detail instanceof IncidentDetail) || !incidentsCancellable) {
+      case CancelIncidentProcess cancel -> {
+        if (!(detail instanceof IncidentDetail incident) || incident.generation() != cancel.generation() ||
+            !incidentsCancellable) {
           yield Execution.of(REJECTED);
         }
         engine.getRuntimeService().deleteProcessInstance(engineRootId, DELETE_REASON, false, true);

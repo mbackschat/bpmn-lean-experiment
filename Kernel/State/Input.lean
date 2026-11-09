@@ -69,10 +69,13 @@ structure StartInput where
   atMs : Option Nat := none
   deriving Repr
 
+/-- An incident command names the incident's `generation` (`IncidentDetail.generation`) beside its occurrence, so a
+command issued against an incident that has since been resolved or reopened is rejected rather than applied to another
+one. -/
 inductive CommandAction where
   | completeUserTask (values : List (String × Value))
-  | retryIncident
-  | cancelIncidentProcess
+  | retryIncident (generation : Nat)
+  | cancelIncidentProcess (generation : Nat)
   | setVariables (values : List (String × Value))
   | removeVariables (names : List String)
   deriving Repr
