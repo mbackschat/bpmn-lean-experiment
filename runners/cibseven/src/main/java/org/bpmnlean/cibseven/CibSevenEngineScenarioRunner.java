@@ -2,6 +2,8 @@ package org.bpmnlean.cibseven;
 
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.COMMITTED;
 import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.REJECTED;
+import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.ROLLED_BACK;
+import static org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome.UNSUPPORTED;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +23,7 @@ import org.bpmnlean.cibseven.ScenarioProtocol.CanonicalObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.Command;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandObservation;
 import org.bpmnlean.cibseven.ScenarioProtocol.CommandOutcome;
+import org.cibseven.bpm.engine.ProcessEngineException;
 import org.bpmnlean.cibseven.ScenarioProtocol.ConditionStart;
 import org.bpmnlean.cibseven.ScenarioProtocol.Deliver;
 import org.bpmnlean.cibseven.ScenarioProtocol.DeploymentObservation;
@@ -133,59 +136,77 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
                 .addInputStream(validated.bpmnPath().getFileName().toString(), bpmn)
                 .deploy()
                 .getId();
+      } catch (ProcessEngineException refused) {
+        // CIB refusing the model at deployment is the oracle's admission answer: like the kernel's refused program,
+        // only an unsupported deployment is observed and no stimulus runs (canonical-result trace rule).
+        timings.deploymentNanos = positiveElapsedSince(deploymentStartedAt);
+        trace.add(new DeploymentObservation(UNSUPPORTED, null));
+        scenarioOutcome = UNSUPPORTED;
       }
-      timings.deploymentNanos = positiveElapsedSince(deploymentStartedAt);
-      trace.add(new DeploymentObservation(COMMITTED, null));
+      if (deploymentId != null) {
+        timings.deploymentNanos = positiveElapsedSince(deploymentStartedAt);
+        trace.add(new DeploymentObservation(COMMITTED, null));
 
-      var definitionId = rootDefinitionId(deploymentId);
-      var processId =
-          processEngine.getRepositoryService().getProcessDefinition(definitionId).getKey();
-      var definitionProjectionStartedAt = System.nanoTime();
-      pvmDefinition = pvmProjector.project(configuration, definitionId, processId);
-      timings.definitionProjectionNanos = positiveElapsedSince(definitionProjectionStartedAt);
+        var definitionId = rootDefinitionId(deploymentId);
+        var processId =
+            processEngine.getRepositoryService().getProcessDefinition(definitionId).getKey();
+        var definitionProjectionStartedAt = System.nanoTime();
+        pvmDefinition = pvmProjector.project(configuration, definitionId, processId);
+        timings.definitionProjectionNanos = positiveElapsedSince(definitionProjectionStartedAt);
 
-      var stimuli = scenario.stimuli();
-      for (var index = 0; index < stimuli.size(); index++) {
-        var stimulus = stimuli.get(index);
-        effects.beginCommand(stimulus.commandId());
-        if (stimulus instanceof EffectResult && effects.consumedSynchronously(stimulus.commandId())) {
-          continue;
-        }
-        var startedAt = System.nanoTime();
-        CommandOutcome outcome;
-        if (stimulus instanceof Start start) {
-          engineRootId = start(start, definitionId);
-          stableRootId = engineRootId == null ? null : start.instanceId();
-          outcome = engineRootId == null ? REJECTED : COMMITTED;
-        } else if (engineRootId == null) {
-          outcome = REJECTED;
-        } else {
-          var execution = execute(executor, engineRootId, stableRootId, stimulus);
-          outcome = execution.outcome();
-          if (execution.evidence() != null) {
-            effectExecutions.add(execution.evidence());
+        var stimuli = scenario.stimuli();
+        for (var index = 0; index < stimuli.size(); index++) {
+          var stimulus = stimuli.get(index);
+          effects.beginCommand(stimulus.commandId());
+          if (stimulus instanceof EffectResult && effects.consumedSynchronously(stimulus.commandId())) {
+            continue;
           }
-        }
-        var commandNanos = positiveElapsedSince(startedAt);
-        trace.add(new CommandObservation(stimulus.commandId(), outcome));
-        var projectionNanos = 0L;
-        if (engineRootId != null) {
-          var projectionStartedAt = System.nanoTime();
-          var observed = projector.observe(engineRootId, stableRootId, stimulus.commandId());
-          trace.add(observed.state());
-          observations.add(observed);
-          projectionNanos = positiveElapsedSince(projectionStartedAt);
-        }
-        if (stimulus instanceof Start) {
-          timings.startNanos = commandNanos;
-          timings.waitProjectionNanos = projectionNanos;
-        } else {
-          timings.completeNanos = commandNanos;
-          timings.completionProjectionNanos = projectionNanos;
-        }
-        scenarioOutcome = outcome;
-        if (outcome == REJECTED && index + 1 < stimuli.size()) {
-          scenarioOutcome = COMMITTED;
+          var startedAt = System.nanoTime();
+          CommandOutcome outcome;
+          try {
+            if (stimulus instanceof Start start) {
+              engineRootId = start(start, definitionId);
+              stableRootId = engineRootId == null ? null : start.instanceId();
+              outcome = engineRootId == null ? REJECTED : COMMITTED;
+            } else if (engineRootId == null) {
+              outcome = REJECTED;
+            } else {
+              var execution = execute(executor, engineRootId, stableRootId, stimulus);
+              outcome = execution.outcome();
+              if (execution.evidence() != null) {
+                effectExecutions.add(execution.evidence());
+              }
+            }
+          } catch (ProcessEngineException failed) {
+            // An engine exception inside the command rolls back its transaction; the runner's own harness exceptions are
+            // never ProcessEngineException and stay harness failures.
+            outcome = ROLLED_BACK;
+          }
+          var commandNanos = positiveElapsedSince(startedAt);
+          trace.add(new CommandObservation(stimulus.commandId(), outcome));
+          var projectionNanos = 0L;
+          if (engineRootId != null) {
+            var projectionStartedAt = System.nanoTime();
+            var observed = projector.observe(engineRootId, stableRootId, stimulus.commandId());
+            trace.add(observed.state());
+            observations.add(observed);
+            projectionNanos = positiveElapsedSince(projectionStartedAt);
+          }
+          if (stimulus instanceof Start) {
+            timings.startNanos = commandNanos;
+            timings.waitProjectionNanos = projectionNanos;
+          } else {
+            timings.completeNanos = commandNanos;
+            timings.completionProjectionNanos = projectionNanos;
+          }
+          scenarioOutcome = outcome;
+          if (outcome == REJECTED && index + 1 < stimuli.size()) {
+            scenarioOutcome = COMMITTED;
+          }
+          // The kernel's trace rule: only a committed input, or a rejected one that is not last, lets the run continue.
+          if (scenarioOutcome != COMMITTED) {
+            break;
+          }
         }
       }
     } finally {
@@ -212,7 +233,7 @@ final class CibSevenEngineScenarioRunner implements AutoCloseable {
             H2_VERSION,
             startupNanos,
             timings.freeze(),
-            Objects.requireNonNull(pvmDefinition, "pvmDefinition"),
+            pvmDefinition,
             observations.stateQueries(),
             observations.taskQueries(),
             observations.messageSubscriptions(),

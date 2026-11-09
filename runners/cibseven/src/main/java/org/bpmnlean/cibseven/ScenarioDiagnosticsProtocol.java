@@ -16,7 +16,8 @@ public final class ScenarioDiagnosticsProtocol {
       String databaseVersion,
       long startupNanos,
       PhaseTimings phases,
-      PvmDefinitionProjection pvmDefinition,
+      // Absent when CIB refused the deployment, which leaves no definition to project.
+      @JsonInclude(JsonInclude.Include.NON_NULL) PvmDefinitionProjection pvmDefinition,
       List<CibStateQueryEvidence.StateQuerySnapshot> stateQueries,
       List<TaskQuerySnapshot> taskQueries,
       List<CibStateQueryEvidence.MessageSubscriptionSnapshot> messageSubscriptions,
@@ -36,7 +37,6 @@ public final class ScenarioDiagnosticsProtocol {
         throw new IllegalArgumentException("startupNanos must be positive");
       }
       Objects.requireNonNull(phases, "phases");
-      Objects.requireNonNull(pvmDefinition, "pvmDefinition");
       stateQueries = List.copyOf(stateQueries);
       taskQueries = List.copyOf(taskQueries);
       messageSubscriptions = List.copyOf(messageSubscriptions);
