@@ -1,0 +1,47 @@
+{
+  "kind": "scenario",
+  "id": "escalation-code-variable-catch-all-code-variable",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "escalation-code-variable-code-capture",
+    "relativePath": "scenarios/open-rows/escalation-code-variable/code-capture.bpmn",
+    "sha256": "a34ee44755fd060f03af5214c4135f0c16198e7760b0901f31a1fadf61e59f70",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-inspect",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Inspect",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationEventDefinitionFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowEscalationEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

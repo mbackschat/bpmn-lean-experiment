@@ -1,0 +1,46 @@
+{
+  "kind": "scenario",
+  "id": "error-boundary-candidates-authorize-exact-code",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-boundary-candidates-charge-payment",
+    "relativePath": "scenarios/open-rows/error-boundary-candidates/charge-payment.bpmn",
+    "sha256": "b0162098229c7b0a6359b8e47da18397f356a5c06da19fc028edb297a1e743ff",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-authorize-card",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AuthorizeCard",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "CARD_DECLINED",
+        "outputs": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java"
+    ]
+  }
+}

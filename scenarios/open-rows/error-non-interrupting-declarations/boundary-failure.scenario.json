@@ -1,0 +1,48 @@
+{
+  "kind": "scenario",
+  "id": "error-non-interrupting-declarations-boundary-failure",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-non-interrupting-declarations-boundary",
+    "relativePath": "scenarios/open-rows/error-non-interrupting-declarations/non-interrupting-boundary.bpmn",
+    "sha256": "bc7803174918c7c6ba2007d313fae764a5f983ea71674d24cb29e311e5f34f6f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-order-part",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "OrderPart",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "PART_MISSING",
+        "outputs": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java"
+    ]
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "kind": "scenario",
+  "id": "error-event-subprocess-recovery-recover-and-continue",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-event-subprocess-recovery-region-recovery",
+    "relativePath": "scenarios/open-rows/error-event-subprocess-recovery/region-recovery.bpmn",
+    "sha256": "ad845b60094c24cbf1f3023aa9350d5506dca9f7441ea6fd65e4c8712771016d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "orderRef",
+          "value": {
+            "kind": "string",
+            "value": "ORD-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-trigger-failure",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "TriggerFailure",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-recover",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Recover",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-after-region",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AfterRegion",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

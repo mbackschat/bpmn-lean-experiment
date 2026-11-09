@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ClaimIntake"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-call-propagation">
+  <bpmn:escalation id="Escalation_NeedsExpert" name="Needs expert" escalationCode="NEEDS_EXPERT" />
+  <bpmn:process id="Process_ClaimIntake" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ClaimReceived" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:callActivity id="ReviewClaim" name="Review claim" calledElement="Process_ExamineClaim">
+      <bpmn:extensionElements>
+        <camunda:in source="claim" target="dossier" />
+        <camunda:out source="status" target="claimStatus" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_ReviewClaim_NeedsExpert" attachedToRef="ReviewClaim" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_ReviewClaim_NeedsExpert" escalationRef="Escalation_NeedsExpert" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ConsultExpert" name="Consult an expert" />
+    <bpmn:userTask id="CloseReview" name="Close the review" />
+    <bpmn:endEvent id="EndEvent_ReviewClosed" />
+    <bpmn:endEvent id="EndEvent_ExpertConsulted" />
+
+    <bpmn:callActivity id="ReviewEscalated" name="Review escalated claim" calledElement="Process_ExamineClaim">
+      <bpmn:extensionElements>
+        <camunda:in source="claim" target="dossier" />
+        <camunda:out source="status" target="escalatedStatus" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_ReviewEscalated_NeedsExpert" attachedToRef="ReviewEscalated" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_ReviewEscalated_NeedsExpert" escalationRef="Escalation_NeedsExpert" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="TakeOver" name="Take over the claim" />
+    <bpmn:endEvent id="EndEvent_EscalatedReviewed" />
+    <bpmn:endEvent id="EndEvent_TakenOver" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ClaimReceived" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Claim" sourceRef="Gateway_Fork" targetRef="ReviewClaim" />
+    <bpmn:sequenceFlow id="Flow_Fork_Escalated" sourceRef="Gateway_Fork" targetRef="ReviewEscalated" />
+    <bpmn:sequenceFlow id="Flow_Claim_Close" sourceRef="ReviewClaim" targetRef="CloseReview" />
+    <bpmn:sequenceFlow id="Flow_ClaimNeedsExpert_Consult" sourceRef="Boundary_ReviewClaim_NeedsExpert" targetRef="ConsultExpert" />
+    <bpmn:sequenceFlow id="Flow_Close_End" sourceRef="CloseReview" targetRef="EndEvent_ReviewClosed" />
+    <bpmn:sequenceFlow id="Flow_Consult_End" sourceRef="ConsultExpert" targetRef="EndEvent_ExpertConsulted" />
+    <bpmn:sequenceFlow id="Flow_Escalated_End" sourceRef="ReviewEscalated" targetRef="EndEvent_EscalatedReviewed" />
+    <bpmn:sequenceFlow id="Flow_EscalatedNeedsExpert_TakeOver" sourceRef="Boundary_ReviewEscalated_NeedsExpert" targetRef="TakeOver" />
+    <bpmn:sequenceFlow id="Flow_TakeOver_End" sourceRef="TakeOver" targetRef="EndEvent_TakenOver" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_ExamineClaim" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ExamineRequested" />
+    <bpmn:userTask id="Examine" name="Examine the claim" />
+    <bpmn:intermediateThrowEvent id="Raise_NeedsExpert">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_NeedsExpert" escalationRef="Escalation_NeedsExpert" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="Conclude" name="Conclude the examination" />
+    <bpmn:endEvent id="EndEvent_ExamineDone" />
+    <bpmn:sequenceFlow id="Flow_Examine_Start_Examine" sourceRef="StartEvent_ExamineRequested" targetRef="Examine" />
+    <bpmn:sequenceFlow id="Flow_Examine_Examine_Raise" sourceRef="Examine" targetRef="Raise_NeedsExpert" />
+    <bpmn:sequenceFlow id="Flow_Examine_Raise_Conclude" sourceRef="Raise_NeedsExpert" targetRef="Conclude" />
+    <bpmn:sequenceFlow id="Flow_Examine_Conclude_End" sourceRef="Conclude" targetRef="EndEvent_ExamineDone" />
+  </bpmn:process>
+</bpmn:definitions>

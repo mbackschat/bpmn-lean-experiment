@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_NonInterruptingErrorBoundary"
+  targetNamespace="urn:bpmn-lean:scenarios:error-non-interrupting-declarations:boundary">
+  <bpmn:error id="Error_PartMissing" name="Part missing" errorCode="PART_MISSING" />
+  <bpmn:process id="Process_NonInterruptingErrorBoundary" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_RepairRequested" />
+    <bpmn:serviceTask
+      id="OrderPart"
+      name="Order part"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:boundaryEvent id="Boundary_OrderPart_PartMissing" attachedToRef="OrderPart" cancelActivity="false">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_OrderPart_PartMissing" errorRef="Error_PartMissing" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="FindSubstitute" name="Find substitute part" />
+    <bpmn:userTask id="ConfirmRepair" name="Confirm repair" />
+    <bpmn:endEvent id="EndEvent_RepairDone" />
+    <bpmn:endEvent id="EndEvent_SubstituteFound" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Order" sourceRef="StartEvent_RepairRequested" targetRef="OrderPart" />
+    <bpmn:sequenceFlow id="Flow_Order_Confirm" sourceRef="OrderPart" targetRef="ConfirmRepair" />
+    <bpmn:sequenceFlow id="Flow_Confirm_End" sourceRef="ConfirmRepair" targetRef="EndEvent_RepairDone" />
+    <bpmn:sequenceFlow id="Flow_PartMissing_Substitute" sourceRef="Boundary_OrderPart_PartMissing" targetRef="FindSubstitute" />
+    <bpmn:sequenceFlow id="Flow_Substitute_End" sourceRef="FindSubstitute" targetRef="EndEvent_SubstituteFound" />
+  </bpmn:process>
+</bpmn:definitions>

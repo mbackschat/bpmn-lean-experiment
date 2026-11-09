@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_DispatchNotice"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-uncaught">
+  <bpmn:escalation id="Escalation_NobodyListens" name="Nobody listens" escalationCode="NOBODY_LISTENS" />
+  <bpmn:process id="Process_DispatchNotice" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_NoticeRequested" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:userTask id="Draft" name="Draft notice" />
+    <bpmn:intermediateThrowEvent id="Raise_Nobody">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Nobody" escalationRef="Escalation_NobodyListens" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="Publish" name="Publish notice" />
+    <bpmn:endEvent id="EndEvent_Published" />
+
+    <bpmn:userTask id="Check" name="Check notice" />
+    <bpmn:endEvent id="EscalationEnd_Nobody">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_EscalationEnd_Nobody" escalationRef="Escalation_NobodyListens" />
+    </bpmn:endEvent>
+
+    <bpmn:subProcess id="Unrelated" name="Unrelated region">
+      <bpmn:startEvent id="StartEvent_Unrelated" />
+      <bpmn:userTask id="Wait" name="Wait for the unrelated region" />
+      <bpmn:endEvent id="EndEvent_Unrelated" />
+      <bpmn:sequenceFlow id="Flow_Unrelated_Start_Wait" sourceRef="StartEvent_Unrelated" targetRef="Wait" />
+      <bpmn:sequenceFlow id="Flow_Unrelated_Wait_End" sourceRef="Wait" targetRef="EndEvent_Unrelated" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Unrelated_AnyEscalation" attachedToRef="Unrelated" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Unrelated_AnyEscalation" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Observe" name="Observe the escalation" />
+    <bpmn:endEvent id="EndEvent_UnrelatedDone" />
+    <bpmn:endEvent id="EndEvent_Observed" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_NoticeRequested" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Draft" sourceRef="Gateway_Fork" targetRef="Draft" />
+    <bpmn:sequenceFlow id="Flow_Fork_Check" sourceRef="Gateway_Fork" targetRef="Check" />
+    <bpmn:sequenceFlow id="Flow_Fork_Unrelated" sourceRef="Gateway_Fork" targetRef="Unrelated" />
+    <bpmn:sequenceFlow id="Flow_Draft_Raise" sourceRef="Draft" targetRef="Raise_Nobody" />
+    <bpmn:sequenceFlow id="Flow_Raise_Publish" sourceRef="Raise_Nobody" targetRef="Publish" />
+    <bpmn:sequenceFlow id="Flow_Publish_End" sourceRef="Publish" targetRef="EndEvent_Published" />
+    <bpmn:sequenceFlow id="Flow_Check_EscalationEnd" sourceRef="Check" targetRef="EscalationEnd_Nobody" />
+    <bpmn:sequenceFlow id="Flow_Unrelated_End" sourceRef="Unrelated" targetRef="EndEvent_UnrelatedDone" />
+    <bpmn:sequenceFlow id="Flow_AnyEscalation_Observe" sourceRef="Boundary_Unrelated_AnyEscalation" targetRef="Observe" />
+    <bpmn:sequenceFlow id="Flow_Observe_End" sourceRef="Observe" targetRef="EndEvent_Observed" />
+  </bpmn:process>
+</bpmn:definitions>

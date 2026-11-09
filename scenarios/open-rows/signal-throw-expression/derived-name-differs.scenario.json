@@ -1,0 +1,52 @@
+{
+  "kind": "scenario",
+  "id": "signal-throw-expression-derived-name-differs",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "signal-throw-expression-restock-alerts",
+    "relativePath": "scenarios/open-rows/signal-throw-expression/restock-alerts.bpmn",
+    "sha256": "a11fd402e796a9b76d9d5e85ea83e970fb0150daf7e6c72aa7a2395f77ef300e",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "alertName",
+          "value": {
+            "kind": "string",
+            "value": "overstock"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-count",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Count",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §10.5.3",
+      "BPMN 2.0.2 §10.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowSignalEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

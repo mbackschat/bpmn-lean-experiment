@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ReviewItems"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-multi-instance">
+  <bpmn:escalation id="Escalation_Flagged" name="Flagged" escalationCode="FLAGGED" />
+  <bpmn:process id="Process_ReviewItems" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ItemsReady" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:callActivity id="ReviewParallel" name="Review items in parallel" calledElement="Process_ItemCheck">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopCardinality>2</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_ReviewParallel_Flagged" attachedToRef="ReviewParallel" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_ReviewParallel_Flagged" escalationRef="Escalation_Flagged" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ReschedulePar" name="Reschedule the parallel review" />
+    <bpmn:endEvent id="EndEvent_ParallelReviewed" />
+    <bpmn:endEvent id="EndEvent_ParallelRescheduled" />
+
+    <bpmn:callActivity id="ReviewSequential" name="Review items in sequence" calledElement="Process_ItemCheck">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:loopCardinality>2</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_ReviewSequential_Flagged" attachedToRef="ReviewSequential" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_ReviewSequential_Flagged" escalationRef="Escalation_Flagged" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="TriageSeq" name="Triage the sequential review" />
+    <bpmn:endEvent id="EndEvent_SequentialReviewed" />
+    <bpmn:endEvent id="EndEvent_SequentialTriaged" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ItemsReady" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Parallel" sourceRef="Gateway_Fork" targetRef="ReviewParallel" />
+    <bpmn:sequenceFlow id="Flow_Fork_Sequential" sourceRef="Gateway_Fork" targetRef="ReviewSequential" />
+    <bpmn:sequenceFlow id="Flow_Parallel_End" sourceRef="ReviewParallel" targetRef="EndEvent_ParallelReviewed" />
+    <bpmn:sequenceFlow id="Flow_ParallelFlagged_Reschedule" sourceRef="Boundary_ReviewParallel_Flagged" targetRef="ReschedulePar" />
+    <bpmn:sequenceFlow id="Flow_Reschedule_End" sourceRef="ReschedulePar" targetRef="EndEvent_ParallelRescheduled" />
+    <bpmn:sequenceFlow id="Flow_Sequential_End" sourceRef="ReviewSequential" targetRef="EndEvent_SequentialReviewed" />
+    <bpmn:sequenceFlow id="Flow_SequentialFlagged_Triage" sourceRef="Boundary_ReviewSequential_Flagged" targetRef="TriageSeq" />
+    <bpmn:sequenceFlow id="Flow_Triage_End" sourceRef="TriageSeq" targetRef="EndEvent_SequentialTriaged" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_ItemCheck" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ItemReceived" />
+    <bpmn:userTask id="Inspect" name="Inspect the item" />
+    <bpmn:intermediateThrowEvent id="Raise_Flagged">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Flagged" escalationRef="Escalation_Flagged" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="Finish" name="Finish the item" />
+    <bpmn:endEvent id="EndEvent_ItemDone" />
+    <bpmn:sequenceFlow id="Flow_Item_Start_Inspect" sourceRef="StartEvent_ItemReceived" targetRef="Inspect" />
+    <bpmn:sequenceFlow id="Flow_Item_Inspect_Raise" sourceRef="Inspect" targetRef="Raise_Flagged" />
+    <bpmn:sequenceFlow id="Flow_Item_Raise_Finish" sourceRef="Raise_Flagged" targetRef="Finish" />
+    <bpmn:sequenceFlow id="Flow_Item_Finish_End" sourceRef="Finish" targetRef="EndEvent_ItemDone" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,59 @@
+{
+  "kind": "scenario",
+  "id": "message-throw-bound-intermediate-send-refused",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "message-throw-bound-notify-customer",
+    "relativePath": "scenarios/open-rows/message-throw-bound/notify-customer.bpmn",
+    "sha256": "8b25a6a1eea4d008c0813e243b4f755262c0a642b1111ce0c9048179028ab300",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-pack",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Pack",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "refuse-shipped-notice",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Throw_ShippedNotice",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "SEND_REFUSED",
+        "outputs": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §10.3.3",
+      "BPMN 2.0.2 §10.5.3",
+      "BPMN 2.0.2 §10.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateThrowNoneEventActivityBehavior.java"
+    ]
+  }
+}

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_SupportCase"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-throw-propagation">
+  <bpmn:escalation id="Escalation_LimitExceeded" name="Limit exceeded" escalationCode="LIMIT_EXCEEDED" />
+  <bpmn:escalation id="Escalation_Unlisted" name="Unlisted" escalationCode="UNLISTED_ESCALATION" />
+  <bpmn:escalation id="Escalation_PhaseSlipped" name="Phase slipped" escalationCode="PHASE_SLIPPED" />
+  <bpmn:escalation id="Escalation_PhaseCancelled" name="Phase cancelled" escalationCode="PHASE_CANCELLED" />
+  <bpmn:process id="Process_SupportCase" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_CaseOpened" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="Review" name="Review">
+      <bpmn:startEvent id="StartEvent_Review" />
+      <bpmn:userTask id="Assess" name="Assess case" />
+      <bpmn:intermediateThrowEvent id="Raise_LimitExceeded">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_LimitExceeded" escalationRef="Escalation_LimitExceeded" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="Finalize" name="Finalize review" />
+      <bpmn:endEvent id="EndEvent_Review" />
+      <bpmn:sequenceFlow id="Flow_Review_Start_Assess" sourceRef="StartEvent_Review" targetRef="Assess" />
+      <bpmn:sequenceFlow id="Flow_Review_Assess_Raise" sourceRef="Assess" targetRef="Raise_LimitExceeded" />
+      <bpmn:sequenceFlow id="Flow_Review_Raise_Finalize" sourceRef="Raise_LimitExceeded" targetRef="Finalize" />
+      <bpmn:sequenceFlow id="Flow_Review_Finalize_End" sourceRef="Finalize" targetRef="EndEvent_Review" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Review_LimitExceeded" attachedToRef="Review" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Review_LimitExceeded" escalationRef="Escalation_LimitExceeded" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Approve" name="Approve over the limit" />
+    <bpmn:endEvent id="EndEvent_Reviewed" />
+    <bpmn:endEvent id="EndEvent_Approved" />
+
+    <bpmn:subProcess id="Audit" name="Audit">
+      <bpmn:startEvent id="StartEvent_Audit" />
+      <bpmn:userTask id="Inspect" name="Inspect records" />
+      <bpmn:intermediateThrowEvent id="Raise_Unlisted">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Unlisted" escalationRef="Escalation_Unlisted" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="Wrapup" name="Wrap up audit" />
+      <bpmn:endEvent id="EndEvent_Audit" />
+      <bpmn:sequenceFlow id="Flow_Audit_Start_Inspect" sourceRef="StartEvent_Audit" targetRef="Inspect" />
+      <bpmn:sequenceFlow id="Flow_Audit_Inspect_Raise" sourceRef="Inspect" targetRef="Raise_Unlisted" />
+      <bpmn:sequenceFlow id="Flow_Audit_Raise_Wrapup" sourceRef="Raise_Unlisted" targetRef="Wrapup" />
+      <bpmn:sequenceFlow id="Flow_Audit_Wrapup_End" sourceRef="Wrapup" targetRef="EndEvent_Audit" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Audit_AnyEscalation" attachedToRef="Audit" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Audit_AnyEscalation" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Notify" name="Notify auditor" />
+    <bpmn:endEvent id="EndEvent_Audited" />
+    <bpmn:endEvent id="EndEvent_Notified" />
+
+    <bpmn:subProcess id="Program" name="Program">
+      <bpmn:startEvent id="StartEvent_Program" />
+      <bpmn:subProcess id="Phase" name="Phase">
+        <bpmn:startEvent id="StartEvent_Phase" />
+        <bpmn:userTask id="Work" name="Work on the phase" />
+        <bpmn:endEvent id="EscalationEnd_PhaseSlipped">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_PhaseSlipped" escalationRef="Escalation_PhaseSlipped" />
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_Phase_Start_Work" sourceRef="StartEvent_Phase" targetRef="Work" />
+        <bpmn:sequenceFlow id="Flow_Phase_Work_End" sourceRef="Work" targetRef="EscalationEnd_PhaseSlipped" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="Boundary_Phase_PhaseCancelled" attachedToRef="Phase" cancelActivity="false">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Phase_PhaseCancelled" escalationRef="Escalation_PhaseCancelled" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="RecordCancelled" name="Record cancelled phase" />
+      <bpmn:endEvent id="EndEvent_Program" />
+      <bpmn:endEvent id="EndEvent_Cancelled" />
+      <bpmn:sequenceFlow id="Flow_Program_Start_Phase" sourceRef="StartEvent_Program" targetRef="Phase" />
+      <bpmn:sequenceFlow id="Flow_Program_Phase_End" sourceRef="Phase" targetRef="EndEvent_Program" />
+      <bpmn:sequenceFlow id="Flow_Program_Cancelled_Record" sourceRef="Boundary_Phase_PhaseCancelled" targetRef="RecordCancelled" />
+      <bpmn:sequenceFlow id="Flow_Program_Record_End" sourceRef="RecordCancelled" targetRef="EndEvent_Cancelled" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Program_PhaseSlipped" attachedToRef="Program" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Program_PhaseSlipped" escalationRef="Escalation_PhaseSlipped" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Replan" name="Replan the program" />
+    <bpmn:endEvent id="EndEvent_ProgramDone" />
+    <bpmn:endEvent id="EndEvent_Replanned" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_CaseOpened" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Review" sourceRef="Gateway_Fork" targetRef="Review" />
+    <bpmn:sequenceFlow id="Flow_Fork_Audit" sourceRef="Gateway_Fork" targetRef="Audit" />
+    <bpmn:sequenceFlow id="Flow_Fork_Program" sourceRef="Gateway_Fork" targetRef="Program" />
+    <bpmn:sequenceFlow id="Flow_Review_End" sourceRef="Review" targetRef="EndEvent_Reviewed" />
+    <bpmn:sequenceFlow id="Flow_LimitExceeded_Approve" sourceRef="Boundary_Review_LimitExceeded" targetRef="Approve" />
+    <bpmn:sequenceFlow id="Flow_Approve_End" sourceRef="Approve" targetRef="EndEvent_Approved" />
+    <bpmn:sequenceFlow id="Flow_Audit_End" sourceRef="Audit" targetRef="EndEvent_Audited" />
+    <bpmn:sequenceFlow id="Flow_AnyEscalation_Notify" sourceRef="Boundary_Audit_AnyEscalation" targetRef="Notify" />
+    <bpmn:sequenceFlow id="Flow_Notify_End" sourceRef="Notify" targetRef="EndEvent_Notified" />
+    <bpmn:sequenceFlow id="Flow_Program_End" sourceRef="Program" targetRef="EndEvent_ProgramDone" />
+    <bpmn:sequenceFlow id="Flow_PhaseSlipped_Replan" sourceRef="Boundary_Program_PhaseSlipped" targetRef="Replan" />
+    <bpmn:sequenceFlow id="Flow_Replan_End" sourceRef="Replan" targetRef="EndEvent_Replanned" />
+  </bpmn:process>
+</bpmn:definitions>

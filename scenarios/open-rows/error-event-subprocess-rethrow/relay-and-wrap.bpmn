@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_RelayAndWrap"
+  targetNamespace="urn:bpmn-lean:scenarios:error-event-subprocess-rethrow">
+  <bpmn:error id="Error_RawFailure" name="Raw failure" errorCode="RAW_FAILURE" />
+  <bpmn:error id="Error_OtherFailure" name="Other failure" errorCode="OTHER_FAILURE" />
+  <bpmn:error id="Error_WrappedFailure" name="Wrapped failure" errorCode="WRAPPED_FAILURE" />
+  <bpmn:process id="Process_RelayAndWrap" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_JobReceived" />
+
+    <bpmn:subProcess id="Wrapper" name="Wrapper">
+      <bpmn:startEvent id="StartEvent_Wrapper" />
+      <bpmn:subProcess id="Core" name="Core">
+        <bpmn:startEvent id="StartEvent_Core" />
+        <bpmn:serviceTask
+          id="Work"
+          name="Do the work"
+          implementation="urn:bpmn-lean:effect:probe-v1"
+          camunda:delegateExpression="${bpmnLeanEffectHandler}"
+          camunda:asyncBefore="true" />
+        <bpmn:endEvent id="EndEvent_Core" />
+        <bpmn:sequenceFlow id="Flow_Core_Start_Work" sourceRef="StartEvent_Core" targetRef="Work" />
+        <bpmn:sequenceFlow id="Flow_Core_Work_End" sourceRef="Work" targetRef="EndEvent_Core" />
+        <bpmn:subProcess id="Handler_Core_Raw" triggeredByEvent="true">
+          <bpmn:startEvent id="Start_Core_Raw" isInterrupting="true">
+            <bpmn:errorEventDefinition id="ErrorEventDefinition_Core_Raw" errorRef="Error_RawFailure" />
+          </bpmn:startEvent>
+          <bpmn:userTask id="Translate_Raw" name="Translate raw failure" />
+          <bpmn:endEvent id="EndError_RawAgain">
+            <bpmn:errorEventDefinition id="ErrorEventDefinition_RawAgain" errorRef="Error_RawFailure" />
+          </bpmn:endEvent>
+          <bpmn:sequenceFlow id="Flow_Core_Raw_Translate" sourceRef="Start_Core_Raw" targetRef="Translate_Raw" />
+          <bpmn:sequenceFlow id="Flow_Core_Raw_Rethrow" sourceRef="Translate_Raw" targetRef="EndError_RawAgain" />
+        </bpmn:subProcess>
+        <bpmn:subProcess id="Handler_Core_Other" triggeredByEvent="true">
+          <bpmn:startEvent id="Start_Core_Other" isInterrupting="true">
+            <bpmn:errorEventDefinition id="ErrorEventDefinition_Core_Other" errorRef="Error_OtherFailure" />
+          </bpmn:startEvent>
+          <bpmn:userTask id="Translate_Other" name="Translate other failure" />
+          <bpmn:endEvent id="EndError_Wrapped">
+            <bpmn:errorEventDefinition id="ErrorEventDefinition_Wrapped" errorRef="Error_WrappedFailure" />
+          </bpmn:endEvent>
+          <bpmn:sequenceFlow id="Flow_Core_Other_Translate" sourceRef="Start_Core_Other" targetRef="Translate_Other" />
+          <bpmn:sequenceFlow id="Flow_Core_Other_Rethrow" sourceRef="Translate_Other" targetRef="EndError_Wrapped" />
+        </bpmn:subProcess>
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_Wrapper" />
+      <bpmn:sequenceFlow id="Flow_Wrapper_Start_Core" sourceRef="StartEvent_Wrapper" targetRef="Core" />
+      <bpmn:sequenceFlow id="Flow_Wrapper_Core_End" sourceRef="Core" targetRef="EndEvent_Wrapper" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Wrapper_Raw" attachedToRef="Wrapper" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Wrapper_Raw" errorRef="Error_RawFailure" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Wrapper_Wrapped" attachedToRef="Wrapper" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Wrapper_Wrapped" errorRef="Error_WrappedFailure" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Recover_Raw" name="Recover from raw failure" />
+    <bpmn:userTask id="Recover_Wrapped" name="Recover from wrapped failure" />
+
+    <bpmn:endEvent id="EndEvent_JobDone" />
+    <bpmn:endEvent id="EndEvent_RawRecovered" />
+    <bpmn:endEvent id="EndEvent_WrappedRecovered" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Wrapper" sourceRef="StartEvent_JobReceived" targetRef="Wrapper" />
+    <bpmn:sequenceFlow id="Flow_Wrapper_End" sourceRef="Wrapper" targetRef="EndEvent_JobDone" />
+    <bpmn:sequenceFlow id="Flow_Raw_Recover" sourceRef="Boundary_Wrapper_Raw" targetRef="Recover_Raw" />
+    <bpmn:sequenceFlow id="Flow_Wrapped_Recover" sourceRef="Boundary_Wrapper_Wrapped" targetRef="Recover_Wrapped" />
+    <bpmn:sequenceFlow id="Flow_RecoverRaw_End" sourceRef="Recover_Raw" targetRef="EndEvent_RawRecovered" />
+    <bpmn:sequenceFlow id="Flow_RecoverWrapped_End" sourceRef="Recover_Wrapped" targetRef="EndEvent_WrappedRecovered" />
+  </bpmn:process>
+</bpmn:definitions>

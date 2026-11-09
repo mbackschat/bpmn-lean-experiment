@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_RelayedClaim"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-call-relay">
+  <bpmn:escalation id="Escalation_NeedsExpert" name="Needs expert" escalationCode="NEEDS_EXPERT" />
+  <bpmn:process id="Process_RelayedClaimIntake" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ClaimReceived" />
+    <bpmn:callActivity id="ReviewRelayed" name="Review relayed claim" calledElement="Process_ExamineRelayed">
+      <bpmn:extensionElements>
+        <camunda:in source="claim" target="dossier" />
+        <camunda:out source="status" target="relayedStatus" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_ReviewRelayed_NeedsExpert" attachedToRef="ReviewRelayed" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_ReviewRelayed_NeedsExpert" escalationRef="Escalation_NeedsExpert" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ConsultRelayed" name="Consult an expert about the relayed claim" />
+    <bpmn:endEvent id="EndEvent_RelayedReviewed" />
+    <bpmn:endEvent id="EndEvent_RelayedConsulted" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_ClaimReceived" targetRef="ReviewRelayed" />
+    <bpmn:sequenceFlow id="Flow_Relayed_End" sourceRef="ReviewRelayed" targetRef="EndEvent_RelayedReviewed" />
+    <bpmn:sequenceFlow id="Flow_RelayedNeedsExpert_Consult" sourceRef="Boundary_ReviewRelayed_NeedsExpert" targetRef="ConsultRelayed" />
+    <bpmn:sequenceFlow id="Flow_ConsultRelayed_End" sourceRef="ConsultRelayed" targetRef="EndEvent_RelayedConsulted" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_ExamineRelayed" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_RelayedRequested" />
+    <bpmn:userTask id="ExamineRelayed" name="Examine the relayed claim" />
+    <bpmn:intermediateThrowEvent id="Raise_Relayed">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Relayed" escalationRef="Escalation_NeedsExpert" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="ConcludeRelayed" name="Conclude the relayed examination" />
+    <bpmn:endEvent id="EndEvent_RelayedDone" />
+    <bpmn:sequenceFlow id="Flow_Relayed_Start_Examine" sourceRef="StartEvent_RelayedRequested" targetRef="ExamineRelayed" />
+    <bpmn:sequenceFlow id="Flow_Relayed_Examine_Raise" sourceRef="ExamineRelayed" targetRef="Raise_Relayed" />
+    <bpmn:sequenceFlow id="Flow_Relayed_Raise_Conclude" sourceRef="Raise_Relayed" targetRef="ConcludeRelayed" />
+    <bpmn:sequenceFlow id="Flow_Relayed_Conclude_End" sourceRef="ConcludeRelayed" targetRef="EndEvent_RelayedDone" />
+    <bpmn:subProcess id="Handler_Relayed_NeedsExpert" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Relayed_NeedsExpert" isInterrupting="false">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Relayed_NeedsExpert" escalationRef="Escalation_NeedsExpert" />
+      </bpmn:startEvent>
+      <bpmn:intermediateThrowEvent id="Relay_NeedsExpert">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Relay_NeedsExpert" escalationRef="Escalation_NeedsExpert" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:endEvent id="End_Relayed_NeedsExpert" />
+      <bpmn:sequenceFlow id="Flow_Relayed_Handler_Start_Relay" sourceRef="Start_Relayed_NeedsExpert" targetRef="Relay_NeedsExpert" />
+      <bpmn:sequenceFlow id="Flow_Relayed_Handler_Relay_End" sourceRef="Relay_NeedsExpert" targetRef="End_Relayed_NeedsExpert" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

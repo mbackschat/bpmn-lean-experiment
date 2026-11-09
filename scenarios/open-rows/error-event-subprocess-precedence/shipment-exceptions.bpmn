@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ShipmentExceptions"
+  targetNamespace="urn:bpmn-lean:scenarios:error-event-subprocess-precedence">
+  <bpmn:error id="Error_CustomsHold" name="Customs hold" errorCode="CUSTOMS_HOLD" />
+  <bpmn:error id="Error_FreightFull" name="Freight full" errorCode="FREIGHT_FULL" />
+  <bpmn:error id="Error_BillingDispute" name="Billing dispute" errorCode="BILLING_DISPUTE" />
+  <bpmn:error id="Error_OuterBreach" name="Outer breach" errorCode="OUTER_BREACH" />
+  <bpmn:error id="Error_InnerBreach" name="Inner breach" errorCode="INNER_BREACH" />
+  <bpmn:process id="Process_ShipmentExceptions" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ShipmentReleased" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="Customs" name="Customs">
+      <bpmn:startEvent id="StartEvent_Customs" />
+      <bpmn:serviceTask
+        id="ClearCustoms"
+        name="Clear customs"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true" />
+      <bpmn:endEvent id="EndEvent_Customs" />
+      <bpmn:sequenceFlow id="Flow_Customs_Start_Clear" sourceRef="StartEvent_Customs" targetRef="ClearCustoms" />
+      <bpmn:sequenceFlow id="Flow_Customs_Clear_End" sourceRef="ClearCustoms" targetRef="EndEvent_Customs" />
+      <bpmn:subProcess id="Handler_Customs_AnyFailure" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Customs_AnyFailure" isInterrupting="true">
+          <bpmn:errorEventDefinition id="ErrorEventDefinition_Customs_AnyFailure" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Review_Customs_AnyFailure" name="Review any customs failure" />
+        <bpmn:endEvent id="End_Customs_AnyFailure" />
+        <bpmn:sequenceFlow id="Flow_Customs_AnyFailure_Review" sourceRef="Start_Customs_AnyFailure" targetRef="Review_Customs_AnyFailure" />
+        <bpmn:sequenceFlow id="Flow_Customs_AnyFailure_End" sourceRef="Review_Customs_AnyFailure" targetRef="End_Customs_AnyFailure" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="Handler_Customs_Hold" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Customs_Hold" isInterrupting="true">
+          <bpmn:errorEventDefinition id="ErrorEventDefinition_Customs_Hold" errorRef="Error_CustomsHold" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Review_Customs_Hold" name="Review customs hold" />
+        <bpmn:endEvent id="End_Customs_Hold" />
+        <bpmn:sequenceFlow id="Flow_Customs_Hold_Review" sourceRef="Start_Customs_Hold" targetRef="Review_Customs_Hold" />
+        <bpmn:sequenceFlow id="Flow_Customs_Hold_End" sourceRef="Review_Customs_Hold" targetRef="End_Customs_Hold" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+
+    <bpmn:subProcess id="Freight" name="Freight">
+      <bpmn:startEvent id="StartEvent_Freight" />
+      <bpmn:serviceTask
+        id="BookFreight"
+        name="Book freight"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true" />
+      <bpmn:endEvent id="EndEvent_Freight" />
+      <bpmn:sequenceFlow id="Flow_Freight_Start_Book" sourceRef="StartEvent_Freight" targetRef="BookFreight" />
+      <bpmn:sequenceFlow id="Flow_Freight_Book_End" sourceRef="BookFreight" targetRef="EndEvent_Freight" />
+      <bpmn:subProcess id="Handler_Freight_Full" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Freight_Full" isInterrupting="true">
+          <bpmn:errorEventDefinition id="ErrorEventDefinition_Freight_Full" errorRef="Error_FreightFull" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Review_Freight_Full" name="Review full freight" />
+        <bpmn:endEvent id="End_Freight_Full" />
+        <bpmn:sequenceFlow id="Flow_Freight_Full_Review" sourceRef="Start_Freight_Full" targetRef="Review_Freight_Full" />
+        <bpmn:sequenceFlow id="Flow_Freight_Full_End" sourceRef="Review_Freight_Full" targetRef="End_Freight_Full" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="Handler_Freight_AnyFailure" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Freight_AnyFailure" isInterrupting="true">
+          <bpmn:errorEventDefinition id="ErrorEventDefinition_Freight_AnyFailure" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Review_Freight_AnyFailure" name="Review any freight failure" />
+        <bpmn:endEvent id="End_Freight_AnyFailure" />
+        <bpmn:sequenceFlow id="Flow_Freight_AnyFailure_Review" sourceRef="Start_Freight_AnyFailure" targetRef="Review_Freight_AnyFailure" />
+        <bpmn:sequenceFlow id="Flow_Freight_AnyFailure_End" sourceRef="Review_Freight_AnyFailure" targetRef="End_Freight_AnyFailure" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+
+    <bpmn:subProcess id="Billing" name="Billing">
+      <bpmn:startEvent id="StartEvent_Billing" />
+      <bpmn:serviceTask
+        id="Invoice"
+        name="Invoice customer"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true" />
+      <bpmn:endEvent id="EndEvent_Billing" />
+      <bpmn:sequenceFlow id="Flow_Billing_Start_Invoice" sourceRef="StartEvent_Billing" targetRef="Invoice" />
+      <bpmn:sequenceFlow id="Flow_Billing_Invoice_End" sourceRef="Invoice" targetRef="EndEvent_Billing" />
+      <bpmn:subProcess id="Handler_Billing_AnyFailure" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Billing_AnyFailure" isInterrupting="true">
+          <bpmn:errorEventDefinition id="ErrorEventDefinition_Billing_AnyFailure" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Review_Billing_AnyFailure" name="Review any billing failure" />
+        <bpmn:endEvent id="End_Billing_AnyFailure" />
+        <bpmn:sequenceFlow id="Flow_Billing_AnyFailure_Review" sourceRef="Start_Billing_AnyFailure" targetRef="Review_Billing_AnyFailure" />
+        <bpmn:sequenceFlow id="Flow_Billing_AnyFailure_End" sourceRef="Review_Billing_AnyFailure" targetRef="End_Billing_AnyFailure" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Billing_Dispute" attachedToRef="Billing" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Billing_Dispute" errorRef="Error_BillingDispute" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Review_Billing_Dispute" name="Review billing dispute through the boundary" />
+
+    <bpmn:subProcess id="OuterGate" name="Outer gate">
+      <bpmn:startEvent id="StartEvent_OuterGate" />
+      <bpmn:subProcess id="InnerGate" name="Inner gate">
+        <bpmn:startEvent id="StartEvent_InnerGate" />
+        <bpmn:serviceTask
+          id="ScreenParcel"
+          name="Screen parcel"
+          implementation="urn:bpmn-lean:effect:probe-v1"
+          camunda:delegateExpression="${bpmnLeanEffectHandler}"
+          camunda:asyncBefore="true" />
+        <bpmn:endEvent id="EndEvent_InnerGate" />
+        <bpmn:sequenceFlow id="Flow_InnerGate_Start_Screen" sourceRef="StartEvent_InnerGate" targetRef="ScreenParcel" />
+        <bpmn:sequenceFlow id="Flow_InnerGate_Screen_End" sourceRef="ScreenParcel" targetRef="EndEvent_InnerGate" />
+        <bpmn:subProcess id="Handler_InnerGate_Breach" triggeredByEvent="true">
+          <bpmn:startEvent id="Start_InnerGate_Breach" isInterrupting="true">
+            <bpmn:errorEventDefinition id="ErrorEventDefinition_InnerGate_Breach" errorRef="Error_InnerBreach" />
+          </bpmn:startEvent>
+          <bpmn:userTask id="Review_InnerBreach" name="Review inner breach" />
+          <bpmn:endEvent id="End_InnerGate_Breach" />
+          <bpmn:sequenceFlow id="Flow_InnerGate_Breach_Review" sourceRef="Start_InnerGate_Breach" targetRef="Review_InnerBreach" />
+          <bpmn:sequenceFlow id="Flow_InnerGate_Breach_End" sourceRef="Review_InnerBreach" targetRef="End_InnerGate_Breach" />
+        </bpmn:subProcess>
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_OuterGate" />
+      <bpmn:sequenceFlow id="Flow_OuterGate_Start_Inner" sourceRef="StartEvent_OuterGate" targetRef="InnerGate" />
+      <bpmn:sequenceFlow id="Flow_OuterGate_Inner_End" sourceRef="InnerGate" targetRef="EndEvent_OuterGate" />
+      <bpmn:subProcess id="Handler_OuterGate_Breach" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_OuterGate_Breach" isInterrupting="true">
+          <bpmn:errorEventDefinition id="ErrorEventDefinition_OuterGate_Breach" errorRef="Error_OuterBreach" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Review_OuterBreach" name="Review outer breach" />
+        <bpmn:endEvent id="End_OuterGate_Breach" />
+        <bpmn:sequenceFlow id="Flow_OuterGate_Breach_Review" sourceRef="Start_OuterGate_Breach" targetRef="Review_OuterBreach" />
+        <bpmn:sequenceFlow id="Flow_OuterGate_Breach_End" sourceRef="Review_OuterBreach" targetRef="End_OuterGate_Breach" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+
+    <bpmn:endEvent id="EndEvent_Customs_Released" />
+    <bpmn:endEvent id="EndEvent_Freight_Released" />
+    <bpmn:endEvent id="EndEvent_Billing_Released" />
+    <bpmn:endEvent id="EndEvent_Billing_DisputeReviewed" />
+    <bpmn:endEvent id="EndEvent_OuterGate_Released" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ShipmentReleased" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Customs" sourceRef="Gateway_Fork" targetRef="Customs" />
+    <bpmn:sequenceFlow id="Flow_Fork_Freight" sourceRef="Gateway_Fork" targetRef="Freight" />
+    <bpmn:sequenceFlow id="Flow_Fork_Billing" sourceRef="Gateway_Fork" targetRef="Billing" />
+    <bpmn:sequenceFlow id="Flow_Fork_OuterGate" sourceRef="Gateway_Fork" targetRef="OuterGate" />
+    <bpmn:sequenceFlow id="Flow_Customs_End" sourceRef="Customs" targetRef="EndEvent_Customs_Released" />
+    <bpmn:sequenceFlow id="Flow_Freight_End" sourceRef="Freight" targetRef="EndEvent_Freight_Released" />
+    <bpmn:sequenceFlow id="Flow_Billing_End" sourceRef="Billing" targetRef="EndEvent_Billing_Released" />
+    <bpmn:sequenceFlow id="Flow_BillingDispute_Review" sourceRef="Boundary_Billing_Dispute" targetRef="Review_Billing_Dispute" />
+    <bpmn:sequenceFlow id="Flow_BillingDisputeReview_End" sourceRef="Review_Billing_Dispute" targetRef="EndEvent_Billing_DisputeReviewed" />
+    <bpmn:sequenceFlow id="Flow_OuterGate_End" sourceRef="OuterGate" targetRef="EndEvent_OuterGate_Released" />
+  </bpmn:process>
+</bpmn:definitions>

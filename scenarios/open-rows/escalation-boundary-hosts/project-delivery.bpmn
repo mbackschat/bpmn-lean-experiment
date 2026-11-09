@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ProjectDelivery"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-boundary-hosts">
+  <bpmn:escalation id="Escalation_Slip" name="Slip" escalationCode="SLIP" />
+  <bpmn:escalation id="Escalation_Flaky" name="Flaky" escalationCode="FLAKY" />
+  <bpmn:escalation id="Escalation_Slow" name="Slow" escalationCode="SLOW" />
+  <bpmn:escalation id="Escalation_Rollback" name="Rollback" escalationCode="ROLLBACK" />
+  <bpmn:escalation id="Escalation_Warn" name="Warn" escalationCode="WARN" />
+  <bpmn:escalation id="Escalation_Help" name="Help" escalationCode="HELP" />
+  <bpmn:process id="Process_ProjectDelivery" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ProjectKickedOff" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="Build" name="Build">
+      <bpmn:startEvent id="StartEvent_Build" />
+      <bpmn:userTask id="Compile" name="Compile" />
+      <bpmn:intermediateThrowEvent id="Raise_Slip">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Slip" escalationRef="Escalation_Slip" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="Package" name="Package" />
+      <bpmn:endEvent id="EndEvent_Build" />
+      <bpmn:sequenceFlow id="Flow_Build_Start_Compile" sourceRef="StartEvent_Build" targetRef="Compile" />
+      <bpmn:sequenceFlow id="Flow_Build_Compile_Raise" sourceRef="Compile" targetRef="Raise_Slip" />
+      <bpmn:sequenceFlow id="Flow_Build_Raise_Package" sourceRef="Raise_Slip" targetRef="Package" />
+      <bpmn:sequenceFlow id="Flow_Build_Package_End" sourceRef="Package" targetRef="EndEvent_Build" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Build_Slip" attachedToRef="Build" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Build_Slip" escalationRef="Escalation_Slip" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Reschedule" name="Reschedule the build" />
+    <bpmn:endEvent id="EndEvent_Built" />
+    <bpmn:endEvent id="EndEvent_Rescheduled" />
+
+    <bpmn:subProcess id="Test" name="Test">
+      <bpmn:startEvent id="StartEvent_Test" />
+      <bpmn:userTask id="Run" name="Run the tests" />
+      <bpmn:intermediateThrowEvent id="Raise_Flaky_1">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Flaky_1" escalationRef="Escalation_Flaky" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:intermediateThrowEvent id="Raise_Slow">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Slow" escalationRef="Escalation_Slow" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:intermediateThrowEvent id="Raise_Flaky_2">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Flaky_2" escalationRef="Escalation_Flaky" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="Report" name="Report the results" />
+      <bpmn:endEvent id="EndEvent_Test" />
+      <bpmn:sequenceFlow id="Flow_Test_Start_Run" sourceRef="StartEvent_Test" targetRef="Run" />
+      <bpmn:sequenceFlow id="Flow_Test_Run_Flaky1" sourceRef="Run" targetRef="Raise_Flaky_1" />
+      <bpmn:sequenceFlow id="Flow_Test_Flaky1_Slow" sourceRef="Raise_Flaky_1" targetRef="Raise_Slow" />
+      <bpmn:sequenceFlow id="Flow_Test_Slow_Flaky2" sourceRef="Raise_Slow" targetRef="Raise_Flaky_2" />
+      <bpmn:sequenceFlow id="Flow_Test_Flaky2_Report" sourceRef="Raise_Flaky_2" targetRef="Report" />
+      <bpmn:sequenceFlow id="Flow_Test_Report_End" sourceRef="Report" targetRef="EndEvent_Test" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Test_Flaky" attachedToRef="Test" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Test_Flaky" escalationRef="Escalation_Flaky" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Test_Slow" attachedToRef="Test" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Test_Slow" escalationRef="Escalation_Slow" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="TriageFlaky" name="Triage flaky test" />
+    <bpmn:userTask id="TriageSlow" name="Triage slow test" />
+    <bpmn:endEvent id="EndEvent_Tested" />
+    <bpmn:endEvent id="EndEvent_FlakyTriaged" />
+    <bpmn:endEvent id="EndEvent_SlowTriaged" />
+
+    <bpmn:callActivity id="Deploy" name="Deploy" calledElement="Process_Deploy" />
+    <bpmn:boundaryEvent id="Boundary_Deploy_Rollback" attachedToRef="Deploy" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Deploy_Rollback" escalationRef="Escalation_Rollback" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Rollback" name="Roll back the deployment" />
+    <bpmn:endEvent id="EndEvent_Deployed" />
+    <bpmn:endEvent id="EndEvent_RolledBack" />
+
+    <bpmn:callActivity id="Smoke" name="Smoke test" calledElement="Process_Smoke" />
+    <bpmn:boundaryEvent id="Boundary_Smoke_Warn" attachedToRef="Smoke" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Smoke_Warn" escalationRef="Escalation_Warn" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Observe" name="Observe the warning" />
+    <bpmn:endEvent id="EndEvent_Smoked" />
+    <bpmn:endEvent id="EndEvent_Observed" />
+
+    <bpmn:userTask id="Approve" name="Approve the release" />
+    <bpmn:boundaryEvent id="Boundary_Approve_Help" attachedToRef="Approve" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Approve_Help" escalationRef="Escalation_Help" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Assist" name="Assist the approver" />
+    <bpmn:endEvent id="EndEvent_Approved" />
+    <bpmn:endEvent id="EndEvent_Assisted" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ProjectKickedOff" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Build" sourceRef="Gateway_Fork" targetRef="Build" />
+    <bpmn:sequenceFlow id="Flow_Fork_Test" sourceRef="Gateway_Fork" targetRef="Test" />
+    <bpmn:sequenceFlow id="Flow_Fork_Deploy" sourceRef="Gateway_Fork" targetRef="Deploy" />
+    <bpmn:sequenceFlow id="Flow_Fork_Smoke" sourceRef="Gateway_Fork" targetRef="Smoke" />
+    <bpmn:sequenceFlow id="Flow_Fork_Approve" sourceRef="Gateway_Fork" targetRef="Approve" />
+    <bpmn:sequenceFlow id="Flow_Build_End" sourceRef="Build" targetRef="EndEvent_Built" />
+    <bpmn:sequenceFlow id="Flow_Slip_Reschedule" sourceRef="Boundary_Build_Slip" targetRef="Reschedule" />
+    <bpmn:sequenceFlow id="Flow_Reschedule_End" sourceRef="Reschedule" targetRef="EndEvent_Rescheduled" />
+    <bpmn:sequenceFlow id="Flow_Test_End" sourceRef="Test" targetRef="EndEvent_Tested" />
+    <bpmn:sequenceFlow id="Flow_Flaky_Triage" sourceRef="Boundary_Test_Flaky" targetRef="TriageFlaky" />
+    <bpmn:sequenceFlow id="Flow_Slow_Triage" sourceRef="Boundary_Test_Slow" targetRef="TriageSlow" />
+    <bpmn:sequenceFlow id="Flow_TriageFlaky_End" sourceRef="TriageFlaky" targetRef="EndEvent_FlakyTriaged" />
+    <bpmn:sequenceFlow id="Flow_TriageSlow_End" sourceRef="TriageSlow" targetRef="EndEvent_SlowTriaged" />
+    <bpmn:sequenceFlow id="Flow_Deploy_End" sourceRef="Deploy" targetRef="EndEvent_Deployed" />
+    <bpmn:sequenceFlow id="Flow_Rollback_Task" sourceRef="Boundary_Deploy_Rollback" targetRef="Rollback" />
+    <bpmn:sequenceFlow id="Flow_Rollback_End" sourceRef="Rollback" targetRef="EndEvent_RolledBack" />
+    <bpmn:sequenceFlow id="Flow_Smoke_End" sourceRef="Smoke" targetRef="EndEvent_Smoked" />
+    <bpmn:sequenceFlow id="Flow_Warn_Observe" sourceRef="Boundary_Smoke_Warn" targetRef="Observe" />
+    <bpmn:sequenceFlow id="Flow_Observe_End" sourceRef="Observe" targetRef="EndEvent_Observed" />
+    <bpmn:sequenceFlow id="Flow_Approve_End" sourceRef="Approve" targetRef="EndEvent_Approved" />
+    <bpmn:sequenceFlow id="Flow_Help_Assist" sourceRef="Boundary_Approve_Help" targetRef="Assist" />
+    <bpmn:sequenceFlow id="Flow_Assist_End" sourceRef="Assist" targetRef="EndEvent_Assisted" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Deploy" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_DeployRequested" />
+    <bpmn:userTask id="Release" name="Release the build" />
+    <bpmn:intermediateThrowEvent id="Raise_Rollback">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Rollback" escalationRef="Escalation_Rollback" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="Verify" name="Verify the release" />
+    <bpmn:endEvent id="EndEvent_DeployDone" />
+    <bpmn:sequenceFlow id="Flow_Deploy_Start_Release" sourceRef="StartEvent_DeployRequested" targetRef="Release" />
+    <bpmn:sequenceFlow id="Flow_Deploy_Release_Raise" sourceRef="Release" targetRef="Raise_Rollback" />
+    <bpmn:sequenceFlow id="Flow_Deploy_Raise_Verify" sourceRef="Raise_Rollback" targetRef="Verify" />
+    <bpmn:sequenceFlow id="Flow_Deploy_Verify_End" sourceRef="Verify" targetRef="EndEvent_DeployDone" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Smoke" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_SmokeRequested" />
+    <bpmn:userTask id="Probe" name="Probe the service" />
+    <bpmn:intermediateThrowEvent id="Raise_Warn">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Warn" escalationRef="Escalation_Warn" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:userTask id="Check" name="Check the probe" />
+    <bpmn:endEvent id="EndEvent_SmokeDone" />
+    <bpmn:sequenceFlow id="Flow_Smoke_Start_Probe" sourceRef="StartEvent_SmokeRequested" targetRef="Probe" />
+    <bpmn:sequenceFlow id="Flow_Smoke_Probe_Raise" sourceRef="Probe" targetRef="Raise_Warn" />
+    <bpmn:sequenceFlow id="Flow_Smoke_Raise_Check" sourceRef="Raise_Warn" targetRef="Check" />
+    <bpmn:sequenceFlow id="Flow_Smoke_Check_End" sourceRef="Check" targetRef="EndEvent_SmokeDone" />
+  </bpmn:process>
+</bpmn:definitions>

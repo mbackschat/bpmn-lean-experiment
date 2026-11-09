@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ReviewBatches"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-multi-instance:batches">
+  <bpmn:escalation id="Escalation_Overdue" name="Overdue" escalationCode="OVERDUE" />
+  <bpmn:escalation id="Escalation_Late" name="Late" escalationCode="LATE" />
+  <bpmn:escalation id="Escalation_Help" name="Help" escalationCode="HELP" />
+  <bpmn:escalation id="Escalation_Stalled" name="Stalled" escalationCode="STALLED" />
+  <bpmn:process id="Process_ReviewBatches" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_BatchesReceived" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="ReviewParallelBatch" name="Review a batch in parallel">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopCardinality>2</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="StartEvent_ParallelBatch" />
+      <bpmn:userTask id="Check" name="Check the batch" />
+      <bpmn:intermediateThrowEvent id="Raise_Overdue">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Overdue" escalationRef="Escalation_Overdue" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="FinishCheck" name="Finish the check" />
+      <bpmn:endEvent id="EndEvent_ParallelBatch" />
+      <bpmn:sequenceFlow id="Flow_ParallelBatch_Start_Check" sourceRef="StartEvent_ParallelBatch" targetRef="Check" />
+      <bpmn:sequenceFlow id="Flow_ParallelBatch_Check_Raise" sourceRef="Check" targetRef="Raise_Overdue" />
+      <bpmn:sequenceFlow id="Flow_ParallelBatch_Raise_Finish" sourceRef="Raise_Overdue" targetRef="FinishCheck" />
+      <bpmn:sequenceFlow id="Flow_ParallelBatch_Finish_End" sourceRef="FinishCheck" targetRef="EndEvent_ParallelBatch" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_ReviewParallelBatch_Overdue" attachedToRef="ReviewParallelBatch" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_ReviewParallelBatch_Overdue" escalationRef="Escalation_Overdue" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="RescheduleBatch" name="Reschedule the parallel batches" />
+    <bpmn:endEvent id="EndEvent_ParallelBatchesReviewed" />
+    <bpmn:endEvent id="EndEvent_ParallelBatchesRescheduled" />
+
+    <bpmn:subProcess id="ReviewSequentialBatch" name="Review a batch in sequence">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:loopCardinality>2</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="StartEvent_SequentialBatch" />
+      <bpmn:userTask id="Verify" name="Verify the batch" />
+      <bpmn:intermediateThrowEvent id="Raise_Late">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Late" escalationRef="Escalation_Late" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="FinishVerify" name="Finish the verification" />
+      <bpmn:endEvent id="EndEvent_SequentialBatch" />
+      <bpmn:sequenceFlow id="Flow_SequentialBatch_Start_Verify" sourceRef="StartEvent_SequentialBatch" targetRef="Verify" />
+      <bpmn:sequenceFlow id="Flow_SequentialBatch_Verify_Raise" sourceRef="Verify" targetRef="Raise_Late" />
+      <bpmn:sequenceFlow id="Flow_SequentialBatch_Raise_Finish" sourceRef="Raise_Late" targetRef="FinishVerify" />
+      <bpmn:sequenceFlow id="Flow_SequentialBatch_Finish_End" sourceRef="FinishVerify" targetRef="EndEvent_SequentialBatch" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_ReviewSequentialBatch_Late" attachedToRef="ReviewSequentialBatch" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_ReviewSequentialBatch_Late" escalationRef="Escalation_Late" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="TriageBatch" name="Triage the sequential batches" />
+    <bpmn:endEvent id="EndEvent_SequentialBatchesReviewed" />
+    <bpmn:endEvent id="EndEvent_SequentialBatchesTriaged" />
+
+    <bpmn:userTask id="Approve" name="Approve a batch">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopCardinality>2</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="Boundary_Approve_Help" attachedToRef="Approve" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Approve_Help" escalationRef="Escalation_Help" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Assist" name="Assist the approvers" />
+    <bpmn:endEvent id="EndEvent_Approved" />
+    <bpmn:endEvent id="EndEvent_Assisted" />
+
+    <bpmn:subProcess id="Campaign" name="Campaign">
+      <bpmn:startEvent id="StartEvent_Campaign" />
+      <bpmn:subProcess id="Wave" name="Wave">
+        <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+          <bpmn:loopCardinality>2</bpmn:loopCardinality>
+        </bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:startEvent id="StartEvent_Wave" />
+        <bpmn:userTask id="Step" name="Take a step" />
+        <bpmn:intermediateThrowEvent id="Raise_Stalled">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Stalled" escalationRef="Escalation_Stalled" />
+        </bpmn:intermediateThrowEvent>
+        <bpmn:userTask id="FinishStep" name="Finish the step" />
+        <bpmn:endEvent id="EndEvent_Wave" />
+        <bpmn:sequenceFlow id="Flow_Wave_Start_Step" sourceRef="StartEvent_Wave" targetRef="Step" />
+        <bpmn:sequenceFlow id="Flow_Wave_Step_Raise" sourceRef="Step" targetRef="Raise_Stalled" />
+        <bpmn:sequenceFlow id="Flow_Wave_Raise_Finish" sourceRef="Raise_Stalled" targetRef="FinishStep" />
+        <bpmn:sequenceFlow id="Flow_Wave_Finish_End" sourceRef="FinishStep" targetRef="EndEvent_Wave" />
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_Campaign" />
+      <bpmn:sequenceFlow id="Flow_Campaign_Start_Wave" sourceRef="StartEvent_Campaign" targetRef="Wave" />
+      <bpmn:sequenceFlow id="Flow_Campaign_Wave_End" sourceRef="Wave" targetRef="EndEvent_Campaign" />
+      <bpmn:subProcess id="Handler_Campaign_Stalled" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Campaign_Stalled" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Campaign_Stalled" escalationRef="Escalation_Stalled" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Replan" name="Replan the campaign" />
+        <bpmn:endEvent id="End_Campaign_Stalled" />
+        <bpmn:sequenceFlow id="Flow_Campaign_Stalled_Replan" sourceRef="Start_Campaign_Stalled" targetRef="Replan" />
+        <bpmn:sequenceFlow id="Flow_Campaign_Stalled_End" sourceRef="Replan" targetRef="End_Campaign_Stalled" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndEvent_CampaignDone" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_BatchesReceived" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Parallel" sourceRef="Gateway_Fork" targetRef="ReviewParallelBatch" />
+    <bpmn:sequenceFlow id="Flow_Fork_Sequential" sourceRef="Gateway_Fork" targetRef="ReviewSequentialBatch" />
+    <bpmn:sequenceFlow id="Flow_Fork_Approve" sourceRef="Gateway_Fork" targetRef="Approve" />
+    <bpmn:sequenceFlow id="Flow_Fork_Campaign" sourceRef="Gateway_Fork" targetRef="Campaign" />
+    <bpmn:sequenceFlow id="Flow_Parallel_End" sourceRef="ReviewParallelBatch" targetRef="EndEvent_ParallelBatchesReviewed" />
+    <bpmn:sequenceFlow id="Flow_Overdue_Reschedule" sourceRef="Boundary_ReviewParallelBatch_Overdue" targetRef="RescheduleBatch" />
+    <bpmn:sequenceFlow id="Flow_Reschedule_End" sourceRef="RescheduleBatch" targetRef="EndEvent_ParallelBatchesRescheduled" />
+    <bpmn:sequenceFlow id="Flow_Sequential_End" sourceRef="ReviewSequentialBatch" targetRef="EndEvent_SequentialBatchesReviewed" />
+    <bpmn:sequenceFlow id="Flow_Late_Triage" sourceRef="Boundary_ReviewSequentialBatch_Late" targetRef="TriageBatch" />
+    <bpmn:sequenceFlow id="Flow_Triage_End" sourceRef="TriageBatch" targetRef="EndEvent_SequentialBatchesTriaged" />
+    <bpmn:sequenceFlow id="Flow_Approve_End" sourceRef="Approve" targetRef="EndEvent_Approved" />
+    <bpmn:sequenceFlow id="Flow_Help_Assist" sourceRef="Boundary_Approve_Help" targetRef="Assist" />
+    <bpmn:sequenceFlow id="Flow_Assist_End" sourceRef="Assist" targetRef="EndEvent_Assisted" />
+    <bpmn:sequenceFlow id="Flow_Campaign_End" sourceRef="Campaign" targetRef="EndEvent_CampaignDone" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_SupplierReview"
+  targetNamespace="urn:bpmn-lean:scenarios:error-called-child">
+  <bpmn:error id="Error_ReviewRejected" name="Review rejected" errorCode="REVIEW_REJECTED" />
+  <bpmn:process id="Process_OnboardSupplier" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_SupplierProposed" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:callActivity id="ReviewFinance" name="Review finance dossier" calledElement="Process_ReviewDossier">
+      <bpmn:extensionElements>
+        <camunda:in source="financeDossier" target="dossier" />
+        <camunda:out source="verdict" target="financeVerdict" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_Finance_Rejected" attachedToRef="ReviewFinance" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Finance_Rejected" errorRef="Error_ReviewRejected" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ResolveFinance" name="Resolve finance rejection" />
+    <bpmn:userTask id="ConfirmFinance" name="Confirm finance review" />
+
+    <bpmn:callActivity id="ReviewCompliance" name="Review compliance dossier" calledElement="Process_ReviewDossier">
+      <bpmn:extensionElements>
+        <camunda:in source="complianceDossier" target="dossier" />
+        <camunda:out source="verdict" target="complianceVerdict" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_Compliance_Rejected" attachedToRef="ReviewCompliance" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Compliance_Rejected" errorRef="Error_ReviewRejected" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ResolveCompliance" name="Resolve compliance rejection" />
+    <bpmn:userTask id="ConfirmCompliance" name="Confirm compliance review" />
+
+    <bpmn:endEvent id="EndEvent_FinanceConfirmed" />
+    <bpmn:endEvent id="EndEvent_FinanceResolved" />
+    <bpmn:endEvent id="EndEvent_ComplianceConfirmed" />
+    <bpmn:endEvent id="EndEvent_ComplianceResolved" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_SupplierProposed" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Finance" sourceRef="Gateway_Fork" targetRef="ReviewFinance" />
+    <bpmn:sequenceFlow id="Flow_Fork_Compliance" sourceRef="Gateway_Fork" targetRef="ReviewCompliance" />
+    <bpmn:sequenceFlow id="Flow_Finance_Confirm" sourceRef="ReviewFinance" targetRef="ConfirmFinance" />
+    <bpmn:sequenceFlow id="Flow_FinanceRejected_Resolve" sourceRef="Boundary_Finance_Rejected" targetRef="ResolveFinance" />
+    <bpmn:sequenceFlow id="Flow_ConfirmFinance_End" sourceRef="ConfirmFinance" targetRef="EndEvent_FinanceConfirmed" />
+    <bpmn:sequenceFlow id="Flow_ResolveFinance_End" sourceRef="ResolveFinance" targetRef="EndEvent_FinanceResolved" />
+    <bpmn:sequenceFlow id="Flow_Compliance_Confirm" sourceRef="ReviewCompliance" targetRef="ConfirmCompliance" />
+    <bpmn:sequenceFlow id="Flow_ComplianceRejected_Resolve" sourceRef="Boundary_Compliance_Rejected" targetRef="ResolveCompliance" />
+    <bpmn:sequenceFlow id="Flow_ConfirmCompliance_End" sourceRef="ConfirmCompliance" targetRef="EndEvent_ComplianceConfirmed" />
+    <bpmn:sequenceFlow id="Flow_ResolveCompliance_End" sourceRef="ResolveCompliance" targetRef="EndEvent_ComplianceResolved" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_ReviewDossier" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ReviewRequested" />
+    <bpmn:userTask id="Prepare" name="Prepare review" />
+    <bpmn:serviceTask
+      id="Assess"
+      name="Assess dossier"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="verdict">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_ReviewDone" />
+
+    <bpmn:sequenceFlow id="Flow_Review_Start_Prepare" sourceRef="StartEvent_ReviewRequested" targetRef="Prepare" />
+    <bpmn:sequenceFlow id="Flow_Review_Prepare_Assess" sourceRef="Prepare" targetRef="Assess" />
+    <bpmn:sequenceFlow id="Flow_Review_Assess_End" sourceRef="Assess" targetRef="EndEvent_ReviewDone" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,99 @@
+{
+  "kind": "scenario",
+  "id": "error-called-child-finance-unlisted-code",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-called-child-supplier-review",
+    "relativePath": "scenarios/open-rows/error-called-child/supplier-review.bpmn",
+    "sha256": "dcf93bfe2d1daf9d993a4d0f95f9c57f5f191aa0db103965c60a70d215aacb96",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "financeDossier",
+          "value": {
+            "kind": "string",
+            "value": "F-1"
+          }
+        },
+        {
+          "name": "complianceDossier",
+          "value": {
+            "kind": "string",
+            "value": "C-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "prepare-finance",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:13:ReviewFinance:1",
+        "elementId": "Prepare",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "verdict",
+            "value": {
+              "kind": "string",
+              "value": "pending"
+            }
+          },
+          {
+            "name": "scratch",
+            "value": {
+              "kind": "string",
+              "value": "draft"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-assess-finance",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:13:ReviewFinance:1",
+        "elementId": "Assess",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "DOSSIER_LOST",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "rejected"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/tree/OutputVariablesPropagator.java"
+    ]
+  }
+}

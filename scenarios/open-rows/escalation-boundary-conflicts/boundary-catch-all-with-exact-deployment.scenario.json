@@ -1,0 +1,34 @@
+{
+  "kind": "scenario",
+  "id": "escalation-boundary-conflicts-boundary-catch-all-with-exact-deployment",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "escalation-boundary-conflicts-catch-all-with-exact",
+    "relativePath": "scenarios/open-rows/escalation-boundary-conflicts/boundary-catch-all-with-exact.bpmn",
+    "sha256": "69c308b18bb20d401e2012270fdd46c1a851459f239750bb838162b3030bab84",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationEventDefinitionFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowEscalationEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

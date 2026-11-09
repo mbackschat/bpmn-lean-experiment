@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_BoundaryDuplicateCode"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-boundary-conflicts:boundary-duplicate-code">
+  <bpmn:escalation id="Escalation_Overrun" name="Overrun" escalationCode="OVERRUN" />
+  <bpmn:process id="Process_BoundaryDuplicateCode" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_JobStarted" />
+    <bpmn:subProcess id="Host" name="Host">
+      <bpmn:startEvent id="StartEvent_Host" />
+      <bpmn:userTask id="Work" name="Work" />
+      <bpmn:endEvent id="EndEvent_Host" />
+      <bpmn:sequenceFlow id="Flow_Host_Start_Work" sourceRef="StartEvent_Host" targetRef="Work" />
+      <bpmn:sequenceFlow id="Flow_Host_Work_End" sourceRef="Work" targetRef="EndEvent_Host" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Host_Overrun_Interrupting" attachedToRef="Host" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Interrupting" escalationRef="Escalation_Overrun" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Host_Overrun_NonInterrupting" attachedToRef="Host" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_NonInterrupting" escalationRef="Escalation_Overrun" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="HandleInterrupting" name="Handle through the interrupting boundary" />
+    <bpmn:userTask id="HandleNonInterrupting" name="Handle through the non-interrupting boundary" />
+    <bpmn:endEvent id="EndEvent_JobDone" />
+    <bpmn:endEvent id="EndEvent_Interrupted" />
+    <bpmn:endEvent id="EndEvent_Assisted" />
+    <bpmn:sequenceFlow id="Flow_Start_Host" sourceRef="StartEvent_JobStarted" targetRef="Host" />
+    <bpmn:sequenceFlow id="Flow_Host_End" sourceRef="Host" targetRef="EndEvent_JobDone" />
+    <bpmn:sequenceFlow id="Flow_Interrupting_Handle" sourceRef="Boundary_Host_Overrun_Interrupting" targetRef="HandleInterrupting" />
+    <bpmn:sequenceFlow id="Flow_NonInterrupting_Handle" sourceRef="Boundary_Host_Overrun_NonInterrupting" targetRef="HandleNonInterrupting" />
+    <bpmn:sequenceFlow id="Flow_HandleInterrupting_End" sourceRef="HandleInterrupting" targetRef="EndEvent_Interrupted" />
+    <bpmn:sequenceFlow id="Flow_HandleNonInterrupting_End" sourceRef="HandleNonInterrupting" targetRef="EndEvent_Assisted" />
+  </bpmn:process>
+</bpmn:definitions>

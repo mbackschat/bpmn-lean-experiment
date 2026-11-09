@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_EventSubProcessCatchAllWithExact"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-boundary-conflicts:event-subprocess-catch-all-with-exact">
+  <bpmn:escalation id="Escalation_Overrun" name="Overrun" escalationCode="OVERRUN" />
+  <bpmn:process id="Process_EventSubProcessCatchAllWithExact" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_JobStarted" />
+    <bpmn:subProcess id="Host" name="Host">
+      <bpmn:startEvent id="StartEvent_Host" />
+      <bpmn:userTask id="Work" name="Work" />
+      <bpmn:endEvent id="EndEvent_Host" />
+      <bpmn:sequenceFlow id="Flow_Host_Start_Work" sourceRef="StartEvent_Host" targetRef="Work" />
+      <bpmn:sequenceFlow id="Flow_Host_Work_End" sourceRef="Work" targetRef="EndEvent_Host" />
+      <bpmn:subProcess id="Handler_Exact" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Exact" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Exact" escalationRef="Escalation_Overrun" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="HandleExact" name="Handle the exact handler" />
+        <bpmn:endEvent id="End_Exact" />
+        <bpmn:sequenceFlow id="Flow_Exact_Handle" sourceRef="Start_Exact" targetRef="HandleExact" />
+        <bpmn:sequenceFlow id="Flow_Exact_End" sourceRef="HandleExact" targetRef="End_Exact" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="Handler_Any" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Any" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Any" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="HandleAny" name="Handle the catch-all handler" />
+        <bpmn:endEvent id="End_Any" />
+        <bpmn:sequenceFlow id="Flow_Any_Handle" sourceRef="Start_Any" targetRef="HandleAny" />
+        <bpmn:sequenceFlow id="Flow_Any_End" sourceRef="HandleAny" targetRef="End_Any" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndEvent_JobDone" />
+    <bpmn:sequenceFlow id="Flow_Start_Host" sourceRef="StartEvent_JobStarted" targetRef="Host" />
+    <bpmn:sequenceFlow id="Flow_Host_End" sourceRef="Host" targetRef="EndEvent_JobDone" />
+  </bpmn:process>
+</bpmn:definitions>

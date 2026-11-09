@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_StatusNotices"
+  targetNamespace="urn:bpmn-lean:scenarios:message-throw-unbound">
+  <bpmn:message id="Message_StatusNotice" name="StatusNotice" />
+  <bpmn:message id="Message_FinalNotice" name="FinalNotice" />
+  <bpmn:collaboration id="Collaboration_StatusNotices">
+    <bpmn:participant id="Participant_Shop" name="Shop" processRef="Process_StatusNotices" />
+    <bpmn:participant id="Participant_Customer" name="Customer" />
+    <bpmn:messageFlow
+      id="MessageFlow_StatusNotice"
+      name="Status notice"
+      sourceRef="Throw_MessageFlow"
+      targetRef="Participant_Customer"
+      messageRef="Message_StatusNotice" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_StatusNotices" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_OrderAccepted" />
+    <bpmn:userTask id="Prepare" name="Prepare the status" />
+    <bpmn:intermediateThrowEvent id="Throw_BareMarker" name="Bare message marker">
+      <bpmn:messageEventDefinition id="MessageEventDefinition_BareMarker" messageRef="Message_StatusNotice" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateThrowEvent id="Throw_MessageFlow" name="Throw along a Message Flow">
+      <bpmn:messageEventDefinition id="MessageEventDefinition_MessageFlow" messageRef="Message_StatusNotice" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="MessageEnd_Bare" name="Bare message end">
+      <bpmn:messageEventDefinition id="MessageEventDefinition_BareEnd" messageRef="Message_FinalNotice" />
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start_Prepare" sourceRef="StartEvent_OrderAccepted" targetRef="Prepare" />
+    <bpmn:sequenceFlow id="Flow_Prepare_Marker" sourceRef="Prepare" targetRef="Throw_BareMarker" />
+    <bpmn:sequenceFlow id="Flow_Marker_MessageFlow" sourceRef="Throw_BareMarker" targetRef="Throw_MessageFlow" />
+    <bpmn:sequenceFlow id="Flow_MessageFlow_End" sourceRef="Throw_MessageFlow" targetRef="MessageEnd_Bare" />
+  </bpmn:process>
+</bpmn:definitions>

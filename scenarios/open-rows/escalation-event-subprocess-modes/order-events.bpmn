@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_OrderEvents"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-event-subprocess-modes">
+  <bpmn:escalation id="Escalation_Delay" name="Delay" escalationCode="DELAY" />
+  <bpmn:escalation id="Escalation_Reminder" name="Reminder" escalationCode="REMINDER" />
+  <bpmn:escalation id="Escalation_Alert" name="Alert" escalationCode="ALERT" />
+  <bpmn:process id="Process_OrderEvents" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_OrderPlaced" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="Order" name="Order">
+      <bpmn:startEvent id="StartEvent_Order" />
+      <bpmn:userTask id="Process" name="Process the order" />
+      <bpmn:intermediateThrowEvent id="Raise_Delay">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Delay" escalationRef="Escalation_Delay" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="Ship" name="Ship the order" />
+      <bpmn:endEvent id="EndEvent_Order" />
+      <bpmn:sequenceFlow id="Flow_Order_Start_Process" sourceRef="StartEvent_Order" targetRef="Process" />
+      <bpmn:sequenceFlow id="Flow_Order_Process_Raise" sourceRef="Process" targetRef="Raise_Delay" />
+      <bpmn:sequenceFlow id="Flow_Order_Raise_Ship" sourceRef="Raise_Delay" targetRef="Ship" />
+      <bpmn:sequenceFlow id="Flow_Order_Ship_End" sourceRef="Ship" targetRef="EndEvent_Order" />
+      <bpmn:subProcess id="Handler_Order_Delay" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Order_Delay" isInterrupting="true">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Order_Delay" escalationRef="Escalation_Delay" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Expedite" name="Expedite the order" />
+        <bpmn:endEvent id="End_Order_Delay" />
+        <bpmn:sequenceFlow id="Flow_Order_Delay_Expedite" sourceRef="Start_Order_Delay" targetRef="Expedite" />
+        <bpmn:sequenceFlow id="Flow_Order_Delay_End" sourceRef="Expedite" targetRef="End_Order_Delay" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+
+    <bpmn:subProcess id="Billing" name="Billing">
+      <bpmn:startEvent id="StartEvent_Billing" />
+      <bpmn:userTask id="Prepare" name="Prepare the invoice" />
+      <bpmn:intermediateThrowEvent id="Raise_Reminder_1">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Reminder_1" escalationRef="Escalation_Reminder" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:intermediateThrowEvent id="Raise_Reminder_2">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Reminder_2" escalationRef="Escalation_Reminder" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="Send" name="Send the invoice" />
+      <bpmn:endEvent id="EndEvent_Billing" />
+      <bpmn:sequenceFlow id="Flow_Billing_Start_Prepare" sourceRef="StartEvent_Billing" targetRef="Prepare" />
+      <bpmn:sequenceFlow id="Flow_Billing_Prepare_Raise1" sourceRef="Prepare" targetRef="Raise_Reminder_1" />
+      <bpmn:sequenceFlow id="Flow_Billing_Raise1_Raise2" sourceRef="Raise_Reminder_1" targetRef="Raise_Reminder_2" />
+      <bpmn:sequenceFlow id="Flow_Billing_Raise2_Send" sourceRef="Raise_Reminder_2" targetRef="Send" />
+      <bpmn:sequenceFlow id="Flow_Billing_Send_End" sourceRef="Send" targetRef="EndEvent_Billing" />
+      <bpmn:subProcess id="Handler_Billing_Reminder" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Billing_Reminder" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Billing_Reminder" escalationRef="Escalation_Reminder" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="Remind" name="Remind the customer" />
+        <bpmn:endEvent id="End_Billing_Reminder" />
+        <bpmn:sequenceFlow id="Flow_Billing_Reminder_Remind" sourceRef="Start_Billing_Reminder" targetRef="Remind" />
+        <bpmn:sequenceFlow id="Flow_Billing_Reminder_End" sourceRef="Remind" targetRef="End_Billing_Reminder" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+
+    <bpmn:subProcess id="Review" name="Review">
+      <bpmn:startEvent id="StartEvent_Review" />
+      <bpmn:userTask id="Inspect" name="Inspect the order" />
+      <bpmn:intermediateThrowEvent id="Raise_Alert">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Alert" escalationRef="Escalation_Alert" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="Continue" name="Continue the review" />
+      <bpmn:endEvent id="EndEvent_Review" />
+      <bpmn:sequenceFlow id="Flow_Review_Start_Inspect" sourceRef="StartEvent_Review" targetRef="Inspect" />
+      <bpmn:sequenceFlow id="Flow_Review_Inspect_Raise" sourceRef="Inspect" targetRef="Raise_Alert" />
+      <bpmn:sequenceFlow id="Flow_Review_Raise_Continue" sourceRef="Raise_Alert" targetRef="Continue" />
+      <bpmn:sequenceFlow id="Flow_Review_Continue_End" sourceRef="Continue" targetRef="EndEvent_Review" />
+      <bpmn:subProcess id="Handler_Review_Alert" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Review_Alert" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Review_Alert" escalationRef="Escalation_Alert" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="HandleEsp" name="Handle the alert in the event sub-process" />
+        <bpmn:endEvent id="End_Review_Alert" />
+        <bpmn:sequenceFlow id="Flow_Review_Alert_Handle" sourceRef="Start_Review_Alert" targetRef="HandleEsp" />
+        <bpmn:sequenceFlow id="Flow_Review_Alert_End" sourceRef="HandleEsp" targetRef="End_Review_Alert" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Review_Alert" attachedToRef="Review" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Boundary_Review_Alert" escalationRef="Escalation_Alert" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="HandleBoundary" name="Handle the alert on the boundary" />
+
+    <bpmn:subProcess id="Pack" name="Pack">
+      <bpmn:startEvent id="StartEvent_Pack" />
+      <bpmn:userTask id="Seal" name="Seal the parcel" />
+      <bpmn:intermediateThrowEvent id="Raise_PackAlert">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_PackAlert" escalationRef="Escalation_Alert" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:userTask id="Label" name="Label the parcel" />
+      <bpmn:endEvent id="EndEvent_Pack" />
+      <bpmn:sequenceFlow id="Flow_Pack_Start_Seal" sourceRef="StartEvent_Pack" targetRef="Seal" />
+      <bpmn:sequenceFlow id="Flow_Pack_Seal_Raise" sourceRef="Seal" targetRef="Raise_PackAlert" />
+      <bpmn:sequenceFlow id="Flow_Pack_Raise_Label" sourceRef="Raise_PackAlert" targetRef="Label" />
+      <bpmn:sequenceFlow id="Flow_Pack_Label_End" sourceRef="Label" targetRef="EndEvent_Pack" />
+      <bpmn:subProcess id="Handler_Pack_AnyEscalation" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Pack_AnyEscalation" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Pack_AnyEscalation" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="HandlePackEsp" name="Handle any escalation in the event sub-process" />
+        <bpmn:endEvent id="End_Pack_AnyEscalation" />
+        <bpmn:sequenceFlow id="Flow_Pack_Any_Handle" sourceRef="Start_Pack_AnyEscalation" targetRef="HandlePackEsp" />
+        <bpmn:sequenceFlow id="Flow_Pack_Any_End" sourceRef="HandlePackEsp" targetRef="End_Pack_AnyEscalation" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Pack_Alert" attachedToRef="Pack" cancelActivity="true">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Boundary_Pack_Alert" escalationRef="Escalation_Alert" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="HandlePackBoundary" name="Handle the alert on the Pack boundary" />
+
+    <bpmn:endEvent id="EndEvent_Ordered" />
+    <bpmn:endEvent id="EndEvent_Billed" />
+    <bpmn:endEvent id="EndEvent_Reviewed" />
+    <bpmn:endEvent id="EndEvent_ReviewBoundaryHandled" />
+    <bpmn:endEvent id="EndEvent_Packed" />
+    <bpmn:endEvent id="EndEvent_PackBoundaryHandled" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_OrderPlaced" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Order" sourceRef="Gateway_Fork" targetRef="Order" />
+    <bpmn:sequenceFlow id="Flow_Fork_Billing" sourceRef="Gateway_Fork" targetRef="Billing" />
+    <bpmn:sequenceFlow id="Flow_Fork_Review" sourceRef="Gateway_Fork" targetRef="Review" />
+    <bpmn:sequenceFlow id="Flow_Fork_Pack" sourceRef="Gateway_Fork" targetRef="Pack" />
+    <bpmn:sequenceFlow id="Flow_Order_End" sourceRef="Order" targetRef="EndEvent_Ordered" />
+    <bpmn:sequenceFlow id="Flow_Billing_End" sourceRef="Billing" targetRef="EndEvent_Billed" />
+    <bpmn:sequenceFlow id="Flow_Review_End" sourceRef="Review" targetRef="EndEvent_Reviewed" />
+    <bpmn:sequenceFlow id="Flow_ReviewAlert_HandleBoundary" sourceRef="Boundary_Review_Alert" targetRef="HandleBoundary" />
+    <bpmn:sequenceFlow id="Flow_HandleBoundary_End" sourceRef="HandleBoundary" targetRef="EndEvent_ReviewBoundaryHandled" />
+    <bpmn:sequenceFlow id="Flow_Pack_End" sourceRef="Pack" targetRef="EndEvent_Packed" />
+    <bpmn:sequenceFlow id="Flow_PackAlert_HandleBoundary" sourceRef="Boundary_Pack_Alert" targetRef="HandlePackBoundary" />
+    <bpmn:sequenceFlow id="Flow_HandlePackBoundary_End" sourceRef="HandlePackBoundary" targetRef="EndEvent_PackBoundaryHandled" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_RelayChain"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-event-subprocess-nesting">
+  <bpmn:escalation id="Escalation_Deep" name="Deep" escalationCode="DEEP" />
+  <bpmn:escalation id="Escalation_Shallow" name="Shallow" escalationCode="SHALLOW" />
+  <bpmn:escalation id="Escalation_Raw" name="Raw" escalationCode="RAW" />
+  <bpmn:process id="Process_RelayChain" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ChainStarted" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="Outer" name="Outer">
+      <bpmn:startEvent id="StartEvent_Outer" />
+      <bpmn:subProcess id="Inner" name="Inner">
+        <bpmn:startEvent id="StartEvent_Inner" />
+        <bpmn:userTask id="Dig" name="Dig" />
+        <bpmn:intermediateThrowEvent id="Raise_Deep">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Deep" escalationRef="Escalation_Deep" />
+        </bpmn:intermediateThrowEvent>
+        <bpmn:userTask id="Surface" name="Surface" />
+        <bpmn:endEvent id="EndEvent_Inner" />
+        <bpmn:sequenceFlow id="Flow_Inner_Start_Dig" sourceRef="StartEvent_Inner" targetRef="Dig" />
+        <bpmn:sequenceFlow id="Flow_Inner_Dig_Raise" sourceRef="Dig" targetRef="Raise_Deep" />
+        <bpmn:sequenceFlow id="Flow_Inner_Raise_Surface" sourceRef="Raise_Deep" targetRef="Surface" />
+        <bpmn:sequenceFlow id="Flow_Inner_Surface_End" sourceRef="Surface" targetRef="EndEvent_Inner" />
+        <bpmn:subProcess id="Handler_Inner_Shallow" triggeredByEvent="true">
+          <bpmn:startEvent id="Start_Inner_Shallow" isInterrupting="false">
+            <bpmn:escalationEventDefinition id="EscalationEventDefinition_Inner_Shallow" escalationRef="Escalation_Shallow" />
+          </bpmn:startEvent>
+          <bpmn:userTask id="HandleInner" name="Handle the shallow escalation" />
+          <bpmn:endEvent id="End_Inner_Shallow" />
+          <bpmn:sequenceFlow id="Flow_Inner_Shallow_Handle" sourceRef="Start_Inner_Shallow" targetRef="HandleInner" />
+          <bpmn:sequenceFlow id="Flow_Inner_Shallow_End" sourceRef="HandleInner" targetRef="End_Inner_Shallow" />
+        </bpmn:subProcess>
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_Outer" />
+      <bpmn:sequenceFlow id="Flow_Outer_Start_Inner" sourceRef="StartEvent_Outer" targetRef="Inner" />
+      <bpmn:sequenceFlow id="Flow_Outer_Inner_End" sourceRef="Inner" targetRef="EndEvent_Outer" />
+      <bpmn:subProcess id="Handler_Outer_Deep" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Outer_Deep" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Outer_Deep" escalationRef="Escalation_Deep" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="EscalateOuter" name="Handle the deep escalation" />
+        <bpmn:endEvent id="End_Outer_Deep" />
+        <bpmn:sequenceFlow id="Flow_Outer_Deep_Handle" sourceRef="Start_Outer_Deep" targetRef="EscalateOuter" />
+        <bpmn:sequenceFlow id="Flow_Outer_Deep_End" sourceRef="EscalateOuter" targetRef="End_Outer_Deep" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+
+    <bpmn:subProcess id="Wrapper" name="Wrapper">
+      <bpmn:startEvent id="StartEvent_Wrapper" />
+      <bpmn:subProcess id="Core" name="Core">
+        <bpmn:startEvent id="StartEvent_Core" />
+        <bpmn:userTask id="Work" name="Work" />
+        <bpmn:intermediateThrowEvent id="Raise_Raw">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_Raw" escalationRef="Escalation_Raw" />
+        </bpmn:intermediateThrowEvent>
+        <bpmn:userTask id="Done" name="Done" />
+        <bpmn:endEvent id="EndEvent_Core" />
+        <bpmn:sequenceFlow id="Flow_Core_Start_Work" sourceRef="StartEvent_Core" targetRef="Work" />
+        <bpmn:sequenceFlow id="Flow_Core_Work_Raise" sourceRef="Work" targetRef="Raise_Raw" />
+        <bpmn:sequenceFlow id="Flow_Core_Raise_Done" sourceRef="Raise_Raw" targetRef="Done" />
+        <bpmn:sequenceFlow id="Flow_Core_Done_End" sourceRef="Done" targetRef="EndEvent_Core" />
+        <bpmn:subProcess id="Handler_Core_Raw" triggeredByEvent="true">
+          <bpmn:startEvent id="Start_Core_Raw" isInterrupting="false">
+            <bpmn:escalationEventDefinition id="EscalationEventDefinition_Core_Raw" escalationRef="Escalation_Raw" />
+          </bpmn:startEvent>
+          <bpmn:intermediateThrowEvent id="Raise_RawAgain">
+            <bpmn:escalationEventDefinition id="EscalationEventDefinition_Raise_RawAgain" escalationRef="Escalation_Raw" />
+          </bpmn:intermediateThrowEvent>
+          <bpmn:userTask id="Handled" name="Finish handling the raw escalation" />
+          <bpmn:endEvent id="End_Core_Raw" />
+          <bpmn:sequenceFlow id="Flow_Core_Raw_Raise" sourceRef="Start_Core_Raw" targetRef="Raise_RawAgain" />
+          <bpmn:sequenceFlow id="Flow_Core_Raw_Handled" sourceRef="Raise_RawAgain" targetRef="Handled" />
+          <bpmn:sequenceFlow id="Flow_Core_Raw_End" sourceRef="Handled" targetRef="End_Core_Raw" />
+        </bpmn:subProcess>
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_Wrapper" />
+      <bpmn:sequenceFlow id="Flow_Wrapper_Start_Core" sourceRef="StartEvent_Wrapper" targetRef="Core" />
+      <bpmn:sequenceFlow id="Flow_Wrapper_Core_End" sourceRef="Core" targetRef="EndEvent_Wrapper" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Wrapper_Raw" attachedToRef="Wrapper" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Wrapper_Raw" escalationRef="Escalation_Raw" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Observe" name="Observe the raw escalation" />
+
+    <bpmn:endEvent id="EndEvent_Chained" />
+    <bpmn:endEvent id="EndEvent_Wrapped" />
+    <bpmn:endEvent id="EndEvent_Observed" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ChainStarted" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Outer" sourceRef="Gateway_Fork" targetRef="Outer" />
+    <bpmn:sequenceFlow id="Flow_Fork_Wrapper" sourceRef="Gateway_Fork" targetRef="Wrapper" />
+    <bpmn:sequenceFlow id="Flow_Outer_End" sourceRef="Outer" targetRef="EndEvent_Chained" />
+    <bpmn:sequenceFlow id="Flow_Wrapper_End" sourceRef="Wrapper" targetRef="EndEvent_Wrapped" />
+    <bpmn:sequenceFlow id="Flow_Raw_Observe" sourceRef="Boundary_Wrapper_Raw" targetRef="Observe" />
+    <bpmn:sequenceFlow id="Flow_Observe_End" sourceRef="Observe" targetRef="EndEvent_Observed" />
+  </bpmn:process>
+</bpmn:definitions>

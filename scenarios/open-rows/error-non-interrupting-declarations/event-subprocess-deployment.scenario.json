@@ -1,0 +1,31 @@
+{
+  "kind": "scenario",
+  "id": "error-non-interrupting-declarations-event-subprocess-deployment",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-non-interrupting-declarations-event-subprocess",
+    "relativePath": "scenarios/open-rows/error-non-interrupting-declarations/non-interrupting-event-subprocess.bpmn",
+    "sha256": "c3f68f185fb6b85b05fb2e576b471e2dd12d591817e5b70a7bb0052a9cd1ae23",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

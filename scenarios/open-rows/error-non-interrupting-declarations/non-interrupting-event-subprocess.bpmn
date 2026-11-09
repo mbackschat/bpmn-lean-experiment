@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_NonInterruptingErrorEventSubProcess"
+  targetNamespace="urn:bpmn-lean:scenarios:error-non-interrupting-declarations:event-subprocess">
+  <bpmn:error id="Error_PartMissing" name="Part missing" errorCode="PART_MISSING" />
+  <bpmn:process id="Process_NonInterruptingErrorEventSubProcess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_RepairRequested" />
+    <bpmn:userTask id="OrderPartByHand" name="Order part by hand" />
+    <bpmn:endEvent id="EndEvent_RepairDone" />
+    <bpmn:subProcess id="Handler_PartMissing" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_PartMissing" isInterrupting="false">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_PartMissing" errorRef="Error_PartMissing" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="FindSubstitute" name="Find substitute part" />
+      <bpmn:endEvent id="End_PartMissing" />
+      <bpmn:sequenceFlow id="Flow_Handler_Start_Find" sourceRef="Start_PartMissing" targetRef="FindSubstitute" />
+      <bpmn:sequenceFlow id="Flow_Handler_Find_End" sourceRef="FindSubstitute" targetRef="End_PartMissing" />
+    </bpmn:subProcess>
+
+    <bpmn:sequenceFlow id="Flow_Start_Order" sourceRef="StartEvent_RepairRequested" targetRef="OrderPartByHand" />
+    <bpmn:sequenceFlow id="Flow_Order_End" sourceRef="OrderPartByHand" targetRef="EndEvent_RepairDone" />
+  </bpmn:process>
+</bpmn:definitions>

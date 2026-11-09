@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ChargePayment"
+  targetNamespace="urn:bpmn-lean:scenarios:error-boundary-candidates">
+  <bpmn:error id="Error_CardDeclined" name="Card declined" errorCode="CARD_DECLINED" />
+  <bpmn:error id="Error_CardDeclinedAgain" name="Card declined, second declaration" errorCode="CARD_DECLINED" />
+  <bpmn:process id="Process_ChargePayment" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_PaymentRequested" />
+
+    <bpmn:serviceTask
+      id="AuthorizeCard"
+      name="Authorize card"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:boundaryEvent id="Boundary_Authorize_CardDeclined" attachedToRef="AuthorizeCard" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Authorize_CardDeclined" errorRef="Error_CardDeclined" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Authorize_AnyFailure" attachedToRef="AuthorizeCard" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Authorize_AnyFailure" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Review_Authorize_CardDeclined" name="Review declined authorization" />
+    <bpmn:userTask id="Review_Authorize_AnyFailure" name="Review failed authorization" />
+
+    <bpmn:serviceTask
+      id="CaptureFunds"
+      name="Capture funds"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:boundaryEvent id="Boundary_Capture_AnyFailure" attachedToRef="CaptureFunds" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Capture_AnyFailure" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Capture_CardDeclined" attachedToRef="CaptureFunds" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Capture_CardDeclined" errorRef="Error_CardDeclinedAgain" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Review_Capture_AnyFailure" name="Review failed capture" />
+    <bpmn:userTask id="Review_Capture_CardDeclined" name="Review declined capture" />
+
+    <bpmn:serviceTask
+      id="NotifyBank"
+      name="Notify bank"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:boundaryEvent id="Boundary_Notify_AnyFirst" attachedToRef="NotifyBank" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Notify_AnyFirst" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Notify_AnySecond" attachedToRef="NotifyBank" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Notify_AnySecond" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Review_Notify_AnyFirst" name="Review failed notification (first catch-all)" />
+    <bpmn:userTask id="Review_Notify_AnySecond" name="Review failed notification (second catch-all)" />
+
+    <bpmn:endEvent id="EndEvent_PaymentSettled" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Authorize" sourceRef="StartEvent_PaymentRequested" targetRef="AuthorizeCard" />
+    <bpmn:sequenceFlow id="Flow_Authorize_Capture" sourceRef="AuthorizeCard" targetRef="CaptureFunds" />
+    <bpmn:sequenceFlow id="Flow_Capture_Notify" sourceRef="CaptureFunds" targetRef="NotifyBank" />
+    <bpmn:sequenceFlow id="Flow_Notify_End" sourceRef="NotifyBank" targetRef="EndEvent_PaymentSettled" />
+
+    <bpmn:sequenceFlow id="Flow_Authorize_CardDeclined" sourceRef="Boundary_Authorize_CardDeclined" targetRef="Review_Authorize_CardDeclined" />
+    <bpmn:sequenceFlow id="Flow_Authorize_AnyFailure" sourceRef="Boundary_Authorize_AnyFailure" targetRef="Review_Authorize_AnyFailure" />
+    <bpmn:sequenceFlow id="Flow_Capture_AnyFailure" sourceRef="Boundary_Capture_AnyFailure" targetRef="Review_Capture_AnyFailure" />
+    <bpmn:sequenceFlow id="Flow_Capture_CardDeclined" sourceRef="Boundary_Capture_CardDeclined" targetRef="Review_Capture_CardDeclined" />
+    <bpmn:sequenceFlow id="Flow_Notify_AnyFirst" sourceRef="Boundary_Notify_AnyFirst" targetRef="Review_Notify_AnyFirst" />
+    <bpmn:sequenceFlow id="Flow_Notify_AnySecond" sourceRef="Boundary_Notify_AnySecond" targetRef="Review_Notify_AnySecond" />
+
+    <bpmn:sequenceFlow id="Flow_ReviewAuthorizeDeclined_End" sourceRef="Review_Authorize_CardDeclined" targetRef="EndEvent_PaymentSettled" />
+    <bpmn:sequenceFlow id="Flow_ReviewAuthorizeAny_End" sourceRef="Review_Authorize_AnyFailure" targetRef="EndEvent_PaymentSettled" />
+    <bpmn:sequenceFlow id="Flow_ReviewCaptureAny_End" sourceRef="Review_Capture_AnyFailure" targetRef="EndEvent_PaymentSettled" />
+    <bpmn:sequenceFlow id="Flow_ReviewCaptureDeclined_End" sourceRef="Review_Capture_CardDeclined" targetRef="EndEvent_PaymentSettled" />
+    <bpmn:sequenceFlow id="Flow_ReviewNotifyFirst_End" sourceRef="Review_Notify_AnyFirst" targetRef="EndEvent_PaymentSettled" />
+    <bpmn:sequenceFlow id="Flow_ReviewNotifySecond_End" sourceRef="Review_Notify_AnySecond" targetRef="EndEvent_PaymentSettled" />
+  </bpmn:process>
+</bpmn:definitions>

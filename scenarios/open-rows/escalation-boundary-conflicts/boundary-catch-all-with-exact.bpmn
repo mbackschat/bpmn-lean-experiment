@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_BoundaryCatchAllWithExact"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-boundary-conflicts:boundary-catch-all-with-exact">
+  <bpmn:escalation id="Escalation_Overrun" name="Overrun" escalationCode="OVERRUN" />
+  <bpmn:process id="Process_BoundaryCatchAllWithExact" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_JobStarted" />
+    <bpmn:subProcess id="Host" name="Host">
+      <bpmn:startEvent id="StartEvent_Host" />
+      <bpmn:userTask id="Work" name="Work" />
+      <bpmn:endEvent id="EndEvent_Host" />
+      <bpmn:sequenceFlow id="Flow_Host_Start_Work" sourceRef="StartEvent_Host" targetRef="Work" />
+      <bpmn:sequenceFlow id="Flow_Host_Work_End" sourceRef="Work" targetRef="EndEvent_Host" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Host_Overrun" attachedToRef="Host" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Exact" escalationRef="Escalation_Overrun" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Host_Any" attachedToRef="Host" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Any" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="HandleExact" name="Handle the exact boundary" />
+    <bpmn:userTask id="HandleAny" name="Handle the catch-all boundary" />
+    <bpmn:endEvent id="EndEvent_JobDone" />
+    <bpmn:endEvent id="EndEvent_ExactHandled" />
+    <bpmn:endEvent id="EndEvent_AnyHandled" />
+    <bpmn:sequenceFlow id="Flow_Start_Host" sourceRef="StartEvent_JobStarted" targetRef="Host" />
+    <bpmn:sequenceFlow id="Flow_Host_End" sourceRef="Host" targetRef="EndEvent_JobDone" />
+    <bpmn:sequenceFlow id="Flow_Exact_Handle" sourceRef="Boundary_Host_Overrun" targetRef="HandleExact" />
+    <bpmn:sequenceFlow id="Flow_Any_Handle" sourceRef="Boundary_Host_Any" targetRef="HandleAny" />
+    <bpmn:sequenceFlow id="Flow_HandleExact_End" sourceRef="HandleExact" targetRef="EndEvent_ExactHandled" />
+    <bpmn:sequenceFlow id="Flow_HandleAny_End" sourceRef="HandleAny" targetRef="EndEvent_AnyHandled" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_FulfilOrder"
+  targetNamespace="urn:bpmn-lean:scenarios:error-ancestor-search">
+  <bpmn:error id="Error_PackingFailed" name="Packing failed" errorCode="PACKING_FAILED" />
+  <bpmn:error id="Error_StockShort" name="Stock short" errorCode="STOCK_SHORT" />
+  <bpmn:process id="Process_FulfilOrder" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_OrderPlaced" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="ReserveStock" name="Reserve stock">
+      <bpmn:startEvent id="StartEvent_Reserve" />
+      <bpmn:subProcess id="PickItems" name="Pick items">
+        <bpmn:startEvent id="StartEvent_Pick" />
+        <bpmn:serviceTask
+          id="PickLine"
+          name="Pick line"
+          implementation="urn:bpmn-lean:effect:probe-v1"
+          camunda:delegateExpression="${bpmnLeanEffectHandler}"
+          camunda:asyncBefore="true" />
+        <bpmn:endEvent id="EndEvent_Pick" />
+        <bpmn:sequenceFlow id="Flow_Pick_Start_Line" sourceRef="StartEvent_Pick" targetRef="PickLine" />
+        <bpmn:sequenceFlow id="Flow_Pick_Line_End" sourceRef="PickLine" targetRef="EndEvent_Pick" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="Boundary_PickItems_PackingFailed" attachedToRef="PickItems" cancelActivity="true">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_PickItems_PackingFailed" errorRef="Error_PackingFailed" />
+      </bpmn:boundaryEvent>
+      <bpmn:endEvent id="EndEvent_Reserve" />
+      <bpmn:sequenceFlow id="Flow_Reserve_Start_Pick" sourceRef="StartEvent_Reserve" targetRef="PickItems" />
+      <bpmn:sequenceFlow id="Flow_Reserve_Pick_End" sourceRef="PickItems" targetRef="EndEvent_Reserve" />
+      <bpmn:userTask id="Repick" name="Repick items" />
+      <bpmn:endEvent id="EndEvent_Repicked" />
+      <bpmn:sequenceFlow id="Flow_Reserve_PackingFailed_Repick" sourceRef="Boundary_PickItems_PackingFailed" targetRef="Repick" />
+      <bpmn:sequenceFlow id="Flow_Reserve_Repick_End" sourceRef="Repick" targetRef="EndEvent_Repicked" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_ReserveStock_StockShort" attachedToRef="ReserveStock" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_ReserveStock_StockShort" errorRef="Error_StockShort" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Backorder" name="Create backorder" />
+    <bpmn:endEvent id="EndEvent_Reserved" />
+    <bpmn:endEvent id="EndEvent_Backordered" />
+
+    <bpmn:subProcess id="ShipOrder" name="Ship order">
+      <bpmn:startEvent id="StartEvent_Ship" />
+      <bpmn:subProcess id="LoadTruck" name="Load truck">
+        <bpmn:startEvent id="StartEvent_Load" />
+        <bpmn:userTask id="ScanPallet" name="Scan pallet" />
+        <bpmn:endEvent id="EndError_StockShort">
+          <bpmn:errorEventDefinition id="ErrorEventDefinition_Load_StockShort" errorRef="Error_StockShort" />
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_Load_Start_Scan" sourceRef="StartEvent_Load" targetRef="ScanPallet" />
+        <bpmn:sequenceFlow id="Flow_Load_Scan_Error" sourceRef="ScanPallet" targetRef="EndError_StockShort" />
+      </bpmn:subProcess>
+      <bpmn:boundaryEvent id="Boundary_LoadTruck_AnyFailure" attachedToRef="LoadTruck" cancelActivity="true">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_LoadTruck_AnyFailure" />
+      </bpmn:boundaryEvent>
+      <bpmn:endEvent id="EndEvent_Ship" />
+      <bpmn:sequenceFlow id="Flow_Ship_Start_Load" sourceRef="StartEvent_Ship" targetRef="LoadTruck" />
+      <bpmn:sequenceFlow id="Flow_Ship_Load_End" sourceRef="LoadTruck" targetRef="EndEvent_Ship" />
+      <bpmn:userTask id="Reload" name="Reload truck" />
+      <bpmn:endEvent id="EndEvent_Reloaded" />
+      <bpmn:sequenceFlow id="Flow_Ship_AnyFailure_Reload" sourceRef="Boundary_LoadTruck_AnyFailure" targetRef="Reload" />
+      <bpmn:sequenceFlow id="Flow_Ship_Reload_End" sourceRef="Reload" targetRef="EndEvent_Reloaded" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_ShipOrder_StockShort" attachedToRef="ShipOrder" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_ShipOrder_StockShort" errorRef="Error_StockShort" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Reroute" name="Reroute shipment" />
+    <bpmn:endEvent id="EndEvent_Shipped" />
+    <bpmn:endEvent id="EndEvent_Rerouted" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_OrderPlaced" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Reserve" sourceRef="Gateway_Fork" targetRef="ReserveStock" />
+    <bpmn:sequenceFlow id="Flow_Fork_Ship" sourceRef="Gateway_Fork" targetRef="ShipOrder" />
+    <bpmn:sequenceFlow id="Flow_Reserve_End" sourceRef="ReserveStock" targetRef="EndEvent_Reserved" />
+    <bpmn:sequenceFlow id="Flow_StockShort_Backorder" sourceRef="Boundary_ReserveStock_StockShort" targetRef="Backorder" />
+    <bpmn:sequenceFlow id="Flow_Backorder_End" sourceRef="Backorder" targetRef="EndEvent_Backordered" />
+    <bpmn:sequenceFlow id="Flow_Ship_End" sourceRef="ShipOrder" targetRef="EndEvent_Shipped" />
+    <bpmn:sequenceFlow id="Flow_ShipStockShort_Reroute" sourceRef="Boundary_ShipOrder_StockShort" targetRef="Reroute" />
+    <bpmn:sequenceFlow id="Flow_Reroute_End" sourceRef="Reroute" targetRef="EndEvent_Rerouted" />
+  </bpmn:process>
+</bpmn:definitions>

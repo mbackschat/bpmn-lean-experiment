@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_DispatchBatches"
+  targetNamespace="urn:bpmn-lean:scenarios:error-multi-instance">
+  <bpmn:error id="Error_NotifyFailed" name="Notify failed" errorCode="NOTIFY_FAILED" />
+  <bpmn:error id="Error_ReviewRejected" name="Review rejected" errorCode="REVIEW_REJECTED" />
+  <bpmn:process id="Process_DispatchBatches" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_BatchesReady" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:serviceTask
+      id="NotifyEach"
+      name="Notify recipient"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:loopCardinality>3</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Boundary_NotifyEach_Failed" attachedToRef="NotifyEach" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_NotifyEach_Failed" errorRef="Error_NotifyFailed" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ResolveNotify" name="Resolve failed notification" />
+    <bpmn:endEvent id="EndEvent_Notified" />
+    <bpmn:endEvent id="EndEvent_NotifyResolved" />
+
+    <bpmn:callActivity id="ReviewEach" name="Review batch" calledElement="Process_ReviewBatch">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopCardinality>2</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_ReviewEach_Rejected" attachedToRef="ReviewEach" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_ReviewEach_Rejected" errorRef="Error_ReviewRejected" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ResolveReview" name="Resolve rejected review" />
+    <bpmn:endEvent id="EndEvent_Reviewed" />
+    <bpmn:endEvent id="EndEvent_ReviewResolved" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_BatchesReady" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Notify" sourceRef="Gateway_Fork" targetRef="NotifyEach" />
+    <bpmn:sequenceFlow id="Flow_Fork_Review" sourceRef="Gateway_Fork" targetRef="ReviewEach" />
+    <bpmn:sequenceFlow id="Flow_Notify_End" sourceRef="NotifyEach" targetRef="EndEvent_Notified" />
+    <bpmn:sequenceFlow id="Flow_NotifyFailed_Resolve" sourceRef="Boundary_NotifyEach_Failed" targetRef="ResolveNotify" />
+    <bpmn:sequenceFlow id="Flow_ResolveNotify_End" sourceRef="ResolveNotify" targetRef="EndEvent_NotifyResolved" />
+    <bpmn:sequenceFlow id="Flow_Review_End" sourceRef="ReviewEach" targetRef="EndEvent_Reviewed" />
+    <bpmn:sequenceFlow id="Flow_ReviewRejected_Resolve" sourceRef="Boundary_ReviewEach_Rejected" targetRef="ResolveReview" />
+    <bpmn:sequenceFlow id="Flow_ResolveReview_End" sourceRef="ResolveReview" targetRef="EndEvent_ReviewResolved" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_ReviewBatch" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_BatchReceived" />
+    <bpmn:serviceTask
+      id="Assess"
+      name="Assess batch"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:endEvent id="EndEvent_BatchAssessed" />
+
+    <bpmn:sequenceFlow id="Flow_Batch_Start_Assess" sourceRef="StartEvent_BatchReceived" targetRef="Assess" />
+    <bpmn:sequenceFlow id="Flow_Batch_Assess_End" sourceRef="Assess" targetRef="EndEvent_BatchAssessed" />
+  </bpmn:process>
+</bpmn:definitions>

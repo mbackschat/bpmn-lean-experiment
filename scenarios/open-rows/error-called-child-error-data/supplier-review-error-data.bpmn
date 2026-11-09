@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_SupplierReviewErrorData"
+  targetNamespace="urn:bpmn-lean:scenarios:error-called-child-error-data">
+  <bpmn:process id="Process_OnboardSupplierErrorData" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_SupplierProposed" />
+    <bpmn:callActivity id="ReviewDossier" name="Review dossier" calledElement="Process_ReviewDossierErrorData">
+      <bpmn:extensionElements>
+        <camunda:in source="dossier" target="dossier" />
+        <camunda:out source="verdict" target="reviewVerdict" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_ReviewDossier_AnyFailure" attachedToRef="ReviewDossier" cancelActivity="true">
+      <bpmn:errorEventDefinition
+        id="ErrorEventDefinition_ReviewDossier_AnyFailure"
+        camunda:errorCodeVariable="reviewCode"
+        camunda:errorMessageVariable="reviewMessage" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ResolveReview" name="Resolve the failed review" />
+    <bpmn:userTask id="ConfirmReview" name="Confirm the review" />
+    <bpmn:endEvent id="EndEvent_Confirmed" />
+    <bpmn:endEvent id="EndEvent_Resolved" />
+    <bpmn:sequenceFlow id="Flow_Start_Review" sourceRef="StartEvent_SupplierProposed" targetRef="ReviewDossier" />
+    <bpmn:sequenceFlow id="Flow_Review_Confirm" sourceRef="ReviewDossier" targetRef="ConfirmReview" />
+    <bpmn:sequenceFlow id="Flow_AnyFailure_Resolve" sourceRef="Boundary_ReviewDossier_AnyFailure" targetRef="ResolveReview" />
+    <bpmn:sequenceFlow id="Flow_Confirm_End" sourceRef="ConfirmReview" targetRef="EndEvent_Confirmed" />
+    <bpmn:sequenceFlow id="Flow_Resolve_End" sourceRef="ResolveReview" targetRef="EndEvent_Resolved" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_ReviewDossierErrorData" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ReviewRequested" />
+    <bpmn:userTask id="Prepare" name="Prepare review" />
+    <bpmn:serviceTask
+      id="Assess"
+      name="Assess dossier"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="verdict">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_ReviewDone" />
+    <bpmn:sequenceFlow id="Flow_Review_Start_Prepare" sourceRef="StartEvent_ReviewRequested" targetRef="Prepare" />
+    <bpmn:sequenceFlow id="Flow_Review_Prepare_Assess" sourceRef="Prepare" targetRef="Assess" />
+    <bpmn:sequenceFlow id="Flow_Review_Assess_End" sourceRef="Assess" targetRef="EndEvent_ReviewDone" />
+  </bpmn:process>
+</bpmn:definitions>

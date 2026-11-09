@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ClaimRefund"
+  targetNamespace="urn:bpmn-lean:scenarios:error-unhandled">
+  <bpmn:error id="Error_FundsFrozen" name="Funds frozen" errorCode="FUNDS_FROZEN" />
+  <bpmn:error id="Error_AuditFinding" name="Audit finding" errorCode="AUDIT_FINDING" />
+  <bpmn:process id="Process_ClaimRefund" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ClaimApproved" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="Settlement" name="Settlement">
+      <bpmn:startEvent id="StartEvent_Settlement" />
+      <bpmn:serviceTask
+        id="PayOut"
+        name="Pay out refund"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true" />
+      <bpmn:boundaryEvent id="Boundary_PayOut_FundsFrozen" attachedToRef="PayOut" cancelActivity="true">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_PayOut_FundsFrozen" errorRef="Error_FundsFrozen" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="ReleaseFunds" name="Release frozen funds" />
+      <bpmn:endEvent id="EndEvent_Settlement" />
+      <bpmn:endEvent id="EndEvent_Released" />
+      <bpmn:sequenceFlow id="Flow_Settlement_Start_PayOut" sourceRef="StartEvent_Settlement" targetRef="PayOut" />
+      <bpmn:sequenceFlow id="Flow_Settlement_PayOut_End" sourceRef="PayOut" targetRef="EndEvent_Settlement" />
+      <bpmn:sequenceFlow id="Flow_Settlement_FundsFrozen_Release" sourceRef="Boundary_PayOut_FundsFrozen" targetRef="ReleaseFunds" />
+      <bpmn:sequenceFlow id="Flow_Settlement_Release_End" sourceRef="ReleaseFunds" targetRef="EndEvent_Released" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="Archive" name="Archive claim" />
+    <bpmn:endEvent id="EndEvent_Archived" />
+
+    <bpmn:userTask id="Audit" name="Audit claim" />
+    <bpmn:endEvent id="EndError_AuditFinding">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_AuditFinding" errorRef="Error_AuditFinding" />
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ClaimApproved" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Settlement" sourceRef="Gateway_Fork" targetRef="Settlement" />
+    <bpmn:sequenceFlow id="Flow_Fork_Audit" sourceRef="Gateway_Fork" targetRef="Audit" />
+    <bpmn:sequenceFlow id="Flow_Settlement_Archive" sourceRef="Settlement" targetRef="Archive" />
+    <bpmn:sequenceFlow id="Flow_Archive_End" sourceRef="Archive" targetRef="EndEvent_Archived" />
+    <bpmn:sequenceFlow id="Flow_Audit_Error" sourceRef="Audit" targetRef="EndError_AuditFinding" />
+  </bpmn:process>
+</bpmn:definitions>

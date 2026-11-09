@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_EventSubProcessDuplicateCode"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-boundary-conflicts:event-subprocess-duplicate-code">
+  <bpmn:escalation id="Escalation_Overrun" name="Overrun" escalationCode="OVERRUN" />
+  <bpmn:process id="Process_EventSubProcessDuplicateCode" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_JobStarted" />
+    <bpmn:subProcess id="Host" name="Host">
+      <bpmn:startEvent id="StartEvent_Host" />
+      <bpmn:userTask id="Work" name="Work" />
+      <bpmn:endEvent id="EndEvent_Host" />
+      <bpmn:sequenceFlow id="Flow_Host_Start_Work" sourceRef="StartEvent_Host" targetRef="Work" />
+      <bpmn:sequenceFlow id="Flow_Host_Work_End" sourceRef="Work" targetRef="EndEvent_Host" />
+      <bpmn:subProcess id="Handler_Interrupting" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Interrupting" isInterrupting="true">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Interrupting" escalationRef="Escalation_Overrun" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="HandleInterrupting" name="Handle through the interrupting handler" />
+        <bpmn:endEvent id="End_Interrupting" />
+        <bpmn:sequenceFlow id="Flow_Interrupting_Handle" sourceRef="Start_Interrupting" targetRef="HandleInterrupting" />
+        <bpmn:sequenceFlow id="Flow_Interrupting_End" sourceRef="HandleInterrupting" targetRef="End_Interrupting" />
+      </bpmn:subProcess>
+      <bpmn:subProcess id="Handler_NonInterrupting" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_NonInterrupting" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_NonInterrupting" escalationRef="Escalation_Overrun" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="HandleNonInterrupting" name="Handle through the non-interrupting handler" />
+        <bpmn:endEvent id="End_NonInterrupting" />
+        <bpmn:sequenceFlow id="Flow_NonInterrupting_Handle" sourceRef="Start_NonInterrupting" targetRef="HandleNonInterrupting" />
+        <bpmn:sequenceFlow id="Flow_NonInterrupting_End" sourceRef="HandleNonInterrupting" targetRef="End_NonInterrupting" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndEvent_JobDone" />
+    <bpmn:sequenceFlow id="Flow_Start_Host" sourceRef="StartEvent_JobStarted" targetRef="Host" />
+    <bpmn:sequenceFlow id="Flow_Host_End" sourceRef="Host" targetRef="EndEvent_JobDone" />
+  </bpmn:process>
+</bpmn:definitions>

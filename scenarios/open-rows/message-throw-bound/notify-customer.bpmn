@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_NotifyCustomer"
+  targetNamespace="urn:bpmn-lean:scenarios:message-throw-bound">
+  <bpmn:message id="Message_ShipmentNotice" name="ShipmentNotice" />
+  <bpmn:message id="Message_ClosureNotice" name="ClosureNotice" />
+  <bpmn:error id="Error_SendRefused" name="Send refused" errorCode="SEND_REFUSED" />
+  <bpmn:process id="Process_NotifyCustomer" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_OrderReady" />
+    <bpmn:userTask id="Pack" name="Pack the order" />
+
+    <bpmn:subProcess id="Notification" name="Notification">
+      <bpmn:startEvent id="StartEvent_Notification" />
+      <bpmn:intermediateThrowEvent id="Throw_ShippedNotice" name="Send shipment notice">
+        <bpmn:messageEventDefinition
+          id="MessageEventDefinition_ShippedNotice"
+          messageRef="Message_ShipmentNotice"
+          camunda:delegateExpression="${bpmnLeanEffectHandler}" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:endEvent id="MessageEnd_Closed" name="Send closure notice">
+        <bpmn:messageEventDefinition
+          id="MessageEventDefinition_ClosedNotice"
+          messageRef="Message_ClosureNotice"
+          camunda:delegateExpression="${bpmnLeanEffectHandler}" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Notification_Start_Shipped" sourceRef="StartEvent_Notification" targetRef="Throw_ShippedNotice" />
+      <bpmn:sequenceFlow id="Flow_Notification_Shipped_Closed" sourceRef="Throw_ShippedNotice" targetRef="MessageEnd_Closed" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Notification_SendRefused" attachedToRef="Notification" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Notification_SendRefused" errorRef="Error_SendRefused" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="HandleRefusal" name="Handle the refused send" />
+    <bpmn:userTask id="Archive" name="Archive the order" />
+    <bpmn:endEvent id="EndEvent_Archived" />
+    <bpmn:endEvent id="EndEvent_RefusalHandled" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Pack" sourceRef="StartEvent_OrderReady" targetRef="Pack" />
+    <bpmn:sequenceFlow id="Flow_Pack_Notification" sourceRef="Pack" targetRef="Notification" />
+    <bpmn:sequenceFlow id="Flow_Notification_Archive" sourceRef="Notification" targetRef="Archive" />
+    <bpmn:sequenceFlow id="Flow_Archive_End" sourceRef="Archive" targetRef="EndEvent_Archived" />
+    <bpmn:sequenceFlow id="Flow_SendRefused_Handle" sourceRef="Boundary_Notification_SendRefused" targetRef="HandleRefusal" />
+    <bpmn:sequenceFlow id="Flow_Handle_End" sourceRef="HandleRefusal" targetRef="EndEvent_RefusalHandled" />
+  </bpmn:process>
+</bpmn:definitions>

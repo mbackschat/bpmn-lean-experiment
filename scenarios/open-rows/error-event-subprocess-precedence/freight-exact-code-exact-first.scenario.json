@@ -1,0 +1,48 @@
+{
+  "kind": "scenario",
+  "id": "error-event-subprocess-precedence-freight-exact-code-exact-first",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-event-subprocess-precedence-shipment-exceptions",
+    "relativePath": "scenarios/open-rows/error-event-subprocess-precedence/shipment-exceptions.bpmn",
+    "sha256": "3cc5d61de12fc65ec087c83fe6df6d6ae91fe9d1d8f14fd302aace9ccf4ec9f2",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "fail-book-freight",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "BookFreight",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "FREIGHT_FULL",
+        "outputs": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

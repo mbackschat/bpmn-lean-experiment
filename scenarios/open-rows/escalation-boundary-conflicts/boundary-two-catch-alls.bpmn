@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_BoundaryTwoCatchAlls"
+  targetNamespace="urn:bpmn-lean:scenarios:escalation-boundary-conflicts:boundary-two-catch-alls">
+  <bpmn:process id="Process_BoundaryTwoCatchAlls" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_JobStarted" />
+    <bpmn:subProcess id="Host" name="Host">
+      <bpmn:startEvent id="StartEvent_Host" />
+      <bpmn:userTask id="Work" name="Work" />
+      <bpmn:endEvent id="EndEvent_Host" />
+      <bpmn:sequenceFlow id="Flow_Host_Start_Work" sourceRef="StartEvent_Host" targetRef="Work" />
+      <bpmn:sequenceFlow id="Flow_Host_Work_End" sourceRef="Work" targetRef="EndEvent_Host" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Host_AnyFirst" attachedToRef="Host" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_AnyFirst" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Host_AnySecond" attachedToRef="Host" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_AnySecond" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="HandleFirst" name="Handle the first catch-all" />
+    <bpmn:userTask id="HandleSecond" name="Handle the second catch-all" />
+    <bpmn:endEvent id="EndEvent_JobDone" />
+    <bpmn:endEvent id="EndEvent_FirstHandled" />
+    <bpmn:endEvent id="EndEvent_SecondHandled" />
+    <bpmn:sequenceFlow id="Flow_Start_Host" sourceRef="StartEvent_JobStarted" targetRef="Host" />
+    <bpmn:sequenceFlow id="Flow_Host_End" sourceRef="Host" targetRef="EndEvent_JobDone" />
+    <bpmn:sequenceFlow id="Flow_First_Handle" sourceRef="Boundary_Host_AnyFirst" targetRef="HandleFirst" />
+    <bpmn:sequenceFlow id="Flow_Second_Handle" sourceRef="Boundary_Host_AnySecond" targetRef="HandleSecond" />
+    <bpmn:sequenceFlow id="Flow_HandleFirst_End" sourceRef="HandleFirst" targetRef="EndEvent_FirstHandled" />
+    <bpmn:sequenceFlow id="Flow_HandleSecond_End" sourceRef="HandleSecond" targetRef="EndEvent_SecondHandled" />
+  </bpmn:process>
+</bpmn:definitions>

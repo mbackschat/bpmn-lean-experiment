@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ProcessRecovery"
+  targetNamespace="urn:bpmn-lean:scenarios:error-event-subprocess-recovery:process">
+  <bpmn:error id="Error_ProcessFailed" name="Process failed" errorCode="PROCESS_FAILED" />
+  <bpmn:process id="Process_ProcessRecovery" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_RequestAccepted" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+    <bpmn:userTask id="OrdinaryWork" name="Ordinary work" />
+    <bpmn:endEvent id="EndEvent_OrdinaryWork" />
+    <bpmn:userTask id="TriggerFailure" name="Trigger failure" />
+    <bpmn:endEvent id="EndError_ProcessFailed">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_ProcessFailed" errorRef="Error_ProcessFailed" />
+    </bpmn:endEvent>
+    <bpmn:subProcess id="Handler_Process_Failed" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Process_Failed" isInterrupting="true">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_Process_Failed" errorRef="Error_ProcessFailed" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Recover" name="Recover the process" />
+      <bpmn:endEvent id="End_Process_Failed" />
+      <bpmn:sequenceFlow id="Flow_Handler_Start_Recover" sourceRef="Start_Process_Failed" targetRef="Recover" />
+      <bpmn:sequenceFlow id="Flow_Handler_Recover_End" sourceRef="Recover" targetRef="End_Process_Failed" />
+    </bpmn:subProcess>
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_RequestAccepted" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Ordinary" sourceRef="Gateway_Fork" targetRef="OrdinaryWork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Trigger" sourceRef="Gateway_Fork" targetRef="TriggerFailure" />
+    <bpmn:sequenceFlow id="Flow_Ordinary_End" sourceRef="OrdinaryWork" targetRef="EndEvent_OrdinaryWork" />
+    <bpmn:sequenceFlow id="Flow_Trigger_Error" sourceRef="TriggerFailure" targetRef="EndError_ProcessFailed" />
+  </bpmn:process>
+</bpmn:definitions>

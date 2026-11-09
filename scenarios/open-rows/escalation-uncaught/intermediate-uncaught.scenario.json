@@ -1,0 +1,47 @@
+{
+  "kind": "scenario",
+  "id": "escalation-uncaught-intermediate-uncaught",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "escalation-uncaught-dispatch-notice",
+    "relativePath": "scenarios/open-rows/escalation-uncaught/dispatch-notice.bpmn",
+    "sha256": "c68b489ce47854cbf1b7d892e0dc6dd9fb12c41df3814433a32043507b2a6a9b",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "start-process",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "complete-draft",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Draft",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationEventDefinitionFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ThrowEscalationEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}
