@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "mi-service-parallel",
     "relativePath": "scenarios/open-rows/multi-instance-service-task/parallel.bpmn",
-    "sha256": "c2387c9f94c915a235f01747465be88690c50c384ca3f24416d1c3e6eab3745f",
+    "sha256": "3f09609e65a9e80f4d0b4f82f407e4da50bee7d502522c39bbc8b542023a0109",
     "sourceOverlay": null
   },
   "stimuli": [
@@ -15,7 +15,7 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "recipients",
+          "name": "DataInput_Recipients",
           "value": {
             "kind": "stringList",
             "value": [

@@ -84,7 +84,7 @@
     "cibRefs": [
       "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
       "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateThrowNoneEventActivityBehavior.java",
-      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/DefaultJobRetryCmd.java"
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/DefaultJobRetryCmd.java"
     ]
   }
 }

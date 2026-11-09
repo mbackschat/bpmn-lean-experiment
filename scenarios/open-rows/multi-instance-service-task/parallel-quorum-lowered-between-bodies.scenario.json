@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "mi-service-parallel-quorum",
     "relativePath": "scenarios/open-rows/multi-instance-service-task/parallel-quorum.bpmn",
-    "sha256": "c7f316992f22f500f24b62efddd40f0da3f5d58ee0f90d83a0911ca899f94870",
+    "sha256": "ed10646f3985422d150b36f0813840a68a9db805fce0101af71a36193707e6c1",
     "sourceOverlay": null
   },
   "stimuli": [
@@ -15,14 +15,7 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "quorum",
-          "value": {
-            "kind": "integer",
-            "value": 3
-          }
-        },
-        {
-          "name": "recipients",
+          "name": "DataInput_Recipients",
           "value": {
             "kind": "stringList",
             "value": [
@@ -30,6 +23,13 @@
               "b",
               "c"
             ]
+          }
+        },
+        {
+          "name": "quorum",
+          "value": {
+            "kind": "integer",
+            "value": 3
           }
         }
       ]

@@ -45,7 +45,7 @@
       "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
       "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
       "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java",
-      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/DefaultJobRetryCmd.java"
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/DefaultJobRetryCmd.java"
     ]
   }
 }

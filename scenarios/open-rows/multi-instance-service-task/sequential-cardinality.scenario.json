@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "mi-service-sequential-cardinality",
     "relativePath": "scenarios/open-rows/multi-instance-service-task/sequential-cardinality.bpmn",
-    "sha256": "10856c080e5f483e86a787b0fc81b0039bc4305f9815516275a5774076842990",
+    "sha256": "5e76b219503b1127929595c7e2711d2a1db041d2a84ebfd9889bc00d29c328dd",
     "sourceOverlay": null
   },
   "stimuli": [

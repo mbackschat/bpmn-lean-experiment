@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "mi-service-sequential-quorum",
     "relativePath": "scenarios/open-rows/multi-instance-service-task/sequential-quorum.bpmn",
-    "sha256": "54f1eb8fa1fb83cc89b687784483cf50393f746a589d97a9d10b9d5c88c78468",
+    "sha256": "71135e8bff7193300fb4c0ca704fce2d5af02c369b7e88ffa0364cdb9e14976d",
     "sourceOverlay": null
   },
   "stimuli": [
@@ -15,14 +15,7 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "quorum",
-          "value": {
-            "kind": "integer",
-            "value": 0
-          }
-        },
-        {
-          "name": "recipients",
+          "name": "DataInput_Recipients",
           "value": {
             "kind": "stringList",
             "value": [
@@ -30,6 +23,13 @@
               "b",
               "c"
             ]
+          }
+        },
+        {
+          "name": "quorum",
+          "value": {
+            "kind": "integer",
+            "value": 0
           }
         }
       ]

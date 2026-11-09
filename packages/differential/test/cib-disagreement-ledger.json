@@ -593,20 +593,6 @@
     ]
   },
   {
-    "evidence": "scenarios/open-rows/compensation-handler-failures/technical-failure-cancelled.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/compensation-handler-failures/technical-failure-retried.cibseven-evidence.json",
-    "owners": [
-      "PC-COMPENSATION-01",
-      "PC-COMPENSATION-04"
-    ]
-  },
-  {
     "evidence": "scenarios/open-rows/compensation-handler-form-refusals/association-to-ordinary-activity.cibseven-evidence.json",
     "owners": [
       "PC-COMPENSATION-04",
@@ -2162,66 +2148,6 @@
     "evidence": "scenarios/open-rows/multi-instance-nesting/sequential-sequential-equal-items.cibseven-evidence.json",
     "owners": [
       "PC-MI-11"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-business-error.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-12"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-cardinality.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-collection-shrunk-then-restored.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-08"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-equal-items.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-missing-result.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-premature-and-stale-effects.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-quorum-initially-true.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-quorum-lowered-between-bodies.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-quorum-reached-early.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-09"
-    ]
-  },
-  {
-    "evidence": "scenarios/open-rows/multi-instance-service-task/sequential-technical-failure-retry.cibseven-evidence.json",
-    "owners": [
-      "PC-MI-02"
     ]
   },
   {

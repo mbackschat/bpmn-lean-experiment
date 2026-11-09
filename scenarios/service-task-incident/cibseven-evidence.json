@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "service-task-effect-incident-retry-success",
-    "sha256": "050caf6bb8546cf08b319b344ccc51c35e469359f55a95d3402709cdacd9efac"
+    "sha256": "07a79433fe0c3b1b5d2798ec00ed045e1478bed447cd72df233bf54bd6ec5fb2"
   },
   "profile": {
     "id": "cibseven-2.2.0",

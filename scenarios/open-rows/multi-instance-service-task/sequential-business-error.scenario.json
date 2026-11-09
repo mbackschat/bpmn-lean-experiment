@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "mi-service-sequential-boundary",
     "relativePath": "scenarios/open-rows/multi-instance-service-task/sequential-boundary.bpmn",
-    "sha256": "f95772795cc985d936c88435f7cd9fd3bf931137ecb6958934b22d673f71175f",
+    "sha256": "c2523aed628d2946059571349524c59e785cca8e00dfb427d8e4e53b692ee622",
     "sourceOverlay": null
   },
   "stimuli": [
@@ -15,7 +15,7 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "recipients",
+          "name": "DataInput_Recipients",
           "value": {
             "kind": "stringList",
             "value": [

@@ -13,11 +13,6 @@
       name="Notify recipient"
       implementation="urn:bpmn-lean:effect:probe-v1"
       camunda:delegateExpression="${bpmnLeanEffectHandler}">
-      <bpmn:extensionElements>
-        <camunda:inputOutput>
-          <camunda:inputParameter name="position">${loopCounter}</camunda:inputParameter>
-        </camunda:inputOutput>
-      </bpmn:extensionElements>
       <bpmn:multiInstanceLoopCharacteristics camunda:asyncBefore="true" isSequential="false">
         <bpmn:loopCardinality>${count}</bpmn:loopCardinality>
       </bpmn:multiInstanceLoopCharacteristics>

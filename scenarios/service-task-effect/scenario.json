@@ -39,7 +39,7 @@
     "cibRefs": [
       "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
       "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/ExecuteJobsCmd.java",
-      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/DefaultJobRetryCmd.java"
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/DefaultJobRetryCmd.java"
     ]
   }
 }

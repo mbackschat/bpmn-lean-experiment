@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "mi-service-sequential-output-parameter",
     "relativePath": "scenarios/open-rows/multi-instance-service-task/sequential-output-parameter.bpmn",
-    "sha256": "9727c96c80aaf97a870ed4316a7d391c06a0ae144216cac1ed395ffb0955d020",
+    "sha256": "ab681c2734b07ccecd043173c40da021bf411ce252aa4305ccb34b802525b171",
     "sourceOverlay": null
   },
   "stimuli": [
@@ -15,7 +15,7 @@
       "instanceId": "Instance_1",
       "variables": [
         {
-          "name": "recipients",
+          "name": "DataInput_Recipients",
           "value": {
             "kind": "stringList",
             "value": [

@@ -2,7 +2,7 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "service-task-effect-success",
-    "sha256": "69c10c4ef250266dacea6ca418d84218f597a0b18cf5bb486362f0ef50ef9a0d"
+    "sha256": "43ad792369e52f368c7c898a9a249fd0dea55c941ccb009e6710bbe45ccfb5b1"
   },
   "profile": {
     "id": "cibseven-2.2.0",

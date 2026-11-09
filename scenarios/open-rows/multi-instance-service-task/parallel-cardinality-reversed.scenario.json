@@ -5,7 +5,7 @@
   "bpmn": {
     "id": "mi-service-parallel-cardinality",
     "relativePath": "scenarios/open-rows/multi-instance-service-task/parallel-cardinality.bpmn",
-    "sha256": "e705a4ba1554031b0306ee97cf832e84432448ffea446d038896b54c956968b0",
+    "sha256": "f6bab8130cc4892dc26ba7942276d8f1864ab8ad50afd2ab55f0871f18a27aa9",
     "sourceOverlay": null
   },
   "stimuli": [

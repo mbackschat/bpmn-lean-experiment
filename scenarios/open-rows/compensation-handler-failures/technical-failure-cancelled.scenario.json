@@ -100,7 +100,7 @@
       "engine/src/main/java/org/cibseven/bpm/engine/impl/event/CompensationEventHandler.java",
       "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java",
       "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
-      "engine/src/main/java/org/cibseven/bpm/engine/impl/jobexecutor/DefaultJobRetryCmd.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/DefaultJobRetryCmd.java",
       "engine/src/main/java/org/cibseven/bpm/engine/impl/persistence/entity/IncidentEntity.java"
     ]
   }
