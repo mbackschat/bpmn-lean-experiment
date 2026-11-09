@@ -133,11 +133,11 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "559",
+            "publicJobId": "7",
             "retries": 3,
             "executable": true,
             "dueDatePresent": false,
-            "processInstanceId": "557",
+            "processInstanceId": "5",
             "elementId": "ServiceTask_Record",
             "incident": null
           }
@@ -148,20 +148,20 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "559",
+            "publicJobId": "7",
             "retries": 0,
             "executable": false,
             "dueDatePresent": false,
-            "processInstanceId": "557",
+            "processInstanceId": "5",
             "elementId": "ServiceTask_Record",
             "incident": {
-              "publicIncidentId": "564",
+              "publicIncidentId": "12",
               "type": "failedJob",
-              "configurationJobId": "559",
-              "processInstanceId": "557",
+              "configurationJobId": "7",
+              "processInstanceId": "5",
               "elementId": "ServiceTask_Record",
-              "causeIncidentId": "564",
-              "rootCauseIncidentId": "564"
+              "causeIncidentId": "12",
+              "rootCauseIncidentId": "12"
             }
           }
         ]
@@ -171,11 +171,11 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "559",
+            "publicJobId": "7",
             "retries": 1,
             "executable": true,
             "dueDatePresent": false,
-            "processInstanceId": "557",
+            "processInstanceId": "5",
             "elementId": "ServiceTask_Record",
             "incident": null
           }
