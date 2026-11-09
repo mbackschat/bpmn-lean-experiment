@@ -5,11 +5,11 @@ public import Kernel.Hooks
 /-! # Publish
 
 The one generic projection from runtime state to the public state observation of the
-[canonical result](../contracts/schemas/canonical-result.schema.json). Owns matching on `OpenKind` with `Step`.
+[canonical result](../contracts/schemas/canonical-result.schema.json). It reads open items through `OpenKind.view`.
 User tasks and effects are ordered by occurrence (process instance id, element id, then activation), and enabled
-interactions by their kind's wait rank and then occurrence, as every retained baseline state orders them
-(2026-11-08); every other list keeps the order in which its items opened. Evaluation requests are internal and never
-published.
+interactions by their kind's wait rank and then occurrence; every other list keeps the order in which its items
+opened. This is the project's publication contract; a Signal or conditional wait, which no admitted model opens yet, is
+not published.
 -/
 
 public section
@@ -95,15 +95,6 @@ structure Observation where
   failure : Option PublishedFailure
   deriving Repr
 
-/-- The published wait kind of an open item and its rank in `activeWaits`; evaluation requests are not waits. -/
-def waitKind : OpenKind → Option (String × Nat)
-  | .userTask _ => some ("userTask", 0)
-  | .message _ => some ("message", 1)
-  | .timer _ => some ("timer", 2)
-  | .effect _ => some ("effect", 3)
-  | .incident _ => some ("incident", 4)
-  | .evaluation _ => none
-
 def statusName : InstanceStatus → String
   | .running => "running"
   | .completed => "completed"
@@ -111,77 +102,49 @@ def statusName : InstanceStatus → String
   | .failed => "failed"
 
 /-- One wait per element and kind, counting its open items, in the order the first of them opened. -/
-def activeWaitsInOpenOrder (items : List OpenItem) : List ActiveWait :=
+def activeWaitsInOpenOrder (program : Program) (items : List OpenItem) : List ActiveWait :=
   items.foldl (fun waits item =>
-    match waitKind item.kind with
+    let elementId := (program.publicId item.element).value
+    match item.kind.view.published with
     | none => waits
     | some (kind, rank) =>
-      if waits.any (fun wait => wait.elementId == item.element.value && wait.kind == kind) then
+      if waits.any (fun wait => wait.elementId == elementId && wait.kind == kind) then
         waits.map fun wait =>
-          if wait.elementId == item.element.value && wait.kind == kind then
+          if wait.elementId == elementId && wait.kind == kind then
             { wait with multiplicity := wait.multiplicity + 1 }
           else wait
-      else waits ++ [{ elementId := item.element.value, kind, rank, multiplicity := 1 }]) []
+      else waits ++ [{ elementId, kind, rank, multiplicity := 1 }]) []
 
 /-- One wait per element and kind, counting its open items, ordered by kind (user task, message, timer, effect,
-incident) and then by element id, as every retained baseline state orders them (994 of 994, 2026-11-08). -/
-def activeWaits (items : List OpenItem) : List ActiveWait :=
-  (activeWaitsInOpenOrder items).mergeSort fun left right =>
+incident) and then by element id. -/
+def activeWaits (program : Program) (items : List OpenItem) : List ActiveWait :=
+  (activeWaitsInOpenOrder program items).mergeSort fun left right =>
     left.rank < right.rank || (left.rank == right.rank && decide (left.elementId ≤ right.elementId))
 
-def occurrenceId (state : State) (item : OpenItem) : OccurrenceId :=
-  { processInstanceId := state.instanceOf item.scope, elementId := item.element.value, activation := item.activation }
+def occurrenceId (program : Program) (state : State) (item : OpenItem) : OccurrenceId :=
+  { processInstanceId := state.instanceOf item.scope, elementId := (program.publicId item.element).value
+    activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
 
 def effect (id : OccurrenceId) (detail : EffectDetail) : OpenEffect :=
   { id, protocol := detail.protocol, operation := detail.operation, arguments := detail.arguments }
 
-def userTask? (state : State) (item : OpenItem) : Option OpenUserTask :=
-  match item.kind with
-  | .userTask detail =>
-    some { id := occurrenceId state item, name := detail.name, candidateGroups := detail.candidateGroups,
-           formFields := detail.formFields, inputs := detail.inputs }
-  | .message _ => none
-  | .timer _ => none
-  | .effect _ => none
-  | .incident _ => none
-  | .evaluation _ => none
+def userTask? (program : Program) (state : State) (item : OpenItem) : Option OpenUserTask :=
+  item.kind.view.userTask.map fun detail =>
+    { id := occurrenceId program state item, name := detail.name, candidateGroups := detail.candidateGroups,
+      formFields := detail.formFields, inputs := detail.inputs }
 
-def messageSubscription? (state : State) (item : OpenItem) : Option OpenMessageSubscription :=
-  match item.kind with
-  | .message detail => some { id := occurrenceId state item, channel := detail.channel }
-  | .userTask _ => none
-  | .timer _ => none
-  | .effect _ => none
-  | .incident _ => none
-  | .evaluation _ => none
+def messageSubscription? (program : Program) (state : State) (item : OpenItem) : Option OpenMessageSubscription :=
+  item.kind.view.channel.map fun channel => { id := occurrenceId program state item, channel }
 
-def timer? (state : State) (item : OpenItem) : Option OpenTimer :=
-  match item.kind with
-  | .timer detail => some { id := occurrenceId state item, deadlineMs := detail.deadlineMs }
-  | .userTask _ => none
-  | .message _ => none
-  | .effect _ => none
-  | .incident _ => none
-  | .evaluation _ => none
+def timer? (program : Program) (state : State) (item : OpenItem) : Option OpenTimer :=
+  item.kind.view.deadlineMs.map fun deadlineMs => { id := occurrenceId program state item, deadlineMs }
 
-def effect? (state : State) (item : OpenItem) : Option OpenEffect :=
-  match item.kind with
-  | .effect detail => some (effect (occurrenceId state item) detail)
-  | .userTask _ => none
-  | .message _ => none
-  | .timer _ => none
-  | .incident _ => none
-  | .evaluation _ => none
+def effect? (program : Program) (state : State) (item : OpenItem) : Option OpenEffect :=
+  item.kind.view.effect.map (effect (occurrenceId program state item))
 
-def incident? (state : State) (item : OpenItem) : Option OpenIncident :=
-  match item.kind with
-  | .incident detail =>
-    some { effect := effect (occurrenceId state item) detail.effect, generation := detail.generation }
-  | .userTask _ => none
-  | .message _ => none
-  | .timer _ => none
-  | .effect _ => none
-  | .evaluation _ => none
+def incident? (program : Program) (state : State) (item : OpenItem) : Option OpenIncident :=
+  item.kind.view.incident.map fun detail =>
+    { effect := effect (occurrenceId program state item) detail.effect, generation := detail.generation }
 
 /-- The sort key of an enabled interaction: its kind's wait rank, then its occurrence. -/
 def EnabledInteraction.key : EnabledInteraction → Nat × OccurrenceId
@@ -197,50 +160,52 @@ def OccurrenceId.le (left right : OccurrenceId) : Bool :=
     (decide (left.elementId < right.elementId) ||
       (left.elementId == right.elementId && left.activation ≤ right.activation)))
 
-def interactions (state : State) (item : OpenItem) : List EnabledInteraction :=
-  let id := occurrenceId state item
-  match item.kind with
-  | .userTask _ => [.completeUserTask id]
-  | .message detail =>
-    match detail.correlationKey with
-    | some key => [.publishCorrelatedPayloadMessage id detail.channel key]
-    | none =>
-      [if detail.payload then .deliverPayloadMessage id detail.channel else .deliverMessage id detail.channel]
-  | .incident detail =>
+/-- What an open item enables: each view field contributes its own interactions, so no field's presence is read as the
+item's kind. -/
+def interactions (program : Program) (state : State) (item : OpenItem) : List EnabledInteraction :=
+  let id := occurrenceId program state item
+  let view := item.kind.view
+  let userTask : List EnabledInteraction := view.userTask.toList.map fun _ => .completeUserTask id
+  let message : List EnabledInteraction := view.channel.toList.map fun channel =>
+    match view.criteria with
+    | key :: _ => .publishCorrelatedPayloadMessage id channel key
+    | [] => if view.payload then .deliverPayloadMessage id channel else .deliverMessage id channel
+  let incident : List EnabledInteraction := view.incident.toList.flatMap fun detail =>
     .retryIncident id detail.generation ::
       (if detail.cancellable then [.cancelIncidentProcess id detail.generation] else [])
-  | .timer _ => []
-  | .effect _ => []
-  | .evaluation _ => []
+  userTask ++ message ++ incident
 
-def reference (ref : OccurrenceRef) : OccurrenceId :=
-  { processInstanceId := ref.processInstanceId, elementId := ref.element.value, activation := ref.activation }
+def reference (program : Program) (ref : OccurrenceRef) : OccurrenceId :=
+  { processInstanceId := ref.processInstanceId, elementId := (program.publicId ref.element).value
+    activation := ref.activation }
 
-/-- A trigger is published under an identity distinct from its throwing element's, `operation:<element>`: "each
-trigger has an identity distinct from its throw Event" in the
-[trigger account](../docs/capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md), whose name the retained baselines
-publish (`compensation-failure-*`, `transaction-cancellation-handler-failed`). -/
-def failure (record : CompensationFailure) : PublishedFailure :=
-  let trigger := reference record.trigger
-  { trigger := { trigger with elementId := s!"operation:{trigger.elementId}" }, handler := reference record.handler
-    effect := reference record.effect, code := record.code, message := record.message }
+/-- A compensation trigger is published under an identity distinct from its throwing element's, `operation:<element>`:
+"each trigger has an identity distinct from its throw Event" in the
+[trigger account](../docs/capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md). A failure without a trigger and handler
+is not published in this form. -/
+def failure (program : Program) (record : InstanceFailure) : Option PublishedFailure := do
+  let related (name : String) := (record.related.find? (·.1 == name)).map (·.2)
+  let trigger := reference program (← related "trigger")
+  let handler := reference program (← related "handler")
+  pure { trigger := { trigger with elementId := s!"operation:{trigger.elementId}" }, handler
+         effect := reference program record.occurrence, code := record.code, message := record.message }
 
-def observe (state : State) : Observation :=
+def observe (program : Program) (state : State) : Observation :=
   let items := state.openItems
   { instanceId := state.instanceId
     status := statusName state.status
-    activeWaits := activeWaits items
-    openUserTasks := (items.filterMap (userTask? state)).mergeSort fun left right => left.id.le right.id
-    openMessageSubscriptions := items.filterMap (messageSubscription? state)
-    openTimers := items.filterMap (timer? state)
-    openEffects := (items.filterMap (effect? state)).mergeSort fun left right => left.id.le right.id
-    openIncidents := items.filterMap (incident? state)
+    activeWaits := activeWaits program items
+    openUserTasks := (items.filterMap (userTask? program state)).mergeSort fun left right => left.id.le right.id
+    openMessageSubscriptions := items.filterMap (messageSubscription? program state)
+    openTimers := items.filterMap (timer? program state)
+    openEffects := (items.filterMap (effect? program state)).mergeSort fun left right => left.id.le right.id
+    openIncidents := items.filterMap (incident? program state)
     variables := (((state.variables.find? (·.scope == State.root)).map (·.entries)).getD []).mergeSort
       fun left right => decide (left.1 ≤ right.1)
-    enabledInteractions := (items.flatMap (interactions state)).mergeSort fun left right =>
+    enabledInteractions := (items.flatMap (interactions program state)).mergeSort fun left right =>
       left.key.1 < right.key.1 || (left.key.1 == right.key.1 && left.key.2.le right.key.2)
     logicalTimeMs := state.logicalTimeMs
-    failure := state.failure.map failure }
+    failure := state.failure.bind (failure program) }
 
 /-! ## Multi-Instance Activities -/
 
@@ -259,7 +224,7 @@ structure OpenMultiInstance where
   processInstanceId : String
   activityElementId : String
   activation : Nat
-  mode : String
+  mode : MultiInstanceMode
   plannedInstanceCount : Nat
   pendingItemCount : Nat
   numberOfInstances : Nat
@@ -269,7 +234,7 @@ structure OpenMultiInstance where
   deriving Repr
 
 /-- A program publishes `openMultiInstances`, in every state, exactly when it declares a Multi-Instance Activity or
-Scope, as the frozen evaluator does (`BpmnSemantics.SemanticProcess.hasMultiInstanceDefinitions`). -/
+Scope. -/
 def publishesMultiInstances (program : Program) : Bool :=
   program.elements.any fun element => element.envelope?.any (·.multiInstance.isSome)
 
@@ -278,27 +243,26 @@ def isCompleted : Iteration → Bool
   | .waiting => false
   | .active _ => false
 
-/-- The open Multi-Instance Activities in the order they were entered; `modeName` is `Hooks.multiInstanceMode`. -/
-def multiInstances (modeName : MultiInstanceMode → String) (program : Program) (state : State) :
-    List OpenMultiInstance :=
-  state.slots.multiInstances.runs.filterMap fun run => do
+/-- The open Multi-Instance Activities in the order they were entered. -/
+def multiInstances (program : Program) (state : State) : List OpenMultiInstance :=
+  state.slots.multiInstances.filterMap fun run => do
     let loop ← ((program.element? run.element).bind (·.envelope?)).bind (·.multiInstance)
     let input ← loop.inputDataItem
     let output ← loop.outputDataItem
     let items ← run.items
     let iterations := run.instances.zipIdx.filterMap fun (slot, index) =>
       match slot with
-      | .active id => do
-        let item ← state.openItems.find? (·.id == id)
+      | .active scope => do
+        let item ← state.openItems.find? (·.scope == scope)
         let value ← items[index]?
-        some { loopCounter := index, taskId := occurrenceId state item, taskInput := (input, value),
+        some { loopCounter := index, taskId := occurrenceId program state item, taskInput := (input, value),
                completionBindingName := output }
       | .waiting => none
       | .completed _ => none
     let completed := (run.instances.filter isCompleted).length
     let generated := iterations.length + completed
-    some { processInstanceId := state.instanceOf run.scope, activityElementId := run.element.value
-           activation := run.activation, mode := modeName loop.mode
+    some { processInstanceId := state.instanceOf run.scope, activityElementId := (program.publicId run.element).value
+           activation := ((state.occurrence? run.occurrence).map (·.activation)).getD 0, mode := loop.mode
            plannedInstanceCount := run.instances.length, pendingItemCount := run.instances.length - generated
            numberOfInstances := generated, numberOfActiveInstances := iterations.length
            numberOfCompletedInstances := completed, activeIterations := iterations }

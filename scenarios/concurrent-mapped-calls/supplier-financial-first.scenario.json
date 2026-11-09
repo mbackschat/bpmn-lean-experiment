@@ -93,7 +93,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": [
         {

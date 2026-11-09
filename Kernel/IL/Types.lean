@@ -1,5 +1,7 @@
 module
 
+public import Kernel.IL.Types.Options
+
 /-! # Kernel IL
 
 The kernel's program representation: a flat table of elements keyed by identifier, fixed for every row of the
@@ -44,8 +46,8 @@ inductive SimpleBoolean where
   | stringEquals (name value : String)
   deriving DecidableEq, Repr
 
-/-- An expression. `literal`, `simpleBoolean` and `variable` are evaluated by the kernel; `foreign` is answered by
-the profile's evaluator through an evaluation request. -/
+/-- An expression. `literal`, `simpleBoolean` and `variable` are evaluated by the kernel; admission refuses `foreign`,
+which only the deferred JUEL binding (PC-DATA-07) would read. -/
 inductive Expression where
   | literal (value : Value)
   | simpleBoolean (body : SimpleBoolean)
@@ -59,10 +61,20 @@ inductive ValueSource where
   | expression (body : Expression)
   deriving Repr
 
+/-- Which syntax wrote a mapping, which settles what an unset source means: an unavailable Data Input
+(BPMN 2.0.2 §10.4.2), an unresolved `camunda:inputParameter` or `outputParameter` expression, or a `camunda:in`/`out`
+copy that reads null (CIB-EXT-0021). -/
+inductive MappingDialect where
+  | dataAssociation
+  | ioParameter
+  | callVariable
+  deriving DecidableEq, Repr
+
 /-- `target := source`, evaluated in the scope the owning element names. -/
 structure Mapping where
   target : String
   source : Expression
+  dialect : MappingDialect := .dataAssociation
   deriving Repr
 
 /-! ## Subscriptions -/
@@ -146,19 +158,29 @@ structure Boundary where
 
 /-! ## Throws -/
 
+structure EffectBinding where
+  protocol : String
+  operation : String
+  deriving DecidableEq, Repr
+
+/-- `binding = none` is an unbound pass-through (PC-MESSAGE-09). -/
 structure MessageThrow where
-  binding : String
+  binding : Option EffectBinding := none
   payload : List Mapping := []
   deriving Repr
 
 structure SignalThrow where
   name : ValueSource
   payload : List Mapping := []
+  propagateAll : Bool := false
+  localOnly : Bool := false
+  businessKey : Option Expression := none
+  asynchronous : Bool := false
   deriving Repr
 
 structure ErrorThrow where
   code : String
-  message : Option String := none
+  message : Option ValueSource := none
   deriving Repr
 
 structure EscalationThrow where
@@ -206,19 +228,16 @@ structure ServiceWork where
   deriving Repr
 
 structure SendWork where
-  binding : String
+  binding : EffectBinding
   recipient : Option ValueSource := none
   correlation : List CorrelationCriterion := []
+  messageRef : Option String := none
+  operationRef : Option String := none
   deriving Repr
 
 structure ScriptWork where
   format : String
   source : String
-  resultVariable : Option String := none
-  deriving Repr
-
-structure RuleWork where
-  decision : ValueSource
   resultVariable : Option String := none
   deriving Repr
 
@@ -229,18 +248,29 @@ inductive CallBinding where
   | versionTag (value : ValueSource)
   deriving Repr
 
+inductive DecisionResultMapping where
+  | singleEntry
+  | singleResult
+  | collectEntries
+  | resultList
+  deriving DecidableEq, Repr
+
+structure RuleWork where
+  decision : ValueSource
+  resultVariable : Option String := none
+  binding : CallBinding := .latest
+  resultMapping : DecisionResultMapping := .resultList
+  deriving Repr
+
 structure CallWork where
   calledElement : ValueSource
   binding : CallBinding := .latest
+  tenant : Option ValueSource := none
   businessKey : Option Expression := none
   inputs : List Mapping := []
   outputs : List Mapping := []
   propagateAllInputs : Bool := false
   propagateAllOutputs : Bool := false
-  /-- The mappings are CIB `camunda:in`/`camunda:out` copies, which read an unset source as null, as CIB's
-  `VariableScope.getVariable` does (CVM-IN-01, CVM-OUT-01); otherwise they are BPMN Data Associations, whose unset
-  source leaves the InputSet or OutputSet unavailable ([BPMN 2.0.2 §10.4.2](../../docs/reference/bpmn-2.0.2/README.md)). -/
-  unsetSourceReadsNull : Bool := false
   deriving Repr
 
 /-- Guarded type: `Kernel.Feature.Work` owns matching on it. -/
@@ -268,6 +298,12 @@ inductive InstanceCount where
   | cardinality (count : Expression)
   deriving Repr
 
+/-- Whether the input collection is read once on entry or re-read by a sequential Activity (PC-MI-08). -/
+inductive CollectionRead where
+  | entrySnapshot
+  | sequentialReread
+  deriving DecidableEq, Repr
+
 structure MultiInstance where
   mode : MultiInstanceMode
   count : InstanceCount
@@ -276,7 +312,7 @@ structure MultiInstance where
   inputDataItem : Option String := none
   outputDataItem : Option String := none
   outputCollection : Option String := none
-  mutableCollection : Bool := false
+  mutableCollection : CollectionRead := .entrySnapshot
   deriving Repr
 
 structure Envelope where
@@ -287,6 +323,11 @@ structure Envelope where
   boundaries : List Boundary := []
   multiInstance : Option MultiInstance := none
   compensationHandler : Option ElementId := none
+  /-- PC-CF-07. -/
+  defaultFlow : Option FlowId := none
+  /-- A transaction boundary before the element begins and after it completes (CIB-EXT-0027). -/
+  asyncBefore : Bool := false
+  asyncAfter : Bool := false
   deriving Repr
 
 /-! ## Elements -/
@@ -296,10 +337,22 @@ structure ActivityPayload where
   envelope : Envelope := {}
   deriving Repr
 
+/-- BPMN `transactionMethod`. CIB reads no such attribute (`BpmnParse#parseTransaction`). -/
+inductive TransactionMethod where
+  | compensate
+  | store
+  | image
+  | other (uri : String)
+  deriving DecidableEq, Repr
+
+structure TransactionScope where
+  method : TransactionMethod := .compensate
+  deriving Repr
+
 /-- Guarded type: `Kernel.Feature.Scopes` owns matching on it. -/
 inductive ScopeKind where
   | embedded
-  | transaction
+  | transaction (payload : TransactionScope)
   | eventSubProcess (start : Subscription) (interrupting : Bool)
   deriving Repr
 
@@ -329,22 +382,13 @@ structure EventPayload where
   outgoing : List FlowId := []
   deriving Repr
 
-structure ConditionalFlow where
-  flow : FlowId
-  condition : Option Expression
-  deriving Repr
-
-/-- An Event-Based Gateway arm is a catch Event or a Receive Task, named by identifier. -/
-structure EventArm where
-  target : ElementId
-  deriving Repr
-
-/-- Guarded type: `Kernel.Feature.Flow` owns matching on it. Conditional candidates keep document order. -/
+/-- Guarded type: `Kernel.Feature.Flow` owns matching on it. Conditional candidates keep document order; a Sequence
+Flow's condition lives on the `Flow`. An Event-Based Gateway's arms are the targets of its outgoing flows. -/
 inductive GatewayKind where
-  | exclusive (candidates : List ConditionalFlow) (default : Option FlowId)
+  | exclusive (candidates : List FlowId) (default : Option FlowId)
   | parallel
-  | inclusive (candidates : List ConditionalFlow) (default : Option FlowId)
-  | eventBased (arms : List EventArm)
+  | inclusive (candidates : List FlowId) (default : Option FlowId)
+  | eventBased
   deriving Repr
 
 structure GatewayPayload where
@@ -358,8 +402,27 @@ structure StartPayload where
   outgoing : List FlowId := []
   deriving Repr
 
+/-- The definition a called process is bound to. `version` to `tenant` name a binding of a Call Activity, `none` for
+the process this program carries; `sourceSha256` pins the source (PC-SCOPE-03). -/
+structure DefinitionRef where
+  key : String
+  version : Option Nat := none
+  versionTag : Option String := none
+  deployment : Option String := none
+  tenant : Option String := none
+  sourceSha256 : Option String := none
+  deriving DecidableEq, Repr
+
+/-- `sourceId` is the identifier the model's author wrote, which publication shows. `Header.id` is unique in the
+program, so that two versions of one called definition can coexist. -/
+structure ElementOrigin where
+  definition : Option DefinitionRef := none
+  sourceId : String
+  deriving Repr
+
 structure Header where
   id : ElementId
+  origin : ElementOrigin
   sourceType : String
   parent : Option ElementId
   deriving Repr
@@ -377,6 +440,7 @@ structure Flow where
   id : FlowId
   source : ElementId
   target : ElementId
+  condition : Option Expression := none
   deriving Repr
 
 structure ProgramIdentity where
@@ -385,33 +449,276 @@ structure ProgramIdentity where
   profile : String
   deriving Repr
 
-/-- The behaviour a profile selects where CIB Seven and the standard differ, as typed data the lowering fills from
-the profile's relation identifiers; the kernel never reads a profile identifier. -/
-structure ProfileOptions where
-  /-- A User Task completion without output mappings writes its submitted values as Process variables
-  (CIB-EXT-0005); otherwise a submission must be exactly the task's OutputSet. -/
-  submissionInstallsVariables : Bool := true
-  /-- An effect incident offers `cancelIncidentProcess` (CIB-OP-0009). -/
-  incidentProcessCancellation : Bool := false
-  /-- When set, a User Task submission may name only variables a scope occurrence on the task's chain declares, each
-  once, and its canonical JSON may take at most this many UTF-8 bytes (CIB-EXT-0020, `NSD-TASK-01`). -/
-  scopeChainSubmissionBytes : Option Nat := none
-  deriving Repr
-
-/-- A process the program carries besides its root process, for a Call Activity to call: its id and its
-process-level elements, which have no parent. -/
+/-- A process the program carries besides its root process, for a Call Activity to call: its bound definition and
+its process-level elements, which have no parent. -/
 structure CalledProcess where
-  id : String
+  definition : DefinitionRef
   children : List ElementId
+  /-- The item names the process declares: its Properties, Data Objects and their references, and its own Data Inputs
+  and Outputs. They are declared at the instance root before any value is bound (BPMN 2.0.2 §10.4.1). -/
+  variables : List String := []
   deriving Repr
 
-/-- `processes` lists the called processes; every other parentless element belongs to the root process. -/
+/-- `processes` lists the called processes; every other parentless element belongs to the root process, whose
+declared item names are `variables` (as `CalledProcess.variables`). -/
 structure Program where
   identity : ProgramIdentity
   options : ProfileOptions := {}
   elements : List Element
   flows : List Flow
+  variables : List String := []
   processes : List CalledProcess := []
-  deriving Repr
+
+/-! ## Queries
+
+Read-only projections of a `Program`, in this module so that no module beyond the three hubs has more than five
+direct importers (guard 15). They project; they never dispatch on what an element means, so matching here does not
+compete with the dispatch owners.
+-/
+
+def Element.header : Element → Header
+  | .activity header _ => header
+  | .scope header _ => header
+  | .event header _ => header
+  | .gateway header _ => header
+  | .start header _ => header
+
+/-- The envelope of an Activity or Scope; other elements have none. -/
+def Element.envelope? : Element → Option Envelope
+  | .activity _ payload => some payload.envelope
+  | .scope _ payload => some payload.envelope
+  | .event _ _ => none
+  | .gateway _ _ => none
+  | .start _ _ => none
+
+def Element.activity? : Element → Option (Header × ActivityPayload)
+  | .activity header payload => some (header, payload)
+  | .scope _ _ => none
+  | .event _ _ => none
+  | .gateway _ _ => none
+  | .start _ _ => none
+
+def Element.scope? : Element → Option (Header × ScopePayload)
+  | .scope header payload => some (header, payload)
+  | .activity _ _ => none
+  | .event _ _ => none
+  | .gateway _ _ => none
+  | .start _ _ => none
+
+def Element.event? : Element → Option (Header × EventPayload)
+  | .event header payload => some (header, payload)
+  | .activity _ _ => none
+  | .scope _ _ => none
+  | .gateway _ _ => none
+  | .start _ _ => none
+
+def Element.gateway? : Element → Option (Header × GatewayPayload)
+  | .gateway header payload => some (header, payload)
+  | .activity _ _ => none
+  | .scope _ _ => none
+  | .event _ _ => none
+  | .start _ _ => none
+
+def Element.start? : Element → Option (Header × StartPayload)
+  | .start header payload => some (header, payload)
+  | .activity _ _ => none
+  | .scope _ _ => none
+  | .event _ _ => none
+  | .gateway _ _ => none
+
+/-- The subscription of a catch Event. -/
+def EventPayload.catch? (payload : EventPayload) : Option Subscription :=
+  match payload.role with
+  | .catch subscription => some subscription
+  | .throw _ => none
+  | .linkCatch _ => none
+  | .linkThrow _ => none
+
+/-- The Link name of a throwing Link Event. -/
+def EventPayload.linkThrow? (payload : EventPayload) : Option String :=
+  match payload.role with
+  | .linkThrow name => some name
+  | .catch _ => none
+  | .throw _ => none
+  | .linkCatch _ => none
+
+/-- The Link name of a catching Link Event. -/
+def EventPayload.linkCatch? (payload : EventPayload) : Option String :=
+  match payload.role with
+  | .linkCatch name => some name
+  | .catch _ => none
+  | .throw _ => none
+  | .linkThrow _ => none
+
+/-- The outgoing flows of an element, boundaries' flows excluded. -/
+def Element.outgoing : Element → List FlowId
+  | .activity _ payload => payload.envelope.outgoing
+  | .scope _ payload => payload.envelope.outgoing
+  | .event _ payload => payload.outgoing
+  | .gateway _ payload => payload.outgoing
+  | .start _ payload => payload.outgoing
+
+/-- The incoming flows of an element; a start Event has none. -/
+def Element.incoming : Element → List FlowId
+  | .activity _ payload => payload.envelope.incoming
+  | .scope _ payload => payload.envelope.incoming
+  | .event _ payload => payload.incoming
+  | .gateway _ payload => payload.incoming
+  | .start _ _ => []
+
+/-- The Timer of a trigger, if it is one. -/
+def Trigger.timer? : Trigger → Option TimerTrigger
+  | .timer payload => some payload
+  | .message _ => none
+  | .signal _ => none
+  | .condition _ => none
+  | .error _ => none
+  | .escalation _ => none
+  | .compensation => none
+  | .cancel => none
+
+/-- The Message of a trigger, if it is one. -/
+def Trigger.message? : Trigger → Option MessageTrigger
+  | .message payload => some payload
+  | .timer _ => none
+  | .signal _ => none
+  | .condition _ => none
+  | .error _ => none
+  | .escalation _ => none
+  | .compensation => none
+  | .cancel => none
+
+/-- The Call a work record names, if it is one. -/
+def Work.call? : Work → Option CallWork
+  | .call work => some work
+  | Work.none => Option.none
+  | .manual => Option.none
+  | .user _ => Option.none
+  | .receive _ => Option.none
+  | .service _ => Option.none
+  | .send _ => Option.none
+  | .script _ => Option.none
+  | .rule _ => Option.none
+
+/-- Whether the work opens a host effect (a Service Task). -/
+def Work.isService : Work → Bool
+  | .service _ => true
+  | Work.none => false
+  | .manual => false
+  | .user _ => false
+  | .receive _ => false
+  | .send _ => false
+  | .script _ => false
+  | .rule _ => false
+  | .call _ => false
+
+/-- Whether the work opens a User Task. -/
+def Work.isUser : Work → Bool
+  | .user _ => true
+  | Work.none => false
+  | .manual => false
+  | .receive _ => false
+  | .service _ => false
+  | .send _ => false
+  | .script _ => false
+  | .rule _ => false
+  | .call _ => false
+
+/-- The Message a work record waits for, if it does. -/
+def Work.receive? : Work → Option MessageTrigger
+  | .receive work => some work.message
+  | Work.none => Option.none
+  | .manual => Option.none
+  | .user _ => Option.none
+  | .service _ => Option.none
+  | .send _ => Option.none
+  | .script _ => Option.none
+  | .rule _ => Option.none
+  | .call _ => Option.none
+
+/-- The start subscription of an Event Sub-Process scope, if it is one. -/
+def ScopeKind.start? : ScopeKind → Option Subscription
+  | .eventSubProcess start _ => some start
+  | .embedded => none
+  | .transaction _ => none
+
+/-- The published name of a Multi-Instance mode. -/
+def MultiInstanceMode.name : MultiInstanceMode → String
+  | .sequential => "sequential"
+  | .parallel => "parallel"
+
+def ValueSource.literal? : ValueSource → Option String
+  | .literal value => some value
+  | .expression _ => none
+
+namespace Program
+
+def element? (program : Program) (id : ElementId) : Option Element :=
+  program.elements.find? (fun element => element.header.id == id)
+
+def flow? (program : Program) (id : FlowId) : Option Flow :=
+  program.flows.find? (·.id == id)
+
+def target? (program : Program) (flow : FlowId) : Option ElementId :=
+  (program.flows.find? (·.id == flow)).map (·.target)
+
+def source? (program : Program) (flow : FlowId) : Option ElementId :=
+  (program.flows.find? (·.id == flow)).map (·.source)
+
+/-- Whether `element` is a process-level element of a called process. -/
+def inCalledProcess (program : Program) (element : ElementId) : Bool :=
+  program.processes.any (·.children.contains element)
+
+/-- The elements whose parent is `parent`; `none` is the root process level. -/
+def children (program : Program) (parent : Option ElementId) : List Element :=
+  program.elements.filter fun element =>
+    element.header.parent == parent && !(parent.isNone && program.inCalledProcess element.header.id)
+
+/-- Whether the process an instance runs declares the item `name`: the root process for `none`, else the called
+process of the definition its Call bound. -/
+def declares (program : Program) (definition : Option DefinitionRef) (name : String) : Bool :=
+  match definition with
+  | none => program.variables.contains name
+  | some bound => program.processes.any fun process => process.definition == bound && process.variables.contains name
+
+/-- The called process of `key` the latest binding selects: the highest version the program carries, a process without
+a version counting lowest. Two versions of one key coexist because `Header.id` stays unique (PC-SCOPE-03). -/
+def calledProcess? (program : Program) (key : String) : Option CalledProcess :=
+  (program.processes.filter (·.definition.key == key)).foldl (fun chosen process =>
+    match chosen with
+    | none => some process
+    | some current =>
+      if (current.definition.version.getD 0) < (process.definition.version.getD 0) then some process else chosen) none
+
+/-- The identifier publication and addressing show for an element: the one its author wrote. A boundary has no header
+and keeps its identifier. -/
+def publicId (program : Program) (id : ElementId) : ElementId :=
+  ((program.element? id).map fun element => ⟨element.header.origin.sourceId⟩).getD id
+
+/-- Whether an element begins when its parent Scope is entered without a none start Event: it has no incoming flow, is
+no compensation handler, and is no Event Sub-Process (BPMN 2.0.2 §13.3.4, §13.5.5). -/
+def beginsImplicitly (program : Program) (element : Element) : Bool :=
+  let handler := program.elements.any fun other => (other.envelope?.bind (·.compensationHandler)) == some element.header.id
+  let eventSubProcess := ((element.scope?).bind fun (_, payload) => payload.kind.start?).isSome
+  element.incoming.isEmpty && element.start?.isNone && !handler && !eventSubProcess
+
+/-- The process-level elements of a called process. -/
+def processChildren (program : Program) (process : CalledProcess) : List Element :=
+  process.children.filterMap program.element?
+
+/-- The source element type of an element or boundary, which semantic publication shows. A boundary has no header; BPMN
+has one element type for it. -/
+def sourceType? (program : Program) (id : ElementId) : Option String :=
+  match program.element? id with
+  | some element => some element.header.sourceType
+  | none => (program.elements.find? fun element =>
+      (element.envelope?.any (·.boundaries.any (·.id == id)))).map fun _ => "boundaryEvent"
+
+/-- A boundary by its id, with the element it is attached to. -/
+def boundary? (program : Program) (id : ElementId) : Option (Element × Boundary) :=
+  program.elements.findSome? fun element =>
+    (element.envelope?.bind fun envelope => envelope.boundaries.find? (·.id == id)).map (element, ·)
+
+end Program
 
 end Kernel

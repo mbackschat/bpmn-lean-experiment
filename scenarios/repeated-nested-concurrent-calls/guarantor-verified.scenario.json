@@ -137,7 +137,7 @@
       "taskId": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyApplicant:1",
         "elementId": "CollectDocument",
-        "activation": 2
+        "activation": 4
       },
       "submittedValues": []
     },
@@ -157,7 +157,7 @@
       "taskId": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyGuarantor:1",
         "elementId": "CollectDocument",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": [
         {
@@ -175,7 +175,7 @@
       "taskId": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyGuarantor:1",
         "elementId": "CollectDocument",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": []
     },
@@ -185,7 +185,7 @@
       "taskId": {
         "processInstanceId": "call:15:Loan_guaranteed:15:VerifyGuarantor:1",
         "elementId": "RecordVerdict",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": [
         {

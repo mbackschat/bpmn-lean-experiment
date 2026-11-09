@@ -33,8 +33,8 @@ def arrayBytes (sizes : List Nat) : Nat :=
 
 mutual
 /-- The canonical JSON bytes of a portable value: no whitespace, `kind` before `value` (or `coefficient` and
-`scale`), Map entries `name` before `value` (`BpmnSemantics.SemanticProcess.CanonicalBusinessValue`). A String List
-is outside the portable value arms and has no measure. -/
+`scale`), Map entries `name` before `value` ([NSD-TASK-01](../../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#profile-and-value-domain)).
+A String List is outside the portable value arms and has no measure. -/
 def valueBytes : Value → Option Nat
   | .null => some "{\"kind\":\"null\"}".utf8ByteSize
   | .bool value => some ("{\"kind\":\"boolean\",\"value\":}".utf8ByteSize + (toString value).utf8ByteSize)

@@ -87,7 +87,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:11:LegalReview:2",
         "elementId": "ReviewClauses",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": [
         {

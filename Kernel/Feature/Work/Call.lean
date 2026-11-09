@@ -17,77 +17,52 @@ public section
 
 namespace Kernel.Feature.Work.Call
 
-/-- Evaluate a Call's mappings against `variables`. A CIB copy reads an unset variable source as null
-(`CallWork.unsetSourceReadsNull`); a BPMN Data Association from an unset source makes the set unavailable, which
-the state cannot hold at a Call yet, so the step is refused as `unsupported` with `unavailable`. -/
-def copy (ctx : Ctx) (work : CallWork) (unavailable : String) (variables : List (String × Value))
-    (mappings : List Mapping) : Except Failure (List (String × Value)) :=
-  mappings.mapM fun mapping =>
-    let unset : Bool :=
-      match mapping.source with
-      | .variable name => !variables.any (·.1 == name)
-      | .literal _ => false
-      | .simpleBoolean _ => false
-      | .foreign _ _ => false
-    if unset then
-      if work.unsetSourceReadsNull then .ok (mapping.target, .null) else .error (.unsupported unavailable)
-    else
-      match ctx.evaluate variables mapping.source with
-      | .value value => .ok (mapping.target, value)
-      | .needsHost => .error (.unsupported "host-evaluation")
-      | .failure code => .error (.semanticFailure code)
+/-- Evaluate a Call's mappings against `variables`, each by its dialect (`Ctx.evaluateMappings`). A Data Association's
+unavailable source makes the set unavailable, which the state cannot hold at a Call yet, so the step is refused as
+`unsupported` with `unavailable` (dynamic-only: whether a source variable is set depends on the run). -/
+def copy (ctx : Ctx) (unavailable : String) (context : EvalContext) (mappings : List Mapping) :
+    Except Failure (List (String × Value)) := do
+  match ← ctx.evaluateMappings context mappings with
+  | some bindings => .ok bindings
+  | none => .error (.unsupported unavailable) -- dynamic-only: whether a source is set is the run's data
 
-/-- The called process a Call names. An expression-named called element needs the host evaluator, and a call of
-the root process would need the root's elements in a called instance. -/
+/-- The called process a Call names. An expression-named called element and a call of the root process are refused
+at admission (`work.call.calledElementExpression`, `work.call.rootProcess`). -/
 def calledProcess (ctx : Ctx) (work : CallWork) : Except Failure CalledProcess :=
   match work.calledElement with
-  | .expression _ => .error (.unsupported "call-element-expression")
+  | .expression _ => .error (.unsupported "work-call-called-element-expression")
   | .literal id =>
-    if id == ctx.program.identity.processId then .error (.unsupported "call-root-process")
+    if id == ctx.program.identity.processId then .error (.unsupported "work-call-root-process")
     else match ctx.program.calledProcess? id with
       | some process => .ok process
       | none => .error (.semanticFailure "call-without-called-process")
 
-/-- Start the called instance. An Event Sub-Process of the called process would need its start subscriptions armed
-in the called root, which `Signal.armScope` cannot name, so a called process that declares one is refused. -/
-def invoke (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : CallWork) (arrival : Arrival)
+/-- Start the called instance. The Event Sub-Processes of a called process are not admitted yet
+(`call.calledEventSubProcess`): `armScope` and the raise search read a scope occurrence's element's children, which for
+a called root are the Call's, so they need the called process's children instead. -/
+def invoke (ctx : Ctx) (header : Header) (payload : ActivityPayload) (work : CallWork) (occurrence : Occurrence)
     (state : State) : Outcome := do
   let process ← calledProcess ctx work
   let children := ctx.program.processChildren process
   if children.any (fun child => (child.scope?.bind fun (_, scope) => ctx.eventStart scope).isSome) then
-    .error (.unsupported "called-event-subprocess")
+    .error (.unsupported "call-called-event-subprocess")
   else
-    let inputs ← copy ctx work "call-input-unavailable" (state.visible arrival.scope) work.inputs
-    match children.findSome? fun child => child.start?.bind fun (_, start) =>
-        if start.subscription.isNone then some start else none with
+    let inputs ← copy ctx "call-input-unavailable" (state.evalContext occurrence.scope) work.inputs
+    match children.findSome? fun child => child.start?.bind fun (start, payload) =>
+        if payload.subscription.isNone then some start else none with
     | none => .error (.semanticFailure "called-process-without-none-start")
     | some start =>
-      let (state, root) := state.enterCalled header.id arrival.scope inputs
+      let (state, root) := state.enterCalled occurrence inputs process.definition
       let state :=
-        if payload.envelope.boundaries.isEmpty then state else state.signal (.arm root.value header.id arrival.scope)
-      .ok (state.emit start.outgoing root)
+        if payload.envelope.boundaries.isEmpty || payload.envelope.multiInstance.isSome then state
+        else state.signal (.arm occurrence.id header.id occurrence.scope)
+      .ok (state.signal (.begin { element := start.id, scope := root }))
 
-/-- `Hooks.completeCall`: return from the idle called instance whose root is `occurrence`. -/
-def complete (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (work : CallWork) (occurrence : ScopeOccurrence)
-    (state : State) : Outcome := do
-  let parent ← match occurrence.parent with
-    | some parent => .ok parent
-    | none => .error (.semanticFailure "called-instance-without-caller")
-  let outputs ← copy ctx work "call-output-unavailable" (state.visible occurrence.id) work.outputs
-  let left := (state.leaveScope occurrence.id).disarm occurrence.id.value
-  let written := outputs.foldl (fun state binding => state.writeOutward parent binding) left
-  .ok (written.emit payload.envelope.outgoing parent)
-
-def callWork? : Work → Option CallWork
-  | .call work => some work
-  | .none => none
-  | .manual => none
-  | .user _ => none
-  | .receive _ => none
-  | .service _ => none
-  | .send _ => none
-  | .script _ => none
-  | .rule _ => none
+/-- `Hooks.completeCall`: return from the idle called instance whose root is `root`. -/
+def complete (ctx : Ctx) (_ : Header) (_ : ActivityPayload) (work : CallWork) (root : ScopeOccurrence)
+    (owner : Occurrence) (state : State) : Outcome := do
+  let outputs ← copy ctx "call-output-unavailable" (state.evalContext root.id) work.outputs
+  .ok (state.signal (.complete owner.id .outgoing outputs .outward))
 
 /-- The root-level names a User Task submission inside the called instance of `scope` may carry under the
 scope-chain submission rule (`Kernel.Feature.Work.Submission`): its Call's input targets and the variables its
@@ -98,7 +73,7 @@ def submissionNames (ctx : Ctx) (state : State) (scope : ScopeOccurrenceId) : Li
   let work : Option CallWork :=
     (state.scopes.find? fun occurrence => occurrence.id == root && occurrence.calledInstance.isSome).bind
       fun occurrence => ((occurrence.element.bind ctx.program.element?).bind (·.activity?)).bind
-        fun (_, payload) => callWork? payload.work
+        fun (_, payload) => payload.work.call?
   match work with
   | none => []
   | some work =>

@@ -59,13 +59,17 @@ partial def valueFromJson (json : Json) : Except String Value := do
 instance : ToJson Value := ⟨valueToJson⟩
 instance : FromJson Value := ⟨valueFromJson⟩
 
-deriving instance FromJson, ToJson for SimpleBoolean, Expression, ValueSource, Mapping, CycleDialect,
+deriving instance FromJson, ToJson for SimpleBoolean, Expression, ValueSource, MappingDialect, Mapping, CycleDialect,
   TimerSchedule, TimerTrigger, CorrelationCriterion, MessageTrigger, SignalTrigger, ConditionTrigger, ErrorTrigger,
-  EscalationTrigger, Trigger, Subscription, Boundary, MessageThrow, SignalThrow, ErrorThrow, EscalationThrow,
-  CompensationThrow, Throw, UserWork, ReceiveWork, ServiceWork, SendWork, ScriptWork, RuleWork, CallBinding,
-  CallWork, Work, MultiInstanceMode, InstanceCount, MultiInstance, Envelope, ActivityPayload, ScopeKind,
-  ScopePayload, Placement, EventRole, EventPayload, ConditionalFlow, EventArm, GatewayKind, GatewayPayload,
-  StartPayload, Header, Element, Flow, ProgramIdentity, ProfileOptions, CalledProcess, Program
+  EscalationTrigger, Trigger, Subscription, Boundary, EffectBinding, MessageThrow, SignalThrow, ErrorThrow,
+  EscalationThrow, CompensationThrow, Throw, UserWork, ReceiveWork, ServiceWork, SendWork, ScriptWork, CallBinding,
+  DecisionResultMapping, RuleWork, CallWork, Work, MultiInstanceMode, InstanceCount, CollectionRead, MultiInstance,
+  Envelope, ActivityPayload, TransactionMethod, TransactionScope, ScopeKind, ScopePayload, Placement, EventRole,
+  EventPayload, GatewayKind, GatewayPayload, StartPayload, DefinitionRef, ElementOrigin, Header, Element,
+  Flow, ProgramIdentity, SubmissionRule, UndeclaredWrite, ErrorPathOutputs, TechnicalFailure, ContinuationFailure,
+  MessageCorrelation, DeliveryVariables, MultiInstanceFinalBody, MultiInstanceOutputs, CompensationOrder,
+  CompensationHandlerFailure, AbnormalScopeEnd, UnhandledError, CallBindingTime, Evaluator, ConditionOrder, ProfileOptions,
+  CalledProcess, Program
 
 /-- `[{name, value}]`, the scenario contract's variable bindings. -/
 def bindingsFromJson (json : Json) : Except String (List (String × Value)) := do

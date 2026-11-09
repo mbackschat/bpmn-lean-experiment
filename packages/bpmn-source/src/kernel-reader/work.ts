@@ -1,57 +1,19 @@
 import { asElement, asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { envelopeFor, headerOf } from "./build.js";
-import { associationInputs, associationOutputs, associationSourceId, associationTargetId, inputOutputParameters, valueExpression, valueSource } from "./data.js";
+import { activityProtocol, declaredImplementation, effectBinding, operation } from "./binding.js";
+import { associationMappings, associationSourceId, associationTargetId, inputOutputParameters, valueSource, variableCopies } from "./data.js";
 import { messageTrigger } from "./events.js";
-import { FlowElementKind, ReadRefusal, ReadRefusalCode, extensionValues, list, optionalId, requireId, text } from "./model.js";
-import type { Built, EffectBinding, ModelNode, ReadContext } from "./model.js";
+import { FlowElementKind, ReadRefusal, ReadRefusalCode, extensionValues, list, optionalId, reference, requireId, text } from "./model.js";
+import type { Built, ModelNode, ReadContext } from "./model.js";
 import { readMultiInstance } from "./multi-instance.js";
-import { assertNever, ctor, literalSource, mapping, variable } from "./wire.js";
+import { assertNever, ctor, literalSource, mapping, MappingSyntax, variable } from "./wire.js";
 import type { KernelJson } from "./wire.js";
 
-const activityProtocol = "urn:bpmn-lean:effect-protocol:activity-v1";
-const operation = (name: string): string => `urn:bpmn-lean:effect-operation:${name}-v1`;
-
-/** The project's own effect implementations, by the source attributes that select them. */
-const builtInBindings: ReadonlyArray<EffectBinding> = [
-  { implementation: "urn:bpmn-lean:effect:probe-v1", delegateExpression: "${bpmnLeanEffectHandler}", protocol: activityProtocol, operation: operation("probe") },
-  { implementation: null, delegateExpression: "${mappedSuccessHandler}", protocol: activityProtocol, operation: operation("mapped-success") },
-  { implementation: "urn:bpmn-lean:effect-binding:mapped-boundary-error:v1", delegateExpression: "#{mappedBoundaryErrorHandler}", protocol: activityProtocol, operation: operation("mapped-boundary-error") },
-];
-const compensationEffectImplementation = "urn:bpmn-lean:effect:compensation-single-effect-v1";
 const configuredHandlers: ReadonlyMap<string, string> = new Map([["urn:bpmn-lean:task-handler:probe-v1", operation("probe")]]);
 
-/** CIB attributes that select an Activity's Java or external implementation. */
-const implementationAttributes = ["delegateExpression", "class", "expression", "type", "topic"] as const;
-
-function declaredImplementation(ctx: ReadContext, element: ElementRecord): Readonly<{ name: string; value: string }> | null {
-  for (const name of implementationAttributes) {
-    const value = ctx.attribute(element, name);
-    if (value !== null) return { name, value };
-  }
-  return null;
-}
-
-/**
- * The effect a task selects: an overlay or built-in binding when its source attributes match one; otherwise the
- * source's own attributes unchanged, which `Kernel.Admission` refuses when no host implements that protocol.
- */
-function serviceWork(ctx: ReadContext, element: ElementRecord): KernelJson {
-  const declared = declaredImplementation(ctx, element);
-  const delegate = declared?.name === "delegateExpression" ? declared.value : null;
-  const implementation = text(element, "implementation");
-  const bound = [...ctx.bindings, ...builtInBindings].find((binding) =>
-    binding.delegateExpression === delegate && binding.implementation === implementation);
-  if (bound !== undefined) return ctor("service", { payload: { protocol: bound.protocol, operation: bound.operation } });
-  if (implementation === compensationEffectImplementation) {
-    return ctor("service", { payload: { protocol: activityProtocol, operation: operation("compensation-single-effect") } });
-  }
-  const operationRef = optionalId(asElement(element.operationRef) ?? {});
-  return ctor("service", { payload: {
-    protocol: implementation ?? "##WebService",
-    operation: declared?.value ?? operationRef ?? "",
-  } });
-}
+const serviceWork = (ctx: ReadContext, element: ElementRecord): KernelJson =>
+  ctor("service", { payload: effectBinding(ctx, element) });
 
 function configuredTaskWork(element: ElementRecord): KernelJson | null {
   const definition = extensionValues(element).find((value) => value.$type === "bpmnLean:TaskDefinition");
@@ -104,10 +66,11 @@ enum CallBindingKind {
 
 const callBindingKinds: ReadonlySet<string> = new Set(Object.values(CallBindingKind));
 
-function callBinding(ctx: ReadContext, element: ElementRecord): KernelJson {
-  const declared = ctx.attribute(element, "calledElementBinding") ?? CallBindingKind.Latest;
+/** CIB `BpmnParse#parseBinding`, `#parseVersion`, `#parseVersionTag` over one attribute family. */
+function callableBinding(ctx: ReadContext, element: ElementRecord, attribute: string, version: string, versionTag: string): KernelJson {
+  const declared = ctx.attribute(element, attribute) ?? CallBindingKind.Latest;
   if (!callBindingKinds.has(declared)) {
-    throw new ReadRefusal(ReadRefusalCode.UnknownAttributeValue, optionalId(element), `calledElementBinding ${declared}`);
+    throw new ReadRefusal(ReadRefusalCode.UnknownAttributeValue, optionalId(element), `${attribute} ${declared}`);
   }
   const binding = declared as CallBindingKind;
   switch (binding) {
@@ -116,35 +79,17 @@ function callBinding(ctx: ReadContext, element: ElementRecord): KernelJson {
     case CallBindingKind.Deployment:
       return "deployment";
     case CallBindingKind.Version:
-      return ctor("version", { value: valueSource(ctx.attribute(element, "calledElementVersion") ?? "") });
+      return ctor("version", { value: valueSource(ctx.attribute(element, version) ?? "") });
     case CallBindingKind.VersionTag:
-      return ctor("versionTag", { value: valueSource(ctx.attribute(element, "calledElementVersionTag") ?? "") });
+      return ctor("versionTag", { value: valueSource(ctx.attribute(element, versionTag) ?? "") });
   }
   return assertNever(binding);
 }
 
-type CallMappings = Readonly<{ mappings: KernelJson[]; propagateAll: boolean; businessKey: KernelJson | null }>;
-
-function camundaCallMappings(ctx: ReadContext, entries: ReadonlyArray<ElementRecord>, element: ElementRecord): CallMappings {
-  const mappings: KernelJson[] = [];
-  let propagateAll = false;
-  let businessKey: KernelJson | null = null;
-  for (const entry of entries) {
-    if (entry.variables === "all") {
-      propagateAll = true;
-    } else if (typeof entry.businessKey === "string") {
-      businessKey = /[#$]\{/u.test(entry.businessKey) ? valueExpression(entry.businessKey) : ctor("literal", { value: { kind: "string", value: entry.businessKey } });
-    } else if (typeof entry.target === "string") {
-      const source = typeof entry.sourceExpression === "string" ? valueExpression(entry.sourceExpression) : variable(String(entry.source));
-      mappings.push(mapping(entry.target, source));
-    } else {
-      throw new ReadRefusal(ReadRefusalCode.UnknownAttributeValue, optionalId(element), "camunda call mapping without a target");
-    }
-    if (typeof entry.local === "string") {
-      ctx.noteNotCarried({ element: optionalId(element), fact: "camunda:in/out local" });
-    }
-  }
-  return { mappings, propagateAll, businessKey };
+/** CIB `BpmnParse#parseTenantId`: an empty tenant is no tenant. */
+function tenantSource(ctx: ReadContext, element: ElementRecord, attribute: string): KernelJson {
+  const tenant = ctx.attribute(element, attribute);
+  return tenant === null || tenant.length === 0 ? null : valueSource(tenant);
 }
 
 /** BPMN Call Activity data: a Call's DataInput or DataOutput corresponds by position to the called Process's (§10.3.6). */
@@ -158,11 +103,11 @@ function correspondingData(call: ElementRecord, called: ElementRecord | undefine
 function callWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   const calledElement = text(element, "calledElement") ?? "";
   const called = resolveCalledProcess(ctx, calledElement);
-  const inEntries = ctx.extensions(element, "in");
-  const outEntries = ctx.extensions(element, "out");
-  const camunda = inEntries.length > 0 || outEntries.length > 0;
-  const inMappings = camundaCallMappings(ctx, inEntries, element);
-  const outMappings = camundaCallMappings(ctx, outEntries, element);
+  const inCopies = variableCopies(element, ctx.extensions(element, "in"));
+  const outCopies = variableCopies(element, ctx.extensions(element, "out"));
+  if ([inCopies, outCopies].some((copies) => copies.localOnly || copies.localCopy)) {
+    ctx.noteNotCarried({ element: optionalId(element), fact: "camunda:in/out local" });
+  }
   const dataInputs = list(element, "dataInputAssociations").map((association) => ({
     target: correspondingData(element, called, "dataInputs", associationTargetId(association)),
     source: associationSourceId(association),
@@ -171,20 +116,28 @@ function callWork(ctx: ReadContext, element: ElementRecord): KernelJson {
     source: correspondingData(element, called, "dataOutputs", associationSourceId(association)),
     target: associationTargetId(association),
   }));
+  const associated = (entry: Readonly<{ target: string | null; source: string | null }>): KernelJson =>
+    mapping(String(entry.target), variable(String(entry.source)), MappingSyntax.DataAssociation);
   return ctor("call", { payload: {
     calledElement: called === undefined ? valueSource(calledElement) : literalSource(requireId(called)),
-    binding: callBinding(ctx, element),
-    businessKey: inMappings.businessKey,
-    inputs: [...dataInputs.map((entry) => mapping(String(entry.target), variable(String(entry.source)))), ...inMappings.mappings],
-    outputs: [...dataOutputs.map((entry) => mapping(String(entry.target), variable(String(entry.source)))), ...outMappings.mappings],
-    propagateAllInputs: inMappings.propagateAll,
-    propagateAllOutputs: outMappings.propagateAll,
-    unsetSourceReadsNull: camunda,
+    binding: callableBinding(ctx, element, "calledElementBinding", "calledElementVersion", "calledElementVersionTag"),
+    tenant: tenantSource(ctx, element, "calledElementTenantId"),
+    businessKey: inCopies.businessKey,
+    inputs: [...dataInputs.map(associated), ...inCopies.mappings],
+    outputs: [...dataOutputs.map(associated), ...outCopies.mappings],
+    propagateAllInputs: inCopies.propagateAll,
+    propagateAllOutputs: outCopies.propagateAll,
   } });
 }
 
-function sendWork(element: ElementRecord): KernelJson {
-  return ctor("send", { payload: { binding: optionalId(asElement(element.messageRef) ?? {}) ?? "", recipient: null, correlation: [] } });
+function sendWork(ctx: ReadContext, element: ElementRecord): KernelJson {
+  return ctor("send", { payload: {
+    binding: effectBinding(ctx, element),
+    recipient: null,
+    correlation: [],
+    messageRef: optionalId(reference(element, "messageRef", "bpmn:Message") ?? {}),
+    operationRef: optionalId(reference(element, "operationRef", "bpmn:Operation") ?? {}),
+  } });
 }
 
 function scriptWork(ctx: ReadContext, element: ElementRecord): KernelJson {
@@ -195,10 +148,30 @@ function scriptWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   } });
 }
 
+/** CIB `DecisionEvaluationUtil#getDecisionResultMapperForName`; any other name fails the parse. */
+enum DecisionResultMapper {
+  SingleEntry = "singleEntry",
+  SingleResult = "singleResult",
+  CollectEntries = "collectEntries",
+  ResultList = "resultList",
+}
+
+const decisionResultMappers: ReadonlySet<string> = new Set(Object.values(DecisionResultMapper));
+
+function decisionResultMapping(ctx: ReadContext, element: ElementRecord): KernelJson {
+  const declared = ctx.attribute(element, "mapDecisionResult") ?? DecisionResultMapper.ResultList;
+  if (!decisionResultMappers.has(declared)) {
+    throw new ReadRefusal(ReadRefusalCode.UnknownAttributeValue, optionalId(element), `mapDecisionResult ${declared}`);
+  }
+  return declared;
+}
+
 function ruleWork(ctx: ReadContext, element: ElementRecord): KernelJson {
   return ctor("rule", { payload: {
     decision: valueSource(ctx.attribute(element, "decisionRef") ?? ""),
     resultVariable: ctx.attribute(element, "resultVariable"),
+    binding: callableBinding(ctx, element, "decisionRefBinding", "decisionRefVersion", "decisionRefVersionTag"),
+    resultMapping: decisionResultMapping(ctx, element),
   } });
 }
 
@@ -228,7 +201,7 @@ function workOf(ctx: ReadContext, element: ElementRecord, kind: ActivityKind): R
     case FlowElementKind.SendTask:
       return hasEffectImplementation(ctx, element)
         ? { work: serviceWork(ctx, element), sourceType: FlowElementKind.ServiceTask }
-        : { work: sendWork(element), sourceType: kind };
+        : { work: sendWork(ctx, element), sourceType: kind };
     case FlowElementKind.ReceiveTask:
       return { work: ctor("receive", { payload: { message: messageTrigger(ctx, element, element) } }), sourceType: kind };
     case FlowElementKind.ScriptTask:
@@ -248,8 +221,8 @@ export function readActivityData(ctx: ReadContext, element: ElementRecord, withA
   const parameters = inputOutputParameters(ctx, element);
   const open = (key: string): ElementRecord[] => withAssociations ? list(element, key).filter((association) => !loop.folded.has(association)) : [];
   return {
-    inputs: [...associationInputs(ctx, open("dataInputAssociations")), ...parameters.inputs],
-    outputs: [...associationOutputs(ctx, open("dataOutputAssociations")), ...parameters.outputs],
+    inputs: [...associationMappings(ctx, open("dataInputAssociations")), ...parameters.inputs],
+    outputs: [...associationMappings(ctx, open("dataOutputAssociations")), ...parameters.outputs],
     multiInstance: loop.multiInstance,
   };
 }
@@ -263,7 +236,7 @@ export function readActivity(ctx: ReadContext, node: ModelNode, kind: ActivityKi
     id,
     build: (boundaries) => ctor("activity", {
       header: headerOf(node, sourceType),
-      payload: { work, envelope: envelopeFor(ctx, id, data, boundaries) },
+      payload: { work, envelope: envelopeFor(ctx, node.element, data, boundaries) },
     }),
   };
 }

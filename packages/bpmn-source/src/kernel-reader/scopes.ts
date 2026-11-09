@@ -1,7 +1,7 @@
 import type { ElementRecord } from "../moddle-graph.js";
 import { envelopeFor, headerOf } from "./build.js";
 import { startSubscription } from "./events.js";
-import { byId, FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, requireId } from "./model.js";
+import { byId, FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, requireId, text } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
 import { inputOutputParameters } from "./data.js";
 import { readActivityData } from "./work.js";
@@ -30,12 +30,24 @@ function eventSubProcessKind(ctx: ReadContext, node: ModelNode): KernelJson {
   return ctor("eventSubProcess", { start: subscription, interrupting: start.isInterrupting !== false });
 }
 
+/**
+ * BPMN 2.0.2 `tTransactionMethod` (Semantic.xsd): `##Compensate`, its default, `##Image`, `##Store`, or any URI. Both
+ * union members collapse whitespace (XSD Part 2 §4.3.6), so the lexical value is read collapsed.
+ */
+function transactionMethod(element: ElementRecord): KernelJson {
+  const method = (text(element, "method") ?? "##Compensate").replace(/[\t\n\r ]+/gu, " ").trim();
+  if (method === "##Compensate") return "compensate";
+  if (method === "##Image") return "image";
+  if (method === "##Store") return "store";
+  return ctor("other", { uri: method });
+}
+
 type ScopeKind = FlowElementKind.SubProcess | FlowElementKind.Transaction;
 
 function scopeKind(ctx: ReadContext, node: ModelNode, kind: ScopeKind): KernelJson {
   switch (kind) {
     case FlowElementKind.Transaction:
-      return "transaction";
+      return ctor("transaction", { payload: { method: transactionMethod(node.element) } });
     case FlowElementKind.SubProcess:
       return node.element.triggeredByEvent === true ? eventSubProcessKind(ctx, node) : "embedded";
   }
@@ -55,7 +67,7 @@ export function readScope(ctx: ReadContext, node: ModelNode, kind: ScopeKind): B
     id,
     build: (boundaries) => ctor("scope", {
       header: headerOf(node, kind),
-      payload: { ...payload, envelope: envelopeFor(ctx, id, data, boundaries) },
+      payload: { ...payload, envelope: envelopeFor(ctx, node.element, data, boundaries) },
     }),
   };
 }

@@ -1,8 +1,7 @@
 import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
-import { fixed, headerOf } from "./build.js";
-import { conditionExpression } from "./data.js";
-import { FlowElementKind, optionalId, requireId } from "./model.js";
+import { defaultFlowOf, fixed, headerOf } from "./build.js";
+import { FlowElementKind, requireId } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
 import { assertNever, ctor } from "./wire.js";
 import type { KernelJson } from "./wire.js";
@@ -13,24 +12,20 @@ type GatewayKind = FlowElementKind.ExclusiveGateway | FlowElementKind.InclusiveG
 const flowById = (ctx: ReadContext, id: string): ElementRecord | undefined =>
   ctx.flows.find((flow) => flow.id === id);
 
-function candidate(ctx: ReadContext, id: string): KernelJson {
-  const expression = asElement(flowById(ctx, id)?.conditionExpression);
-  return { flow: id, condition: expression === undefined ? null : conditionExpression(ctx, expression) };
-}
-
-/** Outgoing flows other than the default, in document order: conditions are evaluated in that order (§13.4.2). */
+/**
+ * Outgoing flows other than the default, in document order: conditions are evaluated in that order (§13.4.2). Each
+ * condition lives on its `Flow`.
+ */
 function candidateFlows(ctx: ReadContext, id: string, defaultFlow: string | null): string[] {
   return ctx.outgoing(id)
     .filter((flow) => flow !== defaultFlow)
     .sort((left, right) => (ctx.flowOrder.get(left) ?? 0) - (ctx.flowOrder.get(right) ?? 0));
 }
 
-const defaultFlowOf = (element: ElementRecord): string | null => optionalId(asElement(element.default) ?? {});
-
 function exclusiveKind(ctx: ReadContext, id: string, element: ElementRecord): KernelJson {
   const defaultFlow = defaultFlowOf(element);
   return ctor("exclusive", {
-    candidates: candidateFlows(ctx, id, defaultFlow).map((flow) => candidate(ctx, flow)),
+    candidates: candidateFlows(ctx, id, defaultFlow),
     default: defaultFlow,
   });
 }
@@ -44,14 +39,8 @@ function inclusiveKind(ctx: ReadContext, id: string, element: ElementRecord): Ke
   const flows = ctx.outgoing(id).filter((flow) => flow !== defaultFlow);
   const conditioned = flows.some((flow) => asElement(flowById(ctx, flow)?.conditionExpression) !== undefined);
   return ctor("inclusive", {
-    candidates: conditioned || defaultFlow !== null ? flows.map((flow) => candidate(ctx, flow)) : [],
+    candidates: conditioned || defaultFlow !== null ? flows : [],
     default: defaultFlow,
-  });
-}
-
-function eventBasedKind(ctx: ReadContext, id: string): KernelJson {
-  return ctor("eventBased", {
-    arms: ctx.outgoing(id).map((flow) => ({ target: optionalId(asElement(flowById(ctx, flow)?.targetRef) ?? {}) ?? flow })),
   });
 }
 
@@ -64,7 +53,7 @@ function gatewayKind(ctx: ReadContext, id: string, node: ModelNode, kind: Gatewa
     case FlowElementKind.ParallelGateway:
       return "parallel";
     case FlowElementKind.EventBasedGateway:
-      return eventBasedKind(ctx, id);
+      return "eventBased";
   }
   return assertNever(kind);
 }

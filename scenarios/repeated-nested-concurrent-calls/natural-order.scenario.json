@@ -72,7 +72,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:25:CallActivity_BankApproval:1",
         "elementId": "UserTask_PrepareApproval",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": []
     },
@@ -82,7 +82,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:25:CallActivity_BankApproval:1",
         "elementId": "UserTask_Approve",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": []
     },
@@ -112,7 +112,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:26:CallActivity_FinalApproval:1",
         "elementId": "UserTask_PrepareApproval",
-        "activation": 3
+        "activation": 1
       },
       "submittedValues": []
     },
@@ -122,7 +122,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:26:CallActivity_FinalApproval:1",
         "elementId": "UserTask_Approve",
-        "activation": 3
+        "activation": 1
       },
       "submittedValues": []
     }

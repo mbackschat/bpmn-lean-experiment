@@ -1,0 +1,128 @@
+/**
+ * Kernel inputs, transcribed from `Kernel/State/Input.lean`: the inputs a host submits, the occurrence identities they
+ * name and the start triggers and deliveries they carry. Part of `state.ts`, which re-exports it.
+ */
+import { type ElementId, TechnicalFailure, type Trigger, type Value } from "../il/types.js";
+import { type Binding, InputTag, type MessageChannel } from "./wait.js";
+
+/** The public identity of an occurrence: its process instance, the element and its activation number. */
+export interface OccurrenceRef {
+  readonly processInstanceId: string;
+  readonly element: ElementId;
+  readonly activation: number;
+}
+
+// guard-exception(3): the start input's own statement of how it fired, not a second dispatch over `Trigger`.
+export enum StartTriggerTag {
+  None = "none",
+  Timer = "timer",
+  Message = "message",
+  Signal = "signal",
+  Condition = "condition",
+}
+
+export type StartTrigger =
+  | { readonly tag: StartTriggerTag.None }
+  | { readonly tag: StartTriggerTag.Timer; readonly logicalTimeMs: number }
+  | { readonly tag: StartTriggerTag.Message; readonly channel: MessageChannel; readonly payload: Value | null }
+  | { readonly tag: StartTriggerTag.Signal; readonly name: string; readonly variables: readonly Binding[] }
+  | { readonly tag: StartTriggerTag.Condition };
+
+export const noStartTrigger: StartTrigger = { tag: StartTriggerTag.None };
+
+/** What a delivery delivers. An addressless Receive stays a delivery on the unspecified channel (CIB-INT-0004). */
+export enum DeliveryTriggerTag { Message = "message", Signal = "signal" }
+
+export type DeliveryTrigger =
+  | { readonly tag: DeliveryTriggerTag.Message; readonly channel: MessageChannel }
+  | { readonly tag: DeliveryTriggerTag.Signal; readonly name: string };
+
+export enum CriterionTargetTag {
+  ProcessVariable = "processVariable",
+  LocalVariable = "localVariable",
+  BusinessKey = "businessKey",
+  ProcessInstance = "processInstance",
+}
+
+export type CriterionTarget =
+  | { readonly tag: CriterionTargetTag.ProcessVariable; readonly name: string }
+  | { readonly tag: CriterionTargetTag.LocalVariable; readonly name: string }
+  | { readonly tag: CriterionTargetTag.BusinessKey }
+  | { readonly tag: CriterionTargetTag.ProcessInstance };
+
+/** A present null matches only a present null; an absent name matches nothing (PC-MESSAGE-08). */
+export interface CorrelationMatch { readonly target: CriterionTarget; readonly expected: Value; }
+
+/** A Message or Signal delivered to the subscription `occurrence` names. */
+export interface DeliveryInput {
+  readonly occurrence: OccurrenceRef;
+  readonly trigger: DeliveryTrigger;
+  readonly correlation: readonly CorrelationMatch[];
+  readonly payload: Value | null;
+  /** The input's logical time (`Input.atMs`). */
+  readonly atMs: number | null;
+}
+
+// Inputs
+
+export interface StartInput {
+  readonly instanceId: string;
+  readonly startEvent: ElementId | null;
+  readonly variables: readonly Binding[];
+  readonly trigger: StartTrigger;
+  readonly businessKey: string | null;
+  /** The input's logical time (`Input.atMs`). */
+  readonly atMs: number | null;
+}
+
+export enum CommandActionTag {
+  CompleteUserTask = "completeUserTask",
+  RetryIncident = "retryIncident",
+  CancelIncidentProcess = "cancelIncidentProcess",
+  SetVariables = "setVariables",
+  RemoveVariables = "removeVariables",
+}
+
+export type CommandAction =
+  | { readonly tag: CommandActionTag.CompleteUserTask; readonly values: readonly Binding[] }
+  | { readonly tag: CommandActionTag.RetryIncident }
+  | { readonly tag: CommandActionTag.CancelIncidentProcess }
+  | { readonly tag: CommandActionTag.SetVariables; readonly values: readonly Binding[] }
+  | { readonly tag: CommandActionTag.RemoveVariables; readonly names: readonly string[] };
+
+export interface CommandInput { readonly occurrence: OccurrenceRef; readonly action: CommandAction; readonly atMs: number | null; }
+
+export interface TimerInput { readonly occurrence: OccurrenceRef; readonly logicalTimeMs: number; readonly atMs: number | null; }
+
+export enum EffectOutcomeTag {
+  Success = "success",
+  BusinessFailure = "businessFailure",
+  TechnicalFailure = "technicalFailure",
+}
+
+export type EffectOutcome =
+  | { readonly tag: EffectOutcomeTag.Success; readonly outputs: readonly Binding[] }
+  | {
+      readonly tag: EffectOutcomeTag.BusinessFailure;
+      readonly code: string;
+      readonly message: string | null;
+      readonly outputs: readonly Binding[];
+    }
+  | { readonly tag: EffectOutcomeTag.TechnicalFailure };
+
+export interface EffectInput { readonly occurrence: OccurrenceRef; readonly outcome: EffectOutcome; readonly atMs: number | null; }
+
+/**
+ * Guarded type: `step.ts` owns matching on it. Every payload carries `atMs`, the input's logical time in milliseconds:
+ * the clock advances to it before the input's transition, so a timer armed by the input counts from it, and `null` leaves
+ * the clock where it is. Logical time is an explicit input, never a wall clock.
+ */
+export type Input =
+  | { readonly tag: InputTag.Start; readonly payload: StartInput }
+  | { readonly tag: InputTag.Command; readonly payload: CommandInput }
+  | { readonly tag: InputTag.Deliver; readonly payload: DeliveryInput }
+  | { readonly tag: InputTag.TimerFire; readonly payload: TimerInput }
+  | { readonly tag: InputTag.EffectResult; readonly payload: EffectInput };
+
+/** What an expression reads: the variables in view and the logical time, never a wall clock. */
+export interface EvalContext { readonly variables: readonly Binding[]; readonly nowMs: number; }

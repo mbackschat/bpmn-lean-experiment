@@ -194,7 +194,7 @@ function retiredSourceFindings(
 ): string[] {
   return source.split("\n").flatMap((line, index) => {
     // The kernel IL's Terminate End Event throw is BPMN's own name, not the retired operation.
-    const hasRetiredWireLiteral = !["packages/bpmn-source/src/kernel-lowering.ts", "packages/bpmn-source/src/kernel-reader/events.ts"].includes(relativePath) && new RegExp(
+    const hasRetiredWireLiteral = relativePath !== "packages/bpmn-source/src/kernel-reader/events.ts" && new RegExp(
       `(["'])${retiredOperationName}\\1`,
       "u",
     ).test(line);

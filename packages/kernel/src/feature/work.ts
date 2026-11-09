@@ -1,26 +1,30 @@
 /**
  * Work: what an Activity does, transcribed from `Kernel/Feature/Work.lean`.
  *
- * Owns matching on `Work`. An Activity's input mappings are evaluated once, on arrival, against the variables
- * visible from its scope occurrence; they become the Activity's local values (a User Task's published inputs, an
- * effect's arguments). A task without work passes its token through; a User Task, a Service Task's effect and a
- * Receive Task's Message open one item each, and the input that closes the item completes the Activity: its output
- * mappings write outward, its attached items are disarmed and its outgoing flows receive tokens.
+ * Owns matching on `Work`. An Activity's input mappings are evaluated once, when its occurrence begins, against the
+ * variables visible from its scope occurrence; they become the Activity's local values (a User Task's published inputs,
+ * an effect's arguments). A task without work completes at once; a User Task, a Service Task's effect and a Receive
+ * Task's Message open one item each, and the input that closes the item completes the Activity through the pipeline.
+ * The boundaries of a Multi-Instance Activity belong to its body, so an instance arms none.
  *
- * An Activity with boundaries signals `arm` for the item it opened; a BPMN error an effect reports is raised from
- * the Activity after its outputs are written and its item and attached items are removed, so the catcher, which may
- * be a boundary of this Activity, finds nothing of the Activity left to interrupt. A technical failure turns the
- * effect's item into an incident with the same identity and attachments, which a retry turns back.
+ * A BPMN error an effect reports leaves the Activity `raised`, then raises from it, so the catcher, which may be a
+ * boundary of this Activity, finds nothing of the Activity left to interrupt. A technical failure turns the effect's
+ * item into an incident with the same identity and attachments, which a retry turns back.
  */
-import { ctxEvaluateMappings, type Arrival, type Ctx } from "../hooks.js";
 import {
+  ErrorPathOutputs,
+  SubmissionRule,
+  TechnicalFailure,
   ValueSourceTag,
   WorkTag,
   assertNever,
+  distinctCount,
+  elementEnvelope,
+  programElement,
   type ActivityPayload,
   type Header,
   type Mapping,
-  type MessageTrigger,
+  type MultiInstance,
   type UserWork,
 } from "../il/types.js";
 import {
@@ -32,334 +36,168 @@ import {
   OpenKindTag,
   RaisedTag,
   SignalTag,
-  clearInside,
-  closeItem,
+  WriteRule,
   committed,
-  disarm,
-  openKindEffect,
-  emit,
+  completeSignal,
+  enterScope,
   failed,
-  hold,
-  openKindIncident,
+  failedWith,
   instanceRoot,
-  messageChannelEquals,
-  openKindMessage,
-  openAttached,
+  leaveOutgoing,
+  leaveRaised,
+  occurrenceOf,
+  openItem,
+  openKindView,
+  optionalChannelEquals,
   root,
   signal,
-  visible,
-  write,
-  writeOutward,
   type Binding,
   type CommandAction,
   type EffectOutcome,
   type Fired,
-  type MessageChannel,
+  type Occurrence,
   type OpenItem,
   type OpenKind,
   type Outcome,
   type Result,
   type ScopeOccurrence,
-  type ScopeOccurrenceId,
   type State,
   type UserTaskDetail,
 } from "../state.js";
-import { complete as completeCallWork, invoke } from "./work/call.js";
-import { check } from "./work/submission.js";
+import { ctxEvaluateMappings, deliveryTriggerChannel, evalContext, hold, messageTriggerChannel, type Ctx } from "../hooks.js";
+import * as Call from "./work/call.js";
+import * as Submission from "./work/submission.js";
 
-/** Open `kind` for the Activity and arm its boundaries on the new item. */
-export function openWork(
-  kind: OpenKind,
-  header: Header,
-  payload: ActivityPayload,
-  scope: ScopeOccurrenceId,
-  state: State,
-): State {
-  const [opened, id] = openAttached(state, kind, header.id, scope, null);
-  return payload.envelope.boundaries.length === 0
-    ? opened
-    : signal(opened, { tag: SignalTag.Arm, host: id, element: header.id, scope });
-}
-
-/** The Message a Receive Task waits for. An expression-named Message needs the host evaluator. */
-export function channel(trigger: MessageTrigger): Result<MessageChannel> {
-  const address = (messageId: string | null): MessageChannel => ({
-    messageId,
-    interfaceRef: trigger.interfaceRef,
-    operationRef: trigger.operationRef,
-  });
-  const name = trigger.name;
-  if (name === null) {
-    return committed(address(null));
-  }
-  switch (name.tag) {
-    case ValueSourceTag.Literal:
-      return committed(address(name.value));
-    case ValueSourceTag.Expression:
-      return failed(FailureTag.Unsupported, "receive-message-expression");
-  }
-  return assertNever(name);
+/** Open `kind` for the Activity and arm its boundaries on the occurrence. */
+function openWork(kind: OpenKind, header: Header, payload: ActivityPayload, occurrence: Occurrence, state: State): State {
+  const opened = openItem(state, kind, occurrence);
+  if (payload.envelope.boundaries.length === 0 || payload.envelope.multiInstance !== null) return opened;
+  return signal(opened, { tag: SignalTag.Arm, host: occurrence.id, element: header.id, scope: occurrence.scope });
 }
 
 /**
- * The outputs a completion writes, from the values it submits. The submission must be exactly the Activity's
- * OutputSet (BPMN 2.0.2 §10.4.1): every output mapping evaluates against the submitted values alone, no name is
- * submitted twice, and no submitted value is superfluous (dropping it leaves the outputs evaluable). Anything else is
- * rejected, so a completion never commits a partial or unmediated write; the retained baselines observe it for User
- * Task data outputs (`activity-data-output-omitted`, `structured-composition-serial-null`) and effect result patches
- * alike.
+ * The outputs a completion writes, from the values it submits. The submission must be exactly the Activity's OutputSet
+ * (BPMN 2.0.2 §10.4.1): every output mapping evaluates against the submitted values alone, no name is submitted twice,
+ * and no submitted value is superfluous (dropping it leaves the outputs evaluable). Anything else is rejected, so a
+ * completion never commits a partial or unmediated write.
  */
-export function outputs(ctx: Ctx, mappings: readonly Mapping[], values: readonly Binding[]): Result<readonly Binding[]> {
-  const fills = (submitted: readonly Binding[]): boolean => ctxEvaluateMappings(ctx, submitted, mappings).ok;
-  const names = values.map((binding) => binding[0]);
-  if (new Set(names).size !== names.length) {
-    return failed(FailureTag.Rejected, "duplicate-output");
-  }
-  const evaluated = ctxEvaluateMappings(ctx, values, mappings);
-  if (!evaluated.ok) {
-    const failure = evaluated.failure;
-    switch (failure.tag) {
-      case FailureTag.Unsupported:
-        return failed(FailureTag.Unsupported, failure.code);
-      case FailureTag.Rejected:
-        return failed(FailureTag.Rejected, "output-unavailable");
-      case FailureTag.SemanticFailure:
-        return failed(FailureTag.Rejected, "output-unavailable");
-      case FailureTag.RolledBack:
-        return failed(FailureTag.RolledBack, failure.code);
-    }
-    return assertNever(failure.tag);
-  }
-  if (names.some((name) => fills(values.filter((binding) => binding[0] !== name)))) {
-    return failed(FailureTag.Rejected, "undeclared-output");
-  }
-  return committed(evaluated.value);
-}
-
-/**
- * An Activity with a compensation handler stays compensable once it completes (BPMN 2.0.2 §13.5.5); a boundary
- * handler restores no context.
- */
-export function retain(payload: ActivityPayload, item: OpenItem, state: State): State {
-  return payload.envelope.compensationHandler !== null
-    ? signal(state, { tag: SignalTag.Completed, element: item.element, scope: item.scope, snapshot: [] })
-    : state;
-}
-
-/** Close the Activity's item, write `written` outward from its scope and take its outgoing flows. */
-export function finish(payload: ActivityPayload, item: OpenItem, written: readonly Binding[], state: State): State {
-  const closed = disarm(closeItem(state, item.id), item.id);
-  const wrote = written.reduce((current, binding) => writeOutward(current, item.scope, binding), closed);
-  return retain(payload, item, emit(wrote, payload.envelope.outgoing, item.scope));
+function outputs(ctx: Ctx, nowMs: number, mappings: readonly Mapping[], values: readonly Binding[]): Result<readonly Binding[]> {
+  const evaluated = (variables: readonly Binding[]): Result<readonly Binding[] | null> =>
+    ctxEvaluateMappings(ctx, { variables, nowMs }, mappings);
+  const fills = (variables: readonly Binding[]): boolean => {
+    const result = evaluated(variables);
+    return result.ok && result.value !== null;
+  };
+  const names = values.map(([name]) => name);
+  if (distinctCount(names) !== names.length) return failed(FailureTag.Rejected, "duplicate-output");
+  const written = evaluated(values);
+  if (!written.ok) return failedWith(written.failure);
+  if (written.value === null) return failed(FailureTag.Rejected, "output-unavailable");
+  if (names.some((name) => fills(values.filter(([other]) => other !== name)))) return failed(FailureTag.Rejected, "undeclared-output");
+  return committed(written.value);
 }
 
 /** What an open User Task publishes, with the inputs it was given. */
-export function userTaskDetail(task: UserWork, inputs: readonly Binding[]): UserTaskDetail {
-  const groups = task.candidateGroups.flatMap((source): string[] => {
-    switch (source.tag) {
+function userTaskDetail(task: UserWork, inputs: readonly Binding[]): UserTaskDetail {
+  const groups = task.candidateGroups.flatMap((group) => {
+    switch (group.tag) {
       case ValueSourceTag.Literal:
-        return [source.value];
+        return [group.value];
       case ValueSourceTag.Expression:
         return [];
     }
-    return assertNever(source);
+    return assertNever(group);
   });
-  return { name: task.name, candidateGroups: groups, formFields: task.formFields, inputs };
+  return {
+    name: task.name,
+    assignee: null,
+    candidateUsers: [],
+    candidateGroups: groups,
+    formKey: null,
+    formFields: task.formFields,
+    dueDate: null,
+    followUpDate: null,
+    priority: null,
+    inputs,
+  };
 }
 
 /**
- * `Ctx.bodyWait`: one instance of a Multi-Instance User Task opens a User Task that publishes no inputs, its item
- * being published with the Multi-Instance Activity instead; other work does not run as an instance.
+ * Enter the Activity's local-variable scope when it has inputs (CIB-EXT-0015): the completion pipeline disposes of it
+ * with the Activity.
  */
-export function bodyWait(payload: ActivityPayload): OpenKind | null {
-  const work = payload.work;
-  switch (work.tag) {
-    case WorkTag.User:
-      return { tag: OpenKindTag.UserTask, detail: userTaskDetail(work.payload, []) };
-    case WorkTag.None:
-      return null;
-    case WorkTag.Manual:
-      return null;
-    case WorkTag.Receive:
-      return null;
-    case WorkTag.Service:
-      return null;
-    case WorkTag.Send:
-      return null;
-    case WorkTag.Script:
-      return null;
-    case WorkTag.Rule:
-      return null;
-    case WorkTag.Call:
-      return null;
-  }
-  return assertNever(work);
+function enterLocal(header: Header, inputs: readonly Binding[], occurrence: Occurrence, state: State): State {
+  return inputs.length === 0 ? state : enterScope(state, header.id, occurrence.scope, inputs, occurrence.id)[0];
 }
 
 /**
- * An input mapping whose source is unavailable makes the InputSet unavailable, and the Activity waits for it
- * (BPMN 2.0.2 §10.4.2): the token is held at the Activity (`FeatureSlots.held`), keeping its scope occurrence alive.
- * Nothing re-evaluates a held InputSet yet, so the token waits until its scope occurrence is cleared.
+ * An Activity's occurrence began. An input mapping whose source is unavailable makes the InputSet unavailable, and an
+ * occurrence a token began waits for it (BPMN 2.0.2 §10.4.2), held in `FeatureSlots.held` until its scope occurrence
+ * is cleared. An occurrence no token began has no flow to hold on, which is refused; it may do a task without work, a
+ * User Task or a Service Task (`scope.implicitStart` and `compensation.handlerWork` at admission). A
+ * `camunda:inputParameter`, whose unresolved expression is no unavailable Data Input, rolls the command back instead
+ * of holding (`ctxEvaluateMappings`).
  */
-export function arriveActivity(
-  ctx: Ctx,
-  header: Header,
-  payload: ActivityPayload,
-  arrival: Arrival,
-  state: State,
-): Outcome {
-  const evaluated = ctxEvaluateMappings(ctx, visible(state, arrival.scope), payload.envelope.inputs);
-  if (!evaluated.ok) {
-    const failure = evaluated.failure;
-    switch (failure.tag) {
-      case FailureTag.SemanticFailure:
-        return committed(hold(state, { flow: arrival.flow, scope: arrival.scope }));
-      case FailureTag.Rejected:
-        return failed(FailureTag.Rejected, failure.code);
-      case FailureTag.Unsupported:
-        return failed(FailureTag.Unsupported, failure.code);
-      case FailureTag.RolledBack:
-        return failed(FailureTag.RolledBack, failure.code);
-    }
-    return assertNever(failure.tag);
+export function arriveActivity(ctx: Ctx, header: Header, payload: ActivityPayload, occurrence: Occurrence, state: State): Outcome {
+  const evaluated = ctxEvaluateMappings(ctx, evalContext(state, occurrence.scope), payload.envelope.inputs);
+  if (!evaluated.ok) return failedWith(evaluated.failure);
+  if (evaluated.value === null) {
+    if (occurrence.incoming !== null) return committed(hold(state, { occurrence: occurrence.id, flow: occurrence.incoming, scope: occurrence.scope }));
+    // Dynamic-only: whether the source is set depends on the run.
+    return failed(FailureTag.Unsupported, "started-activity-input-unavailable");
   }
   const inputs = evaluated.value;
+  const entered = enterLocal(header, inputs, occurrence, state);
+  const begunByToken = occurrence.incoming !== null;
+  const complete = (current: State): State => signal(current, completeSignal(occurrence.id, leaveOutgoing, [], WriteRule.Outward));
   const work = payload.work;
   switch (work.tag) {
     case WorkTag.None:
-      return committed(emit(state, payload.envelope.outgoing, arrival.scope));
     case WorkTag.Manual:
-      return committed(emit(state, payload.envelope.outgoing, arrival.scope));
+      return committed(complete(entered));
     case WorkTag.User:
-      return committed(
-        openWork(
-          { tag: OpenKindTag.UserTask, detail: userTaskDetail(work.payload, inputs) },
-          header,
-          payload,
-          arrival.scope,
-          state,
-        ),
-      );
+      return committed(openWork({ tag: OpenKindTag.UserTask, detail: userTaskDetail(work.payload, inputs) }, header, payload, occurrence, entered));
     case WorkTag.Receive: {
-      const address = channel(work.payload.message);
-      if (!address.ok) {
-        return address;
-      }
-      return committed(
-        openWork(
-          { tag: OpenKindTag.Message, detail: { channel: address.value, payload: false, correlationKey: null } },
-          header,
-          payload,
-          arrival.scope,
-          state,
-        ),
-      );
+      if (!begunByToken) return failed(FailureTag.Unsupported, "scope-implicit-start");
+      const channel = messageTriggerChannel(work.payload.message);
+      // Admission refuses it (`work.receive.messageExpression`).
+      if (channel === null) return failed(FailureTag.Unsupported, "work-receive-message-expression");
+      return committed(openWork({ tag: OpenKindTag.Message, detail: { channel, payload: false, criteria: [] } }, header, payload, occurrence, entered));
     }
     case WorkTag.Service:
-      return committed(
-        openWork(
-          {
-            tag: OpenKindTag.Effect,
-            detail: {
-              protocol: work.payload.protocol,
-              operation: work.payload.operation,
-              arguments: inputs,
-              failures: 0,
-            },
-          },
-          header,
-          payload,
-          arrival.scope,
-          state,
-        ),
-      );
+      return committed(openWork({
+        tag: OpenKindTag.Effect,
+        detail: { protocol: work.payload.protocol, operation: work.payload.operation, arguments: inputs, failures: 0, send: null },
+      }, header, payload, occurrence, entered));
+    // Admission refuses the three (`work.send`, `work.script`, `work.rule`).
     case WorkTag.Send:
-      return failed(FailureTag.Unsupported, "send-task");
+      return failed(FailureTag.Unsupported, "work-send");
     case WorkTag.Script:
-      return failed(FailureTag.Unsupported, "script-task");
+      return failed(FailureTag.Unsupported, "work-script");
     case WorkTag.Rule:
-      return failed(FailureTag.Unsupported, "business-rule-task");
+      return failed(FailureTag.Unsupported, "work-rule");
     case WorkTag.Call:
-      return invoke(ctx, header, payload, work.payload, arrival, state);
+      if (!begunByToken) return failed(FailureTag.Unsupported, "scope-implicit-start");
+      return Call.invoke(ctx, header, payload, work.payload, occurrence, entered);
   }
   return assertNever(work);
 }
 
-/**
- * `Hooks.startActivity`: begin, in `scope`, an Activity that no token reaches: one without incoming Sequence Flow in
- * a Scope without a start Event, or a compensation handler. An unavailable InputSet has no token to hold, so it is
- * refused, as is work other than a task without work, a User Task or a Service Task.
- */
-export function startActivity(
-  ctx: Ctx,
-  header: Header,
-  payload: ActivityPayload,
-  scope: ScopeOccurrenceId,
-  state: State,
-): Outcome {
-  const evaluated = ctxEvaluateMappings(ctx, visible(state, scope), payload.envelope.inputs);
-  if (!evaluated.ok) {
-    const failure = evaluated.failure;
-    switch (failure.tag) {
-      case FailureTag.SemanticFailure:
-        return failed(FailureTag.Unsupported, "started-activity-input-unavailable");
-      case FailureTag.Rejected:
-        return evaluated;
-      case FailureTag.Unsupported:
-        return evaluated;
-      case FailureTag.RolledBack:
-        return evaluated;
-    }
-    return assertNever(failure.tag);
+/** One Multi-Instance instance submits exactly its output data item, written locally to the instance. */
+function instanceOutput(loop: MultiInstance, values: readonly Binding[]): Result<null> {
+  const [only] = values;
+  if (loop.outputDataItem !== null && values.length === 1 && only !== undefined) {
+    return only[0] !== loop.outputDataItem ? failed(FailureTag.Rejected, "undeclared-output") : committed(null);
   }
-  const inputs = evaluated.value;
-  const work = payload.work;
-  switch (work.tag) {
-    case WorkTag.None:
-      return committed(emit(state, payload.envelope.outgoing, scope));
-    case WorkTag.Manual:
-      return committed(emit(state, payload.envelope.outgoing, scope));
-    case WorkTag.User:
-      return committed(
-        openWork({ tag: OpenKindTag.UserTask, detail: userTaskDetail(work.payload, inputs) }, header, payload, scope, state),
-      );
-    case WorkTag.Service:
-      return committed(
-        openWork(
-          {
-            tag: OpenKindTag.Effect,
-            detail: {
-              protocol: work.payload.protocol,
-              operation: work.payload.operation,
-              arguments: inputs,
-              failures: 0,
-            },
-          },
-          header,
-          payload,
-          scope,
-          state,
-        ),
-      );
-    case WorkTag.Receive:
-      return failed(FailureTag.Unsupported, "started-receive-task");
-    case WorkTag.Send:
-      return failed(FailureTag.Unsupported, "send-task");
-    case WorkTag.Script:
-      return failed(FailureTag.Unsupported, "script-task");
-    case WorkTag.Rule:
-      return failed(FailureTag.Unsupported, "business-rule-task");
-    case WorkTag.Call:
-      return failed(FailureTag.Unsupported, "started-call-activity");
-  }
-  return assertNever(work);
+  if (loop.outputDataItem !== null && values.length === 0) return failed(FailureTag.Rejected, "output-unavailable");
+  return failed(FailureTag.Rejected, "undeclared-output");
 }
 
 /**
- * A User Task without output mappings, under a profile whose submission installs variables (CIB-EXT-0005), writes
- * the submitted values from its scope; otherwise the submission is the task's OutputSet (`outputs`), which for a
- * task without outputs admits only the empty submission. The scope-chain rule, when the profile selects it, applies
- * first (`work/submission.ts`).
+ * A User Task without output mappings, under a profile whose submission installs variables (CIB-EXT-0005), writes the
+ * submitted values from its scope; otherwise the submission is the task's OutputSet (`outputs`), which for a task
+ * without outputs admits only the empty submission. The scope-chain rule, when the profile selects it, applies first
+ * (`submission.ts`).
  */
 export function completeUserTask(
   ctx: Ctx,
@@ -371,114 +209,110 @@ export function completeUserTask(
 ): Outcome {
   const limit = ctx.program.options.scopeChainSubmissionBytes;
   if (limit !== null) {
-    const checked = check(ctx, state, item.scope, limit, values);
-    if (!checked.ok) {
-      return checked;
-    }
+    const checked = Submission.check(ctx, state, item.scope, limit, values);
+    if (!checked.ok) return failedWith(checked.failure);
   }
-  if (payload.envelope.outputs.length === 0 && ctx.program.options.submissionInstallsVariables) {
-    const written = values.reduce((current, [name, value]) => write(current, item.scope, name, value), state);
-    return committed(
-      retain(payload, item, emit(disarm(closeItem(written, item.id), item.id), payload.envelope.outgoing, item.scope)),
-    );
+  const loop = payload.envelope.multiInstance;
+  if (loop !== null) {
+    const submitted = instanceOutput(loop, values);
+    if (!submitted.ok) return failedWith(submitted.failure);
+    return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Own)));
   }
-  const written = outputs(ctx, payload.envelope.outputs, values);
-  if (!written.ok) {
-    return written;
+  if (ctx.program.options.submission === SubmissionRule.InstallsVariables && payload.envelope.outputs.length === 0) {
+    return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, values, WriteRule.Outward)));
   }
-  return committed(finish(payload, item, written.value, state));
+  const written = outputs(ctx, state.logicalTimeMs, payload.envelope.outputs, values);
+  if (!written.ok) return failedWith(written.failure);
+  return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
 }
 
-/** Replace the kind of the open item `id`, keeping its identity, activation and attachments. */
-export function reopen(state: State, id: number, kind: OpenKind): State {
+/** Replace the kind of the open item `id`, keeping its identity and attachments. */
+function reopen(state: State, id: number, kind: OpenKind): State {
   return { ...state, openItems: state.openItems.map((item) => (item.id === id ? { ...item, kind } : item)) };
 }
 
 /**
- * An effect's result patch is its OutputSet. A BPMN error writes its outputs too, then raises from the Activity with
- * the closed item as host, as the mapped-boundary-error baseline observes.
+ * An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host: it
+ * writes no outputs (BPMN 2.0.2 §13.3.2) unless the profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A
+ * technical failure has no BPMN meaning (§13.3.3 defines only a fault) and refuses unless the profile opens an incident
+ * (CIB-EXT-0013, CIB-CFG-0008).
  */
-export function effectResult(
-  ctx: Ctx,
-  header: Header,
-  payload: ActivityPayload,
-  item: OpenItem,
-  outcome: EffectOutcome,
-  state: State,
-): Outcome {
+export function effectResult(ctx: Ctx, item: OpenItem, outcome: EffectOutcome, state: State): Outcome {
+  // A throw Event's effect has no envelope and so no output mappings (PC-MESSAGE-09).
+  const element = programElement(ctx.program, item.element);
+  const mappings = (element === null ? null : elementEnvelope(element))?.outputs ?? [];
   switch (outcome.tag) {
     case EffectOutcomeTag.Success: {
-      const written = outputs(ctx, payload.envelope.outputs, outcome.outputs);
-      if (!written.ok) {
-        return written;
-      }
-      return committed(finish(payload, item, written.value, state));
+      const written = outputs(ctx, state.logicalTimeMs, mappings, outcome.outputs);
+      if (!written.ok) return failedWith(written.failure);
+      return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, written.value, WriteRule.Outward)));
     }
     case EffectOutcomeTag.BusinessFailure: {
-      const written = outputs(ctx, payload.envelope.outputs, outcome.outputs);
-      if (!written.ok) {
-        return written;
-      }
-      const closed = disarm(closeItem(state, item.id), item.id);
-      const wrote = written.value.reduce((current, binding) => writeOutward(current, item.scope, binding), closed);
-      return committed(
-        signal(wrote, {
-          tag: SignalTag.Raise,
-          event: { tag: RaisedTag.Error, code: outcome.code, message: outcome.message },
-          origin: { element: header.id, scope: item.scope, host: item.id, activation: item.activation },
-        }),
-      );
+      const written = errorPathWrites(ctx, state, mappings, outcome.outputs);
+      if (!written.ok) return failedWith(written.failure);
+      const activation = occurrenceOf(state, item.occurrence)?.activation ?? 0;
+      const completed = signal(state, completeSignal(item.occurrence, leaveRaised, written.value, WriteRule.Outward));
+      return committed(signal(completed, {
+        tag: SignalTag.Raise,
+        event: { tag: RaisedTag.Error, code: outcome.code, message: outcome.message },
+        origin: { element: item.element, scope: item.scope, activation, host: item.occurrence },
+      }));
     }
-    case EffectOutcomeTag.TechnicalFailure: {
-      const detail = openKindEffect(item.kind);
-      if (detail === null) {
-        return failed(FailureTag.SemanticFailure, "effect-result-without-effect");
-      }
-      if (detail.failures > 0) {
-        return failed(FailureTag.Unsupported, "repeated-effect-incident");
-      }
-      const effect = { ...detail, failures: detail.failures + 1 };
-      return committed(
-        reopen(state, item.id, {
-          tag: OpenKindTag.Incident,
-          detail: { effect, generation: 1, cancellable: ctx.program.options.incidentProcessCancellation },
-        }),
-      );
-    }
+    case EffectOutcomeTag.TechnicalFailure:
+      return technicalFailure(ctx, item, state);
   }
   return assertNever(outcome);
 }
 
-/**
- * A retry reopens the failed effect with the same occurrence (CIB-EXT-0013); cancelling the incident's process ends
- * the instance as cancelled, keeping its Process variables (CIB-EXT-0014, CIB-OP-0009), and is offered only for an
- * incident of the root process instance under a profile that selects it.
- */
-export function resolveIncident(
-  _ctx: Ctx,
-  _header: Header,
-  _payload: ActivityPayload,
-  item: OpenItem,
-  action: CommandAction,
-  state: State,
-): Outcome {
-  const incident = openKindIncident(item.kind);
-  if (incident === null) {
-    return failed(FailureTag.SemanticFailure, "incident-command-without-incident");
+function errorPathWrites(ctx: Ctx, state: State, mappings: readonly Mapping[], patch: readonly Binding[]): Result<readonly Binding[]> {
+  switch (ctx.program.options.errorPathOutputs) {
+    case ErrorPathOutputs.Mapped:
+      return outputs(ctx, state.logicalTimeMs, mappings, patch);
+    case ErrorPathOutputs.None:
+      return patch.length === 0 ? committed([]) : failed(FailureTag.Rejected, "error-path-outputs-not-accepted");
   }
+  return assertNever(ctx.program.options.errorPathOutputs);
+}
+
+function technicalFailure(ctx: Ctx, item: OpenItem, state: State): Outcome {
+  const detail = openKindView(item.kind).effect;
+  switch (ctx.program.options.technicalFailure) {
+    case TechnicalFailure.HostFailure:
+      // Dynamic-only: a host failure is an input; no admission can tell whether it will arrive.
+      return failed(FailureTag.Unsupported, "effect-technical-failure");
+    case TechnicalFailure.Incident: {
+      if (detail === null) return failed(FailureTag.SemanticFailure, "effect-result-without-effect");
+      // Dynamic-only: a retried effect's second failure is a run outcome; PC-AUTO retries own it.
+      if (detail.failures > 0) return failed(FailureTag.Unsupported, "repeated-effect-incident");
+      const effect = { ...detail, failures: detail.failures + 1 };
+      const cancellable = ctx.program.options.incidentProcessCancellation;
+      return committed(reopen(state, item.id, { tag: OpenKindTag.Incident, detail: { effect, generation: 1, cancellable } }));
+    }
+  }
+  return assertNever(ctx.program.options.technicalFailure);
+}
+
+/**
+ * A retry reopens the failed effect with the same occurrence (CIB-EXT-0013); cancelling the incident's process ends the
+ * instance as cancelled, keeping its Process variables (CIB-EXT-0014, CIB-OP-0009), and is offered only for an incident
+ * of the root process instance under a profile that selects it.
+ */
+export function resolveIncident(_ctx: Ctx, item: OpenItem, action: CommandAction, state: State): Outcome {
+  const incident = openKindView(item.kind).incident;
+  if (incident === null) return failed(FailureTag.SemanticFailure, "incident-command-without-incident");
   switch (action.tag) {
     case CommandActionTag.RetryIncident:
       return committed(reopen(state, item.id, { tag: OpenKindTag.Effect, detail: incident.effect }));
     case CommandActionTag.CancelIncidentProcess:
-      if (!incident.cancellable) {
-        return failed(FailureTag.Rejected, "incident-process-cancellation-unavailable");
-      }
-      if (instanceRoot(state, item.scope) !== root) {
-        return failed(FailureTag.Unsupported, "called-incident-cancellation");
-      }
-      return committed({ ...clearInside(state, root), status: InstanceStatus.Cancelled });
+      if (!incident.cancellable) return failed(FailureTag.Rejected, "incident-process-cancellation-unavailable");
+      // Dynamic-only: whether the incident is in a called instance depends on the run.
+      if (instanceRoot(state, item.scope) !== root) return failed(FailureTag.Unsupported, "called-incident-cancellation");
+      return committed(signal(state, { tag: SignalTag.EndInstance, status: InstanceStatus.Cancelled, failure: null }));
     case CommandActionTag.CompleteUserTask:
       return failed(FailureTag.SemanticFailure, "incident-user-task-completion");
+    case CommandActionTag.SetVariables:
+    case CommandActionTag.RemoveVariables:
+      return failed(FailureTag.SemanticFailure, "incident-variable-command");
   }
   return assertNever(action);
 }
@@ -487,7 +321,7 @@ export function resolveIncident(
 export function triggerActivity(
   _ctx: Ctx,
   _header: Header,
-  payload: ActivityPayload,
+  _payload: ActivityPayload,
   item: OpenItem,
   fired: Fired,
   state: State,
@@ -495,18 +329,18 @@ export function triggerActivity(
   switch (fired.tag) {
     case FiredTag.Timer:
       return failed(FailureTag.SemanticFailure, "activity-timer-without-timer");
+    case FiredTag.Signal:
+      return failed(FailureTag.SemanticFailure, "activity-signal-without-signal");
+    case FiredTag.Condition:
+      return failed(FailureTag.SemanticFailure, "activity-condition-without-condition");
     case FiredTag.Message: {
-      const detail = openKindMessage(item.kind);
-      if (detail === null) {
-        return failed(FailureTag.SemanticFailure, "activity-message-without-message");
-      }
-      if (!messageChannelEquals(fired.delivery.channel, detail.channel)) {
+      const channel = openKindView(item.kind).channel;
+      if (channel === null) return failed(FailureTag.SemanticFailure, "activity-message-without-message");
+      if (!optionalChannelEquals(deliveryTriggerChannel(fired.delivery.trigger), channel)) {
         return failed(FailureTag.Rejected, "message-channel-mismatch");
       }
-      if (fired.delivery.payload !== null) {
-        return failed(FailureTag.Rejected, "unexpected-message-payload");
-      }
-      return committed(finish(payload, item, [], state));
+      if (fired.delivery.payload !== null) return failed(FailureTag.Rejected, "unexpected-message-payload");
+      return committed(signal(state, completeSignal(item.occurrence, leaveOutgoing, [], WriteRule.Outward)));
     }
   }
   return assertNever(fired);
@@ -517,30 +351,23 @@ export function completeCall(
   ctx: Ctx,
   header: Header,
   payload: ActivityPayload,
-  occurrence: ScopeOccurrence,
+  calledRoot: ScopeOccurrence,
+  owner: Occurrence,
   state: State,
 ): Outcome {
   const work = payload.work;
-  const notCall = (): Outcome => failed(FailureTag.SemanticFailure, "called-instance-without-call");
   switch (work.tag) {
     case WorkTag.Call:
-      return completeCallWork(ctx, header, payload, work.payload, occurrence, state);
+      return Call.complete(ctx, header, payload, work.payload, calledRoot, owner, state);
     case WorkTag.None:
-      return notCall();
     case WorkTag.Manual:
-      return notCall();
     case WorkTag.User:
-      return notCall();
     case WorkTag.Receive:
-      return notCall();
     case WorkTag.Service:
-      return notCall();
     case WorkTag.Send:
-      return notCall();
     case WorkTag.Script:
-      return notCall();
     case WorkTag.Rule:
-      return notCall();
+      return failed(FailureTag.SemanticFailure, "called-instance-without-call");
   }
   return assertNever(work);
 }

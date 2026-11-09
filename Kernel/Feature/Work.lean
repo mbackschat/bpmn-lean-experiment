@@ -6,72 +6,49 @@ public import Kernel.Feature.Work.Submission
 
 /-! # Work: what an Activity does
 
-Owns matching on `Work`. An Activity's input mappings are evaluated once, on arrival, against the variables visible
-from its scope occurrence; they become the Activity's local values (a User Task's published inputs, an effect's
-arguments). A task without work passes its token through; a User Task, a Service Task's effect and a Receive Task's
-Message open one item each, and the input that closes the item completes the Activity: its output mappings write
-outward, its attached items are disarmed and its outgoing flows receive tokens.
+Owns matching on `Work`. An Activity's input mappings are evaluated once, when its occurrence begins, against the
+variables visible from its scope occurrence; they become the Activity's local values (a User Task's published inputs,
+an effect's arguments). A task without work completes at once; a User Task, a Service Task's effect and a Receive
+Task's Message open one item each, and the input that closes the item completes the Activity through the pipeline.
+The boundaries of a Multi-Instance Activity belong to its body, so an instance arms none.
 
-An Activity with boundaries signals `arm` for the item it opened; a BPMN error an effect reports is raised from the
-Activity after its outputs are written and its item and attached items are removed, so the catcher, which may be a
-boundary of this Activity, finds nothing of the Activity left to interrupt. A technical failure turns the effect's
-item into an incident with the same identity and attachments, which a retry turns back.
+A BPMN error an effect reports leaves the Activity `raised`, then raises from it, so the catcher, which may be a
+boundary of this Activity, finds nothing of the Activity left to interrupt. A technical failure turns the effect's item
+into an incident with the same identity and attachments, which a retry turns back.
 -/
 
 public section
 
 namespace Kernel.Feature.Work
 
-/-- Open `kind` for the Activity and arm its boundaries on the new item. -/
-def openWork (kind : OpenKind) (header : Header) (payload : ActivityPayload) (scope : ScopeOccurrenceId)
+/-- Open `kind` for the Activity and arm its boundaries on the occurrence. -/
+def openWork (kind : OpenKind) (header : Header) (payload : ActivityPayload) (occurrence : Occurrence)
     (state : State) : State :=
-  let (state, id) := state.openAttached kind header.id scope none
-  if payload.envelope.boundaries.isEmpty then state else state.signal (.arm id header.id scope)
-
-/-- The Message a Receive Task waits for. An expression-named Message needs the host evaluator. -/
-def channel (trigger : MessageTrigger) : Except Failure MessageChannel :=
-  let address (messageId : Option String) : MessageChannel :=
-    { messageId, interfaceRef := trigger.interfaceRef, operationRef := trigger.operationRef }
-  match trigger.name with
-  | none => .ok (address none)
-  | some (.literal name) => .ok (address (some name))
-  | some (.expression _) => .error (.unsupported "receive-message-expression")
+  let state := state.openItem kind occurrence
+  if payload.envelope.boundaries.isEmpty || payload.envelope.multiInstance.isSome then state
+  else state.signal (.arm occurrence.id header.id occurrence.scope)
 
 /-- The outputs a completion writes, from the values it submits. The submission must be exactly the Activity's
 OutputSet ([BPMN 2.0.2 §10.4.1](../../docs/reference/bpmn-2.0.2/README.md)): every output mapping evaluates against
 the submitted values alone, no name is submitted twice, and no submitted value is superfluous (dropping it leaves
-the outputs evaluable). Anything else is rejected, so a completion never commits a partial or unmediated write; the
-retained baselines observe it for User Task data outputs (`activity-data-output-omitted`,
-`structured-composition-serial-null`) and effect result patches alike. -/
-def outputs (ctx : Ctx) (mappings : List Mapping) (values : List (String × Value)) :
+the outputs evaluable). Anything else is rejected, so a completion never commits a partial or unmediated write. -/
+def outputs (ctx : Ctx) (nowMs : Nat) (mappings : List Mapping) (values : List (String × Value)) :
     Except Failure (List (String × Value)) :=
-  let fills (values : List (String × Value)) : Bool :=
-    match ctx.evaluateMappings values mappings with
-    | .ok _ => true
+  let evaluated (variables : List (String × Value)) := ctx.evaluateMappings { variables, nowMs } mappings
+  let fills (variables : List (String × Value)) : Bool :=
+    match evaluated variables with
+    | .ok (some _) => true
+    | .ok none => false
     | .error _ => false
   let names := values.map (·.1)
   if names.eraseDups.length != names.length then .error (.rejected "duplicate-output")
   else
-    match ctx.evaluateMappings values mappings with
-    | .error (.unsupported code) => .error (.unsupported code)
-    | .error (.rejected _) => .error (.rejected "output-unavailable")
-    | .error (.semanticFailure _) => .error (.rejected "output-unavailable")
-    | .error (.rolledBack code) => .error (.rolledBack code)
-    | .ok written =>
+    match evaluated values with
+    | .error failure => .error failure
+    | .ok none => .error (.rejected "output-unavailable")
+    | .ok (some written) =>
       if names.any (fun name => fills (values.filter (·.1 != name))) then .error (.rejected "undeclared-output")
       else .ok written
-
-/-- An Activity with a compensation handler stays compensable once it completes
-([BPMN 2.0.2 §13.5.5](../../docs/reference/bpmn-2.0.2/README.md)); a boundary handler restores no context. -/
-def retain (payload : ActivityPayload) (item : OpenItem) (state : State) : State :=
-  if payload.envelope.compensationHandler.isSome then state.signal (.completed item.element item.scope [])
-  else state
-
-/-- Close the Activity's item, write `written` outward from its scope and take its outgoing flows. -/
-def finish (payload : ActivityPayload) (item : OpenItem) (written : List (String × Value)) (state : State) :
-    State :=
-  let closed := (state.closeItem item.id).disarm item.id
-  retain payload item ((written.foldl (·.writeOutward item.scope ·) closed).emit payload.envelope.outgoing item.scope)
 
 /-- What an open User Task publishes, with the inputs it was given. -/
 def userTaskDetail (task : UserWork) (inputs : List (String × Value)) : UserTaskDetail :=
@@ -80,70 +57,53 @@ def userTaskDetail (task : UserWork) (inputs : List (String × Value)) : UserTas
     | .expression _ => none
   { name := task.name, candidateGroups := groups, formFields := task.formFields, inputs }
 
-/-- `Ctx.bodyWait`: one instance of a Multi-Instance User Task opens a User Task that publishes no inputs, its item
-being published with the Multi-Instance Activity instead; other work does not run as an instance. -/
-def bodyWait (payload : ActivityPayload) : Option OpenKind :=
-  match payload.work with
-  | .user task => some (.userTask (userTaskDetail task []))
-  | .none => none
-  | .manual => none
-  | .receive _ => none
-  | .service _ => none
-  | .send _ => none
-  | .script _ => none
-  | .rule _ => none
-  | .call _ => none
+/-- Enter the Activity's local-variable scope when it has inputs (CIB-EXT-0015): the completion pipeline disposes of it
+with the Activity. -/
+def enterLocal (header : Header) (inputs : List (String × Value)) (occurrence : Occurrence) (state : State) : State :=
+  if inputs.isEmpty then state else (state.enterScope header.id occurrence.scope inputs (some occurrence.id)).1
 
-/-- An input mapping whose source is unavailable makes the InputSet unavailable, and the Activity waits for it
-([BPMN 2.0.2 §10.4.2](../../docs/reference/bpmn-2.0.2/README.md)): the token is held at the Activity
-(`FeatureSlots.held`), keeping its scope occurrence alive. Nothing re-evaluates a held InputSet yet, so the token
-waits until its scope occurrence is cleared. -/
-def arriveActivity (ctx : Ctx) (header : Header) (payload : ActivityPayload) (arrival : Arrival) (state : State) :
+/-- An Activity's occurrence began. An input mapping whose source is unavailable makes the InputSet unavailable, and
+an occurrence a token began waits for it ([BPMN 2.0.2 §10.4.2](../../docs/reference/bpmn-2.0.2/README.md)), held in
+`FeatureSlots.held` until its scope occurrence is cleared. An occurrence no token began has no flow to hold on, which
+is refused; it may do a task without work, a User Task or a Service Task (`scope.implicitStart` and
+`compensation.handlerWork` at admission). A `camunda:inputParameter`, whose unresolved expression is no unavailable
+Data Input, rolls the command back instead of holding (`Ctx.evaluateMappings`). -/
+def arriveActivity (ctx : Ctx) (header : Header) (payload : ActivityPayload) (occurrence : Occurrence) (state : State) :
     Outcome := do
-  let available ← match ctx.evaluateMappings (state.visible arrival.scope) payload.envelope.inputs with
-    | .ok inputs => .ok (some inputs)
-    | .error (.semanticFailure _) => .ok none
-    | .error (.rejected code) => .error (.rejected code)
-    | .error (.unsupported code) => .error (.unsupported code)
-    | .error (.rolledBack code) => .error (.rolledBack code)
-  let some inputs := available
-    | .ok (state.hold { flow := arrival.flow, scope := arrival.scope })
+  let some inputs ← ctx.evaluateMappings (state.evalContext occurrence.scope) payload.envelope.inputs
+    | match occurrence.incoming with
+      | some flow => .ok (state.hold { occurrence := occurrence.id, flow, scope := occurrence.scope })
+      -- Dynamic-only: whether the source is set depends on the run.
+      | none => .error (.unsupported "started-activity-input-unavailable")
+  let state := enterLocal header inputs occurrence state
+  let begunByToken := occurrence.incoming.isSome
+  let complete (state : State) : State := state.signal (.complete occurrence.id .outgoing [] .outward)
   match payload.work with
-  | .none => .ok (state.emit payload.envelope.outgoing arrival.scope)
-  | .manual => .ok (state.emit payload.envelope.outgoing arrival.scope)
-  | .user task => .ok (openWork (.userTask (userTaskDetail task inputs)) header payload arrival.scope state)
+  | .none => .ok (complete state)
+  | .manual => .ok (complete state)
+  | .user task => .ok (openWork (.userTask (userTaskDetail task inputs)) header payload occurrence state)
   | .receive work => do
-    let channel ← channel work.message
-    .ok (openWork (.message { channel }) header payload arrival.scope state)
+    if !begunByToken then .error (.unsupported "scope-implicit-start") else
+    -- Admission refuses it (`work.receive.messageExpression`).
+    let some channel := work.message.channel? | .error (.unsupported "work-receive-message-expression")
+    .ok (openWork (.message { channel }) header payload occurrence state)
   | .service work =>
     .ok (openWork (.effect { protocol := work.protocol, operation := work.operation, arguments := inputs })
-      header payload arrival.scope state)
-  | .send _ => .error (.unsupported "send-task")
-  | .script _ => .error (.unsupported "script-task")
-  | .rule _ => .error (.unsupported "business-rule-task")
-  | .call work => Call.invoke ctx header payload work arrival state
+      header payload occurrence state)
+  -- Admission refuses the three (`work.send`, `work.script`, `work.rule`).
+  | .send _ => .error (.unsupported "work-send")
+  | .script _ => .error (.unsupported "work-script")
+  | .rule _ => .error (.unsupported "work-rule")
+  | .call work =>
+    if !begunByToken then .error (.unsupported "scope-implicit-start")
+    else Call.invoke ctx header payload work occurrence state
 
-/-- `Hooks.startActivity`: begin, in `scope`, an Activity that no token reaches: one without incoming Sequence Flow
-in a Scope without a start Event, or a compensation handler. An unavailable InputSet has no token to hold, so it
-is refused, as is work other than a task without work, a User Task or a Service Task. -/
-def startActivity (ctx : Ctx) (header : Header) (payload : ActivityPayload) (scope : ScopeOccurrenceId)
-    (state : State) : Outcome := do
-  let inputs ← match ctx.evaluateMappings (state.visible scope) payload.envelope.inputs with
-    | .ok inputs => .ok inputs
-    | .error (.semanticFailure _) => .error (.unsupported "started-activity-input-unavailable")
-    | .error failure => .error failure
-  match payload.work with
-  | .none => .ok (state.emit payload.envelope.outgoing scope)
-  | .manual => .ok (state.emit payload.envelope.outgoing scope)
-  | .user task => .ok (openWork (.userTask (userTaskDetail task inputs)) header payload scope state)
-  | .service work =>
-    .ok (openWork (.effect { protocol := work.protocol, operation := work.operation, arguments := inputs })
-      header payload scope state)
-  | .receive _ => .error (.unsupported "started-receive-task")
-  | .send _ => .error (.unsupported "send-task")
-  | .script _ => .error (.unsupported "script-task")
-  | .rule _ => .error (.unsupported "business-rule-task")
-  | .call _ => .error (.unsupported "started-call-activity")
+/-- One Multi-Instance instance submits exactly its output data item, written locally to the instance. -/
+def instanceOutput (loop : MultiInstance) (values : List (String × Value)) : Except Failure Unit :=
+  match loop.outputDataItem, values with
+  | some name, [(submittedName, _)] => if submittedName != name then .error (.rejected "undeclared-output") else .ok ()
+  | some _, [] => .error (.rejected "output-unavailable")
+  | _, _ => .error (.rejected "undeclared-output")
 
 /-- A User Task without output mappings, under a profile whose submission installs variables (CIB-EXT-0005), writes
 the submitted values from its scope; otherwise the submission is the task's OutputSet (`outputs`), which for a task
@@ -153,34 +113,46 @@ def completeUserTask (ctx : Ctx) (_ : Header) (payload : ActivityPayload) (item 
     (values : List (String × Value)) (state : State) : Outcome := do
   if let some limit := ctx.program.options.scopeChainSubmissionBytes then
     Submission.check ctx state item.scope limit values
-  if payload.envelope.outputs.isEmpty && ctx.program.options.submissionInstallsVariables then
-    let written := values.foldl (fun state (name, value) => state.write item.scope name value) state
-    .ok (retain payload item ((written.closeItem item.id).disarm item.id |>.emit payload.envelope.outgoing item.scope))
-  else
-    let written ← outputs ctx payload.envelope.outputs values
-    .ok (finish payload item written state)
+  match payload.envelope.multiInstance with
+  | some loop =>
+    instanceOutput loop values
+    .ok (state.signal (.complete item.occurrence .outgoing values .own))
+  | none =>
+    match ctx.program.options.submission, payload.envelope.outputs with
+    | .installsVariables, [] => .ok (state.signal (.complete item.occurrence .outgoing values .outward))
+    | .installsVariables, _ :: _ | .outputSet, _ =>
+      let written ← outputs ctx state.logicalTimeMs payload.envelope.outputs values
+      .ok (state.signal (.complete item.occurrence .outgoing written .outward))
 
-/-- Replace the kind of the open item `id`, keeping its identity, activation and attachments. -/
+/-- Replace the kind of the open item `id`, keeping its identity and attachments. -/
 def reopen (state : State) (id : Nat) (kind : OpenKind) : State :=
   { state with openItems := state.openItems.map fun item => if item.id == id then { item with kind } else item }
 
-/-- An effect's result patch is its OutputSet. A BPMN error writes its outputs too, then raises from the Activity
-with the closed item as host, as the mapped-boundary-error baseline observes. -/
-def effectResult (ctx : Ctx) (header : Header) (payload : ActivityPayload) (item : OpenItem)
-    (outcome : EffectOutcome) (state : State) : Outcome :=
+/-- An effect's result patch is its OutputSet. A BPMN error raises from the Activity with the occurrence as host: it
+writes no outputs (BPMN 2.0.2 §13.3.2) unless the profile maps them on the error path (CIB-EXT-0004, -0009, -0016). A
+technical failure has no BPMN meaning (§13.3.3 defines only a fault) and refuses unless the profile opens an incident
+(CIB-EXT-0013, CIB-CFG-0008). -/
+def effectResult (ctx : Ctx) (item : OpenItem) (outcome : EffectOutcome) (state : State) : Outcome :=
+  -- A throw Event's effect has no envelope and so no output mappings (PC-MESSAGE-09).
+  let mappings := (((ctx.program.element? item.element).bind (·.envelope?)).map (·.outputs)).getD []
   match outcome with
   | .success patch => do
-    let written ← outputs ctx payload.envelope.outputs patch
-    .ok (finish payload item written state)
+    let written ← outputs ctx state.logicalTimeMs mappings patch
+    .ok (state.signal (.complete item.occurrence .outgoing written .outward))
   | .businessFailure code message patch => do
-    let written ← outputs ctx payload.envelope.outputs patch
-    let closed := (state.closeItem item.id).disarm item.id
-    .ok ((written.foldl (·.writeOutward item.scope ·) closed).signal (.raise (.error code message)
-      { element := header.id, scope := item.scope, host := some item.id, activation := some item.activation }))
+    let written ← match ctx.program.options.errorPathOutputs with
+      | .mapped => outputs ctx state.logicalTimeMs mappings patch
+      | .none => if patch.isEmpty then .ok [] else .error (.rejected "error-path-outputs-not-accepted")
+    let activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0
+    .ok ((state.signal (.complete item.occurrence .raised written .outward)).signal (.raise (.error code message)
+      { element := item.element, scope := item.scope, activation, host := some item.occurrence }))
   | .technicalFailure =>
-    match item.kind.effect? with
-    | none => .error (.semanticFailure "effect-result-without-effect")
-    | some detail =>
+    match ctx.program.options.technicalFailure, item.kind.view.effect with
+    -- Dynamic-only: a host failure is an input; no admission can tell whether it will arrive.
+    | .hostFailure, _ => .error (.unsupported "effect-technical-failure")
+    | .incident, none => .error (.semanticFailure "effect-result-without-effect")
+    | .incident, some detail =>
+      -- Dynamic-only: a retried effect's second failure is a run outcome; PC-AUTO retries own it.
       if detail.failures > 0 then .error (.unsupported "repeated-effect-incident")
       else
         let effect := { detail with failures := detail.failures + 1 }
@@ -189,36 +161,40 @@ def effectResult (ctx : Ctx) (header : Header) (payload : ActivityPayload) (item
 /-- A retry reopens the failed effect with the same occurrence (CIB-EXT-0013); cancelling the incident's process
 ends the instance as cancelled, keeping its Process variables (CIB-EXT-0014, CIB-OP-0009), and is offered only for
 an incident of the root process instance under a profile that selects it. -/
-def resolveIncident (_ : Ctx) (_ : Header) (_ : ActivityPayload) (item : OpenItem) (action : CommandAction)
-    (state : State) : Outcome :=
-  match item.kind.incident?, action with
+def resolveIncident (_ : Ctx) (item : OpenItem) (action : CommandAction) (state : State) : Outcome :=
+  match item.kind.view.incident, action with
   | none, _ => .error (.semanticFailure "incident-command-without-incident")
   | some incident, .retryIncident => .ok (reopen state item.id (.effect incident.effect))
   | some incident, .cancelIncidentProcess =>
     if !incident.cancellable then .error (.rejected "incident-process-cancellation-unavailable")
+    -- Dynamic-only: whether the incident is in a called instance depends on the run.
     else if state.instanceRoot item.scope != State.root then .error (.unsupported "called-incident-cancellation")
-    else .ok { state.clearInside State.root with status := .cancelled }
+    else .ok (state.signal (.endInstance .cancelled none))
   | some _, .completeUserTask _ => .error (.semanticFailure "incident-user-task-completion")
+  | some _, .setVariables _ => .error (.semanticFailure "incident-variable-command")
+  | some _, .removeVariables _ => .error (.semanticFailure "incident-variable-command")
 
 /-- A delivery completes a Receive Task only on the channel it waits on; the Message carries no payload here. -/
-def triggerActivity (_ : Ctx) (_ : Header) (payload : ActivityPayload) (item : OpenItem) (fired : Fired)
+def triggerActivity (_ : Ctx) (_ : Header) (_ : ActivityPayload) (item : OpenItem) (fired : Fired)
     (state : State) : Outcome :=
   match fired with
   | .timer _ => .error (.semanticFailure "activity-timer-without-timer")
+  | .signal _ => .error (.semanticFailure "activity-signal-without-signal")
+  | .condition _ => .error (.semanticFailure "activity-condition-without-condition")
   | .message delivery =>
-    match item.kind.message? with
+    match item.kind.view.channel with
     | none => .error (.semanticFailure "activity-message-without-message")
-    | some detail =>
-      if delivery.channel != detail.channel then .error (.rejected "message-channel-mismatch")
+    | some channel =>
+      if delivery.trigger.channel? != some channel then .error (.rejected "message-channel-mismatch")
       else if delivery.payload.isSome then .error (.rejected "unexpected-message-payload")
-      else .ok (finish payload item [] state)
+      else .ok (state.signal (.complete item.occurrence .outgoing [] .outward))
 
 /-- `Hooks.completeCall`: only a Call Activity starts a called instance. -/
-def completeCall (ctx : Ctx) (header : Header) (payload : ActivityPayload) (occurrence : ScopeOccurrence)
-    (state : State) : Outcome :=
+def completeCall (ctx : Ctx) (header : Header) (payload : ActivityPayload) (root : ScopeOccurrence)
+    (owner : Occurrence) (state : State) : Outcome :=
   let notCall : Outcome := .error (.semanticFailure "called-instance-without-call")
   match payload.work with
-  | .call work => Call.complete ctx header payload work occurrence state
+  | .call work => Call.complete ctx header payload work root owner state
   | .none => notCall
   | .manual => notCall
   | .user _ => notCall

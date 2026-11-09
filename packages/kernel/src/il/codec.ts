@@ -14,42 +14,75 @@
  * outside the safe range is refused here although Lean's arbitrary-precision `Int` and `Nat` accept it.
  */
 import {
+  AbnormalScopeEnd,
   CallBindingTag,
+  CallBindingTime,
+  CollectionRead,
+  CompensationHandlerFailureTag,
+  CompensationOrder,
+  ConditionOrder,
+  ContinuationFailure,
   CycleDialect,
+  DecisionResultMapping,
+  DeliveryVariables,
   ElementTag,
+  ErrorPathOutputs,
+  Evaluator,
   EventRoleTag,
   ExpressionTag,
   GatewayKindTag,
   InstanceCountTag,
+  MappingDialect,
+  MessageCorrelation,
+  MultiInstanceFinalBody,
   MultiInstanceMode,
+  MultiInstanceOutputs,
   Placement,
   ScopeKindTag,
   SimpleBooleanTag,
+  SubmissionRule,
+  TechnicalFailure,
   ThrowTag,
   TimerScheduleTag,
+  TransactionMethodTag,
   TriggerTag,
+  UndeclaredWrite,
+  UnhandledError,
   ValueSourceTag,
   ValueTag,
   WorkTag,
   assertNever,
+  type Boundary,
+  type CallBinding,
+  type CompensationHandlerFailure,
+  type CorrelationCriterion,
+  type DefinitionRef,
+  type EffectBinding,
   type Element,
+  type Envelope,
+  type EventRole,
   type Expression,
+  type Flow,
+  type GatewayKind,
+  type Header,
+  type InstanceCount,
+  type Mapping,
+  type MessageTrigger,
+  type MultiInstance,
+  type ProfileOptions,
   type Program,
+  type ScopeKind,
+  type SimpleBoolean,
+  type Subscription,
+  type Throw,
+  type TimerSchedule,
+  type TransactionMethod,
+  type Trigger,
   type Value,
+  type ValueSource,
+  type Work,
 } from "./types.js";
-import {
-  CommandActionTag,
-  EffectOutcomeTag,
-  FailureTag,
-  InputTag,
-  type Binding,
-  type CommandAction,
-  type EffectOutcome,
-  type Failure,
-  type Input,
-  type MessageChannel,
-  type OccurrenceRef,
-} from "../state.js";
+import type { Binding } from "../state.js";
 
 export type JsonValue =
   | null
@@ -378,7 +411,12 @@ export const valueCodec: Codec<Value> = {
 
 // The kernel IL, in `Kernel.IL.Types` declaration order.
 
-const simpleBoolean = inductive<import("./types.js").SimpleBoolean>("SimpleBoolean", {
+/** A nullary enum whose members are their own wire names. */
+function members<E extends string>(name: string, values: Readonly<Record<string, E>>): Codec<E> {
+  return nullary<E>(name, Object.fromEntries(Object.values(values).map((value) => [value, value])) as Record<E, E>);
+}
+
+const simpleBoolean = inductive<SimpleBoolean>("SimpleBoolean", {
   [SimpleBooleanTag.Literal]: { value: bool },
   [SimpleBooleanTag.IsPresent]: { name: string },
   [SimpleBooleanTag.IsNull]: { name: string },
@@ -392,94 +430,86 @@ const expression = inductive<Expression>("Expression", {
   [ExpressionTag.Foreign]: { language: string, source: string },
 });
 
-const valueSource = inductive<import("./types.js").ValueSource>("ValueSource", {
+const valueSource = inductive<ValueSource>("ValueSource", {
   [ValueSourceTag.Literal]: { value: string },
   [ValueSourceTag.Expression]: { body: expression },
 });
 
-const mapping = struct<import("./types.js").Mapping>("Mapping", { target: string, source: expression });
-
-const cycleDialect = nullary<CycleDialect>("CycleDialect", {
-  [CycleDialect.Iso8601]: CycleDialect.Iso8601,
-  [CycleDialect.Cron]: CycleDialect.Cron,
+const mapping = struct<Mapping>("Mapping", {
+  target: string,
+  source: expression,
+  dialect: members("MappingDialect", MappingDialect),
 });
 
-const timerSchedule = inductive<import("./types.js").TimerSchedule>("TimerSchedule", {
+const timerSchedule = inductive<TimerSchedule>("TimerSchedule", {
   [TimerScheduleTag.Duration]: { value: valueSource },
   [TimerScheduleTag.Date]: { value: valueSource },
-  [TimerScheduleTag.Cycle]: { value: valueSource, dialect: cycleDialect },
+  [TimerScheduleTag.Cycle]: { value: valueSource, dialect: members("CycleDialect", CycleDialect) },
 });
 
-const correlationCriterion = struct<import("./types.js").CorrelationCriterion>("CorrelationCriterion", {
-  key: string,
-  value: expression,
-});
+const correlationCriterion = struct<CorrelationCriterion>("CorrelationCriterion", { key: string, value: expression });
 
-const messageTrigger = struct<import("./types.js").MessageTrigger>("MessageTrigger", {
+const messageTrigger = struct<MessageTrigger>("MessageTrigger", {
   name: option(valueSource),
   correlation: list(correlationCriterion),
   interfaceRef: option(string),
   operationRef: option(string),
 });
 
-const trigger = inductive<import("./types.js").Trigger>("Trigger", {
+const trigger = inductive<Trigger>("Trigger", {
   [TriggerTag.Timer]: { payload: struct("TimerTrigger", { schedule: timerSchedule }) },
   [TriggerTag.Message]: { payload: messageTrigger },
   [TriggerTag.Signal]: { payload: struct("SignalTrigger", { name: valueSource }) },
   [TriggerTag.Condition]: {
-    payload: struct("ConditionTrigger", {
-      condition: expression,
-      variableName: option(string),
-      variableEvents: list(string),
-    }),
+    payload: struct("ConditionTrigger", { condition: expression, variableName: option(string), variableEvents: list(string) }),
   },
   [TriggerTag.Error]: {
-    payload: struct("ErrorTrigger", {
-      code: option(string),
-      codeVariable: option(string),
-      messageVariable: option(string),
-    }),
+    payload: struct("ErrorTrigger", { code: option(string), codeVariable: option(string), messageVariable: option(string) }),
   },
-  [TriggerTag.Escalation]: {
-    payload: struct("EscalationTrigger", { code: option(string), codeVariable: option(string) }),
-  },
+  [TriggerTag.Escalation]: { payload: struct("EscalationTrigger", { code: option(string), codeVariable: option(string) }) },
   [TriggerTag.Compensation]: {},
   [TriggerTag.Cancel]: {},
 });
 
-const subscription = struct<import("./types.js").Subscription>("Subscription", {
-  trigger,
-  outputs: list(mapping),
-});
+const subscription = struct<Subscription>("Subscription", { trigger, outputs: list(mapping) });
 
-const boundary = struct<import("./types.js").Boundary>("Boundary", {
+const boundary = struct<Boundary>("Boundary", {
   id: string,
   subscription,
   interrupting: bool,
   outgoing: list(string),
 });
 
-const throwRecord = inductive<import("./types.js").Throw>("Throw", {
+const effectBinding = struct<EffectBinding>("EffectBinding", { protocol: string, operation: string });
+
+const throwRecord = inductive<Throw>("Throw", {
   [ThrowTag.None]: {},
-  [ThrowTag.Message]: { payload: struct("MessageThrow", { binding: string, payload: list(mapping) }) },
-  [ThrowTag.Signal]: { payload: struct("SignalThrow", { name: valueSource, payload: list(mapping) }) },
-  [ThrowTag.Error]: { payload: struct("ErrorThrow", { code: string, message: option(string) }) },
-  [ThrowTag.Escalation]: { payload: struct("EscalationThrow", { code: string }) },
-  [ThrowTag.Compensation]: {
-    payload: struct("CompensationThrow", { activity: option(string), waitForCompletion: bool }),
+  [ThrowTag.Message]: { payload: struct("MessageThrow", { binding: option(effectBinding), payload: list(mapping) }) },
+  [ThrowTag.Signal]: {
+    payload: struct("SignalThrow", {
+      name: valueSource,
+      payload: list(mapping),
+      propagateAll: bool,
+      localOnly: bool,
+      businessKey: option(expression),
+      asynchronous: bool,
+    }),
   },
+  [ThrowTag.Error]: { payload: struct("ErrorThrow", { code: string, message: option(valueSource) }) },
+  [ThrowTag.Escalation]: { payload: struct("EscalationThrow", { code: string }) },
+  [ThrowTag.Compensation]: { payload: struct("CompensationThrow", { activity: option(string), waitForCompletion: bool }) },
   [ThrowTag.Cancel]: {},
   [ThrowTag.Terminate]: {},
 });
 
-const callBinding = inductive<import("./types.js").CallBinding>("CallBinding", {
+const callBinding = inductive<CallBinding>("CallBinding", {
   [CallBindingTag.Latest]: {},
   [CallBindingTag.Deployment]: {},
   [CallBindingTag.Version]: { value: valueSource },
   [CallBindingTag.VersionTag]: { value: valueSource },
 });
 
-const work = inductive<import("./types.js").Work>("Work", {
+const work = inductive<Work>("Work", {
   [WorkTag.None]: {},
   [WorkTag.Manual]: {},
   [WorkTag.User]: {
@@ -499,35 +529,39 @@ const work = inductive<import("./types.js").Work>("Work", {
   [WorkTag.Service]: { payload: struct("ServiceWork", { protocol: string, operation: string }) },
   [WorkTag.Send]: {
     payload: struct("SendWork", {
-      binding: string,
+      binding: effectBinding,
       recipient: option(valueSource),
       correlation: list(correlationCriterion),
+      messageRef: option(string),
+      operationRef: option(string),
     }),
   },
-  [WorkTag.Script]: {
-    payload: struct("ScriptWork", { format: string, source: string, resultVariable: option(string) }),
+  [WorkTag.Script]: { payload: struct("ScriptWork", { format: string, source: string, resultVariable: option(string) }) },
+  [WorkTag.Rule]: {
+    payload: struct("RuleWork", {
+      decision: valueSource,
+      resultVariable: option(string),
+      binding: callBinding,
+      resultMapping: members("DecisionResultMapping", DecisionResultMapping),
+    }),
   },
-  [WorkTag.Rule]: { payload: struct("RuleWork", { decision: valueSource, resultVariable: option(string) }) },
   [WorkTag.Call]: {
     payload: struct("CallWork", {
       calledElement: valueSource,
       binding: callBinding,
+      tenant: option(valueSource),
       businessKey: option(expression),
       inputs: list(mapping),
       outputs: list(mapping),
       propagateAllInputs: bool,
       propagateAllOutputs: bool,
-      unsetSourceReadsNull: bool,
     }),
   },
 });
 
-const multiInstance = struct<import("./types.js").MultiInstance>("MultiInstance", {
-  mode: nullary<MultiInstanceMode>("MultiInstanceMode", {
-    [MultiInstanceMode.Sequential]: MultiInstanceMode.Sequential,
-    [MultiInstanceMode.Parallel]: MultiInstanceMode.Parallel,
-  }),
-  count: inductive<import("./types.js").InstanceCount>("InstanceCount", {
+const multiInstance = struct<MultiInstance>("MultiInstance", {
+  mode: members("MultiInstanceMode", MultiInstanceMode),
+  count: inductive<InstanceCount>("InstanceCount", {
     [InstanceCountTag.Collection]: { items: expression },
     [InstanceCountTag.Cardinality]: { count: expression },
   }),
@@ -536,10 +570,10 @@ const multiInstance = struct<import("./types.js").MultiInstance>("MultiInstance"
   inputDataItem: option(string),
   outputDataItem: option(string),
   outputCollection: option(string),
-  mutableCollection: bool,
+  mutableCollection: members("CollectionRead", CollectionRead),
 });
 
-const envelope = struct<import("./types.js").Envelope>("Envelope", {
+const envelope = struct<Envelope>("Envelope", {
   incoming: list(string),
   outgoing: list(string),
   inputs: list(mapping),
@@ -547,61 +581,65 @@ const envelope = struct<import("./types.js").Envelope>("Envelope", {
   boundaries: list(boundary),
   multiInstance: option(multiInstance),
   compensationHandler: option(string),
+  defaultFlow: option(string),
+  asyncBefore: bool,
+  asyncAfter: bool,
 });
 
-const scopeKind = inductive<import("./types.js").ScopeKind>("ScopeKind", {
+const transactionMethod = inductive<TransactionMethod>("TransactionMethod", {
+  [TransactionMethodTag.Compensate]: {},
+  [TransactionMethodTag.Store]: {},
+  [TransactionMethodTag.Image]: {},
+  [TransactionMethodTag.Other]: { uri: string },
+});
+
+const scopeKind = inductive<ScopeKind>("ScopeKind", {
   [ScopeKindTag.Embedded]: {},
-  [ScopeKindTag.Transaction]: {},
+  [ScopeKindTag.Transaction]: { payload: struct("TransactionScope", { method: transactionMethod }) },
   [ScopeKindTag.EventSubProcess]: { start: subscription, interrupting: bool },
 });
 
-const eventRole = inductive<import("./types.js").EventRole>("EventRole", {
+const eventRole = inductive<EventRole>("EventRole", {
   [EventRoleTag.Catch]: { subscription },
   [EventRoleTag.Throw]: { record: throwRecord },
   [EventRoleTag.LinkCatch]: { name: string },
   [EventRoleTag.LinkThrow]: { name: string },
 });
 
-const conditionalFlow = struct<import("./types.js").ConditionalFlow>("ConditionalFlow", {
-  flow: string,
-  condition: option(expression),
-});
-
-const gatewayKind = inductive<import("./types.js").GatewayKind>("GatewayKind", {
-  [GatewayKindTag.Exclusive]: { candidates: list(conditionalFlow), default: option(string) },
+const gatewayKind = inductive<GatewayKind>("GatewayKind", {
+  [GatewayKindTag.Exclusive]: { candidates: list(string), default: option(string) },
   [GatewayKindTag.Parallel]: {},
-  [GatewayKindTag.Inclusive]: { candidates: list(conditionalFlow), default: option(string) },
-  [GatewayKindTag.EventBased]: { arms: list(struct("EventArm", { target: string })) },
+  [GatewayKindTag.Inclusive]: { candidates: list(string), default: option(string) },
+  [GatewayKindTag.EventBased]: {},
 });
 
-const header = struct<import("./types.js").Header>("Header", {
+const definitionRef = struct<DefinitionRef>("DefinitionRef", {
+  key: string,
+  version: option(nat),
+  versionTag: option(string),
+  deployment: option(string),
+  tenant: option(string),
+  sourceSha256: option(string),
+});
+
+const header = struct<Header>("Header", {
   id: string,
+  origin: struct("ElementOrigin", { definition: option(definitionRef), sourceId: string }),
   sourceType: string,
   parent: option(string),
 });
 
 const element = inductive<Element>("Element", {
-  [ElementTag.Activity]: {
-    header,
-    payload: struct("ActivityPayload", { work, envelope }),
-  },
+  [ElementTag.Activity]: { header, payload: struct("ActivityPayload", { work, envelope }) },
   [ElementTag.Scope]: {
     header,
-    payload: struct("ScopePayload", {
-      kind: scopeKind,
-      children: list(string),
-      localVariables: list(string),
-      envelope,
-    }),
+    payload: struct("ScopePayload", { kind: scopeKind, children: list(string), localVariables: list(string), envelope }),
   },
   [ElementTag.Event]: {
     header,
     payload: struct("EventPayload", {
       role: eventRole,
-      placement: nullary<Placement>("Placement", {
-        [Placement.Intermediate]: Placement.Intermediate,
-        [Placement.Finish]: Placement.Finish,
-      }),
+      placement: members("Placement", Placement),
       incoming: list(string),
       outgoing: list(string),
     }),
@@ -616,16 +654,43 @@ const element = inductive<Element>("Element", {
   },
 });
 
+const flow = struct<Flow>("Flow", { id: string, source: string, target: string, condition: option(expression) });
+
+const compensationHandlerFailure = inductive<CompensationHandlerFailure>("CompensationHandlerFailure", {
+  [CompensationHandlerFailureTag.FailsInstance]: {},
+  [CompensationHandlerFailureTag.Selected]: { code: string },
+});
+
+const profileOptions = struct<ProfileOptions>("ProfileOptions", {
+  relations: list(string),
+  evaluator: members("Evaluator", Evaluator),
+  submission: members("SubmissionRule", SubmissionRule),
+  scopeChainSubmissionBytes: option(nat),
+  undeclaredWrite: members("UndeclaredWrite", UndeclaredWrite),
+  errorPathOutputs: members("ErrorPathOutputs", ErrorPathOutputs),
+  technicalFailure: members("TechnicalFailure", TechnicalFailure),
+  incidentProcessCancellation: bool,
+  continuationFailure: members("ContinuationFailure", ContinuationFailure),
+  conditionOrder: members("ConditionOrder", ConditionOrder),
+  messageCorrelation: members("MessageCorrelation", MessageCorrelation),
+  deliveryVariables: members("DeliveryVariables", DeliveryVariables),
+  multiInstanceFinalBody: members("MultiInstanceFinalBody", MultiInstanceFinalBody),
+  multiInstanceOutputs: members("MultiInstanceOutputs", MultiInstanceOutputs),
+  compensationOrder: members("CompensationOrder", CompensationOrder),
+  compensationHandlerFailure,
+  abnormalScopeEnd: members("AbnormalScopeEnd", AbnormalScopeEnd),
+  unhandledError: members("UnhandledError", UnhandledError),
+  callBindingTime: members("CallBindingTime", CallBindingTime),
+  timerZone: option(string),
+});
+
 const program = struct<Program>("Program", {
   identity: struct("ProgramIdentity", { processId: string, sourceSha256: string, profile: string }),
-  options: struct("ProfileOptions", {
-    submissionInstallsVariables: bool,
-    incidentProcessCancellation: bool,
-    scopeChainSubmissionBytes: option(nat),
-  }),
+  options: profileOptions,
   elements: list(element),
-  flows: list(struct("Flow", { id: string, source: string, target: string })),
-  processes: list(struct("CalledProcess", { id: string, children: list(string) })),
+  flows: list(flow),
+  variables: list(string),
+  processes: list(struct("CalledProcess", { definition: definitionRef, children: list(string), variables: list(string) })),
 });
 
 export function decodeProgram(json: unknown): Decoded<Program> {
@@ -634,6 +699,11 @@ export function decodeProgram(json: unknown): Decoded<Program> {
 
 export function encodeProgram(value: Program): JsonValue {
   return program.encode(value);
+}
+
+/** Lean's derived `ToJson TimerSchedule`, which the host view publishes for a timer start. */
+export function encodeTimerSchedule(value: TimerSchedule): JsonValue {
+  return timerSchedule.encode(value);
 }
 
 export function decodeValue(json: unknown): Decoded<Value> {

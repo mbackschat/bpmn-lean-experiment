@@ -4,7 +4,8 @@ public import Kernel.Hooks
 
 /-! # Flow: starts, gateways and Links
 
-Owns matching on `GatewayKind`. Gateway semantics follow [BPMN 2.0.2 §13.4](../../docs/reference/bpmn-2.0.2/README.md):
+Owns matching on `GatewayKind` and `Leave`, and is the only module that adds tokens (guard 17): every occurrence leaves
+through `outflow`. Gateway semantics follow [BPMN 2.0.2 §13.4](../../docs/reference/bpmn-2.0.2/README.md):
 
 - Exclusive (§13.4.2): the first true candidate in document order, else the default.
 - Parallel (§13.4.1): a gateway with more than one incoming flow waits until every incoming flow holds a token in
@@ -12,68 +13,90 @@ Owns matching on `GatewayKind`. Gateway semantics follow [BPMN 2.0.2 §13.4](../
 - Inclusive (§13.4.3): a join fires once at least one incoming flow holds a token and no token still upstream in
   the same scope occurrence can reach an incoming flow that holds none; it consumes one token from each filled
   flow. A split takes every true candidate, else the default.
-- Event-Based (§13.4.4): the token is consumed and `Hooks.armGateway` opens the arms.
+- Event-Based (§13.4.4): the gateway's occurrence stays open and `Hooks.armGateway` opens the arms; the arm that fires
+  completes it.
 
-A diverging gateway that finds no outgoing flow rolls the command back, as the frozen evaluator's closure does
-(`internal-choice-schedule.ts`, the exclusive-choice-without-default baseline).
+Each token that reaches a join is its own occurrence, parked in `state.slots.parked` until the join fires; then every
+consumed occurrence completes, one with the outgoing flows and the others with none, since a join ends one activity
+instance per joined execution (CIB `ParallelGatewayActivityBehavior`, `PvmExecutionImpl.leaveActivityViaTransitions`).
 
-Waiting tokens are parked in `state.slots.parked` on the incoming flow they arrived on, so `Step` keeps their scope
-occurrence alive.
+A diverging gateway that finds no outgoing flow rolls the command back.
 -/
 
 public section
 
 namespace Kernel.Feature.Flow
 
-/-- A start Event emits on its outgoing flows whether it is a none start or a triggered one: a triggered start's
-trigger is already consumed by the input that names it. -/
-def startProcess (_ : Ctx) (_ : Header) (payload : StartPayload) (state : State) : Outcome :=
-  .ok (state.emit payload.outgoing State.root)
+def complete (state : State) (id : Nat) (leave : Leave) : State :=
+  state.signal (.complete id leave [] .outward)
 
-def condition (ctx : Ctx) (variables : List (String × Value)) (candidate : ConditionalFlow) :
-    Except Failure Bool :=
-  match candidate.condition with
-  | none => .ok true
-  | some condition =>
-    match ctx.evaluate variables condition with
-    | .value (.bool value) => .ok value
-    | .value _ => .error (.semanticFailure "condition-not-boolean")
-    | .needsHost => .error (.unsupported "host-evaluation")
-    | .failure code => .error (.semanticFailure code)
+/-- `Hooks.outflow`: the only place tokens are added. An element's own selection is its outgoing flows. -/
+def outflow (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State) : Outcome :=
+  match leave with
+  | .flows selected => .ok (state.emit selected occurrence.scope)
+  | .outgoing =>
+    match ctx.program.element? occurrence.element with
+    | some element => .ok (state.emit element.outgoing occurrence.scope)
+    | none => .error (.semanticFailure "outflow-without-element")
+  | .raised => .error (.semanticFailure "outflow-of-raised-occurrence")
 
-/-- The first candidate whose condition holds; an unconditioned candidate holds. -/
-def firstTrue (ctx : Ctx) (variables : List (String × Value)) :
-    List ConditionalFlow → Except Failure (Option FlowId)
+/-- A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. -/
+def condition (ctx : Ctx) (context : EvalContext) (candidate : FlowId) : Except Failure Bool :=
+  match ctx.program.flow? candidate with
+  | none => .error (.semanticFailure "gateway-candidate-without-flow")
+  | some flow =>
+    match flow.condition with
+    | none => .ok true
+    | some condition =>
+      match ctx.evaluate context condition with
+      | .value (.bool value) => .ok value
+      | .value _ => .error (.semanticFailure "condition-not-boolean")
+      | .failure code => .error (.semanticFailure code)
+
+/-- The first candidate whose condition holds. -/
+def firstTrue (ctx : Ctx) (context : EvalContext) : List FlowId → Except Failure (Option FlowId)
   | [] => .ok none
   | candidate :: rest => do
-    if ← condition ctx variables candidate then .ok (some candidate.flow) else firstTrue ctx variables rest
+    if ← condition ctx context candidate then .ok (some candidate) else firstTrue ctx context rest
 
-def exclusive (ctx : Ctx) (candidates : List ConditionalFlow) (default : Option FlowId) (scope : ScopeOccurrenceId)
+def exclusive (ctx : Ctx) (candidates : List FlowId) (default : Option FlowId) (occurrence : Occurrence)
     (state : State) : Outcome := do
-  let chosen ← firstTrue ctx (state.visible scope) candidates
+  let chosen ← firstTrue ctx (state.evalContext occurrence.scope) candidates
   match chosen <|> default with
-  | some flow => .ok (state.emit [flow] scope)
+  | some flow => .ok (complete state occurrence.id (.flows [flow]))
   | none => .error (.rolledBack "exclusive-gateway-no-outgoing-flow")
 
-/-- An inclusive split. A gateway that lists no candidates is a pure join whose outgoing flows are unconditioned
-(the lowering lists candidates only for a diverging gateway), so it emits on all of them. -/
-def inclusiveSplit (ctx : Ctx) (candidates : List ConditionalFlow) (default : Option FlowId) (outgoing : List FlowId)
-    (scope : ScopeOccurrenceId) (state : State) : Outcome := do
-  if candidates.isEmpty then return state.emit outgoing scope
-  let variables := state.visible scope
-  let chosen ← candidates.filterM (condition ctx variables)
-  match chosen.map (·.flow), default with
-  | [], some flow => .ok (state.emit [flow] scope)
+/-- The flows an inclusive split takes. A gateway that lists no candidates is a pure join whose outgoing flows are
+unconditioned, so it takes all of them. -/
+def inclusiveFlows (ctx : Ctx) (candidates : List FlowId) (default : Option FlowId) (outgoing : List FlowId)
+    (scope : ScopeOccurrenceId) (state : State) : Except Failure (List FlowId) := do
+  if candidates.isEmpty then return outgoing
+  let chosen ← candidates.filterM (condition ctx (state.evalContext scope))
+  match chosen, default with
+  | [], some flow => .ok [flow]
   | [], none => .error (.rolledBack "inclusive-gateway-no-outgoing-flow")
-  | flows, _ => .ok (state.emit flows scope)
+  | flows, _ => .ok flows
+
+/-- `Hooks.select`. Under `ConditionOrder.beforeOutputs` a completion's outgoing conditions are evaluated before its
+output writes, from inside the scope occurrence it still owns, which holds an Activity's locals (CIB-INT-0011); under
+BPMN order `outflow` resolves the leave after the writes. -/
+def select (ctx : Ctx) (occurrence : Occurrence) (leave : Leave) (state : State) : Except Failure Leave :=
+  match ctx.program.options.conditionOrder, leave with
+  | .afterOutputs, _ => .ok leave
+  | .beforeOutputs, .flows _ => .ok leave
+  | .beforeOutputs, .raised => .ok leave
+  | .beforeOutputs, .outgoing =>
+    match ctx.program.element? occurrence.element with
+    | none => .error (.semanticFailure "outflow-without-element")
+    | some element => do
+      let inside := ((state.scopes.find? (·.occurrence == some occurrence.id)).map (·.id)).getD occurrence.scope
+      .ok (.flows (← element.outgoing.filterM (condition ctx (state.evalContext inside))))
 
 /-- The flows leaving an element, its boundaries' flows included. -/
 def leaving (element : Element) : List FlowId :=
   match element.envelope? with
   | some envelope => envelope.outgoing ++ envelope.boundaries.flatMap (·.outgoing)
-  | none =>
-    ((element.event?.map (·.2.outgoing)) <|> (element.gateway?.map (·.2.outgoing)) <|>
-      (element.start?.map (·.2.outgoing))).getD []
+  | none => element.outgoing
 
 /-- The Link catch Events named `name` among the siblings of `parent`. -/
 def linkCatches (program : Program) (parent : Option ElementId) (name : String) : List (Header × EventPayload) :=
@@ -118,60 +141,71 @@ def positions (program : Program) (state : State) (gateway : ElementId) (scope :
     |>.flatMap (continuing ·.element)
   let children := (state.scopes.filter (·.parent == some scope)).flatMap fun child =>
     (child.element.map continuing).getD []
-  let parked := (state.slots.parked.filter fun token =>
-      token.scope == scope && program.target? token.flow != some gateway).flatMap fun token =>
-    ((program.target? token.flow).map continuing).getD []
+  let parked := (state.slots.parked.filter fun waiting =>
+      waiting.scope == scope && program.target? waiting.flow != some gateway).flatMap fun waiting =>
+    ((program.target? waiting.flow).map continuing).getD []
   queued ++ items ++ children ++ parked
 
-def park (state : State) (arrival : Arrival) : State :=
-  { state with slots := { state.slots with parked := state.slots.parked ++ [{ flow := arrival.flow, scope := arrival.scope }] } }
-
-/-- Remove one parked token from each of `flows` in `scope`. -/
-def unpark (state : State) (flows : List FlowId) (scope : ScopeOccurrenceId) : State :=
-  let parked := flows.foldl (fun parked flow =>
-    let (before, after) := parked.span fun token => !(token.flow == flow && token.scope == scope)
-    before ++ after.drop 1) state.slots.parked
-  { state with slots := { state.slots with parked } }
+def park (state : State) (waiting : Parked) : State :=
+  { state with slots := { state.slots with parked := state.slots.parked ++ [waiting] } }
 
 def filled (state : State) (incoming : List FlowId) (scope : ScopeOccurrenceId) : List FlowId :=
-  incoming.filter fun flow => state.slots.parked.any fun token => token.flow == flow && token.scope == scope
+  incoming.filter fun flow => state.slots.parked.any fun waiting => waiting.flow == flow && waiting.scope == scope
 
-/-- Park the arrival at a join and fire when `ready` holds; a gateway with one incoming flow passes it on. -/
-def join (incoming : List FlowId) (arrival : Arrival) (state : State) (ready : State → Bool)
-    (fire : State → Outcome) : Outcome :=
-  if incoming.length ≤ 1 then fire state
+/-- The occurrences a firing join consumes: the first parked on each filled flow. -/
+def consumed (state : State) (incoming : List FlowId) (scope : ScopeOccurrenceId) : List Parked :=
+  incoming.filterMap fun flow => state.slots.parked.find? fun waiting => waiting.flow == flow && waiting.scope == scope
+
+def unpark (state : State) (consumed : List Parked) : State :=
+  { state with slots := { state.slots with parked := state.slots.parked.filter (!consumed.contains ·) } }
+
+/-- Park the occurrence at a join and fire when `ready` holds; a gateway with one incoming flow passes it on. When the
+join fires, the arriving occurrence, if consumed, is the one that leaves with the flows and the others end with
+none. -/
+def join (occurrence : Occurrence) (incoming : List FlowId) (state : State) (ready : State → Bool)
+    (flows : State → Except Failure (List FlowId)) : Outcome := do
+  let some flow := occurrence.incoming | .error (.semanticFailure "gateway-without-flow")
+  if incoming.length ≤ 1 then .ok (complete state occurrence.id (.flows (← flows state)))
   else
-    let parked := park state arrival
-    if ready parked then fire (unpark parked (filled parked incoming arrival.scope) arrival.scope)
-    else .ok parked
+    let parked := park state { occurrence := occurrence.id, flow, scope := occurrence.scope }
+    if !ready parked then .ok parked
+    else
+      let consumed := consumed parked incoming occurrence.scope
+      let unparked := unpark parked consumed
+      let selected ← flows unparked
+      let firing :=
+        if consumed.any (·.occurrence == occurrence.id) then occurrence.id
+        else (consumed.getLast?.map (·.occurrence)).getD occurrence.id
+      let others := (consumed.map (·.occurrence)).filter (· != firing)
+      .ok (complete (others.foldl (complete · · (.flows [])) unparked) firing (.flows selected))
 
-def arriveGateway (ctx : Ctx) (header : Header) (payload : GatewayPayload) (arrival : Arrival) (state : State) :
+def arriveGateway (ctx : Ctx) (header : Header) (payload : GatewayPayload) (occurrence : Occurrence) (state : State) :
     Outcome :=
-  let scope := arrival.scope
+  let scope := occurrence.scope
   match payload.kind with
-  | .exclusive candidates default => exclusive ctx candidates default scope state
+  | .exclusive candidates default => exclusive ctx candidates default occurrence state
   | .parallel =>
-    join payload.incoming arrival state
+    join occurrence payload.incoming state
       (fun parked => (filled parked payload.incoming scope).length == payload.incoming.length)
-      (fun state => .ok (state.emit payload.outgoing scope))
+      (fun _ => .ok payload.outgoing)
   | .inclusive candidates default =>
-    join payload.incoming arrival state
+    join occurrence payload.incoming state
       (fun parked =>
         let empty := payload.incoming.filter (!(filled parked payload.incoming scope).contains ·)
         !reaches ctx.program header.id empty (positions ctx.program parked header.id scope))
-      (inclusiveSplit ctx candidates default payload.outgoing scope)
-  | .eventBased _ => .ok (state.signal (.armGateway header.id scope))
+      (inclusiveFlows ctx candidates default payload.outgoing scope)
+  | .eventBased => .ok (state.signal (.armGateway occurrence.id header.id scope))
 
 /-- A throwing Link continues at the catching Link of the same name in the same process level or Sub-Process
 (BPMN 2.0.2 §10.5.6); a catching Link reached by a flow passes the token on. -/
-def arriveLink (ctx : Ctx) (header : Header) (payload : EventPayload) (arrival : Arrival) (state : State) :
+def arriveLink (ctx : Ctx) (header : Header) (payload : EventPayload) (occurrence : Occurrence) (state : State) :
     Outcome :=
   match payload.linkThrow? with
   | some name =>
     match linkCatches ctx.program header.parent name with
-    | [(_, target)] => .ok (state.emit target.outgoing arrival.scope)
+    | [(_, target)] => .ok (complete state occurrence.id (.flows target.outgoing))
     | [] => .error (.semanticFailure "link-without-catch")
     | _ :: _ :: _ => .error (.semanticFailure "link-ambiguous-catch")
-  | none => .ok (state.emit payload.outgoing arrival.scope)
+  | none => .ok (complete state occurrence.id .outgoing)
 
 end Kernel.Feature.Flow

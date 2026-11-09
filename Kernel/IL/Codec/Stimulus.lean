@@ -55,42 +55,54 @@ def effectOutcomeFromJson (json : Json) : Except String EffectOutcome := do
 does not accept yet. -/
 def stimulusFromJson (json : Json) : Except String (String × Option Input) := do
   let commandId ← json.getObjValAs? String "commandId"
+  -- `at`, the input's logical time in milliseconds, is optional; absent or null leaves the clock unchanged.
+  let atMs ← match json.getObjVal? "at" with
+    | .error _ => pure none
+    | .ok Json.null => pure none
+    | .ok _ => some <$> json.getObjValAs? Nat "at"
   let input : Option Input ← match ← json.getObjValAs? String "kind" with
     | "startProcess" =>
       pure (some (.start { instanceId := ← json.getObjValAs? String "instanceId"
-                           variables := ← bindingsField json "initialVariables" }))
+                           variables := ← bindingsField json "initialVariables", atMs }))
     | "triggerTimerStart" | "triggerMessageStart" =>
       pure (some (.start { instanceId := ← json.getObjValAs? String "instanceId"
-                           startEvent := some ⟨← json.getObjValAs? String "startEventId"⟩ }))
+                           startEvent := some ⟨← json.getObjValAs? String "startEventId"⟩, atMs }))
     | "completeUserTaskInstance" =>
       let occurrence ← occurrenceFromJson (← json.getObjVal? "taskId")
-      pure (some (.command { occurrence, action := .completeUserTask (← bindingsField json "submittedValues") }))
+      pure (some (.command { occurrence, action := .completeUserTask (← bindingsField json "submittedValues"), atMs }))
     | "deliverMessage" =>
       pure (some (.deliver { occurrence := ← occurrenceFromJson (← json.getObjVal? "subscriptionId")
-                             channel := ← channelFromJson (← json.getObjVal? "channel") }))
+                             trigger := .message (← channelFromJson (← json.getObjVal? "channel")), atMs }))
     | "deliverPayloadMessage" =>
       pure (some (.deliver { occurrence := ← occurrenceFromJson (← json.getObjVal? "subscriptionId")
-                             channel := ← channelFromJson (← json.getObjVal? "channel")
-                             payload := some (← valueFromJson (← json.getObjVal? "payload")) }))
+                             trigger := .message (← channelFromJson (← json.getObjVal? "channel"))
+                             payload := some (← valueFromJson (← json.getObjVal? "payload")), atMs }))
     | "fireTimer" =>
       pure (some (.timerFire { occurrence := ← occurrenceFromJson (← json.getObjVal? "timerId")
-                               logicalTimeMs := ← json.getObjValAs? Nat "logicalTimeMs" }))
+                               logicalTimeMs := ← json.getObjValAs? Nat "logicalTimeMs", atMs }))
     | "completeEffect" =>
       pure (some (.effectResult { occurrence := ← occurrenceFromJson (← json.getObjVal? "effectId")
-                                  outcome := ← effectOutcomeFromJson (← json.getObjVal? "result") }))
+                                  outcome := ← effectOutcomeFromJson (← json.getObjVal? "result"), atMs }))
     | "reportEffectFailure" =>
       pure (some (.effectResult { occurrence := ← occurrenceFromJson (← json.getObjVal? "effectId")
-                                  outcome := .technicalFailure }))
+                                  outcome := .technicalFailure, atMs }))
     | "retryIncident" =>
       let incident ← json.getObjVal? "incidentId"
       pure (some (.command { occurrence := ← occurrenceFromJson (← incident.getObjVal? "effectId")
-                             action := .retryIncident }))
+                             action := .retryIncident, atMs }))
     | "cancelIncidentProcess" =>
       let incident ← json.getObjVal? "incidentId"
       pure (some (.command { occurrence := ← occurrenceFromJson (← incident.getObjVal? "effectId")
-                             action := .cancelIncidentProcess }))
+                             action := .cancelIncidentProcess, atMs }))
     | _ => pure none
   pure (commandId, input)
+
+/-- The refusal or failure code a failure carries. -/
+def failureCode : Failure → String
+  | .rejected code => code
+  | .rolledBack code => code
+  | .semanticFailure code => code
+  | .unsupported code => code
 
 def failureName : Failure → String
   | .rejected _ => "rejected"

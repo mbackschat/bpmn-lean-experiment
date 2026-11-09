@@ -7,6 +7,7 @@
 import { asElement, asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { indexCompensation } from "./compensation.js";
+import { conditionExpression } from "./data.js";
 import { readEvent } from "./events.js";
 import { readGateway } from "./flow.js";
 import {
@@ -173,20 +174,33 @@ function buildProgramElements(ctx: ReadContext): KernelJson[] {
   return built.flatMap((entry) => (entry.kind === "element" ? [entry.build(boundaries.get(entry.id) ?? [])] : []));
 }
 
-const conditionReadingKinds: ReadonlySet<FlowElementKind> = new Set([FlowElementKind.ExclusiveGateway, FlowElementKind.InclusiveGateway]);
-
-/** BPMN facts with no IL field yet (the conditional and default outflows of an Activity, a Transaction's method). */
-function structuralFacts(ctx: ReadContext): SourceFactNotCarried[] {
-  const conditional = ctx.flows.filter((flow) => asElement(flow.conditionExpression) !== undefined &&
-    !conditionReadingKinds.has(ctx.nodes.get(String(endpoint(flow, "sourceRef")))?.kind ?? FlowElementKind.SequenceFlow));
-  const facts: SourceFactNotCarried[] = conditional.map((flow) => ({ element: optionalId(flow), fact: "conditionExpression on a non-gateway source" }));
-  for (const { element, kind } of ctx.nodes.values()) {
-    const gateway = conditionReadingKinds.has(kind);
-    if (!gateway && asElement(element.default) !== undefined) facts.push({ element: optionalId(element), fact: "default" });
-    if (kind === FlowElementKind.Transaction && Object.hasOwn(element, "method")) facts.push({ element: optionalId(element), fact: "method" });
-  }
-  return facts;
+/** A Sequence Flow carries its own condition, whatever its source (BPMN 2.0.2 §13.2.1, §13.3.3). */
+function readFlow(ctx: ReadContext, flow: ElementRecord): KernelJson {
+  const condition = asElement(flow.conditionExpression);
+  return {
+    id: requireId(flow),
+    source: endpoint(flow, "sourceRef"),
+    target: endpoint(flow, "targetRef"),
+    condition: condition === undefined ? null : conditionExpression(ctx, condition),
+  };
 }
+
+/**
+ * The item names a process declares at its instance root (BPMN 2.0.2 §10.4.1): its Properties, the Data Objects and
+ * Data Object references among its own flow elements, and its own Data Inputs and Outputs. A Data Store holds no
+ * instance data, and a Sub-Process's Data Objects are not the process's.
+ */
+function declaredItems(process: ElementRecord): string[] {
+  const io = asElement(process.ioSpecification) ?? {};
+  const data = list(process, "flowElements")
+    .filter((element) => element.$type === "bpmn:DataObject" || element.$type === "bpmn:DataObjectReference");
+  return [...list(process, "properties"), ...data, ...list(io, "dataInputs"), ...list(io, "dataOutputs")]
+    .map(requireId).sort(compareIds);
+}
+
+/** A process these Definitions carry: its key is its id, and no deployment has bound it yet. */
+const processDefinition = (key: string): KernelJson =>
+  ({ key, version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null });
 
 function collectNotCarried(ctx: ReadContext & { consumedBy: (element: ElementRecord) => ReadonlySet<string> },
   processes: ReadonlyArray<ElementRecord>): SourceFactNotCarried[] {
@@ -196,8 +210,7 @@ function collectNotCarried(ctx: ReadContext & { consumedBy: (element: ElementRec
     const loop = asElement(node.element.loopCharacteristics);
     if (loop !== undefined) owners.push(loop);
   }
-  return [...structuralFacts(ctx),
-    ...owners.flatMap((element) => uncarriedFacts(element, ctx.definitions, ctx.consumedBy(element), ctx.inertAttributes))];
+  return owners.flatMap((element) => uncarriedFacts(element, ctx.definitions, ctx.consumedBy(element), ctx.inertAttributes));
 }
 
 /** Reads one BPMN source to the kernel IL; `options` are copied into the Program and select nothing here. */
@@ -217,10 +230,12 @@ export async function readKernelProgram(source: KernelSource, options: KernelPro
       identity: { processId: requireId(ctx.rootProcess), sourceSha256: parsed.sha256, profile: source.profile },
       options,
       elements,
-      flows: ctx.flows.map((flow) => ({ id: requireId(flow), source: endpoint(flow, "sourceRef"), target: endpoint(flow, "targetRef") })),
+      flows: ctx.flows.map((flow) => readFlow(ctx, flow)),
+      variables: declaredItems(ctx.rootProcess),
       processes: processes.filter((process) => process !== ctx.rootProcess)
         .sort((left, right) => compareIds(requireId(left), requireId(right)))
-        .map((process) => ({ id: requireId(process), children: childIds(ctx, process) })),
+        .map((process) => ({ definition: processDefinition(requireId(process)), children: childIds(ctx, process),
+          variables: declaredItems(process) })),
     };
     return { kind: "read", program, notCarried };
   } catch (error: unknown) {

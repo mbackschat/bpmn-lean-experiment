@@ -23,10 +23,10 @@ The counts below cover only entries recorded by this project, including the sepa
 | Lane | Recorded entries | Open candidates | Meaning |
 |---|---:|---:|---|
 | Normative agreement records | 19 | 2 | A bounded BPMN requirement and pinned CIB observation agree; candidates remain unapproved |
-| Permitted operational details | 9 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
+| Permitted operational details | 12 | 0 | CIB or the oracle adapter chooses host mechanics without changing required BPMN observations |
 | Confirmed normative deviations | 0 | 1 | Clear BPMN requirement and pinned CIB evidence establish incompatible behavior |
-| CIB interpretations of BPMN gaps or inconsistencies | 3 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
-| CIB extension records | 20 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
+| CIB interpretations of BPMN gaps or inconsistencies | 10 | 0 | CIB selects an operational meaning where BPMN does not uniquely settle it |
+| CIB extension records | 27 | 3 | Project profile deliberately includes behavior beyond bare BPMN execution; candidates remain unselected |
 | Configuration-specific realizations | 9 | 1 | Behavior is permitted or meaningful only under a declared CIB environment |
 | Known CIB limitations within reviewed scope | 3 | 0 | Unsupported or incomplete behavior that is not yet classified as a normative deviation |
 
@@ -376,7 +376,9 @@ The nested scope-data profile adopts that resolution as the semantic outcome `ro
 
 **Evidence:** The [calibration probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenExclusiveChoiceWithoutDefaultProbeTest.java) and the [Exclusive Choice without a default account](capsules/EXCLUSIVE-CHOICE-WITHOUT-DEFAULT-SPEC.md).
 
-**Boundary:** This interpretation covers only root-body Choices of the nested scope-data profile with Simple Boolean conditions, reached by a Start or a User Task completion. It does not cover a no-match after an effect result, incidents, job retries, a converging or mixed gateway, or any other profile.
+A diverging Inclusive Gateway with no selected flow and no default rolls its command back the same way: BPMN Table 13.3 throws, and CIB `InclusiveGatewayActivityBehavior:82` raises `stuckExecutionException`. The kernel's `Flow.inclusiveSplit` shares the Exclusive rule's outcome.
+
+**Boundary:** This interpretation covers only root-body Choices and diverging Inclusive Gateways of the nested scope-data profile with Simple Boolean conditions, reached by a Start or a User Task completion. It does not cover a no-match after an effect result, incidents, job retries, a converging or mixed gateway, or any other profile.
 
 ### CIB-INT-0004 — a Receive Task without a Message waits for an occurrence-addressed trigger
 
@@ -415,6 +417,56 @@ The project standards profile does not adopt that counter identity. It keeps nor
 **Evidence:** The [public-service phase-zero probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSequentialMultiInstancePhaseZeroProbeTest.java), the pinned `SequentialMultiInstanceActivityBehavior`, and the [selected counter resolution](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md#normative-account-and-selected-resolutions).
 
 **Boundary:** This interpretation covers only the exact sequential collection-driven fixture under `CIB-CFG-0001`. It says nothing about parallel Multi-Instance, runtime modification, migration, completion conditions, compensation, or project public counter names.
+
+### CIB-INT-0007 — a Sub-Process left abnormally completes normally
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.abnormalScopeEnd`; no calibration probe yet
+
+BPMN says a Sub-Process left by a Terminate End or by an interrupting Event Sub-Process is "abnormally terminated" (§13.3.4, §13.5.6) and leaves the parent's continuation open. CIB Seven `2.2.0` completes such a Sub-Process normally and takes its outgoing flows.
+
+**Evidence:** Pinned `SubProcessActivityBehavior#complete`, and the kernel rule basis in the [row traceability](kernel/ROW-TRACEABILITY-MAP.md#rule-basis) (`Propagation`, `Scopes.startEventSubProcess`, `Step`).
+
+**Boundary:** The kernel implements only this normal continuation; the standards reading (`AbnormalScopeEnd.withoutOutflow`) refuses a program whose shape reaches it with `profile.abnormalScopeEnd.withoutOutflow`.
+
+### CIB-INT-0008 — a repeating Timer without a start date first fires one period after arming
+
+**Status:** Recorded bounded interpretation from the pinned source; no calibration probe yet
+
+BPMN §10.5.6 does not fix the first firing of an ISO-8601 cycle `R/<duration>` that has no start date. CIB Seven `2.2.0` takes the arming time as the start and returns the first date after it, which is one period after arming.
+
+**Evidence:** Pinned `DurationHelper` (the constructor defaults an absent start and end to the current time) and `DurationHelper#getDateAfterRepeat`; the kernel's `Subscriptions.timerDetail`.
+
+**Boundary:** Iso-8601 cycles with a literal `R/<duration>` on attached subscriptions and Event Sub-Process starts only. Cron cycles, cycles with a start or end date, and a process zone are refused at admission.
+
+### CIB-INT-0009 — on the final Multi-Instance completion, sequential tests exhaustion first and parallel tests the condition first
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.multiInstanceFinalBody`
+
+BPMN §13.3.7 evaluates the completion condition on every completion. CIB Seven `2.2.0` skips it on the sequential mode's final completion, which `loopCounter == nrOfInstances` short-circuits, and evaluates it first in parallel mode.
+
+**Evidence:** Pinned `SequentialMultiInstanceActivityBehavior:53` and `ParallelMultiInstanceActivityBehavior:96`; the kernel's `MultiInstance.completeInstance`.
+
+**Boundary:** The observable difference is whether the final completion's condition evaluates, not any other Multi-Instance counter. `MultiInstanceFinalBody.conditionEveryCompletion` keeps the BPMN evaluation.
+
+### CIB-INT-0010 — at one catching scope an Event Sub-Process precedes a boundary, and an exact code precedes a catch-all
+
+**Status:** Recorded bounded interpretation from the pinned source; no calibration probe yet
+
+BPMN Table 10.88 lets an exact-code and a catch-all catcher both catch, and §10.5.1 names the nearest catcher only. CIB Seven `2.2.0` orders catchers at one scope by precedence: an Event Sub-Process start has precedence 10 over a boundary's 0, and a catcher with a code gets one more than a catch-all's.
+
+**Evidence:** Pinned `BpmnParse:1221` (`setPrecedence(10)`), `ErrorEventDefinition#getPrecedence` ("handlers with error code take precedence over catchall-handlers"); the kernel's `Propagation.searchScopes` and `Subscriptions.codePrecedence`.
+
+**Boundary:** Error and Escalation catches at one catching scope. It does not cover searches across scopes, which §10.5.1 settles as nearest first, or a boundary's own catch-all order against another boundary with the same code.
+
+### CIB-INT-0011 — an Activity's outgoing conditions evaluate before its output writes
+
+**Status:** Recorded bounded interpretation from the pinned source; selected by `ProfileOptions.conditionOrder.beforeOutputs`; no admitted row reaches it yet
+
+BPMN §13.3.2 writes an Activity's outputs before it leaves, so a condition reads them (`ConditionOrder.afterOutputs`). CIB Seven `2.2.0` evaluates the outgoing conditions when the Activity leaves, against the execution that still holds the Activity's locals, and runs its output parameters only when the Activity ends after that.
+
+**Evidence:** Pinned `BpmnActivityBehavior#performOutgoingBehavior:81-92` for the evaluation and `ExecutionEntity:524` for the output parameters; the kernel's `Feature.Flow.select`.
+
+**Boundary:** Conditional Sequence Flows out of an Activity. `flow.conditionalOutflow` still refuses them at admission, so the option has no observable effect until a row admits them.
 
 ## Known limitation register
 
@@ -729,6 +781,46 @@ BPMN 2.0.2 Clause 10.3.3 defines the Send Task as a Task that sends a Message to
 
 **Evidence:** The [Send Task probe](../runners/cibseven/src/test/java/org/bpmnlean/cibseven/CibSevenSendTaskProbeTest.java) drives the [retained shipping notice and claim acknowledgement](../scenarios/send-task/README.md) in CIB `2.2.0` (2026-11-03), running every continuation job before the next command: each send is one job, then one delegate invocation whose locals are exactly the evaluated inputs (the customer's address as `recipient`, the order as `correlationId`, the literal channel; the claim reference), then one ended historic activity instance of type `sendTask` with no task entity, and the Process variables keep only the Start bindings, in both completion orders of the claim's fork.
 
+### CIB-EXT-0024 — an unresolved input or output parameter expression fails its evaluation
+
+**Status:** Inferred from the pinned source; not verified by a calibration probe; verify before a profile selects it
+
+An unresolved `camunda:inputParameter` or `outputParameter` expression raises an evaluation failure that rolls the command back; it is not an unavailable Data Input, which holds the token (§13.3.2).
+
+**Evidence:** Pinned `JuelExpression#getValue` throws `ProcessEngineException` ("Unknown property used in expression"); the kernel's `Mapping.dialect` rule in `Ctx.evaluateMappings`. The rule basis marks this reading inferred.
+
+**Boundary:** Expressions the kernel evaluates. `MappingDialect.dataAssociation` keeps the BPMN availability rule, and the kernel holds an unavailable InputSet only for that dialect.
+
+### CIB-EXT-0025 — Message correlation by API criteria and delivered variables
+
+**Status:** Recorded extension from the pinned source; not selected by the standards reading (`ProfileOptions.messageCorrelation`, `ProfileOptions.deliveryVariables`)
+
+Correlation criteria are API-supplied and match Process or local variables, business key or instance identity, and delivered variables install without a modeled output.
+
+**Evidence:** Pinned `MessageCorrelationBuilderImpl` (`processInstanceVariableEquals`, `localVariableEquals`, `setVariable`); the kernel's `DeliveryInput.correlation`.
+
+**Boundary:** The kernel carries the criteria shape, and `profile.messageCorrelation.apiCriteria` and `profile.deliveryVariables.installs` refuse these options until a row admits them.
+
+### CIB-EXT-0026 — a continuation failure after an effect result fails the job
+
+**Status:** Recorded extension; selected only by `ContinuationFailure.incident`
+
+A failure in a continuation reached by an effect result fails the job and raises an incident instead of rolling back, the path CIB-INT-0003 excludes from its own boundary and CIB-EXT-0013 describes for a failing job.
+
+**Evidence:** The boundary of CIB-INT-0003 and the [failed-job account in CIB-EXT-0013](#cib-ext-0013-failed-job-service-task-incident-and-retry); the kernel's `Step.effectContinuation`.
+
+**Boundary:** A `.rolledBack` continuation of a successful effect result under `ContinuationFailure.incident` only.
+
+### CIB-EXT-0027 — an asynchronous continuation commits the input at its boundary
+
+**Status:** Recorded extension from the pinned source, read under every profile; success path and failure split verified by one local probe against published CIB Seven `2.2.0` on 2026-11-08
+
+`camunda:asyncBefore` and `camunda:asyncAfter` are transaction boundaries. CIB commits the command at the boundary and continues in a job, so a failure after the boundary fails that job, with its retries and incidents (`CIB-EXT-0013`), and the part before it stays committed. The kernel runs a closure across a boundary as one input and does not split it: a closure that rolls back or fails after it crossed a boundary is `unsupported` (`async-boundary-failure`), never a rollback of the whole input. A closure that does not fail is unchanged, because CIB reaches the same committed state once the job has run.
+
+**Evidence:** Pinned `ExecutionEntity#performOperation` asks each atomic operation `isAsync` and, when it is, `scheduleAtomicOperationAsync` sends a message job instead of continuing. `PvmAtomicOperationTransitionCreateScope` and `PvmAtomicOperationActivityStartCreateScope` answer with `isAsyncBefore`, before the Activity's scope, start listeners and input mappings; `PvmAtomicOperationTransitionNotifyListenerTake` and `PvmAtomicOperationActivityEnd` answer with `isAsyncAfter`, after the Activity ended and before its outgoing flows are taken; `AsyncContinuationJobHandler` continues the stored operation in the job's own transaction. The probe ran the sequential User Task model with and without `asyncBefore` on the task: after the one continuation job ran, the open task, the activity history and the completed instance were identical. With `asyncAfter` on the task and an Exclusive Gateway whose conditions are all false behind it, completing the task committed, and the continuation job failed with `ENGINE-02004` and two retries left. The kernel's `Step.crossed` and `Step.deferred` own the rule.
+
+**Boundary:** The marks on Activities and Sub-Processes (`Envelope.asyncBefore`, `asyncAfter`), read conservatively: any rollback or semantic failure after any crossing in the same input is `unsupported`, including one on a concurrent branch that CIB would roll back together with the boundary's job. Job identity, retries, exclusivity and priority, the separate Multi-Instance body and instance marks, and asynchronous continuations on Events and Gateways stay outside; no job or transaction-timing equivalence is claimed.
+
 ## Permitted operational-detail register
 
 ### CIB-OP-0001 — CIB host task identity mapped to project semantic task identity
@@ -854,6 +946,16 @@ For the one admitted addressless Receive Task, the oracle adapter finds the exec
 **Evidence:** The [addressless Receive Task scenario](../scenarios/addressless-receive-task/README.md), its content-bound retained result and the [addressless Receive Task account](capsules/ADDRESSLESS-RECEIVE-TASK-SPEC.md).
 
 **Boundary:** The mapping is limited to one live activation-`1` addressless Receive Task wait in one Process instance. It does not establish repeated activation, multiple waits, signal names, trigger variables or signals to other activities.
+
+### CIB-OP-0012 — a CIB-generated called instance identifier mapped to the project's derived `call:` identity
+
+**Status:** Recorded operational mapping
+
+CIB generates a process instance identifier per Call. BPMN prescribes no host identity, and the project derives a stable one from the calling instance, the Call Activity and its activation, each part length-prefixed so nested identifiers cannot collide.
+
+**Evidence:** The kernel's `State.calledInstanceId`, and [row traceability](kernel/ROW-TRACEABILITY-MAP.md#rule-basis).
+
+**Boundary:** Identity of a called instance only. The called definition is bound per instance in `InstanceData.definition`, and CIB's generated identifier is not exposed.
 
 ## Configuration-specific register
 

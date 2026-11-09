@@ -11,7 +11,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { BpmnCompilationStatus, compileBpmnToSemanticProcess } from "@bpmn-lean/bpmn-source";
 import type { KernelJson } from "@bpmn-lean/bpmn-source";
 import { firstValueDisagreement } from "@bpmn-lean/differential";
 import type { ValueDisagreement } from "@bpmn-lean/differential";
@@ -19,12 +18,11 @@ import { runPopulation, runScenario } from "@bpmn-lean/kernel";
 import type { Scenario } from "@bpmn-lean/semantic-core";
 
 import { parseWireJsonBytes } from "../../../scripts/strict-json.ts";
-import { lowerCaseToKernel } from "./kernel-program.ts";
+import { readCaseKernelProgram } from "./kernel-program.ts";
 import { runLeanKernelPopulation, runLeanKernelScenario, writeProgram } from "./kernel-targets.ts";
 import { projectRoot } from "./pipeline-target-support.ts";
 
 const discoveryRoots = ["scenarios", "packages/differential/test/fixtures"];
-const compilationLimits = { maxBytes: 1024 * 1024, parserDeadlineMs: 1_000 };
 
 type SourceDefinition = Readonly<{ id: string; relativePath: string; sha256: string }>;
 type PopulationScenario = Readonly<{ id: string; profile: string; definitions: ReadonlyArray<SourceDefinition> }>;
@@ -73,20 +71,10 @@ async function boundOverlay(relativePath: string, scenario: Scenario) {
 async function kernelProgramFor(
   source: Readonly<{ relativePath: string; id: string; sha256: string }>,
   profile: string,
-  sourceOverlay: Awaited<ReturnType<typeof boundOverlay>>,
+  overlay: Awaited<ReturnType<typeof boundOverlay>>,
 ): Promise<KernelJson> {
-  const compilation = await compileBpmnToSemanticProcess({
-    bytes: await readFile(path.join(projectRoot, source.relativePath)),
-    sourceId: source.id,
-    expectedSha256: source.sha256,
-    sourceOverlay,
-    semanticProfile: profile,
-    limits: compilationLimits,
-  });
-  if (compilation.status !== BpmnCompilationStatus.Accepted) {
-    throw new Error(`BPMN compilation was rejected for ${source.relativePath}: ${JSON.stringify(compilation.diagnostics)}`);
-  }
-  return lowerCaseToKernel(compilation.checkedProcess, profile);
+  const bytes = await readFile(path.join(projectRoot, source.relativePath));
+  return readCaseKernelProgram({ relativePath: source.relativePath, bytes, sha256: source.sha256, overlay }, profile);
 }
 
 /** JSON serialization erases the undefined members a TypeScript result may carry and Lean's cannot. */

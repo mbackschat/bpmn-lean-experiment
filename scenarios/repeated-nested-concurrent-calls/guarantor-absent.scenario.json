@@ -104,7 +104,7 @@
       "taskId": {
         "processInstanceId": "call:14:Loan_unvouched:15:VerifyGuarantor:1",
         "elementId": "CollectDocument",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": []
     },
@@ -114,7 +114,7 @@
       "taskId": {
         "processInstanceId": "call:14:Loan_unvouched:15:VerifyGuarantor:1",
         "elementId": "RecordVerdict",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": [
         {

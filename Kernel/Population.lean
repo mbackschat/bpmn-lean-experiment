@@ -5,15 +5,17 @@ public import Kernel.Step
 /-! # Population
 
 Mechanisms across process instances ([proposal](../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#population)). Every input
-reaches an instance through `Step.step`; this layer only decides which instance an input goes to. Implemented:
-instances of possibly different definitions, each driven by its own inputs, and Message key correlation with
-exact-cardinality routing ([specification](../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#global-command-and-runtime-contract)):
-a publication addresses one deployed definition, process, Message channel and correlation key; the candidates are
-the open subscriptions of that definition's instances that `Hooks.correlates` accepts; exactly one is delivered to,
-while zero or several reject the publication and change no instance. Candidate order never picks a winner.
+reaches an instance through `Step.step`; this layer only decides which instance an input goes to. A scenario is one
+ordered list of stimuli mixing instance inputs and population stimuli. Implemented: instances of possibly different
+definitions, each driven by its own inputs, and Message key correlation with exact-cardinality routing
+([specification](../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#global-command-and-runtime-contract)): a publication
+addresses one deployed definition, process, Message channel and correlation key; the candidates are the open
+subscriptions of that definition's instances that `Hooks.correlates` accepts; exactly one is delivered to, while zero
+or several reject the publication and change no instance. Candidate order never picks a winner.
 
-A failure here is a harness refusal with a stable code, never a semantic outcome: an instance input that does not
-commit, a publication that names no deployed definition, or a candidate whose key cannot be evaluated.
+An instance input that does not commit and a delivery a target refuses are results, never harness errors. A harness
+refusal, with a stable code, is a publication that names no deployed definition or carries an empty payload; a
+candidate whose key cannot be evaluated is no match.
 -/
 
 public section
@@ -28,7 +30,7 @@ structure Overlay where
 
 /-- A deployed definition's identity as a publication addresses it: definitions whose local identifiers agree but
 whose source, overlay or profile differ are distinct (specification, global command). -/
-structure DefinitionRef where
+structure DeploymentRef where
   sourceId : String
   sourceSha256 : String
   overlay : Option Overlay
@@ -36,12 +38,12 @@ structure DefinitionRef where
   deriving DecidableEq, Repr
 
 structure Definition where
-  ref : DefinitionRef
+  ref : DeploymentRef
   program : Program
 
 /-- A correlated publication's address. -/
 structure Address where
-  definition : DefinitionRef
+  definition : DeploymentRef
   processId : String
   channel : MessageChannel
   correlationKey : String
@@ -58,6 +60,8 @@ structure Instance where
 
 inductive Resolution where
   | committed (target : OccurrenceRef)
+  /-- The sole candidate refused the delivery; nothing changed. -/
+  | failed (target : OccurrenceRef) (failure : Failure)
   | noMatch
   | ambiguous
 
@@ -67,40 +71,36 @@ structure PublicationResult where
   ingressOrdinal : Nat
   resolution : Resolution
 
+/-- One population scenario stimulus, in scenario order: an input for the instance of `script`, or a publication. -/
+inductive Stimulus where
+  | input (script : Nat) (definition : Definition) (commandId : String) (input : Input)
+  | publish (publication : Publication)
+
 structure Result where
   publications : List PublicationResult
   /-- Ordered by process instance identifier, whatever order they started in. -/
   instances : List Instance
+  /-- The instance inputs that did not commit, with their failures. -/
+  inputFailures : List (String × Failure)
 
-/-- Start one instance and apply its inputs; each must commit. -/
-def startInstance (hooks : Hooks) (definition : Definition) (inputs : List (String × Input)) :
-    Except String Instance := do
-  let state ← inputs.foldlM (init := none) fun (before : Option State) (commandId, input) =>
-    match Step.step hooks definition.program before input with
-    | .ok after => .ok (some after)
-    | .error _ => .error s!"instance-input-not-committed:{commandId}"
-  match state with
-  | some state => pure { definition, state }
-  | none => throw "instance-without-inputs"
-
-def occurrence (state : State) (item : OpenItem) : OccurrenceRef :=
-  { processInstanceId := state.instanceOf item.scope, element := item.element, activation := item.activation }
+def occurrence (program : Program) (state : State) (item : OpenItem) : OccurrenceRef :=
+  { processInstanceId := state.instanceOf item.scope, element := program.publicId item.element
+    activation := ((state.occurrence? item.occurrence).map (·.activation)).getD 0 }
 
 /-- The instances at the address's definition and process, by position, with each of their correlated subscriptions
 that accepts `correlation`. -/
-def candidates (hooks : Hooks) (instances : List Instance) (address : Address) (correlation : List (String × Value)) :
-    Except String (List (Nat × OccurrenceRef)) :=
-  instances.zipIdx.flatMapM fun (member, index) => do
+def candidates (hooks : Hooks) (instances : List Instance) (address : Address) (correlation : List CorrelationMatch) :
+    List (Nat × OccurrenceRef) :=
+  instances.zipIdx.flatMap fun (member, index) =>
     let program := member.definition.program
-    if member.definition.ref != address.definition || program.identity.processId != address.processId then
-      pure []
+    if member.definition.ref != address.definition || program.identity.processId != address.processId then []
     else
       let ctx := Step.context hooks program
-      let accepted ← member.state.openItems.filterM fun item =>
+      let accepted := member.state.openItems.filter fun item =>
         match hooks.correlates ctx item address.channel correlation member.state with
-        | .ok accepts => .ok accepts
-        | .error _ => .error "correlation-candidate-invalid"
-      pure (accepted.map fun item => (index, occurrence member.state item))
+        | .ok accepts => accepts
+        | .error _ => false
+      accepted.map fun item => (index, occurrence program member.state item)
 
 /-- Route one publication: deliver to its sole candidate, or reject it leaving every instance unchanged. -/
 def publish (hooks : Hooks) (definitions : List Definition) (instances : List Instance) (ingressOrdinal : Nat)
@@ -110,32 +110,51 @@ def publish (hooks : Hooks) (definitions : List Definition) (instances : List In
       definition.ref == address.definition && definition.program.identity.processId == address.processId do
     throw "publication-unknown-definition"
   if publication.payload.isEmpty then throw "publication-payload-empty"
-  let correlation := [(address.correlationKey, Value.string publication.payload)]
+  let correlation : List CorrelationMatch :=
+    [{ target := .processVariable address.correlationKey, expected := .string publication.payload }]
   let result (resolution : Resolution) : PublicationResult :=
     { commandId := publication.commandId, ingressOrdinal, resolution }
-  match ← candidates hooks instances address correlation with
+  match candidates hooks instances address correlation with
   | [] => pure (instances, result .noMatch)
   | [(index, target)] =>
-    let delivery : Input := .deliver { occurrence := target, channel := address.channel, correlation }
-    let updated ← instances.zipIdx.mapM fun (member, position) =>
-      if position != index then .ok member
-      else match Step.step hooks member.definition.program (some member.state) delivery with
-        | .ok state => .ok { member with state }
-        | .error _ => .error "correlated-delivery-not-committed"
-    pure (updated, result (.committed target))
+    let delivery : Input := .deliver { occurrence := target, trigger := .message address.channel, correlation }
+    match instances[index]? with
+    | none => throw "candidate-without-instance"
+    | some member =>
+      match Step.step hooks member.definition.program (some member.state) delivery with
+      | .ok state => pure (instances.set index { member with state }, result (.committed target))
+      | .error failure => pure (instances, result (.failed target failure))
   | _ :: _ :: _ => pure (instances, result .ambiguous)
 
-/-- Start every instance, in order, then route every publication, in order. -/
-def run (hooks : Hooks) (definitions : List Definition) (scripts : List (Definition × List (String × Input)))
-    (publications : List Publication) : Except String Result := do
-  let instances ← scripts.mapM fun (definition, inputs) => startInstance hooks definition inputs
-  let ids := instances.map (·.state.instanceId)
+/-- What a run has done so far: instances by script, publication results and input failures. -/
+structure Progress where
+  instances : List (Nat × Instance) := []
+  publications : List PublicationResult := []
+  inputFailures : List (String × Failure) := []
+
+/-- Apply one stimulus. A publication sees the instances started so far. -/
+def apply (hooks : Hooks) (definitions : List Definition) (progress : Progress) : Stimulus → Except String Progress
+  | .input script definition commandId input =>
+    let before := (progress.instances.find? (·.1 == script)).map (·.2.state)
+    match Step.step hooks definition.program before input with
+    | .error failure => .ok { progress with inputFailures := progress.inputFailures ++ [(commandId, failure)] }
+    | .ok state =>
+      let others := progress.instances.filter (·.1 != script)
+      .ok { progress with instances := others ++ [(script, { definition, state })] }
+  | .publish publication => do
+    let ordinal := progress.publications.length + 1
+    let scripts := progress.instances.map (·.1)
+    let (instances, published) ← publish hooks definitions (progress.instances.map (·.2)) ordinal publication
+    pure { progress with instances := scripts.zip instances, publications := progress.publications ++ [published] }
+
+/-- Fold the stimuli in order. -/
+def run (hooks : Hooks) (definitions : List Definition) (stimuli : List Stimulus) : Except String Result := do
+  let progress ← stimuli.foldlM (apply hooks definitions) ({} : Progress)
+  let ids := progress.instances.map (·.2.state.instanceId)
   unless ids.eraseDups.length == ids.length do throw "instance-id-duplicate"
-  let (instances, results) ← publications.zipIdx.foldlM (init := (instances, [])) fun (instances, results)
-      (publication, position) => do
-    let (instances, published) ← publish hooks definitions instances (position + 1) publication
-    pure (instances, results ++ [published])
-  pure { publications := results
-         instances := instances.mergeSort fun left right => decide (left.state.instanceId ≤ right.state.instanceId) }
+  pure { publications := progress.publications
+         inputFailures := progress.inputFailures
+         instances := (progress.instances.map (·.2)).mergeSort fun left right =>
+           decide (left.state.instanceId ≤ right.state.instanceId) }
 
 end Kernel.Population

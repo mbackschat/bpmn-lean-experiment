@@ -2,7 +2,6 @@ module
 
 public import Kernel.IL.Types
 public import Kernel.IL.Timer
-public import Kernel.IL.Query
 
 /-! # Admission of catch Events, boundaries and triggered starts. A refusal carries a stable code.
 
@@ -30,6 +29,14 @@ def timer (cycles : Bool) (trigger : TimerTrigger) : Option String :=
     | .iso8601, false, _ => some "timer.cycleNotAttached"
     | .cron, _, _ => some "timer.cron"
 
+/-- An interrupting catch ends what it interrupts at its first firing, so a repeating Timer has no second firing to
+give; no row selects a meaning for it. -/
+def interruptingCycle (trigger : TimerTrigger) : Option String :=
+  match trigger.schedule with
+  | .cycle _ _ => some "timer.interruptingCycle"
+  | .duration _ => none
+  | .date _ => none
+
 def message (trigger : MessageTrigger) : Option String :=
   if !trigger.correlation.isEmpty then some "message.correlation"
   else
@@ -52,10 +59,35 @@ def correlatedCatch (subscription : Subscription) (trigger : MessageTrigger) : O
       | .variable _ => message { trigger with correlation := [] }
       | .literal _ => some "message.correlation.value"
       | .simpleBoolean _ => some "message.correlation.value"
-      | .foreign _ _ => some "message.correlation.value"
+      | .foreign _ _ => some "expression.outsideSimpleBoolean"
   | _ :: _ :: _ => some "message.correlation.keys"
 
+/-- Only a Message subscription writes what its delivery carries; any other trigger's outputs would be dropped. -/
+def outputs (subscription : Subscription) : Option String :=
+  if subscription.trigger.message?.isSome || subscription.outputs.isEmpty then none else some "event.outputs"
+
+def errorTrigger (trigger : ErrorTrigger) : Option String :=
+  if trigger.codeVariable.isSome then some "event.error.codeVariable"
+  else if trigger.messageVariable.isSome then some "event.error.messageVariable"
+  else none
+
+def escalationTrigger (trigger : EscalationTrigger) : Option String :=
+  if trigger.codeVariable.isSome then some "event.escalation.codeVariable" else none
+
+/-- An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts. -/
+def interruptingEventSubProcess (start : Subscription) : Option String :=
+  match start.trigger with
+  | .message _ => some "scope.eventSubProcess.interruptingMessage"
+  | .timer trigger => interruptingCycle trigger
+  | .signal _ => none
+  | .condition _ => none
+  | .error _ => none
+  | .escalation _ => none
+  | .compensation => none
+  | .cancel => none
+
 def catchEvent (subscription : Subscription) : Option String :=
+  outputs subscription <|>
   match subscription.trigger with
   | .timer trigger => timer false trigger
   | .message trigger => correlatedCatch subscription trigger
@@ -67,13 +99,14 @@ def catchEvent (subscription : Subscription) : Option String :=
   | .cancel => some "event.catch.cancel"
 
 def boundary (boundary : Boundary) : Option String :=
+  outputs boundary.subscription <|>
   match boundary.subscription.trigger with
-  | .timer trigger => timer true trigger
+  | .timer trigger => (if boundary.interrupting then interruptingCycle trigger else none) <|> timer true trigger
   | .message trigger => message trigger
   | .signal _ => some "boundary.signal"
   | .condition _ => some "boundary.condition"
-  | .error _ => none
-  | .escalation _ => none
+  | .error trigger => errorTrigger trigger
+  | .escalation trigger => escalationTrigger trigger
   | .compensation => none
   | .cancel => none
 
@@ -84,13 +117,15 @@ def boundaries (list : List Boundary) : Option String :=
 Sub-Process start, which may also repeat a cycle and catch what `Kernel.Feature.Propagation` raises. -/
 def start (nested : Bool) (subscription : Subscription) : Option String :=
   let raised (code : String) : Option String := if nested then none else some code
+  outputs subscription <|>
   match subscription.trigger with
   | .timer trigger => timer nested trigger
-  | .message trigger => message trigger
+  | .message trigger =>
+    (if !nested && !subscription.outputs.isEmpty then some "start.message.outputs" else none) <|> message trigger
   | .signal _ => some "start.signal"
   | .condition _ => some "start.condition"
-  | .error _ => raised "start.error"
-  | .escalation _ => raised "start.escalation"
+  | .error trigger => raised "start.error" <|> errorTrigger trigger
+  | .escalation trigger => raised "start.escalation" <|> escalationTrigger trigger
   | .compensation => raised "start.compensation"
   | .cancel => some "start.cancel"
 

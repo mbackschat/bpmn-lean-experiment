@@ -39,12 +39,20 @@ verify_lean_checks() {
   # Guards 1 and 2 of the kernel rewrite proposal read the built kernel's environment.
   ./scripts/lake.sh build Kernel kernelRun
   ./scripts/lake.sh run scripts/kernel-dispatch.lean
+  # Guards 17, 18 and 19 read it too; the self-test first shows the scan rejects its seeded violations (guard 23).
+  ./scripts/lake.sh run scripts/kernel-effects.lean --self-test
+  ./scripts/lake.sh run scripts/kernel-effects.lean
+  # Guards 15 and 22: each builds a fresh clone of HEAD, so neither touches this checkout.
+  node scripts/kernel-build-budget.ts lean
+  node scripts/kernel-build-budget.ts growth
 }
 
 verify_runtime() {
   ./scripts/pnpm.sh run build:verification-typescript
   ./scripts/pnpm.sh run test:semantic-core:built
   ./scripts/pnpm.sh run test:kernel
+  # Guard 15's TypeScript bounds need node_modules, which only this lane installs.
+  node scripts/kernel-build-budget.ts typescript
   ./scripts/pnpm.sh run test:bpmn-source:built
   ./scripts/test-cibseven-oracle.sh
   ./scripts/pnpm.sh run test:differential:built

@@ -4,12 +4,11 @@ public import Kernel.IL.Types
 
 /-! # Timer lexemes
 
-The exact ISO 8601 grammar the profile admits for Timer literals, shared by `Kernel.Admission.Subscriptions` and
-`Kernel.Feature.Subscriptions`. It is the frozen evaluator's grammar (`packages/semantic-core/src/timer-duration-lexeme.ts`,
-TED-PARSE-01): a duration is `PT[nH][nM][nS]` with non-negative integer components in that order, each at most
-once, at least one present, totalling 1 ms to `maxDurationMs`. A cycle is the unbounded repetition `R/<duration>`
-(the only form `timer-boundary-event-source.ts` admits). Zero, fractional and nominal durations, dates, dated
-intervals and bounded repetitions are conforming BPMN that the profile refuses.
+The exact ISO 8601 grammar the profile admits for Timer literals (CIB-LIM-0003, CIB-AGR-0021), shared by
+`Kernel.Admission.Subscriptions` and `Kernel.Feature.Subscriptions`: a duration is `PT[nH][nM][nS]` with non-negative
+integer components in that order, each at most once, at least one present, totalling 1 ms to `maxDurationMs`. A cycle
+is the unbounded repetition `R/<duration>`. Zero, fractional and nominal durations, dates, dated intervals and bounded
+repetitions are conforming BPMN that the profile refuses.
 -/
 
 public section

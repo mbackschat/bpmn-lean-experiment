@@ -33,7 +33,7 @@ export type Module = Readonly<{ name: string; layer: Layer; family: string; file
 const mayImport: Readonly<Record<Layer, readonly Layer[]>> = {
   [Layer.Il]: [Layer.Il],
   [Layer.Codec]: [Layer.Il, Layer.State, Layer.Codec],
-  [Layer.State]: [Layer.Il],
+  [Layer.State]: [Layer.Il, Layer.State],
   [Layer.Hooks]: [Layer.Il, Layer.State],
   [Layer.Feature]: [Layer.Il, Layer.State, Layer.Hooks],
   [Layer.Admission]: [Layer.Il],

@@ -1,56 +1,185 @@
 /**
- * Admission registry, transcribed from `Kernel/AdmissionRegistry.lean`: the first refusal of any element, in
- * program order. Only `run.ts` imports it.
+ * Admission registry, transcribed from `Kernel/AdmissionRegistry.lean`: the first refusal of any element, in program
+ * order. Only `run.ts` imports it.
  */
-import { ElementTag, EventRoleTag, assertNever, type Element, type Program } from "./il/types.js";
-import * as Flow from "./admission/flow.js";
+import {
+  ElementTag,
+  EventRoleTag,
+  assertNever,
+  elementEnvelope,
+  elementEvent,
+  elementScope,
+  workCall,
+  type ActivityPayload,
+  type Boundary,
+  type CalledProcess,
+  type Element,
+  type ElementId,
+  type EventPayload,
+  type Flow,
+  type Header,
+  type Program,
+  type Subscription,
+} from "./il/types.js";
+import * as Data from "./admission/data.js";
+import * as FlowAdmission from "./admission/flow.js";
+import * as Profile from "./admission/profile.js";
 import * as Work from "./admission/work.js";
 import * as MultiInstance from "./admission/multi-instance.js";
 import * as Propagation from "./admission/propagation.js";
 import * as Scopes from "./admission/scopes.js";
 import * as Subscriptions from "./admission/subscriptions.js";
 
-export function element(candidate: Element): string | null {
-  switch (candidate.tag) {
-    case ElementTag.Activity: {
-      const envelope = candidate.payload.envelope;
-      return Work.activity(candidate.payload) ??
-        (envelope.multiInstance === null ? null : MultiInstance.activity(envelope, envelope.multiInstance)) ??
-        Subscriptions.boundaries(envelope.boundaries);
-    }
-    case ElementTag.Scope:
-      return Scopes.scope(candidate.payload) ?? Subscriptions.boundaries(candidate.payload.envelope.boundaries);
-    case ElementTag.Event: {
-      const role = candidate.payload.role;
-      switch (role.tag) {
-        case EventRoleTag.Catch:
-          return Subscriptions.catchEvent(role.subscription);
-        case EventRoleTag.Throw:
-          return Propagation.throwRecord(role.record);
-        case EventRoleTag.LinkCatch:
-          return Flow.link(candidate.payload);
-        case EventRoleTag.LinkThrow:
-          return Flow.link(candidate.payload);
-      }
-      return assertNever(role);
-    }
-    case ElementTag.Gateway:
-      return Flow.gateway(candidate.payload);
-    case ElementTag.Start: {
-      const subscription = candidate.payload.subscription;
-      return Flow.start(candidate.payload) ??
-        (subscription === null ? null : Subscriptions.start(candidate.header.parent !== null, subscription));
-    }
-  }
-  return assertNever(candidate);
+/** Whether an element is some Activity's or Scope's compensation handler. */
+function isHandler(program: Program, id: ElementId): boolean {
+  return program.elements.some((element) => elementEnvelope(element)?.compensationHandler === id);
 }
 
-export function admit(program: Program): string | null {
-  for (const candidate of program.elements) {
-    const refusal = element(candidate);
-    if (refusal !== null) {
-      return refusal;
+/** Refusals an Activity owes because of how it begins or of what its handler restores. */
+function activityOrigin(program: Program, header: Header, payload: ActivityPayload): string | null {
+  const handler = isHandler(program, header.id);
+  if (handler && payload.envelope.inputs.length > 0) return "activity.compensationHandler.input";
+  if (handler && !Work.beginsWithoutToken(payload.work)) return "compensation.handlerWork";
+  if (Scopes.implicitChild(program, header) && !Work.beginsWithoutToken(payload.work)) return "scope.implicitStart";
+  return null;
+}
+
+function subscriptionData(subscription: Subscription): string | null {
+  return Data.mappings(subscription.outputs);
+}
+
+function boundaryData(boundaries: readonly Boundary[]): string | null {
+  for (const boundary of boundaries) {
+    const refused = subscriptionData(boundary.subscription);
+    if (refused !== null) return refused;
+  }
+  return null;
+}
+
+/** The first refusal among `checks`, evaluated lazily in order. */
+function first(...checks: readonly (() => string | null)[]): string | null {
+  for (const check of checks) {
+    const refused = check();
+    if (refused !== null) return refused;
+  }
+  return null;
+}
+
+function eventRole(program: Program, header: Header, payload: EventPayload): string | null {
+  const role = payload.role;
+  switch (role.tag) {
+    case EventRoleTag.Catch:
+      return Subscriptions.catchEvent(role.subscription) ?? subscriptionData(role.subscription);
+    case EventRoleTag.Throw:
+      return Propagation.throwRecord(role.record);
+    case EventRoleTag.LinkCatch:
+    case EventRoleTag.LinkThrow:
+      return FlowAdmission.link(program, header, payload);
+  }
+  return assertNever(role);
+}
+
+function element(program: Program, entry: Element): string | null {
+  const header = entry.header;
+  switch (entry.tag) {
+    case ElementTag.Activity: {
+      const payload = entry.payload;
+      const call = workCall(payload.work);
+      const loop = payload.envelope.multiInstance;
+      return first(
+        () => Data.origin(header),
+        () => Data.envelope(payload.envelope),
+        () => (call === null ? null : Data.mappings(call.inputs) ?? Data.mappings(call.outputs)),
+        () => Work.activity(program, payload),
+        () => activityOrigin(program, header, payload),
+        () => (loop === null ? null : MultiInstance.activity(payload.envelope, loop)),
+        () => Subscriptions.boundaries(payload.envelope.boundaries),
+        () => boundaryData(payload.envelope.boundaries),
+      );
     }
+    case ElementTag.Scope: {
+      const payload = entry.payload;
+      const start = Scopes.interruptingStart(payload);
+      return first(
+        () => Data.origin(header),
+        () => Data.envelope(payload.envelope),
+        () => Scopes.scope(program, header, payload),
+        () => (start === null ? null : Subscriptions.interruptingEventSubProcess(start)),
+        () => Subscriptions.boundaries(payload.envelope.boundaries),
+        () => boundaryData(payload.envelope.boundaries),
+      );
+    }
+    case ElementTag.Event:
+      return Data.origin(header) ?? eventRole(program, header, entry.payload);
+    case ElementTag.Gateway:
+      return Data.origin(header) ?? FlowAdmission.gateway(program, entry.payload);
+    case ElementTag.Start: {
+      const subscription = entry.payload.subscription;
+      return first(
+        () => Data.origin(header),
+        () => FlowAdmission.start(entry.payload),
+        () => (subscription === null
+          ? null
+          : Subscriptions.start(header.parent !== null, subscription) ?? subscriptionData(subscription)),
+      );
+    }
+  }
+  return assertNever(entry);
+}
+
+function throwTerminates(header: Header, payload: EventPayload): boolean {
+  const role = payload.role;
+  switch (role.tag) {
+    case EventRoleTag.Throw:
+      return header.parent !== null && Propagation.terminates(role.record);
+    case EventRoleTag.Catch:
+    case EventRoleTag.LinkCatch:
+    case EventRoleTag.LinkThrow:
+      return false;
+  }
+  return assertNever(role);
+}
+
+/** Whether the program's shape reaches an abnormal scope end: a Terminate in a Sub-Process or an interrupting Event Sub-Process. */
+function abnormalScope(program: Program): boolean {
+  return program.elements.some((entry) => {
+    const event = elementEvent(entry);
+    const scope = elementScope(entry);
+    return (event !== null && throwTerminates(event[0], event[1])) ||
+      (scope !== null && Scopes.interruptingStart(scope[1]) !== null);
+  });
+}
+
+/** A flow's condition, then where it may sit. */
+function flow(program: Program, entry: Flow): string | null {
+  return Data.flowCondition(entry) ?? FlowAdmission.conditionalOutflow(program, entry);
+}
+
+/**
+ * A called process is bound at assembly to the one definition the program carries, so its definition names no binding
+ * of its own (PC-SCOPE-03).
+ */
+function calledProcess(process: CalledProcess): string | null {
+  const definition = process.definition;
+  const bound = definition.version !== null || definition.versionTag !== null || definition.deployment !== null ||
+    definition.tenant !== null;
+  return bound ? "process.definition.binding" : null;
+}
+
+/** The first refusal: profile options, then called-process bindings, flows and elements in program order. */
+export function admit(program: Program): string | null {
+  return first(
+    () => Profile.options(abnormalScope(program), program.options),
+    () => firstOf(program.processes, calledProcess),
+    () => firstOf(program.flows, (entry) => flow(program, entry)),
+    () => firstOf(program.elements, (entry) => element(program, entry)),
+  );
+}
+
+function firstOf<T>(items: readonly T[], check: (item: T) => string | null): string | null {
+  for (const item of items) {
+    const refused = check(item);
+    if (refused !== null) return refused;
   }
   return null;
 }

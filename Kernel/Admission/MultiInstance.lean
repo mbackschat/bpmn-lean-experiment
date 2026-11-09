@@ -18,7 +18,7 @@ def collection : InstanceCount → Option String
   | .collection (.variable _) => none
   | .collection (.literal _) => some "multiInstance.collectionExpression"
   | .collection (.simpleBoolean _) => some "multiInstance.collectionExpression"
-  | .collection (.foreign _ _) => some "multiInstance.collectionExpression"
+  | .collection (.foreign _ _) => some "expression.outsideSimpleBoolean"
   | .cardinality _ => some "multiInstance.cardinality"
 
 def condition : Option Expression → Option String
@@ -26,12 +26,12 @@ def condition : Option Expression → Option String
   | some (.simpleBoolean _) => none
   | some (.literal _) => some "multiInstance.completionConditionExpression"
   | some (.variable _) => some "multiInstance.completionConditionExpression"
-  | some (.foreign _ _) => some "multiInstance.completionConditionExpression"
+  | some (.foreign _ _) => some "expression.outsideSimpleBoolean"
 
 def activity (envelope : Envelope) (loop : MultiInstance) : Option String :=
   collection loop.count <|> condition loop.completionCondition <|>
     if loop.elementVariable.isSome then some "multiInstance.elementVariable"
-    else if loop.mutableCollection then some "multiInstance.mutableCollection"
+    else if loop.mutableCollection == .sequentialReread then some "multiInstance.mutableCollection"
     else if loop.inputDataItem.isNone then some "multiInstance.inputDataItem"
     else if loop.outputDataItem.isNone then some "multiInstance.outputDataItem"
     else if !envelope.inputs.isEmpty || !envelope.outputs.isEmpty then some "multiInstance.mappings"

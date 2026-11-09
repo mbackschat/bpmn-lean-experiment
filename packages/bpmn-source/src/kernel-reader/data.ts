@@ -2,7 +2,7 @@ import { asElementArray } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { ReadRefusal, ReadRefusalCode, list, optionalId, text } from "./model.js";
 import type { ReadContext } from "./model.js";
-import { compareIds, ctor, expressionSource, foreign, literalSource, mapping, stringLiteral, variable } from "./wire.js";
+import { compareIds, ctor, expressionSource, foreign, literalSource, mapping, MappingSyntax, stringLiteral, variable } from "./wire.js";
 import type { KernelJson } from "./wire.js";
 
 /** The source language of a CIB value that is more than a variable read; the kernel reads it only as `foreign`. */
@@ -99,8 +99,9 @@ export function inputOutputParameters(ctx: ReadContext, element: ElementRecord):
     .sort((left, right) => compareIds(String(left.name), String(right.name)));
   const inputs = named("inputParameter");
   return {
-    inputs: inputs.map((parameter) => mapping(String(parameter.name), parameterValue(parameter))),
-    outputs: named("outputParameter").map((parameter) => mapping(String(parameter.name), parameterValue(parameter))),
+    inputs: inputs.map((parameter) => mapping(String(parameter.name), parameterValue(parameter), MappingSyntax.IoParameter)),
+    outputs: named("outputParameter").map((parameter) =>
+      mapping(String(parameter.name), parameterValue(parameter), MappingSyntax.IoParameter)),
     targets: inputs.map((parameter) => String(parameter.name)),
   };
 }
@@ -138,19 +139,17 @@ const elementId = (source: ElementRecord): string => String(source.id);
 /** A catch Event's DataOutput is the payload part the Message delivers under its name. */
 const eventOutputName = (source: ElementRecord): string => text(source, "name") ?? elementId(source);
 
-export const associationInputs = (ctx: ReadContext, associations: ReadonlyArray<ElementRecord>): KernelJson[] =>
-  associations.map((association) => mapping(associationTarget(association), associationValue(ctx, association, elementId)));
+const associationMapping = (ctx: ReadContext, association: ElementRecord, sourceName: (source: ElementRecord) => string): KernelJson =>
+  mapping(associationTarget(association), associationValue(ctx, association, sourceName), MappingSyntax.DataAssociation);
 
-export const associationOutputs = (ctx: ReadContext, associations: ReadonlyArray<ElementRecord>): KernelJson[] =>
-  associations.map((association) => mapping(associationTarget(association), associationValue(ctx, association, elementId)));
+export const associationMappings = (ctx: ReadContext, associations: ReadonlyArray<ElementRecord>): KernelJson[] =>
+  associations.map((association) => associationMapping(ctx, association, elementId));
 
 export const eventOutputs = (ctx: ReadContext, element: ElementRecord): KernelJson[] =>
-  list(element, "dataOutputAssociations").map((association) =>
-    mapping(associationTarget(association), associationValue(ctx, association, eventOutputName)));
+  list(element, "dataOutputAssociations").map((association) => associationMapping(ctx, association, eventOutputName));
 
 export const eventInputs = (ctx: ReadContext, element: ElementRecord): KernelJson[] =>
-  list(element, "dataInputAssociations").map((association) =>
-    mapping(associationTarget(association), associationValue(ctx, association, elementId)));
+  associationMappings(ctx, list(element, "dataInputAssociations"));
 
 export const associationSourceId = (association: ElementRecord): string | null => {
   const source = list(association, "sourceRef")[0];
@@ -161,3 +160,42 @@ export const associationTargetId = (association: ElementRecord): string | null =
   const target = association.targetRef as ElementRecord | undefined;
   return target === undefined ? null : optionalId(target);
 };
+
+/** The text of a CIB business key: a value expression when it carries an expression marker, else a string literal. */
+export const businessKeyExpression = (source: string): KernelJson =>
+  expressionMarkerPattern.test(source) ? valueExpression(source) : stringLiteral(source);
+
+export type VariableCopies = Readonly<{
+  mappings: KernelJson[];
+  /** A `variables="all"` entry copies every variable. */
+  propagateAll: boolean;
+  /** That entry also carries `local="true"`, so it copies only the local variables. */
+  localOnly: boolean;
+  businessKey: KernelJson | null;
+  /** A single-variable copy carries a `local` attribute, which no IL field holds. */
+  localCopy: boolean;
+}>;
+
+/** CIB `camunda:in`/`camunda:out` copies (`BpmnParse#parseInputParameter`, `#parseCallableElementProvider`). */
+export function variableCopies(element: ElementRecord, entries: ReadonlyArray<ElementRecord>): VariableCopies {
+  const mappings: KernelJson[] = [];
+  let propagateAll = false;
+  let localOnly = false;
+  let localCopy = false;
+  let businessKey: KernelJson | null = null;
+  for (const entry of entries) {
+    if (entry.variables === "all") {
+      propagateAll = true;
+      localOnly ||= entry.local === "true";
+    } else if (typeof entry.businessKey === "string") {
+      businessKey = businessKeyExpression(entry.businessKey);
+    } else if (typeof entry.target === "string") {
+      const source = typeof entry.sourceExpression === "string" ? valueExpression(entry.sourceExpression) : variable(String(entry.source));
+      mappings.push(mapping(entry.target, source, MappingSyntax.CallVariable));
+      localCopy ||= typeof entry.local === "string";
+    } else {
+      throw new ReadRefusal(ReadRefusalCode.UnknownAttributeValue, optionalId(element), "camunda variable copy without a target");
+    }
+  }
+  return { mappings, propagateAll, localOnly, businessKey, localCopy };
+}

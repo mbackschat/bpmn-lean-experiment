@@ -1,18 +1,37 @@
 /**
- * Flow: starts, gateways and Links, transcribed from `Kernel/Feature/Flow.lean`. Owns matching on `GatewayKind`.
+ * Flow: starts, gateways and Links, transcribed from `Kernel/Feature/Flow.lean`.
  *
- * Gateway semantics follow BPMN 2.0.2 §13.4: an Exclusive Gateway takes the first true candidate in document
- * order, else the default; a Parallel join waits until every incoming flow holds a token in the same scope
- * occurrence; an Inclusive join fires once no token still upstream in the same scope occurrence can reach an
- * incoming flow that holds none, and its split takes every true candidate, else the default; an Event-Based
- * Gateway consumes the token and signals `armGateway`. A diverging gateway that finds no outgoing flow rolls the
- * command back. Waiting tokens are parked in `state.slots.parked` on the incoming flow they arrived on.
+ * Owns matching on `GatewayKind` and `Leave`, and is the only module that adds tokens (guard 17): every occurrence
+ * leaves through `outflow`. Gateway semantics follow BPMN 2.0.2 §13.4:
+ *
+ * - Exclusive (§13.4.2): the first true candidate in document order, else the default.
+ * - Parallel (§13.4.1): a gateway with more than one incoming flow waits until every incoming flow holds a token in the
+ *   same scope occurrence, consumes one token from each and emits on every outgoing flow.
+ * - Inclusive (§13.4.3): a join fires once at least one incoming flow holds a token and no token still upstream in the
+ *   same scope occurrence can reach an incoming flow that holds none; it consumes one token from each filled flow. A
+ *   split takes every true candidate, else the default.
+ * - Event-Based (§13.4.4): the gateway's occurrence stays open and `Hooks.armGateway` opens the arms; the arm that
+ *   fires completes it.
+ *
+ * Each token that reaches a join is its own occurrence, parked in `state.slots.parked` until the join fires; then every
+ * consumed occurrence completes, one with the outgoing flows and the others with none, since a join ends one activity
+ * instance per joined execution (CIB `ParallelGatewayActivityBehavior`, `PvmExecutionImpl.leaveActivityViaTransitions`).
+ * A diverging gateway that finds no outgoing flow rolls the command back.
  */
 import {
-  ValueTag,
+  ConditionOrder,
   GatewayKindTag,
+  ValueTag,
   assertNever,
-  type ConditionalFlow,
+  elementEnvelope,
+  elementEvent,
+  elementOutgoing,
+  eventPayloadLinkCatch,
+  eventPayloadLinkThrow,
+  programChildren,
+  programElement,
+  programFlow,
+  programTarget,
   type Element,
   type ElementId,
   type EventPayload,
@@ -20,147 +39,152 @@ import {
   type GatewayPayload,
   type Header,
   type Program,
-  type StartPayload,
 } from "../il/types.js";
 import {
-  elementEnvelope,
-  elementEvent,
-  elementGateway,
-  elementStart,
-  eventPayloadLinkCatch,
-  eventPayloadLinkThrow,
-  programChildren,
-  programElement,
-  programTarget,
-} from "../il/query.js";
-import { EvaluationTag, type Arrival, type Ctx } from "../hooks.js";
-import {
   FailureTag,
+  LeaveTag,
+  SignalTag,
+  WriteRule,
   committed,
+  completeSignal,
   emit,
   failed,
-  root,
+  failedWith,
+  leaveFlows,
+  leaveOutgoing,
+  parkedEquals,
   signal,
-  SignalTag,
-  visible,
-  type Binding,
+  type EvalContext,
+  type Leave,
+  type Occurrence,
   type Outcome,
+  type Parked,
   type Result,
   type ScopeOccurrenceId,
   type State,
 } from "../state.js";
+import { EvaluationTag, evalContext, type Ctx } from "../hooks.js";
 
-/**
- * A start Event emits on its outgoing flows whether it is a none start or a triggered one: a triggered start's
- * trigger is already consumed by the input that names it.
- */
-export function startProcess(_ctx: Ctx, _header: Header, payload: StartPayload, state: State): Outcome {
-  return committed(emit(state, payload.outgoing, root));
+function complete(state: State, id: number, leave: Leave): State {
+  return signal(state, completeSignal(id, leave, [], WriteRule.Outward));
 }
 
-export function condition(ctx: Ctx, variables: readonly Binding[], candidate: ConditionalFlow): Result<boolean> {
-  if (candidate.condition === null) {
-    return committed(true);
+/** `Hooks.outflow`: the only place tokens are added. An element's own selection is its outgoing flows. */
+export function outflow(ctx: Ctx, occurrence: Occurrence, leave: Leave, state: State): Outcome {
+  switch (leave.tag) {
+    case LeaveTag.Flows:
+      return committed(emit(state, leave.selected, occurrence.scope));
+    case LeaveTag.Outgoing: {
+      const element = programElement(ctx.program, occurrence.element);
+      return element === null
+        ? failed(FailureTag.SemanticFailure, "outflow-without-element")
+        : committed(emit(state, elementOutgoing(element), occurrence.scope));
+    }
+    case LeaveTag.Raised:
+      return failed(FailureTag.SemanticFailure, "outflow-of-raised-occurrence");
   }
-  const evaluation = ctx.evaluate(variables, candidate.condition);
+  return assertNever(leave);
+}
+
+/** A candidate's condition, read from its Sequence Flow; an unconditioned candidate holds. */
+function condition(ctx: Ctx, context: EvalContext, candidate: FlowId): Result<boolean> {
+  const flow = programFlow(ctx.program, candidate);
+  if (flow === null) return failed(FailureTag.SemanticFailure, "gateway-candidate-without-flow");
+  if (flow.condition === null) return committed(true);
+  const evaluation = ctx.evaluate(context, flow.condition);
   switch (evaluation.tag) {
     case EvaluationTag.Value:
       return evaluation.result.tag === ValueTag.Bool
         ? committed(evaluation.result.value)
         : failed(FailureTag.SemanticFailure, "condition-not-boolean");
-    case EvaluationTag.NeedsHost:
-      return failed(FailureTag.Unsupported, "host-evaluation");
     case EvaluationTag.Failure:
       return failed(FailureTag.SemanticFailure, evaluation.code);
   }
   return assertNever(evaluation);
 }
 
-/** The first candidate whose condition holds; an unconditioned candidate holds. */
-export function firstTrue(
-  ctx: Ctx,
-  variables: readonly Binding[],
-  candidates: readonly ConditionalFlow[],
-): Result<FlowId | null> {
+/** The candidates whose condition holds, in order; the first failure stops the filter. */
+function holding(ctx: Ctx, context: EvalContext, candidates: readonly FlowId[], firstOnly: boolean): Result<readonly FlowId[]> {
+  const chosen: FlowId[] = [];
   for (const candidate of candidates) {
-    const holds = condition(ctx, variables, candidate);
-    if (!holds.ok) {
-      return holds;
-    }
-    if (holds.value) {
-      return committed(candidate.flow);
+    const held = condition(ctx, context, candidate);
+    if (!held.ok) return failedWith(held.failure);
+    if (held.value) {
+      chosen.push(candidate);
+      if (firstOnly) break;
     }
   }
-  return committed(null);
+  return committed(chosen);
 }
 
-export function exclusive(
-  ctx: Ctx,
-  candidates: readonly ConditionalFlow[],
-  fallback: FlowId | null,
-  scope: ScopeOccurrenceId,
-  state: State,
-): Outcome {
-  const chosen = firstTrue(ctx, visible(state, scope), candidates);
-  if (!chosen.ok) {
-    return chosen;
-  }
-  const flow = chosen.value ?? fallback;
+function exclusive(ctx: Ctx, candidates: readonly FlowId[], fallback: FlowId | null, occurrence: Occurrence, state: State): Outcome {
+  const chosen = holding(ctx, evalContext(state, occurrence.scope), candidates, true);
+  if (!chosen.ok) return failedWith(chosen.failure);
+  const flow = chosen.value[0] ?? fallback;
   return flow === null
     ? failed(FailureTag.RolledBack, "exclusive-gateway-no-outgoing-flow")
-    : committed(emit(state, [flow], scope));
+    : committed(complete(state, occurrence.id, leaveFlows([flow])));
 }
 
 /**
- * An inclusive split. A gateway that lists no candidates is a pure join whose outgoing flows are unconditioned
- * (the lowering lists candidates only for a diverging gateway), so it emits on all of them.
+ * The flows an inclusive split takes. A gateway that lists no candidates is a pure join whose outgoing flows are
+ * unconditioned, so it takes all of them.
  */
-export function inclusiveSplit(
+function inclusiveFlows(
   ctx: Ctx,
-  candidates: readonly ConditionalFlow[],
+  candidates: readonly FlowId[],
   fallback: FlowId | null,
   outgoing: readonly FlowId[],
   scope: ScopeOccurrenceId,
   state: State,
-): Outcome {
-  if (candidates.length === 0) {
-    return committed(emit(state, outgoing, scope));
+): Result<readonly FlowId[]> {
+  if (candidates.length === 0) return committed(outgoing);
+  const chosen = holding(ctx, evalContext(state, scope), candidates, false);
+  if (!chosen.ok || chosen.value.length > 0) return chosen;
+  return fallback === null ? failed(FailureTag.RolledBack, "inclusive-gateway-no-outgoing-flow") : committed([fallback]);
+}
+
+/**
+ * `Hooks.select`. Under `ConditionOrder.beforeOutputs` a completion's outgoing conditions are evaluated before its
+ * output writes, from inside the scope occurrence it still owns, which holds an Activity's locals (CIB-INT-0011); under
+ * BPMN order `outflow` resolves the leave after the writes.
+ */
+export function select(ctx: Ctx, occurrence: Occurrence, leave: Leave, state: State): Result<Leave> {
+  switch (ctx.program.options.conditionOrder) {
+    case ConditionOrder.AfterOutputs:
+      return committed(leave);
+    case ConditionOrder.BeforeOutputs:
+      return selectBeforeOutputs(ctx, occurrence, leave, state);
   }
-  const variables = visible(state, scope);
-  const chosen: FlowId[] = [];
-  for (const candidate of candidates) {
-    const holds = condition(ctx, variables, candidate);
-    if (!holds.ok) {
-      return holds;
+  return assertNever(ctx.program.options.conditionOrder);
+}
+
+function selectBeforeOutputs(ctx: Ctx, occurrence: Occurrence, leave: Leave, state: State): Result<Leave> {
+  switch (leave.tag) {
+    case LeaveTag.Flows:
+    case LeaveTag.Raised:
+      return committed(leave);
+    case LeaveTag.Outgoing: {
+      const element = programElement(ctx.program, occurrence.element);
+      if (element === null) return failed(FailureTag.SemanticFailure, "outflow-without-element");
+      const inside = state.scopes.find((scope) => scope.occurrence === occurrence.id)?.id ?? occurrence.scope;
+      const chosen = holding(ctx, evalContext(state, inside), elementOutgoing(element), false);
+      return chosen.ok ? committed(leaveFlows(chosen.value)) : failedWith(chosen.failure);
     }
-    if (holds.value) {
-      chosen.push(candidate.flow);
-    }
   }
-  if (chosen.length > 0) {
-    return committed(emit(state, chosen, scope));
-  }
-  return fallback === null
-    ? failed(FailureTag.RolledBack, "inclusive-gateway-no-outgoing-flow")
-    : committed(emit(state, [fallback], scope));
+  return assertNever(leave);
 }
 
 /** The flows leaving an element, its boundaries' flows included. */
-export function leaving(element: Element): readonly FlowId[] {
+function leaving(element: Element): readonly FlowId[] {
   const envelope = elementEnvelope(element);
-  if (envelope !== null) {
-    return [...envelope.outgoing, ...envelope.boundaries.flatMap((boundary) => boundary.outgoing)];
-  }
-  return elementEvent(element)?.[1].outgoing ?? elementGateway(element)?.[1].outgoing ??
-    elementStart(element)?.[1].outgoing ?? [];
+  return envelope === null
+    ? elementOutgoing(element)
+    : [...envelope.outgoing, ...envelope.boundaries.flatMap((boundary) => boundary.outgoing)];
 }
 
 /** The Link catch Events named `name` among the siblings of `parent`. */
-export function linkCatches(
-  program: Program,
-  parent: ElementId | null,
-  name: string,
-): readonly (readonly [Header, EventPayload])[] {
+function linkCatches(program: Program, parent: ElementId | null, name: string): readonly (readonly [Header, EventPayload])[] {
   return programChildren(program, parent).flatMap((element) => {
     const event = elementEvent(element);
     return event !== null && eventPayloadLinkCatch(event[1]) === name ? [event] : [];
@@ -168,171 +192,145 @@ export function linkCatches(
 }
 
 /** The flows a token continues on after reaching `element`; a throwing Link continues at its catching Links. */
-export function successors(program: Program, element: Element): readonly FlowId[] {
+function successors(program: Program, element: Element): readonly FlowId[] {
   const event = elementEvent(element);
   const name = event === null ? null : eventPayloadLinkThrow(event[1]);
-  if (event !== null && name !== null) {
-    return linkCatches(program, event[0].parent, name).flatMap((target) => target[1].outgoing);
-  }
-  return leaving(element);
+  if (event === null || name === null) return leaving(element);
+  return linkCatches(program, event[0].parent, name).flatMap(([, payload]) => payload.outgoing);
 }
 
 /** Whether a token on one of `start` can reach one of `targets` without passing through `gateway`. */
-export function reaches(
-  program: Program,
-  gateway: ElementId,
-  targets: readonly FlowId[],
-  start: readonly FlowId[],
-): boolean {
-  let frontier = start;
+function reaches(program: Program, gateway: ElementId, targets: readonly FlowId[], start: readonly FlowId[]): boolean {
+  let frontier = [...start];
   const seen: FlowId[] = [];
-  // The fuel bounds every visit of every flow by every edge into it, so it is never exhausted; running out
-  // answers "reachable", which only keeps the join waiting.
-  let fuel = (program.flows.length + 1) * (program.flows.length + 1);
-  while (frontier.length > 0) {
-    if (fuel === 0) {
-      return true;
-    }
-    fuel -= 1;
-    const [flow, ...rest] = frontier as [FlowId, ...FlowId[]];
-    if (targets.includes(flow)) {
-      return true;
-    }
+  // The fuel bounds every visit of every flow by every edge into it, so it is never exhausted; running out answers
+  // "reachable", which only keeps the join waiting.
+  for (let fuel = (program.flows.length + 1) * (program.flows.length + 1); ; fuel -= 1) {
+    const [flow, ...rest] = frontier;
+    if (flow === undefined) return false;
+    if (fuel === 0) return true;
+    if (targets.includes(flow)) return true;
     if (seen.includes(flow)) {
       frontier = rest;
       continue;
     }
     const target = programTarget(program, flow);
-    const targetElement = target === null || target === gateway ? null : programElement(program, target);
-    const next = targetElement === null ? [] : successors(program, targetElement);
-    frontier = [...rest, ...next];
+    const element = target === null || target === gateway ? null : programElement(program, target);
+    frontier = [...rest, ...(element === null ? [] : successors(program, element))];
     seen.unshift(flow);
   }
-  return false;
 }
 
 /**
  * The flows from which the remaining work of scope occurrence `scope` continues, excluding the tokens parked at
- * `gateway`: queued tokens, the elements of open items and child scope occurrences, and tokens parked at other
- * joins. A passive item keeps nothing alive and is no position; a boundary item is no element, and its host's
- * position already covers the boundary's flows.
+ * `gateway`: queued tokens, the elements of open items and child scope occurrences, and tokens parked at other joins.
+ * A passive item keeps nothing alive and is no position; a boundary item is no element, and its host's position
+ * already covers the boundary's flows.
  */
-export function positions(
-  program: Program,
-  state: State,
-  gateway: ElementId,
-  scope: ScopeOccurrenceId,
-): readonly FlowId[] {
+function positions(program: Program, state: State, gateway: ElementId, scope: ScopeOccurrenceId): readonly FlowId[] {
   const continuing = (element: ElementId): readonly FlowId[] => {
     const found = programElement(program, element);
     return found === null ? [] : successors(program, found);
   };
   const queued = state.tokens.filter((token) => token.scope === scope).map((token) => token.flow);
-  const items = state.openItems
-    .filter((item) => item.scope === scope && !item.passive)
-    .flatMap((item) => continuing(item.element));
-  const children = state.scopes
-    .filter((child) => child.parent === scope)
+  const items = state.openItems.filter((item) => item.scope === scope && !item.passive).flatMap((item) => continuing(item.element));
+  const children = state.scopes.filter((child) => child.parent === scope)
     .flatMap((child) => (child.element === null ? [] : continuing(child.element)));
   const parked = state.slots.parked
-    .filter((token) => token.scope === scope && programTarget(program, token.flow) !== gateway)
-    .flatMap((token) => {
-      const target = programTarget(program, token.flow);
+    .filter((waiting) => waiting.scope === scope && programTarget(program, waiting.flow) !== gateway)
+    .flatMap((waiting) => {
+      const target = programTarget(program, waiting.flow);
       return target === null ? [] : continuing(target);
     });
   return [...queued, ...items, ...children, ...parked];
 }
 
-export function park(state: State, arrival: Arrival): State {
-  return {
-    ...state,
-    slots: { ...state.slots, parked: [...state.slots.parked, { flow: arrival.flow, scope: arrival.scope }] },
-  };
+function park(state: State, waiting: Parked): State {
+  return { ...state, slots: { ...state.slots, parked: [...state.slots.parked, waiting] } };
 }
 
-/** Remove one parked token from each of `flows` in `scope`. */
-export function unpark(state: State, flows: readonly FlowId[], scope: ScopeOccurrenceId): State {
-  const parked = flows.reduce((remaining, flow) => {
-    const at = remaining.findIndex((token) => token.flow === flow && token.scope === scope);
-    return at < 0 ? remaining : [...remaining.slice(0, at), ...remaining.slice(at + 1)];
-  }, state.slots.parked);
+function filled(state: State, incoming: readonly FlowId[], scope: ScopeOccurrenceId): readonly FlowId[] {
+  return incoming.filter((flow) => state.slots.parked.some((waiting) => waiting.flow === flow && waiting.scope === scope));
+}
+
+/** The occurrences a firing join consumes: the first parked on each filled flow. */
+function consumedAt(state: State, incoming: readonly FlowId[], scope: ScopeOccurrenceId): readonly Parked[] {
+  return incoming.flatMap((flow) => {
+    const waiting = state.slots.parked.find((candidate) => candidate.flow === flow && candidate.scope === scope);
+    return waiting === undefined ? [] : [waiting];
+  });
+}
+
+function unpark(state: State, consumed: readonly Parked[]): State {
+  const parked = state.slots.parked.filter((waiting) => !consumed.some((entry) => parkedEquals(entry, waiting)));
   return { ...state, slots: { ...state.slots, parked } };
 }
 
-export function filled(state: State, incoming: readonly FlowId[], scope: ScopeOccurrenceId): readonly FlowId[] {
-  return incoming.filter((flow) => state.slots.parked.some((token) => token.flow === flow && token.scope === scope));
-}
-
-/** Park the arrival at a join and fire when `ready` holds; a gateway with one incoming flow passes it on. */
-export function join(
+/**
+ * Park the occurrence at a join and fire when `ready` holds; a gateway with one incoming flow passes it on. When the
+ * join fires, the arriving occurrence, if consumed, is the one that leaves with the flows and the others end with none.
+ */
+function join(
+  occurrence: Occurrence,
   incoming: readonly FlowId[],
-  arrival: Arrival,
   state: State,
   ready: (parked: State) => boolean,
-  fire: (state: State) => Outcome,
+  flows: (state: State) => Result<readonly FlowId[]>,
 ): Outcome {
+  const flow = occurrence.incoming;
+  if (flow === null) return failed(FailureTag.SemanticFailure, "gateway-without-flow");
   if (incoming.length <= 1) {
-    return fire(state);
+    const selected = flows(state);
+    return selected.ok ? committed(complete(state, occurrence.id, leaveFlows(selected.value))) : failedWith(selected.failure);
   }
-  const parked = park(state, arrival);
-  return ready(parked)
-    ? fire(unpark(parked, filled(parked, incoming, arrival.scope), arrival.scope))
-    : committed(parked);
+  const parked = park(state, { occurrence: occurrence.id, flow, scope: occurrence.scope });
+  if (!ready(parked)) return committed(parked);
+  const consumed = consumedAt(parked, incoming, occurrence.scope);
+  const unparked = unpark(parked, consumed);
+  const selected = flows(unparked);
+  if (!selected.ok) return failedWith(selected.failure);
+  const firing = consumed.some((entry) => entry.occurrence === occurrence.id)
+    ? occurrence.id
+    : consumed.at(-1)?.occurrence ?? occurrence.id;
+  const others = consumed.map((entry) => entry.occurrence).filter((id) => id !== firing);
+  const ended = others.reduce((current, id) => complete(current, id, leaveFlows([])), unparked);
+  return committed(complete(ended, firing, leaveFlows(selected.value)));
 }
 
-export function arriveGateway(
-  ctx: Ctx,
-  header: Header,
-  payload: GatewayPayload,
-  arrival: Arrival,
-  state: State,
-): Outcome {
-  const scope = arrival.scope;
+export function arriveGateway(ctx: Ctx, header: Header, payload: GatewayPayload, occurrence: Occurrence, state: State): Outcome {
+  const scope = occurrence.scope;
   const kind = payload.kind;
   switch (kind.tag) {
     case GatewayKindTag.Exclusive:
-      return exclusive(ctx, kind.candidates, kind.default, scope, state);
+      return exclusive(ctx, kind.candidates, kind.default, occurrence, state);
     case GatewayKindTag.Parallel:
-      return join(
-        payload.incoming,
-        arrival,
-        state,
+      return join(occurrence, payload.incoming, state,
         (parked) => filled(parked, payload.incoming, scope).length === payload.incoming.length,
-        (next) => committed(emit(next, payload.outgoing, scope)),
-      );
+        () => committed(payload.outgoing));
     case GatewayKindTag.Inclusive:
-      return join(
-        payload.incoming,
-        arrival,
-        state,
+      return join(occurrence, payload.incoming, state,
         (parked) => {
           const full = filled(parked, payload.incoming, scope);
           const empty = payload.incoming.filter((flow) => !full.includes(flow));
           return !reaches(ctx.program, header.id, empty, positions(ctx.program, parked, header.id, scope));
         },
-        (next) => inclusiveSplit(ctx, kind.candidates, kind.default, payload.outgoing, scope, next),
-      );
+        (current) => inclusiveFlows(ctx, kind.candidates, kind.default, payload.outgoing, scope, current));
     case GatewayKindTag.EventBased:
-      return committed(signal(state, { tag: SignalTag.ArmGateway, gateway: header.id, scope }));
+      return committed(signal(state, { tag: SignalTag.ArmGateway, occurrence: occurrence.id, gateway: header.id, scope }));
   }
   return assertNever(kind);
 }
 
 /**
- * A throwing Link continues at the catching Link of the same name in the same process level or Sub-Process
- * (BPMN 2.0.2 §10.5.6); a catching Link reached by a flow passes the token on.
+ * A throwing Link continues at the catching Link of the same name in the same process level or Sub-Process (BPMN 2.0.2
+ * §10.5.6); a catching Link reached by a flow passes the token on.
  */
-export function arriveLink(ctx: Ctx, header: Header, payload: EventPayload, arrival: Arrival, state: State): Outcome {
+export function arriveLink(ctx: Ctx, header: Header, payload: EventPayload, occurrence: Occurrence, state: State): Outcome {
   const name = eventPayloadLinkThrow(payload);
-  if (name === null) {
-    return committed(emit(state, payload.outgoing, arrival.scope));
-  }
-  const targets = linkCatches(ctx.program, header.parent, name);
-  const [only] = targets;
-  if (only === undefined) {
-    return failed(FailureTag.SemanticFailure, "link-without-catch");
-  }
-  return targets.length === 1
-    ? committed(emit(state, only[1].outgoing, arrival.scope))
-    : failed(FailureTag.SemanticFailure, "link-ambiguous-catch");
+  if (name === null) return committed(complete(state, occurrence.id, leaveOutgoing));
+  const catches = linkCatches(ctx.program, header.parent, name);
+  const [only] = catches;
+  if (only === undefined) return failed(FailureTag.SemanticFailure, "link-without-catch");
+  if (catches.length > 1) return failed(FailureTag.SemanticFailure, "link-ambiguous-catch");
+  return committed(complete(state, occurrence.id, leaveFlows(only[1].outgoing)));
 }

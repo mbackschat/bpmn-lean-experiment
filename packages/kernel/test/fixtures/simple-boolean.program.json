@@ -5,15 +5,39 @@
     "profile": "bpmn-2.0.2-simple-boolean-exclusive-gateway-draft"
   },
   "options": {
-    "submissionInstallsVariables": false,
+    "relations": [
+      "CIB-AGR-0006",
+      "CIB-INT-0001"
+    ],
+    "evaluator": "simpleBoolean",
+    "submission": "outputSet",
+    "scopeChainSubmissionBytes": null,
+    "undeclaredWrite": "refused",
+    "errorPathOutputs": "none",
+    "technicalFailure": "hostFailure",
     "incidentProcessCancellation": false,
-    "scopeChainSubmissionBytes": null
+    "continuationFailure": "rolledBack",
+    "conditionOrder": "afterOutputs",
+    "messageCorrelation": "modeledKey",
+    "deliveryVariables": "mappedOnly",
+    "multiInstanceFinalBody": "conditionEveryCompletion",
+    "multiInstanceOutputs": "aggregates",
+    "compensationOrder": "dependency",
+    "compensationHandlerFailure": "failsInstance",
+    "abnormalScopeEnd": "withoutOutflow",
+    "unhandledError": "refused",
+    "callBindingTime": "programAssembly",
+    "timerZone": null
   },
   "elements": [
     {
       "gateway": {
         "header": {
           "id": "Choice",
+          "origin": {
+            "definition": null,
+            "sourceId": "Choice"
+          },
           "sourceType": "exclusiveGateway",
           "parent": null
         },
@@ -21,30 +45,8 @@
           "kind": {
             "exclusive": {
               "candidates": [
-                {
-                  "flow": "Flow_First",
-                  "condition": {
-                    "simpleBoolean": {
-                      "body": {
-                        "literal": {
-                          "value": true
-                        }
-                      }
-                    }
-                  }
-                },
-                {
-                  "flow": "Flow_Second",
-                  "condition": {
-                    "simpleBoolean": {
-                      "body": {
-                        "isPresent": {
-                          "name": "route"
-                        }
-                      }
-                    }
-                  }
-                }
+                "Flow_First",
+                "Flow_Second"
               ],
               "default": "Flow_Default"
             }
@@ -64,6 +66,10 @@
       "event": {
         "header": {
           "id": "End_Default",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Default"
+          },
           "sourceType": "endEvent",
           "parent": null
         },
@@ -85,6 +91,10 @@
       "event": {
         "header": {
           "id": "End_First",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_First"
+          },
           "sourceType": "endEvent",
           "parent": null
         },
@@ -106,6 +116,10 @@
       "event": {
         "header": {
           "id": "End_Second",
+          "origin": {
+            "definition": null,
+            "sourceId": "End_Second"
+          },
           "sourceType": "endEvent",
           "parent": null
         },
@@ -127,6 +141,10 @@
       "start": {
         "header": {
           "id": "Start",
+          "origin": {
+            "definition": null,
+            "sourceId": "Start"
+          },
           "sourceType": "startEvent",
           "parent": null
         },
@@ -142,6 +160,10 @@
       "activity": {
         "header": {
           "id": "Task_Default",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_Default"
+          },
           "sourceType": "userTask",
           "parent": null
         },
@@ -170,9 +192,12 @@
             ],
             "inputs": [],
             "outputs": [],
-            "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false,
+            "boundaries": []
           }
         }
       }
@@ -181,6 +206,10 @@
       "activity": {
         "header": {
           "id": "Task_First",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_First"
+          },
           "sourceType": "userTask",
           "parent": null
         },
@@ -209,9 +238,12 @@
             ],
             "inputs": [],
             "outputs": [],
-            "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false,
+            "boundaries": []
           }
         }
       }
@@ -220,6 +252,10 @@
       "activity": {
         "header": {
           "id": "Task_Second",
+          "origin": {
+            "definition": null,
+            "sourceId": "Task_Second"
+          },
           "sourceType": "userTask",
           "parent": null
         },
@@ -248,9 +284,12 @@
             ],
             "inputs": [],
             "outputs": [],
-            "boundaries": [],
             "multiInstance": null,
-            "compensationHandler": null
+            "compensationHandler": null,
+            "defaultFlow": null,
+            "asyncBefore": false,
+            "asyncAfter": false,
+            "boundaries": []
           }
         }
       }
@@ -260,38 +299,62 @@
     {
       "id": "Flow_Default",
       "source": "Choice",
-      "target": "Task_Default"
+      "target": "Task_Default",
+      "condition": null
     },
     {
       "id": "Flow_Default_End",
       "source": "Task_Default",
-      "target": "End_Default"
+      "target": "End_Default",
+      "condition": null
     },
     {
       "id": "Flow_First",
       "source": "Choice",
-      "target": "Task_First"
+      "target": "Task_First",
+      "condition": {
+        "simpleBoolean": {
+          "body": {
+            "literal": {
+              "value": true
+            }
+          }
+        }
+      }
     },
     {
       "id": "Flow_First_End",
       "source": "Task_First",
-      "target": "End_First"
+      "target": "End_First",
+      "condition": null
     },
     {
       "id": "Flow_Second",
       "source": "Choice",
-      "target": "Task_Second"
+      "target": "Task_Second",
+      "condition": {
+        "simpleBoolean": {
+          "body": {
+            "isPresent": {
+              "name": "route"
+            }
+          }
+        }
+      }
     },
     {
       "id": "Flow_Second_End",
       "source": "Task_Second",
-      "target": "End_Second"
+      "target": "End_Second",
+      "condition": null
     },
     {
       "id": "Flow_Start",
       "source": "Start",
-      "target": "Choice"
+      "target": "Choice",
+      "condition": null
     }
   ],
+  "variables": [],
   "processes": []
 }

@@ -1,7 +1,8 @@
 import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { fixed, headerOf } from "./build.js";
-import { conditionExpression, eventInputs, eventOutputs, valueSource } from "./data.js";
+import { declaredImplementation, effectBinding } from "./binding.js";
+import { conditionExpression, eventInputs, eventOutputs, valueSource, variableCopies } from "./data.js";
 import { FlowElementKind, ReadRefusal, ReadRefusalCode, list, optionalId, reference, requireId, text } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
 import { assertNever, ctor, foreign, literalSource, subscription, variable } from "./wire.js";
@@ -174,6 +175,38 @@ function conditionPayload(ctx: ReadContext, definition: ElementRecord): KernelJs
   };
 }
 
+/**
+ * CIB executes a Message throw with a declared implementation as a Service Task; without one it is an unbound
+ * pass-through. `MessageThrow` has no field for the Message or Operation it names, so those are reported.
+ */
+function messageThrow(ctx: ReadContext, event: ElementRecord, definition: ElementRecord): KernelJson {
+  const binding = declaredImplementation(ctx, definition) === null ? null : effectBinding(ctx, definition);
+  if (reference(definition, "messageRef", "bpmn:Message") !== null) {
+    ctx.noteNotCarried({ element: optionalId(event), fact: "messageRef" });
+  }
+  if (reference(definition, "operationRef", "bpmn:Operation") !== null) {
+    ctx.noteNotCarried({ element: optionalId(event), fact: "operationRef" });
+  }
+  return { binding, payload: eventInputs(ctx, event) };
+}
+
+/**
+ * A Signal throw's payload and propagation: its Data Associations, then the `camunda:in` copies of its definition
+ * (`BpmnParse#parseSignalEventDefinition`); `camunda:async` is the asynchronous throw.
+ */
+function signalThrow(ctx: ReadContext, event: ElementRecord, definition: ElementRecord): KernelJson {
+  const copies = variableCopies(definition, ctx.extensions(definition, "in"));
+  if (copies.localCopy) ctx.noteNotCarried({ element: optionalId(definition), fact: "camunda:in local" });
+  return {
+    name: signalName(definition),
+    payload: [...eventInputs(ctx, event), ...copies.mappings],
+    propagateAll: copies.propagateAll,
+    localOnly: copies.localOnly,
+    businessKey: copies.businessKey,
+    asynchronous: ctx.attribute(definition, "async") === "true",
+  };
+}
+
 function requireCode(event: ElementRecord, code: string | null): string {
   if (code === null) throw new ReadRefusal(ReadRefusalCode.ThrowWithoutCode, optionalId(event), "no code to throw");
   return code;
@@ -182,17 +215,16 @@ function requireCode(event: ElementRecord, code: string | null): string {
 function readThrow(ctx: ReadContext, event: ElementRecord, definition: ElementRecord): KernelJson {
   const kind = kindOf(definition);
   switch (kind) {
-    case EventDefinitionKind.Message: {
-      const message = reference(definition, "messageRef", "bpmn:Message");
-      return ctor("message", { payload: { binding: message === null ? "" : requireId(message), payload: eventInputs(ctx, event) } });
-    }
+    case EventDefinitionKind.Message:
+      return ctor("message", { payload: messageThrow(ctx, event, definition) });
     case EventDefinitionKind.Signal:
-      return ctor("signal", { payload: { name: signalName(definition), payload: eventInputs(ctx, event) } });
+      return ctor("signal", { payload: signalThrow(ctx, event, definition) });
     case EventDefinitionKind.Error: {
       const error = reference(definition, "errorRef", "bpmn:Error");
+      const message = error === null ? null : ctx.attribute(error, "errorMessage");
       return ctor("error", { payload: {
         code: requireCode(event, error === null ? null : text(error, "errorCode")),
-        message: error === null ? null : ctx.attribute(error, "errorMessage"),
+        message: message === null ? null : valueSource(message),
       } });
     }
     case EventDefinitionKind.Escalation: {

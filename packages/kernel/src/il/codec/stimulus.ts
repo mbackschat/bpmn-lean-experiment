@@ -18,9 +18,11 @@ import {
 import { assertNever, type Value } from "../types.js";
 import {
   CommandActionTag,
+  DeliveryTriggerTag,
   EffectOutcomeTag,
   FailureTag,
   InputTag,
+  noStartTrigger,
   type Binding,
   type CommandAction,
   type EffectOutcome,
@@ -138,29 +140,29 @@ export function effectOutcomeFromJson(json: unknown): Decoded<EffectOutcome> {
   return refuse(`unknown effect result kind ${kind.value}`);
 }
 
-function startStimulus(json: unknown): Decoded<Input> {
+function startStimulus(json: unknown, atMs: number | null): Decoded<Input> {
   const instanceId = stringField(json, "instanceId");
   if (!instanceId.ok) {
     return instanceId;
   }
   return mapDecoded(bindingsField(json, "initialVariables"), (variables) => ({
     tag: InputTag.Start,
-    payload: { instanceId: instanceId.value, startEvent: null, variables },
+    payload: { instanceId: instanceId.value, startEvent: null, variables, trigger: noStartTrigger, businessKey: null, atMs },
   }));
 }
 
-function triggeredStartStimulus(json: unknown): Decoded<Input> {
+function triggeredStartStimulus(json: unknown, atMs: number | null): Decoded<Input> {
   const instanceId = stringField(json, "instanceId");
   if (!instanceId.ok) {
     return instanceId;
   }
   return mapDecoded(stringField(json, "startEventId"), (startEvent) => ({
     tag: InputTag.Start,
-    payload: { instanceId: instanceId.value, startEvent, variables: [] },
+    payload: { instanceId: instanceId.value, startEvent, variables: [], trigger: noStartTrigger, businessKey: null, atMs },
   }));
 }
 
-function deliveryStimulus(json: unknown, withPayload: boolean): Decoded<Input> {
+function deliveryStimulus(json: unknown, withPayload: boolean, atMs: number | null): Decoded<Input> {
   const occurrence = occurrenceField(json, "subscriptionId");
   if (!occurrence.ok) {
     return occurrence;
@@ -181,56 +183,62 @@ function deliveryStimulus(json: unknown, withPayload: boolean): Decoded<Input> {
   }
   return accept({
     tag: InputTag.Deliver,
-    payload: { occurrence: occurrence.value, channel: channel.value, correlation: [], payload },
+    payload: {
+      occurrence: occurrence.value,
+      trigger: { tag: DeliveryTriggerTag.Message, channel: channel.value },
+      correlation: [],
+      payload,
+      atMs,
+    },
   });
 }
 
-function incidentStimulus(json: unknown, action: CommandAction): Decoded<Input> {
+function incidentStimulus(json: unknown, action: CommandAction, atMs: number | null): Decoded<Input> {
   const incident = objVal(json, "incidentId");
   if (!incident.ok) {
     return incident;
   }
   return mapDecoded(occurrenceField(incident.value, "effectId"), (occurrence) => ({
     tag: InputTag.Command,
-    payload: { occurrence, action },
+    payload: { occurrence, action, atMs },
   }));
 }
 
-const stimulusKinds: ReadonlyMap<string, (json: unknown) => Decoded<Input>> = new Map([
+const stimulusKinds: ReadonlyMap<string, (json: unknown, atMs: number | null) => Decoded<Input>> = new Map([
   ["startProcess", startStimulus],
   ["triggerTimerStart", triggeredStartStimulus],
   ["triggerMessageStart", triggeredStartStimulus],
   [
     "completeUserTaskInstance",
-    (json: unknown): Decoded<Input> => {
+    (json: unknown, atMs: number | null): Decoded<Input> => {
       const occurrence = occurrenceField(json, "taskId");
       if (!occurrence.ok) {
         return occurrence;
       }
       return mapDecoded(bindingsField(json, "submittedValues"), (values) => ({
         tag: InputTag.Command,
-        payload: { occurrence: occurrence.value, action: { tag: CommandActionTag.CompleteUserTask, values } },
+        payload: { occurrence: occurrence.value, action: { tag: CommandActionTag.CompleteUserTask, values }, atMs },
       }));
     },
   ],
-  ["deliverMessage", (json: unknown) => deliveryStimulus(json, false)],
-  ["deliverPayloadMessage", (json: unknown) => deliveryStimulus(json, true)],
+  ["deliverMessage", (json: unknown, atMs: number | null) => deliveryStimulus(json, false, atMs)],
+  ["deliverPayloadMessage", (json: unknown, atMs: number | null) => deliveryStimulus(json, true, atMs)],
   [
     "fireTimer",
-    (json: unknown): Decoded<Input> => {
+    (json: unknown, atMs: number | null): Decoded<Input> => {
       const occurrence = occurrenceField(json, "timerId");
       if (!occurrence.ok) {
         return occurrence;
       }
       return mapDecoded(nat.decode(objValD(json, "logicalTimeMs")), (logicalTimeMs) => ({
         tag: InputTag.TimerFire,
-        payload: { occurrence: occurrence.value, logicalTimeMs },
+        payload: { occurrence: occurrence.value, logicalTimeMs, atMs },
       }));
     },
   ],
   [
     "completeEffect",
-    (json: unknown): Decoded<Input> => {
+    (json: unknown, atMs: number | null): Decoded<Input> => {
       const occurrence = occurrenceField(json, "effectId");
       if (!occurrence.ok) {
         return occurrence;
@@ -239,22 +247,22 @@ const stimulusKinds: ReadonlyMap<string, (json: unknown) => Decoded<Input>> = ne
       const outcome = raw.ok ? effectOutcomeFromJson(raw.value) : raw;
       return mapDecoded(outcome, (decoded) => ({
         tag: InputTag.EffectResult,
-        payload: { occurrence: occurrence.value, outcome: decoded },
+        payload: { occurrence: occurrence.value, outcome: decoded, atMs },
       }));
     },
   ],
   [
     "reportEffectFailure",
-    (json: unknown): Decoded<Input> =>
+    (json: unknown, atMs: number | null): Decoded<Input> =>
       mapDecoded(occurrenceField(json, "effectId"), (occurrence) => ({
         tag: InputTag.EffectResult,
-        payload: { occurrence, outcome: { tag: EffectOutcomeTag.TechnicalFailure } },
+        payload: { occurrence, outcome: { tag: EffectOutcomeTag.TechnicalFailure }, atMs },
       })),
   ],
-  ["retryIncident", (json: unknown) => incidentStimulus(json, { tag: CommandActionTag.RetryIncident })],
+  ["retryIncident", (json: unknown, atMs: number | null) => incidentStimulus(json, { tag: CommandActionTag.RetryIncident }, atMs)],
   [
     "cancelIncidentProcess",
-    (json: unknown) => incidentStimulus(json, { tag: CommandActionTag.CancelIncidentProcess }),
+    (json: unknown, atMs: number | null) => incidentStimulus(json, { tag: CommandActionTag.CancelIncidentProcess }, atMs),
   ],
 ]);
 
@@ -275,7 +283,25 @@ export function stimulusFromJson(json: unknown): Decoded<readonly [string, Input
   if (decoder === undefined) {
     return accept([commandId.value, null] as const);
   }
-  return mapDecoded(decoder(json), (input) => [commandId.value, input] as const);
+  const atMs = logicalTime(json);
+  if (!atMs.ok) {
+    return atMs;
+  }
+  return mapDecoded(decoder(json, atMs.value), (input) => [commandId.value, input] as const);
+}
+
+/** `at`, the input's logical time in milliseconds, is optional; absent or null leaves the clock unchanged. */
+function logicalTime(json: unknown): Decoded<number | null> {
+  const raw = objVal(json, "at");
+  if (!raw.ok || raw.value === null) {
+    return accept(null);
+  }
+  return nat.decode(raw.value);
+}
+
+/** The refusal or failure code a failure carries. */
+export function failureCode(failure: Failure): string {
+  return failure.code;
 }
 
 export function failureName(failure: Failure): string {

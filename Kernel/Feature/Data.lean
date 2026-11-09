@@ -2,11 +2,11 @@ module
 
 public import Kernel.Hooks
 
-/-! # Data: in-kernel expression evaluation
+/-! # Data: expression evaluation and variable writes
 
 The kernel evaluates only the [Simple Boolean subset](../../docs/SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) and plain
-variable references; every other expression is answered by the profile's host evaluator. Variables are looked up
-innermost scope first.
+variable references; admission refuses every other expression. Variables are looked up innermost scope first. This
+feature is the only writer of variables (guard 17): writes reach it through the completion pipeline and `Signal.write`.
 -/
 
 public section
@@ -29,13 +29,48 @@ def simpleBoolean (variables : List (String × Value)) : SimpleBoolean → Bool
     | some (.string actual) => actual == expected
     | _ => false
 
-def evaluate (variables : List (String × Value)) : Expression → Evaluation
+def evaluate (context : EvalContext) : Expression → Evaluation
   | .literal value => .value value
-  | .simpleBoolean body => .value (.bool (simpleBoolean variables body))
+  | .simpleBoolean body => .value (.bool (simpleBoolean context.variables body))
   | .variable name =>
-    match lookup variables name with
+    match lookup context.variables name with
     | some value => .value value
     | none => .failure "unknown-variable"
-  | .foreign _ _ => .needsHost
+  -- Admission refuses it (`expression.outsideSimpleBoolean`, `mapping.expression`, `flow.condition.foreign`).
+  | .foreign _ _ => .failure "expression.outsideSimpleBoolean"
+
+/-- One write seen from `scope`. Outward, a name no scope binds goes to the instance root when the instance's process
+declares it, since a target is a declared item ([BPMN 2.0.2 §10.4.1](../../docs/reference/bpmn-2.0.2/README.md)); any
+other name is the profile's choice: refused, or created at the instance root as CIB does (`UndeclaredWrite`,
+`AbstractVariableScope.setVariable`). -/
+def write (ctx : Ctx) (rule : WriteRule) (scope : ScopeOccurrenceId) (state : State) (binding : String × Value) :
+    Outcome :=
+  let (name, value) := binding
+  match rule with
+  | .own => .ok (state.setVariable scope name value)
+  | .outward =>
+    match state.owner? scope name with
+    | some owner => .ok (state.setVariable owner name value)
+    | none =>
+      let root := state.instanceRoot scope
+      let definition := (state.slots.instances.find? (·.root == root)).bind (·.definition)
+      if ctx.program.declares definition name then .ok (state.setVariable root name value)
+      else
+        match ctx.program.options.undeclaredWrite with
+        | .refused => .error (.semanticFailure "undeclared-write")
+        | .atInstanceRoot => .ok (state.setVariable root name value)
+
+/-- `Hooks.writeOutputs`: apply writes from a scope occurrence, under the writing feature's rule. -/
+def writeOutputs (ctx : Ctx) (scope : ScopeOccurrenceId) (writes : List (String × Value)) (rule : WriteRule) (state : State) :
+    Outcome :=
+  writes.foldlM (write ctx rule scope) state
+
+/-- `Hooks.removeVariables`: delete each name from the innermost scope that declares it; an undeclared name is nothing
+to delete. -/
+def removeVariables (_ : Ctx) (scope : ScopeOccurrenceId) (names : List String) (state : State) : Outcome :=
+  .ok <| names.foldl (fun state name =>
+    match state.owner? scope name with
+    | some owner => state.removeVariable owner name
+    | none => state) state
 
 end Kernel.Feature.Data

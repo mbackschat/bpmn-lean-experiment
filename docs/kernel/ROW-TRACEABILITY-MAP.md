@@ -19,20 +19,22 @@ Every open row maps onto the lifecycle design after the ten amendments below. As
 | F9 | `Step.begin (element) (scope) (continuation)`; "replaces `Arrival`" | `Occurrence` drops the arrival flow that per-flow joins need. A Boundary is not an `Element`, so the begin dispatch has no arm for it. A fired catch or Link catch must begin without re-subscribing. | `Occurrence.entry : Entry` (`token flow` or `triggered values`); begin resolves boundaries through `Program.boundary?`. | PC-CF-03, PC-CF-04, PC-CF-05, PC-CF-08, PC-BASIC-02, PC-ERROR-01, PC-ERROR-02, PC-ESCALATION-02, PC-ESCALATION-03, PC-TX-02, PC-TIMER-06, PC-TIMER-07, PC-TIMER-08, PC-MESSAGE-04, PC-MESSAGE-05, PC-MESSAGE-06, PC-MESSAGE-07, PC-SIGNAL-02, PC-SIGNAL-03, PC-CONDITION-03, PC-CONDITION-04, PC-CONDITION-05 |
 | F10 | Section 1: body and instances are "ordinary occurrences of the element" | One counter makes the first instance activation 2 and makes every instance identity depend on body entries. CIB gives the body its own activity id (`BpmnParse:185`, `:1808`). | Key the counter by `(instance, element, ActivationRole)`; the journal carries the role. | PC-MI-01 to PC-MI-12 |
 
-Status of the amendments in the working tree, measured 2026-11-08:
+Status of the amendments in the working tree after the W0.1 audit fixes, measured 2026-11-08:
 
 | Gap | Status | Evidence, or what remains |
 |---|---|---|
 | F1 | closed | Reservation: `Occurrence.begun`, `State.reserve`; a repeating subscription reserves afresh per firing (`completeFiring`). The table cites `Occurrence.begun` instead of the `ItemOwner` first proposed. |
 | F2 | closed | `Leave.raised` writes, then skips retention and continuation (`Step.complete`); the raise is a separate signal. |
-| F3 | open | No write path without an ending occurrence. |
-| F4 | partial | `Work.openWork` arms no boundaries on an instance. `Propagation.searchScopes` still reads the boundaries of an instance scope occurrence; `Ctx.handlerScope` only names compensation. |
-| F5 | partial | `hooks.completed` precedes `removeOccurrence`. Retained records are not promoted: `Scopes` still refuses `compensation-retained-at-scope-completion`. |
-| F6 | open | No Activity-owned scope occurrence. |
-| F7 | open | `Step.complete` answers `complete-unknown-occurrence` as a semantic failure instead of dropping the signal. |
+| F3 | closed | `Signal.write` and `Signal.remove` write without ending an occurrence; the variable commands use them. |
+| F4 | closed | Work, Scopes and Call arm no boundaries when the envelope is Multi-Instance; `arriveMultiInstance` arms them at the body, and `Ctx.scopeRole` answers `multiInstanceInstance` for an instance scope and a scope its occurrence owns. |
+| F5 | closed | `hooks.completed` precedes `removeOccurrence`, and a completed Sub-Process's retained records move into `Compensable.children`. |
+| F6 | closed | An Activity with inputs owns a scope occurrence (`Work.arriveActivity`); idle completion skips it (`Step.activityLocal`) and `removeOccurrence` disposes it. |
+| F7 | closed | `Step.complete` and `Signal.fire` drop a signal whose occurrence or item is gone. |
 | F8 | closed | `clearInside (keep)`. |
 | F9 | closed | `Occurrence.incoming`, `BeginRequest.reserved`, boundaries begun through `completeFiring`. |
-| F10 | open | `State.activate` keys `(instance, element)`, so a body and its instances share one counter. |
+| F10 | closed | `State.activate` keys `(instance, element, ActivationRole)`, and the journal carries the role. |
+
+An unavailable InputSet holds its token in `FeatureSlots.held` (BPMN 2.0.2 §10.4.2), decided by the owner on 2026-11-08 because `activity-data-input-absent` and `activity-data-input-output-absent` depend on it. Publishing the hold and releasing it when the source is set land with the rows that need them.
 
 Inherited, through the rows they consume: PC-DELIVERY-01 (F2), PC-JOURNEY-02 (F2, F3), PC-JOURNEY-03 and PC-JOURNEY-04 (F4, F10), PC-JOURNEY-05 (F1, F9), PC-JOURNEY-06 (F1, F9), PC-JOURNEY-07 (F2, F5). A journey row carries `L.consumes` instead of the amendment tokens.
 
@@ -204,7 +206,7 @@ Each cell is a comma-separated token list; `-` means empty. A token is a Lean na
 
 ## Shape delta
 
-Each block is ready to paste over the named declaration; a line comment names the rows that need the item. A block marked `-- add to` lists only the fields to add to the record as it stands in the working tree. Justifications sit beside the choice they justify; the code rule that a comment states why applies when these land.
+Landed in the working tree on 2026-11-08 with the W0.1 audit fixes, except where the [Lifecycle fit](#lifecycle-fit) status says otherwise; the blocks stay as the review record. Each block is ready to paste over the named declaration; a line comment names the rows that need the item. A block marked `-- add to` lists only the fields to add to the record as it stands in the working tree. Justifications sit beside the choice they justify; the code rule that a comment states why applies when these land.
 
 ### IL (`Kernel/IL/Types.lean`)
 
@@ -249,8 +251,8 @@ structure Envelope where
   multiInstance : Option MultiInstance := none
   compensationHandler : Option ElementId := none
   defaultFlow : Option FlowId := none               -- PC-CF-07
-  asyncBefore : Bool := false                       -- PC-AUTO-01 (CIB-EXT-0001); admitted only where selected
-  asyncAfter : Bool := false                        -- refused: activity.asyncAfter
+  asyncBefore : Bool := false                       -- PC-AUTO-01; a transaction boundary `Step` reads (CIB-EXT-0027)
+  asyncAfter : Bool := false                        -- a transaction boundary `Step` reads (CIB-EXT-0027)
   deriving Repr
 
 /-- BPMN `transactionMethod`. CIB reads no such attribute (`BpmnParse#parseTransaction`). -/
@@ -696,7 +698,7 @@ The evaluator needs no change. An expression outside Simple Boolean is refused a
 | `State.writeOutward` | an undeclared output lands at the instance root | CIB-EXT-0020 (`AbstractVariableScope.setVariable`) | `O.undeclaredWrite` |
 | `State.write` | an undeclared name lands in the writing scope | none: disagrees with `writeOutward` and with CIB's root creation (`TaskEntity.setExecutionVariables`) | one write rule under `O.undeclaredWrite`; defect |
 | `Work.outputs` | a submission is exactly the OutputSet | §10.4.1, §13.3.2, with a project restriction on superfluous values | `O.submission` |
-| `Work.arriveActivity`, `MultiInstance.arriveMultiInstance` | an unavailable InputSet holds the token | §13.3.2 for Data Associations; for `camunda:inputParameter`, unclassified (E1) | `Mapping.dialect`; the hold must be published |
+| `Work.arriveActivity`, `MultiInstance.arriveMultiInstance` | an unavailable InputSet holds the token | §10.4.2, §13.3.2 for Data Associations; for `camunda:inputParameter`, CIB-EXT-0024 (inferred) | `Mapping.dialect`; publishing and release land with their rows |
 | `Work.effectResult` | a business failure writes outputs, then raises | CIB-EXT-0004, -0009, -0016; BPMN writes none (§13.3.2) | `O.errorPathOutputs` |
 | `Work.effectResult` | a technical failure opens an incident | CIB-EXT-0013, CIB-CFG-0008 | `O.technicalFailure` |
 | `Work.resolveIncident` | cancel ends the root as cancelled | CIB-EXT-0014, CIB-OP-0009 | `O.incidentProcessCancellation` |
@@ -728,7 +730,7 @@ The evaluator needs no change. An expression outside Simple Boolean is refused a
 | `State.calledInstanceId` | derived called instance identity | project identity; unclassified (E8) | none |
 | `Population.publish` | exactly one candidate | CIB-LIM-0002 account; capsule specification | `O.messageCorrelation` |
 
-Proposed register entries, to land with the profile behaviour they govern:
+Register entries, landed in the [relation register](../CIB-BPMN-RELATION-REGISTER.md) on 2026-11-08 with the behaviour they govern, plus CIB-INT-0011 for `ConditionOrder`:
 
 - E1, CIB-EXT-0024: "An unresolved `camunda:inputParameter` or `outputParameter` expression raises an evaluation failure that rolls the command back; it is not an unavailable Data Input." Verify in a calibration probe before selection.
 - E2, widen CIB-INT-0003: "A diverging Inclusive Gateway with no selected flow and no default rolls its command back" (`InclusiveGatewayActivityBehavior:82`, Table 13.3).

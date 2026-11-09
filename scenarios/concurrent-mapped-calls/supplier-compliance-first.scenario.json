@@ -68,7 +68,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": [
         {
@@ -86,7 +86,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
-        "activation": 1
+        "activation": 3
       },
       "submittedValues": []
     },
@@ -96,7 +96,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": [
         {
@@ -114,7 +114,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:23:ComplianceExpertOpinion:1",
         "elementId": "GiveExpertOpinion",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": [
         {

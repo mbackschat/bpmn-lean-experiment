@@ -1,11 +1,26 @@
 /**
  * Kernel IL, transcribed from `Kernel/IL/Types.lean`, which is the authority.
  *
- * A Lean inductive whose constructors carry arguments is a discriminated union whose `tag` is an enum member
- * spelled exactly as the Lean constructor, so the codec's constructor tables and the derived JSON tags coincide.
- * An all-nullary Lean inductive is a plain string enum. `Option` is `T | null`, `Nat` and `Int` are safe integers,
- * and `ElementId`/`FlowId` are plain strings as on the wire.
+ * The kernel's program representation: a flat table of elements keyed by identifier, each a header plus one payload
+ * record. A field the admitted surface does not cover is refused by the admission modules, never left out of these
+ * types. A Lean inductive whose constructors carry arguments is a discriminated union whose `tag` is an enum member
+ * spelled exactly as the Lean constructor, so the codec's constructor tables and the derived JSON tags coincide; an
+ * all-nullary Lean inductive is a plain string enum. `Option` is `T | null`, `Nat` and `Int` are safe integers, and
+ * `ElementId`/`FlowId` are plain strings as on the wire. A Lean query `T.f` is exported as `tF`, `?` dropped.
  */
+
+import {
+  AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
+  ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
+  MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
+  UnhandledError,
+} from "./types/options.js";
+export {
+  AbnormalScopeEnd, CallBindingTime, type CompensationHandlerFailure, CompensationHandlerFailureTag, CompensationOrder,
+  ConditionOrder, ContinuationFailure, DeliveryVariables, ErrorPathOutputs, Evaluator, MessageCorrelation,
+  MultiInstanceFinalBody, MultiInstanceOutputs, type ProfileOptions, SubmissionRule, TechnicalFailure, UndeclaredWrite,
+  UnhandledError,
+};
 
 export type ElementId = string;
 export type FlowId = string;
@@ -21,22 +36,18 @@ export function compareStrings(left: string, right: string): number {
   const b = Array.from(right, (char) => char.codePointAt(0) ?? 0);
   for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
     const difference = (a[index] ?? 0) - (b[index] ?? 0);
-    if (difference !== 0) {
-      return difference;
-    }
+    if (difference !== 0) return difference;
   }
   return a.length - b.length;
 }
 
 /**
- * Lean's `List.mergeSort` with its `le` comparator, transcribed rather than delegated to `Array.prototype.sort` so
- * that the result agrees with Lean's even for a comparator that is not a total preorder: the first half takes
- * `⌈n/2⌉` items and a merge prefers the left item when `le left right`.
+ * Lean's `List.mergeSort` with its `le` comparator, transcribed rather than delegated to `Array.prototype.sort` so that
+ * the result agrees with Lean's even for a comparator that is not a total preorder: the first half takes `⌈n/2⌉` items
+ * and a merge prefers the left item when `le left right`.
  */
 export function mergeSort<T>(items: readonly T[], le: (left: T, right: T) => boolean): readonly T[] {
-  if (items.length < 2) {
-    return items;
-  }
+  if (items.length < 2) return items;
   const half = Math.floor((items.length + 1) / 2);
   const left = mergeSort(items.slice(0, half), le);
   const right = mergeSort(items.slice(half), le);
@@ -57,7 +68,20 @@ export function mergeSort<T>(items: readonly T[], le: (left: T, right: T) => boo
   return [...merged, ...left.slice(i), ...right.slice(j)];
 }
 
-/** Data values; the wire form is the scenario contract's `variableValue`, owned by `il/codec.ts`. */
+/** Lean's `String.utf8ByteSize`, counted per code point; a lone surrogate counts as its replacement character. */
+export function utf8ByteSize(text: string): number {
+  let size = 0;
+  for (const char of text) {
+    const point = char.codePointAt(0) ?? 0;
+    size += point < 0x80 ? 1 : point < 0x800 ? 2 : point < 0x10000 ? 3 : 4;
+  }
+  return size;
+}
+
+/** Lean's `List.eraseDups` length: the number of distinct members. */
+export function distinctCount<T>(items: readonly T[]): number { return new Set(items).size; }
+
+/** A typed data value, as the scenario contract's `variableValue` carries it; the one nested type. */
 export enum ValueTag {
   Null = "null",
   Bool = "bool",
@@ -79,6 +103,7 @@ export type Value =
   | { readonly tag: ValueTag.List; readonly items: readonly Value[] }
   | { readonly tag: ValueTag.Map; readonly entries: readonly (readonly [string, Value])[] };
 
+/** The Simple Boolean subset, evaluated inside the kernel ([decision](../../../../docs/SIMPLE-BOOLEAN-EXPRESSION-DECISION.md)). */
 export enum SimpleBooleanTag {
   Literal = "literal",
   IsPresent = "isPresent",
@@ -92,6 +117,10 @@ export type SimpleBoolean =
   | { readonly tag: SimpleBooleanTag.IsNull; readonly name: string }
   | { readonly tag: SimpleBooleanTag.StringEquals; readonly name: string; readonly value: string };
 
+/**
+ * An expression. `literal`, `simpleBoolean` and `variable` are evaluated by the kernel; admission refuses `foreign`,
+ * which only the deferred JUEL binding (PC-DATA-07) would read.
+ */
 export enum ExpressionTag {
   Literal = "literal",
   SimpleBoolean = "simpleBoolean",
@@ -105,51 +134,46 @@ export type Expression =
   | { readonly tag: ExpressionTag.Variable; readonly name: string }
   | { readonly tag: ExpressionTag.Foreign; readonly language: string; readonly source: string };
 
-export enum ValueSourceTag {
-  Literal = "literal",
-  Expression = "expression",
-}
+/** A configuration value given either literally or by an expression. */
+export enum ValueSourceTag { Literal = "literal", Expression = "expression" }
 
 export type ValueSource =
   | { readonly tag: ValueSourceTag.Literal; readonly value: string }
   | { readonly tag: ValueSourceTag.Expression; readonly body: Expression };
 
-export interface Mapping {
-  readonly target: string;
-  readonly source: Expression;
+/**
+ * Which syntax wrote a mapping, which settles what an unset source means: an unavailable Data Input (BPMN 2.0.2
+ * §10.4.2), an unresolved `camunda:inputParameter` or `outputParameter` expression, or a `camunda:in`/`out` copy that
+ * reads null (CIB-EXT-0021).
+ */
+export enum MappingDialect {
+  DataAssociation = "dataAssociation",
+  IoParameter = "ioParameter",
+  CallVariable = "callVariable",
 }
+
+/** `target := source`, evaluated in the scope the owning element names. */
+export interface Mapping { readonly target: string; readonly source: Expression; readonly dialect: MappingDialect; }
 
 // Subscriptions
 
-export enum CycleDialect {
-  Iso8601 = "iso8601",
-  Cron = "cron",
-}
+export enum CycleDialect { Iso8601 = "iso8601", Cron = "cron" }
 
-export enum TimerScheduleTag {
-  Duration = "duration",
-  Date = "date",
-  Cycle = "cycle",
-}
+export enum TimerScheduleTag { Duration = "duration", Date = "date", Cycle = "cycle" }
 
 export type TimerSchedule =
   | { readonly tag: TimerScheduleTag.Duration; readonly value: ValueSource }
   | { readonly tag: TimerScheduleTag.Date; readonly value: ValueSource }
   | { readonly tag: TimerScheduleTag.Cycle; readonly value: ValueSource; readonly dialect: CycleDialect };
 
-export interface TimerTrigger {
-  readonly schedule: TimerSchedule;
-}
+export interface TimerTrigger { readonly schedule: TimerSchedule; }
 
-export interface CorrelationCriterion {
-  readonly key: string;
-  readonly value: Expression;
-}
+export interface CorrelationCriterion { readonly key: string; readonly value: Expression; }
 
 /**
  * `name` is the BPMN Message's identifier, `null` for an unspecified Message (a Receive Task without `messageRef`,
- * which only its waiting occurrence addresses); `interfaceRef` and `operationRef` name the Operation that carries
- * it, when the model gives one.
+ * which only its waiting occurrence addresses); `interfaceRef` and `operationRef` name the Operation that carries it,
+ * when the model gives one.
  */
 export interface MessageTrigger {
   readonly name: ValueSource | null;
@@ -158,13 +182,13 @@ export interface MessageTrigger {
   readonly operationRef: string | null;
 }
 
-export interface SignalTrigger {
-  readonly name: ValueSource;
-}
+export interface SignalTrigger { readonly name: ValueSource; }
 
 export interface ConditionTrigger {
   readonly condition: Expression;
+  // guard-exception(19): a Conditional trigger is refused whole (`event.catch.condition`, `boundary.condition`, `start.condition`).
   readonly variableName: string | null;
+  // guard-exception(19): refused with its trigger, as `variableName` above.
   readonly variableEvents: readonly string[];
 }
 
@@ -176,10 +200,7 @@ export interface ErrorTrigger {
 }
 
 /** `code = null` catches every Escalation. */
-export interface EscalationTrigger {
-  readonly code: string | null;
-  readonly codeVariable: string | null;
-}
+export interface EscalationTrigger { readonly code: string | null; readonly codeVariable: string | null; }
 
 /** Guarded type: `feature/subscriptions` owns matching on it. */
 export enum TriggerTag {
@@ -203,10 +224,7 @@ export type Trigger =
   | { readonly tag: TriggerTag.Compensation }
   | { readonly tag: TriggerTag.Cancel };
 
-export interface Subscription {
-  readonly trigger: Trigger;
-  readonly outputs: readonly Mapping[];
-}
+export interface Subscription { readonly trigger: Trigger; readonly outputs: readonly Mapping[]; }
 
 export interface Boundary {
   readonly id: ElementId;
@@ -217,29 +235,28 @@ export interface Boundary {
 
 // Throws
 
-export interface MessageThrow {
-  readonly binding: string;
-  readonly payload: readonly Mapping[];
-}
+export interface EffectBinding { readonly protocol: string; readonly operation: string; }
+
+/** `binding = null` is an unbound pass-through (PC-MESSAGE-09). */
+export interface MessageThrow { readonly binding: EffectBinding | null; readonly payload: readonly Mapping[]; }
 
 export interface SignalThrow {
   readonly name: ValueSource;
   readonly payload: readonly Mapping[];
+  // guard-exception(19): a Signal throw is refused whole (`throw.signal`, admission/propagation.ts).
+  readonly propagateAll: boolean;
+  // guard-exception(19): refused with its throw, as `propagateAll` above.
+  readonly localOnly: boolean;
+  readonly businessKey: Expression | null;
+  // guard-exception(19): refused with its throw, as `propagateAll` above.
+  readonly asynchronous: boolean;
 }
 
-export interface ErrorThrow {
-  readonly code: string;
-  readonly message: string | null;
-}
+export interface ErrorThrow { readonly code: string; readonly message: ValueSource | null; }
 
-export interface EscalationThrow {
-  readonly code: string;
-}
+export interface EscalationThrow { readonly code: string; }
 
-export interface CompensationThrow {
-  readonly activity: ElementId | null;
-  readonly waitForCompletion: boolean;
-}
+export interface CompensationThrow { readonly activity: ElementId | null; readonly waitForCompletion: boolean; }
 
 /** Guarded type: `feature/propagation` owns matching on it. */
 export enum ThrowTag {
@@ -277,29 +294,24 @@ export interface UserWork {
   readonly priority: ValueSource | null;
 }
 
-export interface ReceiveWork {
-  readonly message: MessageTrigger;
-}
+export interface ReceiveWork { readonly message: MessageTrigger; }
 
-export interface ServiceWork {
-  readonly protocol: string;
-  readonly operation: string;
-}
+export interface ServiceWork { readonly protocol: string; readonly operation: string; }
 
 export interface SendWork {
-  readonly binding: string;
+  readonly binding: EffectBinding;
+  // guard-exception(19): a Send Task is refused whole (`work.send`, admission/work.ts).
   readonly recipient: ValueSource | null;
   readonly correlation: readonly CorrelationCriterion[];
+  // guard-exception(19): refused with its Send Task, as `recipient` above.
+  readonly messageRef: string | null;
+  readonly operationRef: string | null;
 }
 
 export interface ScriptWork {
+  // guard-exception(19): a Script Task is refused whole (`work.script`, admission/work.ts).
   readonly format: string;
   readonly source: string;
-  readonly resultVariable: string | null;
-}
-
-export interface RuleWork {
-  readonly decision: ValueSource;
   readonly resultVariable: string | null;
 }
 
@@ -316,20 +328,32 @@ export type CallBinding =
   | { readonly tag: CallBindingTag.Version; readonly value: ValueSource }
   | { readonly tag: CallBindingTag.VersionTag; readonly value: ValueSource };
 
+export enum DecisionResultMapping {
+  SingleEntry = "singleEntry",
+  SingleResult = "singleResult",
+  CollectEntries = "collectEntries",
+  ResultList = "resultList",
+}
+
+export interface RuleWork {
+  // guard-exception(19): a Business Rule Task is refused whole (`work.rule`, admission/work.ts).
+  readonly decision: ValueSource;
+  // guard-exception(19): refused with its Business Rule Task, as `decision` above.
+  readonly resultVariable: string | null;
+  readonly binding: CallBinding;
+  // guard-exception(19): refused with its Business Rule Task, as `decision` above.
+  readonly resultMapping: DecisionResultMapping;
+}
+
 export interface CallWork {
   readonly calledElement: ValueSource;
   readonly binding: CallBinding;
+  readonly tenant: ValueSource | null;
   readonly businessKey: Expression | null;
   readonly inputs: readonly Mapping[];
   readonly outputs: readonly Mapping[];
   readonly propagateAllInputs: boolean;
   readonly propagateAllOutputs: boolean;
-  /**
-   * The mappings are CIB `camunda:in`/`camunda:out` copies, which read an unset source as null (CVM-IN-01,
-   * CVM-OUT-01); otherwise they are BPMN Data Associations, whose unset source leaves the InputSet or OutputSet
-   * unavailable (BPMN 2.0.2 §10.4.2).
-   */
-  readonly unsetSourceReadsNull: boolean;
 }
 
 /** Guarded type: `feature/work` owns matching on it. */
@@ -359,19 +383,16 @@ export type Work =
 // Multi-Instance and the shared activity envelope
 
 /** Guarded type: `feature/multi-instance` owns matching on it. */
-export enum MultiInstanceMode {
-  Sequential = "sequential",
-  Parallel = "parallel",
-}
+export enum MultiInstanceMode { Sequential = "sequential", Parallel = "parallel" }
 
-export enum InstanceCountTag {
-  Collection = "collection",
-  Cardinality = "cardinality",
-}
+export enum InstanceCountTag { Collection = "collection", Cardinality = "cardinality" }
 
 export type InstanceCount =
   | { readonly tag: InstanceCountTag.Collection; readonly items: Expression }
   | { readonly tag: InstanceCountTag.Cardinality; readonly count: Expression };
+
+/** Whether the input collection is read once on entry or re-read by a sequential Activity (PC-MI-08). */
+export enum CollectionRead { EntrySnapshot = "entrySnapshot", SequentialReread = "sequentialReread" }
 
 export interface MultiInstance {
   readonly mode: MultiInstanceMode;
@@ -381,7 +402,7 @@ export interface MultiInstance {
   readonly inputDataItem: string | null;
   readonly outputDataItem: string | null;
   readonly outputCollection: string | null;
-  readonly mutableCollection: boolean;
+  readonly mutableCollection: CollectionRead;
 }
 
 export interface Envelope {
@@ -392,25 +413,34 @@ export interface Envelope {
   readonly boundaries: readonly Boundary[];
   readonly multiInstance: MultiInstance | null;
   readonly compensationHandler: ElementId | null;
+  /** PC-CF-07. */
+  readonly defaultFlow: FlowId | null;
+  /** A transaction boundary before the element begins and after it completes (CIB-EXT-0027). */
+  readonly asyncBefore: boolean;
+  readonly asyncAfter: boolean;
 }
 
 // Elements
 
-export interface ActivityPayload {
-  readonly work: Work;
-  readonly envelope: Envelope;
-}
+export interface ActivityPayload { readonly work: Work; readonly envelope: Envelope; }
+
+/** BPMN `transactionMethod`. CIB reads no such attribute (`BpmnParse#parseTransaction`). */
+export enum TransactionMethodTag { Compensate = "compensate", Store = "store", Image = "image", Other = "other" }
+
+export type TransactionMethod =
+  | { readonly tag: TransactionMethodTag.Compensate }
+  | { readonly tag: TransactionMethodTag.Store }
+  | { readonly tag: TransactionMethodTag.Image }
+  | { readonly tag: TransactionMethodTag.Other; readonly uri: string };
+
+export interface TransactionScope { readonly method: TransactionMethod; }
 
 /** Guarded type: `feature/scopes` owns matching on it. */
-export enum ScopeKindTag {
-  Embedded = "embedded",
-  Transaction = "transaction",
-  EventSubProcess = "eventSubProcess",
-}
+export enum ScopeKindTag { Embedded = "embedded", Transaction = "transaction", EventSubProcess = "eventSubProcess" }
 
 export type ScopeKind =
   | { readonly tag: ScopeKindTag.Embedded }
-  | { readonly tag: ScopeKindTag.Transaction }
+  | { readonly tag: ScopeKindTag.Transaction; readonly payload: TransactionScope }
   | { readonly tag: ScopeKindTag.EventSubProcess; readonly start: Subscription; readonly interrupting: boolean };
 
 export interface ScopePayload {
@@ -420,17 +450,10 @@ export interface ScopePayload {
   readonly envelope: Envelope;
 }
 
-export enum Placement {
-  Intermediate = "intermediate",
-  Finish = "finish",
-}
+export enum Placement { Intermediate = "intermediate", Finish = "finish" }
 
-export enum EventRoleTag {
-  Catch = "catch",
-  Throw = "throw",
-  LinkCatch = "linkCatch",
-  LinkThrow = "linkThrow",
-}
+/** Guarded type: `step.ts` owns matching on it, and `admission-registry.ts`. */
+export enum EventRoleTag { Catch = "catch", Throw = "throw", LinkCatch = "linkCatch", LinkThrow = "linkThrow" }
 
 export type EventRole =
   | { readonly tag: EventRoleTag.Catch; readonly subscription: Subscription }
@@ -445,17 +468,10 @@ export interface EventPayload {
   readonly outgoing: readonly FlowId[];
 }
 
-export interface ConditionalFlow {
-  readonly flow: FlowId;
-  readonly condition: Expression | null;
-}
-
-/** An Event-Based Gateway arm is a catch Event or a Receive Task, named by identifier. */
-export interface EventArm {
-  readonly target: ElementId;
-}
-
-/** Guarded type: `feature/flow` owns matching on it. Conditional candidates keep document order. */
+/**
+ * Guarded type: `feature/flow` owns matching on it. Conditional candidates keep document order; a Sequence Flow's
+ * condition lives on the `Flow`. An Event-Based Gateway's arms are the targets of its outgoing flows.
+ */
 export enum GatewayKindTag {
   Exclusive = "exclusive",
   Parallel = "parallel",
@@ -464,18 +480,10 @@ export enum GatewayKindTag {
 }
 
 export type GatewayKind =
-  | {
-      readonly tag: GatewayKindTag.Exclusive;
-      readonly candidates: readonly ConditionalFlow[];
-      readonly default: FlowId | null;
-    }
+  | { readonly tag: GatewayKindTag.Exclusive; readonly candidates: readonly FlowId[]; readonly default: FlowId | null }
   | { readonly tag: GatewayKindTag.Parallel }
-  | {
-      readonly tag: GatewayKindTag.Inclusive;
-      readonly candidates: readonly ConditionalFlow[];
-      readonly default: FlowId | null;
-    }
-  | { readonly tag: GatewayKindTag.EventBased; readonly arms: readonly EventArm[] };
+  | { readonly tag: GatewayKindTag.Inclusive; readonly candidates: readonly FlowId[]; readonly default: FlowId | null }
+  | { readonly tag: GatewayKindTag.EventBased };
 
 export interface GatewayPayload {
   readonly kind: GatewayKind;
@@ -483,25 +491,36 @@ export interface GatewayPayload {
   readonly outgoing: readonly FlowId[];
 }
 
-export interface StartPayload {
-  readonly subscription: Subscription | null;
-  readonly outgoing: readonly FlowId[];
+export interface StartPayload { readonly subscription: Subscription | null; readonly outgoing: readonly FlowId[]; }
+
+/**
+ * The definition a called process is bound to. `version` to `tenant` name a binding of a Call Activity, `null` for the
+ * process this program carries; `sourceSha256` pins the source (PC-SCOPE-03).
+ */
+export interface DefinitionRef {
+  readonly key: string;
+  readonly version: number | null;
+  readonly versionTag: string | null;
+  readonly deployment: string | null;
+  readonly tenant: string | null;
+  readonly sourceSha256: string | null;
 }
+
+/**
+ * `sourceId` is the identifier the model's author wrote, which publication shows. `Header.id` is unique in the program,
+ * so that two versions of one called definition can coexist.
+ */
+export interface ElementOrigin { readonly definition: DefinitionRef | null; readonly sourceId: string; }
 
 export interface Header {
   readonly id: ElementId;
+  readonly origin: ElementOrigin;
   readonly sourceType: string;
   readonly parent: ElementId | null;
 }
 
-/** Guarded type: `step.ts` owns matching on it. */
-export enum ElementTag {
-  Activity = "activity",
-  Scope = "scope",
-  Event = "event",
-  Gateway = "gateway",
-  Start = "start",
-}
+/** Guarded type: `step.ts` owns matching on it, and `admission-registry.ts`. */
+export enum ElementTag { Activity = "activity", Scope = "scope", Event = "event", Gateway = "gateway", Start = "start" }
 
 export type Element =
   | { readonly tag: ElementTag.Activity; readonly header: Header; readonly payload: ActivityPayload }
@@ -514,6 +533,7 @@ export interface Flow {
   readonly id: FlowId;
   readonly source: ElementId;
   readonly target: ElementId;
+  readonly condition: Expression | null;
 }
 
 export interface ProgramIdentity {
@@ -523,38 +543,364 @@ export interface ProgramIdentity {
 }
 
 /**
- * The behaviour a profile selects where CIB Seven and the standard differ, as typed data the lowering fills from
- * the profile's relation identifiers; the kernel never reads a profile identifier.
- */
-export interface ProfileOptions {
-  /**
-   * A User Task completion without output mappings writes its submitted values as Process variables
-   * (CIB-EXT-0005); otherwise a submission must be exactly the task's OutputSet.
-   */
-  readonly submissionInstallsVariables: boolean;
-  /** An effect incident offers `cancelIncidentProcess` (CIB-OP-0009). */
-  readonly incidentProcessCancellation: boolean;
-  /**
-   * When set, a User Task submission may name only variables a scope occurrence on the task's chain declares, each
-   * once, and its canonical JSON may take at most this many UTF-8 bytes (CIB-EXT-0020, `NSD-TASK-01`).
-   */
-  readonly scopeChainSubmissionBytes: number | null;
-}
-
-/**
- * A process the program carries besides its root process, for a Call Activity to call: its id and its
+ * A process the program carries besides its root process, for a Call Activity to call: its bound definition and its
  * process-level elements, which have no parent.
  */
 export interface CalledProcess {
-  readonly id: string;
+  readonly definition: DefinitionRef;
   readonly children: readonly ElementId[];
+  /**
+   * The item names the process declares: its Properties, Data Objects and their references, and its own Data Inputs and
+   * Outputs. They are declared at the instance root before any value is bound (BPMN 2.0.2 §10.4.1).
+   */
+  readonly variables: readonly string[];
 }
 
-/** `processes` lists the called processes; every other parentless element belongs to the root process. */
+/**
+ * `processes` lists the called processes; every other parentless element belongs to the root process, whose declared
+ * item names are `variables` (as `CalledProcess.variables`).
+ */
 export interface Program {
   readonly identity: ProgramIdentity;
   readonly options: ProfileOptions;
   readonly elements: readonly Element[];
   readonly flows: readonly Flow[];
+  readonly variables: readonly string[];
   readonly processes: readonly CalledProcess[];
+}
+
+// Queries: read-only projections of a `Program`, in this module so that no module beyond the three hubs has more than
+// five direct importers (guard 15). They project; they never dispatch on what an element means, so matching here does
+// not compete with the dispatch owners.
+
+export function elementHeader(element: Element): Header {
+  switch (element.tag) {
+    case ElementTag.Activity:
+    case ElementTag.Scope:
+    case ElementTag.Event:
+    case ElementTag.Gateway:
+    case ElementTag.Start:
+      return element.header;
+  }
+  return assertNever(element);
+}
+
+/** The envelope of an Activity or Scope; other elements have none. */
+export function elementEnvelope(element: Element): Envelope | null {
+  switch (element.tag) {
+    case ElementTag.Activity: case ElementTag.Scope: return element.payload.envelope;
+    case ElementTag.Event: case ElementTag.Gateway: case ElementTag.Start: return null;
+  }
+  return assertNever(element);
+}
+
+export function elementActivity(element: Element): readonly [Header, ActivityPayload] | null {
+  switch (element.tag) {
+    case ElementTag.Activity: return [element.header, element.payload];
+    case ElementTag.Scope: case ElementTag.Event: case ElementTag.Gateway: case ElementTag.Start: return null;
+  }
+  return assertNever(element);
+}
+
+export function elementScope(element: Element): readonly [Header, ScopePayload] | null {
+  switch (element.tag) {
+    case ElementTag.Scope: return [element.header, element.payload];
+    case ElementTag.Activity: case ElementTag.Event: case ElementTag.Gateway: case ElementTag.Start: return null;
+  }
+  return assertNever(element);
+}
+
+export function elementEvent(element: Element): readonly [Header, EventPayload] | null {
+  switch (element.tag) {
+    case ElementTag.Event: return [element.header, element.payload];
+    case ElementTag.Activity: case ElementTag.Scope: case ElementTag.Gateway: case ElementTag.Start: return null;
+  }
+  return assertNever(element);
+}
+
+export function elementGateway(element: Element): readonly [Header, GatewayPayload] | null {
+  switch (element.tag) {
+    case ElementTag.Gateway: return [element.header, element.payload];
+    case ElementTag.Activity: case ElementTag.Scope: case ElementTag.Event: case ElementTag.Start: return null;
+  }
+  return assertNever(element);
+}
+
+export function elementStart(element: Element): readonly [Header, StartPayload] | null {
+  switch (element.tag) {
+    case ElementTag.Start: return [element.header, element.payload];
+    case ElementTag.Activity: case ElementTag.Scope: case ElementTag.Event: case ElementTag.Gateway: return null;
+  }
+  return assertNever(element);
+}
+
+/** The subscription of a catch Event. */
+export function eventPayloadCatch(payload: EventPayload): Subscription | null {
+  switch (payload.role.tag) {
+    case EventRoleTag.Catch: return payload.role.subscription;
+    case EventRoleTag.Throw: case EventRoleTag.LinkCatch: case EventRoleTag.LinkThrow: return null;
+  }
+  return assertNever(payload.role);
+}
+
+/** The Link name of a throwing Link Event. */
+export function eventPayloadLinkThrow(payload: EventPayload): string | null {
+  switch (payload.role.tag) {
+    case EventRoleTag.LinkThrow: return payload.role.name;
+    case EventRoleTag.Catch: case EventRoleTag.Throw: case EventRoleTag.LinkCatch: return null;
+  }
+  return assertNever(payload.role);
+}
+
+/** The Link name of a catching Link Event. */
+export function eventPayloadLinkCatch(payload: EventPayload): string | null {
+  switch (payload.role.tag) {
+    case EventRoleTag.LinkCatch: return payload.role.name;
+    case EventRoleTag.Catch: case EventRoleTag.Throw: case EventRoleTag.LinkThrow: return null;
+  }
+  return assertNever(payload.role);
+}
+
+/** The outgoing flows of an element, boundaries' flows excluded. */
+export function elementOutgoing(element: Element): readonly FlowId[] {
+  switch (element.tag) {
+    case ElementTag.Activity: case ElementTag.Scope: return element.payload.envelope.outgoing;
+    case ElementTag.Event: case ElementTag.Gateway: case ElementTag.Start: return element.payload.outgoing;
+  }
+  return assertNever(element);
+}
+
+/** The incoming flows of an element; a start Event has none. */
+export function elementIncoming(element: Element): readonly FlowId[] {
+  switch (element.tag) {
+    case ElementTag.Activity: case ElementTag.Scope: return element.payload.envelope.incoming;
+    case ElementTag.Event: case ElementTag.Gateway: return element.payload.incoming;
+    case ElementTag.Start: return [];
+  }
+  return assertNever(element);
+}
+
+/** The Timer of a trigger, if it is one. */
+export function triggerTimer(trigger: Trigger): TimerTrigger | null {
+  switch (trigger.tag) {
+    case TriggerTag.Timer: return trigger.payload;
+    case TriggerTag.Message:
+    case TriggerTag.Signal:
+    case TriggerTag.Condition:
+    case TriggerTag.Error:
+    case TriggerTag.Escalation:
+    case TriggerTag.Compensation:
+    case TriggerTag.Cancel:
+      return null;
+  }
+  return assertNever(trigger);
+}
+
+/** The Message of a trigger, if it is one. */
+export function triggerMessage(trigger: Trigger): MessageTrigger | null {
+  switch (trigger.tag) {
+    case TriggerTag.Message: return trigger.payload;
+    case TriggerTag.Timer:
+    case TriggerTag.Signal:
+    case TriggerTag.Condition:
+    case TriggerTag.Error:
+    case TriggerTag.Escalation:
+    case TriggerTag.Compensation:
+    case TriggerTag.Cancel:
+      return null;
+  }
+  return assertNever(trigger);
+}
+
+/** The Call a work record names, if it is one. */
+export function workCall(work: Work): CallWork | null {
+  switch (work.tag) {
+    case WorkTag.Call: return work.payload;
+    case WorkTag.None:
+    case WorkTag.Manual:
+    case WorkTag.User:
+    case WorkTag.Receive:
+    case WorkTag.Service:
+    case WorkTag.Send:
+    case WorkTag.Script:
+    case WorkTag.Rule:
+      return null;
+  }
+  return assertNever(work);
+}
+
+/** Whether the work opens a host effect (a Service Task). */
+export function workIsService(work: Work): boolean {
+  switch (work.tag) {
+    case WorkTag.Service: return true;
+    case WorkTag.None:
+    case WorkTag.Manual:
+    case WorkTag.User:
+    case WorkTag.Receive:
+    case WorkTag.Send:
+    case WorkTag.Script:
+    case WorkTag.Rule:
+    case WorkTag.Call:
+      return false;
+  }
+  return assertNever(work);
+}
+
+/** Whether the work opens a User Task. */
+export function workIsUser(work: Work): boolean {
+  switch (work.tag) {
+    case WorkTag.User: return true;
+    case WorkTag.None:
+    case WorkTag.Manual:
+    case WorkTag.Receive:
+    case WorkTag.Service:
+    case WorkTag.Send:
+    case WorkTag.Script:
+    case WorkTag.Rule:
+    case WorkTag.Call:
+      return false;
+  }
+  return assertNever(work);
+}
+
+/** The Message a work record waits for, if it does. */
+export function workReceive(work: Work): MessageTrigger | null {
+  switch (work.tag) {
+    case WorkTag.Receive: return work.payload.message;
+    case WorkTag.None:
+    case WorkTag.Manual:
+    case WorkTag.User:
+    case WorkTag.Service:
+    case WorkTag.Send:
+    case WorkTag.Script:
+    case WorkTag.Rule:
+    case WorkTag.Call:
+      return null;
+  }
+  return assertNever(work);
+}
+
+/** The start subscription of an Event Sub-Process scope, if it is one. */
+export function scopeKindStart(kind: ScopeKind): Subscription | null {
+  switch (kind.tag) {
+    case ScopeKindTag.EventSubProcess: return kind.start;
+    case ScopeKindTag.Embedded: case ScopeKindTag.Transaction: return null;
+  }
+  return assertNever(kind);
+}
+
+/** The published name of a Multi-Instance mode. */
+export function multiInstanceModeName(mode: MultiInstanceMode): string { return mode; }
+
+export function valueSourceLiteral(source: ValueSource): string | null {
+  switch (source.tag) { case ValueSourceTag.Literal: return source.value; case ValueSourceTag.Expression: return null; }
+  return assertNever(source);
+}
+
+export function programElement(program: Program, id: ElementId): Element | null {
+  return program.elements.find((element) => elementHeader(element).id === id) ?? null;
+}
+
+export function programFlow(program: Program, id: FlowId): Flow | null {
+  return program.flows.find((flow) => flow.id === id) ?? null;
+}
+
+export function programTarget(program: Program, flow: FlowId): ElementId | null {
+  return programFlow(program, flow)?.target ?? null;
+}
+
+export function programSource(program: Program, flow: FlowId): ElementId | null {
+  return programFlow(program, flow)?.source ?? null;
+}
+
+/** Whether `element` is a process-level element of a called process. */
+export function programInCalledProcess(program: Program, element: ElementId): boolean {
+  return program.processes.some((process) => process.children.includes(element));
+}
+
+/** The elements whose parent is `parent`; `null` is the root process level. */
+export function programChildren(program: Program, parent: ElementId | null): readonly Element[] {
+  return program.elements.filter((element) => {
+    const header = elementHeader(element);
+    return header.parent === parent && !(parent === null && programInCalledProcess(program, header.id));
+  });
+}
+
+/** Lean's derived `DecidableEq DefinitionRef`. */
+function definitionRefEquals(left: DefinitionRef, right: DefinitionRef): boolean {
+  return left.key === right.key && left.version === right.version && left.versionTag === right.versionTag &&
+    left.deployment === right.deployment && left.tenant === right.tenant && left.sourceSha256 === right.sourceSha256;
+}
+
+/**
+ * Whether the process an instance runs declares the item `name`: the root process for `null`, else the called process
+ * of the definition its Call bound.
+ */
+export function programDeclares(program: Program, definition: DefinitionRef | null, name: string): boolean {
+  if (definition === null) return program.variables.includes(name);
+  return program.processes.some((process) => definitionRefEquals(process.definition, definition) && process.variables.includes(name));
+}
+
+/**
+ * The called process of `key` the latest binding selects: the highest version the program carries, a process without
+ * a version counting lowest. Two versions of one key coexist because `Header.id` stays unique (PC-SCOPE-03).
+ */
+export function programCalledProcess(program: Program, key: string): CalledProcess | null {
+  let chosen: CalledProcess | null = null;
+  for (const process of program.processes) {
+    if (process.definition.key !== key) continue;
+    if (chosen === null || (chosen.definition.version ?? 0) < (process.definition.version ?? 0)) chosen = process;
+  }
+  return chosen;
+}
+
+/**
+ * The identifier publication and addressing show for an element: the one its author wrote. A boundary has no header
+ * and keeps its identifier.
+ */
+export function programPublicId(program: Program, id: ElementId): ElementId {
+  const element = programElement(program, id);
+  return element === null ? id : elementHeader(element).origin.sourceId;
+}
+
+/**
+ * Whether an element begins when its parent Scope is entered without a none start Event: it has no incoming flow, is
+ * no compensation handler, and is no Event Sub-Process (BPMN 2.0.2 §13.3.4, §13.5.5).
+ */
+export function programBeginsImplicitly(program: Program, element: Element): boolean {
+  const id = elementHeader(element).id;
+  const handler = program.elements.some((other) => elementEnvelope(other)?.compensationHandler === id);
+  const scope = elementScope(element);
+  const eventSubProcess = scope !== null && scopeKindStart(scope[1].kind) !== null;
+  return elementIncoming(element).length === 0 && elementStart(element) === null && !handler && !eventSubProcess;
+}
+
+/** The process-level elements of a called process. */
+export function programProcessChildren(program: Program, process: CalledProcess): readonly Element[] {
+  return process.children.flatMap((id) => {
+    const element = programElement(program, id);
+    return element === null ? [] : [element];
+  });
+}
+
+/**
+ * The source element type of an element or boundary, which semantic publication shows. A boundary has no header; BPMN
+ * has one element type for it.
+ */
+export function programSourceType(program: Program, id: ElementId): string | null {
+  const element = programElement(program, id);
+  if (element !== null) return elementHeader(element).sourceType;
+  const host = program.elements.find((candidate) =>
+    (elementEnvelope(candidate)?.boundaries ?? []).some((boundary) => boundary.id === id));
+  return host === undefined ? null : "boundaryEvent";
+}
+
+/** A boundary by its id, with the element it is attached to. */
+export function programBoundary(program: Program, id: ElementId): readonly [Element, Boundary] | null {
+  for (const element of program.elements) {
+    const envelope = elementEnvelope(element);
+    const boundary = envelope?.boundaries.find((candidate) => candidate.id === id);
+    if (boundary !== undefined) return [element, boundary];
+  }
+  return null;
 }

@@ -25,7 +25,7 @@ def mapsData : Work → Bool
   | .rule _ => false
   | .call _ => false
 
-/-- The work one instance of a Multi-Instance Activity may do: a User Task (`Kernel.Feature.Work.bodyWait`). The
+/-- The work one instance of a Multi-Instance Activity may do: a User Task. The
 Multi-Instance shape itself is admitted by `Kernel.Admission.MultiInstance`. -/
 def instanceBody : Work → Bool
   | .user _ => true
@@ -38,11 +38,23 @@ def instanceBody : Work → Bool
   | .rule _ => false
   | .call _ => false
 
+/-- The work an occurrence no token began may do: a task without work, a User Task or a Service Task. -/
+def beginsWithoutToken : Work → Bool
+  | .none => true
+  | .manual => true
+  | .user _ => true
+  | .service _ => true
+  | .receive _ => false
+  | .send _ => false
+  | .script _ => false
+  | .rule _ => false
+  | .call _ => false
+
 def envelope (work : Work) (envelope : Envelope) : Option String :=
   if !envelope.inputs.isEmpty && !mapsData work then some "activity.inputMappings"
   else if !envelope.outputs.isEmpty && !mapsData work then some "activity.outputMappings"
   else if envelope.multiInstance.isSome && !instanceBody work then some "activity.multiInstanceBody"
-  -- A compensation subject must report its completion (`Signal.completed`), which `Kernel.Feature.Work` does for a
+  -- A compensation subject completes through the pipeline's `Hooks.completed`, which `Kernel.Feature.Work` reaches for a
   -- single User Task or Service Task only.
   else if envelope.compensationHandler.isSome && (!mapsData work || envelope.multiInstance.isSome) then
     some "activity.compensationHandler"
@@ -56,12 +68,32 @@ def receive (work : ReceiveWork) : Option String :=
     | some (.literal _) => none
     | some (.expression _) => some "work.receive.messageExpression"
 
-/-- A Call names its called process literally, binds the latest version, carries no business key and maps its
-data explicitly; its mappings live in `CallWork`, never in the envelope. -/
-def call (work : CallWork) : Option String :=
+/-- The called process's Data Associations correspond to the Call's by position (BPMN 2.0.2 §10.3.6): the kernel reads
+exactly one input and one output Data Association, the scalar interface the reader resolves; anything else, or a mix
+with CIB variable mappings, has no correspondence it could read. -/
+def dataCorrespondence (work : CallWork) : Option String :=
+  let isData (mapping : Mapping) : Bool := mapping.dialect == .dataAssociation
+  let mappings := work.inputs ++ work.outputs
+  if mappings.any isData && (work.inputs.length != 1 || work.outputs.length != 1 || !mappings.all isData) then
+    some "work.call.dataCorrespondence"
+  else none
+
+/-- A Call names a called process literally that the program carries, not the root process and without an Event
+Sub-Process, binds the latest version, carries no business key or tenant and maps its data explicitly; its mappings
+live in `CallWork`, never in the envelope. -/
+def call (program : Program) (work : CallWork) : Option String :=
   let element : Option String :=
     match work.calledElement with
-    | .literal _ => none
+    | .literal id =>
+      if id == program.identity.processId then some "work.call.rootProcess"
+      else
+        match program.calledProcess? id with
+        | some process =>
+          if (program.processChildren process).any (fun child =>
+              (child.scope?.bind fun (_, scope) => scope.kind.start?).isSome) then
+            some "call.calledEventSubProcess"
+          else none
+        | none => some "work.call.calledProcessMissing"
     | .expression _ => some "work.call.calledElementExpression"
   let binding : Option String :=
     match work.binding with
@@ -71,24 +103,38 @@ def call (work : CallWork) : Option String :=
     | .versionTag _ => some "work.call.binding"
   element <|> binding <|>
     (if work.businessKey.isSome then some "work.call.businessKey"
+     else if work.tenant.isSome then some "work.call.tenant"
      else if work.propagateAllInputs || work.propagateAllOutputs then some "work.call.propagateAll"
-     else none)
+     else dataCorrespondence work)
 
-def activity (payload : ActivityPayload) : Option String :=
+/-- The fields of a User Task the kernel does not yet read. -/
+def userTask (task : UserWork) : Option String :=
+  if task.assignee.isSome then some "work.user.assignee"
+  else if !task.candidateUsers.isEmpty then some "work.user.candidateUsers"
+  else if task.formKey.isSome then some "work.user.formKey"
+  else if task.dueDate.isSome then some "work.user.dueDate"
+  else if task.followUpDate.isSome then some "work.user.followUpDate"
+  else if task.priority.isSome then some "work.user.priority"
+  else if task.candidateGroups.any (fun
+    | .literal _ => false
+    | .expression _ => true) then some "work.user.candidateGroupExpression"
+  else none
+
+def service (work : ServiceWork) : Option String :=
+  if work.protocol.isEmpty || work.operation.isEmpty then some "work.service.unboundImplementation" else none
+
+def activity (program : Program) (payload : ActivityPayload) : Option String :=
   let work : Option String :=
     match payload.work with
     | .none => none
     | .manual => none
-    | .user task =>
-      if task.candidateGroups.any (fun
-        | .literal _ => false
-        | .expression _ => true) then some "work.user.candidateGroupExpression" else none
+    | .user task => userTask task
     | .receive work => receive work
-    | .service _ => none
+    | .service work => service work
     | .send _ => some "work.send"
     | .script _ => some "work.script"
     | .rule _ => some "work.rule"
-    | .call work => call work
+    | .call work => call program work
   work <|> envelope payload.work payload.envelope
 
 end Kernel.Admission.Work

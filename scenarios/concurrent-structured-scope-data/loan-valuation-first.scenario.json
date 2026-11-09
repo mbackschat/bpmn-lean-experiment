@@ -240,7 +240,7 @@
       "taskId": {
         "processInstanceId": "call:10:Instance_1:18:CreditExpertReview:1",
         "elementId": "GiveOpinion",
-        "activation": 2
+        "activation": 1
       },
       "submittedValues": [
         {

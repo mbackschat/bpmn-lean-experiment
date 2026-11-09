@@ -57,7 +57,8 @@ export function readMultiInstance(ctx: ReadContext, activity: ElementRecord): Mu
       inputDataItem: itemInputName,
       outputDataItem: itemOutputName,
       outputCollection: collectionOutput === undefined ? optionalId(outputCollection ?? {}) : associationTargetId(collectionOutput),
-      mutableCollection: false,
+      // No source attribute selects a sequential re-read (PC-MI-08); the reader carries the entry snapshot.
+      mutableCollection: "entrySnapshot",
     },
   };
 }
