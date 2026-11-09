@@ -1,6 +1,6 @@
 /**
  * The classified disagreements between the kernel and retained CIB evidence: each entry names one evidence file and its
- * owner. An open or held coverage row owns an answer CIB gave before the row's code exists (PLAN order gate: rows turn
+ * owners, every row or relation whose account the scenario witnesses. An open or held coverage row owns an answer CIB gave before the row's code exists (PLAN order gate: rows turn
  * red to green against an answer fixed before the code); a registered CIB relation owns a difference the standards
  * profile keeps on purpose. The oracle requires the set of disagreeing evidence to equal the ledger exactly, so an
  * unlisted disagreement fails, and so does a listed one that now agrees, which forces its removal when its row lands.
@@ -10,7 +10,7 @@ import path from "node:path";
 
 import { compareCanonicalStrings } from "@bpmn-lean/differential";
 
-export type LedgerEntry = Readonly<{ evidence: string; owner: string }>;
+export type LedgerEntry = Readonly<{ evidence: string; owners: ReadonlyArray<string> }>;
 
 export type LedgerViolations = Readonly<{
   /** Disagreeing evidence the ledger does not list. */
@@ -48,11 +48,14 @@ export function ledgerOwnerFaults(
 ): ReadonlyArray<string> {
   const faults: string[] = [];
   const seen = new Set<string>();
-  for (const [index, { evidence, owner }] of ledger.entries()) {
-    const status = rowOwner.test(owner) ? rows.get(owner) : undefined;
-    if (status?.startsWith("done") === true) faults.push(`${evidence}: owner ${owner} is done`);
-    else if (status === undefined && !register.has(owner)) {
-      faults.push(`${evidence}: owner ${owner} is no open row or registered relation`);
+  for (const [index, { evidence, owners }] of ledger.entries()) {
+    if (owners.length === 0) faults.push(`${evidence}: names no owner`);
+    for (const owner of owners) {
+      const status = rowOwner.test(owner) ? rows.get(owner) : undefined;
+      if (status?.startsWith("done") === true) faults.push(`${evidence}: owner ${owner} is done`);
+      else if (status === undefined && !register.has(owner)) {
+        faults.push(`${evidence}: owner ${owner} is no open row or registered relation`);
+      }
     }
     if (seen.has(evidence)) faults.push(`${evidence}: listed twice`);
     else if (index > 0 && compareCanonicalStrings(ledger[index - 1]!.evidence, evidence) > 0) {

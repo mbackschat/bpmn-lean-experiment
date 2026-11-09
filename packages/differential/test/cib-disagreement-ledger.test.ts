@@ -5,8 +5,8 @@ import { ledgerOwnerFaults, ledgerViolations, readCibDisagreementLedger } from "
 import { projectRoot } from "./pipeline-target-support.ts";
 
 const ledger = [
-  { evidence: "scenarios/a/cibseven-evidence.json", owner: "PC-CF-04" },
-  { evidence: "scenarios/b/cibseven-evidence.json", owner: "CIB-EXT-0005" },
+  { evidence: "scenarios/a/cibseven-evidence.json", owners: ["PC-CF-04"] },
+  { evidence: "scenarios/b/cibseven-evidence.json", owners: ["CIB-EXT-0005"] },
 ];
 
 test("a classified CIB disagreement passes only while its scenario still disagrees", () => {
@@ -30,21 +30,23 @@ test("a ledger owner is an open or held coverage row or a registered CIB relatio
   const rows = new Map([["PC-CF-04", "open"], ["PC-DATA-01", "done; closure, 2026-10-23"], ["PC-QUALIFY-03", "held"]]);
   const register = new Set(["CIB-EXT-0005"]);
   assert.deepEqual(ledgerOwnerFaults([
-    { evidence: "scenarios/a/cibseven-evidence.json", owner: "PC-CF-04" },
-    { evidence: "scenarios/b/cibseven-evidence.json", owner: "PC-QUALIFY-03" },
-    { evidence: "scenarios/c/cibseven-evidence.json", owner: "CIB-EXT-0005" },
+    { evidence: "scenarios/a/cibseven-evidence.json", owners: ["PC-CF-04"] },
+    { evidence: "scenarios/b/cibseven-evidence.json", owners: ["PC-QUALIFY-03"] },
+    { evidence: "scenarios/c/cibseven-evidence.json", owners: ["CIB-EXT-0005"] },
   ], rows, register), []);
   assert.deepEqual(ledgerOwnerFaults([
-    { evidence: "scenarios/a/cibseven-evidence.json", owner: "PC-DATA-01" },
-    { evidence: "scenarios/b/cibseven-evidence.json", owner: "CIB-EXT-9999" },
-    { evidence: "scenarios/b/cibseven-evidence.json", owner: "PC-CF-04" },
-    { evidence: "scenarios/0/cibseven-evidence.json", owner: "PC-CF-04" },
+    { evidence: "scenarios/a/cibseven-evidence.json", owners: ["PC-DATA-01"] },
+    { evidence: "scenarios/b/cibseven-evidence.json", owners: ["CIB-EXT-9999"] },
+    { evidence: "scenarios/b/cibseven-evidence.json", owners: ["PC-CF-04"] },
+    { evidence: "scenarios/0/cibseven-evidence.json", owners: ["PC-CF-04"] },
   ], rows, register), [
     "scenarios/a/cibseven-evidence.json: owner PC-DATA-01 is done",
     "scenarios/b/cibseven-evidence.json: owner CIB-EXT-9999 is no open row or registered relation",
     "scenarios/b/cibseven-evidence.json: listed twice",
     "scenarios/0/cibseven-evidence.json: out of order",
   ]);
+  assert.deepEqual(ledgerOwnerFaults([{ evidence: "scenarios/a/cibseven-evidence.json", owners: [] }], rows, register),
+    ["scenarios/a/cibseven-evidence.json: names no owner"]);
 });
 
 test("the retained ledger names only valid owners, in order", async () => {
