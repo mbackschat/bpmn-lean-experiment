@@ -523,7 +523,6 @@
         },
         "jobs": {
           "type": "array",
-          "maxItems": 1,
           "items": {
             "$ref": "#/$defs/incidentJob"
           }
