@@ -115,7 +115,8 @@ function cleanBuild(lean: Lean, label: string): string[] {
 /** Guard 23: the dispatch scan rejects a match on a guarded type in a module that does not own it. */
 function proveDispatchScan(lean: Lean, directory: string): string[] {
   const file = path.join(directory, "Kernel", "Feature", "Data.lean");
-  const seeded = "def seededDispatchViolation : Element → Nat\n  | .activity .. => 1\n  | _ => 0";
+  // Fully qualified: the seed lands outside the module's namespace, where an unqualified `Element` auto-binds.
+  const seeded = "def seededDispatchViolation : Kernel.Element → Nat\n  | .activity .. => 1\n  | _ => 0";
   let findings: string[] = [];
   edited(file, seeded, () => {
     const build = lean(kernelTargets);
