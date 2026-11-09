@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_EspAtProcessLevel"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-form-refusals:esp-at-process-level">
+  <bpmn:process id="Process_EspAtProcessLevel" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Work" sourceRef="StartEvent_Start" targetRef="UserTask_Work" />
+    <bpmn:userTask id="UserTask_Work" name="Do the work" />
+    <bpmn:sequenceFlow id="Flow_Work_End" sourceRef="UserTask_Work" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:subProcess id="EventSubProcess_Process" triggeredByEvent="true">
+      <bpmn:startEvent id="StartEvent_EspProcess" isInterrupting="false">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_EspProcess" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_EspProcess_Undo" sourceRef="StartEvent_EspProcess" targetRef="UserTask_UndoProcess" />
+      <bpmn:userTask id="UserTask_UndoProcess" name="Undo Process" />
+      <bpmn:sequenceFlow id="Flow_UndoProcess_End" sourceRef="UserTask_UndoProcess" targetRef="EndEvent_EspProcess" />
+      <bpmn:endEvent id="EndEvent_EspProcess" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

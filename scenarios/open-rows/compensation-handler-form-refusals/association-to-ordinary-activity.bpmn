@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_AssociationToOrdinaryActivity"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-form-refusals:association-to-ordinary-activity">
+  <bpmn:process id="Process_AssociationToOrdinaryActivity" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Work" sourceRef="StartEvent_Start" targetRef="UserTask_Work" />
+    <bpmn:userTask id="UserTask_Work" name="Do the work" />
+    <bpmn:boundaryEvent id="Boundary_Compensate" attachedToRef="UserTask_Work">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Work" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_Undo" name="Undo the work" />
+    <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_Compensate" targetRef="UserTask_Undo" />
+    <bpmn:sequenceFlow id="Flow_Work_End" sourceRef="UserTask_Work" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

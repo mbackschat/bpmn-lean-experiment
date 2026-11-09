@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_FailingHandlers"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-failures">
+  <bpmn:error id="Error_ReleaseFailed" name="Release failed" errorCode="RELEASE_FAILED" />
+  <bpmn:process id="Process_FailingHandlers" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_Start" targetRef="Gateway_Fork" />
+    <bpmn:parallelGateway id="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Book1" sourceRef="Gateway_Fork" targetRef="UserTask_Book1" />
+    <bpmn:sequenceFlow id="Flow_Fork_Book2" sourceRef="Gateway_Fork" targetRef="UserTask_Book2" />
+
+    <bpmn:userTask id="UserTask_Book1" name="Book one" />
+    <bpmn:boundaryEvent id="Boundary_Compensate1" attachedToRef="UserTask_Book1">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_1" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask
+      id="ServiceTask_Release1"
+      name="Release one"
+      isForCompensation="true"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:association id="Association_1" associationDirection="One" sourceRef="Boundary_Compensate1" targetRef="ServiceTask_Release1" />
+    <bpmn:sequenceFlow id="Flow_Book1_Join" sourceRef="UserTask_Book1" targetRef="Gateway_Join" />
+
+    <bpmn:userTask id="UserTask_Book2" name="Book two" />
+    <bpmn:boundaryEvent id="Boundary_Compensate2" attachedToRef="UserTask_Book2">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_2" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask
+      id="ServiceTask_Release2"
+      name="Release two"
+      isForCompensation="true"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:association id="Association_2" associationDirection="One" sourceRef="Boundary_Compensate2" targetRef="ServiceTask_Release2" />
+    <bpmn:sequenceFlow id="Flow_Book2_Join" sourceRef="UserTask_Book2" targetRef="Gateway_Join" />
+
+    <bpmn:parallelGateway id="Gateway_Join" />
+    <bpmn:sequenceFlow id="Flow_Join_Throw" sourceRef="Gateway_Join" targetRef="IntermediateThrow_All" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Throw_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+
+    <bpmn:subProcess id="EventSubProcess_ReleaseFailed" triggeredByEvent="true">
+      <bpmn:startEvent id="StartEvent_ReleaseFailed" isInterrupting="true">
+        <bpmn:errorEventDefinition id="ErrorDefinition_ReleaseFailed" errorRef="Error_ReleaseFailed" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_ReleaseFailed_Recover" sourceRef="StartEvent_ReleaseFailed" targetRef="UserTask_Recover" />
+      <bpmn:userTask id="UserTask_Recover" name="Recover from the failed release" />
+      <bpmn:sequenceFlow id="Flow_Recover_End" sourceRef="UserTask_Recover" targetRef="EndEvent_Recovered" />
+      <bpmn:endEvent id="EndEvent_Recovered" />
+    </bpmn:subProcess>
+  </bpmn:process>
+</bpmn:definitions>

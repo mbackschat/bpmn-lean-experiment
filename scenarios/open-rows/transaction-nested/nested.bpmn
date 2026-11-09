@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_Nested"
+  targetNamespace="urn:bpmn-lean:scenarios:transaction-nested">
+  <bpmn:process id="Process_Nested" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Outer" sourceRef="StartEvent_Start" targetRef="Transaction_Outer" />
+
+    <bpmn:transaction id="Transaction_Outer" name="Outer transaction">
+      <bpmn:startEvent id="StartEvent_Outer" />
+      <bpmn:sequenceFlow id="Flow_Outer_Fork" sourceRef="StartEvent_Outer" targetRef="Gateway_Fork" />
+      <bpmn:parallelGateway id="Gateway_Fork" />
+      <bpmn:sequenceFlow id="Flow_Fork_OuterWork" sourceRef="Gateway_Fork" targetRef="UserTask_OuterWork" />
+      <bpmn:sequenceFlow id="Flow_Fork_Inner" sourceRef="Gateway_Fork" targetRef="Transaction_Inner" />
+      <bpmn:sequenceFlow id="Flow_Fork_OuterDecide" sourceRef="Gateway_Fork" targetRef="UserTask_OuterDecide" />
+
+      <bpmn:userTask id="UserTask_OuterWork" name="Outer work" />
+      <bpmn:boundaryEvent id="Boundary_CompensateOuterWork" attachedToRef="UserTask_OuterWork">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_OuterWork" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoOuterWork" name="Undo outer work" isForCompensation="true" />
+      <bpmn:association id="Association_OuterWork" associationDirection="One" sourceRef="Boundary_CompensateOuterWork" targetRef="UserTask_UndoOuterWork" />
+      <bpmn:sequenceFlow id="Flow_OuterWork_End" sourceRef="UserTask_OuterWork" targetRef="EndEvent_OuterWork" />
+      <bpmn:endEvent id="EndEvent_OuterWork" />
+
+      <bpmn:transaction id="Transaction_Inner" name="Inner transaction">
+        <bpmn:startEvent id="StartEvent_Inner" />
+        <bpmn:sequenceFlow id="Flow_Inner_Work" sourceRef="StartEvent_Inner" targetRef="UserTask_InnerWork" />
+        <bpmn:userTask id="UserTask_InnerWork" name="Inner work" />
+        <bpmn:boundaryEvent id="Boundary_CompensateInnerWork" attachedToRef="UserTask_InnerWork">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_InnerWork" />
+        </bpmn:boundaryEvent>
+        <bpmn:userTask id="UserTask_UndoInnerWork" name="Undo inner work" isForCompensation="true" />
+        <bpmn:association id="Association_InnerWork" associationDirection="One" sourceRef="Boundary_CompensateInnerWork" targetRef="UserTask_UndoInnerWork" />
+        <bpmn:sequenceFlow id="Flow_InnerWork_Decide" sourceRef="UserTask_InnerWork" targetRef="UserTask_InnerDecide" />
+        <bpmn:userTask id="UserTask_InnerDecide" name="Decide whether to cancel the inner transaction" />
+        <bpmn:sequenceFlow id="Flow_InnerDecide_Gateway" sourceRef="UserTask_InnerDecide" targetRef="Gateway_Inner" />
+        <bpmn:exclusiveGateway id="Gateway_Inner" default="Flow_Inner_Keep" />
+        <bpmn:sequenceFlow id="Flow_Inner_Cancel" sourceRef="Gateway_Inner" targetRef="EndEvent_InnerCancel">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${innerCancel}</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_Inner_Keep" sourceRef="Gateway_Inner" targetRef="EndEvent_InnerKeep" />
+        <bpmn:endEvent id="EndEvent_InnerCancel">
+          <bpmn:cancelEventDefinition id="CancelDefinition_Inner" />
+        </bpmn:endEvent>
+        <bpmn:endEvent id="EndEvent_InnerKeep" />
+      </bpmn:transaction>
+      <bpmn:boundaryEvent id="Boundary_CancelInner" attachedToRef="Transaction_Inner">
+        <bpmn:cancelEventDefinition id="CancelDefinition_InnerCatch" />
+      </bpmn:boundaryEvent>
+      <bpmn:sequenceFlow id="Flow_Inner_Done" sourceRef="Transaction_Inner" targetRef="EndEvent_InnerDone" />
+      <bpmn:endEvent id="EndEvent_InnerDone" />
+      <bpmn:sequenceFlow id="Flow_CancelInner_Handle" sourceRef="Boundary_CancelInner" targetRef="UserTask_InnerCancelled" />
+      <bpmn:userTask id="UserTask_InnerCancelled" name="Handle the inner cancellation" />
+      <bpmn:sequenceFlow id="Flow_InnerCancelled_End" sourceRef="UserTask_InnerCancelled" targetRef="EndEvent_InnerCancelled" />
+      <bpmn:endEvent id="EndEvent_InnerCancelled" />
+
+      <bpmn:userTask id="UserTask_OuterDecide" name="Decide whether to cancel the outer transaction" />
+      <bpmn:sequenceFlow id="Flow_OuterDecide_Gateway" sourceRef="UserTask_OuterDecide" targetRef="Gateway_Outer" />
+      <bpmn:exclusiveGateway id="Gateway_Outer" default="Flow_Outer_Keep" />
+      <bpmn:sequenceFlow id="Flow_Outer_Cancel" sourceRef="Gateway_Outer" targetRef="EndEvent_OuterCancel">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${outerCancel}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_Outer_Keep" sourceRef="Gateway_Outer" targetRef="EndEvent_OuterKeep" />
+      <bpmn:endEvent id="EndEvent_OuterCancel">
+        <bpmn:cancelEventDefinition id="CancelDefinition_Outer" />
+      </bpmn:endEvent>
+      <bpmn:endEvent id="EndEvent_OuterKeep" />
+    </bpmn:transaction>
+    <bpmn:boundaryEvent id="Boundary_CancelOuter" attachedToRef="Transaction_Outer">
+      <bpmn:cancelEventDefinition id="CancelDefinition_OuterCatch" />
+    </bpmn:boundaryEvent>
+
+    <bpmn:sequenceFlow id="Flow_Outer_Done" sourceRef="Transaction_Outer" targetRef="UserTask_Done" />
+    <bpmn:userTask id="UserTask_Done" name="Finish" />
+    <bpmn:sequenceFlow id="Flow_Done_End" sourceRef="UserTask_Done" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+    <bpmn:sequenceFlow id="Flow_CancelOuter_Handle" sourceRef="Boundary_CancelOuter" targetRef="UserTask_OuterCancelled" />
+    <bpmn:userTask id="UserTask_OuterCancelled" name="Handle the outer cancellation" />
+    <bpmn:sequenceFlow id="Flow_OuterCancelled_End" sourceRef="UserTask_OuterCancelled" targetRef="EndEvent_OuterCancelled" />
+    <bpmn:endEvent id="EndEvent_OuterCancelled" />
+  </bpmn:process>
+</bpmn:definitions>

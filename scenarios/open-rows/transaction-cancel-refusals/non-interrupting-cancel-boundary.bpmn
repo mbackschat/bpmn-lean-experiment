@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_NonInterruptingCancelBoundary"
+  targetNamespace="urn:bpmn-lean:scenarios:transaction-cancel-refusals:non-interrupting-cancel-boundary">
+  <bpmn:process id="Process_NonInterruptingCancelBoundary" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Transaction" sourceRef="StartEvent_Start" targetRef="Transaction_Work" />
+    <bpmn:transaction id="Transaction_Work" name="Work">
+      <bpmn:startEvent id="StartEvent_Work" />
+      <bpmn:sequenceFlow id="Flow_Work_Fork" sourceRef="StartEvent_Work" targetRef="Gateway_Fork" />
+      <bpmn:parallelGateway id="Gateway_Fork" />
+      <bpmn:sequenceFlow id="Flow_Fork_Step" sourceRef="Gateway_Fork" targetRef="UserTask_Step" />
+      <bpmn:sequenceFlow id="Flow_Fork_Other" sourceRef="Gateway_Fork" targetRef="UserTask_Other" />
+      <bpmn:userTask id="UserTask_Step" name="Do the step" />
+      <bpmn:boundaryEvent id="Boundary_CompensateStep" attachedToRef="UserTask_Step">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Step" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoStep" name="Undo the step" isForCompensation="true" />
+      <bpmn:association id="Association_Step" associationDirection="One" sourceRef="Boundary_CompensateStep" targetRef="UserTask_UndoStep" />
+      <bpmn:sequenceFlow id="Flow_Step_Cancel" sourceRef="UserTask_Step" targetRef="EndEvent_Cancel" />
+      <bpmn:endEvent id="EndEvent_Cancel">
+        <bpmn:cancelEventDefinition id="CancelDefinition_Work" />
+      </bpmn:endEvent>
+      <bpmn:userTask id="UserTask_Other" name="Do the other work" />
+      <bpmn:sequenceFlow id="Flow_Other_End" sourceRef="UserTask_Other" targetRef="EndEvent_Other" />
+      <bpmn:endEvent id="EndEvent_Other" />
+    </bpmn:transaction>
+    <bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Work" cancelActivity="false">
+      <bpmn:cancelEventDefinition id="CancelDefinition_Catch" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_Transaction_Normal" sourceRef="Transaction_Work" targetRef="UserTask_Normal" />
+    <bpmn:userTask id="UserTask_Normal" name="Continue normally" />
+    <bpmn:sequenceFlow id="Flow_Normal_End" sourceRef="UserTask_Normal" targetRef="EndEvent_Normal" />
+    <bpmn:endEvent id="EndEvent_Normal" />
+    <bpmn:sequenceFlow id="Flow_Cancel_Cancelled" sourceRef="Boundary_Cancel" targetRef="UserTask_Cancelled" />
+    <bpmn:userTask id="UserTask_Cancelled" name="Handle the cancellation" />
+    <bpmn:sequenceFlow id="Flow_Cancelled_End" sourceRef="UserTask_Cancelled" targetRef="EndEvent_Cancelled" />
+    <bpmn:endEvent id="EndEvent_Cancelled" />
+  </bpmn:process>
+</bpmn:definitions>

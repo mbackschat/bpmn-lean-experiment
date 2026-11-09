@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_Regions"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-regions">
+  <bpmn:process id="Process_Regions" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Outer" sourceRef="StartEvent_Start" targetRef="UserTask_Outer" />
+
+    <bpmn:userTask id="UserTask_Outer" name="Outer work" />
+    <bpmn:boundaryEvent id="Boundary_CompensateOuter" attachedToRef="UserTask_Outer">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Outer" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoOuter" name="Undo outer work" isForCompensation="true" />
+    <bpmn:association id="Association_Outer" associationDirection="One" sourceRef="Boundary_CompensateOuter" targetRef="UserTask_UndoOuter" />
+    <bpmn:sequenceFlow id="Flow_Outer_Region" sourceRef="UserTask_Outer" targetRef="SubProcess_Region" />
+
+    <bpmn:subProcess id="SubProcess_Region" name="Region">
+      <bpmn:startEvent id="StartEvent_Region" />
+      <bpmn:sequenceFlow id="Flow_Region_InnerA" sourceRef="StartEvent_Region" targetRef="UserTask_InnerA" />
+
+      <bpmn:userTask id="UserTask_InnerA" name="Inner work A" />
+      <bpmn:boundaryEvent id="Boundary_CompensateInnerA" attachedToRef="UserTask_InnerA">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_InnerA" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoInnerA" name="Undo inner work A" isForCompensation="true" />
+      <bpmn:association id="Association_InnerA" associationDirection="One" sourceRef="Boundary_CompensateInnerA" targetRef="UserTask_UndoInnerA" />
+      <bpmn:sequenceFlow id="Flow_InnerA_Deep" sourceRef="UserTask_InnerA" targetRef="SubProcess_Deep" />
+
+      <bpmn:subProcess id="SubProcess_Deep" name="Deep region">
+        <bpmn:startEvent id="StartEvent_Deep" />
+        <bpmn:sequenceFlow id="Flow_Deep_Work" sourceRef="StartEvent_Deep" targetRef="UserTask_DeepWork" />
+        <bpmn:userTask id="UserTask_DeepWork" name="Deep work" />
+        <bpmn:boundaryEvent id="Boundary_CompensateDeepWork" attachedToRef="UserTask_DeepWork">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_DeepWork" />
+        </bpmn:boundaryEvent>
+        <bpmn:userTask id="UserTask_UndoDeepWork" name="Undo deep work" isForCompensation="true" />
+        <bpmn:association id="Association_DeepWork" associationDirection="One" sourceRef="Boundary_CompensateDeepWork" targetRef="UserTask_UndoDeepWork" />
+        <bpmn:sequenceFlow id="Flow_DeepWork_End" sourceRef="UserTask_DeepWork" targetRef="EndEvent_Deep" />
+        <bpmn:endEvent id="EndEvent_Deep" />
+      </bpmn:subProcess>
+      <bpmn:sequenceFlow id="Flow_Deep_Inner" sourceRef="SubProcess_Deep" targetRef="Gateway_Inner" />
+
+      <bpmn:exclusiveGateway id="Gateway_Inner" default="Flow_Inner_Merge" />
+      <bpmn:sequenceFlow id="Flow_Inner_Throw" sourceRef="Gateway_Inner" targetRef="IntermediateThrow_Inner">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${throwInside}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_Inner_Merge" sourceRef="Gateway_Inner" targetRef="Gateway_InnerMerge" />
+      <bpmn:intermediateThrowEvent id="IntermediateThrow_Inner">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Inner" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:sequenceFlow id="Flow_ThrowInner_After" sourceRef="IntermediateThrow_Inner" targetRef="UserTask_InnerAfter" />
+      <bpmn:userTask id="UserTask_InnerAfter" name="Continue inside the region" />
+      <bpmn:sequenceFlow id="Flow_InnerAfter_Merge" sourceRef="UserTask_InnerAfter" targetRef="Gateway_InnerMerge" />
+      <bpmn:exclusiveGateway id="Gateway_InnerMerge" />
+      <bpmn:sequenceFlow id="Flow_InnerMerge_End" sourceRef="Gateway_InnerMerge" targetRef="EndEvent_Region" />
+      <bpmn:endEvent id="EndEvent_Region" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Region_Mid" sourceRef="SubProcess_Region" targetRef="UserTask_Mid" />
+
+    <bpmn:userTask id="UserTask_Mid" name="Between the regions" />
+    <bpmn:sequenceFlow id="Flow_Mid_Scope" sourceRef="UserTask_Mid" targetRef="Gateway_Scope" />
+    <bpmn:exclusiveGateway id="Gateway_Scope" default="Flow_Scope_All" />
+    <bpmn:sequenceFlow id="Flow_Scope_Region" sourceRef="Gateway_Scope" targetRef="IntermediateThrow_Region">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${targetRegion}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Scope_All" sourceRef="Gateway_Scope" targetRef="IntermediateThrow_All" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Region">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_ThrowRegion" activityRef="SubProcess_Region" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_ThrowAll" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_ThrowRegion_Merge" sourceRef="IntermediateThrow_Region" targetRef="Gateway_OuterMerge" />
+    <bpmn:sequenceFlow id="Flow_ThrowAll_Merge" sourceRef="IntermediateThrow_All" targetRef="Gateway_OuterMerge" />
+    <bpmn:exclusiveGateway id="Gateway_OuterMerge" />
+    <bpmn:sequenceFlow id="Flow_OuterMerge_Tail" sourceRef="Gateway_OuterMerge" targetRef="UserTask_Tail" />
+    <bpmn:userTask id="UserTask_Tail" name="Tail" />
+    <bpmn:sequenceFlow id="Flow_Tail_End" sourceRef="UserTask_Tail" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

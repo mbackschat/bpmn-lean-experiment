@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ReverseOrder"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-order-chronology">
+  <bpmn:process id="Process_ReverseOrder" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_Start" targetRef="Gateway_Fork" />
+    <bpmn:parallelGateway id="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_BookA" sourceRef="Gateway_Fork" targetRef="UserTask_BookA" />
+    <bpmn:sequenceFlow id="Flow_Fork_BookC" sourceRef="Gateway_Fork" targetRef="UserTask_BookC" />
+    <bpmn:sequenceFlow id="Flow_Fork_Clock" sourceRef="Gateway_Fork" targetRef="UserTask_Clock" />
+
+    <bpmn:userTask id="UserTask_BookA" name="Book A" />
+    <bpmn:boundaryEvent id="Boundary_CompensateA" attachedToRef="UserTask_BookA">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_A" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoA" name="Undo A" isForCompensation="true" />
+    <bpmn:association id="Association_A" associationDirection="One" sourceRef="Boundary_CompensateA" targetRef="UserTask_UndoA" />
+    <bpmn:sequenceFlow id="Flow_BookA_BookB" sourceRef="UserTask_BookA" targetRef="UserTask_BookB" />
+
+    <bpmn:userTask id="UserTask_BookB" name="Book B, which follows A" />
+    <bpmn:boundaryEvent id="Boundary_CompensateB" attachedToRef="UserTask_BookB">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_B" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoB" name="Undo B" isForCompensation="true" />
+    <bpmn:association id="Association_B" associationDirection="One" sourceRef="Boundary_CompensateB" targetRef="UserTask_UndoB" />
+    <bpmn:sequenceFlow id="Flow_BookB_Join" sourceRef="UserTask_BookB" targetRef="Gateway_Join" />
+
+    <bpmn:userTask id="UserTask_BookC" name="Book C, independent of A and B" />
+    <bpmn:boundaryEvent id="Boundary_CompensateC" attachedToRef="UserTask_BookC">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_C" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoC" name="Undo C" isForCompensation="true" />
+    <bpmn:association id="Association_C" associationDirection="One" sourceRef="Boundary_CompensateC" targetRef="UserTask_UndoC" />
+    <bpmn:sequenceFlow id="Flow_BookC_Join" sourceRef="UserTask_BookC" targetRef="Gateway_Join" />
+
+    <bpmn:userTask id="UserTask_Clock" name="Hold the clock open" />
+    <bpmn:boundaryEvent id="Boundary_Tick1" attachedToRef="UserTask_Clock" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Tick2" attachedToRef="UserTask_Clock" cancelActivity="false">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT20S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_Clock_End" sourceRef="UserTask_Clock" targetRef="EndEvent_Clock" />
+    <bpmn:sequenceFlow id="Flow_Tick1_End" sourceRef="Boundary_Tick1" targetRef="EndEvent_Tick1" />
+    <bpmn:sequenceFlow id="Flow_Tick2_End" sourceRef="Boundary_Tick2" targetRef="EndEvent_Tick2" />
+    <bpmn:endEvent id="EndEvent_Clock" />
+    <bpmn:endEvent id="EndEvent_Tick1" />
+    <bpmn:endEvent id="EndEvent_Tick2" />
+
+    <bpmn:parallelGateway id="Gateway_Join" />
+    <bpmn:sequenceFlow id="Flow_Join_Throw" sourceRef="Gateway_Join" targetRef="IntermediateThrow_Compensate" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Compensate">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Throw_After" sourceRef="IntermediateThrow_Compensate" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

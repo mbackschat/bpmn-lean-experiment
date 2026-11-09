@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_NestedEsp"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-event-subprocess-nesting">
+  <bpmn:process id="Process_NestedEsp" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Outer" sourceRef="StartEvent_Start" targetRef="SubProcess_Outer" />
+
+    <bpmn:subProcess id="SubProcess_Outer" name="Outer parent">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="outerLocal">${receipt}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_Outer" />
+      <bpmn:sequenceFlow id="Flow_Outer_Work" sourceRef="StartEvent_Outer" targetRef="UserTask_OuterWork" />
+      <bpmn:userTask id="UserTask_OuterWork" name="Outer work" />
+      <bpmn:boundaryEvent id="Boundary_CompensateOuterWork" attachedToRef="UserTask_OuterWork">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_OuterWork" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoOuterWork" name="Undo outer work" isForCompensation="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenOuterWork">${outerLocal}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:association id="Association_OuterWork" associationDirection="One" sourceRef="Boundary_CompensateOuterWork" targetRef="UserTask_UndoOuterWork" />
+      <bpmn:sequenceFlow id="Flow_OuterWork_Inner" sourceRef="UserTask_OuterWork" targetRef="SubProcess_Inner" />
+
+      <bpmn:subProcess id="SubProcess_Inner" name="Inner parent">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="innerLocal">${receipt}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+        <bpmn:startEvent id="StartEvent_Inner" />
+        <bpmn:sequenceFlow id="Flow_Inner_Work" sourceRef="StartEvent_Inner" targetRef="UserTask_InnerWork" />
+        <bpmn:userTask id="UserTask_InnerWork" name="Inner work" />
+        <bpmn:boundaryEvent id="Boundary_CompensateInnerWork" attachedToRef="UserTask_InnerWork">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_InnerWork" />
+        </bpmn:boundaryEvent>
+        <bpmn:userTask id="UserTask_UndoInnerWork" name="Undo inner work" isForCompensation="true">
+          <bpmn:extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="seenInnerWork">${innerLocal}</camunda:inputParameter>
+            </camunda:inputOutput>
+          </bpmn:extensionElements>
+        </bpmn:userTask>
+        <bpmn:association id="Association_InnerWork" associationDirection="One" sourceRef="Boundary_CompensateInnerWork" targetRef="UserTask_UndoInnerWork" />
+        <bpmn:sequenceFlow id="Flow_InnerWork_End" sourceRef="UserTask_InnerWork" targetRef="EndEvent_Inner" />
+        <bpmn:endEvent id="EndEvent_Inner" />
+
+        <bpmn:subProcess id="EventSubProcess_Inner" triggeredByEvent="true">
+          <bpmn:startEvent id="StartEvent_EspInner" isInterrupting="false">
+            <bpmn:compensateEventDefinition id="CompensateDefinition_EspInner" />
+          </bpmn:startEvent>
+          <bpmn:sequenceFlow id="Flow_EspInner_Undo" sourceRef="StartEvent_EspInner" targetRef="UserTask_UndoInner" />
+          <bpmn:userTask id="UserTask_UndoInner" name="Undo the inner parent">
+            <bpmn:extensionElements>
+              <camunda:inputOutput>
+                <camunda:inputParameter name="seenInner">${innerLocal}</camunda:inputParameter>
+              </camunda:inputOutput>
+            </bpmn:extensionElements>
+          </bpmn:userTask>
+          <bpmn:sequenceFlow id="Flow_UndoInner_Route" sourceRef="UserTask_UndoInner" targetRef="Gateway_RethrowInner" />
+          <bpmn:exclusiveGateway id="Gateway_RethrowInner" default="Flow_RethrowInner_Stop" />
+          <bpmn:sequenceFlow id="Flow_RethrowInner_Throw" sourceRef="Gateway_RethrowInner" targetRef="IntermediateThrow_FromInner">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${rethrowInner}</bpmn:conditionExpression>
+          </bpmn:sequenceFlow>
+          <bpmn:sequenceFlow id="Flow_RethrowInner_Stop" sourceRef="Gateway_RethrowInner" targetRef="EndEvent_EspInnerStop" />
+          <bpmn:intermediateThrowEvent id="IntermediateThrow_FromInner">
+            <bpmn:compensateEventDefinition id="CompensateDefinition_FromInner" />
+          </bpmn:intermediateThrowEvent>
+          <bpmn:sequenceFlow id="Flow_FromInner_End" sourceRef="IntermediateThrow_FromInner" targetRef="EndEvent_EspInnerRethrown" />
+          <bpmn:endEvent id="EndEvent_EspInnerStop" />
+          <bpmn:endEvent id="EndEvent_EspInnerRethrown" />
+        </bpmn:subProcess>
+      </bpmn:subProcess>
+      <bpmn:sequenceFlow id="Flow_Inner_End" sourceRef="SubProcess_Inner" targetRef="EndEvent_Outer" />
+      <bpmn:endEvent id="EndEvent_Outer" />
+
+      <bpmn:subProcess id="EventSubProcess_Outer" triggeredByEvent="true">
+        <bpmn:startEvent id="StartEvent_EspOuter" isInterrupting="false">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_EspOuter" />
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="Flow_EspOuter_Undo" sourceRef="StartEvent_EspOuter" targetRef="UserTask_UndoOuter" />
+        <bpmn:userTask id="UserTask_UndoOuter" name="Undo the outer parent">
+          <bpmn:extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="seenOuter">${outerLocal}</camunda:inputParameter>
+            </camunda:inputOutput>
+          </bpmn:extensionElements>
+        </bpmn:userTask>
+        <bpmn:sequenceFlow id="Flow_UndoOuter_Route" sourceRef="UserTask_UndoOuter" targetRef="Gateway_RethrowOuter" />
+        <bpmn:exclusiveGateway id="Gateway_RethrowOuter" default="Flow_RethrowOuter_Stop" />
+        <bpmn:sequenceFlow id="Flow_RethrowOuter_All" sourceRef="Gateway_RethrowOuter" targetRef="IntermediateThrow_AllFromOuter">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${rethrowOuter == 'all'}</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_RethrowOuter_Inner" sourceRef="Gateway_RethrowOuter" targetRef="IntermediateThrow_InnerFromOuter">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${rethrowOuter == 'inner'}</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_RethrowOuter_Stop" sourceRef="Gateway_RethrowOuter" targetRef="EndEvent_EspOuterStop" />
+        <bpmn:intermediateThrowEvent id="IntermediateThrow_AllFromOuter">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_AllFromOuter" />
+        </bpmn:intermediateThrowEvent>
+        <bpmn:intermediateThrowEvent id="IntermediateThrow_InnerFromOuter">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_InnerFromOuter" activityRef="SubProcess_Inner" />
+        </bpmn:intermediateThrowEvent>
+        <bpmn:sequenceFlow id="Flow_AllFromOuter_End" sourceRef="IntermediateThrow_AllFromOuter" targetRef="EndEvent_EspOuterRethrown" />
+        <bpmn:sequenceFlow id="Flow_InnerFromOuter_End" sourceRef="IntermediateThrow_InnerFromOuter" targetRef="EndEvent_EspOuterRethrown" />
+        <bpmn:endEvent id="EndEvent_EspOuterStop" />
+        <bpmn:endEvent id="EndEvent_EspOuterRethrown" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Outer_Mid" sourceRef="SubProcess_Outer" targetRef="UserTask_Mid" />
+
+    <bpmn:userTask id="UserTask_Mid" name="Between the parents and the throw" />
+    <bpmn:sequenceFlow id="Flow_Mid_Throw" sourceRef="UserTask_Mid" targetRef="IntermediateThrow_All" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Throw_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Continue" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

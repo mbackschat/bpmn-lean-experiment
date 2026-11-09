@@ -1,0 +1,33 @@
+{
+  "kind": "scenario",
+  "id": "compensation-handler-form-refusals-handler-with-sequence-flow",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "compensation-handler-form-refusals-handler-with-sequence-flow",
+    "relativePath": "scenarios/open-rows/compensation-handler-form-refusals/handler-with-sequence-flow.bpmn",
+    "sha256": "18bba75958b050c19bafdf0279016c20cdfead1a133e2ca1dbef04a9beedd0b6",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.1",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §10.5.5"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensationEventParseInvalidProcessTest.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/CompensationEventHandler.java"
+    ]
+  }
+}

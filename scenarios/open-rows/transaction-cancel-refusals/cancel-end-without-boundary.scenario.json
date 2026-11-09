@@ -1,0 +1,61 @@
+{
+  "kind": "scenario",
+  "id": "transaction-cancel-refusals-cancel-end-without-boundary",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "transaction-cancel-refusals-cancel-end-without-boundary",
+    "relativePath": "scenarios/open-rows/transaction-cancel-refusals/cancel-end-without-boundary.bpmn",
+    "sha256": "c1b303116e4a5a625c075a4c281e4852bfa3fdb368e300c74454b2b82297f02f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Step-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Step",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Step-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Step",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §13.5.6",
+      "BPMN 2.0.2 §10.5.7"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CancelEndEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CancelBoundaryEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/subprocess/transaction/TransactionSubProcessTest.java"
+    ]
+  }
+}

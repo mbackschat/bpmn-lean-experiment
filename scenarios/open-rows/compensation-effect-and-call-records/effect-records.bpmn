@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_EffectRecords"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-effect-and-call-records:effect-records">
+  <bpmn:error id="Error_ReserveFailed" name="Reserve failed" errorCode="RESERVE_FAILED" />
+  <bpmn:process id="Process_EffectRecords" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Reserve" sourceRef="StartEvent_Start" targetRef="ServiceTask_Reserve" />
+    <bpmn:serviceTask
+      id="ServiceTask_Reserve"
+      name="Reserve the stock"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:boundaryEvent id="Boundary_CompensateReserve" attachedToRef="ServiceTask_Reserve">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Reserve" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask
+      id="ServiceTask_Release"
+      name="Release the stock"
+      isForCompensation="true"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:association id="Association_Reserve" associationDirection="One" sourceRef="Boundary_CompensateReserve" targetRef="ServiceTask_Release" />
+    <bpmn:boundaryEvent id="Boundary_ReserveFailed" attachedToRef="ServiceTask_Reserve">
+      <bpmn:errorEventDefinition id="ErrorDefinition_ReserveFailed" errorRef="Error_ReserveFailed" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_Reserve_Merge" sourceRef="ServiceTask_Reserve" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Failed_Recover" sourceRef="Boundary_ReserveFailed" targetRef="UserTask_Recover" />
+    <bpmn:userTask id="UserTask_Recover" name="Recover from the failed reservation" />
+    <bpmn:sequenceFlow id="Flow_Recover_Merge" sourceRef="UserTask_Recover" targetRef="Gateway_Merge" />
+    <bpmn:exclusiveGateway id="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Merge_Throw" sourceRef="Gateway_Merge" targetRef="IntermediateThrow_All" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Throw_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Continue" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,169 @@
+{
+  "kind": "scenario",
+  "id": "transaction-cancel-mixed-refund-business-failure",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "transaction-cancel-mixed-order",
+    "relativePath": "scenarios/open-rows/transaction-cancel-mixed/order.bpmn",
+    "sha256": "3b92afeb7ebd8698fc748f3a2fa0d190ca08e224e2b2b59989b03a2648da7477",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "cancel",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "picked",
+          "value": {
+            "kind": "string",
+            "value": "p0"
+          }
+        },
+        {
+          "name": "crate",
+          "value": {
+            "kind": "string",
+            "value": "root-crate"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Pick-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Pick",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-effect-success-ServiceTask_Charge-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Charge",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_PackItems-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_PackItems",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "crate-packed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_Decide-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Decide",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s05-effect-business-failure-ServiceTask_Refund-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Refund",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "ORDER_FAULT",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-UserTask_UndoPick-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoPick",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-UserTask_Fault-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Fault",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §10.7.2",
+      "BPMN 2.0.2 §13.3.2",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §10.3.3.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CancelEndEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CancelBoundaryEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/CompensationUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/subprocess/transaction/TransactionSubProcessTest.java"
+    ]
+  }
+}

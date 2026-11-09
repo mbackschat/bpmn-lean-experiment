@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_MiSequentialEsp"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-event-subprocess-multi-instance:sequential-esp">
+  <bpmn:process id="Process_MiSequentialEsp" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Visits" sourceRef="StartEvent_Start" targetRef="SubProcess_Visits" />
+    <bpmn:subProcess id="SubProcess_Visits" name="Visit a stop">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" camunda:collection="items" camunda:elementVariable="stop" />
+      <bpmn:startEvent id="StartEvent_Visit" />
+      <bpmn:sequenceFlow id="Flow_Visit_Work" sourceRef="StartEvent_Visit" targetRef="UserTask_Visit" />
+      <bpmn:userTask id="UserTask_Visit" name="Work at the stop" />
+      <bpmn:boundaryEvent id="Boundary_CompensateVisit" attachedToRef="UserTask_Visit">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Visit" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoVisit" name="Undo the work" isForCompensation="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenStop">${stop}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:association id="Association_Visit" associationDirection="One" sourceRef="Boundary_CompensateVisit" targetRef="UserTask_UndoVisit" />
+      <bpmn:sequenceFlow id="Flow_Visit_End" sourceRef="UserTask_Visit" targetRef="EndEvent_Visit" />
+      <bpmn:endEvent id="EndEvent_Visit" />
+      <bpmn:subProcess id="EventSubProcess_Visit" triggeredByEvent="true">
+        <bpmn:startEvent id="StartEvent_EspVisit" isInterrupting="false">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_EspVisit" />
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="Flow_Esp_Undo" sourceRef="StartEvent_EspVisit" targetRef="UserTask_UndoVisitParent" />
+        <bpmn:userTask id="UserTask_UndoVisitParent" name="Undo the stop">
+          <bpmn:extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="seenParent">${stop}</camunda:inputParameter>
+            </camunda:inputOutput>
+          </bpmn:extensionElements>
+        </bpmn:userTask>
+        <bpmn:sequenceFlow id="Flow_Undo_Route" sourceRef="UserTask_UndoVisitParent" targetRef="Gateway_Rethrow" />
+        <bpmn:exclusiveGateway id="Gateway_Rethrow" default="Flow_Rethrow_Stop" />
+        <bpmn:sequenceFlow id="Flow_Rethrow_Throw" sourceRef="Gateway_Rethrow" targetRef="IntermediateThrow_FromEsp">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${rethrow}</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_Rethrow_Stop" sourceRef="Gateway_Rethrow" targetRef="EndEvent_EspStop" />
+        <bpmn:intermediateThrowEvent id="IntermediateThrow_FromEsp">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_FromEsp" />
+        </bpmn:intermediateThrowEvent>
+        <bpmn:sequenceFlow id="Flow_FromEsp_End" sourceRef="IntermediateThrow_FromEsp" targetRef="EndEvent_EspRethrown" />
+        <bpmn:endEvent id="EndEvent_EspStop" />
+        <bpmn:endEvent id="EndEvent_EspRethrown" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Visits_Pause" sourceRef="SubProcess_Visits" targetRef="UserTask_Pause" />
+    <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />
+    <bpmn:sequenceFlow id="Flow_Pause_Throw" sourceRef="UserTask_Pause" targetRef="IntermediateThrow_All" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Throw_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Continue" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,212 @@
+{
+  "kind": "scenario",
+  "id": "compensation-handler-bodies-premature-and-stale-handler-results",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "compensation-handler-bodies-handler-bodies",
+    "relativePath": "scenarios/open-rows/compensation-handler-bodies/handler-bodies.bpmn",
+    "sha256": "6b96ca0e17e54cd63701c2166d236af87d553658069ea7599ad4bf6d97e46e1d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Plan-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Plan",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Quote-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Quote",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_Ship-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Ship",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_UndoPlanReview-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoPlanReview",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s05-deliver-message-ReceiveTask_UndoQuote-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReceiveTask_UndoQuote",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_QuoteWithdrawn"
+        }
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s06-deliver-message-ReceiveTask_UndoQuote-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReceiveTask_UndoQuote",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_QuoteWithdrawn"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-UserTask_UndoPlanReview-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoPlanReview",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-complete-UserTask_After-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s09-complete-UserTask_Reverse-1",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:21:CallActivity_UndoShip:1",
+        "elementId": "UserTask_Reverse",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s10-effect-success-ServiceTask_UndoPlanNotify-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_UndoPlanNotify",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s11-effect-success-ServiceTask_UndoPlanNotify-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_UndoPlanNotify",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s12-complete-UserTask_After-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s13-complete-UserTask_Wrapped-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Wrapped",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.1",
+      "BPMN 2.0.2 §10.7.2",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §10.3.3.1",
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/CompensationUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/CompensationEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java"
+    ]
+  }
+}

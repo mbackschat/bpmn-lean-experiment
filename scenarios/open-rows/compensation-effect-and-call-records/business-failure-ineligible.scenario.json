@@ -1,0 +1,90 @@
+{
+  "kind": "scenario",
+  "id": "compensation-effect-and-call-records-business-failure-ineligible",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "compensation-effect-and-call-records-effect-records",
+    "relativePath": "scenarios/open-rows/compensation-effect-and-call-records/effect-records.bpmn",
+    "sha256": "a182fcdfad430958f7f72a3f1ce7412171f2c6aa3c85f0a939b4e6bb5a1a9540",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s01-effect-business-failure-ServiceTask_Reserve-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Reserve",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "RESERVE_FAILED",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_Recover-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Recover",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s03-effect-success-ServiceTask_Release-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Release",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_After-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.3",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §13.3.2",
+      "BPMN 2.0.2 §10.3.3.1",
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/CompensationUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/AbstractBpmnActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

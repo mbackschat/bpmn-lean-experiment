@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_Capture"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-context">
+  <bpmn:process id="Process_Capture" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Charge" sourceRef="StartEvent_Start" targetRef="UserTask_Charge" />
+
+    <bpmn:userTask id="UserTask_Charge" name="Charge" />
+    <bpmn:boundaryEvent id="Boundary_CompensateCharge" attachedToRef="UserTask_Charge">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Charge" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoCharge" name="Undo charge" isForCompensation="true">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenReceipt">${receipt}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:association id="Association_Charge" associationDirection="One" sourceRef="Boundary_CompensateCharge" targetRef="UserTask_UndoCharge" />
+    <bpmn:sequenceFlow id="Flow_Charge_Boundaried" sourceRef="UserTask_Charge" targetRef="SubProcess_Boundaried" />
+
+    <bpmn:subProcess id="SubProcess_Boundaried" name="Pack with a boundary handler">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="parcel">${receipt}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_Boundaried" />
+      <bpmn:sequenceFlow id="Flow_Boundaried_Pack" sourceRef="StartEvent_Boundaried" targetRef="UserTask_PackBoundaried" />
+      <bpmn:userTask id="UserTask_PackBoundaried" name="Pack the parcel" />
+      <bpmn:sequenceFlow id="Flow_PackBoundaried_End" sourceRef="UserTask_PackBoundaried" targetRef="EndEvent_Boundaried" />
+      <bpmn:endEvent id="EndEvent_Boundaried" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_CompensateBoundaried" attachedToRef="SubProcess_Boundaried">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Boundaried" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoBoundaried" name="Undo the parcel" isForCompensation="true">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenParcel">${parcel}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:association id="Association_Boundaried" associationDirection="One" sourceRef="Boundary_CompensateBoundaried" targetRef="UserTask_UndoBoundaried" />
+    <bpmn:sequenceFlow id="Flow_Boundaried_Snapshotted" sourceRef="SubProcess_Boundaried" targetRef="SubProcess_Snapshotted" />
+
+    <bpmn:subProcess id="SubProcess_Snapshotted" name="Pack with an event sub-process handler">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="crate">${receipt}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_Snapshotted" />
+      <bpmn:sequenceFlow id="Flow_Snapshotted_Pack" sourceRef="StartEvent_Snapshotted" targetRef="UserTask_PackSnapshotted" />
+      <bpmn:userTask id="UserTask_PackSnapshotted" name="Pack the crate" />
+      <bpmn:sequenceFlow id="Flow_PackSnapshotted_End" sourceRef="UserTask_PackSnapshotted" targetRef="EndEvent_Snapshotted" />
+      <bpmn:endEvent id="EndEvent_Snapshotted" />
+      <bpmn:subProcess id="EventSubProcess_Snapshotted" triggeredByEvent="true">
+        <bpmn:startEvent id="StartEvent_UndoSnapshotted" isInterrupting="false">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_Snapshotted" />
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="Flow_UndoSnapshotted_Task" sourceRef="StartEvent_UndoSnapshotted" targetRef="UserTask_UndoSnapshotted" />
+        <bpmn:userTask id="UserTask_UndoSnapshotted" name="Undo the crate">
+          <bpmn:extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="seenCrate">${crate}</camunda:inputParameter>
+            </camunda:inputOutput>
+          </bpmn:extensionElements>
+        </bpmn:userTask>
+        <bpmn:sequenceFlow id="Flow_UndoSnapshotted_End" sourceRef="UserTask_UndoSnapshotted" targetRef="EndEvent_UndoSnapshotted" />
+        <bpmn:endEvent id="EndEvent_UndoSnapshotted" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Snapshotted_Plain" sourceRef="SubProcess_Snapshotted" targetRef="SubProcess_Plain" />
+
+    <bpmn:subProcess id="SubProcess_Plain" name="Pack without a handler of its own">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="lot">${receipt}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_Plain" />
+      <bpmn:sequenceFlow id="Flow_Plain_Pack" sourceRef="StartEvent_Plain" targetRef="UserTask_PackPlain" />
+      <bpmn:userTask id="UserTask_PackPlain" name="Pack the lot" />
+      <bpmn:boundaryEvent id="Boundary_CompensatePackPlain" attachedToRef="UserTask_PackPlain">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_PackPlain" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoPackPlain" name="Undo the lot" isForCompensation="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenLot">${lot}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:association id="Association_PackPlain" associationDirection="One" sourceRef="Boundary_CompensatePackPlain" targetRef="UserTask_UndoPackPlain" />
+      <bpmn:sequenceFlow id="Flow_PackPlain_End" sourceRef="UserTask_PackPlain" targetRef="EndEvent_Plain" />
+      <bpmn:endEvent id="EndEvent_Plain" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Plain_Pause" sourceRef="SubProcess_Plain" targetRef="UserTask_Pause" />
+
+    <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />
+    <bpmn:sequenceFlow id="Flow_Pause_Throw" sourceRef="UserTask_Pause" targetRef="IntermediateThrow_All" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Throw_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Continue" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

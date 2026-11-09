@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_EmptyThrows"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-targeting:empty-throws">
+  <bpmn:process id="Process_EmptyThrows" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_ThrowEmpty" sourceRef="StartEvent_Start" targetRef="IntermediateThrow_Empty" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Empty">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Empty" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_ThrowEmpty_ThrowAbsent" sourceRef="IntermediateThrow_Empty" targetRef="IntermediateThrow_Absent" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Absent">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Absent" activityRef="UserTask_Later" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_ThrowAbsent_Later" sourceRef="IntermediateThrow_Absent" targetRef="UserTask_Later" />
+
+    <bpmn:userTask id="UserTask_Later" name="Do the later work" />
+    <bpmn:boundaryEvent id="Boundary_CompensateLater" attachedToRef="UserTask_Later">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Later" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoLater" name="Undo the later work" isForCompensation="true" />
+    <bpmn:association id="Association_Later" associationDirection="One" sourceRef="Boundary_CompensateLater" targetRef="UserTask_UndoLater" />
+    <bpmn:sequenceFlow id="Flow_Later_ThrowLater" sourceRef="UserTask_Later" targetRef="IntermediateThrow_Later" />
+
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Later">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_ThrowLater" activityRef="UserTask_Later" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_ThrowLater_Done" sourceRef="IntermediateThrow_Later" targetRef="UserTask_Done" />
+    <bpmn:userTask id="UserTask_Done" name="Done" />
+    <bpmn:sequenceFlow id="Flow_Done_End" sourceRef="UserTask_Done" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>

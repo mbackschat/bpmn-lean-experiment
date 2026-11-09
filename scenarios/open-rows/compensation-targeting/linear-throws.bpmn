@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_LinearThrows"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-targeting:linear-throws">
+  <bpmn:process id="Process_LinearThrows" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Reserve" sourceRef="StartEvent_Start" targetRef="UserTask_Reserve" />
+
+    <bpmn:userTask id="UserTask_Reserve" name="Reserve" />
+    <bpmn:boundaryEvent id="Boundary_CompensateReserve" attachedToRef="UserTask_Reserve">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Reserve" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoReserve" name="Undo reserve" isForCompensation="true" />
+    <bpmn:association id="Association_Reserve" associationDirection="One" sourceRef="Boundary_CompensateReserve" targetRef="UserTask_UndoReserve" />
+    <bpmn:sequenceFlow id="Flow_Reserve_Ship" sourceRef="UserTask_Reserve" targetRef="UserTask_Ship" />
+
+    <bpmn:userTask id="UserTask_Ship" name="Ship" />
+    <bpmn:boundaryEvent id="Boundary_CompensateShip" attachedToRef="UserTask_Ship">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Ship" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoShip" name="Undo ship" isForCompensation="true" />
+    <bpmn:association id="Association_Ship" associationDirection="One" sourceRef="Boundary_CompensateShip" targetRef="UserTask_UndoShip" />
+    <bpmn:sequenceFlow id="Flow_Ship_Bill" sourceRef="UserTask_Ship" targetRef="UserTask_Bill" />
+
+    <bpmn:userTask id="UserTask_Bill" name="Bill" />
+    <bpmn:boundaryEvent id="Boundary_CompensateBill" attachedToRef="UserTask_Bill">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Bill" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoBill" name="Undo bill" isForCompensation="true" />
+    <bpmn:association id="Association_Bill" associationDirection="One" sourceRef="Boundary_CompensateBill" targetRef="UserTask_UndoBill" />
+    <bpmn:sequenceFlow id="Flow_Bill_Route" sourceRef="UserTask_Bill" targetRef="Gateway_Route" />
+
+    <bpmn:exclusiveGateway id="Gateway_Route" default="Flow_Route_EndAll" />
+    <bpmn:sequenceFlow id="Flow_Route_Chain" sourceRef="Gateway_Route" targetRef="IntermediateThrow_Ship">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${mode == 'chain'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Route_EndTargeted" sourceRef="Gateway_Route" targetRef="EndEvent_TargetReserve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${mode == 'end'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Route_EndAll" sourceRef="Gateway_Route" targetRef="EndEvent_All" />
+
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Ship">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_ThrowShip" activityRef="UserTask_Ship" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_ThrowShip_One" sourceRef="IntermediateThrow_Ship" targetRef="UserTask_CheckpointOne" />
+    <bpmn:userTask id="UserTask_CheckpointOne" name="Checkpoint one" />
+    <bpmn:sequenceFlow id="Flow_One_ThrowAll" sourceRef="UserTask_CheckpointOne" targetRef="IntermediateThrow_All" />
+
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_ThrowAll" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_ThrowAll_Two" sourceRef="IntermediateThrow_All" targetRef="UserTask_CheckpointTwo" />
+    <bpmn:userTask id="UserTask_CheckpointTwo" name="Checkpoint two" />
+    <bpmn:sequenceFlow id="Flow_Two_ThrowAgain" sourceRef="UserTask_CheckpointTwo" targetRef="IntermediateThrow_Again" />
+
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Again">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_ThrowAgain" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_ThrowAgain_Three" sourceRef="IntermediateThrow_Again" targetRef="UserTask_CheckpointThree" />
+    <bpmn:userTask id="UserTask_CheckpointThree" name="Checkpoint three" />
+    <bpmn:sequenceFlow id="Flow_Three_EndTargeted" sourceRef="UserTask_CheckpointThree" targetRef="EndEvent_TargetReserve" />
+
+    <bpmn:endEvent id="EndEvent_TargetReserve">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_EndReserve" activityRef="UserTask_Reserve" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_EndAll" />
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

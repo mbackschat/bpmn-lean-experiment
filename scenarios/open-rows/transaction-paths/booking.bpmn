@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_Booking"
+  targetNamespace="urn:bpmn-lean:scenarios:transaction-paths">
+  <bpmn:error id="Error_BookingFailed" name="Booking failed" errorCode="BOOKING_FAILED" />
+  <bpmn:process id="Process_Booking" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Transaction" sourceRef="StartEvent_Start" targetRef="Transaction_Booking" />
+
+    <bpmn:transaction id="Transaction_Booking" name="Booking">
+      <bpmn:startEvent id="StartEvent_Booking" />
+      <bpmn:sequenceFlow id="Flow_Booking_Flight" sourceRef="StartEvent_Booking" targetRef="UserTask_Flight" />
+      <bpmn:userTask id="UserTask_Flight" name="Book the flight" />
+      <bpmn:boundaryEvent id="Boundary_CompensateFlight" attachedToRef="UserTask_Flight">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Flight" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoFlight" name="Undo the flight" isForCompensation="true">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenFlight">${flight}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:association id="Association_Flight" associationDirection="One" sourceRef="Boundary_CompensateFlight" targetRef="UserTask_UndoFlight" />
+      <bpmn:sequenceFlow id="Flow_Flight_Hotel" sourceRef="UserTask_Flight" targetRef="UserTask_Hotel" />
+      <bpmn:userTask id="UserTask_Hotel" name="Book the hotel" />
+      <bpmn:boundaryEvent id="Boundary_CompensateHotel" attachedToRef="UserTask_Hotel">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Hotel" />
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="UserTask_UndoHotel" name="Undo the hotel" isForCompensation="true" />
+      <bpmn:association id="Association_Hotel" associationDirection="One" sourceRef="Boundary_CompensateHotel" targetRef="UserTask_UndoHotel" />
+      <bpmn:sequenceFlow id="Flow_Hotel_Outcome" sourceRef="UserTask_Hotel" targetRef="Gateway_Outcome" />
+      <bpmn:exclusiveGateway id="Gateway_Outcome" default="Flow_Outcome_Ok" />
+      <bpmn:sequenceFlow id="Flow_Outcome_Cancel" sourceRef="Gateway_Outcome" targetRef="EndEvent_Cancel">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${outcome == 'cancel'}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_Outcome_Error" sourceRef="Gateway_Outcome" targetRef="EndEvent_Error">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${outcome == 'error'}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_Outcome_Ok" sourceRef="Gateway_Outcome" targetRef="EndEvent_Ok" />
+      <bpmn:endEvent id="EndEvent_Cancel">
+        <bpmn:cancelEventDefinition id="CancelDefinition_Booking" />
+      </bpmn:endEvent>
+      <bpmn:endEvent id="EndEvent_Error">
+        <bpmn:errorEventDefinition id="ErrorDefinition_Throw" errorRef="Error_BookingFailed" />
+      </bpmn:endEvent>
+      <bpmn:endEvent id="EndEvent_Ok" />
+    </bpmn:transaction>
+    <bpmn:boundaryEvent id="Boundary_Cancel" attachedToRef="Transaction_Booking">
+      <bpmn:cancelEventDefinition id="CancelDefinition_Catch" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Error" attachedToRef="Transaction_Booking">
+      <bpmn:errorEventDefinition id="ErrorDefinition_Catch" errorRef="Error_BookingFailed" />
+    </bpmn:boundaryEvent>
+
+    <bpmn:sequenceFlow id="Flow_Transaction_Confirm" sourceRef="Transaction_Booking" targetRef="UserTask_Confirm" />
+    <bpmn:userTask id="UserTask_Confirm" name="Confirm the booking" />
+    <bpmn:sequenceFlow id="Flow_Confirm_Throw" sourceRef="UserTask_Confirm" targetRef="IntermediateThrow_Outer" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_Outer">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Outer" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Throw_After" sourceRef="IntermediateThrow_Outer" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Continue" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+
+    <bpmn:sequenceFlow id="Flow_Cancel_Cancelled" sourceRef="Boundary_Cancel" targetRef="UserTask_Cancelled" />
+    <bpmn:userTask id="UserTask_Cancelled" name="Handle the cancellation" />
+    <bpmn:sequenceFlow id="Flow_Cancelled_End" sourceRef="UserTask_Cancelled" targetRef="EndEvent_Cancelled" />
+    <bpmn:endEvent id="EndEvent_Cancelled" />
+    <bpmn:sequenceFlow id="Flow_Error_Handled" sourceRef="Boundary_Error" targetRef="UserTask_ErrorHandled" />
+    <bpmn:userTask id="UserTask_ErrorHandled" name="Handle the booking error" />
+    <bpmn:sequenceFlow id="Flow_ErrorHandled_End" sourceRef="UserTask_ErrorHandled" targetRef="EndEvent_ErrorHandled" />
+    <bpmn:endEvent id="EndEvent_ErrorHandled" />
+  </bpmn:process>
+</bpmn:definitions>

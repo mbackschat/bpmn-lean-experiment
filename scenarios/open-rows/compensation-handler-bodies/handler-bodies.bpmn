@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_HandlerBodies"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-bodies">
+  <bpmn:message id="Message_QuoteWithdrawn" name="quoteWithdrawn" />
+  <bpmn:process id="Process_HandlerBodies" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Wrap" sourceRef="StartEvent_Start" targetRef="SubProcess_Wrap" />
+
+    <bpmn:subProcess id="SubProcess_Wrap" name="Wrap">
+      <bpmn:startEvent id="StartEvent_Wrap" />
+      <bpmn:sequenceFlow id="Flow_Wrap_Fork" sourceRef="StartEvent_Wrap" targetRef="Gateway_Fork" />
+      <bpmn:parallelGateway id="Gateway_Fork" />
+      <bpmn:sequenceFlow id="Flow_Fork_Plan" sourceRef="Gateway_Fork" targetRef="UserTask_Plan" />
+      <bpmn:sequenceFlow id="Flow_Fork_Quote" sourceRef="Gateway_Fork" targetRef="UserTask_Quote" />
+      <bpmn:sequenceFlow id="Flow_Fork_Ship" sourceRef="Gateway_Fork" targetRef="UserTask_Ship" />
+
+      <bpmn:userTask id="UserTask_Plan" name="Plan" />
+      <bpmn:boundaryEvent id="Boundary_CompensatePlan" attachedToRef="UserTask_Plan">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Plan" />
+      </bpmn:boundaryEvent>
+      <bpmn:subProcess id="SubProcess_UndoPlan" name="Undo the plan" isForCompensation="true">
+        <bpmn:startEvent id="StartEvent_UndoPlan" />
+        <bpmn:sequenceFlow id="Flow_UndoPlan_Review" sourceRef="StartEvent_UndoPlan" targetRef="UserTask_UndoPlanReview" />
+        <bpmn:userTask id="UserTask_UndoPlanReview" name="Review the undo of the plan" />
+        <bpmn:sequenceFlow id="Flow_Review_Notify" sourceRef="UserTask_UndoPlanReview" targetRef="ServiceTask_UndoPlanNotify" />
+        <bpmn:serviceTask
+          id="ServiceTask_UndoPlanNotify"
+          name="Notify about the undo of the plan"
+          implementation="urn:bpmn-lean:effect:probe-v1"
+          camunda:delegateExpression="${bpmnLeanEffectHandler}"
+          camunda:asyncBefore="true" />
+        <bpmn:sequenceFlow id="Flow_Notify_End" sourceRef="ServiceTask_UndoPlanNotify" targetRef="EndEvent_UndoPlan" />
+        <bpmn:endEvent id="EndEvent_UndoPlan" />
+      </bpmn:subProcess>
+      <bpmn:association id="Association_Plan" associationDirection="One" sourceRef="Boundary_CompensatePlan" targetRef="SubProcess_UndoPlan" />
+      <bpmn:sequenceFlow id="Flow_Plan_Join" sourceRef="UserTask_Plan" targetRef="Gateway_Join" />
+
+      <bpmn:userTask id="UserTask_Quote" name="Quote" />
+      <bpmn:boundaryEvent id="Boundary_CompensateQuote" attachedToRef="UserTask_Quote">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Quote" />
+      </bpmn:boundaryEvent>
+      <bpmn:receiveTask id="ReceiveTask_UndoQuote" name="Await the withdrawal of the quote" isForCompensation="true" messageRef="Message_QuoteWithdrawn" />
+      <bpmn:association id="Association_Quote" associationDirection="One" sourceRef="Boundary_CompensateQuote" targetRef="ReceiveTask_UndoQuote" />
+      <bpmn:sequenceFlow id="Flow_Quote_Join" sourceRef="UserTask_Quote" targetRef="Gateway_Join" />
+
+      <bpmn:userTask id="UserTask_Ship" name="Ship" />
+      <bpmn:boundaryEvent id="Boundary_CompensateShip" attachedToRef="UserTask_Ship">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_Ship" />
+      </bpmn:boundaryEvent>
+      <bpmn:callActivity id="CallActivity_UndoShip" name="Undo the shipment" isForCompensation="true" calledElement="Process_UndoShip" />
+      <bpmn:association id="Association_Ship" associationDirection="One" sourceRef="Boundary_CompensateShip" targetRef="CallActivity_UndoShip" />
+      <bpmn:sequenceFlow id="Flow_Ship_Join" sourceRef="UserTask_Ship" targetRef="Gateway_Join" />
+
+      <bpmn:parallelGateway id="Gateway_Join" />
+      <bpmn:sequenceFlow id="Flow_Join_Throw" sourceRef="Gateway_Join" targetRef="IntermediateThrow_All" />
+      <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+        <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:sequenceFlow id="Flow_Throw_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+      <bpmn:userTask id="UserTask_After" name="Continue after compensation" />
+      <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Wrap" />
+      <bpmn:endEvent id="EndEvent_Wrap" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Abandon" attachedToRef="SubProcess_Wrap" cancelActivity="true">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT60S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_Wrap_Wrapped" sourceRef="SubProcess_Wrap" targetRef="UserTask_Wrapped" />
+    <bpmn:sequenceFlow id="Flow_Abandon_Abandoned" sourceRef="Boundary_Abandon" targetRef="UserTask_Abandoned" />
+    <bpmn:userTask id="UserTask_Wrapped" name="Wrapped up" />
+    <bpmn:userTask id="UserTask_Abandoned" name="Abandoned" />
+    <bpmn:sequenceFlow id="Flow_Wrapped_End" sourceRef="UserTask_Wrapped" targetRef="EndEvent_Wrapped" />
+    <bpmn:sequenceFlow id="Flow_Abandoned_End" sourceRef="UserTask_Abandoned" targetRef="EndEvent_Abandoned" />
+    <bpmn:endEvent id="EndEvent_Wrapped" />
+    <bpmn:endEvent id="EndEvent_Abandoned" />
+  </bpmn:process>
+  <bpmn:process id="Process_UndoShip" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_UndoShip" />
+    <bpmn:sequenceFlow id="Flow_UndoShip_Reverse" sourceRef="StartEvent_UndoShip" targetRef="UserTask_Reverse" />
+    <bpmn:userTask id="UserTask_Reverse" name="Reverse the shipment" />
+    <bpmn:sequenceFlow id="Flow_Reverse_End" sourceRef="UserTask_Reverse" targetRef="EndEvent_UndoShip" />
+    <bpmn:endEvent id="EndEvent_UndoShip" />
+  </bpmn:process>
+</bpmn:definitions>

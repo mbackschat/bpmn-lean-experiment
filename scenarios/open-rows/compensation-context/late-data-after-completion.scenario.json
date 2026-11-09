@@ -1,0 +1,269 @@
+{
+  "kind": "scenario",
+  "id": "compensation-context-late-data-after-completion",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "compensation-context-capture",
+    "relativePath": "scenarios/open-rows/compensation-context/capture.bpmn",
+    "sha256": "b7e6e3e6fa7aa10ec3b8a666ecd3e03fa05d36f301461c38d3da4cc49d88e67d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "receipt",
+          "value": {
+            "kind": "string",
+            "value": "r-start"
+          }
+        },
+        {
+          "name": "parcel",
+          "value": {
+            "kind": "string",
+            "value": "root-parcel"
+          }
+        },
+        {
+          "name": "crate",
+          "value": {
+            "kind": "string",
+            "value": "root-crate"
+          }
+        },
+        {
+          "name": "lot",
+          "value": {
+            "kind": "string",
+            "value": "root-lot"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s01-complete-UserTask_Charge-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Charge",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-charged"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-UserTask_PackBoundaried-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_PackBoundaried",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "parcel",
+            "value": {
+              "kind": "string",
+              "value": "parcel-packed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-UserTask_PackSnapshotted-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_PackSnapshotted",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "crate-packed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-UserTask_PackPlain-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_PackPlain",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "lot-packed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-set-variables-UserTask_Pause-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Pause",
+        "activation": 1
+      },
+      "action": {
+        "kind": "setVariables",
+        "values": [
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "r-late"
+            }
+          },
+          {
+            "name": "parcel",
+            "value": {
+              "kind": "string",
+              "value": "parcel-late"
+            }
+          },
+          {
+            "name": "crate",
+            "value": {
+              "kind": "string",
+              "value": "crate-late"
+            }
+          },
+          {
+            "name": "lot",
+            "value": {
+              "kind": "string",
+              "value": "lot-late"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-UserTask_Pause-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Pause",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-UserTask_UndoCharge-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoCharge",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-complete-UserTask_UndoBoundaried-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoBoundaried",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s09-complete-UserTask_UndoSnapshotted-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoSnapshotted",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s10-complete-UserTask_UndoPackPlain-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_UndoPackPlain",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s11-complete-UserTask_After-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_After",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.7",
+      "BPMN 2.0.2 §10.7.1",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.3.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/CompensationUtil.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/event/CompensationEventHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SubProcessActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/AbstractBpmnActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/compensate/CompensateEventTest.java"
+    ]
+  }
+}

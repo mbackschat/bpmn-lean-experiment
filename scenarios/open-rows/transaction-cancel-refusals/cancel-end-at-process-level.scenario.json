@@ -1,0 +1,35 @@
+{
+  "kind": "scenario",
+  "id": "transaction-cancel-refusals-cancel-end-at-process-level",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "transaction-cancel-refusals-cancel-end-at-process-level",
+    "relativePath": "scenarios/open-rows/transaction-cancel-refusals/cancel-end-at-process-level.bpmn",
+    "sha256": "fb917cea54d503917d1fb4aa78969e3dc5d01dcbcb60e9f717c9ce61f5145606",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.5",
+      "BPMN 2.0.2 §13.5.6",
+      "BPMN 2.0.2 §10.5.7"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CancelEndEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CancelBoundaryEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/subprocess/transaction/TransactionSubProcessTest.java"
+    ]
+  }
+}

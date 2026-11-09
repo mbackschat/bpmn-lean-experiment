@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_TypedHandler"
+  targetNamespace="urn:bpmn-lean:scenarios:compensation-handler-bodies:typed-handler">
+  <bpmn:process id="Process_TypedHandler" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Start" />
+    <bpmn:sequenceFlow id="Flow_Start_Work" sourceRef="StartEvent_Start" targetRef="UserTask_Work" />
+
+    <bpmn:userTask id="UserTask_Work" name="Do the work" />
+    <bpmn:boundaryEvent id="Boundary_CompensateWork" attachedToRef="UserTask_Work">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_Work" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_UndoWork" name="Undo the work" isForCompensation="true">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="seenCount">${count}</camunda:inputParameter>
+          <camunda:inputParameter name="seenFlag">${flag}</camunda:inputParameter>
+          <camunda:inputParameter name="seenRatio">${ratio}</camunda:inputParameter>
+          <camunda:inputParameter name="seenTags">${tags}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:association id="Association_Work" associationDirection="One" sourceRef="Boundary_CompensateWork" targetRef="UserTask_UndoWork" />
+    <bpmn:sequenceFlow id="Flow_Work_Typed" sourceRef="UserTask_Work" targetRef="SubProcess_Typed" />
+
+    <bpmn:subProcess id="SubProcess_Typed" name="Typed parent">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="snapCount">${count}</camunda:inputParameter>
+          <camunda:inputParameter name="snapFlag">${flag}</camunda:inputParameter>
+          <camunda:inputParameter name="snapRatio">${ratio}</camunda:inputParameter>
+          <camunda:inputParameter name="snapTags">${tags}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_Typed" />
+      <bpmn:sequenceFlow id="Flow_Typed_Inside" sourceRef="StartEvent_Typed" targetRef="UserTask_Inside" />
+      <bpmn:userTask id="UserTask_Inside" name="Work inside the parent" />
+      <bpmn:sequenceFlow id="Flow_Inside_End" sourceRef="UserTask_Inside" targetRef="EndEvent_Typed" />
+      <bpmn:endEvent id="EndEvent_Typed" />
+      <bpmn:subProcess id="EventSubProcess_Typed" triggeredByEvent="true">
+        <bpmn:startEvent id="StartEvent_EspTyped" isInterrupting="false">
+          <bpmn:compensateEventDefinition id="CompensateDefinition_Typed" />
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="Flow_EspTyped_Undo" sourceRef="StartEvent_EspTyped" targetRef="UserTask_UndoTyped" />
+        <bpmn:userTask id="UserTask_UndoTyped" name="Undo the typed parent">
+          <bpmn:extensionElements>
+            <camunda:inputOutput>
+              <camunda:inputParameter name="seenSnapCount">${snapCount}</camunda:inputParameter>
+              <camunda:inputParameter name="seenSnapFlag">${snapFlag}</camunda:inputParameter>
+              <camunda:inputParameter name="seenSnapRatio">${snapRatio}</camunda:inputParameter>
+              <camunda:inputParameter name="seenSnapTags">${snapTags}</camunda:inputParameter>
+            </camunda:inputOutput>
+          </bpmn:extensionElements>
+        </bpmn:userTask>
+        <bpmn:sequenceFlow id="Flow_UndoTyped_End" sourceRef="UserTask_UndoTyped" targetRef="EndEvent_UndoTyped" />
+        <bpmn:endEvent id="EndEvent_UndoTyped" />
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_Typed_Pause" sourceRef="SubProcess_Typed" targetRef="UserTask_Pause" />
+
+    <bpmn:userTask id="UserTask_Pause" name="Pause before compensating" />
+    <bpmn:sequenceFlow id="Flow_Pause_Throw" sourceRef="UserTask_Pause" targetRef="IntermediateThrow_All" />
+    <bpmn:intermediateThrowEvent id="IntermediateThrow_All">
+      <bpmn:compensateEventDefinition id="CompensateDefinition_All" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_Throw_After" sourceRef="IntermediateThrow_All" targetRef="UserTask_After" />
+    <bpmn:userTask id="UserTask_After" name="Continue" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_After" targetRef="EndEvent_Done" />
+    <bpmn:endEvent id="EndEvent_Done" />
+  </bpmn:process>
+</bpmn:definitions>
