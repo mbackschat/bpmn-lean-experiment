@@ -51,6 +51,7 @@ import org.cibseven.bpm.model.bpmn.instance.Message;
 import org.cibseven.bpm.model.bpmn.instance.MessageEventDefinition;
 import org.cibseven.bpm.model.bpmn.instance.Operation;
 import org.cibseven.bpm.model.bpmn.instance.ReceiveTask;
+import org.cibseven.bpm.model.bpmn.instance.SendTask;
 import org.cibseven.bpm.model.bpmn.instance.ServiceTask;
 import org.cibseven.bpm.model.bpmn.instance.UserTask;
 import org.cibseven.bpm.model.bpmn.instance.cibseven.CamundaInputOutput;
@@ -321,7 +322,13 @@ final class CibSevenOpenWaitProjector {
             wait(instance, elementId, activation, new TimerDetail(deadlineMs, recurrence(timer.getRepeat())),
                 handle));
       } else if (instance.model().getModelElementById(elementId) instanceof ServiceTask task) {
-        projectEffect(instance, occurrences, projection, job, task, executable, handle);
+        projectEffect(instance, occurrences, projection, job,
+            new DelegatedTask(task.getId(), task.getImplementation(), task.getCamundaDelegateExpression()),
+            executable, handle);
+      } else if (instance.model().getModelElementById(elementId) instanceof SendTask task) {
+        projectEffect(instance, occurrences, projection, job,
+            new DelegatedTask(task.getId(), task.getImplementation(), task.getCamundaDelegateExpression()),
+            executable, handle);
       } else {
         throw new IllegalStateException("Unsupported asynchronous continuation at " + elementId);
       }
@@ -333,19 +340,19 @@ final class CibSevenOpenWaitProjector {
       CibSevenOccurrences occurrences,
       Projection projection,
       Job job,
-      ServiceTask task,
+      DelegatedTask task,
       boolean executable,
       JobHandle handle) {
-    var protocol = task.getImplementation();
-    var handler = beanToken(task.getCamundaDelegateExpression());
+    var protocol = task.implementation();
+    var handler = beanToken(task.delegateExpression());
     if (!CibSevenScriptedEffect.SOURCE_PROTOCOL.equals(protocol)
         || !CibSevenScriptedEffect.HANDLER_BEANS.contains(handler)) {
-      throw new IllegalStateException("Service Task " + task.getId() + " has no effect binding in this runner");
+      throw new IllegalStateException("Task " + task.id() + " has no effect binding in this runner");
     }
-    var activation = occurrences.pendingActivation(instance, task.getId());
+    var activation = occurrences.pendingActivation(instance, task.id());
     projection.effects().add(
         new EffectJob(
-            task.getId(), activation, protocol, handler, job.getRetries(), executable, job.getDuedate() != null));
+            task.id(), activation, protocol, handler, job.getRetries(), executable, job.getDuedate() != null));
     var incidents =
         engine.getRuntimeService().createIncidentQuery().processInstanceId(instance.engineId()).list().stream()
             .filter(incident -> job.getId().equals(incident.getConfiguration()))
@@ -363,7 +370,7 @@ final class CibSevenOpenWaitProjector {
             null);
     FailedJobIncident raw = null;
     if (incidents.isEmpty()) {
-      projection.waits().add(wait(instance, task.getId(), activation, new EffectDetail(effect), handle));
+      projection.waits().add(wait(instance, task.id(), activation, new EffectDetail(effect), handle));
     } else {
       var incident = incidents.getFirst();
       raw =
@@ -373,14 +380,17 @@ final class CibSevenOpenWaitProjector {
               incident.getRootCauseIncidentId());
       projection.waits().add(
           wait(
-              instance, task.getId(), activation,
+              instance, task.id(), activation,
               new IncidentDetail(effect, seen.size(), incidentsCancellable), handle));
     }
     projection.incidents().add(
         new IncidentJob(
             job.getId(), job.getRetries(), executable, job.getDuedate() != null, job.getProcessInstanceId(),
-            task.getId(), raw));
+            task.id(), raw));
   }
+
+  /** A Service or Send Task whose delegate expression the runner's effect handler answers. */
+  private record DelegatedTask(String id, String implementation, String delegateExpression) {}
 
   private static ProjectedWait wait(
       Instance instance, String elementId, long activation, ScenarioProtocol.WaitDetail detail, Handle handle) {
