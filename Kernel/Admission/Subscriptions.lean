@@ -48,7 +48,7 @@ def message (trigger : MessageTrigger) : Option String :=
     | some (.literal _) => none
     | none => some "message.unnamed"
 
-/-- A correlated catch, as the [specification](../../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#required-optional-and-excluded-scope)
+/-- A correlated catch, as the [specification](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md)
 bounds it: one key bound to a variable, an Operation channel, and no output, since its payload is never written. -/
 def correlatedCatch (subscription : Subscription) (trigger : MessageTrigger) : Option String :=
   match trigger.correlation with

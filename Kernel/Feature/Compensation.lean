@@ -18,7 +18,7 @@ thrower asked.
 
 A handler that an Error leaves uncaught fails the process instance: every token, item and occurrence is removed and
 the failure is published. BPMN 2.0.2 §13.3.2 leaves this open; it is the interpretation COMPH-FAIL-01 of the
-[trigger account](../../docs/capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md).
+[trigger account](../../docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md).
 -/
 
 public section

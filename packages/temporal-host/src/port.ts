@@ -1,5 +1,5 @@
 /**
- * The slice of the kernel's host interface this host reads ([proposal](../../../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#host-interface)).
+ * The slice of the kernel's host interface this host reads ([architecture](../../../docs/kernel/ARCHITECTURE-SPEC.md#host-interface)).
  *
  * Views arrive in the JSON the kernel's runner renders for them (`Kernel.Run.hostViewJson`, `requirementsJson`), so
  * every value here is plain JSON: it crosses Temporal payloads and queries as is, and the Lean runner's `--host-view`

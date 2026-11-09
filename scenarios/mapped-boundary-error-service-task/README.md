@@ -1,6 +1,6 @@
 # Mapped-boundary-Error Service Task scenario
 
-This directory contains the exact admitted BPMN source and one answer-free schedule for the [typed BPMN Error and interrupting boundary-error specification](../../docs/capsules/BOUNDARY-ERROR-SPEC.md). The Service Task returns the typed business-error arm, the matching exact-code boundary Error interrupts the normal route, and execution continues only through the boundary Sequence Flow to its User Task.
+This directory contains the exact admitted BPMN source and one answer-free schedule for the [typed BPMN Error and interrupting boundary-error specification](../../docs/kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md). The Service Task returns the typed business-error arm, the matching exact-code boundary Error interrupts the normal route, and execution continues only through the boundary Sequence Flow to its User Task.
 
 The [BPMN fixture](process.bpmn) is project-authored MIT-licensed source under the distinct `cibseven-2.0.0-mapped-boundary-error-service-task-draft` profile.
 

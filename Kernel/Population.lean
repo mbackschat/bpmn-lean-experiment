@@ -4,11 +4,11 @@ public import Kernel.Step
 
 /-! # Population
 
-Mechanisms across process instances ([proposal](../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#population)). Every input
+Mechanisms across process instances ([architecture](../docs/kernel/ARCHITECTURE-SPEC.md#population)). Every input
 reaches an instance through `Step.step`; this layer only decides which instance an input goes to. A scenario is one
 ordered list of stimuli mixing instance inputs and population stimuli. Implemented: instances of possibly different
 definitions, each driven by its own inputs, and Message key correlation with exact-cardinality routing
-([specification](../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#global-command-and-runtime-contract)): a publication
+([specification](../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md)): a publication
 addresses one deployed definition, process, Message channel and correlation key; the candidates are the open
 subscriptions of that definition's instances that `Hooks.correlates` accepts; exactly one is delivered to, while zero
 or several reject the publication and change no instance. Candidate order never picks a winner.

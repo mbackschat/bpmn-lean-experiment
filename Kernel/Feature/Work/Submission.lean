@@ -6,7 +6,7 @@ public import Kernel.Feature.Work.Call
 /-! # Work: the scope-chain submission rule
 
 `ProfileOptions.scopeChainSubmissionBytes` selects `NSD-TASK-01` of the
-[nested embedded scope data specification](../../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#profile-and-value-domain)
+[nested embedded scope data specification](../../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md)
 (CIB-EXT-0020): a User Task completion may name only variables a scope occurrence on the task's chain declares,
 below the root of its process instance, or, inside a called instance, the names its Call copies across
 (`Call.submissionNames`, CVM-TASK-01), each at most once, and the canonical JSON of the submission may take at most
@@ -33,7 +33,7 @@ def arrayBytes (sizes : List Nat) : Nat :=
 
 mutual
 /-- The canonical JSON bytes of a portable value: no whitespace, `kind` before `value` (or `coefficient` and
-`scale`), Map entries `name` before `value` ([NSD-TASK-01](../../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#profile-and-value-domain)).
+`scale`), Map entries `name` before `value` ([NSD-TASK-01](../../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md)).
 A String List is outside the portable value arms and has no measure. -/
 def valueBytes : Value → Option Nat
   | .null => some "{\"kind\":\"null\"}".utf8ByteSize

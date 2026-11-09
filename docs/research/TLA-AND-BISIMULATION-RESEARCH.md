@@ -13,7 +13,7 @@ The current disposition is:
 5. Select a technique only for a named question, a separating defect it must expose, a feedback-time budget, and a defined correspondence back to Lean, the semantic core, or the real Temporal adapter.
 6. Remove an experimental tool if it does not find useful counterexamples or establish evidence more cheaply and clearly than the existing pipeline.
 
-This sharpens the current [Temporal hosting/refinement boundary](../PROJECT-DESIGN.md#temporal-hostingrefinement-preflight), which retains weak, stuttering-aware adapter refinement as the intended relation without claiming a general theorem.
+This sharpens the current [Temporal hosting/refinement boundary](../kernel/ARCHITECTURE-SPEC.md#temporal-hosting-and-refinement-preflight), which retains weak, stuttering-aware adapter refinement as the intended relation without claiming a general theorem.
 
 ## Why this project is a good candidate
 

@@ -2,20 +2,20 @@
 
 ## Mission
 
-Build a Temporal-hosted BPMN 2.0.2 execution engine that imports Process diagrams within CIB Seven `2.2.0` implemented element breadth and feature depth, and an MIT-licensed BPM platform on top of it. **Practical CIB7 Coverage** is the primary engine objective, with BPMN meaning authoritative within that implementation ceiling: the reusable semantic model, Lean account, TypeScript core, and Temporal refinement must be meaningful without CIB Seven and without any downstream product. Within that roadmap, practical breadth and semantic risk are co-equal scheduling inputs after normative dependencies. Practical breadth comes from the executable BPMN breadth of CIB Seven `2.2.0` and a maintained deduplicated corpus of representative whole models. Semantic risk comes from element and mechanism families whose concurrency, ordering, cancellation, scope, liveness, runtime-identity, data, or durable-hosting obligations could invalidate an accepted representation or force a non-local redesign even when few sampled models use them.
+Build a Temporal-hosted BPMN 2.0.2 execution engine that imports Process diagrams within CIB Seven `2.2.0` implemented element breadth and feature depth, and an MIT-licensed BPM platform on top of it. **Practical CIB7 Coverage** is the primary engine objective, with BPMN meaning authoritative within that implementation ceiling: the kernel IL, the Lean kernel, the TypeScript kernel and the Temporal host must be meaningful without CIB Seven and without any downstream product. Within that ceiling, practical breadth and semantic risk are co-equal scheduling inputs after normative dependencies. Practical breadth comes from the executable BPMN breadth of CIB Seven `2.2.0` and a maintained deduplicated corpus of representative whole models. Semantic risk comes from mechanisms whose concurrency, ordering, cancellation, scope, liveness, runtime-identity, data or durable-hosting obligations could invalidate the accepted representation or force a non-local redesign even when few sampled models use them.
 
-CIB Seven compatibility is a versioned overlay on that BPMN engine. It selects and classifies CIB interpretations, extensions, configuration-specific realizations, limitations, and evidenced deviations without allowing CIB host mechanisms to define the vendor-neutral BPMN core.
+CIB Seven compatibility is a versioned overlay on that BPMN engine. It selects and classifies CIB interpretations, extensions, configuration-specific realizations, limitations and evidenced deviations without allowing CIB host mechanisms to define the vendor-neutral BPMN core.
 
-The distinguishing claim is that the BPMN meaning underneath the platform is machine-checked in Lean rather than asserted, and that the platform inherits that assurance because it consumes the engine's published contract instead of reconstructing semantic facts. [The product division](#product-division) states the boundary that claim depends on, [the assurance-lane rule](#lean-assurance-lane) states how the Lean investment is allocated as breadth grows, and [ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete repository and modular-monolith realization of those decisions.
+The distinguishing claim is that the BPMN meaning underneath the platform is stated executably in Lean rather than asserted, and that the platform inherits that assurance because it consumes the engine's published contract instead of reconstructing semantic facts. [The product division](#product-division) states the boundary that claim depends on; the [kernel architecture specification](kernel/ARCHITECTURE-SPEC.md) owns the engine's design, guardrails and assurance lane; [ARCHITECTURE.md](ARCHITECTURE.md) owns the repository and modular-monolith realization.
 
-The project pursues these goals through four assurance and execution components:
+The project pursues these goals through four components:
 
-1. a versioned CIB Seven semantic profile;
-2. an executable Lean reference interpreter;
-3. an independently implemented pure TypeScript semantic core;
-4. a Temporal durability adapter continuously checked through differential, refinement, and replay testing.
+1. versioned semantic profiles (a standards profile and cumulative CIB Seven profiles), which are data;
+2. the Lean kernel, the formal semantic authority and executable specification;
+3. the TypeScript kernel, a separately written transcription of the Lean kernel;
+4. the Temporal host, continuously checked through differential, refinement and replay testing.
 
-The original supplied architecture brief is preserved as [archived provenance](archived/ARCHITECTURE-AND-ASSURANCE-HANDOFF.md); its live decisions and release gates have been transferred to current owners. The normative target is owned by [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md). Every reviewed CIB relationship belongs in the prominent [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md). This document owns the project-local constitution.
+The normative target is owned by [BPMN-CONFORMANCE-TARGET.md](BPMN-CONFORMANCE-TARGET.md). Every reviewed CIB relationship belongs in the [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md). This document owns the project-local constitution: goals, product boundaries, scope ordering and the evolution policy.
 
 ## Product division
 
@@ -23,83 +23,63 @@ The owner divided the work into three products on 2026-08-07.
 
 | # | Product | Owner | License | Repository | Depends on | Owns |
 |---|---|---|---|---|---|---|
-| 1 | BPMN execution engine | this project | MIT | this one | Temporal | Source admission, the Lean account, the TypeScript semantic core, the Temporal adapter, semantic profiles, the CIB relationship register, and CIB oracle evidence |
-| 2 | BPM platform on Temporal | this project | MIT | this one | product 1 | Deployment and versioning, tasklist, task interaction, dashboard, operations and monitoring, history, mining, diagnosis, the JUEL evaluator host, identity, persistence, and the external API |
+| 1 | BPMN execution engine | this project | MIT | this one | Temporal | Source reading, kernel admission, the Lean and TypeScript kernels, the Temporal host, semantic profiles, the CIB relationship register, and CIB oracle evidence |
+| 2 | BPM platform on Temporal | this project | MIT | this one | product 1 | Deployment and versioning, tasklist, task interaction, dashboard, operations and monitoring, history, mining, diagnosis, identity, persistence, and the external API |
 | 3 | A12 Workflows replacement | A12 | EUPL-1.2 | **separate, A12-owned** | product 2 | A12 models, delegates, façades, and migration |
 
-Dependency runs one way and so does licensing. Product 3 may build on MIT product 2; **product 2 must never take an EUPL dependency**, or the separation it exists to provide is gone. Product 3 consumes product 2 as a published MIT artifact, and **no A12 product code is added here**. A12 remains what it already is in this repository: an external evidence and research input under the separately selected `adoption` lane, alongside the project-authored MIT fixtures and the two profiles that carry its name. The A12 source boundary recorded in [SOURCES.md](SOURCES.md) continues to bind this repository unchanged.
+Dependency runs one way and so does licensing. Product 3 may build on MIT product 2; **product 2 must never take an EUPL dependency**, or the separation it exists to provide is gone. Product 3 consumes product 2 as a published MIT artifact, and **no A12 product code is added here**. A12 remains an external evidence and research input. The A12 source boundary recorded in [SOURCES.md](SOURCES.md) continues to bind this repository unchanged.
 
-The post-MVP scalability order is Product 2 shared persistence, shared immutable artifact storage, bounded background recovery, and projection-backed reads first; Product 1 Workflow-chain budgets and Continue-As-New second; and workload isolation plus distributed capacity evidence third. The functional MVP remains explicitly single-node and carries no production scalability or capacity claim. [The Temporal BPMN execution scalability proposal](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md) owns the selected scale contracts, while [PLAN.md](PLAN.md) alone schedules their current implementation.
+The post-MVP scalability order is Product 2 shared persistence, shared immutable artifact storage, bounded background recovery, and projection-backed reads first; Product 1 Workflow-chain budgets and Continue-As-New second; and workload isolation plus distributed capacity evidence third. The functional MVP remains explicitly single-node and carries no production scalability or capacity claim. [The Temporal BPMN execution scalability proposal](TEMPORAL-BPMN-EXECUTION-SCALABILITY-PROPOSAL.md) owns the scale contracts, outside the current target; [PLAN.md](PLAN.md) alone schedules work.
 
 ### Engine maturity roadmap labels
 
-The engine uses a non-binding pre-1.0 maturity ladder as a compact way to express cumulative progress. These labels are planning vocabulary, not assigned software versions: they create no package SemVer, release, compatibility promise, support window, migration baseline, delivery date, profile identity, or conformance claim. [PLAN.md](PLAN.md) may revise, split, reorder, or rename a future label when normative dependencies, semantic risk, corpus reach, Temporal feasibility, or measured evidence changes the best route. Advancing a label requires an explicit evidence-backed owner decision; finishing one listed work item never advances it automatically.
+The engine uses a non-binding pre-1.0 maturity ladder as planning vocabulary, not assigned software versions: the labels create no package SemVer, release, compatibility promise, support window, migration baseline, delivery date, profile identity or conformance claim. Advancing a label requires an explicit evidence-backed owner decision.
 
 | Starting-point label | Working outcome | Boundary |
 |---|---|---|
-| Engine `v0.1`, **Runnable MVP** | Retrospectively names the implemented external runner floor and its Horizon 2 durable-lifecycle hardening. | Horizon 1 remains a Product 2 platform horizon rather than an engine-version constituent. The label makes no production-scale claim. |
-| Engine `v0.2`, **Minimum Useful Engine (MUE)** | Safely admit ordinary modeler interchange and add enough reusable Process Execution breadth for materially more representative whole models: Multi-Instance, broader data and Task mechanisms, event subscriptions, and compensation/Transaction foundations. | Historical planning boundary; separate MUE acceptance is no longer selected or a prerequisite for Practical CIB7 Coverage. BPMN, selected CIB, and Product 2 denominators remain separate. |
-| Engine `v0.3`, **Scalable Engine** | Add workload isolation, backpressure, fairness, failover, observability, capacity, and cost evidence around the useful semantic surface. | Horizon 3 is the current candidate body. Scale evidence does not increase BPMN or CIB coverage. |
-| Engine `v0.9`, **Conformance Candidate** | Reach a reviewable candidate against the declared BPMN Process Execution target with the requirement ledger, profiles, formal account, implementation, and evidence aligned. | The label is unavailable while material target requirements or evidence obligations remain open and is not itself a conformance statement. |
-| Engine `v1.0`, **Conformant Engine** | Reserved for an explicitly approved release boundary whose evidence supports the exact declared OMG Process Execution Conformance claim and whose public compatibility policy is selected. | This is an unselected conditional destination. Any requirements beyond the CIB7 ceiling require a new owner scope decision; this label authorizes no such work. |
+| Engine `v0.1`, **Runnable MVP** | Retrospectively names the external runner floor and its durable-lifecycle hardening. | No production-scale claim. |
+| Engine `v0.2`, **Minimum Useful Engine (MUE)** | Ordinary modeler interchange plus enough reusable Process Execution breadth for representative whole models. | Historical planning boundary; separate MUE acceptance is no longer selected or a prerequisite for Practical CIB7 Coverage. |
+| Engine `v0.3`, **Scalable Engine** | Workload isolation, backpressure, fairness, failover, observability, capacity and cost evidence around the useful semantic surface. | Scale evidence does not increase BPMN or CIB coverage. |
+| Engine `v0.9`, **Conformance Candidate** | A reviewable candidate against the declared BPMN Process Execution target with ledger, profiles, formal account, implementation and evidence aligned. | Not itself a conformance statement. |
+| Engine `v1.0`, **Conformant Engine** | Reserved for an explicitly approved release boundary whose evidence supports the exact declared OMG Process Execution Conformance claim. | Unselected; any requirement beyond the CIB7 ceiling needs a new owner scope decision. |
 
-The ladder retains historical planning vocabulary. [Practical CIB7 Coverage](#practical-cib7-coverage) is the current objective; no maturity label or separate MUE acceptance constrains its sequencing. Future labels remain unselected hypotheses.
-
-A closed engine-maturity label is recorded by one annotated Git tag named `engine/v<major>.<minor>` whose annotation is `Engine v<major>.<minor>: <name>`. The component-first Git ref namespace groups engine milestones while keeping them distinct from repository release tags. The tag is an immutable evidence-snapshot pointer, not a release tag or SemVer assignment. Create it only after the owner explicitly closes that maturity boundary, and never move it to absorb later work. Historical repository tags such as `MVP`, `M1` through `M6`, and `v0.1.0-preview` retain their original targets and meanings; the engine-maturity ladder neither renames nor rewrites them.
+A closed engine-maturity label is recorded by one annotated Git tag named `engine/v<major>.<minor>` whose annotation is `Engine v<major>.<minor>: <name>`, created only after the owner closes that boundary and never moved. Historical repository tags such as `MVP`, `M1` through `M6` and `v0.1.0-preview` keep their original targets and meanings.
 
 ### MUE delivery checkpoints
 
-The historical MUE programme defined three non-release delivery checkpoints before the Engine `v0.2` maturity boundary. Preserve their evidence; the current Practical CIB7 Coverage objective supersedes separate MUE acceptance work without claiming that acceptance passed. Each checkpoint requires a clean, committed, completely verified head and one immutable annotated `phase/<kebab-case>` tag under the [project tag policy](../CLAUDE.md#git-and-delivery). A checkpoint tag is an evidence snapshot, not a package version, compatibility promise, conformance claim, or substitute for a governed semantic review.
+The historical MUE programme defined non-release checkpoints before the Engine `v0.2` boundary. Their evidence is preserved; Practical CIB7 Coverage supersedes separate MUE acceptance without claiming that acceptance passed. A checkpoint tag is an evidence snapshot under the [project tag policy](../CLAUDE.md#git-and-delivery), not a package version, compatibility promise or conformance claim.
 
 | Checkpoint | Exit boundary | Annotated tag |
 |---|---|---|
-| MUE v0.2 Preview Alpha | One polished production-browser and real-Temporal vertical slice is closure-reviewed, release-gated, and demonstrable with curated examples while every unimplemented MUE limit remains explicit. | `phase/mue-preview-alpha` |
-| MUE v0.2 Preview Beta | Every MUE content ID remaining after Alpha has one separately reviewed risk-bearing vertical checkpoint, and those checkpoints are integrated into one coherent Product 2 preview with open limits disclosed. Breadth evidence does not close the underlying content IDs. | `phase/mue-preview-beta` |
-| MUE v0.2 Release Candidate | All MUE content IDs in the owner-selected boundary are fully implemented, governed closure is complete, and the feature surface is frozen. Only cross-family stabilization, final evidence reconciliation, and release qualification may remain. | `phase/mue-release-candidate` |
-| Minimum Useful Engine | Every MUE semantic, durability, evidence, integration, and release-acceptance obligation is closed by explicit owner decision. | `engine/v0.2` with annotation `Engine v0.2: Minimum Useful Engine` |
+| MUE v0.2 Preview Alpha | One production-browser and real-Temporal vertical slice, demonstrable with curated examples, every unimplemented limit explicit. | `phase/mue-preview-alpha` |
+| MUE v0.2 Preview Beta | Every remaining MUE content ID has one reviewed vertical checkpoint, integrated into one Product 2 preview with open limits disclosed. | `phase/mue-preview-beta` |
+| MUE v0.2 Release Candidate | All MUE content IDs in the owner-selected boundary implemented and the feature surface frozen. | `phase/mue-release-candidate` |
+| Minimum Useful Engine | Every MUE obligation closed by explicit owner decision. | `engine/v0.2` |
 
-The Preview Alpha and Preview Beta `phase/` tags remain historical evidence at their original targets. The owner-directed RC phase-tag realignments and their qualification limits are recorded in [the historical RC content boundary](#historical-rc-content-boundary); they do not move the published distribution tag. Their names now read as checkpoints in the MUE v0.2 programme, not retrospective software versions; no Alpha or Beta `v0.2.0-*` release is asserted. A qualified, downloadable RC distribution may receive `v0.2.0-rc.1` at its own exact committed and release-gated target, with matching root and browser product versions. Its versioned tag is an actual prerelease, not an alias used to trigger image publication. If separately requested in future, final MUE acceptance creates `engine/v0.2`; `v0.2.0` requires its own software-release decision. Published tags remain immutable except for the explicitly owner-directed RC phase-tag realignments recorded by the [project tag policy](../CLAUDE.md#git-and-delivery). Before first publication only, an owner-directed correction may replace a local checkpoint tag after the exact remote reference is proved absent and every applicable gate is rerun into receipts bound to the replacement target; the correction must close an evidence-record defect and must not make the tag follow later work.
+The published distribution `v0.2.0-rc.1` stays at `16c5b9f6`; the Alpha and Beta `phase/` tags stay at their original targets, together with the owner-directed RC phase-tag realignments and the bounded native-runtime risk exception. No further tag move is authorized.
 
 #### Historical RC content boundary
 
-`MUE-RELEASE-CANDIDATE` freezes the historical seven content IDs below; it is not an eighth content ID. Practical coverage is separate.
-
-| Content ID | State | Exact RC closure boundary | Evidence or closure owner |
-|---|---|---|---|
-| `SEQUENTIAL-MULTI-INSTANCE` | `satisfied` | Retain the closure-reviewed collection-driven User Task profile, including ordered aggregation and outer-Timer interruption; no additional Multi-Instance host is selected for RC. | [Sequential Multi-Instance specification](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) |
-| `INTERNAL-COMMUTATION` | `satisfied` | Close internal scheduling for the complete selected RC capability surface under the approved scope amendment, retaining exhaustive classifications, finite independent batches, canonical publication, private choice guarantees, and the existing Temporal admission boundary. Unresolved capability dependencies block RC closure. | [RC completion scope amendment](INTERNAL-COMMUTATION-PROPOSAL.md#rc-completion-scope-amendment) |
-| `PARALLEL-MULTI-INSTANCE` | `satisfied` | Retain the closure-reviewed bounded parallel User Task profile, including all/first completion, cancellation, capacity, aggregation, and outer-Timer interruption; no additional Multi-Instance host is selected for RC. | [Parallel Multi-Instance specification](capsules/PARALLEL-MULTI-INSTANCE-SPEC.md) |
-| `MECHANISM-MATURITY-EVIDENCE` | `satisfied` | Reconciled generated family vector, executable corpus union, requirement/CIB measures, and Product 2 disclosures; no combined support percentage. | [Mechanism-maturity classifications](SEMANTIC-VERIFICATION-POLICY.md#mechanism-maturity-classifications) |
-| `DATA-AND-TASK-MECHANISMS` | `satisfied` | Compose one required scalar direct input and output on the same User Task occurrence while retaining the implemented User Task and Service Task profiles; no new Task subclass is selected for RC. | [Composed Activity data specification](capsules/ACTIVITY-DATA-INPUT-OUTPUT-MEDIATION-SPEC.md) |
-| `EVENT-SUBSCRIPTIONS` | `satisfied` | Close reusable Message/Timer subscription lifetime across the admitted catch and Activity-boundary loci, including repeatable non-interrupting paths, deterministic completion/trigger races, and exact scope cleanup. | [Repeatable subscription specification](capsules/REPEATABLE-EVENT-SUBSCRIPTIONS-SPEC.md) |
-| `COMPENSATION-TRANSACTIONS` | `satisfied` | Register the reviewed Compensation account as a public capability and close one bounded Transaction Sub-Process cancellation path through compensation and a Cancel Boundary Event. | [Public Compensation registration](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-implementation) and [Transaction specification](capsules/TRANSACTION-CANCELLATION-SPEC.md) |
-
-The historical RC feature surface freezes only after all seven rows are `satisfied`. Its qualification permits stabilization; Practical CIB7 Coverage advances independently without rewriting RC evidence. `H3-WORKLOAD-ISOLATION` stays in Engine `v0.3`, while `CONFORMANCE-CLOSURE` stays in Engine `v0.9`.
-
-Integration state: `satisfied`.
-
-[The project tag policy](../CLAUDE.md#git-and-delivery) and [MUE delivery checkpoints](#mue-delivery-checkpoints) own the historical RC phase realignments. Preserve the published `v0.2.0-rc.1` distribution at `16c5b9f6`, Alpha/Beta tags, and the existing bounded native-runtime risk exception. MUE acceptance has not passed and is no longer a separate work item; no further tag move is authorized.
+`MUE-RELEASE-CANDIDATE` froze seven content IDs, all recorded `satisfied` on the old stack: `SEQUENTIAL-MULTI-INSTANCE`, `INTERNAL-COMMUTATION`, `PARALLEL-MULTI-INSTANCE`, `MECHANISM-MATURITY-EVIDENCE`, `DATA-AND-TASK-MECHANISMS`, `EVENT-SUBSCRIPTIONS` and `COMPENSATION-TRANSACTIONS`. Their closure records are historical and live at the [pre-reset document state](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/PROJECT-DESIGN.md#historical-rc-content-boundary); the kernel rewrite replaced the code they describe, so they carry no claim about the kernel. `H3-WORKLOAD-ISOLATION` stays in Engine `v0.3` and `CONFORMANCE-CLOSURE` in Engine `v0.9`.
 
 ### Practical CIB7 Coverage
 
-On 2026-10-03 the owner selected **Practical CIB7 Coverage** as the primary delivery objective, superseding the proposed MUE-then-coverage sequence. Reconfirmed on 2026-10-04: MUE RC was sufficient; the owner intends to show and release only Practical CIB7 Coverage. MUE is historical evidence, not a separate acceptance gate or sequencing prerequisite. No new version or tag is assigned. Sequential and parallel Multi-Instance Sub-Processes remain required practical scope, but compete for priority with composition, data, automated work and other practical gaps under the ordering rule below. [PLAN](PLAN.md#practical-cib7-coverage-goal) owns execution order.
+On 2026-10-03 the owner selected **Practical CIB7 Coverage** as the primary delivery objective, superseding the MUE-then-coverage sequence; reconfirmed on 2026-10-04, the owner intends to show and release only Practical CIB7 Coverage. No new version or tag is assigned. [PLAN](PLAN.md) owns execution order.
 
-The milestone must close the reviewed [practical-depth inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md) of CIB7-supported element variants and their useful compositions, with every required row linked to exact CIB depth evidence, a semantic owner, source/Lean/TypeScript behavior, applicable Temporal refinement and a retained whole business model. Isolated element examples and private checkpoints cannot establish broad executable coverage. Review missing depth in control-flow composition, scoped data and expressions, task/effect and decision execution, subprocess/Call reuse, Multi-Instance bodies, timers, messages and exception handling. The inventory must distinguish required behavior, optional compatibility integrations and CIB-unsupported exclusions before implementation starts.
+The milestone closes the reviewed [practical-depth inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md) of CIB7-supported element variants and their useful compositions under the kernel's [definition of done for a row](kernel/ARCHITECTURE-SPEC.md#definition-of-done-for-a-row). Isolated element examples cannot establish broad executable coverage. The inventory distinguishes required behavior, optional compatibility integrations and CIB-unsupported exclusions.
 
-Acceptance requires all required rows and cross-family business journeys to pass their applicable gates, exact restrictions and CIB differences to be disclosed, and an explicit owner decision. Java/REST API replacement, every scripting runtime, vendor administration facilities and production-scale qualification do not follow from this milestone. The [CIB7 scope ceiling](#cib-seven-220-breadth-ordering) bounds it; full OMG conformance remains a separate conditional claim, not a reason to implement beyond CIB7.
+Acceptance requires all required rows and cross-family business journeys to pass, exact restrictions and CIB differences to be disclosed, and an explicit owner decision. Java/REST API replacement, every scripting runtime, vendor administration facilities and production-scale qualification do not follow from this milestone. The [CIB7 scope ceiling](#cib-seven-220-breadth-ordering) bounds it; full OMG conformance remains a separate conditional claim, not a reason to implement beyond CIB7.
 
 ### One repository for products 1 and 2
 
-Products 1 and 2 share this repository. A change to a published observation ripples through the checked graph, the Lean account, the semantic core, the adapter, the schemas, and then the platform's read models and surfaces, and [the pre-release evolution policy](#pre-release-evolution-policy) requires that such a change replace every producer, consumer, fixture, schema, and test **atomically**. Two repositories would make that impossible for the engine-to-platform contract: it would need either lockstep releases or a version-tolerant reader, and the second is exactly what that policy forbids before an immutable baseline exists. Sharing one tree is therefore the option consistent with the project's own rules, not a shortcut around them.
+Products 1 and 2 share this repository. A change to a published observation ripples from the kernel through the contracts, the Temporal host and the engine API into the platform's read models and surfaces, and [the pre-release evolution policy](#pre-release-evolution-policy) requires that such a change replace every producer, consumer, fixture, schema and test **atomically**. Two repositories would need either lockstep releases or a version-tolerant reader, and the second is exactly what that policy forbids before an immutable baseline exists.
 
 Product 3 is separate for the opposite reason: it is another organization's product under a reciprocal license, so its boundary is a distribution boundary rather than a change-coordination one.
 
-The engine keeps its existing paths and the platform is added as a sibling tree:
-
 ```text
-packages/                         product 1 TypeScript engine packages
-  contract-types/                neutral type-only contract utilities shared by products 1 and 2
-BpmnSemantics/                    product 1 Lean reference
+Kernel/                           product 1 Lean kernel
+packages/                         product 1 TypeScript packages (kernel, bpmn-source, temporal-host, engine-api, differential)
+  contract-types/                 neutral type-only contract utilities shared by products 1 and 2
 profiles/ scenarios/ contracts/   product 1 semantic artifacts
 runners/                          product 1 external-oracle adapters
 
@@ -107,72 +87,56 @@ platform/                         product 2 modular monolith and production Work
 showcase/                         product 2 milestone acceptance gates
 ```
 
-[ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete application, contract, foundation, business-module, UI, Worker, and showcase layout. The detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md) record which of those locations and mechanisms exist. This document does not duplicate the package tree because it owns the product boundary and rationale rather than implementation structure.
+[ARCHITECTURE.md](ARCHITECTURE.md) owns the concrete layout. Because the repository wall is gone, the boundary is executable: an owned guard fails when a product-1 tree references `platform/`, when a platform package deep-imports an engine internal path instead of its public entry point, or when a platform package imports Temporal Event History APIs. The only neutral cross-product package is `@bpmn-lean/contract-types`, which owns type-level immutability and no runtime, BPMN, engine, platform or transport behavior. The engine's complete gate keeps passing without building any platform package.
 
-Because the repository wall is gone, the boundary must be executable instead. An owned guard must fail when a product-1 tree references `platform/`; when a platform package deep-imports an engine internal path instead of its public entry point; when a platform package imports Temporal Event History APIs at all; and when a production JUEL Worker appears under the external-oracle `runners/` tree. The only neutral cross-product package is `@bpmn-lean/contract-types`, which owns type-level immutability and no runtime, BPMN, engine, platform, or transport behavior. The engine's complete gate must additionally keep passing without building any platform package, which is what demonstrates that the engine remains self-contained.
-
-Sharing the tree also makes one check possible that separate repositories would not: for every registered scenario, the platform's projected task set must equal the engine's published open User Tasks, and its projected history must be complete with respect to the engine's committed transition records. That turns "the platform reconstructs no semantic fact" from a rule into a test.
+Sharing the tree also makes one check possible that separate repositories would not: for every registered scenario, the platform's projected task set must equal the engine's published open User Tasks, and its projected history must be complete with respect to the engine's committed publication. That turns "the platform reconstructs no semantic fact" from a rule into a test.
 
 ### Dependency posture
 
 Two rules govern the platform's dependencies, and they are commonly mistaken for one.
 
-**A small footprint is a stated requirement, for security rather than tidiness.** Every package in the resolved graph is attack surface, and a BPM platform is exactly the kind of product where a user-facing surface, a deployment endpoint, and durable business state meet. The owner confirmed this on 2026-08-07 and declined to relax dependency approval for platform-only packages.
+**A small footprint is a stated requirement, for security rather than tidiness.** Every package in the resolved graph is attack surface, and a BPM platform is exactly the kind of product where a user-facing surface, a deployment endpoint and durable business state meet. The owner confirmed this on 2026-08-07 and declined to relax dependency approval for platform-only packages.
 
-**Adopt rather than reimplement.** The platform implements what only it can implement and takes maintained MIT-compatible work for everything else. A JUEL evaluator and a BPMN diagram renderer are explicitly out of scope as implementation here; so is anything else whose correctness is someone else's solved problem. The owner set this direction on 2026-08-07.
+**Adopt rather than reimplement.** The platform implements what only it can implement and takes maintained MIT-compatible work for everything else; a BPMN diagram renderer is out of scope as implementation here, and so is anything else whose correctness is someone else's solved problem (owner direction, 2026-08-07). Expression evaluation is the exception the engine owns: the kernel evaluates its profile's expression subset inside the step, with no JVM in the TypeScript and Temporal solution ([owner decision, 2026-11-08](kernel/ARCHITECTURE-SPEC.md#runtime-state-and-step)).
 
-The two rules agree more often than they conflict, because fewer packages is not automatically safer when the alternative is our own unaudited code in the same risky position. A hand-written multipart parser on an upload endpoint carries more exposure than a maintained one. Where they genuinely conflict, the comparison is against the whole alternative, including the defects we would introduce and maintain, never against the package count alone.
+The two rules agree more often than they conflict, because fewer packages is not automatically safer when the alternative is our own unaudited code in the same risky position. Where they genuinely conflict, the comparison is against the whole alternative, including the defects we would introduce and maintain, never against the package count alone.
 
-Together they define what the platform owns: the engine boundary, the projection from committed transition records into read models, deployment and admission gateway behavior, the BPM domain meaning of a task row, an incident, and an operator action, and the composition of all of it. Rendering, parsing, transport, storage engines, expression evaluation, and charting are adopted.
+Each candidate is decided on its own record: research the alternatives, compare the resolved footprint and licences against what building it would cost, and obtain owner approval before anything enters the tree. [The dependency rule](../CLAUDE.md#dependencies) follows the standard package-manager split: direct intent belongs in the owning manifest, exact resolution in the committed lockfile and frozen CI installation, and [`platform/license-policy.json`](../platform/license-policy.json) owns only the platform's permitted licences and exact non-standard exceptions.
 
-Each candidate is still decided on its own record through the ordinary process: research the alternatives, compare the resolved footprint and licences against what building it would cost, and obtain owner approval before anything enters the tree. [The dependency rule](../CLAUDE.md#dependencies) follows the standard package-manager split: direct intent belongs in the owning manifest, exact resolution belongs in the committed lockfile and frozen CI installation, pnpm reports the installed production closure, and [`platform/license-policy.json`](../platform/license-policy.json) owns only the platform's permitted licences and exact non-standard exceptions. It does not duplicate the lockfile with a hand-maintained transitive inventory or an arbitrary package-count budget.
-
-Stop for owner direction before any dependency addition, removal, replacement, or upgrade. This applies even when the implementation architecture would otherwise remain unchanged.
-
-Within product 1 the internal layering is unchanged:
+Within product 1 the internal layering is:
 
 ```text
 BPM platform on Temporal            (product 2)
         ↓ consumes the published engine contract
 selected CIB Seven compatibility profiles
         ↓ refine or extend
-vendor-neutral BPMN 2.0.2 execution core
+vendor-neutral BPMN 2.0.2 execution kernel
         ↓ hosted by
 Temporal durability and effect infrastructure
 ```
 
 | Layer | Owns | Must not own |
 |---|---|---|
-| BPMN execution core | Standard Process structure and lifecycle, control flow, Activities, Events, scopes, variables, public semantic observations, and host-independent commands | Camunda extension QNames, CIB jobs/retries/incidents, downstream handlers or APIs, Temporal attempts, or product-specific model shapes |
+| BPMN execution kernel | Standard Process structure and lifecycle, control flow, Activities, Events, scopes, variables, expression evaluation for the selected profile, public semantic observations, and host-independent inputs | Camunda extension QNames, CIB jobs/retries/incidents, downstream handlers or APIs, Temporal attempts, or product-specific model shapes |
 | CIB Seven compatibility profile | Classified interpretations and gap resolutions, selected `camunda:*` source extensions, CIB configuration, transaction/variable behavior, jobs/retries/incidents, and bounded behavioral compatibility evidence | General BPMN authority, unqualified engine compatibility, downstream integration APIs, or product-specific business semantics |
-| BPM platform | Deployment, read models, user and operator surfaces, persistence, identity, the pinned JUEL runtime, and product acceptance evidence | Any BPMN meaning, transition, admission decision, or occurrence identity it did not receive from a published engine observation |
+| BPM platform | Deployment, read models, user and operator surfaces, persistence, identity, and product acceptance evidence | Any BPMN meaning, transition, admission decision, or occurrence identity it did not receive from a published engine observation |
 
 ### What the platform may consume
 
-Product 2's permitted surface for **consuming semantic state** is the engine's published contract, in four kinds: compile exact bytes against a selected profile, start an admitted program, observe committed canonical state, and submit a command. Nothing else of that kind crosses.
+Product 2's permitted surface for **consuming semantic state** is the engine's published contract, in four kinds: compile exact bytes against a selected profile, start an admitted program, observe committed canonical state, and submit a command. Nothing else of that kind crosses. The [engine API](../packages/engine-api/) and the [Temporal host](../packages/temporal-host/) realize it; Product 2 consumes the Temporal client only through its engine gateway, so Worker and test infrastructure stay outside the platform server's dependency closure.
 
-Those four are a taxonomy of permitted consumption, not a generic portability interface. [The Temporal adapter subsystem](ARCHITECTURE.md#temporal-adapter-subsystem) realizes the hosting side as separate protocol, client, Workflow, Worker, runner, and testkit packages. Product 2 consumes the concrete Temporal client package only through its engine gateway, so adopting Temporal remains explicit while Worker and test infrastructure stay outside the platform server's dependency closure. The [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md) records whether that package boundary is implemented.
+Consumption is not the only direction. The platform additionally **hosts** engine-defined work: it runs the Workflow Worker carrying the admitted program and implements the effect Activity Worker. Hosting is a responsibility, never a fifth way to reach semantic state.
 
-Consumption is not the only direction. The platform additionally **hosts** engine-defined work: it runs the Workflow Worker carrying the admitted program, implements the effect Activity Worker, and will host the pinned JUEL runtime. Hosting an evaluator whose result decides a Sequence Flow is safe only under the existing isolation, where an explicitly selected language profile bounds the evaluator and the semantic core validates the content-bound result before applying the consuming BPMN rule. Hosting is a responsibility, never a fifth way to reach semantic state.
-
-Because the two products share a tree, the platform will link engine packages through the workspace, which is what makes the atomic cross-layer change above possible; the boundary is therefore to be held by the executable guard and those narrowed entry points, not by a distribution step.
-
-Each surface additionally splits into a service, a public HTTP API over it, and a client. [ARCHITECTURE.md](ARCHITECTURE.md#product-2-dependency-direction) owns the package realization. **The platform's own UI must consume only that public API and may not import a platform service package.** The reason is evidential rather than stylistic: the UI is the most demanding client the platform has, so a guarded UI passing demonstrates the API is sufficient for an adopter who builds their own front end. Without it, such an adopter discovers the API's gaps only after committing to it, and the platform's claim to be adoptable at the API is untested.
+Each surface splits into a service, a public HTTP API over it, and a client. [ARCHITECTURE.md](ARCHITECTURE.md#product-2-dependency-direction) owns the package realization. **The platform's own UI consumes only that public API and may not import a platform service package**, so a guarded UI passing demonstrates the API is sufficient for an adopter who builds their own front end.
 
 Two rules make the assurance claim transferable, and without both of them it is false:
 
-- **Occurrence identity is taken, never constructed.** The platform answers a published interaction by submitting the identity that interaction carried. No product code assembles a task, subscription, activation, or Call identity.
-- **A missing fact is a stop condition, not a workaround.** When the platform needs something the engine does not publish, it files an engine requirement and stops. It does not derive the fact from Temporal Event History, from a state difference, or from its own store. This extends the rule the engine runner already applies to a rejected wait-set shape.
+- **Occurrence identity is taken, never constructed.** The platform answers a published interaction by submitting the identity that interaction carried. No product code assembles a task, subscription, activation or Call identity.
+- **A missing fact is a stop condition, not a workaround.** When the platform needs something the engine does not publish, it files an engine requirement and stops. It does not derive the fact from Temporal Event History, from a state difference, or from its own store.
 
 ### Source-grounded Product 2 interaction design
 
-Before production code selects or implements a material Product 2 UI/UX surface, inspect the comparable CIB Seven capability first when one exists. Use the pristine pinned source registered in [SOURCES.md](SOURCES.md) and its current documentation, then consult another established product when CIB Seven has no analogue or an independent comparison would expose a tradeoff. Record in the owning research and product contract what the project will adopt, where it will deliberately deviate, and what it will exclude, with the published engine or platform fact that supports each decision. Do not copy source code, styling, assets, private data models, or product terminology from a reference product.
-
-CIB Seven remains a functional and interaction-design reference for Product 2, not a semantic authority, dependency, or visual theme. Source inspection is required because screenshots alone conceal state ownership, failure behavior, navigation, and accessibility mechanics. Acceptance oracles are written from the project-owned decision before its production implementation, so later visual review verifies an informed design rather than becoming the first design comparison.
-
-A representative vertical slice may deliberately cross layers when needed to prove that source admission, semantics, CIB realization, and Temporal hosting compose. The `CreateDocument` and typed boundary-error slices are such feasibility evidence. They do not establish a policy of implementing every downstream model independently across every layer.
-
-After a seam is proven, work proceeds by reusable semantic mechanism. A model that uses already implemented BPMN and CIB mechanisms should normally add only platform configuration and regression evidence. A new full semantic capsule is justified only by a new BPMN proposition, a newly selected CIB relationship, or a material Temporal refinement risk.
+Before production code selects or implements a material Product 2 UI/UX surface, inspect the comparable CIB Seven capability first when one exists, using the pristine pinned source registered in [SOURCES.md](SOURCES.md) and its documentation, then another established product when CIB Seven has no analogue. Record in the owning research and product contract what the project adopts, deliberately deviates from and excludes, with the published engine or platform fact supporting each decision. Do not copy source code, styling, assets, private data models or product terminology from a reference product. CIB Seven remains a functional and interaction-design reference for Product 2, not a semantic authority, dependency or visual theme.
 
 Coverage is accounted separately:
 
@@ -180,275 +144,119 @@ Coverage is accounted separately:
 2. CIB coverage counts classified source extensions and behavioral relationships for named profiles;
 3. platform coverage counts closed showcase milestones and their acceptance gates, against the denominator in [the showcase milestone ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder).
 
-No aggregate percentage may combine these denominators, and no public claim may exceed the exact profile and evidence recorded in the applicable detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md). The architecture is built so that a conformance claim becomes provable; the claim itself stays bounded until the evidence supports it.
+No aggregate percentage may combine these denominators, and no public claim may exceed the exact profile and evidence recorded in the [kernel status map](kernel/KERNEL-STATUS-MAP.md).
 
 ## CIB Seven 2.2.0 breadth ordering
 
-The owner selected CIB Seven `2.2.0` implemented element breadth and feature depth as the scope ceiling on 2026-10-03. A feature or deeper variant not implemented in that baseline is out of scope, even if BPMN specifies it. Before selection, record exact CIB source/test/documentation evidence for supported hosts, combinations, data, expressions, repetition and interruption; tag presence or test-file frequency alone is insufficient. Unknown depth stays unresolved, not implicitly admitted. This selects practical execution scope, not CIB architecture, Java/REST APIs or an obligation to reproduce defects. BPMN remains normative and the relationship register classifies differences.
+The owner selected CIB Seven `2.2.0` implemented element breadth and feature depth as the scope ceiling on 2026-10-03. A feature or deeper variant not implemented in that baseline is out of scope, even if BPMN specifies it. Before selection, record exact CIB source, test or documentation evidence for supported hosts, combinations, data, expressions, repetition and interruption; tag presence or test-file frequency alone is insufficient. Unknown depth stays unresolved, not implicitly admitted. This selects practical execution scope, not CIB architecture, Java/REST APIs or an obligation to reproduce defects. BPMN remains normative and the relationship register classifies differences.
 
-The ceiling governs new selection and extension; existing published evidence is historical fact, not approval to extend behavior beyond CIB7. Existing differences, including [standard Multi-Instance output aggregation](CIB-BPMN-RELATION-REGISTER.md#cib-lim-0001-standard-sequential-multi-instance-output-aggregation-is-absent), remain disclosed and require explicit disposition before any broad CIB7-depth acceptance. Do not silently remove established behavior or count an unsupported CIB variant toward the new milestone.
+Existing differences, including [standard Multi-Instance output aggregation](CIB-BPMN-RELATION-REGISTER.md#cib-lim-0001-standard-sequential-multi-instance-output-aggregation-is-absent), remain disclosed and require explicit disposition before any broad CIB7-depth acceptance.
 
-CIB Seven `2.2.0` is also the primary mature-engine baseline for ordering work within that scope. The concrete queue belongs only to [PLAN.md](PLAN.md); the requirement ledger, CIB breadth research, executable corpus, scalability proposal, and capsule research supply evidence but do not independently schedule work. The 80/20 heuristic selects a small set of reusable mechanisms that unlocks the greatest reach across independent clone families. It is not a coverage percentage, a raw XML-element ranking, or permission to ignore a rare high-consequence defect. After normative dependencies, semantic risk and practical reach are co-equal and are not averaged: either can justify priority. Every semantic increment starts with the BPMN standard account first, then adds a CIB relationship only as a classified overlay when an ambiguity, extension, configuration, or compatibility claim requires it. When candidates remain equal in standards value, reach, and risk, the BPM platform's next [showcase milestone](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder) breaks the tie. Every semantic selection records its reviewed BPMN requirements, independent model-family reach, realistic risk counterexample, CIB evidence decision, bounded capsule cost, and Temporal feasibility. Each newly executable semantic variant adds a credible retained whole model and keeps the generated corpus, capability disclosure, and pipeline evidence equal. Program entries split into separately reviewed capsules at their named mechanism boundaries rather than becoming one broad implementation change.
+CIB Seven `2.2.0` is also the primary mature-engine baseline for ordering work within that scope. The concrete queue belongs only to [PLAN.md](PLAN.md); the requirement ledger, CIB breadth research, executable corpus and scalability proposal supply evidence but do not schedule work. After normative dependencies, semantic risk and practical reach are co-equal and are not averaged: either can justify priority. Every semantic increment starts with the BPMN standard account, then adds a CIB relationship only as a classified overlay when an ambiguity, extension, configuration or compatibility claim requires it. Each newly executable variant adds a credible retained whole model when its row's acceptance names one.
 
-BPMN Process Execution coverage within the CIB7 ceiling is the primary engine roadmap. Group requirements by reusable mechanism rather than by XML element: Process lifecycle and graph flow; Activity lifecycle; branching and merging; scopes and interruption; event subscription and consumption; variables, data, and mapping; looping and multi-instance; compensation; import and reference closure. [The requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns dispositions. [CIB breadth research](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md) measures mature engine-test breadth, while the scheduled curated executable corpus measures independent whole-model families that this project can or cannot actually run. Neither raw XML-tag counts nor cloned model counts select work by themselves.
+Group requirements by reusable mechanism rather than by XML element: Process lifecycle and graph flow; Activity lifecycle; branching and merging; scopes and interruption; event subscription and consumption; variables, data and mapping; looping and Multi-Instance; compensation; import and reference closure. [The requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns dispositions. [CIB breadth research](research/CIB-SEVEN-BPMN-BREADTH-RESEARCH.md) measures mature engine-test breadth, while the curated executable corpus measures independent whole-model families this project can or cannot run. Neither raw XML-tag counts nor cloned model counts select work by themselves.
 
-The standing high-risk semantic families are Activity lifecycle and implicit merge or split behavior; inclusive and complex synchronization; repeated scopes, interruption, and cancellation; event subscription lifetime, correlation, races, and Event Sub-Processes; loops, multi-instance, fairness, divergence, and stable-state progress; data availability, mapping, mutation, expressions, and external language execution; compensation ordering and snapshot state; repeated runtime occurrences and complete command identity; and Temporal delivery, retry, replay, and cancellation refinements that could erase a public BPMN outcome. This list is a risk lens rather than an implementation queue; entries beyond CIB7 implementation depth do not authorize work. Each next-family decision compares it with the current corpus and CIB breadth evidence.
+The standing high-risk semantic areas are Activity lifecycle and implicit merge or split; inclusive and complex synchronization; repeated scopes, interruption and cancellation; event subscription lifetime, correlation, races and Event Sub-Processes; loops, Multi-Instance, fairness, divergence and stable-state progress; data availability, mapping, mutation, expressions and external language execution; compensation ordering and snapshot state; repeated runtime occurrences and complete command identity; and Temporal delivery, retry, replay and cancellation refinements that could erase a public BPMN outcome. This list is a risk lens rather than an implementation queue.
 
-The CIB breadth baseline counts executable Process behavior rather than every CIB product feature or public API. The project corpus counts clone-normalized model families and reusable mechanisms rather than physical files or raw XML tags. It distinguishes schema validity, project admission, semantic execution, Temporal execution, selected CIB comparison, and Product 2 readiness, so success in a viewer or parser cannot stand in for a process that users can start and operate through a complete production-backed browser journey. External examples remain external unless their licence permits redistribution; their provenance and digests may inform research without their bytes entering the MIT repository.
+The CIB breadth baseline counts executable Process behavior rather than every CIB product feature or public API. The corpus counts clone-normalized model families and reusable mechanisms rather than physical files or raw XML tags, and distinguishes schema validity, admission, semantic execution, Temporal execution, selected CIB comparison and Product 2 readiness. External examples remain external unless their licence permits redistribution.
 
-Administration, persistence, authorization, Tasklist, Cockpit, forms UI, identity management, Collaboration features not exercised by the selected engine baseline, and product-specific human-resource policy do not enter the **semantic** schedule merely because a CIB distribution contains adjacent facilities. Several of those facilities are exactly what product 2 must provide, and it provides them as its own MIT work without importing CIB semantics for them. Product readiness remains an explicit corpus dimension because it catches integration gaps, but it does not redefine BPMN behavior or increase BPMN coverage.
+Administration, persistence, authorization, Tasklist, Cockpit, forms UI, identity management, Collaboration features not exercised by the selected engine baseline and product-specific human-resource policy do not enter the **semantic** schedule merely because a CIB distribution contains adjacent facilities. Several of them are what product 2 provides as its own MIT work without importing CIB semantics for them.
 
-The [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md) owns standards dispositions. The [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md) owns relation classifications. The [model-corpus registry](../model-corpus/README.md#admission-and-product-readiness-gate) owns the corpus increment's executable acceptance gate, while [PLAN.md](PLAN.md) owns the concrete ordered queue. Corpus evidence selects which requirement to review next; it never approves the semantic account for that requirement.
+The [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md) owns relation classifications, and the [model-corpus registry](../model-corpus/README.md) owns the corpus's executable acceptance gate. Corpus evidence selects which requirement to review next; it never approves the semantic account for that requirement.
 
 ### CIB evidence on demand
 
-For every BPMN work unit, add CIB-specific implementation only when at least one of these questions answers yes: BPMN leaves a material choice the selected profile must resolve; admitted source requires a `camunda:*` extension; the compatibility claim requires a pinned engine observation not already covered; CIB configuration or host behavior can change the canonical or adoption-visible result; or a concrete downstream blocker remains after the standard mechanism is implemented. If all answers are no, add no new CIB profile surface. Otherwise add the smallest relationship-register entry, profile delta, probe, fidelity label, and mutation that establishes the fact. Standard capsules do not automatically require a new CIB extension lane.
-
-## Engine runner delivery boundary
-
-The [Temporal engine runner](RUNNABLE-TEMPORAL-MVP-SPEC.md) is the implemented engine-side product floor: an ordinary external-Temporal Worker and command path for the registered admitted profiles, plus explicit host simulations that answer published interactions through the real semantic command boundaries. The command owns no Temporal server or port lifecycle, and unsupported source is rejected before it connects.
-
-That simulated actor is host policy. It does not define BPMN User Task meaning and adds no human-resource model. It is also not the product's user surface: real task interaction, forms, identity, authorization, discovery, and a task inbox belong to product 2, which reaches them through the same published contract and the same content-bound commands this actor uses. Completion data is a separately reviewed CIB-profile semantic extension under the [User Task completion-data specification](capsules/USER-TASK-COMPLETION-DATA-SPEC.md).
-
-## Lean assurance lane
-
-Breadth is how the approach's unknown failure modes are found, not what they are traded for. Nothing further proved about the current bounded topologies reveals whether the account survives cycles, arbitrary graphs, a wider value domain, or ordinary multiple-enabledness. Each engine milestone therefore carries one named research question, recorded with [the showcase milestone ladder](SHOWCASE-MILESTONE-LADDER-DECISION.md#showcase-milestone-ladder), and each capsule declares the **shape** of its Lean lane at capsule start rather than discovering it from how much effort the lane absorbed.
-
-| Lane shape | When it is required | Recorded as |
-|---|---|---|
-| Proved | The risk is an invariant no finite test can cover: progress under cycles, cancellation removing exactly the owned subtree, trace completeness with respect to the transition relation | A quantified theorem with useful hypotheses |
-| Checked | The proposition is finite and the risk is a coding slip | A decided fixture or executable guard |
-| Deliberately open | Neither is affordable within the capsule's effort bound | An explicit absence in the applicable detail map routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md), with its reason and reopen trigger |
-
-Every capsule proposal and specification carries exactly one `## Lean assurance lane` section whose first content line is exactly one of `Lane shape: proved`, `Lane shape: checked`, or `Lane shape: deliberately open`. The next paragraph begins `Evidence:` and states the selected proposition's basis and boundary: a proved or checked specification lane names its guaranteeing declarations as `Module.lean#declaration` links that must exist, a proposal lane may link only starting owners but any declaration it names must exist, while a deliberately open lane links the runtime/proof implementation-map entry that owns its reason and reopen trigger. No other level-two heading owns Lean, assurance, or proof-boundary material. The documentation-reviewability guard enforces the closed field, evidence statement, owner link, and single section, and rejects a proved lane that names an executable check or, naming no declaration, links a module whose witnesses include one; prose may explain scope and residual limits without becoming a second field.
-
-Each capsule declares its Lean lane at capsule start as proved, checked, or deliberately open. The first two shapes are the choice [the targeted preservation gate](#semantic-increment-preservation-gate) already permits between the smallest reusable theorem or executable guard. The third widens that proof boundary because it closes neither. A deliberately open lane names its reason and reopen trigger in [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md). This owner decision supersedes only that part of the 2026-07-30 gate, retains deliberately open work because a recorded unaffordable obligation is better than an unrecorded one, and leaves every other preservation requirement intact. The governing product proposal's [review receipt](BPM-PLATFORM-PROPOSAL.md#independent-cold-review-receipt) records the material boundary change.
-
-Owner direction (2026-10-14): select the shape by risk, per Practical CIB7 family rather than per slice. Concurrency, cancellation, Compensation/Transaction and Multi-Instance families take `proved`; low-risk breadth over an already proved mechanism takes `checked` finite witnesses or a recorded `deliberately open` lane. Temporal refinement and replay evidence is required once per new hosting mechanism, not again for each slice that reuses it.
-
-Two outcomes look alike and are not. A Lean lane that cannot close within its effort bound is a cost signal, handled the way the checked-source relation experiment was handled: record the precise unresolved boundary, freeze the experiment, and let the product continue on the executable guard. A Lean lane that **refutes** a proposed account is the payoff the approach exists for. Only the third case genuinely stops work, where a preservation obligation cannot be stated without assuming its own result, and the [semantic increment preservation gate](#semantic-increment-preservation-gate) requires owner direction.
-
-Two costs are known to grow with breadth and are scheduled rather than discovered. Kernel-decided propositions hold reduced terms in resident memory, but peak cost follows reduction depth and proof ownership rather than a module's fixture count; the [cold-consumer watch](lean-resource-costs/COMPENSATION-RESOURCE-LEDGER.md#snapshot-invariant-and-cgroup-acceptance-correction) therefore remeasures affected consumers when a capsule changes a reduction family they use and splits an unsafe target by proof ownership. Loops can also lengthen an individual decided run as semantic depth grows. The decided-fixture strategy is therefore reviewed before the compositional-admission milestone, not after it.
-
-## Semantic increment preservation gate
-
-Every capsule that widens admission or replaces lowering, runtime representation, or public observation states the exact source-to-result claim at risk, retains a separating discriminator, and closes the smallest reusable theorem or executable guard protecting that claim. It also establishes that every newly reachable internal closure stays within `semanticProcessClosureLimit`; every newly reachable multiple-enabled state is an approved order-invariant pair, carries an explicit semantic choice, or is rejected consistently by Lean and the semantic core; and every newly reachable stable `running` state is terminally complete or exposes an explicit resumption surface. Tokens alone do not establish progress. A general preservation theorem becomes mandatory only when a second capsule needs the same proposition.
-
-Profile-parameterized structural admission is the successor to exact whole-program execution-surface predicates. One reusable validator owns topology-independent reference, producer/consumer, reachability, co-reachability, acyclicity, closure, and stable-state obligations, while a selected profile supplies typed mechanism and cardinality capabilities. Do not add another whole-topology disjunct.
-
-Host capability is not semantic admission. Every capsule making a new wait-set combination reachable defines the adapter capability predicate separately from semantic well-formedness and checks it before Workflow start. Violation is a deterministic pre-start admission result, never a Workflow crash.
-
-Canonical wait ordering reopens when a later admission makes mixed or repeated same-kind waits reachable or changes the wait-kind domain. The trigger already fired for the Intermediate Catch Message capsule; all four projectors now order by semantic kind rank and then element ID.
-
-Stop and request owner direction when the preservation obligation cannot be stated without assuming the desired result, a Temporal preflight cannot map a required public semantic outcome without adding host-defined semantics, a new normative or pinned-CIB observation reopens an approved account, or the feature/profile/observation boundary would expand beyond the approved capsule. Also stop when lowering performs semantic work claimed by the IL, an IL operation merely selects a topology-specific evaluator, a new operation mirrors a BPMN surface class without a reusable mechanism and discriminator, neutral semantic distinctions would be erased before Lean can check lowering, structural invalidity would become an ordinary semantic outcome, or a dependency or semantic language boundary must change.
+For every BPMN work unit, add CIB-specific implementation only when at least one of these holds: BPMN leaves a material choice the selected profile must resolve; admitted source requires a `camunda:*` extension; the compatibility claim requires a pinned engine observation not already covered; CIB configuration or host behavior can change the canonical or adoption-visible result; or a concrete downstream blocker remains after the standard mechanism is implemented. Otherwise add no new CIB profile surface. When one holds, add the smallest relationship-register entry, profile option, scenario evidence and mutation that establishes the fact.
 
 ## Authority model
 
-BPMN and CIB are related but not interchangeable. BPMN 2.0.2 is authoritative for syntax, metamodel, and Process Execution Conformance. CIB Seven is a mature, compliance-oriented implementation whose normal role is to realize BPMN faithfully, make underspecified behavior operational, and add explicit engine extensions.
+BPMN and CIB are related but not interchangeable. BPMN 2.0.2 is authoritative for syntax, metamodel and Process Execution Conformance. CIB Seven is a mature, compliance-oriented implementation whose normal role is to realize BPMN faithfully, make underspecified behavior operational, and add explicit engine extensions. [CLAUDE.md](../CLAUDE.md#authority-model) owns the ordered authority list.
 
-The default CIB classification is normative agreement. Greater operational specificity is an interpretation when it resolves a BPMN gap. Worker, job, retry, incident, listener, or other added capabilities are extensions when they exceed bare BPMN. A normative deviation is exceptional and requires clear standard language, pinned separating evidence, alternative-explanation exclusion, and owner review.
+The default CIB classification is normative agreement. Greater operational specificity is an interpretation when it resolves a BPMN gap. Worker, job, retry, incident, listener or other added capabilities are extensions when they exceed bare BPMN. A normative deviation is exceptional and requires clear standard language, pinned separating evidence, alternative-explanation exclusion and owner review.
 
-CIB participates twice:
-
-- before formalization, a normative requirement and the smallest relevant CIB probe are reviewed and classified into a semantic profile;
-- after implementation, the pinned complete engine remains the independent behavioral oracle for that declared profile.
-
-Raw CIB output never becomes Lean authority automatically, and differential mismatches are never resolved by majority vote.
-
-## Pre-coding decision ownership
-
-The supplied handoff's original pre-coding checklist is discharged through current owners rather than repeated as a second live checklist:
-
-| Decision | Current owner |
-|---|---|
-| Exact CIB release, source revision, and environment | [SOURCES.md](SOURCES.md), each semantic profile, and the [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md) |
-| Compatibility level and selected CIB extensions | [CIB Seven compatibility scope](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) and profile-specific capsules |
-| BPMN feature subset | [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md), and semantic capsules |
-| Database and scheduler profiles | Selected CIB profiles and [TESTING-SPEC.md](TESTING-SPEC.md) |
-| Expression and variable-type subsets | Profile-selected expression decisions, data capsules, and [Semantic Process IL](SEMANTIC-PROCESS-IL-SPEC.md) |
-| Observation boundary | Shared wire contracts, semantic capsules, and [SEMANTIC-VERIFICATION-POLICY.md](SEMANTIC-VERIFICATION-POLICY.md#evidence-lanes) |
-| Listener and history inclusion | [Temporal lifecycle specification](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) and the pre-release policy below |
-| Nondeterminism and causal ordering | Semantic capsules, profile admission, and [TESTING-SPEC.md](TESTING-SPEC.md) |
-| External services | Effect capsules and versioned Worker protocols |
-| Profile and artifact evolution | The pre-release evolution policy below and profile registry |
-| Evidence and release gates | [TESTING-SPEC.md](TESTING-SPEC.md#profile-release-readiness-gate) |
-
-No component may silently answer an undecided semantic question. A new decision returns to its named owner, applicable normative or CIB evidence, and independent review gate before implementation crosses that boundary.
+CIB participates twice: before formalization, a normative requirement and the smallest relevant CIB probe are reviewed and classified into a profile; after implementation, the pinned complete engine remains the independent behavioral oracle for that profile. Raw CIB output never becomes Lean authority automatically, and differential mismatches are never resolved by majority vote.
 
 ## Component boundaries
 
 | Component | Responsibility | Explicit limit |
 |---|---|---|
-| BPMN semantic profile | Select one bounded reading of the normative Process requirement, including explicit resolution of a standard gap or inconsistency | It contains no CIB extension or downstream product binding unless a separately named overlay selects it |
-| CIB Seven compatibility profile | Select a pinned release, configuration, source extensions, host realization, observation boundary, and classified relation to the BPMN account | It is not the vendor-neutral BPMN core, an engine build, or an unqualified compatibility promise |
-| BPMN source boundary | Preserve exact bytes, validate and admit source, and produce a checked project-owned BPMN graph | Parser objects and CMOF facts do not define execution behavior |
-| Semantic Process IL | Lower the checked graph into a bounded language of typed semantic mechanisms with source provenance | It is not a mirror of the BPMN metamodel, a universal BPMN language, or mutable runtime state |
-| Lean reference interpreter | Give the selected capsule executable operational meaning and prove reusable laws | It does not automatically prove CIB, XML parsing, TypeScript, Temporal, databases, or effects |
-| TypeScript semantic core | Implement production semantic transitions as a separately written, deterministic realization of the reviewed account, including explicitly selected project-owned total expression languages | It performs no I/O, evaluates no external/profile-delegated language such as JUEL, has no CIB or Temporal dependency, and is not an independent choice of operational account |
-| Temporal adapter | Persist semantic state, deliver inputs, and host declared effects and waits durably | Hidden Workflow work may not redefine BPMN-visible behavior |
-| BPM platform | Deploy and version definitions, project engine observations into read models, and serve user, operator, and integration surfaces | It does not enter the semantic core, redefine profiles, construct an occurrence identity, or reconstruct a semantic fact the engine did not publish |
-| Assurance pipeline | Compare canonical consequences, detect seeded disagreement, check isolation, and test Temporal refinement/replay | Finite evidence never implies universal conformance |
-
-The preserved handoff calls the TypeScript component a “reducer.” This project calls it the **semantic core** and names its public transition operation `applyStimulus`. The boundary is a semantic transition system; the terminology avoids an unnecessary Redux association.
-
-## Temporal hosting/refinement preflight
-
-Lean-to-TypeScript correspondence and TypeScript-to-Temporal refinement are independent obligations. A Lean definition can be sound and the pure semantic core can transcribe it correctly while the durable adapter still loses an input, applies a duplicate, exposes an intermediate state, leaks transport retries, closes before a command outcome is delivered, or lacks a hosting mechanism for a semantic wait or effect.
-
-Every capsule must therefore complete a Temporal hosting/refinement preflight after selecting its semantic account and separating witnesses but before implementing that transition family in production Lean or TypeScript. The preflight must record:
-
-- the Temporal ingress and acknowledgement mechanism for every external semantic stimulus;
-- how semantic waits, timers, subscriptions, effects, and cancellations remain core-owned state while Temporal provides durable wakeup or I/O;
-- how any profile-selected expression evaluator receives an exact context and returns a content-bound result without letting the adapter choose BPMN control flow;
-- the relation between committed core state and Workflow state, including which host steps are hidden;
-- command serialization, permitted semantic order, handler interleaving, duplicate delivery, idempotency, and retry boundaries;
-- completion, failure, cancellation, Continue-As-New, and post-completion command behavior;
-- Query, Visibility, external read-model, and canonical-observation responsibilities;
-- replay and versioning risks;
-- the smallest live-history refinement witness and nearest realistic adapter counterexample.
-
-A preflight may conclude that Temporal has no native BPMN analogue and still find a sound composition of Workflow state, Update or Signal ingress, Query, timers, Activities, and child operations. It may not turn one of those mechanisms into semantic authority. If a required public outcome cannot yet be preserved, that is an explicit research or profile blocker; it is not deferred silently until adapter implementation.
-
-The preflight is a feasibility review, not a passed evidence lane. Capsule closure still requires executable Temporal refinement and replay evidence.
-
-The intended adapter-correctness relation is observational, weak, and stuttering-aware: Temporal may add hidden durable steps only while preserving semantic-core-visible behavior. Current finite refinement and replay witnesses establish their exact capsule boundaries; they do not yet constitute a general refinement theorem.
+| Semantic profile | Data: the selected CIB relation options and the admitted field set for one declared target ([profiles](kernel/ARCHITECTURE-SPEC.md#profiles)) | No code compares a profile identifier; a profile is not an engine build or an unqualified compatibility promise |
+| BPMN source boundary (`@bpmn-lean/bpmn-source`) | Preserve exact bytes, parse, and read the model into the kernel IL, refusing only parse, preservation and unknown-element cases | Parser objects never cross it; every semantic refusal belongs to kernel admission |
+| Kernel IL | One immutable, serializable, flat element table per definition, fixed in shape for every row ([IL specification](kernel/IL-SPEC.md)) | Not a mirror of the BPMN metamodel and not runtime state |
+| Lean kernel | Executable operational meaning of the admitted surface and the declarative `Laws` per feature | It does not prove CIB, XML parsing, TypeScript, Temporal, databases or effects |
+| TypeScript kernel | A separately written transcription of the Lean kernel's executable modules, paired by name | No I/O, no CIB or Temporal dependency, and no independent choice of operational account |
+| Temporal host | Persist kernel state, deliver inputs, and host timers and effects durably, seeing the kernel only through its host interface | Hidden Workflow work may not redefine BPMN-visible behavior |
+| BPM platform | Deploy and version definitions, project engine observations into read models, and serve user, operator and integration surfaces | It does not enter the kernel, redefine profiles, construct an occurrence identity, or reconstruct a semantic fact the engine did not publish |
+| Assurance pipeline | Compare canonical consequences across Lean, TypeScript and retained CIB evidence, detect seeded disagreement, and test Temporal refinement and replay | Finite evidence never implies universal conformance |
 
 ## Why Lean
 
-Lean is useful when it converts semantic risk into an executable definition, a reusable quantified law, or a checked counterexample before the same choice spreads through TypeScript and Temporal.
-
-The first capsule’s `task_identity_mismatch_is_rejected` theorem quantifies over the model, active Process instance, activation, submitted occurrence, command identity, and logical time. If any semantic occurrence component differs, it proves rejection, exact state preservation, an empty internal microtrace, and no closure-bound involvement. The nearby element-only identity non-law demonstrates the realistic defect that this theorem prevents.
-
-That is stronger than replaying one serialized example, but it remains bounded to the Lean account. A CIB witness, a Lean theorem, TypeScript behavior, and Temporal refinement are separate claims even when they agree.
+Lean is useful when it converts semantic risk into an executable definition, a reusable law, or a checked counterexample before the same choice spreads through TypeScript and Temporal. The Lean kernel is the executable specification that every scenario checks the TypeScript kernel and CIB Seven against; each `Laws.<F>` states its feature's rules independently of `Step`'s code, and the proof wave proves `Step` sound against them ([Lean assurance lane](kernel/ARCHITECTURE-SPEC.md#lean-assurance-lane)). A CIB witness, a Lean law, TypeScript behavior and Temporal refinement remain separate claims even when they agree.
 
 ### Two kinds of independence
 
-Lean and the TypeScript semantic core are independent **transcriptions** of one reviewed operational account. They are separately written, separately executable, and mutually check transcription defects such as an inverted guard or a mistyped identity field. They are not independent **accounts**: the capsule currently prescribes the microstate inventory and the internal closure bound, so both realizations share that decomposition and would reproduce an error in it identically.
+Lean and the TypeScript kernel are independent **transcriptions** of one reviewed operational account. They are separately written and separately executable, and they mutually check transcription defects such as an inverted guard or a mistyped identity field. They are not independent **accounts**: both share the kernel's state decomposition and would reproduce an error in it identically. Agreement between Lean and TypeScript is a transcription check, never evidence of meaning.
 
-Account-level independence therefore comes only from the normative and profile review and from pinned CIB evidence, bounded by the oracle fidelity that the applicable capsule records. Claims must not present Lean-to-TypeScript agreement as independent confirmation of the selected account; [SEMANTIC-VERIFICATION-POLICY.md](SEMANTIC-VERIFICATION-POLICY.md#evidence-lanes) owns the per-claim independence test and disclosure of shared failure modes.
+Account-level independence therefore comes only from the normative and profile review and from pinned CIB evidence, bounded by the oracle fidelity that the [CIB observation policy](CIB-OBSERVATION-POLICY.md) records. The [engineering policy](kernel/ENGINEERING-POLICY.md#contracts-and-evidence) owns the evidence lanes and what each one does and does not establish.
 
-For source-to-execution matrices, normative/profile review selects the account. Separately authored expected source facts and raw-XML negatives can reject a defective checked-graph producer for the properties they assert; they are neither a second XML parser nor an independent semantic account. Lean, the semantic core, and Temporal consume one compiled artifact in the differential pipeline, so their agreement checks transcription and hosting rather than independently establishing XML normalization: a producer defect shared by that artifact can make every downstream target agree. Each capsule's matrix names its actual source discriminator and its selected CIB execution evidence or absence; inherited relationship metadata and source inspection alone do not supply mechanism-specific execution corroboration.
-
-A capsule may deliberately buy account-level independence by specifying only the observable contract and letting each realization choose its own runtime representation. That is a per-capsule decision with a real cost, and it must be recorded in the capsule rather than assumed.
-
-Lean also forces architectural distinctions to become explicit:
-
-- shared definition identity versus runtime occurrence identity;
-- external command admission versus internal microstep closure;
-- semantic failure versus rejected command versus harness exhaustion;
-- semantic state versus CIB and Temporal host identity;
-- declarative permitted transition relation versus executable transition selector.
-
-Every new transition family should have a declarative Lean relation and an executable evaluator with a soundness bridge. Completeness, determinism, compiler correspondence, TypeScript correspondence, liveness, and refinement remain separate obligations and must not be implied by evaluator soundness.
-
-The bridge is one evidence lane, not two, whenever the relation arm's premise is the evaluator's own result: a wrong state transformation then produces a wrong relation and the two still agree. Such a bridge establishes that each operation kind is routed to the transformation its arm names and that the dispatch is exhaustive, which is worth checking and is not a claim about meaning. A relation arm earns an independent lane only by stating premises the evaluator does not supply, as a per-offered-token merge relation does by admitting transitions the evaluator's selection does not take. Apply that test to each arm rather than to a remembered count: an arm also fails it when it binds its own premises and then names the evaluator's transformation as the successor, which is less visible than a literal result premise and is how arming arms in this repository turned out to be graphs after being counted as decompositions. For arms that do not, the falsifiable semantic evidence is runtime-state well-formedness preservation and monotonicity, which a wrong transformation fails. That evidence is currently executable rather than quantified: the Lean obligation over the registered arms is an open lane, so a capsule citing it must name the core-side lane and its bound.
-
-The Lean implementation does not parse BPMN XML, prove the arbitrary XML parser correct, prove full checked-source-to-public-run preservation, or machine-check the TypeScript or Temporal implementation. It does strictly decode the pipeline-provided checked BPMN graph and Semantic Process program, validate both independently, recompute canonical lowering, reject inequality before evaluation, and execute the received program. Structural definition identity and source-origin preservation are proved; the stronger universal observational preservation proposition remains unsupported and is not a standing prerequisite. Material admission and representation changes instead close the targeted obligation above, while the universal theorem reopens only under its explicit reuse or non-locality trigger.
+Lean also forces architectural distinctions to become explicit: shared definition identity versus runtime occurrence identity; external input admission versus internal step closure; semantic failure versus rejected input versus harness exhaustion; semantic state versus CIB and Temporal host identity; declarative laws versus the executable step.
 
 ## Interpreter architecture
 
-The production architecture is an **interpreter/evaluator in TypeScript, not a BPMN-to-TypeScript code generator**.
+The production architecture is an **interpreter in TypeScript, not a BPMN-to-TypeScript code generator**.
 
 ```text
 BPMN 2 XML
-  → exact source identity, bounded structural import, and profile admission
-  → checked project-owned BPMN graph
-  → bounded Semantic Process IL data
-  → pure TypeScript semantic-core transitions
-  → Temporal durability, delivery, timers, and effects
+  → exact source identity, parsing and reading (@bpmn-lean/bpmn-source)
+  → kernel IL data, admitted against the selected profile (Kernel.Admission)
+  → pure kernel steps (Lean and TypeScript)
+  → Temporal durability, delivery, timers and effects (temporal-host)
 ```
 
-Parsing, admission, and lowering occur outside deterministic Workflow execution. A generic Workflow receives an admitted Semantic Process program and serializes semantic inputs through the core. Temporal Activities, timers, messages, and child operations implement declared effects only after the core assigns their BPMN meaning.
+Reading and admission occur outside deterministic Workflow execution. One generic Workflow receives an admitted program and drives the kernel step from its host view. Temporal Activities, timers and messages implement declared effects and waits only after the kernel assigns their BPMN meaning. The [kernel architecture specification](kernel/ARCHITECTURE-SPEC.md) owns the design.
 
-[SEMANTIC-PROCESS-IL-SPEC.md](SEMANTIC-PROCESS-IL-SPEC.md) owns the implemented checked-source contract, bounded lowering, operation meanings, exact Lean preservation boundary, event-growth policy, and stop criteria. The language slice is bounded to the sequential and balanced parallel capsule specs. No topology-specific executable representation or legacy reader is retained.
-
-This choice preserves one inspectable model representation, avoids generating a new Workflow Definition for every diagram, and keeps SDK calls, Workflow deployment, and replay mechanics from becoming accidental BPMN semantics. It also keeps parser evolution, profile evolution, semantic-core evolution, and Worker deployment conceptually separate.
-
-Generated TypeScript is not prohibited. It may later serve as a derived diagnostic, specialization, optimization, or packaging artifact after explicit equivalence and replay evidence. It is never the semantic authority by construction.
+This choice preserves one inspectable model representation, avoids generating a new Workflow Definition for every diagram, and keeps SDK calls, Workflow deployment and replay mechanics from becoming accidental BPMN semantics. Generated TypeScript is never the semantic authority by construction.
 
 ## Profile-selected expression evaluation
 
-BPMN `FormalExpression` carries expression text under a selected language. BPMN does not prescribe one universal grammar, AST, or evaluator, but an executable profile must still select the exact language, visible context, result type, failure consequence, and consuming BPMN transition. Omitted definition-level and expression-level language selection retains BPMN's XPath default and is never silently interpreted as a project language.
+BPMN `FormalExpression` carries expression text under a selected language. BPMN does not prescribe one universal grammar or evaluator, but an executable profile must still select the exact language, visible context, result type, failure consequence and consuming BPMN transition. Omitted definition-level and expression-level language selection retains BPMN's XPath default and is never silently interpreted as a project language.
 
-The standards-first path is the dependency-free [Simple Boolean expression language](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md). Its immutable URI selects a closed, total, read-only grammar whose complete typed AST and string/null Process-variable meaning are implemented independently in Lean and TypeScript. The source boundary parses and rejects the complete language before Workflow start; the checked graph retains both the exact source and typed expression; Lean reparses the source when checking lowering; and the semantic core evaluates only the typed expression during bounded internal closure. This establishes one exact `FormalExpression` profile and conditional-routing mechanism without claiming XPath, JUEL, or general expression support.
+Each profile selects exactly one evaluator for its admitted expressions, run inside the kernel step; no evaluation leaves the kernel. Until M2 every profile selects the [Simple Boolean language](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md); from M2 a read-only JUEL subset, written in Lean and transcribed to TypeScript, grows by level ([JUEL decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md), [levels](kernel/ARCHITECTURE-SPEC.md#runtime-state-and-step)). An expression outside the selected evaluator is refused at admission with a stable code.
 
-External/profile-delegated languages remain a different architecture. The deferred [JUEL evaluation decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md) supplies exact expression text and complete approved context to the pinned runtime, then binds its result back to the semantic core. Such a runtime is authoritative only for its bounded language result. It does not choose a Sequence Flow, mutate semantic state directly, define variable visibility, or supply host identity. CIB and a project JUEL Worker would share one correlated expression-truth account.
-
-Read-only evaluation, variable mutation, and engine/application-service calls are separate capability classes. The Simple Boolean language has no mutation or capability surface. A future mutating language must return a typed patch for semantic-core validation. Service calls use explicit effects or downstream adoption capabilities. Beans, `execution`, Java objects, methods, functions, file/network access, Groovy, FreeMarker, DMN/FEEL, JUEL, and XPath do not enter the Simple Boolean profile by implication.
-
-The existing exact `MappingExpression.localVariable` form remains a bounded direct lookup for two implemented mapping capsules, not a general expression language and not a Simple Boolean or JUEL consumer. It may not grow. A future mapping-expression capsule must replace it atomically or retain a separately evidenced exact-token equivalence; pre-release code may not retain two selectable accounts for the same admitted source.
-
-Language families remain separately selected profiles. BPMN 2.0.2 declares XPath as its default expression language, while JUEL, DMN/FEEL, Groovy scripts, and FreeMarker templates have different value, capability, failure, and hosting contracts. Do not extract a universal multi-language framework until a second implemented consumer demonstrates an identical contract.
-
-A universal BPMN IL, general BPMN compiler, and general semantic assertion language remain excluded. The exact Simple Boolean v1 URI, grammar, total result, Process-scope string/null context, and read-only capability boundary may not expand without a separate owner decision. JUEL, capability-bearing expressions, variable mutation, XPath, DMN/FEEL, Groovy, FreeMarker, and JavaScript remain separate profile and runtime decisions, and no Workflow, Lean, or TypeScript semantic-core path may parse or evaluate JUEL.
-
-The [Simple Boolean decision](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) owns the active language. The [Exclusive Gateway condition specification](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md) owns its first consuming rules and Temporal boundary. The [JUEL decision](JUEL-EVALUATION-ARCHITECTURE-DECISION.md) owns only the deferred CIB compatibility boundary.
+Read-only evaluation, variable mutation and engine or application-service calls are separate capability classes. Service calls use explicit effects. Beans, `execution`, Java objects, unlisted methods, file or network access, Groovy and FreeMarker do not enter any evaluator by implication; DMN decision tables and JavaScript Script Tasks follow their own [owner decisions](kernel/ARCHITECTURE-SPEC.md#owner-decisions-on-the-path). A universal multi-language framework is not extracted.
 
 ## CIB compatibility and polyglot effect execution
 
-The project targets explicitly selected source and behavioral compatibility with versioned CIB Seven profiles. It does not target drop-in replacement of the Process Engine Java, REST, plugin, persistence, deployment, or administration APIs. Every compatibility claim names its source syntax, feature surface, behavior, configuration, observation boundary, and evidence; an unqualified “CIB-compatible” claim is prohibited.
+The project targets explicitly selected source and behavioral compatibility with versioned CIB Seven profiles. It does not target drop-in replacement of the Process Engine Java, REST, plugin, persistence, deployment or administration APIs. Every compatibility claim names its source syntax, feature surface, behavior, configuration, observation boundary and evidence; an unqualified “CIB-compatible” claim is prohibited.
 
-Camunda/CIB extension syntax is admitted only through exact profile-selected BPMN contexts, expanded namespace QNames, and value shapes. Source/profile admission normalizes an admitted binding to profile-registered opaque protocol and operation identities validated as safe strings. Camunda namespaces and source tokens remain in exact source/profile evidence; bean or Worker bindings remain in the BPM platform. The checked graph, Semantic Process IL, Lean, and pure TypeScript core contain only the neutral identities and generic source-derived semantic data needed to verify neutral graph-to-program lowering. Java classes, JUEL objects, engine jobs, retries, host identities, and downstream business literals never become semantic authority merely because the source or oracle uses them. Only an explicitly selected language profile may make a pinned evaluator authoritative for its bounded expression result, under the isolation above. The approved family dispositions and reopen conditions remain in [the CIB Seven compatibility scope proposal](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md).
+Camunda/CIB extension syntax is admitted only through exact profile-selected BPMN contexts, expanded namespace QNames and value shapes, and is read into neutral handler bindings. Camunda namespaces and source tokens remain in exact source evidence; bean or Worker bindings remain in the BPM platform. The kernel IL, Lean and the TypeScript kernel contain only neutral identities and source-derived semantic data. Java classes, engine jobs, retries, host identities and downstream business literals never become semantic authority because the source or oracle uses them. The [CIB Seven compatibility scope proposal](CIB-SEVEN-COMPATIBILITY-SCOPE-PROPOSAL.md) keeps the family dispositions and reopen conditions.
 
-The TypeScript semantic core and TypeScript Temporal Workflow remain the single production interpreter account. Committed effect intents cross a versioned language-neutral Activity protocol that may be executed by TypeScript or JVM Workers. A Worker performs external computation; it never mutates Process state directly or independently chooses semantic identity. It returns a typed result or future typed variable patch for validation and commitment by the semantic core.
+The TypeScript kernel and the TypeScript Temporal Workflow remain the single production interpreter. Effect requests cross a language-neutral Activity protocol that TypeScript or JVM Workers may execute. A Worker performs external computation; it never mutates Process state directly or chooses semantic identity, and returns an effect result the kernel validates and commits.
 
-Supporting Java handlers therefore does not justify rewriting the semantic core in Java or Kotlin, maintaining a second JVM interpreter, or moving semantic decisions to a remote service. A JVM Worker may expose a project-owned Java handler API and, under separately reviewed compatibility profiles, bounded adapters for CIB Seven or Camunda 7 delegates. Unsupported delegate operations fail explicitly. Full `DelegateExecution`, internal `ActivityBehavior`, Process Engine service, and plugin compatibility remain outside the architecture unless the owner funds a separate compatibility program.
+Supporting Java handlers therefore does not justify rewriting the kernel in Java or Kotlin, maintaining a second JVM interpreter, or moving semantic decisions to a remote service. A JVM Worker may expose a project-owned Java handler API and, under separately reviewed profiles, bounded adapters for CIB Seven or Camunda 7 delegates; unsupported delegate operations fail explicitly. Full `DelegateExecution`, internal `ActivityBehavior`, Process Engine service and plugin compatibility remain outside the architecture unless the owner funds a separate compatibility program. The TypeScript SDK's deterministic Workflow sandbox, structural wire types and language separation from the Java CIB oracle make TypeScript the interpreter host; reopen that choice only for a named non-Temporal embedded JVM product mode that must own and advance Process state in-process, after fresh owner approval.
 
-Workflow and Worker implementations must agree through explicit Activity type, task queue, request/result schema, payload encoding, idempotency identity, timeout, retry, cancellation, and failure contracts. Cross-SDK compatibility is an executable evidence obligation rather than an assumption about default payload converters. A JVM Worker may be implemented in Kotlin behind Java-friendly public interfaces, but neither a Kotlin toolchain nor any Java runtime dependency follows automatically from this architecture.
-
-The [archived dual semantic-core proposal](archived/DUAL-SEMANTIC-CORE-ARCHITECTURE-PROPOSAL.md) records the rejected alternative. The TypeScript SDK’s deterministic Workflow sandbox, event-loop fit, structural wire types, existing replay evidence, and language separation from the Java CIB oracle make TypeScript the selected interpreter host. Java remains the preferred language for a future JVM compatibility Worker when the migration inventory supplies that consumer. Reopen the semantic-core language only for a named non-Temporal embedded JVM product mode that must own and advance semantic Process state in-process, and only after fresh owner approval records that exact trigger; a Worker, Java client facade, or Spring preference does not qualify.
-
-## Semantic rule traceability
-
-Each semantic capsule owns stable identifiers for its material propositions and maps them to distinct BPMN/profile, CIB, Lean, TypeScript, Temporal, negative-witness, and mutation lanes.
-
-A rule identifier names a proposition rather than a function or test. Ordinary implementation renaming does not change it; a material semantic change must not silently reuse it.
-
-Target scenarios contain only model/profile identity and explicit semantic inputs. Expected results remain verifier-side, content-bound evidence. Canonical observations depend only on admitted definition/runtime state and explicit semantic inputs, never on future scripted commands, host IDs, or expected output.
-
-Every admission, lowering, runtime-representation, or public-observation capsule names the exact source-to-result claim it can invalidate and closes the smallest targeted theorem or executable guard that protects that claim. It also checks that newly reachable internal closure remains within the configured production bound and that newly reachable multiple-enabledness is order-invariant, explicitly chosen, or rejected consistently by Lean and TypeScript. A universal checked-source preservation theorem is required when a second capsule needs the same proposition or a targeted proof cannot isolate the risk without rebuilding the general relation.
-
-Runtime variables preserve explicit scope ownership. Process-scope bindings form the public `variables` observation; Activity-local bindings are internal semantic state unless a later capsule explicitly changes the observation contract. Activity-local ownership uses complete semantic occurrence identity rather than a bare BPMN element identifier or activation ordinal.
+Workflow and Worker implementations agree through explicit Activity type, task queue, request and result schema, payload encoding, idempotency identity, timeout, retry, cancellation and failure contracts. Cross-SDK compatibility is an executable evidence obligation rather than an assumption about default payload converters.
 
 ## Pre-release evolution policy
 
-The project is far from a production compatibility boundary and expects substantial change. Its current evolution policy therefore optimizes for one clean scalable architecture:
+The project is far from a production compatibility boundary and expects substantial change. Its evolution policy therefore optimizes for one clean architecture:
 
 - each wire artifact has a stable structural `kind`;
 - wire integers stay within the non-negative JavaScript-safe integer domain, and canonical identifiers are exact Unicode-scalar strings ordered lexicographically by scalar value without normalization;
 - byte-level JSON admission rejects duplicate decoded object keys and unpaired surrogate encodings before typed decoding;
 - JSON Schema `$id` owns schema-document identity;
 - a semantic profile `id` owns reviewed semantic and compatibility meaning;
-- checked BPMN graphs and Semantic Process programs carry stable exact-source and selected-profile identity, and programs also carry compiler identity;
-- a breaking shape change replaces all current producers, consumers, schemas, examples, and tests atomically;
-- no parallel legacy format, embedded format counter, compatibility switch, migration reader, or fallback constructor is retained before a durable release baseline exists;
+- kernel programs carry stable exact-source and selected-profile identity;
+- a breaking shape change replaces all current producers, consumers, schemas, examples and tests atomically;
+- no parallel legacy format, embedded format counter, compatibility switch, migration reader or fallback constructor is retained before a durable release baseline exists;
 - local Temporal tests use a fresh in-memory server, replay the histories created in that same gate, and then discard all server state.
-
-This policy avoids prototype branches that scale linearly across Java, Lean, TypeScript, Temporal, fixtures, and documentation. It does not waive future compatibility.
 
 Before the first immutable release or persisted production history, the owner must explicitly approve:
 
 1. which profile and wire artifacts become immutable;
 2. the Event History baseline and Worker/version markers;
-3. migration, patching, deprecation, and rollback rules;
+3. migration, patching, deprecation and rollback rules;
 4. retained replay fixtures and their provenance;
 5. support windows and removal criteria.
 
 From that point onward, history compatibility and artifact migration become mandatory evidence based on real retained state rather than speculative prototypes.
-
-## Success criteria for every capsule
-
-A semantic capsule is closed only when:
-
-1. its normative/profile question and CIB relationship are explicit;
-2. answer-free positive and negative witnesses separate a realistic wrong account;
-3. its Temporal hosting/refinement preflight identifies every required host mechanism, lifecycle risk, and smallest refinement witness without making Temporal semantic authority;
-4. Lean defines executable meaning and at least one useful law or checked non-law where appropriate;
-5. the TypeScript semantic core independently realizes the selected behavior;
-6. CIB evidence is pinned, content-bound, and mutation-sensitive;
-7. Temporal’s observable behavior refines the core and live histories replay;
-8. harness, semantic, and infrastructure outcomes remain separate;
-9. all public claims and exclusions match [`implementation-status-router`](IMPLEMENTATION-MAP.md);
-10. feedback budgets, cleanup, documentation ownership, and common-mode risks have been reviewed;
-11. every rule is assigned to the BPMN core, a selected CIB overlay, or downstream adoption, and an existing mechanism is reused instead of adding a model-specific semantic path.
-12. any external language evaluator is pinned and capability-bounded, its context and result are content-bound, its evidence correlation is stated, and Lean/TypeScript claims stop at the consuming transition unless expression truth is actually formalized.

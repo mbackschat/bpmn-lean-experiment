@@ -1,6 +1,6 @@
 # CIB Seven 2.2.0 Intermediate Catch Timer profile
 
-The [immutable profile artifact](profile.json) selects one private executable `None Start Event → Intermediate Catch Timer Event → None End Event` Process whose duration is an exact `PT[nH][nM][nS]` lexeme from 1 ms to `PT87660H` ([Timer exact durations](../../docs/capsules/TIMER-EXACT-DURATIONS-PROPOSAL.md)); the retained CIB evidence covers `PT1S`, and the CIB runner checks the `PT1H30M` and `PT90M` due dates under CIB Seven `2.2.0`, Java 21, H2, a controlled clock, and disabled automatic job execution.
+The [immutable profile artifact](profile.json) selects one private executable `None Start Event → Intermediate Catch Timer Event → None End Event` Process whose duration is an exact `PT[nH][nM][nS]` lexeme from 1 ms to `PT87660H` ([Timer exact durations](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md)); the retained CIB evidence covers `PT1S`, and the CIB runner checks the `PT1H30M` and `PT90M` due dates under CIB Seven `2.2.0`, Java 21, H2, a controlled clock, and disabled automatic job execution.
 
 The profile claims only the reviewed wait, due-date, eligibility, and completion agreement recorded as `CIB-AGR-0004`, the exact-duration agreement `CIB-AGR-0021` and its refusal boundary `CIB-LIM-0003`, under configuration `CIB-CFG-0001`. The job due-date delta is adapter-derived from the fixed clock epoch; the timer wait, ineligibility before due time, eligibility at due time, and due transition are engine-observed.
 

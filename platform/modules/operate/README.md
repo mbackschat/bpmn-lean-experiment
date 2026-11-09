@@ -4,7 +4,7 @@
 
 ## What you can do
 
-Register confirmed Process instances, search them by public identity, inspect committed execution, retry or cancel published incidents, export complete bounded per-instance operator audit, and aggregate version-bound flow-node frequency and duration when the authoritative projection is complete.
+Register confirmed Process instances, search them by public identity, inspect committed execution, retry or cancel published incidents, export complete bounded per-instance operator audit, and aggregate version-bound flow-node frequency when the authoritative projection is complete. Completed durations are always `null`: neither engine publication carries a timestamp.
 
 The same four Promise-only repository contracts have local SQLite and shared PostgreSQL adapters. PostgreSQL owns an ordinal-0003 checksum-bound migration for the Process registry, incident actions and source-ordered audit outbox, committed-execution prefix, and flow-node-occurrence prefix. Its adapters use a caller-owned `PostgresqlRuntime`; they never own the pool lifecycle. Ordinary projection writes append only a validated suffix, while the explicit rebuild operations alone may replace a complete prefix.
 
@@ -14,7 +14,7 @@ The ordinal-0008 migration adds immutable incident snapshot generations. Candida
 
 The ordinal-0009 migration adds database-clock completion watermarks to the append-only committed-execution and flow-node-occurrence headers, plus a constrained redundant current Process status. Lease-fenced recovery refreshes those facts even for an exact no-suffix Product 1 observation. Shared per-instance execution reads require one fresh aligned E1 and occurrence head, while shared metrics materialize and validate one exact-definition population cut in one SQL statement. Neither path calls Product 1 from the request, and metrics add no generation table or recovery family.
 
-The [failed-Process increment](../../../docs/BPM-PLATFORM-FAILED-PROCESS-SPEC.md) adds the ordinal-0012 status-constraint migration and schema epoch 12. Both repositories preserve exact failure bytes. Closed execution caching requires complete healthy E1 and an aligned empty occurrence head; closed registration alone supplies no metrics. Matching late incident-action closure records a definite rejected result, including `failed`, without creating a repair action.
+The [failed-Process increment](../../../docs/BPM-PLATFORM-FAILED-PROCESS-SPEC.md) adds the ordinal-0012 status-constraint migration and schema epoch 12. Both repositories preserve exact failure bytes. Closed execution caching requires complete healthy E1 and an aligned occurrence head with no open occurrence; closed registration alone supplies no metrics. Matching late incident-action closure records a definite rejected result, including `failed`, without creating a repair action.
 
 ## Quick start
 
@@ -32,6 +32,6 @@ The ordinary command is database-free. Run the explicit real-PostgreSQL 18 witne
 
 - [Process-instance search specification](../../../docs/BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md) owns discovery and paging.
 - [Incident-operations specification](../../../docs/BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md) owns authorization, actions, reconciliation, and audit.
-- [Committed-execution publication specification](../../../docs/capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) owns history and current-position projection.
-- [Flow-node occurrence metrics specification](../../../docs/capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md) owns aggregate availability and calculations.
-- [Architecture](../../../docs/ARCHITECTURE.md#modules) owns module placement and the [`implementation-status-owner:BPM-PLATFORM`](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns current coverage.
+- [Committed-execution publication specification](../../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md) owns history and current-position projection.
+- [Flow-node occurrence metrics specification](../../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md) owns aggregate availability and calculations.
+- [Architecture](../../../docs/ARCHITECTURE.md) owns module placement and the [`implementation-status-owner:BPM-PLATFORM`](../../../docs/BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns current coverage.

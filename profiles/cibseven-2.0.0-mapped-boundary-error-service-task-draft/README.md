@@ -10,4 +10,4 @@ CIB Seven executes the delegate, error catch, output mapping, and boundary routi
 
 The profile makes no claim about catch-all or multiple handlers, nested Error propagation, Error End Events, general JUEL, arbitrary delegates, Process-scope writes from a Worker, unmatched-Error compatibility, technical failures as business Errors, incidents, retry exhaustion, cancellation recovery, scripts, listeners, or Java binary compatibility.
 
-The mapped-boundary-Error capsule owns the bounded semantics and evidence relation. Mandatory gates use only the project-authored MIT fixture. Product-specific source bindings may be supplied only through the registered data-only overlay contract.
+The [propagation semantics](../../docs/kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md) own the bounded semantics and evidence relation. Mandatory gates use only the project-authored MIT fixture. Product-specific source bindings may be supplied only through the registered data-only overlay contract.

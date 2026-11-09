@@ -1,117 +1,82 @@
 # Plan
 
-Execution order and resume state live here; linked owners retain contracts.
+Delivery order, budgets and the resume point. The [kernel architecture](kernel/ARCHITECTURE-SPEC.md) owns the design, the guardrails and the definition of done; the [coverage target](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) owns each row's acceptance; the [kernel status map](kernel/KERNEL-STATUS-MAP.md) owns what is implemented and open per row. This file and the status map change only at a milestone or track closure, or at a stop.
 
-## Current checkpoint
+## Goal
 
-### Practical CIB7 Coverage goal
+The sole delivery target is [Practical CIB7 Coverage](PRACTICAL-CIB7-COVERAGE-TARGET.md), bounded by CIB Seven `2.2.0`. Retain the [Product 1 floor](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) and the historical [Alpha](MUE-PREVIEW-ALPHA-SPEC.md) and [Beta](MUE-PREVIEW-BETA-SPEC.md) boundaries; MUE acceptance is superseded without claiming it passed. Preserve published tags, `v0.2.0-rc.1` at `16c5b9f6`; no new version, tag or tag move is selected.
 
-The sole delivery target is [Practical CIB7 Coverage](PROJECT-DESIGN.md#practical-cib7-coverage), within the [CIB7 ceiling](PROJECT-DESIGN.md#cib-seven-220-breadth-ordering). The approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) owns required depth and acceptance, including both Multi-Instance Sub-Process forms. Source/Lean/TypeScript, CIB evidence, Temporal refinement/replay and whole-model journeys remain distinct obligations.
+## Order gates
 
-Retain the [Product 1 floor](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract), historical [Alpha](MUE-PREVIEW-ALPHA-SPEC.md), [Beta](MUE-PREVIEW-BETA-SPEC.md#historical-beta-content-boundary) and [RC boundaries](PROJECT-DESIGN.md#historical-rc-content-boundary). MUE acceptance is superseded without claiming it passed. Preserve published tags, `v0.2.0-rc.1` at `16c5b9f6` and the bounded native-runtime risk exception; no new version/tag or tag move is selected.
+Order gates bind alongside the day budgets, because a budget of days cannot fire on work that takes hours. Nothing builds on a kernel shape until guards 17 to 21 pass on it and every open row maps onto it. A track's fill starts only when its row fixtures, scenarios and CIB evidence exist, so rows turn red to green against an answer fixed before the code. Agreement between Lean and TypeScript is a transcription check, never evidence of meaning.
 
-## Ordered work
+## W0: the kernel
 
-Exactly one stable work ID is active. Required maps govern routing.
+| Milestone | Content | Exit | Budget |
+|---|---|---|---|
+| W0.0 | process reset: `CLAUDE.md` rewritten, process and document guards deleted | fast suite green | 0.5 day |
+| W0.1 | module skeleton, guards, vocabulary schema, row traceability map and fixtures, state slots, a vertical slice (Start, User Task, Exclusive Gateway, End) through every layer, retargeted `lake.sh` | every row fixture decodes; measurement plan passes; architecture checkpoint approves | 1 day |
+| W0.2 | Lean kernel parity against the frozen old evaluators, largest profiles first | every scenario, population scenario, admission decision and committed publication equals the baseline or carries a classified mismatch; the inflation probe passes | 2 days |
+| W0.3a | TypeScript kernel transcribed from the Lean executable modules | differential agreement on every scenario | 1 day, parallel to W0.2's second day |
+| W0.3b | contracts re-cut, generic Temporal host, engine API, CIB runner options, platform types and history view | hosted CI green, including the Temporal witnesses | 3 days |
+| W0.4 | old library, core, adapter code, guards and documents deleted after extraction; the proposal graduated to the [kernel architecture](kernel/ARCHITECTURE-SPEC.md) | complete hosted verification green; land on `main` | 0.5 day |
 
-1. `CIB7-PRACTICAL-COVERAGE` · **active** · Owner: [Practical CIB7 Coverage inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: follow the approved [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list). Structured User Task registration is independently accepted; `PC-DATA-01` design is accepted; advance `PC-DATA-03` surface by surface through consuming amendments; the handoff and effect-data amendments are closed. Preserve invoice/Call runtime holds and deferred MI guarantees. Preserve private checkpoints and failed qualification.
+W0 budget: seven days from approval (168 hours); with the tracks and integration, about 14 calendar days from approval to Practical CIB7 Coverage acceptance, before the proof wave. The parity baseline (the old evaluators' results, bound to each scenario's digest and never given to a runner) was deleted with the old stack at W0.4; each parity mismatch was classified as a kernel defect, an old-evaluator defect or a lifted refusal owned by a track, and the baseline was never adjusted.
 
+## After W0
 
-### Deferred checkpoints
+In order, each before the next starts:
 
-2. `STRUCTURED-PROCESS-COMPOSITION` · **later** · Owner: [composition proposal](capsules/STRUCTURED-PROCESS-COMPOSITION-PROPOSAL.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Public registration is independently accepted; complete qualification and capsule closure remain open.
-3. `CALL-ACTIVITY-DATA-BOUNDARIES` · **later** · Owner: [Call data proposal](capsules/CALL-ACTIVITY-DATA-BOUNDARIES-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve approved scalar semantics and private recovery; registration is implemented, but independent public qualification failed and closure remains open.
-4. `INTERRUPTING-MESSAGE-EVENT-SUBPROCESS` · **later** · Owner: [Message handler proposal](capsules/INTERRUPTING-MESSAGE-EVENT-SUBPROCESS-PROPOSAL.md), [requirement ledger](BPMN-REQUIREMENT-LEDGER.md) · Maps: [contracts/source](ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md), [runtime/proof](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md), [semantic families](ENGINE-SEMANTIC-FAMILY-IMPLEMENTATION-MAP.md), [semantic invariants](ENGINE-SEMANTIC-INVARIANT-IMPLEMENTATION-MAP.md), [Temporal](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [assurance/adoption](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) · Action: Preserve the independently approved private checkpoint at `c2132704`; hosting, registration and closure remain deferred.
+1. Profile consolidation: the per-variant profiles become one BPMN 2.0.2 standards profile and one cumulative CIB Seven 2.2.0 profile ([profiles](kernel/ARCHITECTURE-SPEC.md#profiles)); the CIB 2.0.0 profiles retire into 2.2.0; the refusals deferred to it (abnormal-scope refusals, Sub-Process-level Data Objects as declared items, profile-dependent admission, the CIB 2.0.0 oracle mismatches and corpus refusals) are resolved or listed as lifted refusals of their tracks.
+2. Scenario and evidence batch: scenarios and row fixtures for the open rows, with their CIB evidence produced in one batched hosted run.
+3. Pilot rows PC-MI-02, PC-ERROR-01 and PC-AUTO-02, green on both kernels and the CIB evidence before the tracks scale out.
+4. Mechanism tracks M1–M9, then the integration track.
 
-### Assurance trigger assessment
+## Mechanism tracks, then rows
 
-Assurance base: `99cfe6fc810d06c7538712680302765a75212686`.
+The mechanism tracks run in parallel, up to three at a time, each by its own HIGH agent on its own feature, admission, laws and TypeScript modules, with the root integrating, accepting shape edits, running full builds and reviewing. A track ends when its mechanism and its rows' scenarios are green. Every open or held row appears once:
 
-Assurance work ID: `CIB7-PRACTICAL-COVERAGE`.
+| Track | Rows |
+|---|---|
+| M1 flow and gateways | PC-CF-02, PC-CF-03, PC-CF-04, PC-CF-05, PC-CF-06, PC-CF-07, PC-CF-08, PC-BASIC-01, PC-BASIC-02, PC-BASIC-03, PC-BASIC-04, PC-HUM-05 |
+| M2 data and expressions | PC-DATA-02, PC-DATA-03, PC-DATA-04, PC-DATA-05, PC-DATA-06, PC-DATA-07, PC-DATA-08, PC-DATA-09 |
+| M3 work and effects | PC-HUM-01, PC-HUM-02, PC-HUM-03, PC-HUM-06, PC-AUTO-01, PC-AUTO-02, PC-AUTO-03, PC-AUTO-04, PC-AUTO-05, PC-AUTO-06, PC-AUTO-07, PC-AUTO-08 |
+| M4 scopes | PC-SCOPE-01, PC-SCOPE-02, PC-SCOPE-06, PC-SCOPE-07, PC-TERMINATE-01, PC-TERMINATE-02 |
+| M5 Multi-Instance | PC-MI-01 to PC-MI-12 |
+| M6 subscriptions | PC-TIMER-01, PC-TIMER-02, PC-TIMER-03, PC-TIMER-05, PC-TIMER-06, PC-TIMER-07, PC-TIMER-08, PC-MESSAGE-01, PC-MESSAGE-03, PC-MESSAGE-04, PC-MESSAGE-05, PC-MESSAGE-06, PC-MESSAGE-07, PC-SIGNAL-03, PC-CONDITION-01, PC-CONDITION-03, PC-CONDITION-04, PC-CONDITION-05 |
+| M7 throw and propagation | PC-ERROR-01, PC-ERROR-02, PC-ERROR-03, PC-ESCALATION-01, PC-ESCALATION-02, PC-ESCALATION-03, PC-MESSAGE-09, PC-SIGNAL-01 |
+| M8 population | PC-TIMER-04, PC-MESSAGE-02, PC-MESSAGE-08, PC-SIGNAL-02, PC-SIGNAL-04, PC-CONDITION-02, PC-SCOPE-03 |
+| M9 compensation and Transaction | PC-COMPENSATION-01 to PC-COMPENSATION-05, PC-TX-01, PC-TX-02, PC-TX-03 |
+| I integration | PC-DELIVERY-01 (held), PC-JOURNEY-01 to PC-JOURNEY-07, PC-QUALIFY-01 to PC-QUALIFY-10 (PC-QUALIFY-03 held), PC-ACCEPT-01, PC-ACCEPT-02 |
 
-| Finding | Result | Reason | Bounded action | Acceptance |
-|---|---|---|---|---|
-| AA-01 | not-met | SMIS resumption remains required but proof implementation is deferred; the portable handoff selects no history-transport change. | Preserve pending work and the unresolved guarantee. | [Resumption reassessment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
-| AA-02 | not-met | No batch-member interface extension is selected. | — | — |
-| AA-03 | not-met | No deferred traversal migration is selected; a forcing consumer requires amendment review before implementation. | — | — |
-| AA-04 | not-met | Reuse the existing boundary invariant; no equivalent validator view migration is selected. | — | — |
-| AA-05 | not-met | The accepted runtime/proof repair is preserved; no dependency investigation. | — | — |
-| AA-08 | not-met | Existing Transaction role contracts remain the selected account. | — | — |
-| AA-09 | not-met | No proof relocation is selected for the portable handoff; the pending two-consumer SMIS relocation retains its acceptance obligation. | Preserve pending work without claiming acceptance. | [SMIS amendment](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#command-resumption-ownership-amendment). |
-| AA-11 | not-met | No issuing or command outcome contract changes; the default-less Choice rollback reuses `rolledBack` on its own closure channel. | — | — |
-| AA-13 | met | Raw-wire admission is independently accepted for the existing arms; the recursive-value batch extends the same readers. | Extend each independent reader to the new arms under the accepted lexical admission; listed residuals stay unselected. | [Accepted admission and residuals](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-13). |
-| AA-15 | met | The design must name the value-domain assurance lane without implying runtime evidence. | Separate design acceptance from checked/proved implementation obligations within the design budget. | [Named guarantee obligation](ASSURANCE-IMPROVEMENT-REGISTER.md#aa-15). |
-| AA-18 | not-met | No ordering/uniqueness or identity-family contract extension is selected. | — | — |
-| AA-19 | not-met | No encoder or helper consolidation is selected. | — | — |
-| AA-20 | not-met | Committed publication outcome/type contract is unchanged. | — | — |
-| AA-22 | not-met | No declarative-independence claim correction is selected. | — | — |
-| AA-23 | not-met | Refusal/ambiguity contract changes remain held; the default-less Choice no-flow channel leaves `preparationFailed` and refusal unchanged. | — | — |
-| AA-24 | not-met | No progress-law change is selected; the deferred actual-Start guarantee and satisfiability witness remain open. | Preserve the delayed-Join/turnover discriminator. | [Exact progress claim and limits](capsules/SEQUENTIAL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#lean-assurance-lane). |
+M2 opens with the core JUEL level; rows in other tracks whose acceptance needs its expressions close after their level ([evaluation](kernel/ARCHITECTURE-SPEC.md#runtime-state-and-step)), and every other row proceeds on Simple Boolean.
 
-### Lean build follow-ups
+Budgets: M1–M9 five days across three parallel tracks; integration and qualification two days; the proof wave follows acceptance. Each track reports elapsed time against its budget. A missed budget is reported to the owner at once with the boundary reached and the next decision; it is never renewed silently.
 
-The [module rules](LEAN-BUILD-MODULARITY-SPEC.md#module-rules) own the rules; this list owns the class repairs the module conversion left.
+## Verification cadence
 
-- Fix on the fly: adapt each proof the [matcher defect](LEAN-BUILD-MODULARITY-SPEC.md#module-matcher-defect) breaks, with its comment; give a newly public helper a distinct name whenever another declaration of its short name resolves unqualified in a file that imports both.
-- After the None Intermediate Throw family lands, as its own change (deferred from that family's kernel-type change on 2026-11-03, which records why): merge the duplicated helpers the conversion renamed instead of merging (the operation, place and node owner lookups, `continuationOperationFamily`) into one owner each, and drop the simp arguments Lean's linter reports unused, inside the same complete rebuild.
-- Executable guards: 24 further conformance modules stay kernel-decided only because their executable closure reaches a proofs-only module; move those proof imports out of the definition closure, then convert them.
-- After owner approval: an upstream Lean report with the reproducer; remove the workaround once the pinned Lean reuses public matchers.
-- After owner approval: an upstream Lean report that `sparseCasesOnExt` exports private owners' sparse case-split names (`AuxRecursor.lean:53`, unlike `sparseCasesOnInfoExt`); remove `backward.match.sparseCases = false` and its two local exceptions once the pinned Lean filters them.
-- Partly reopened by the owner on 2026-11-05 inside Kernel IL orthogonalization (registry-instantiated fixtures only, within its 12-hour selection), after the owner closed the hub fix on 2026-11-01 and restated its targets ([restated residual](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary)); the bound reasons in [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts) that name the hub fix refer to this entry: registry-instantiated whole-model fixtures, which need the global dispatch parametrized by a family registry and self-registering `ValueDomain` entries; consuming the hubs through lemmas, each cut sized by enumerating the opened module's private `import all` closure before any compile; removing the exported equation lemmas of `CommandAdmission`'s mutual block, which ends the concurrent mapped Calls exception; moving `RuntimeStateWellFormed`'s `import all` openers onto `RuntimeStateWellFormedLaws`, which shrinks the ten hidden-edit bounds raised when that laws module was added; and retiring the interface entries of `ScopeDataBearing` and `NestedScopeControlAdmission` by hiding the `EffectMappingValuePolicy`, `CommandStartBindings`, `NestedScopeDataCommand` and `ScenarioAdmission` bodies.
-- After the None Intermediate Throw family lands, as its own change (deferred with the item above): move each kernel module's operations out of its `@[expose] public section` into a plain section, and teach the fan-out model that rule, so that Lean's warnings that `@[expose]` has no effect (`initialState`, `emptyScopedVariables`, `SemanticProcessContract`'s two contract predicates, inside exposed sections) and the per-definition `@[no_expose]` marks go; the model reads the redundant attribute today to treat those four as individually exposed.
-- When next edited: hide `BusinessValue`'s six size functions and `ParallelMultiInstanceContract`'s five operations with `@[no_expose]` and exact `import all` in their consumers, as stage 1 did for nine kernel modules.
-- When next edited: wrap the 35 helper-call lines wider than 120 columns that the hidden-bodies conversion (`3268d719`) and the generated-lemma fix (`4b963dc9`) wrote, as the header calls around them wrap.
-- Before the next family, whose plan prices its edits by fan-out: make the fan-out model count as interface edits the hidden-body and private-declaration edits that [still change the public interface](LEAN-BUILD-MODULARITY-SPEC.md#current-boundary) (new private recursive or `match`-bearing definitions, private structures and inductives, and the unidentified closure case of `checkedGraphPolicyValid`, whose edit rebuilds `CheckedGraphValidation`'s interface cone of 503 modules where the model predicts 80); until then the [Acceptance](LEAN-BUILD-MODULARITY-SPEC.md#acceptance) body-edit bound over-claims for that class, and only an owner decision may list it there as an exclusion instead.
-- Recorded generated-lemma leaks ([`lean-realized-leaks.tsv`](../scripts/lean-realized-leaks.tsv)): remove each generated-lemma line by consuming its owner through lemmas when that owner is next edited; the sparse case-split lines go only with the upstream fix above.
-- Split [`lean-fanout-bounds.ts`](../scripts/lean-fanout-bounds.ts), above 800 lines under an owner-approved exception, into one file per ratchet; the rise, debt and owner-decision guards read it at the base commit, so the split is a change of its own.
+Locally: the kernel build of touched modules, the kernel runner, TypeScript type checks and unit tests, and the fast guard suite ([local loop](kernel/ENGINEERING-POLICY.md#local-loop)). Docker, the Temporal server, PostgreSQL, browsers, the CIB oracle suites and other long-running lanes run in hosted CI on the pushed branch, once per milestone or track, which is also the landing gate; a hosted failure is reproduced locally only by its narrowest command. CIB evidence for new scenarios is produced in one batched hosted run per track.
 
-### Scheduled delivery batches
+## Delegation
 
-Owner-directed sequence (2026-10-09), within the [practical inventory](PRACTICAL-CIB7-COVERAGE-TARGET.md).
-
-| Order | Outcome | Shared mechanism and exit |
-|---|---|---|
-| At closure | Bind qualified delivery evidence. | Reporting `55d70e57` extends tracker/baseline `500c0af1`; [selected variants](PRACTICAL-CIB7-COVERAGE-TARGET.md#selected-behavioral-variants). Binding/drift checks pass; record qualified bindings at closure. The [delivery checklist](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) owns the complete work partition; this tracker counts only its selected exact-bound cohort. |
-| 1 | Close serial/mixed-task/business Error delivery. | Govern shared public overlay retention/start, candidate-group/string-form metadata and configured handlers; then installed-runtime, whole-model and independent closure evidence. |
-| 2 | Close existing scope/Call and both MI Sub-Process slices. | Shared reachable ownership, data isolation, cancellation and publication; resumption/stable-wait guarantees, hosting/replay and public registration. |
-| 3 | Extend business data/expressions. | Shared typed values, collections, scoped visibility, mappings and predicates. |
-| 4 | Complete task/control/source breadth. | Plain/Manual, Send, Script, Rule, remaining gateway compositions and Link/interoperability; reuse effect/control contracts. |
-| 5 | Complete event breadth. | Timer/Message loci and payloads, Signal/Conditional, Error/Escalation; shared subscription lifetime, eligibility and scoped handlers. |
-| 6 | Extend Compensation/Transactions. | Targeting, repeated/MI retention, handler outcomes and Cancel propagation through shared retention/cancellation. |
-| 7 | Qualify the integrated target. | Cross-family journeys, disclosures, production browser and distribution gates; owner acceptance. Release/version/scale decisions remain separate. |
-
-Batch 5 continues after the Timer family with Kernel IL orthogonalization (owner decision 2026-11-05). Kernel types bake orthogonal BPMN features into constructors (`SemanticOperation` 42 with 10 User Task variants, `CheckedNode` 40, four Multi-Instance controller lists), and profile-ID strings act as capability switches, so each feature combination reaches hundreds of modules (kernel-shape and design-smell audits, 2026-11-05). Stages of small green commits: profile capability records (features, limits); accessor and footprint laws replacing constructor matches and hub `import all` openers; one switch of `CheckedNode`, `SemanticOperation` and the shape tables to an Activity host with flow lists, data mapping, optional loop and typed boundary handlers, then one loop controller and kind-keyed waits; one shared catch trigger. Later Timer increments wait for it (owner direction 2026-11-05). By owner direction (2026-11-05) a one-hour spike first measures one orthogonal Activity constructor added beside frozen legacy constructors, then picks that incremental route or one reshape; it chose the former, so the merge host family precedes the capability-record and accessor stages, its accessor leaf holding that stage's first laws; by owner direction (2026-11-07) the Task split is the Activity host's last host-only arity form and the next Activity-host family after it is the switch; until then the legacy User Task and effect constructors and their shared payload types stay frozen ([retirement rule](capsules/ACTIVITY-HOST-FLOW-LISTS-SPEC.md#retirement-of-the-dual-representation)). Its host families after the merge: the scope host (Sub-Process, Call and Start flow lists, carrying `PC-BASIC-01`), then the wait-record stage, whose output lists carry `PC-CF-07`'s split clause. Of the reopened hub-fix entry below, one Multi-Instance limits owner (TypeScript, `d62d89d9`; Lean unchanged, its constructor digests and body-edit bound refuse it) and the Error origin merge (`be083b0e`) landed; registry-instantiated fixtures stopped unstarted (2026-11-07): the global dispatch is an ordered chain of about 30 family selectors and needs a selector-disjointness lemma first.
-
-Parked: Activity implicit split and merge (`PC-CF-07`, `PC-BASIC-01`, `PC-BASIC-02`; [proposal](capsules/ACTIVITY-IMPLICIT-SPLIT-MERGE-PROPOSAL.md) approved), by owner decision on 2026-11-05 ("Park AISM"). Its representation commit exceeded the Rule 2 line limits, and after a one-time owner-approved raise and restoration `lean-fanout` reported 67 violations: importer bounds, the new `MarkedInputSelection` module and hidden-definition rewrites. The stopped state is local branch `park/aism-representation` (`ca979e7d`, unpushed, not buildable). It resumes only inside Kernel IL orthogonalization, never by raising bounds.
-
-Within each delivery batch, select bounded outcomes by shared mechanism, contract and affected consumers. Name the participating checklist IDs in the exact resume point, retaining one primary task and each ID's separate acceptance criteria. Reuse the same MEDIUM worker through related implementation, focused testing and corrections while its assumptions remain valid; a checklist row or helper completion alone does not require a new agent, commit or broad gate. Share applicable validation across the coherent change and reuse unchanged evidence under [testing cadence](TESTING-SPEC.md#three-level-verification-policy). Under the owner direction of 2026-10-21 in [CLAUDE.md](../CLAUDE.md#delivery), each checklist family takes one cold design review and one cold code review at closure plus correction audits, under the [cold-review gate](REVIEW-POLICY.md#independent-cold-review-gate); failing tests may be repaired in batches inside the family before its closure review.
-
-Reuse reviewed models/evidence; retain review/resource limits. MEDIUM implements, HIGH accepts. Report progression only when requested.
-
-## Current evidence
-
-- Terminal forks closure. Command: `./scripts/verify.sh`. Status: `exit 1` in temporal-serial, a publication loss recorded in the [Temporal defects ledger](TEMPORAL-DEFECTS-LEDGER.md#td-001-query-loss-during-run-eviction); `./scripts/verify.sh temporal-serial && ./scripts/verify.sh pipeline && ./scripts/verify.sh composition-parity` `exit 0`, the pipeline over 184 cases; `./scripts/doctor.sh research && ./scripts/pnpm.sh run test:model-corpus` `exit 0`, 30 tests. Date: `2026-11-04`. Commit: `bac7df9f`.
-
-- Push qualification. Command: `./scripts/verify.sh runtime`. Status: `exit 1`. Date: `2026-10-12`. Commit: `d639234`. [Scheduled Verify 38246414280](https://github.com/mbackschat/bpmn-lean-experiment/actions/runs/38246414280) fails PMIS recovery admission before service startup; Lean library/executable lanes pass and integration is skipped. The asserted `/tmp/verify-38246414280-admission-probe-20261012` reproduces execution refusal and `parallelSubProcessQualificationUnavailable` for zero/two bodies in the current tree. [PMIS open acceptance](capsules/PARALLEL-MULTI-INSTANCE-SUBPROCESS-PROPOSAL.md#entry-and-retirement-publication-checkpoint) owns the correction. Earlier runtime failures are [TD-001](TEMPORAL-DEFECTS-LEDGER.md#td-001-query-loss-during-run-eviction) and [TD-003](TEMPORAL-DEFECTS-LEDGER.md#td-003-native-v8-garbage-collection-crash). Security audit passes with approved `source-map-js@1.2.2`; push remains unqualified.
+HIGH track agents author kernel feature, admission and laws modules in Lean and their TypeScript pairs on disjoint files, and run only narrow builds of their own modules (`./scripts/lake.sh build Kernel.Feature.<F>`, `Kernel.Laws.<F>` and `Kernel.Run` for their own scenarios) under the shared project lock; an agent that finds the lock held waits and retries. The root alone accepts shape edits, runs full builds, the full runner and every hosted lane, and integrates. Agents never run heavy lanes. Workers on scenarios and models stay MEDIUM. The guards, the architecture checkpoint and the track review replace the old rule that only the root writes Lean.
 
 ## Exact resume point
 
-Active work ID: `CIB7-PRACTICAL-COVERAGE`.
+Active work: Practical CIB7 Coverage, through the [kernel architecture](kernel/ARCHITECTURE-SPEC.md) (owner direction 2026-11-08).
 
-Current task: the [Lean kernel rewrite](LEAN-KERNEL-REWRITE-PROPOSAL.md), owner direction 2026-11-08. The incremental Kernel IL orthogonalization stopped by owner direction during the switch's stage 1; that work is parked unqualified on branch `park/activity-host-switch-stage1` at `ff6ca8dc` and is not built on. The existing Lean library and TypeScript core are frozen.
+Current task: close W0 with the W0.4 pull request: complete hosted verification green on the branch, then fast-forward `main` to that SHA.
 
-Deliverable: the proposal's W0 (new kernel at scenario parity, old stack and documents deleted), then mechanism tracks M1–M9 and the integration track.
+Deliverable after W0: the [after-W0 sequence](#after-w0), then mechanism tracks M1–M9 and the integration track.
 
-Acceptance blockers: none for W0; the owner packet gates the start of M1, M2 and M6.
+Acceptance blockers: PC-DELIVERY-01 and PC-QUALIFY-03 stay held until re-qualified against the generic Temporal host ([owner decision](kernel/ARCHITECTURE-SPEC.md#owner-decisions-on-the-path)).
 
-Current result: W0.0 done: `CLAUDE.md` rewritten, 33 process and document guard files deleted, fast suite green (705 tests). The old-library Lean scanners stay until the first kernel commit; each that fires on `Kernel/` is deleted then.
+Owner items: none open; the owner packet (proof wave, JUEL levels, Script runtime, decision engine, Cron dialect, the two holds) was decided on 2026-11-08.
 
-Owner items: the proposal's owner packet during W0 (proof-wave confirmation, JUEL adoption gating M1, M2 and M6, Script runtime, decision engine, Cron dialect, the two SDK holds).
+Effort budget: W0's 168 hours from approval; the tracks five days across three in parallel, integration two days.
 
-Effort budget: 168 hours from approval for W0, per the proposal's milestone budgets and stop rules; a missed budget is reported to the owner at once and never renewed silently.
+Next action: profile consolidation.
 
-Next action: W0.1, the kernel skeleton, guards, vocabulary, traceability table and vertical slice.
-
-Oracle: the proposal's guardrails; W0 parity against the frozen old-evaluator results.
+Oracle: the guardrails, both kernels and the retained CIB evidence on every scenario.
 
 Stop if the path requires SDK work or a new dependency without the owner's approval.

@@ -6,7 +6,7 @@
 
 ## Responsibility split
 
-[PROJECT-DESIGN.md](PROJECT-DESIGN.md) owns why the products, semantic authorities, and one-way product boundary exist. [The BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns what the first platform product must provide. This document owns how source packages realize those decisions. The detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md) record which parts exist, and [PLAN.md](PLAN.md) records what comes next.
+[PROJECT-DESIGN.md](PROJECT-DESIGN.md) owns why the products, semantic authorities, and one-way product boundary exist. [The BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns what the first platform product must provide. This document owns how source packages realize those decisions. The [kernel status map](kernel/KERNEL-STATUS-MAP.md) and the [BPM platform implementation map](BPM-PLATFORM-IMPLEMENTATION-MAP.md) record which parts exist, and [PLAN.md](PLAN.md) records what comes next.
 
 Local directory `README.md` files state only the ownership and dependency rules of their subtree. They link here instead of copying the complete layout or decision register.
 
@@ -19,10 +19,9 @@ The modular monolith keeps atomic engine-to-platform contract changes possible, 
 ## Repository map
 
 ```text
-packages/                         product 1 TypeScript engine packages
+Kernel/                           product 1 Lean kernel
+packages/                         product 1 TypeScript engine packages (see Engine packages)
   contract-types/                neutral type-only contract utilities shared by products 1 and 2
-  temporal-adapter/              product 1 Temporal subsystem package container
-BpmnSemantics/                    product 1 Lean reference
 profiles/ scenarios/ contracts/   product 1 semantic artifacts
 runners/                          product 1 adapters to external executable oracles
 
@@ -41,52 +40,28 @@ platform/                         product 2 modular monolith
 showcase/                         product 2 executable milestone acceptance gates
 ```
 
-`runners/` is reserved for evidence adapters to independent executable oracles. Production Workers belong under `platform/workers/`; in particular, the deferred JUEL evaluator belongs under `platform/workers/juel-evaluator/`, never beside the CIB Seven oracle runner.
+`runners/` is reserved for evidence adapters to independent executable oracles. Production Workers belong under `platform/workers/`, never beside the CIB Seven oracle runner. Expression evaluation runs inside the kernel step and needs no Worker ([owner decision, 2026-11-08](kernel/ARCHITECTURE-SPEC.md#runtime-state-and-step)).
 
-## Lean proof composition
+## Engine packages
 
-The Lean runtime remains the executable semantic account. Proofs expose reusable transition contracts below family-level command guarantees; proof consumers do not become runtime dependencies. [Actual PMIS invariant transport](../BpmnSemantics/SemanticProcess/ParallelScopeReachableInvariantTransport.lean) uses the existing command-boundary and internal-prefix reachability relations. It owns traversal through committed ingress, selected singleton or reserved-batch execution, and unchanged rejection or rollback. Ingress may establish an invariant that the pre-Start state lacks, so Start-certificate, reservation and data-availability consumers use the same traversal as publication and runtime position. Each consumer supplies its own predecessor-preservation laws without repeating that traversal or assuming successful future admission; boundary stability remains a separate command-level fact.
-
-Batch preservation walks reserved members once through the actual `InternalOccurrencePatchStep` evidence, including frozen allocation revalidation; the preparation-level batch induction is a corollary of that walk, not a second traversal. Local validator interfaces expose exact owner and output bindings once for their consumers. Accounting histories retain their distinct purpose: their over-approximation cannot authorize command ingress inside automatic closure. [Lean proof review](REVIEW-POLICY.md#lean-proof-design-and-review) governs composition; the [`implementation-status-router`](IMPLEMENTATION-MAP.md) routes established guarantees and remaining gaps.
-
-## Temporal adapter subsystem
-
-`packages/temporal-adapter/` is a subsystem directory containing independently built workspace packages. It is not one runtime package and has no production umbrella entry point. The boundaries follow actual execution environments and dependency closures:
+The [kernel architecture specification](kernel/ARCHITECTURE-SPEC.md) owns Product 1's design: the kernel IL, runtime state and step, the module and build shape, the host interface and the guardrails. Its realization in this repository:
 
 ```text
-packages/temporal-adapter/
-  protocol/    shared Temporal-facing contracts, identity, transport, and host admission
-  client/      start, Query, Signal, Update, and retained-result resolution
-  workflow/    deterministic Workflow implementation and scheduling
-  worker/      Workflow bundling, Worker lifecycle, and Activity hosting
-  runner/      product-1 executable composition and command-line entry points
-  testkit/     private ephemeral servers, mutations, calibration, and evidence support
+Kernel/                     Lean kernel: IL, state, hooks, features, admission, step, publication, population, runner
+packages/
+  kernel/                   TypeScript kernel, one file per Lean executable module
+  bpmn-source/              exact source preservation, parsing and the kernel reader
+  temporal-host/            the generic Temporal host: Workflow, Worker, client, in-memory host and test support
+  engine-api/               Product 1's narrow entry point for Product 2
+  differential/             Lean, TypeScript and CIB evidence comparison
+  contract-types/           neutral type-only contract utilities shared by products 1 and 2
 ```
 
-The permitted dependency direction is:
+The Temporal host sees the kernel only through its host interface, and one generic scheduler drives every input kind from the kernel's host view ([Temporal hosting](kernel/ARCHITECTURE-SPEC.md#temporal-hosting-and-refinement-preflight)). Temporal remains explicit Product 1 infrastructure: the host package owns the `@temporalio/*` dependencies, and there is no generic portability interface. Publication is derived from the kernel's committed steps; no layer reconstructs it from Event History.
 
-```text
-runner  ---> client
-  |          |
-  v          v
-worker ---> protocol <--- workflow
-  |                         |
-  +-------------------------+
+Product 2 reaches the engine only through `platform/foundation/engine-gateway`, which depends on `@bpmn-lean/engine-api` alone. No kernel program, kernel state or Temporal identity crosses that entry point; Product 2 holds opaque locators and intents. No other Product 2 package reaches the host package, Workflow code, Worker hosting, ephemeral servers, replay harnesses or `@temporalio/testing`.
 
-testkit ---> protocol + client + workflow + worker + runner
-```
-
-`protocol` may depend on the semantic core but on no Temporal SDK package. `client` owns the production `@temporalio/client` dependency. `workflow` owns `@temporalio/workflow`. `worker` owns `@temporalio/worker`. `runner` composes production engine packages and the client/worker surfaces without exporting test infrastructure. `testkit` alone owns `@temporalio/testing` and may depend on every sibling because it is excluded from production dependency graphs.
-
-Temporal remains explicit Product 1 infrastructure: there is no generic `ProcessStarter` portability interface and no production umbrella adapter package. Product 2 reaches concrete `@bpmn-lean/temporal-client` capabilities only through its engine gateway. The owner approved the resulting direct `@temporalio/client@1.21.0` reachability in the client package; the other SDK dependencies remain isolated by the package boundary above.
-
-Committed execution publication follows the same direction. The semantic core and Lean independently retain exact unnumbered transition and public-position facts. `workflow` alone assigns contiguous revisions in deterministic state and serves a pure cursor Query. `protocol` owns Program-bound producer validation plus a separate representation-free transport validator and canonical bytes. `client` interprets the private Workflow address, while `@bpmn-lean/engine-api` exposes only public identity, an opaque locator, and the closed observation result. Revision state is not BPMN RuntimeState, and no layer reconstructs publication from Event History.
-
-Flow-node occurrence publication is an additive sibling of committed execution publication rather than a field extension to it. The semantic core and Lean derive exact starts and completed or cancelled terminals at the same evaluator boundaries as E1 while retaining private pairing anchors outside the public wire. The Workflow validates both immutable successors from the retained head, samples its deterministic wall clock once per complete committed command batch, assigns public occurrence identity from E1 revision plus start index, and advances both accumulators before recording the command result. A separate pure Query uses the same complete-batch cursors. Product 2 consumes only the representation-free transport surface, transactionally projects each confirmed instance from its retained cursor, and aggregates one request-start exact-definition population or reports the whole result unavailable. It never reconstructs occurrence lifecycle or duration from E1 state differences, Temporal Event History, or platform ingestion time.
-
-Product 2 may consume only the handle-free `@bpmn-lean/temporal-client/definition-start`, `@bpmn-lean/temporal-client/definition-schedule`, `@bpmn-lean/temporal-client/message-start`, `@bpmn-lean/temporal-client/process-work`, `@bpmn-lean/temporal-client/process-operations`, and `@bpmn-lean/temporal-client/execution-publication` entry points, and only through `platform/foundation/engine-gateway`. The gateway owns one lazy reusable concrete client connection and closes it with the server composition lifecycle. No other Product 2 package reaches the client package, Workflow code, Worker hosting, the product-1 runner, mutation Workflows, ephemeral servers, replay harnesses, or `@temporalio/testing`. This is dependency-closure isolation around the accepted Temporal investment, not a vendor-neutral abstraction.
-
-For committed execution, the gateway passes the strict closed page to `operate`, which validates every page against the transactionally retained public head before atomically applying its contiguous suffix. The projection accepts byte-identical overlap, rejects changed overlap and gaps, and rebuilds only from authoritative revision zero. HTTP and the browser read that projection for one instance's History, current Diagram positions, and canonical export. No Product 2 owner reconstructs a record from Event History, state differences, audit, or a private host address.
+For committed execution, the gateway passes the strict closed page to `operate`, which validates every page against the transactionally retained public head before atomically applying its contiguous suffix. The projection accepts byte-identical overlap, rejects changed overlap and gaps, and rebuilds only from authoritative revision zero. HTTP and the browser read that projection for one instance's History, current Diagram positions and canonical export. No Product 2 owner reconstructs a record from Event History, state differences, audit or a private host address.
 
 ## Product 2 dependency direction
 
@@ -113,12 +88,12 @@ The rules are:
 4. A foundation package may not depend on a business module or application composition root.
 5. Only the engine gateway may consume the engine's semantic contract, and it does so through narrowed public engine entry points.
 6. A missing semantic fact stops at the engine gateway. No platform package derives it from Temporal Event History, state differences, or platform persistence.
-7. Production Workers consume versioned request and result contracts. They do not import or enter the semantic core, mutate semantic state, or decide BPMN behavior.
+7. Production Workers consume versioned request and result contracts. They do not import or enter the kernel, mutate semantic state, or decide BPMN behavior.
 8. Product 1 never imports `platform/` or `showcase/`.
 
 ## Worker deployment ownership
 
-The Product 1 Worker binds its loaded Workflow bundle to a native deployment Build ID and registers both production Workflow types as `PINNED`. Worker process liveness is distinct from enrollment readiness: the client checks Current and both Workflow/Activity queue registrations before creation. Explicit fresh-Namespace initialization owns initial native Current selection; ordinary connection cannot promote a candidate. Native administration owns later promotion, and original Workers plus their runtime/configuration remain required for retained Run Queries. [The deployment contract](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md) excludes conversion of existing unversioned environments and owns the bounded composition evidence.
+The [Worker deployment specification](TEMPORAL-WORKER-DEPLOYMENT-REPAIR-SPEC.md) records the native Worker-versioning contract the deleted adapter realized. The generic Temporal host does not implement native deployment versioning; adopting it again is hosting work under the held delivery rows ([owner decisions](kernel/ARCHITECTURE-SPEC.md#owner-decisions-on-the-path)).
 
 ## Applications
 
@@ -199,7 +174,7 @@ The UI kit preserves module boundaries in its package output and declares CSS si
 
 The implemented `platform/foundation/bpmn-definition-projection/` Product 2 boundary privately owns the exact selected parser graph, returns only closed DI bytes with provenance or a closed exact-source-bound Human Task catalog, and has no semantic authority. It is the sole Product 2 exception to the semantic `bpmn-moddle` boundary: raw moddle values and generated non-DI XML may not escape it. Definitions owns digest-bound SQLite persistence, source-first diagram resolution, catalog projection at deployment, and their public consumers; the browser owns diagram rendering, exact task highlighting, provenance display, derived diagrammed-BPMN download, and structured form presentation. No Product 1 semantic, Lean, engine API, or Temporal gate may import this foundation package or invoke its Playwright acceptance.
 
-Product 1 verification, Product 2 platform, showcase compatibility, and browser quality are separately selected CI lanes. A Product 2-only diff skips the unrelated two-operating-system Product 1 matrix while a stable aggregate check remains available to branch protection; shared manifest, lockfile, workspace, documentation, and mixed changes still select Product 1 verification. The browser lane never runs from `verify.sh`, a Lean/semantic-core/BPMN-source/CIB/differential gate, an ordinary Product 1 change, or the platform checkpoint. It builds the web dependency graph once, then reuses that bundle for package checks and fixed public-API Chromium evidence at 1280 and 1600 pixels. The exact same functional entry point runs locally before push and in GitHub Actions. A cross-boundary change selects independent jobs that GitHub can run concurrently instead of one wrapper serially rebuilding overlapping dependency graphs. M5 E1 adds path-scoped History and Diagram behavior to this lane. One wide Process Diagram screenshot remains an optional manually invoked human-review aid in the digest-pinned Linux Playwright environment, not a blocking regression gate. The registered real-host showcase and preview acceptance packages retain independent real Temporal browser evidence. `test:release:mue-preview-alpha` builds the shared Product 2 release graph once before the exact Alpha real-host witness and deterministic functional UI-quality lane. `test:release:mue-preview-beta` also builds that graph once, then reuses the existing Alpha and definition-scoped correlated Message ingress real-host gates plus the same UI-quality lane; Beta adds no new showcase package or host harness.
+Product 1 verification, Product 2 platform, showcase compatibility, and browser quality are separately selected CI lanes. A Product 2-only diff skips the unrelated two-operating-system Product 1 matrix while a stable aggregate check remains available to branch protection; shared manifest, lockfile, workspace, documentation, and mixed changes still select Product 1 verification. The browser lane never runs from `verify.sh`, a Lean, kernel, BPMN-source, CIB or differential gate, an ordinary Product 1 change, or the platform checkpoint. It builds the web dependency graph once, then reuses that bundle for package checks and fixed public-API Chromium evidence at 1280 and 1600 pixels. The exact same functional entry point runs locally before push and in GitHub Actions. A cross-boundary change selects independent jobs that GitHub can run concurrently instead of one wrapper serially rebuilding overlapping dependency graphs. M5 E1 adds path-scoped History and Diagram behavior to this lane. One wide Process Diagram screenshot remains an optional manually invoked human-review aid in the digest-pinned Linux Playwright environment, not a blocking regression gate. The registered real-host showcase and preview acceptance packages retain independent real Temporal browser evidence. `test:release:mue-preview-alpha` builds the shared Product 2 release graph once before the exact Alpha real-host witness and deterministic functional UI-quality lane. `test:release:mue-preview-beta` also builds that graph once, then reuses the existing Alpha and definition-scoped correlated Message ingress real-host gates plus the same UI-quality lane; Beta adds no new showcase package or host harness.
 
 The documentation screenshot project is separate from browser acceptance. It drives the running evaluation distribution only through accessible public UI landmarks, owns no web server or Docker lifecycle, and writes one exact ordered image catalog for the text-first walkthrough. A root orchestrator supplies a dynamic loopback origin and an isolated fresh-volume Compose project, then removes that project after capture. Regeneration runs only on explicit maintainer command, manual workflow dispatch, or a version tag and never becomes a blocking pixel-comparison lane.
 
@@ -233,7 +208,7 @@ Explain which existing decision the recommendation preserves or reopens and why 
 | ARC-008 | Use Fetch-compatible module routes behind a Node HTTP adapter with no external transport library; deploy exact BPMN as a bounded raw XML body | Keeps route ownership with the domain module, preserves exact source bytes, and avoids adopting or hand-writing multipart machinery for a single-file M1 request | A required public operation needs multipart fields, resumable transfer, or another transport contract |
 | ARC-009 | Confine `bpmn-js` to a viewer-only web adapter and retain its required visible bpmn.io watermark and exact license notice | Uses the mature BPMN DI renderer without granting browser parsing semantic authority or misrepresenting its license as MIT | Reopen if the renderer is replaced or the upstream license changes |
 | ARC-010 | Retain React 19.2.8, React DOM 19.2.8 and development-only Vite 7.3.6 as the static HTTP-only client; the 2026-09-27 routing reopening adds typed hash navigation without a server-side meta-framework | Shareable locations and browser history fit static hosting without a fallback-server route; later component and styling choices remain owned by ARC-012 | Reopen for a demonstrated rendering or deployment requirement the static client cannot meet |
-| ARC-011 | Make `packages/temporal-adapter/` a subsystem container of separate protocol, client, workflow, worker, runner, and testkit workspace packages with no production umbrella export | Isolates real execution environments and production dependency closures while keeping Temporal explicit as product-1 infrastructure; product 2 can use the client boundary without pulling Worker and test infrastructure into its server graph | A measured deployment or build constraint proves two adjacent packages have one inseparable lifecycle and dependency closure, or a new Temporal execution environment needs its own package |
+| ARC-011 | Reach Product 1 only through `@bpmn-lean/engine-api` over the one generic `@bpmn-lean/temporal-host` package (kernel rewrite, owner direction 2026-11-08) | Keeps kernel programs, kernel state and Temporal identities out of Product 2 and keeps Worker and test infrastructure out of the platform server graph | A measured deployment or build constraint needs a separately deployable host package |
 | ARC-012 | Retain React Aria Components, TanStack Table and Query, CSS Modules and platform CSS variables; reopen only the routing exclusion on 2026-09-27 for TanStack Router and one shared application QueryClient | Typed URL selection and browser history replace local-only navigation while accessible behavior, feature-owned command state and API-only access remain intact; no form library, component theme framework or virtualization is added | Reopen when an accepted interaction cannot fit these ownership boundaries or independently needs a shared theme |
 | ARC-013 | Confine generated diagram layout to a Product 2 presentation-foundation adapter and persist only exact-source-bound DI | Gives definitions without source DI a diagram without reserializing admitted source or granting presentation code semantic authority | A selected generator cannot preserve the closed DI-only boundary or a product requirement needs a different presentation format |
 | ARC-014 | Keep headless Playwright in a path-filtered Product 2 UI-quality and showcase lane, outside `verify.sh` and all Product 1 semantic loops | Preserves fast, independent semantic work while making responsive and visual evidence mandatory for UI-facing changes and M3 release | Product boundaries or CI ownership change materially |

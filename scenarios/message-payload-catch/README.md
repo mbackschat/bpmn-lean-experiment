@@ -1,8 +1,8 @@
 # Message payload catch mediation source
 
-This directory retains the exact BPMN source selected by the [Message payload catch mediation specification](../../docs/capsules/MESSAGE-PAYLOAD-CATCH-MEDIATION-SPEC.md). One Intermediate Catch Message Event owns one required scalar DataOutput and direct DataOutputAssociation into a distinct Process Property; the Message and DataOutput resolve to the same ItemDefinition object, while the output, association, Property, Message, and surrounding control route retain distinct identities.
+This directory retains the exact BPMN source selected by the [Message payload catch mediation specification](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md). One Intermediate Catch Message Event owns one required scalar DataOutput and direct DataOutputAssociation into a distinct Process Property; the Message and DataOutput resolve to the same ItemDefinition object, while the output, association, Property, Message, and surrounding control route retain distinct identities.
 
-Three answer-free scenarios are registered for the full Lean/core/Temporal differential:
+Three answer-free scenarios are registered for the full Lean/TypeScript/Temporal differential:
 
 - [supplied-scalar.scenario.json](supplied-scalar.scenario.json) supplies one String.
 - [supplied-null.scenario.json](supplied-null.scenario.json) supplies explicit null.

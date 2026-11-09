@@ -850,7 +850,7 @@ This preserves focus without reducing ambition. The proposal is the correct firs
 
 The principal input is the imported [competitive landscape dossier](ENTERPRISE-PROCESS-ORCHESTRATION-COMPETITIVE-LANDSCAPE-RESEARCH.md), researched on 31 July 2026 and bound to the exact received content by the SHA-256 recorded in its provenance section and [SOURCES.md](../SOURCES.md#enterprise-process-orchestration-competitive-landscape-dossier).
 
-Project assessment uses the current [BPM-PLATFORM-PROPOSAL.md](../BPM-PLATFORM-PROPOSAL.md), [BPM-PLATFORM-STACK-RESEARCH.md](BPM-PLATFORM-STACK-RESEARCH.md), [PROJECT-DESIGN.md](../PROJECT-DESIGN.md), [`implementation-status-router`](../IMPLEMENTATION-MAP.md), [PLAN.md](../PLAN.md), and [README.md](../../README.md).
+Project assessment uses the current [BPM-PLATFORM-PROPOSAL.md](../BPM-PLATFORM-PROPOSAL.md), [BPM-PLATFORM-STACK-RESEARCH.md](BPM-PLATFORM-STACK-RESEARCH.md), [PROJECT-DESIGN.md](../PROJECT-DESIGN.md), [kernel status map](../kernel/KERNEL-STATUS-MAP.md), [PLAN.md](../PLAN.md), and [README.md](../../README.md).
 
 The central migration and lifecycle claims were narrowly checked against current official documentation:
 

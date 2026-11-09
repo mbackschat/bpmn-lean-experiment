@@ -1,6 +1,6 @@
 # Nested embedded scope data scenarios
 
-The [profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) and the [nested embedded scope data capsule](../../docs/capsules/NESTED-EMBEDDED-SCOPE-DATA-SPEC.md#separating-witnesses-and-rule-to-evidence-matrix) own the bounded account. Three retained project-authored models share one profile, each with its own exact source overlay that binds the Service Task operations to caller-supplied Activity handlers. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
+The [profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/profile.json) and the [nested embedded scope data semantics](../../docs/kernel/semantics/DATA-SEMANTICS-SPEC.md) own the bounded account. Three retained project-authored models share one profile, each with its own exact source overlay that binds the Service Task operations to caller-supplied Activity handlers. Neutral stimuli contain no expected answer and select Lean, TypeScript and Temporal with CIB absent.
 
 | Model | Journey |
 |---|---|
@@ -14,5 +14,3 @@ The [profile](../../profiles/cibseven-2.2.0-nested-embedded-scope-data-draft/pro
 | [Null risk class](order-null-risk.scenario.json) | A present null `riskClass` and `requestedLimit` commit with an empty compliance completion patch; a null local shadows and is published to the Process as a present value; the compliance output `"pending-check"` lands in order approval's frame and is published as `finalStatus` while the Process `status` stays `"open"`; empty List and Map members survive three frames. |
 | [Patch allowance](claim-limits.scenario.json) | A 16,385-byte patch is rejected with the state unchanged, a 16,384-byte patch commits and reaches the effect and the Sub-Process output. |
 | [Signed quote](quote-signed.scenario.json) | The signed copy written into the innermost frame never reaches the output of the outer frame, which publishes its own prepared quote. |
-
-The [registration controls](../../packages/differential/test/nested-scope-data-pipeline-cases.test.ts) check public admission, every open wait and Process value of each journey, the exact patch sizes, source-order independence of the input declarations and the seeded mutations. A missing required Start name, a repeated patch name, a root List, an over-long root String and a Start whose structured values exceed the committed-state budget are refusals outside the scenario domain or before Workflow creation, so they live in the [value-domain matrix](../../packages/differential/test/scenario-value-domain-cases.ts), the core and Lean tests and the Temporal capacity envelope tests instead.

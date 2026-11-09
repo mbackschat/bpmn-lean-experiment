@@ -1,6 +1,6 @@
 /**
  * The correlation ingress Workflow: one per correlation address (a correlation scope and a Message channel), the
- * cross-instance router of the proposal's [Temporal hosting](../../../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#temporal-hosting-and-refinement-preflight).
+ * cross-instance router of the architecture's [Temporal hosting](../../../docs/kernel/ARCHITECTURE-SPEC.md#temporal-hosting-and-refinement-preflight).
  *
  * Process chains register the open correlated waits they hold on its channel (`register`); publications arrive as
  * `publish` Updates and are taken one at a time in arrival order. For each, the ingress asks every registered chain

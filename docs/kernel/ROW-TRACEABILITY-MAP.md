@@ -1,6 +1,6 @@
 # Row traceability
 
-Data for guard 21 ([proposal](../LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation)). It maps the 115 rows of the [coverage target](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) onto the kernel shape and freezes after the shape commit. Measured on 2026-11-08 against `Kernel/IL/Types.lean`, `Kernel/State.lean` and `Kernel/Hooks.lean` in the uncommitted working tree on `ee0bb468`, which already carries most of the lifecycle seam, and against the root's W0.1 correction design for Occurrence, Continuation, Leave and `Signal.complete`.
+Data for guard 21 ([kernel architecture](ARCHITECTURE-SPEC.md#guardrails-against-degradation)). It maps the 115 rows of the [coverage target](../PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) onto the kernel shape and freezes after the shape commit. Measured on 2026-11-08 against `Kernel/IL/Types.lean`, `Kernel/State.lean` and `Kernel/Hooks.lean` in the uncommitted working tree on `ee0bb468`, which already carries most of the lifecycle seam, and against the root's W0.1 correction design for Occurrence, Continuation, Leave and `Signal.complete`.
 
 ## Lifecycle fit
 

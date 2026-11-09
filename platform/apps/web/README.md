@@ -4,9 +4,9 @@ This is the browser application for the BPM platform. It is a static React app t
 
 ## What you can do
 
-- **Definitions:** upload BPMN XML, review admission diagnostics, inspect versions, start an exact version using the form above its diagram, view or download the diagram, expand Triggers, and publish a target-free correlated Message with distinct unique, zero-match, ambiguous, capacity, and infrastructure outcomes.
+- **Definitions:** upload BPMN XML, review admission diagnostics, inspect versions, start an exact version using the form above its diagram, view or download the diagram, expand Triggers, and publish a target-free correlated Message with distinct unique, zero-match, ambiguous, capacity, and infrastructure outcomes, or see that the engine's Message correlation is unavailable.
 - **Work:** find priority-ordered tasks visible to the current actor, claim one, complete either its legacy typed field or its exact-catalog-bound structured form, choose among declared resolution actions, and inspect its Process context. An unclaimed task exposes Claim but cannot enter the completion flow.
-- **Operations:** search labelled Process-instance cards with readable showcase names and optional Technical details, inspect committed execution history and current diagram positions, view conditional MUE Preview Alpha progress from exact published Sequential Multi-Instance state, review and download the independently ordered operator audit for one confirmed instance, retry or cancel incidents, review your task activity and incident actions together in Action history, and view Process metrics with exact process/version selection and a link back to Definitions.
+- **Operations:** search labelled Process-instance cards with readable showcase names and optional Technical details, inspect committed execution history and the current open waits on the diagram, view conditional MUE Preview Alpha samples, Timer firings and terminal output, review and download the independently ordered operator audit for one confirmed instance, retry or cancel incidents, review your task activity and incident actions together in Action history, and view Process metrics with exact process/version selection and a link back to Definitions.
 - **About:** browse collapsible BPMN families with counts and Expand all / Collapse all, and inspect the exact build version, all currently registered executable BPMN element variants and their separately classified CIB Seven evidence, and the exact seven MUE Preview Beta checkpoint boundaries with their Product 2 surfaces and remaining limits.
 
 The About destination keeps two denominators separate. Its executable-capability family tables are built from the same canonical capability catalog that the retained-model guard checks against registered pipeline XML. Its MUE Preview Beta checkpoint group is built from a separate immutable seven-checkpoint catalog and distinguishes production journeys, registered executable capabilities, generated evidence, and reviewed checkpoints with no Product 2 executable surface. Beta is not full MUE closure or BPMN conformance. The UI never receives Temporal Workflow IDs, Run IDs, Task Queues, Event History, or private engine locators. Diagrams are presentation only and never decide whether a model is executable.
@@ -52,7 +52,7 @@ Run the complete MUE Preview Beta acceptance only after its constituent Alpha an
 ./scripts/pnpm.sh run test:release:mue-preview-beta
 ```
 
-Before pushing a UI-facing commit, run the exact local GitHub entry point described by the [three-level verification policy](../../../docs/TESTING-SPEC.md#three-level-verification-policy).
+Before pushing a UI-facing commit, run the exact local GitHub entry point described by the [three-level verification policy](../../../docs/kernel/ENGINEERING-POLICY.md).
 
 ## Learn more
 

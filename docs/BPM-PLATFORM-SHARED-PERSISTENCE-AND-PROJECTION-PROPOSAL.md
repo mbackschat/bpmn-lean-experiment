@@ -230,15 +230,15 @@ Implementation changes [ARCHITECTURE.md](ARCHITECTURE.md), the server compositio
 - [Human Work task detail and typed form](BPM-PLATFORM-HUMAN-WORK-SPEC.md#task-detail-and-typed-form), [current actor and authorization](BPM-PLATFORM-HUMAN-WORK-SPEC.md#current-actor-and-authorization), [platform audit](BPM-PLATFORM-HUMAN-WORK-SPEC.md#platform-audit), and [persistence and concurrency](BPM-PLATFORM-HUMAN-WORK-SPEC.md#persistence-and-concurrency);
 - [structured Human Work ownership](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md#ownership-boundary) and [public contracts](BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md#public-contracts);
 - [incident current aggregation](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md#confirmed-registration-and-current-aggregation), [durable actions](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md#durable-action-lifecycle-and-concurrency), and [incident audit](BPM-PLATFORM-INCIDENT-OPERATIONS-SPEC.md#platform-audit);
-- [committed-execution public contract](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md#public-contract) and [stable rules](capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md#stable-rules);
-- [flow-node metrics public contract](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md#public-contract) and [stable rules](capsules/FLOW-NODE-OCCURRENCE-METRICS-SPEC.md#stable-rules);
+- [committed-execution public contract](kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md) and [stable rules](kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md);
+- [flow-node metrics public contract](kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md) and [stable rules](kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md);
 - [operator-audit snapshot and completeness](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md#snapshot-completeness-and-resource-contract) and [versioning consequences](BPM-PLATFORM-OPERATOR-HISTORY-AUDIT-EXPORT-SPEC.md#versioning-and-dependency-consequences);
 - [diagram sidecar contract](BPMN-DIAGRAM-PRESENTATION-DECISION.md#sidecar-contract) and [generation lifecycle](BPMN-DIAGRAM-PRESENTATION-DECISION.md#generation-lifecycle);
 - [Schedule persistence](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md#persistent-lifecycle) and [recovery](BPM-PLATFORM-DEFINITION-SCHEDULING-SPEC.md#creation-retry-and-recovery-algorithm);
 - [Message Start persistence](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md#persistent-lifecycle) and [recovery](BPM-PLATFORM-MESSAGE-INGRESS-SPEC.md#reservation-retry-and-recovery-algorithm); and
 - [Process search durable index](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md#durable-index-and-integrity) and [producer integration](BPM-PLATFORM-PROCESS-INSTANCE-SEARCH-SPEC.md#producer-integration-and-failure-boundary).
 
-[TESTING-SPEC.md](TESTING-SPEC.md) must own the real-PostgreSQL multi-replica gate, no-startup-scan guard, and no-request-time-fan-out guard. [CONTRIBUTOR-SETUP-GUIDE.md](CONTRIBUTOR-SETUP-GUIDE.md) and [SOURCES.md](SOURCES.md) must own local and CI PostgreSQL provisioning without adding PostgreSQL to Product 1 verification.
+[TESTING-SPEC.md](kernel/ENGINEERING-POLICY.md#verification) must own the real-PostgreSQL multi-replica gate, no-startup-scan guard, and no-request-time-fan-out guard. [CONTRIBUTOR-SETUP-GUIDE.md](CONTRIBUTOR-SETUP-GUIDE.md) and [SOURCES.md](SOURCES.md) must own local and CI PostgreSQL provisioning without adding PostgreSQL to Product 1 verification.
 
 No Lean, BPMN source, semantic-core, CIB, differential, or Product 1 Temporal implementation owner changes unless later work selects the optional change-driven publication path.
 

@@ -4,17 +4,17 @@ This file is generated from `manifest.json` by the executable corpus guard. Edit
 
 ## Current result
 
-The first tranche contains 103 retained executable models and 7 exact external candidates. 103 are admitted, 7 are rejected, and 12 are eligible for the browser catalog.
+The first tranche contains 103 retained executable models and 7 exact external candidates. The kernel admits 95 and refuses 15; 10 differ from their recorded admission, and 12 are eligible for the browser catalog.
 The retained MVP suite covers all 53 registered executable BPMN element or semantic variants.
 Browser eligibility separates 3 human-work journeys from 9 guided simulations with explicit host participants.
 
 ## Models
 
-| Model | Source | Clone family | Admission | Pipeline | CIB | Product 2 |
+| Model | Source | Clone family | Kernel admission | Scenario | CIB | Product 2 |
 |---|---|---|---|---|---|---|
-| Review a request with assignment and form metadata | retainedScenario | human-review-with-form | accepted | user-task-assignment-form-metadata | pipeline | journeyBacked |
-| Review content and risk in parallel | retainedScenario | parallel-two-human-tasks | accepted | parallel-user-task-metadata-content-then-risk | pipeline | journeyBacked |
-| Prepare two work items in parallel | retainedScenario | parallel-two-human-tasks | accepted | parallel-fork-join-a-then-b | pipeline | notCatalogReady |
+| Review a request with assignment and form metadata | retainedScenario | human-review-with-form | accepted | user-task-assignment-form-metadata | retainedEvidence | journeyBacked |
+| Review content and risk in parallel | retainedScenario | parallel-two-human-tasks | accepted | parallel-user-task-metadata-content-then-risk | retainedEvidence | journeyBacked |
+| Prepare two work items in parallel | retainedScenario | parallel-two-human-tasks | accepted | parallel-fork-join-a-then-b | retainedEvidence | notCatalogReady |
 | Resolve an expense exception with structured human work | retainedScenario | structured-expense-exception-review | accepted | expense-exception-review-approve | notSelected | journeyBacked |
 | Route a Boolean decision | retainedScenario | exclusive-boolean-decision | accepted | exclusive-gateway-simple-boolean-first-true | notSelected | notCatalogReady |
 | Fulfil work through a called Process | retainedScenario | called-process-human-work | accepted | called-process-call-activity | notSelected | notCatalogReady |
@@ -27,8 +27,8 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Review an expense claim | retainedScenario | expense-claim-patch-allowance | accepted | nested-scope-data-claim-limits | notSelected | notCatalogReady |
 | Sign off a bulk quote | retainedScenario | bulk-quote-capacity | accepted | nested-scope-data-quote-signed | notSelected | notCatalogReady |
 | Check a loan applicant's identity through a called Process | retainedScenario | loan-application-identity-check | accepted | call-variable-mapping-loan-approved | notSelected | notCatalogReady |
-| Record an external service effect | retainedScenario | single-service-effect | accepted | service-task-effect-success | pipeline | guidedJourneyBacked |
-| Coordinate parallel work inside a bounded scope | retainedScenario | embedded-parallel-human-work | accepted | embedded-subprocess-completion-a-then-b | pipeline | notCatalogReady |
+| Record an external service effect | retainedScenario | single-service-effect | accepted | service-task-effect-success | retainedEvidence | guidedJourneyBacked |
+| Coordinate parallel work inside a bounded scope | retainedScenario | embedded-parallel-human-work | accepted | embedded-subprocess-completion-a-then-b | retainedEvidence | notCatalogReady |
 | Onboard a new employee | retainedScenario | employee-onboarding-nested-setup | accepted | nested-scope-control-onboarding-setup-first | notSelected | notCatalogReady |
 | Conduct an internal audit | retainedScenario | internal-audit-nested-fieldwork | accepted | nested-scope-control-audit-early-and-stale | notSelected | notCatalogReady |
 | Remediate audit findings | retainedScenario | audit-remediation-concurrent-findings | accepted | concurrent-activations-audit-interleaved-and-stale | notSelected | notCatalogReady |
@@ -72,14 +72,14 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Triage a support ticket and route it by severity | retainedScenario | ticket-triage-without-default | accepted | exclusive-choice-without-default-medium-triage | notSelected | notCatalogReady |
 | Onboard a supplier through shared approvals | retainedScenario | supplier-onboarding-repeated-nested-calls | accepted | repeated-nested-calls-natural-order | notSelected | notCatalogReady |
 | Decide a guaranteed loan through two identity checks | retainedScenario | guarantor-loan-embedded-mapped-calls | accepted | repeated-nested-calls-guarantor-verified | notSelected | notCatalogReady |
-| Recover scoped work after a business error | retainedScenario | subprocess-error-recovery | accepted | subprocess-error-propagation-trigger-first | pipeline | notCatalogReady |
+| Recover scoped work after a business error | retainedScenario | subprocess-error-recovery | accepted | subprocess-error-propagation-trigger-first | retainedEvidence | notCatalogReady |
 | Wait for a review window | retainedScenario | timer-then-human-review | accepted | timer-user-task-composition | notSelected | notCatalogReady |
 | Continue a review after a message | retainedScenario | message-then-human-review | accepted | intermediate-catch-message | notSelected | notCatalogReady |
 | Review a confirmed settlement | retainedScenario | message-payload-then-human-review | accepted | message-payload-catch-supplied-scalar | notSelected | notCatalogReady |
 | Review a received shipment manifest | retainedScenario | shipment-manifest-structured-payload | accepted | portable-message-payload-manifest-delivered | notSelected | notCatalogReady |
 | Correlate a settlement confirmation to its waiting case | retainedScenario | message-key-correlated-settlement-review | accepted | message-key-correlation-unique | notSelected | notCatalogReady |
-| Wait for an invoice receipt | retainedScenario | addressed-receive-task | accepted | message-addressed-receive-task | pipeline | guidedJourneyBacked |
-| Wait for a courier to pick up a parcel | retainedScenario | addressless-receive-task | accepted | addressless-receive-task | pipeline | notCatalogReady |
+| Wait for an invoice receipt | retainedScenario | addressed-receive-task | accepted | message-addressed-receive-task | retainedEvidence | guidedJourneyBacked |
+| Wait for a courier to pick up a parcel | retainedScenario | addressless-receive-task | accepted | addressless-receive-task | retainedEvidence | notCatalogReady |
 | Prepare every applicable review track | retainedScenario | inclusive-human-review-tracks | accepted | inclusive-gateway-both-true-a-then-b | notSelected | notCatalogReady |
 | Continue on a message or deadline | retainedScenario | message-timer-event-race | accepted | event-based-gateway-message-wins | notSelected | notCatalogReady |
 | Escalate work that misses a deadline | retainedScenario | interrupting-task-deadline | accepted | activity-boundary-timer-deadline-wins | notSelected | notCatalogReady |
@@ -89,10 +89,10 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Review and rework a request until accepted | retainedScenario | cyclic-human-rework | accepted | user-task-cycle-repeat-rework-exit | notSelected | notCatalogReady |
 | Start approval from an addressed message | retainedScenario | message-start-human-approval | accepted | message-start-event | notSelected | notCatalogReady |
 | Start a scheduled review | retainedScenario | timer-start-human-review | accepted | timer-start-event | notSelected | notCatalogReady |
-| Stop remaining scoped work after termination | retainedScenario | subprocess-termination | accepted | terminate-end-event-trigger-first | notSelected | notCatalogReady |
+| Stop remaining scoped work after termination | retainedScenario | subprocess-termination | rejected | terminate-end-event-trigger-first | notSelected | notCatalogReady |
 | Run a configured integration before review | retainedScenario | configured-effect-human-review | accepted | configured-task | notSelected | notCatalogReady |
-| Retain a mapped service result | retainedScenario | mapped-service-success | accepted | mapped-success-service-task | pipeline | guidedJourneyBacked |
-| Route a mapped business error to review | retainedScenario | mapped-service-boundary-error | accepted | mapped-boundary-error-service-task-caught | pipeline | notCatalogReady |
+| Retain a mapped service result | retainedScenario | mapped-service-success | accepted | mapped-success-service-task | retainedEvidence | guidedJourneyBacked |
+| Route a mapped business error to review | retainedScenario | mapped-service-boundary-error | accepted | mapped-boundary-error-service-task-caught | retainedEvidence | notCatalogReady |
 | Review an ordered batch of documents | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-natural | notSelected | guidedJourneyBacked |
 | Escalate a batch review at its shared deadline | retainedScenario | sequential-batch-review | accepted | sequential-multi-instance-interrupted | notSelected | notCatalogReady |
 | Complete every parallel risk assessment | retainedScenario | parallel-risk-review | accepted | parallel-multi-instance-all | notSelected | guidedJourneyBacked |
@@ -101,21 +101,21 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Review an invoice with its supplied context | retainedScenario | human-review-with-direct-data-input | accepted | activity-data-input-present | notSelected | notCatalogReady |
 | Record an underwriting decision on the application | retainedScenario | human-decision-with-direct-data-output | accepted | activity-data-output-supplied | notSelected | notCatalogReady |
 | Assess a claim and record its decision | retainedScenario | human-assessment-with-direct-data-input-output | accepted | activity-data-input-output-present | notSelected | guidedJourneyBacked |
-| Review an application with repeated reminder Messages | retainedScenario | subprocess-termination | accepted | subscription-boundary-message-repeat | notSelected | guidedJourneyBacked |
-| Remind an application reviewer every second | retainedScenario | subprocess-termination | accepted | subscription-boundary-timer-repeat | notSelected | notCatalogReady |
-| Remind the application review team until its region closes | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-timer-repeat | notSelected | notCatalogReady |
-| Escalate a delayed application review once | retainedScenario | subprocess-termination | accepted | subscription-subprocess-boundary-one-shot-fire | notSelected | notCatalogReady |
-| Continue audit reminders after application review closes | retainedScenario | subprocess-termination | accepted | subscription-message-host-with-child-entry-repeat | notSelected | notCatalogReady |
-| Await an application response during parallel review | retainedScenario | subprocess-termination | accepted | subscription-catch-message-resume | notSelected | notCatalogReady |
-| Await a review deadline beside independent audit | retainedScenario | subprocess-termination | accepted | subscription-catch-timer-resume | notSelected | notCatalogReady |
-| Receive application documents during review | retainedScenario | subprocess-termination | accepted | subscription-receive-task-resume | notSelected | notCatalogReady |
+| Review an application with repeated reminder Messages | retainedScenario | subprocess-termination | rejected | subscription-boundary-message-repeat | notSelected | guidedJourneyBacked |
+| Remind an application reviewer every second | retainedScenario | subprocess-termination | rejected | subscription-boundary-timer-repeat | notSelected | notCatalogReady |
+| Remind the application review team until its region closes | retainedScenario | subprocess-termination | rejected | subscription-subprocess-boundary-timer-repeat | notSelected | notCatalogReady |
+| Escalate a delayed application review once | retainedScenario | subprocess-termination | rejected | subscription-subprocess-boundary-one-shot-fire | notSelected | notCatalogReady |
+| Continue audit reminders after application review closes | retainedScenario | subprocess-termination | rejected | subscription-message-host-with-child-entry-repeat | notSelected | notCatalogReady |
+| Await an application response during parallel review | retainedScenario | subprocess-termination | rejected | subscription-catch-message-resume | notSelected | notCatalogReady |
+| Await a review deadline beside independent audit | retainedScenario | subprocess-termination | rejected | subscription-catch-timer-resume | notSelected | notCatalogReady |
+| Receive application documents during review | retainedScenario | subprocess-termination | rejected | subscription-receive-task-resume | notSelected | notCatalogReady |
 | Cancel a confirmed travel itinerary | retainedScenario | dependency-aware-travel-compensation | accepted | compensation-success-b-c-a | notSelected | guidedJourneyBacked |
 | Withdraw a resource reservation | retainedScenario | transaction-reservation-withdrawal | accepted | transaction-cancellation-retained-active | notSelected | guidedJourneyBacked |
 | Validate and classify an invoice | retainedScenario | invoice-validation-classification | accepted | classification | notSelected | notCatalogReady |
 | Review and rework an invoice | retainedScenario | invoice-validation-rework | accepted | invoice-rework | notSelected | notCatalogReady |
 | Recover from invoice business Errors | retainedScenario | invoice-business-error-recovery | accepted | invoice-business-error-recovery | notSelected | notCatalogReady |
 | Debounce an alarm before paging | retainedScenario | timer-then-human-review | accepted | intermediate-catch-timer-alarm-debounce | notSelected | notCatalogReady |
-| CIB Seven order goods | externalGit | cib-order-goods | rejected | none | notApplicable | notCatalogReady |
+| CIB Seven order goods | externalGit | cib-order-goods | accepted | none | notApplicable | notCatalogReady |
 | CIB Seven review invoice | externalGit | cib-review-invoice | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven invoice receipt version 1 | externalGit | cib-invoice-receipt | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven invoice receipt version 2 | externalGit | cib-invoice-receipt | rejected | none | notApplicable | notCatalogReady |
@@ -187,39 +187,21 @@ This ranking compares external candidates with the reusable mechanisms exercised
 
 | Rank | Reusable mechanism | Clone families | Model files |
 |---:|---|---:|---:|
-| 1 | `diagramInterchange` | 4 | 5 |
-| 2 | `vendorRuntimeMetadata` | 4 | 5 |
-| 3 | `collaborationPresentation` | 3 | 4 |
-| 4 | `taskMetadata` | 3 | 4 |
-| 5 | `lanePresentation` | 2 | 3 |
-| 6 | `scriptTaskExecution` | 2 | 2 |
-| 7 | `resourceAssignment` | 1 | 1 |
-| 8 | `sendTaskDelivery` | 1 | 1 |
-| 9 | `signalEvent` | 1 | 1 |
+| 1 | `taskMetadata` | 3 | 4 |
+| 2 | `lanePresentation` | 2 | 3 |
+| 3 | `scriptTaskExecution` | 2 | 2 |
+| 4 | `terminateEnd` | 1 | 9 |
+| 5 | `resourceAssignment` | 1 | 1 |
+| 6 | `sendTaskDelivery` | 1 | 1 |
+| 7 | `signalEvent` | 1 | 1 |
 
 ## Deduplicated admission blockers
 
-Blockers are ranked by independent clone families first and physical model files second. They are compiler admission facts, not BPMN requirement priorities or conformance percentages.
+Blockers are ranked by independent clone families first and physical model files second. They are the kernel reader's and `Kernel.Admission`'s stable refusal codes, not BPMN requirement priorities or conformance percentages.
 
-| Rank | Compiler mechanism | Clone families | Model files |
+| Rank | Refusal code | Clone families | Model files |
 |---:|---|---:|---:|
-| 1 | `consumeForeignAttribute:bpmn:Process:camunda:historyTimeToLive` | 3 | 4 |
-| 2 | `consumeForeignAttribute:bpmn:UserTask:camunda:dueDate` | 2 | 3 |
-| 3 | `consumeForeignAttribute:bpmn:UserTask:camunda:formKey` | 2 | 3 |
-| 4 | `unsupportedModel:document` | 2 | 3 |
-| 5 | `consumeForeignAttribute:bpmn:BusinessRuleTask:camunda:decisionRef` | 1 | 2 |
-| 6 | `consumeForeignAttribute:bpmn:BusinessRuleTask:camunda:mapDecisionResult` | 1 | 2 |
-| 7 | `consumeForeignAttribute:bpmn:BusinessRuleTask:camunda:resultVariable` | 1 | 2 |
-| 8 | `consumeForeignAttribute:bpmn:Process:camunda:versionTag` | 1 | 2 |
-| 9 | `consumeForeignAttribute:bpmn:StartEvent:camunda:formKey` | 1 | 2 |
-| 10 | `consumeForeignAttribute:bpmn:UserTask:camunda:candidateGroups` | 1 | 2 |
-| 11 | `preserveElementType:bpmn:DataStore:element` | 1 | 2 |
-| 12 | `preserveElementType:bpmn:Message:element` | 1 | 2 |
-| 13 | `consumeForeignAttribute:bpmn:Process:camunda:isStartableInTasklist` | 1 | 1 |
-| 14 | `consumeForeignAttribute:bpmn:StartEvent:camunda:initiator` | 1 | 1 |
-| 15 | `consumeForeignAttribute:bpmn:UserTask:camunda:assignee` | 1 | 1 |
-| 16 | `executeElementType:bpmn:Task:element` | 1 | 1 |
-| 17 | `preserveProperty:bpmn:StartEvent:extensionElements` | 1 | 1 |
-| 18 | `preserveProperty:bpmn:UserTask:extensionElements` | 1 | 1 |
-| 19 | `preserveProperty:bpmn:UserTask:resources` | 1 | 1 |
-| 20 | `unsupportedEncoding:document` | 1 | 1 |
+| 1 | `flow.condition.foreign` | 3 | 4 |
+| 2 | `profile.abnormalScopeEnd.withoutOutflow` | 1 | 9 |
+| 3 | `source.encoding` | 1 | 1 |
+| 4 | `work.user.assignee` | 1 | 1 |

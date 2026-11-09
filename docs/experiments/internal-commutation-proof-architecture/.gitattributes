@@ -1,3 +1,0 @@
-# Preserve hash-bound historical patch bytes, including unified-diff blank context lines.
-census.patch -whitespace
-execution.patch -whitespace

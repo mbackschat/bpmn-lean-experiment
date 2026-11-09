@@ -1,6 +1,6 @@
 # Ordinary embedded Sub-Process completion scenarios
 
-This directory contains the project-authored BPMN fixture and four answer-free schedules for the [ordinary embedded Sub-Process completion specification](../../docs/capsules/EMBEDDED-SUBPROCESS-COMPLETION-SPEC.md).
+This directory contains the project-authored BPMN fixture and four answer-free schedules for the [ordinary embedded Sub-Process completion specification](../../docs/kernel/semantics/SCOPES-SEMANTICS-SPEC.md).
 
 [A then B](a-then-b.scenario.json) and [B then A](b-then-a.scenario.json) start one Process, expose both child User Tasks, complete them in opposite orders, complete the outer `After Scope` User Task, and observe Process completion. The [live-sibling stale schedule](stale-a-while-b-active.scenario.json) proves that refusing completed Child A preserves Child B exactly. The [post-scope stale schedule](stale-a-after-scope.scenario.json) proves that Child A remains stale after the child scope has completed while `After Scope` remains active. Rejections terminate their individual answer-free schedules under the existing scenario outcome contract; together the four prefixes cover the approved lifecycle. The public discriminator is that `After Scope` is absent while either child remains and is the sole active interaction only after both child paths reach their None End Events.
 

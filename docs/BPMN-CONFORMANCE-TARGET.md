@@ -2,7 +2,7 @@
 
 ## Status
 
-Adopted durable target; exact implemented and absent coverage remains in the [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md).
+Adopted durable target; the kernel's implemented and absent coverage is the [kernel status map](kernel/KERNEL-STATUS-MAP.md#row-status)'s.
 
 This document owns the project’s standard-facing goal and the semantic consequences of the official BPMN 2.0.2 conformance model. It is an original project digest of the locally ingested sources described in the [reference corpus](reference/bpmn-2.0.2/README.md).
 
@@ -22,7 +22,7 @@ If the project later grows a graphical modeler, exporter, BPEL mapper, or choreo
 |---|---|---|
 | BPMN conformance | OMG BPMN 2.0.2 | The adapter imports Process diagrams and supports the required metamodel, operational execution semantics, and Activity lifecycle |
 | CIB compatibility | Immutable CIB Seven semantic profile plus differential evidence | Observable behavior agrees with one pinned CIB release, configuration, feature surface, and observation boundary |
-| Temporal correctness | Semantic-core-to-adapter refinement plus replay and integration evidence | Durable Temporal execution adds only permitted hidden work and preserves semantic-core-visible BPMN behavior |
+| Temporal correctness | Kernel-to-host refinement plus replay and integration evidence | Durable Temporal execution adds only permitted hidden work and preserves kernel-visible BPMN behavior |
 
 Agreement with CIB Seven does not by itself prove BPMN conformance. BPMN conformance does not imply CIB-specific jobs, retries, incidents, extensions, or listener behavior. Passing Temporal replay does not establish either semantic claim.
 
@@ -36,7 +36,7 @@ The project therefore maintains three separate views:
 
 | View | Denominator and owner | Effect on work |
 |---|---|---|
-| BPMN Process Execution coverage | Reviewed normative requirements in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), eventually expanded to the complete applicable Process Execution corpus | Drives reusable semantic mechanisms, admission, Lean, the TypeScript core, and Temporal refinement |
+| BPMN Process Execution coverage | Reviewed normative requirements in the [BPMN requirement ledger](BPMN-REQUIREMENT-LEDGER.md), eventually expanded to the complete applicable Process Execution corpus | Drives reusable semantic mechanisms, admission, the Lean and TypeScript kernels, and Temporal refinement |
 | CIB Seven profile coverage | Classified relationships and extension families in the [CIB–BPMN register](CIB-BPMN-RELATION-REGISTER.md) and named profiles | Added on demand when a BPMN ambiguity, selected compatibility promise, host-realization question, or downstream source extension requires it |
 | A12 Workflows adoption | Exact models, delegates, façade calls, and migration dispositions in the [A12 compatibility ledger](research/A12-WORKFLOWS-COMPATIBILITY-LEDGER.md) | Prioritizes lower-layer work and later verifies the separately bounded adoption adapter |
 
@@ -58,7 +58,7 @@ A representative vertical slice may exercise all layers to establish feasibility
 | Normative CMOF files | Supply the abstract metamodel: packages, classes, inheritance, properties, associations, multiplicities, containment, and defaults |
 | Normative XSD/XSLT files | Supply the concrete XML representation and normative XMI-to-BPMN-XML transformation route |
 
-The [requirement-disposition ledger](BPMN-REQUIREMENT-LEDGER.md) must link every reviewed construct to the applicable normative clause, machine-readable element, profile interpretation, capsule or Lean owner, executable case, and evidence status. It is seeded incrementally and must not claim a complete conformance denominator until the applicable corpus has been exhaustively classified.
+The [requirement-disposition ledger](BPMN-REQUIREMENT-LEDGER.md) must link every reviewed construct to the applicable normative clause, machine-readable element, profile interpretation and kernel semantics document; executable cases and evidence status are the [kernel status map](kernel/KERNEL-STATUS-MAP.md#row-status)'s. It is seeded incrementally and must not claim a complete conformance denominator until the applicable corpus has been exhaustively classified.
 
 [The BPMN XML ingestion decision](BPMN-XML-INGESTION-DECISION.md#normative-artifacts-and-semantic-authority) owns the operational use of these artifact classes: CMOF-derived metamodel facts constrain structural admission, XSD/XSLT constrain interchange, and prose, figures, and issue dispositions constrain executable semantics. None of the machine-readable artifacts alone defines token behavior or Activity lifecycle.
 
@@ -120,7 +120,7 @@ The highest-risk formalization areas include:
 - logical time, fairness, scheduler choices, and divergence, which the prose does not fully operationalize;
 - transaction, job, retry, incident, listener, and persistence behavior that belongs to the CIB profile rather than bare BPMN execution conformance.
 
-BPMN expression support, one project-owned language profile, and CIB JUEL compatibility are separate claims. BPMN supplies `Expression`/`FormalExpression`, definition-level and expression-level language selection, and BPMN rules that consume expression results; it does not make JUEL part of BPMN 2.0.2 merely because the target corpus uses it. The first standards profile selects the dependency-free [Simple Boolean language](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) by an explicit immutable URI and rejects omitted language because BPMN's default remains XPath. Its complete bounded grammar and [Exclusive Gateway consumer](capsules/EXCLUSIVE-GATEWAY-CONDITION-SPEC.md) close one exact `FormalExpression` and conditional-routing slice in Lean, TypeScript, and Temporal while XPath, JUEL, and the general expression family remain unsupported. A separately selected CIB profile may later delegate JUEL parsing and evaluation to the pinned runtime, but it must retain the same project ownership of visible context, evaluation point, required result, failure consequence, and consuming transition.
+BPMN expression support, one project-owned language profile, and CIB JUEL compatibility are separate claims. BPMN supplies `Expression`/`FormalExpression`, definition-level and expression-level language selection, and BPMN rules that consume expression results; it does not make JUEL part of BPMN 2.0.2 merely because the target corpus uses it. The first standards profile selects the dependency-free [Simple Boolean language](SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) by an explicit immutable URI and rejects omitted language because BPMN's default remains XPath. Its complete bounded grammar and [Exclusive Gateway consumer](kernel/semantics/FLOW-SEMANTICS-SPEC.md) close one exact `FormalExpression` and conditional-routing slice while XPath, JUEL, and the general expression family remain unsupported. From M2 a read-only JUEL subset written in Lean and transcribed to TypeScript grows by levels inside the kernel step ([architecture](kernel/ARCHITECTURE-SPEC.md#runtime-state-and-step)); it retains the same project ownership of visible context, evaluation point, required result, failure consequence, and consuming transition.
 
 The converted standard also exposes stale internal cross-references: the conformance and `isExecutable` text point to Clause 14 for execution semantics, while BPMN 2.0.2 places execution semantics in Clause 13 and uses Clause 14 for WS-BPEL mapping. OMG issue `BPMN21-445` separately confirms that the conformance sub-clause references in Section 2.1 are shifted by one. Treat these as source issues to record, not as authority to formalize the wrong clause.
 
@@ -128,7 +128,7 @@ Other specification conflicts that need explicit ledger decisions include `Impor
 
 The Markdown conversion is a search aid rather than a sole normative source. It lost the Task section heading, damaged part of the Complex Gateway table, and cannot preserve all lifecycle information carried by diagrams. Semantic work must cross-check the original PDF, normative machine-readable artifacts, and relevant figures.
 
-OMG maintains a live BPMN 2.0.2 open-issues view at `https://issues.omg.org/issues/spec/BPMN/2.0.2`. It includes execution-relevant ambiguities such as inclusive-gateway synchronization, multiple start events, multi-instance wording, event classification, validation rules, activity conditional flows, cancellation, and compensation. Each affected semantic capsule must consult and record applicable issue dispositions; the base PDF alone is not a sufficient ambiguity audit.
+OMG maintains a live BPMN 2.0.2 open-issues view at `https://issues.omg.org/issues/spec/BPMN/2.0.2`. It includes execution-relevant ambiguities such as inclusive-gateway synchronization, multiple start events, multi-instance wording, event classification, validation rules, activity conditional flows, cancellation, and compensation. Each affected kernel semantics document must consult and record applicable issue dispositions; the base PDF alone is not a sufficient ambiguity audit.
 
 ## Claim discipline
 

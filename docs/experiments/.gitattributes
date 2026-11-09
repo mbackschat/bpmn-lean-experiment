@@ -1,2 +1,0 @@
-# Retained patches stay byte-identical to their recorded hashes; blank context lines are a single space.
-*.patch -whitespace

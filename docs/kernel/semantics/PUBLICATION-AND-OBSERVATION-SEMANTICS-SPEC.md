@@ -36,7 +36,7 @@ This document owns what one input commits and what is observed of it: the outcom
 
 - Every subscription attached to an Activity occurrence names it (`OpenItem.attachedTo`), and its owner is the scope occurrence containing the Activity. Ending or cancelling the Activity occurrence, by whatever route, disarms everything attached to it, reservations included ([root mechanism][aoo-root], [ownership account][aoo-account], [required][aoo-required]).
 - Removing a region removes every token, open item, occurrence, slot entry, variable set and child scope occurrence inside it, so no retained occurrence or subscription references a removed one ([regional preparation][reg-contract]).
-- This is a project representation with no CIB relation ([CIB boundary][aoo-cib]). The reviewed decision to keep a separate Activity record only for an Activity that owns state beyond its body ([decisions][aoo-decisions]) is superseded by the flat state of the [proposal](../../LEAN-KERNEL-REWRITE-PROPOSAL.md#runtime-state-and-step), in which every flow-node occurrence has one record.
+- This is a project representation with no CIB relation ([CIB boundary][aoo-cib]). The reviewed decision to keep a separate Activity record only for an Activity that owns state beyond its body ([decisions][aoo-decisions]) is superseded by the flat state of the [proposal](../ARCHITECTURE-SPEC.md#runtime-state-and-step), in which every flow-node occurrence has one record.
 
 ### State observation
 
@@ -51,7 +51,7 @@ This document owns what one input commits and what is observed of it: the outcom
 
 ### Runtime invariants
 
-- The reviewed runtime contract was one executable well-formedness predicate over the whole state plus separate two-state monotonicity relations ([contract][rsi-contract], [exclusions][rsi-exclusions], [well-formedness][esi-wf]). The [proposal](../../LEAN-KERNEL-REWRITE-PROPOSAL.md#runtime-state-and-step) replaces it: invariants live per feature in `Laws.<F>`, with no global well-formedness function. The facts that carry over: a not-started instance holds nothing; a completed or cancelled one holds no live occurrence or token; every token, open item and occurrence names a live scope occurrence; identities are unique per family; counters and logical time never decrease.
+- The reviewed runtime contract was one executable well-formedness predicate over the whole state plus separate two-state monotonicity relations ([contract][rsi-contract], [exclusions][rsi-exclusions], [well-formedness][esi-wf]). The [proposal](../ARCHITECTURE-SPEC.md#runtime-state-and-step) replaces it: invariants live per feature in `Laws.<F>`, with no global well-formedness function. The facts that carry over: a not-started instance holds nothing; a completed or cancelled one holds no live occurrence or token; every token, open item and occurrence names a live scope occurrence; identities are unique per family; counters and logical time never decrease.
 
 ### Host publication
 

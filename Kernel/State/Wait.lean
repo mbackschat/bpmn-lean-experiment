@@ -41,7 +41,7 @@ structure MessageWaitDetail where
   payload : Bool := false
   /-- The correlation keys a delivery must match: such a wait is published as a definition-scoped correlated
   publication, never as a directly addressed delivery
-  ([specification](../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#source-checked-graph-and-semantic-process-contract)). -/
+  ([specification](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md)). -/
   criteria : List String := []
   deriving Repr
 

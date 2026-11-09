@@ -110,10 +110,10 @@ def payloadBindings (ctx : Ctx) (nowMs : Nat) (outputs : List Mapping) (payload 
 
 /-! ## Correlation
 
-Message key correlation as the [specification](../../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md) bounds it: a
+Message key correlation as the [specification](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md) bounds it: a
 criterion names one correlation key and the expression its single property's value is bound to in the subscription's
 scope; the delivered value is the Message payload's. Both must be non-empty Strings, compared by exact equality
-([exact subset](../../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#exact-expression-and-value-subset)), and the
+([exact subset](../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md)), and the
 criterion is evaluated when a delivery is matched, never when the subscription opens, so the current Property value
 decides. -/
 

@@ -61,4 +61,4 @@ Each registered release acceptance composes its real Temporal-backed showcase wi
 ./scripts/pnpm.sh run test:release:mue-preview-beta
 ```
 
-This lane is intentionally absent from `scripts/verify.sh` and Product 1 feedback loops. A UI-quality failure does not slow or redefine semantic work, and semantic verification does not need a browser. The [three-level verification policy](../../docs/TESTING-SPEC.md#three-level-verification-policy) defines focused commit checks, exact pre-push workflow checks, and milestone/tag gates.
+This lane is intentionally absent from `scripts/verify.sh` and Product 1 feedback loops. A UI-quality failure does not slow or redefine semantic work, and semantic verification does not need a browser. The [three-level verification policy](../../docs/kernel/ENGINEERING-POLICY.md) defines focused commit checks, exact pre-push workflow checks, and milestone/tag gates.

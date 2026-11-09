@@ -6,7 +6,7 @@
 
 The implemented [shared-persistence addendum](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) preserves the same lifecycle and compare-and-set rules in PostgreSQL and moves autonomous reconciliation into one bounded lease-fenced Schedule family. API replicas share the exact retained target and never reconcile it during readiness or request-wide startup. The SQLite transaction and startup passages below describe local mode only.
 
-The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Timer Start Event specification](capsules/TIMER-START-EVENT-SPEC.md) owns semantic and host-refinement meaning, and [PLAN.md](PLAN.md) owns sequencing.
+The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Timer Start Event specification](kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md) owns semantic and host-refinement meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
 ## Product boundary
 

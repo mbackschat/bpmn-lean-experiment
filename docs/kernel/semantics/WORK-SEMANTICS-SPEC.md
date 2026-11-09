@@ -63,7 +63,7 @@ What an Activity does once its occurrence has begun. [`Kernel.Feature.Work`](../
 
 ### Script and Business Rule Tasks
 
-- Script and Business Rule work is refused (`work.script`, `work.rule`). The owner decisions in the [proposal](../../LEAN-KERNEL-REWRITE-PROPOSAL.md#owner-decisions-on-the-path) direct PC-AUTO-05/06 (JavaScript in the TypeScript host's `vm`, result recorded like an effect result) and PC-AUTO-07/08 (DMN decision tables evaluated in the kernel). A Business Rule Task with a delegate implementation runs as `service` work.
+- Script and Business Rule work is refused (`work.script`, `work.rule`). The owner decisions in the [proposal](../ARCHITECTURE-SPEC.md#owner-decisions-on-the-path) direct PC-AUTO-05/06 (JavaScript in the TypeScript host's `vm`, result recorded like an effect result) and PC-AUTO-07/08 (DMN decision tables evaluated in the kernel). A Business Rule Task with a delegate implementation runs as `service` work.
 
 ### Call Activities
 

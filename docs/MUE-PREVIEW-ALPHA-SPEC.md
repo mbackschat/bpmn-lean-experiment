@@ -2,11 +2,11 @@
 
 ## Status
 
-Implemented, independently closure-reviewed, and evidence-closed. The exact implemented and absent platform boundary is maintained by [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), the hosting evidence boundary by [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), and the governed review history is retained in the receipt below.
+Implemented, independently closure-reviewed, and evidence-closed. The exact implemented and absent platform boundary is maintained by [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), the hosting evidence boundary by [kernel status map](kernel/KERNEL-STATUS-MAP.md), and the governed review history is retained in the receipt below.
 
 ## Implemented boundary
 
-MUE Preview Alpha is a polished Product 2 browser journey over the exact natural and interrupted [Sequential Multi-Instance account](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md). That account owns the BPMN meaning, source, checked representation, runtime state, `openMultiInstances` observation, Temporal deadline scheduler, retained scenarios, and exact natural and interrupting outcomes. This specification owns only the product command, decoding, presentation, and live-showcase contracts needed to let a user see those implemented facts.
+MUE Preview Alpha is a polished Product 2 browser journey over the exact natural and interrupted [Sequential Multi-Instance account](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md). That account owns the BPMN meaning, source, checked representation, runtime state, `openMultiInstances` observation, Temporal deadline scheduler, retained scenarios, and exact natural and interrupting outcomes. This specification owns only the product command, decoding, presentation, and live-showcase contracts needed to let a user see those implemented facts.
 
 Alpha's Product 2 direct-start boundary carries the exact canonical `StartProcess.initialVariables`, including the retained model's required three-item input collection. Product 2's strict execution-publication decoder accepts the public `openMultiInstances` shape. A terminal publication contains the final state and transition records but no prior state snapshots, so neither Product 2 nor the browser may reconstruct progress after the fact.
 
@@ -36,7 +36,7 @@ A different start-data value creates a different direct-start intent. Mutation a
 
 ## Exact progress-consumer contract
 
-Product 2's execution-publication contract includes the exact public `ActivityOccurrenceId`, `OpenSequentialMultiInstanceIteration`, and `OpenSequentialMultiInstance` shapes owned by the [Sequential Multi-Instance public contract](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md#public-contract). `StateObservation.openMultiInstances` remains optional because existing programs omit it and the exact Sequential Multi-Instance program carries it in every state, including an empty array after either terminal route.
+Product 2's execution-publication contract includes the exact public `ActivityOccurrenceId`, `OpenSequentialMultiInstanceIteration`, and `OpenSequentialMultiInstance` shapes owned by the [Sequential Multi-Instance public contract](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md). `StateObservation.openMultiInstances` remains optional because existing programs omit it and the exact Sequential Multi-Instance program carries it in every state, including an empty array after either terminal route.
 
 The strict decoder validates every nested key, wire string, safe integer, mode, identity, variable binding, canonical order, and the published count equations. It also requires each nested Process-instance identity to equal the containing state identity. A schema-derived executable guard compares the public state properties with the platform decoder's accepted key set, so a future producer field cannot repeat the current copied-contract drift silently.
 
@@ -105,7 +105,7 @@ Focused gates are the engine API, engine gateway, platform contracts, Definition
 
 ## Same-change owners and reopen conditions
 
-The current producers and consumers are bound by the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary), [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md), [architecture](ARCHITECTURE.md), [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md), [testing specification](TESTING-SPEC.md), showcase registry, and web source map. The Sequential Multi-Instance specification changes only if implementation evidence or its already-owned Product 2 consumer statement changes; its semantic rules do not move here.
+The current producers and consumers are bound by the [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md#the-engine-boundary), [UI design specification](BPM-PLATFORM-UI-DESIGN-SPEC.md), [architecture](ARCHITECTURE.md), [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [kernel status map](kernel/KERNEL-STATUS-MAP.md), [testing specification](kernel/ENGINEERING-POLICY.md#verification), showcase registry, and web source map. The Sequential Multi-Instance specification changes only if implementation evidence or its already-owned Product 2 consumer statement changes; its semantic rules do not move here.
 
 Reopen this specification if Product 1 changes the start variable domain, `openMultiInstances` shape or presence rule, direct-start recovery protocol, current-state publication boundary, User Task command identity, boundary deadline scheduling, or if Alpha requires a durable snapshot history, a production automated actor, metadata-free Work visibility, or a private API.
 
@@ -115,7 +115,7 @@ The production-backed showcase package and root release graph bind the exact ret
 
 The implementation adds no durable progress history, interactive metadata-free Work task, private control API, mock semantic response, additional semantic profile, broader Multi-Instance variant, or MUE-complete claim. Browser-session samples remain explicitly transient, and the other seven MUE content IDs remain open.
 
-The [capsule-cost ledger](CAPSULE-COST-LEDGER.md) owns the reproducible implementation range and comparison. Alpha reuses the closed Sequential Multi-Instance, confirmed-start, execution-publication, Operations, UI-kit, Workflow-chain, and replay mechanisms. Each later breadth slice stays with its named semantic or hosting owner and opens a capsule only for a new proposition, while one Beta integration owner carries the coherent catalog and Product 2 journey.
+The [capsule-cost ledger](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/CAPSULE-COST-LEDGER.md) owns the reproducible implementation range and comparison. Alpha reuses the closed Sequential Multi-Instance, confirmed-start, execution-publication, Operations, UI-kit, Workflow-chain, and replay mechanisms. Each later breadth slice stays with its named semantic or hosting owner and opens a capsule only for a new proposition, while one Beta integration owner carries the coherent catalog and Product 2 journey.
 
 ## Independent cold-review receipt
 

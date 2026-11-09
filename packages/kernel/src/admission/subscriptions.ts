@@ -101,7 +101,7 @@ function criterionValue(subscription: Subscription, trigger: MessageTrigger, cri
 }
 
 /**
- * A correlated catch, as the [specification](../../../../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#required-optional-and-excluded-scope)
+ * A correlated catch, as the [specification](../../../../docs/kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md)
  * bounds it: one key bound to a variable, an Operation channel, and no output, since its payload is never written.
  */
 function correlatedCatch(subscription: Subscription, trigger: MessageTrigger): string | null {

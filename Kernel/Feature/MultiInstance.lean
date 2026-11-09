@@ -11,8 +11,8 @@ occurrence of its own holding its input data item, as an occurrence of the Activ
 like any other. A parallel Activity begins every instance at once, a sequential one the next after each completion
 ([BPMN 2.0.2 §13.3.7](../../docs/reference/bpmn-2.0.2/README.md)).
 
-The resolutions of the [parallel](../../docs/capsules/PARALLEL-MULTI-INSTANCE-SPEC.md#normative-account-and-selected-resolutions)
-and [sequential](../../docs/capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md#stable-semantic-rules) Multi-Instance accounts:
+The resolutions of the [parallel](../../docs/kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md)
+and [sequential](../../docs/kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md) Multi-Instance accounts:
 an instance's completion submits exactly its output data item, which fills the instance's slot whatever the
 completion order; the output collection, in item order, is written only when every slot is filled (`PMI-FINISH-01`);
 a completion condition that holds before then closes the Activity, ending the remaining instances, with no output

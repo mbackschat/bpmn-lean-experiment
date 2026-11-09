@@ -1,6 +1,6 @@
 # Embedded Sub-Process Error propagation scenarios
 
-This directory contains the project-authored BPMN fixture and three answer-free schedules for the [direct-parent Error propagation capsule](../../docs/capsules/SUBPROCESS-ERROR-PROPAGATION-SPEC.md).
+This directory contains the project-authored BPMN fixture and three answer-free schedules for the [direct-parent Error propagation semantics](../../docs/kernel/semantics/PROPAGATION-SEMANTICS-SPEC.md).
 
 [Trigger first](trigger-first.scenario.json) completes `Trigger Error` while `Sibling Work` remains active, observes only `Recover`, and completes the recovered route. [Sibling first](sibling-first.scenario.json) reaches the sibling None End before completing `Trigger Error`, then observes the same public recovery result and completes it. The [stale sibling schedule](stale-sibling-after-error.scenario.json) completes `Trigger Error` and then proves that the canceled Sibling Work occurrence is rejected without changing the committed recovery state. A rejected command terminates its answer-free schedule under the existing scenario outcome contract.
 

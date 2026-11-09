@@ -8,9 +8,9 @@ Maintained regeneration guide. The rendered images are explanatory publication a
 
 This guide records the exact content, visual grammar, source owners, snapshot boundary, and regeneration procedure for the project infographics embedded in the root [README](../README.md). It exists so a later refinement can change a prompt or layout without reconstructing factual input from an old image.
 
-Durable architectural statements must be refreshed from [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the [Semantic Process IL specification](SEMANTIC-PROCESS-IL-SPEC.md), and [TESTING-SPEC.md](TESTING-SPEC.md). Exact current implementation status must be refreshed from the detail maps routed by [`implementation-status-router`](IMPLEMENTATION-MAP.md), and current sequencing from [PLAN.md](PLAN.md). The images do not replace those owners.
+Durable architectural statements must be refreshed from [PROJECT-DESIGN.md](PROJECT-DESIGN.md), the [kernel architecture specification](kernel/ARCHITECTURE-SPEC.md), the [kernel IL specification](kernel/IL-SPEC.md) and the [engineering policy](kernel/ENGINEERING-POLICY.md#contracts-and-evidence). Exact current implementation status must be refreshed from the [kernel status map](kernel/KERNEL-STATUS-MAP.md) and the [BPM platform implementation map](BPM-PLATFORM-IMPLEMENTATION-MAP.md), and current sequencing from [PLAN.md](PLAN.md). The images do not replace those owners.
 
-Apply [the top-level README audience contract](DOC-DISCIPLINE.md#top-level-readme-audience) when writing or revising explanatory copy. Readers should understand the practical value and component roles without prior Lean knowledge. This writing requirement does not itself require regenerating existing assets.
+Apply [the top-level README audience contract](kernel/ENGINEERING-POLICY.md#documentation) when writing or revising explanatory copy. Readers should understand the practical value and component roles without prior Lean knowledge. This writing requirement does not itself require regenerating existing assets.
 
 ## Skill and file ownership
 
@@ -26,10 +26,14 @@ The numbered labels in [the architecture's product division](PROJECT-DESIGN.md#p
 
 | Asset | README purpose | Dominant layout | Status treatment | Raster |
 |---|---|---|---|---|
-| [why-lean-helps](assets/project-infographics/why-lean-helps.avif) | Explain why formal semantics materially improve a production BPMN engine | Vertical transformation flow with an evidence orbit | Durable architecture, commit-stamped | 1024 × 1536 AVIF |
-| [correctness-stack](assets/project-infographics/correctness-stack.avif) | Explain how authority, proof, independent implementation, and executable evidence compose | Layered stack with one question per layer | Durable architecture, commit-stamped | 1024 × 1536 AVIF |
+| [why-lean-helps](assets/project-infographics/why-lean-helps.avif) | Explain why formal semantics materially improve a production BPMN engine | Vertical transformation flow with an evidence orbit | Pre-rewrite architecture, commit-stamped | 1024 × 1536 AVIF |
+| [correctness-stack](assets/project-infographics/correctness-stack.avif) | Explain how authority, proof, independent implementation, and executable evidence compose | Layered stack with one question per layer | Pre-rewrite architecture, commit-stamped | 1024 × 1536 AVIF |
 | [BPM platform vision](assets/project-infographics/product-2-vision.avif) | Show the BPM platform operating journey and which capabilities are implemented, bounded, or still ahead | Journey-card catalog with a maturity ribbon | Explicit implementation snapshot | 1024 × 1536 AVIF |
-| [BPMN execution on Temporal](assets/project-infographics/bpmn-execution-on-temporal.avif) | Show the deployed system around one admitted BPMN execution and locate source storage, compilation, the interpreter, semantic state, Temporal durability, Activities, and platform projections | Distributed runtime topology with explicit process and persistence boundaries | Durable architecture, commit-stamped | 1024 × 1536 AVIF |
+| [BPMN execution on Temporal](assets/project-infographics/bpmn-execution-on-temporal.avif) | Show the deployed system around one admitted BPMN execution and locate source storage, compilation, the interpreter, semantic state, Temporal durability, Activities, and platform projections | Distributed runtime topology with explicit process and persistence boundaries | Pre-rewrite architecture, commit-stamped | 1024 × 1536 AVIF |
+
+### Pre-rewrite content
+
+Three images (why-lean-helps, correctness-stack, BPMN execution on Temporal) still show the engine the kernel rewrite replaced: a checked BPMN graph lowered to the Semantic Process IL, a Lean reference interpreter with per-variant proofs, a TypeScript semantic core and a Temporal adapter. The current pipeline reads BPMN XML directly into the kernel IL, admits it against a profile, and executes it in the Lean kernel and its TypeScript transcription inside one generic Temporal host ([kernel architecture](kernel/ARCHITECTURE-SPEC.md)). Captions and alt text describing those images must say they depict the pre-rewrite engine until their next content refresh, which replaces the old terms with the kernel's. The exact-copy sections below stay the faithful record of what the current renders show.
 
 ## Initial source snapshot
 
@@ -54,9 +58,9 @@ The BPM platform progress and Temporal runtime refreshes use committed source `1
 - Heavy dark navy outlines, rounded cards, restrained soft shadows, compact sans-serif typography, and small flat technical icons.
 - Mint is the title accent and primary success color. Sky blue denotes source and structure, lavender denotes formal semantics, yellow denotes evidence or caution, coral denotes a boundary or absent claim, and neutral gray denotes planned work.
 - Prefer short declarative labels over prose. Keep every relationship directional and write it as source, verb, target.
-- Use exact project terminology: `checked BPMN graph`, `Semantic Process IL`, `Lean reference interpreter`, `TypeScript semantic core`, `Temporal adapter`, `published engine contract`, and `BPM platform` for new public copy. Existing exact-copy sections retain their historical wording until the corresponding image changes.
+- Use exact project terminology: `kernel reader`, `kernel IL`, `kernel admission`, `Lean kernel`, `TypeScript kernel`, `Temporal host`, `published engine contract`, and `BPM platform` for new public copy. Existing exact-copy sections retain their historical wording until the corresponding image changes.
 - Do not use a combined support percentage. BPMN requirement coverage, selected CIB compatibility, executable-corpus reach, and BPM platform milestone progress remain separate denominators.
-- Do not imply that Lean-to-TypeScript agreement selects BPMN meaning independently. Both are independent transcriptions of one reviewed account.
+- Do not imply that Lean-to-TypeScript agreement selects BPMN meaning independently. The TypeScript kernel is a transcription of the Lean kernel; their agreement is a transcription check.
 - Do not imply that Temporal Event History, host retries, a database row, or the platform defines BPMN state.
 - Set all infographic text from the exact copy below. Do not let the image model invent features, percentages, metrics, versions, or claims.
 
@@ -104,10 +108,9 @@ Show that Lean moves the semantic root from prose into executable definitions, u
 
 - [PROJECT-DESIGN.md, Why Lean](PROJECT-DESIGN.md#why-lean)
 - [PROJECT-DESIGN.md, Two kinds of independence](PROJECT-DESIGN.md#two-kinds-of-independence)
-- [Semantic Process IL decision](SEMANTIC-PROCESS-IL-SPEC.md#decision)
-- [Semantic Process IL Lean obligations](SEMANTIC-PROCESS-IL-SPEC.md#lean-specification-and-proof-obligations)
-- [`implementation-status-owner:ENGINE-RUNTIME-PROOF`](ENGINE-RUNTIME-AND-PROOF-IMPLEMENTATION-MAP.md#current-boundary)
-- [`implementation-status-owner:ASSURANCE-ADOPTION`](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md#current-boundary)
+- [Kernel IL specification](kernel/IL-SPEC.md)
+- [Kernel Lean assurance lane](kernel/ARCHITECTURE-SPEC.md#lean-assurance-lane)
+- [Kernel status map, open proof lanes](kernel/KERNEL-STATUS-MAP.md#open-proof-lanes)
 
 ## Infographic 2: The project's correctness stack
 
@@ -147,9 +150,8 @@ Show that no single proof or test establishes whole-system correctness. Each lay
 - [PROJECT-DESIGN.md, Authority model](PROJECT-DESIGN.md#authority-model)
 - [PROJECT-DESIGN.md, Component boundaries](PROJECT-DESIGN.md#component-boundaries)
 - [PROJECT-DESIGN.md, Two kinds of independence](PROJECT-DESIGN.md#two-kinds-of-independence)
-- [TESTING-SPEC.md, Evidence lanes](SEMANTIC-VERIFICATION-POLICY.md#evidence-lanes)
-- [Semantic Process IL independence](SEMANTIC-PROCESS-IL-SPEC.md#independence)
-- [`implementation-status-owner:ASSURANCE-ADOPTION`](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md#implemented)
+- [Engineering policy, contracts and evidence](kernel/ENGINEERING-POLICY.md#contracts-and-evidence)
+- [Kernel status map](kernel/KERNEL-STATUS-MAP.md#assurance-and-adoption)
 
 ## Infographic 3: BPM platform vision and progress
 
@@ -199,8 +201,8 @@ Show the BPM platform as one coherent operator and worker journey over the engin
 - [PROJECT-DESIGN.md, MUE delivery checkpoints](PROJECT-DESIGN.md#mue-delivery-checkpoints)
 - [PROJECT-DESIGN.md, What the platform may consume](PROJECT-DESIGN.md#what-the-platform-may-consume)
 - [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md#current-boundary)
-- [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md#current-boundary)
-- [PLAN.md, Current checkpoint](PLAN.md#current-checkpoint)
+- [Kernel status map](kernel/KERNEL-STATUS-MAP.md#row-status)
+- [PLAN.md, Exact resume point](PLAN.md#exact-resume-point)
 
 ## Infographic 4: How BPMN executes across Temporal
 
@@ -275,7 +277,7 @@ Place the two clauses in one paired, color-coded callout below the runtime topol
 ### Deciding sources
 
 - [PROJECT-DESIGN.md, Interpreter architecture](PROJECT-DESIGN.md#interpreter-architecture)
-- [ARCHITECTURE.md, Temporal adapter subsystem](ARCHITECTURE.md#temporal-adapter-subsystem)
+- [ARCHITECTURE.md, Engine packages](ARCHITECTURE.md#engine-packages)
 - [ARCHITECTURE.md, Applications](ARCHITECTURE.md#applications)
 - [Evaluation Compose topology](../compose.yaml)
 - [Evaluation runtime images](../Dockerfile)
@@ -284,7 +286,7 @@ Place the two clauses in one paired, color-coded callout below the runtime topol
 - [Temporal Process lifecycle specification, Selected lifecycle](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#selected-lifecycle)
 - [Temporal Process lifecycle specification, Workflow-chain production contract](TEMPORAL-PROCESS-LIFECYCLE-SPEC.md#workflow-chain-production-contract)
 - [Temporal execution and TypeScript SDK research](research/TEMPORAL-EXECUTION-RESEARCH.md#executive-model)
-- [`implementation-status-owner:TEMPORAL-HOSTING`](TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md#current-boundary)
+- [Kernel status map](kernel/KERNEL-STATUS-MAP.md#row-status)
 - [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md#current-boundary)
 
 ## Prompt construction
@@ -303,7 +305,7 @@ When the generator cannot render all exact copy legibly, simplify the visual dec
 ## Regeneration workflow
 
 1. Start from a committed source snapshot and record its date and commit alongside the asset's current content, following the [release-candidate refresh source](#release-candidate-refresh-source).
-2. Reopen every deciding source for the asset. For BPM platform progress, recheck every status mark against the platform and Temporal detail maps and the current PLAN checkpoint.
+2. Reopen every deciding source for the asset. For BPM platform progress, recheck every status mark against the platform implementation map, the kernel status map and the current PLAN resume point.
 3. Update exact copy in this guide before changing a rendered image.
 4. Generate one raster asset per request using the maintained prompt. Do not batch several infographics into one generated canvas.
 5. Inspect the full-resolution image for text fidelity, semantic arrows, legend consistency, contrast, clipping, and false visual equivalence.

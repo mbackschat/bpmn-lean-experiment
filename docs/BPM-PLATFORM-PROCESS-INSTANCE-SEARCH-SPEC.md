@@ -77,7 +77,7 @@ Each row stores:
 
 The repository enforces one Process-instance identity globally. Re-recording the byte-equivalent public fact is idempotent. Reusing the same Process-instance identity with a changed definition, source, profile, or capabilities is an integrity failure. The full definition snapshot is decoded and compared on every read rather than trusting filter columns independently.
 
-The current [database test boundary](TESTING-SPEC.md#three-level-verification-policy) assigns sequential exact retries and changed-identity refusal to local SQLite, and same-identity races to shared PostgreSQL. Concurrent byte-equivalent PostgreSQL records resolve idempotently to one row and one ordinal. Concurrent conflicting PostgreSQL records against an initially absent identity produce one winner and one classified integrity failure, leaving the winner byte-identical and unchanged. The original M2 SQLite race evidence belongs to its historical closure target; it no longer selects a concurrent local deployment or test contract.
+The current [database test boundary](kernel/ENGINEERING-POLICY.md#verification) assigns sequential exact retries and changed-identity refusal to local SQLite, and same-identity races to shared PostgreSQL. Concurrent byte-equivalent PostgreSQL records resolve idempotently to one row and one ordinal. Concurrent conflicting PostgreSQL records against an initially absent identity produce one winner and one classified integrity failure, leaving the winner byte-identical and unchanged. The original M2 SQLite race evidence belongs to its historical closure target; it no longer selects a concurrent local deployment or test contract.
 
 The index is not an engine source of truth and is not a transition-record projection. It is an append-only Product 2 registry of confirmed starts. Deleting or corrupting its database loses or blocks search but does not alter an engine Process. Rebuild from engine Event History or Temporal Visibility is prohibited. Backfill of starts that predate this feature is excluded.
 
@@ -154,7 +154,7 @@ Excluded:
 
 ## Acceptance evidence
 
-The maintained acceptance boundary is the focused package gates, both platform harness type gates, Product 1/Product 2 and Temporal boundary guards, source hygiene, the real three-producer live witness, headless Chromium acceptance, and the complete repository and M2 showcase gates. The live and browser witnesses are registered under `showcase/m2-process-instance-search/`; [TESTING-SPEC.md](TESTING-SPEC.md) owns their execution procedure, the [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns the exact current evidence boundary, and [PLAN.md](PLAN.md) owns the latest measured result.
+The maintained acceptance boundary is the focused package gates, both platform harness type gates, Product 1/Product 2 and Temporal boundary guards, source hygiene, the real three-producer live witness, headless Chromium acceptance, and the complete repository and M2 showcase gates. The live and browser witnesses are registered under `showcase/m2-process-instance-search/`; [TESTING-SPEC.md](kernel/ENGINEERING-POLICY.md#verification) owns their execution procedure, the [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md) owns the exact current evidence boundary, and [PLAN.md](PLAN.md) owns the latest measured result.
 
 ## Common-mode risks and nearest unsupported claim
 

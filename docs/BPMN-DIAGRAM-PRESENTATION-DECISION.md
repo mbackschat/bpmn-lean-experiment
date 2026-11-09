@@ -2,7 +2,7 @@
 
 ## Status
 
-**Implemented.** This decision selects embedded BPMN DI plus an exact-source-digest-bound generated presentation sidecar for BPM platform diagrams. The context-cold information-architecture reviewer approved the final corrected contract at `c3f6671`. The implementation is a non-semantic Product 2 increment covered by the definition-projection foundation, Definitions, public-contract, server, web, package-boundary, source-hygiene, and platform-harness gates. It does not change BPMN source admission, checked Process meaning, Semantic Process IL, runtime state, or Temporal execution.
+**Implemented.** This decision selects embedded BPMN DI plus an exact-source-digest-bound generated presentation sidecar for BPM platform diagrams. The context-cold information-architecture reviewer approved the final corrected contract at `c3f6671`. The implementation is a non-semantic Product 2 increment covered by the definition-projection foundation, Definitions, public-contract, server, web, package-boundary, source-hygiene, and platform-harness gates. It does not change BPMN source admission, the kernel IL, runtime state, or Temporal execution.
 
 The implemented [shared-persistence addendum](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) stores the same Definitions-owned sidecar identity, exact DI bytes, provenance, and insert-or-compare result in PostgreSQL. Two API replicas retrieve the same retained presentation for the same exact source. Source-first resolution, corruption refusal, and the Product 2-only parser boundary remain unchanged.
 
@@ -10,7 +10,7 @@ The implemented [shared-persistence addendum](BPM-PLATFORM-SHARED-PERSISTENCE-AN
 
 The execution pipeline correctly admits BPMN source that has no BPMN DI because diagram coordinates are not execution semantics. The M3 browser review nevertheless showed that a registered human-work model without DI produces an empty presentation and leaves users unable to understand the Process they are starting or the task they are completing.
 
-Adding coordinates to the admitted XML would change exact source bytes merely to satisfy a downstream presentation concern. Drawing a second project-specific graph from Semantic Process IL would duplicate BPMN presentation semantics and lose compatibility with the selected `bpmn-js` viewer. Generating layout on every browser render would make presentation nondeterministic, move provenance into the client, and repeat work.
+Adding coordinates to the admitted XML would change exact source bytes merely to satisfy a downstream presentation concern. Drawing a second project-specific graph from the kernel IL would duplicate BPMN presentation semantics and lose compatibility with the selected `bpmn-js` viewer. Generating layout on every browser render would make presentation nondeterministic, move provenance into the client, and repeat work.
 
 ## Decision
 
@@ -21,7 +21,7 @@ A definition diagram resolves in this order:
 3. Otherwise generate one sidecar through the selected deterministic layout adapter, persist it, and return it on subsequent reads.
 4. Treat a stale, malformed, differently bound, corrupt, or digest-invalid stored sidecar as an integrity failure. It blocks presentation until an explicit repair removes or replaces it; an ordinary read never regenerates over corruption.
 
-The source BPMN XML remains the only admitted and executable source. The sidecar is presentation data and never enters BPMN source import, checked graph construction, Semantic Process IL, the semantic core, the Temporal Workflow, CIB evidence, or definition identity.
+The source BPMN XML remains the only admitted and executable source. The sidecar is presentation data and never enters BPMN source import, the kernel reader, the kernel IL, the Lean or TypeScript kernel, the Temporal Workflow, CIB evidence, or definition identity.
 
 ## Sidecar contract
 
@@ -108,7 +108,7 @@ Source DI is usable when resolution finds exactly one candidate presentation for
 | Require source BPMN DI for every executable model | Rejected | Presentation coordinates must not become an engine admission requirement |
 | Mutate the admitted source by inserting generated DI | Rejected | It changes exact source identity and confuses authored source with a derivative |
 | Generate layout in each browser session | Rejected | It repeats work, weakens deterministic provenance, and makes the client a diagram producer |
-| Draw a custom SVG from checked Process data or Semantic Process IL | Rejected | It duplicates BPMN presentation logic and risks treating an execution representation as authored source |
+| Draw a custom SVG from the kernel IL | Rejected | It duplicates BPMN presentation logic and risks treating an execution representation as authored source |
 | Store an unbound diagram by Process ID or definition version | Rejected | The diagram could silently drift from exact source bytes |
 | Persist an exact-digest sidecar generated once | Selected | It preserves source identity, supports the existing viewer, and makes provenance testable |
 

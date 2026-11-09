@@ -126,7 +126,7 @@ Rejected commands: `output-unavailable`, `duplicate-output`, `undeclared-output`
 | PC-DATA-04 | visibility, shadowing, nearest writes and lifetime for Activity, embedded, called and Multi-Instance owners, concurrent mapped Calls; a mapped User Task's completion naming its own locals and its outputs reading them ([UTL-TASK-01, UTL-OUTPUT-01][utl-rules]) |
 | PC-DATA-05 | literal, reference, structured and expression inputs at every entry |
 | PC-DATA-06 | multi-source and multi-target outputs to local and enclosing targets |
-| PC-DATA-07 | an expression with no named language: accepted only under a profile selecting CIB's default language; today the reader reads it as XPath, which admission refuses under every profile; the read-only JUEL subset in the kernel, grown by levels per the [proposal's Evaluation decision](../../LEAN-KERNEL-REWRITE-PROPOSAL.md#runtime-state-and-step) |
+| PC-DATA-07 | an expression with no named language: accepted only under a profile selecting CIB's default language; today the reader reads it as XPath, which admission refuses under every profile; the read-only JUEL subset in the kernel, grown by levels per the [proposal's Evaluation decision](../ARCHITECTURE-SPEC.md#runtime-state-and-step) |
 | PC-DATA-08 | branch, collection and Multi-Instance completion expressions |
 | PC-DATA-09 | absence, null, type error and evaluator failure at entry and completion, including the static Start availability rule and the Call Data Association source |
 

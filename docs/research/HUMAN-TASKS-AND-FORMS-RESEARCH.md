@@ -14,7 +14,7 @@ M6 should deliberately defer arbitrary expressions, nested data, user-authored s
 
 ## Current project boundary
 
-The implemented [User Task assignment and form metadata specification](../capsules/USER-TASK-ASSIGNMENT-FORM-METADATA-SPEC.md) admits exactly one candidate group and exactly one String or Boolean field. The neutral metadata arrays were deliberately chosen so later profiles can widen cardinality without replacing the representation.
+The implemented [User Task assignment and form metadata specification](../kernel/semantics/WORK-SEMANTICS-SPEC.md) admits exactly one candidate group and exactly one String or Boolean field. The neutral metadata arrays were deliberately chosen so later profiles can widen cardinality without replacing the representation.
 
 The semantic command already carries an ordered `submittedValues` patch, and the core merges that patch atomically on a committed User Task completion. The current semantic value domain is only String, Boolean, and null. Product 2 narrows the otherwise plural command to exactly one field in `platform/contracts/src/work-tasks.ts`, `platform/contracts/src/work-task-decoders.ts`, `platform/modules/work/src/work-task-detail-service.ts`, `platform/modules/work/src/work-mutation-service.ts`, and `platform/apps/web/src/work-task-detail-workspace.tsx`.
 

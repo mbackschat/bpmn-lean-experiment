@@ -1,5 +1,5 @@
 /**
- * Emits the kernel IL ([proposal](../../../../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#il)) directly from the parsed BPMN,
+ * Emits the kernel IL ([architecture](../../../../docs/kernel/ARCHITECTURE-SPEC.md#il)) directly from the parsed BPMN,
  * one module per mechanism. The reader chooses no semantics and never branches on a profile: it refuses only what it
  * cannot read faithfully (parse, preservation, unknown or unrepresentable source), and every semantic refusal belongs
  * to `Kernel.Admission`.

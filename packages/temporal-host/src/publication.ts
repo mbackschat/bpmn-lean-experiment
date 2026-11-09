@@ -1,6 +1,6 @@
 /**
  * Publication derived from the kernel journal, the state relation the host preserves
- * ([proposal](../../../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#temporal-hosting-and-refinement-preflight)).
+ * ([architecture](../../../docs/kernel/ARCHITECTURE-SPEC.md#temporal-hosting-and-refinement-preflight)).
  *
  * Every micro-step of a committed input is one revision, numbered across the whole Workflow chain. Each input yields
  * an execution batch, one transition per micro-step with its cause as role, and a flow-node-occurrence batch over the

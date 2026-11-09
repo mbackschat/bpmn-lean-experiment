@@ -23,5 +23,5 @@ Ordinary verification never rewrites retained evidence. Use `./scripts/pnpm.sh r
 - [Source map](SOURCE-MAP.md) maps the runner, projectors, protocols, probes, and replacement tool to their source owners.
 - [CIB Seven BPMN relation register](../../docs/CIB-BPMN-RELATION-REGISTER.md) owns every selected compatibility relationship and candidate deviation.
 - [Reference instrumentation policy](../../docs/REFERENCE-INSTRUMENTATION-POLICY.md) owns the boundary between public observation, diagnostics, and experimental instrumentation.
-- [Testing specification](../../docs/TESTING-SPEC.md) owns oracle, evidence-replacement, and differential gates.
-- [`implementation-status-owner:ASSURANCE-ADOPTION`](../../docs/ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md) records exact current CIB profile and evidence coverage.
+- The [engineering rules](../../docs/kernel/ENGINEERING-POLICY.md#contracts-and-evidence) own oracle, evidence-replacement, and differential gates.
+- The [kernel status map](../../docs/kernel/KERNEL-STATUS-MAP.md#assurance-and-adoption) records current CIB evidence coverage.

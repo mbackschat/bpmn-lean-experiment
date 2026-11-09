@@ -6,7 +6,7 @@
 
 The implemented [shared-persistence addendum](BPM-PLATFORM-SHARED-PERSISTENCE-AND-PROJECTION-PROPOSAL.md) preserves the exact publication state machine and no-redispatch boundary in PostgreSQL and moves autonomous reconciliation into one bounded lease-fenced Message Start family. An `accepted` retained row republishes its exact confirmed identity without definition, artifact, or Product 1 work. API replicas share the row and never reconcile it during readiness or request-wide startup. The SQLite epoch and startup passages below describe local mode only.
 
-The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Message Start Event specification](capsules/MESSAGE-START-EVENT-SPEC.md) owns semantic and direct-host meaning, and [PLAN.md](PLAN.md) owns sequencing.
+The [BPM platform proposal](BPM-PLATFORM-PROPOSAL.md) owns the product boundary, [ARCHITECTURE.md](ARCHITECTURE.md) owns package direction, the [Message Start Event specification](kernel/semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md) owns semantic and direct-host meaning, and [PLAN.md](PLAN.md) owns sequencing.
 
 ## Product question
 

@@ -4,11 +4,9 @@
 
 **Accepted and implemented on 2026-07-24.**
 
-The approved direct runtime dependency is [`bpmn-moddle@10.0.0`](https://www.npmjs.com/package/bpmn-moddle), isolated in the new [`@bpmn-lean/bpmn-source`](../packages/bpmn-source/README.md) workspace package. Lean, the pure TypeScript semantic core, and the Temporal Workflow package remain independent of the parser.
+The approved direct runtime dependency is [`bpmn-moddle@10.0.0`](https://www.npmjs.com/package/bpmn-moddle), isolated in the [`@bpmn-lean/bpmn-source`](../packages/bpmn-source/README.md) workspace package. Lean, the TypeScript kernel and the Temporal host remain independent of the parser.
 
-The bounded evidence behind this decision is recorded in [the BPMN XML ingestion experiment](experiments/BPMN-XML-INGESTION-EXPERIMENT.md). Adoption changes only the source-ingestion boundary and the existing sequential capsule’s executable input; it does not approve a general executable IR, new BPMN behavior, CIB extensions, export, or a conformance claim.
-
-The [Semantic Process IL spec](SEMANTIC-PROCESS-IL-SPEC.md) owns the bounded successor to the initial topology-specific executable representation for the sequential and parallel capsules. The implemented checked graph and lowerer preserve this document's parser isolation, exact-source, admission, security, and license decisions.
+The kernel rewrite kept this decision unchanged and replaced only what consumes the parser's output: the package's [kernel reader](../packages/bpmn-source/src/kernel-reader/index.ts) reads the model directly into the [kernel IL](kernel/IL-SPEC.md), and every semantic refusal moved to kernel admission. The bounded evidence behind the original adoption is the [BPMN XML ingestion experiment at `404a39d7`](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/experiments/BPMN-XML-INGESTION-EXPERIMENT.md).
 
 ## Decision
 
@@ -30,19 +28,19 @@ bpmn-moddle structural import
         ├──────────────► normalized project diagnostics
         │
         ▼
-profile-independent static admission
+kernel reader (refuses parse, preservation and unknown-element cases)
         │
         ▼
-checked project-owned BPMN graph
+kernel IL program
         │
         ▼
-bounded Semantic Process IL
+kernel admission against the selected profile
         │
-        ├──────────────► Lean / TypeScript differential semantics
+        ├──────────────► Lean / TypeScript kernels
         └──────────────► Temporal Workflow input by content identity
 ```
 
-Parsing, admission, and lowering happen outside Temporal Workflow execution. The Workflow receives an immutable Semantic Process program plus source/profile/compiler identities, not raw XML, the checked graph, or moddle objects. The semantic core consumes only project-owned serializable contracts and remains dependency-free.
+Parsing, reading and admission happen outside Temporal Workflow execution. The Workflow receives an immutable kernel program with its source and profile identities, never raw XML or moddle objects. The kernels consume only project-owned serializable contracts and remain dependency-free.
 
 `bpmn-moddle.toXML` is available for bounded interchange experiments but is not part of deployment or execution. Serializer output must never replace the original source bytes.
 
@@ -70,11 +68,11 @@ The machine-readable artifacts constrain the source language. The prose and issu
                     │          │            │
                     ├──────────┴────┐       │
                     ▼               ▼       ▼
-           checked structural graph ──► Semantic Process IL
+                 kernel reader ──────► kernel IL
                                                │
                                ┌───────────────┼──────────────┐
                                ▼               ▼              ▼
-                         Lean semantics   TypeScript core   Temporal host
+                          Lean kernel   TypeScript kernel   Temporal host
 ```
 
 The CMOF path can justify facts such as type inheritance, reference targets, ownership, multiplicity, and defaults. It cannot generate the meaning of traversing a Sequence Flow, joining a gateway, interrupting an Activity, completing a scope, or handling compensation. Those definitions come from the operational sources and explicit profile decisions.
@@ -94,11 +92,11 @@ The implemented use of CMOF is a bounded current metamodel manifest rather than 
 
 A future reusable manifest may additionally need complete package/namespace identity, association opposites, enumerations, and the rest of the metamodel. Those fields are not claimed by this first slice.
 
-That manifest can drive importer validation, supported/unsupported coverage, property-preservation tests, the TypeScript source projection, and the static well-formedness layer admitted into Lean. It remains build-time specification data; neither the pure semantic core nor a Temporal Workflow parses CMOF.
+That manifest can drive importer validation, supported/unsupported coverage and property-preservation tests. It remains build-time specification data; neither kernel nor a Temporal Workflow parses CMOF.
 
-Lean should formalize the smallest reviewed executable fragment over checked source facts. CMOF justifies the structural premises—for example that a Sequence Flow has admitted source and target Flow Nodes—while Lean defines and proves the operational consequences. A full generated CMOF mirror would add large amounts of diagram, interchange, and modeling structure without supplying the missing execution semantics.
+CMOF justifies structural premises—for example that a Sequence Flow has admitted source and target Flow Nodes—while the Lean kernel defines the operational consequences. A full generated CMOF mirror would add large amounts of diagram, interchange, and modeling structure without supplying the missing execution semantics.
 
-The current ingestion slice therefore does not generate complete TypeScript or Lean bindings. It records only the fourteen class/generalization facts and nine property facts consumed by the bounded checked-process compiler, including Gateway and Parallel Gateway structure, Gateway direction, the Flow Element name type, reference targets, multiplicities, containment, and the Start Event default, and explicitly records absent coverage. The maintained checker compares the manifest’s exact source digest and every recorded fact with the ignored normative `BPMN20.cmof` when that corpus is locally available. The XML-facing compiler separately tests that the XSD-optional User Task name becomes `null` when omitted. Further consumers must demonstrate a concrete need before the project generalizes its extraction machinery.
+The current ingestion slice therefore does not generate complete TypeScript or Lean bindings. It records only the fourteen class/generalization facts and nine property facts consumed by the original bounded compiler, including Gateway and Parallel Gateway structure, Gateway direction, the Flow Element name type, reference targets, multiplicities, containment, and the Start Event default, and explicitly records absent coverage. The maintained checker compares the manifest’s exact source digest and every recorded fact with the ignored normative `BPMN20.cmof` when that corpus is locally available. Further consumers must demonstrate a concrete need before the project generalizes its extraction machinery.
 
 ## Why `bpmn-moddle`
 
@@ -129,28 +127,25 @@ The exact `v10.0.0` source tag’s BPMN20, BPMNDI, DC, and DI CMOF resources are
 | Parser warnings | Normalize and retain every warning; source capture may succeed, but executable admission is blocked by default |
 | Round trip | Compare project-owned structural projections and explicitly declared preservation properties; never require or claim byte identity |
 | Source locations | The library exposes line/column mainly in warning text, not a general stable location map; do not invent locations or claim source-range preservation |
-| Temporal history | Store only the content-addressed admitted Semantic Process program and required identities in Workflow input/history; archive source bytes and the checked graph outside Workflow history |
+| Temporal history | Store only the content-addressed admitted kernel program and required identities in Workflow input/history; archive source bytes outside Workflow history |
 
-The package does not export raw moddle objects as a public cross-package contract. It exposes project-owned source identity, defensive exact-byte copies, normalized diagnostics, and the smallest compilation boundary needed by the sequential User Task capsule. The external object graph remains private to the ingestion package.
+The package does not export raw moddle objects as a public cross-package contract. It exposes project-owned source identity, defensive exact-byte copies, normalized diagnostics and the kernel reader. The external object graph remains private to the ingestion package.
 
 ## Admission and security policy
-
-A future MIWG calibration records all four project-admission by CIB-deployment quadrants over the pinned corpus. Schedule it with or after the admission-successor checkpoint, report all four quadrants without asserting set equality, and do not count deployment or admission as execution evidence.
 
 `bpmn-moddle` imports in lax mode and can return a structural result with warnings after discarding or normalizing invalid content. The project must therefore distinguish:
 
 1. **source capture** — exact bytes and identity were retained;
 2. **structural import** — a BPMN definitions graph was produced;
-3. **static admission** — all required references and supported constructs passed project checks;
-4. **profile admission** — the selected semantic profile defines every behavior needed for execution;
-5. **lowering** — the checked graph produced a valid current Semantic Process program;
-6. **execution** — the admitted program was accepted by the semantic core.
+3. **reading** — the kernel reader produced a kernel IL program, with every reference resolved and no unknown element;
+4. **admission** — kernel admission found the program inside the selected profile's admitted surface;
+5. **execution** — the admitted program was started by the kernel.
 
-Any parser warning blocks static admission until a project rule explicitly classifies that warning as safe for the declared profile. The first implementation uses one stable `parserWarning` diagnostic code with the upstream message as evidence rather than a growing set of message-string special cases. The code and the message stay exactly that; what the record adds is the referring element when the parser named one, so several warnings in one file locate several places rather than reading as one complaint repeated.
+Any parser warning blocks admission until a project rule explicitly classifies that warning as safe for the declared profile. The first implementation uses one stable `parserWarning` diagnostic code with the upstream message as evidence rather than a growing set of message-string special cases. The code and the message stay exactly that; what the record adds is the referring element when the parser named one, so several warnings in one file locate several places rather than reading as one complaint repeated.
 
 The importer accepts bytes plus a required caller-provided byte limit and parser Promise-settlement deadline. It rejects a DTD/DOCTYPE before structural parsing. The published parser probe did not resolve internal or external entities, but it accepted a bare DOCTYPE without warning; the explicit preflight avoids relying on that incidental behavior. Parsing untrusted large models is synchronous inside the library, so the current deadline cannot preempt blocked CPU work and a production upload boundary must eventually isolate parsing in a bounded Worker or process.
 
-Encoding support remains an explicit open compatibility boundary. Six pinned MIWG files declare ISO-8859-1, while `bpmn-moddle` reports that encoding as unsupported and falls back to UTF-8. The ingestion package must not hide that warning. A later capsule can add a reviewed byte decoder and feed a derived UTF-8 parse buffer while retaining original bytes, declared encoding, and transformation provenance.
+Encoding support remains an explicit open compatibility boundary. Six pinned MIWG files declare ISO-8859-1, while `bpmn-moddle` reports that encoding as unsupported and falls back to UTF-8. The ingestion package must not hide that warning. A later reviewed change can add a byte decoder and feed a derived UTF-8 parse buffer while retaining original bytes, declared encoding, and transformation provenance.
 
 ## Exact dependency and license audit
 
@@ -174,15 +169,15 @@ All adopted packages are compatible with the repository’s MIT license. They re
 
 ## Removal and upgrade cost
 
-The dependency is isolated to one workspace package. Removing it deletes that package’s parser adapter and lockfile entries; the semantic core, Lean theory, scenario contract, comparator, and Temporal Workflow remain unchanged. Project-owned source identity, diagnostics, checked-graph, and Semantic Process contracts prevent moddle objects from becoming persistence or public API types.
+The dependency is isolated to one workspace package. Removing it deletes that package’s parser adapter and lockfile entries; the kernels, scenario contract, comparator and Temporal host remain unchanged. Project-owned source identity, diagnostics and the kernel IL prevent moddle objects from becoming persistence or public API types.
 
-Upgrades require rerunning the warning, preservation, security, MIWG, and structural-projection gates. A changed serializer output alone is not a semantic-core change. A changed element graph, reference outcome, warning set, default value, or extension projection for source bytes and profile identity already admitted by the existing compiler is an ingestion compatibility change and must receive a new compiler/importer identity. Registering a versioned extension namespace that every existing profile previously rejected is additive: the new profile and exact source content bind the new projection while all previously admitted compiler inputs and outputs remain byte-compatible.
+Upgrades require rerunning the warning, preservation, security, MIWG, and structural-projection gates. A changed serializer output alone is not a kernel change. A changed element graph, reference outcome, warning set, default value, or extension projection for source bytes and profile identity already admitted is an ingestion compatibility change and is replaced atomically under the [pre-release evolution policy](PROJECT-DESIGN.md#pre-release-evolution-policy). Registering a versioned extension namespace that every existing profile previously rejected is additive: previously admitted inputs and outputs remain byte-compatible.
 
 ## Implemented first slice
 
-The completed red/green slice is intentionally smaller than a general BPMN compiler:
+The adoption slice of 2026-07-24, recorded here as the decision's evidence, was intentionally smaller than a general BPMN compiler; the kernel reader later replaced its compiler and IR:
 
-1. create `@bpmn-lean/bpmn-source` with no dependency leak into the semantic core or Temporal adapter;
+1. create `@bpmn-lean/bpmn-source` with no dependency leak into the semantic or Temporal packages;
 2. add red tests for exact byte/hash identity, the current sequential fixture, warning-blocked admission, DOCTYPE rejection, and a meaningful lost-reference mutation;
 3. add exactly `bpmn-moddle@10.0.0` and inspect the resulting lockfile/license/script graph;
 4. implement bounded import and a private moddle adapter;

@@ -1,6 +1,6 @@
 # Parallel fork/join scenarios
 
-This directory contains the exact balanced two-branch BPMN resource and three answer-free scenarios for the [parallel fork/join spec](../../docs/capsules/PARALLEL-FORK-JOIN-SPEC.md).
+This directory contains the exact balanced two-branch BPMN resource and three answer-free scenarios for the [parallel fork/join spec](../../docs/kernel/semantics/FLOW-SEMANTICS-SPEC.md).
 
 Both scenarios start one `Process_ParallelForkJoin` instance and reach simultaneous `UserTask_A` and `UserTask_B` occurrences. [A then B](a-then-b.scenario.json) and [B then A](b-then-a.scenario.json) differ only in the explicit external completion order. Their expected results remain verifier-owned evidence and never enter target input.
 

@@ -5,7 +5,7 @@ public import Kernel.IL.Timer
 
 /-! # Host interface
 
-The adapter sees the kernel only through these projections ([proposal](../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#host-interface)):
+The adapter sees the kernel only through these projections ([architecture](../docs/kernel/ARCHITECTURE-SPEC.md#host-interface)):
 what a program needs from its host, what a definition offers before any instance runs, and the open waits and
 occurrence facts of a state. Matches no guarded type; every wait is read through `OpenKind.view`.
 -/

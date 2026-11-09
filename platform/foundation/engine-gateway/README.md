@@ -1,6 +1,6 @@
 # Engine gateway
 
-`@bpmn-lean/platform-engine-gateway` is Product 2's only concrete semantic-consumption boundary. It narrows Product 1 compilation, start, scheduling, correlation, observation, work, and incident operations into platform-facing ports while keeping Temporal and Semantic Process representations private. Its correlated Message host recompiles exact stored bytes for capability discovery and publication, selects only the engine-projected catch-event address, and removes the full semantic address plus subscription identity from the Product 2 result.
+`@bpmn-lean/platform-engine-gateway` is Product 2's only concrete semantic-consumption boundary. It narrows Product 1 compilation, start, scheduling, correlation, observation, work, and incident operations into platform-facing ports while keeping Temporal and kernel program representations private. Its correlated Message host recompiles exact stored bytes for capability discovery and publication, selects only the engine-projected catch-event address, and removes the full semantic address plus subscription identity from the Product 2 result.
 
 ## What you can do
 

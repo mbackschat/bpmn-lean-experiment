@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented, independently closure-reviewed, and evidence-closed. The exact implemented and absent Product 2 boundary is maintained by [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), the release-assurance boundary by [`implementation-status-owner:ASSURANCE-ADOPTION`](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), and the governed review history is retained in the receipt below.
+Implemented, independently closure-reviewed, and evidence-closed. The exact implemented and absent Product 2 boundary is maintained by [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), the release-assurance boundary by [kernel status map](kernel/KERNEL-STATUS-MAP.md), and the governed review history is retained in the receipt below.
 
 ## Implemented boundary
 
@@ -93,7 +93,7 @@ Release acceptance requires a clean committed target to pass the complete path-s
 
 ## Owners and reopen conditions
 
-Changes to this boundary update the Product 2 web catalog, About panel and CSS, component and browser tests, root release graph, feedback-efficiency guard, [web source map](../platform/apps/web/SOURCE-MAP.md), [web guide](../platform/apps/web/README.md), [showcase registry](../showcase/README.md), [UI-quality acceptance guide](../showcase/platform-ui-quality/README.md), [testing specification](TESTING-SPEC.md), [contributor setup guide](CONTRIBUTOR-SETUP-GUIDE.md), [architecture](ARCHITECTURE.md), [root contributor guidance](../CLAUDE.md), [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [`implementation-status-owner:ASSURANCE-ADOPTION`](ASSURANCE-AND-ADOPTION-IMPLEMENTATION-MAP.md), [documentation registry](README.md), and [PLAN.md](PLAN.md). The other five routed detail maps change only if implementation evidence invalidates one of their current claims.
+Changes to this boundary update the Product 2 web catalog, About panel and CSS, component and browser tests, root release graph, feedback-efficiency guard, [web source map](../platform/apps/web/SOURCE-MAP.md), [web guide](../platform/apps/web/README.md), [showcase registry](../showcase/README.md), [UI-quality acceptance guide](../showcase/platform-ui-quality/README.md), [testing specification](kernel/ENGINEERING-POLICY.md#verification), [contributor setup guide](CONTRIBUTOR-SETUP-GUIDE.md), [architecture](ARCHITECTURE.md), [root contributor guidance](../CLAUDE.md), [`implementation-status-owner:BPM-PLATFORM`](BPM-PLATFORM-IMPLEMENTATION-MAP.md), [kernel status map](kernel/KERNEL-STATUS-MAP.md), [documentation registry](README.md), and [PLAN.md](PLAN.md). The other five routed detail maps change only if implementation evidence invalidates one of their current claims.
 
 Reopen before changing the seven-item denominator or order, reclassifying an item, adding an interactive Beta workflow, using runtime state to populate the catalog, adding another production journey, changing a content boundary, replacing the existing capability catalog, making a release-version claim, or pushing the tag.
 
@@ -107,7 +107,7 @@ The retained gate digests above bind closure target `361911b8`, while the origin
 
 The implementation adds no BPMN meaning, semantic profile, checked-source or IL shape, runtime transition, Temporal hosting mechanism, public engine operation, persistence record, interactive Product 2 workflow, package release, or tag push. The immutable phase tag is local by contract and never implies a push.
 
-The reproducible implementation range is `553adfb3..b7ac924d`: `+391/-14` nonblank code lines and `+30/-15` nonblank documentation lines, with elapsed implementation time unknown. The nearest same-layer comparator is MUE Preview Alpha at `+4182/-168` code and `+181/-168` documentation because both integrate already-reviewed engine behavior into a Product 2 preview and a production release gate. Beta additions fell by 3,791 code lines and 151 documentation lines because it composes the existing Alpha and correlated-Message journeys and adds only a static disclosure surface rather than another transport, actor, host, or replay boundary. Both addition measures fell, so the reflection requires no manufactured process-weight removal. The [capsule-cost ledger](CAPSULE-COST-LEDGER.md) owns the reproducible row.
+The reproducible implementation range is `553adfb3..b7ac924d`: `+391/-14` nonblank code lines and `+30/-15` nonblank documentation lines, with elapsed implementation time unknown. The nearest same-layer comparator is MUE Preview Alpha at `+4182/-168` code and `+181/-168` documentation because both integrate already-reviewed engine behavior into a Product 2 preview and a production release gate. Beta additions fell by 3,791 code lines and 151 documentation lines because it composes the existing Alpha and correlated-Message journeys and adds only a static disclosure surface rather than another transport, actor, host, or replay boundary. Both addition measures fell, so the reflection requires no manufactured process-weight removal. The [capsule-cost ledger](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/CAPSULE-COST-LEDGER.md) owns the reproducible row.
 
 ### Historical Beta content boundary
 
@@ -115,13 +115,13 @@ The reproducible implementation range is `553adfb3..b7ac924d`: `+391/-14` nonbla
 
 | Content ID | State | Exact Beta boundary | Evidence or next-gate owner |
 |---|---|---|---|
-| `SEQUENTIAL-MULTI-INSTANCE` | `satisfied` | Closure-reviewed end-to-end vertical slice. | [Sequential Multi-Instance specification](capsules/SEQUENTIAL-MULTI-INSTANCE-SPEC.md) |
-| `INTERNAL-COMMUTATION` | `satisfied` | Approved first green final-implementation semantic checkpoint. | [Internal Commutation review receipt](INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) |
-| `PARALLEL-MULTI-INSTANCE` | `satisfied` | Closure-reviewed end-to-end vertical slice. | [Parallel Multi-Instance specification](capsules/PARALLEL-MULTI-INSTANCE-SPEC.md) |
-| `MECHANISM-MATURITY-EVIDENCE` | `satisfied` | Complete generated family evidence vector with no combined coverage claim. | [Mechanism-maturity classifications](SEMANTIC-VERIFICATION-POLICY.md#mechanism-maturity-classifications) |
-| `DATA-AND-TASK-MECHANISMS` | `satisfied` | Closure-reviewed direct Activity input and output vertical slices. | [Input specification](capsules/ACTIVITY-DATA-INPUT-MEDIATION-SPEC.md) and [output specification](capsules/ACTIVITY-DATA-OUTPUT-MEDIATION-SPEC.md) |
-| `EVENT-SUBSCRIPTIONS` | `satisfied` | Closure-reviewed Message key-correlation vertical slice across source, both semantic accounts, and Temporal. | [Message key-correlation specification](capsules/MESSAGE-KEY-CORRELATION-SPEC.md) |
-| `COMPENSATION-TRANSACTIONS` | `satisfied` | First independently reviewed end-to-end compensation or Transaction vertical checkpoint. | [Compensation trigger and handler proposal](capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#stage-boundary) |
+| `SEQUENTIAL-MULTI-INSTANCE` | `satisfied` | Closure-reviewed end-to-end vertical slice. | [Sequential Multi-Instance specification](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md) |
+| `INTERNAL-COMMUTATION` | `satisfied` | Approved first green final-implementation semantic checkpoint. | [Internal Commutation review receipt](https://github.com/mbackschat/bpmn-lean-experiment/blob/404a39d7/docs/INTERNAL-COMMUTATION-PROPOSAL.md#independent-cold-review-receipt) |
+| `PARALLEL-MULTI-INSTANCE` | `satisfied` | Closure-reviewed end-to-end vertical slice. | [Parallel Multi-Instance specification](kernel/semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md) |
+| `MECHANISM-MATURITY-EVIDENCE` | `satisfied` | Complete generated family evidence vector with no combined coverage claim. | [Mechanism-maturity classifications](kernel/ENGINEERING-POLICY.md#contracts-and-evidence) |
+| `DATA-AND-TASK-MECHANISMS` | `satisfied` | Closure-reviewed direct Activity input and output vertical slices. | [Input specification](kernel/semantics/DATA-SEMANTICS-SPEC.md) and [output specification](kernel/semantics/DATA-SEMANTICS-SPEC.md) |
+| `EVENT-SUBSCRIPTIONS` | `satisfied` | Closure-reviewed Message key-correlation vertical slice across source, both semantic accounts, and Temporal. | [Message key-correlation specification](kernel/semantics/POPULATION-SEMANTICS-SPEC.md) |
+| `COMPENSATION-TRANSACTIONS` | `satisfied` | First independently reviewed end-to-end compensation or Transaction vertical checkpoint. | [Compensation trigger and handler proposal](kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md) |
 
 `satisfied` means only that the exact Beta boundary in that row is green; it does not claim full MUE closure.
 

@@ -18,7 +18,7 @@ Product 1 compilation and exact-definition direct-start requests accept an optio
 
 - [Architecture](../../docs/ARCHITECTURE.md#product-2-dependency-direction) owns the cross-product dependency boundary.
 - [Production lifecycle specification](../../docs/TEMPORAL-PROCESS-LIFECYCLE-SPEC.md) owns durable start, command, and recovery behavior.
-- [Committed-execution publication specification](../../docs/capsules/COMMITTED-EXECUTION-PUBLICATION-SPEC.md) owns the published execution contract.
-- [Message key-correlation specification](../../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md) owns the complete address, exact-cardinality result, retry, capacity, and target-exposure contract.
+- [publication and observation semantics](../../docs/kernel/semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md) owns the published execution contract.
+- [population semantics](../../docs/kernel/semantics/POPULATION-SEMANTICS-SPEC.md) owns the complete address, exact-cardinality result, retry, capacity, and target-exposure contract.
 - [Structured Human Work specification](../../docs/BPM-PLATFORM-STRUCTURED-HUMAN-WORK-SPEC.md) owns the M6 completion-value boundary; this package derives that payload from the shared semantic contract and detaches caller storage without defining a second value union.
-- The [`implementation-status-owner:ENGINE-CONTRACTS-SOURCE`](../../docs/ENGINE-CONTRACTS-AND-SOURCE-IMPLEMENTATION-MAP.md) records exact operations; the [`implementation-status-owner:TEMPORAL-HOSTING`](../../docs/TEMPORAL-HOSTING-IMPLEMENTATION-MAP.md) records their hosting evidence.
+- The [kernel status map](../../docs/kernel/KERNEL-STATUS-MAP.md) records what the kernel implements and its [hosting evidence](../../docs/kernel/KERNEL-STATUS-MAP.md#assurance-and-adoption).

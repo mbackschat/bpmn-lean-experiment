@@ -4,7 +4,7 @@
 
 Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it cites are the executable authority; where they differ, the difference is a defect of one of them.
 
-The kernel IL is the program both kernels execute: one immutable, serializable, project-owned record per deployed definition, fixed in shape for every row of the [coverage target](../PRACTICAL-CIB7-COVERAGE-TARGET.md). [`Kernel/IL/Types.lean`](../../Kernel/IL/Types.lean) and [`Kernel/IL/Types/Options.lean`](../../Kernel/IL/Types/Options.lean) are the authority for every record and field; this document states the wire encoding, the shape at the level a producer or consumer needs, and the rules that keep the shape stable while admission widens. The [proposal's IL section](../LEAN-KERNEL-REWRITE-PROPOSAL.md#il) owns the design rationale.
+The kernel IL is the program both kernels execute: one immutable, serializable, project-owned record per deployed definition, fixed in shape for every row of the [coverage target](../PRACTICAL-CIB7-COVERAGE-TARGET.md). [`Kernel/IL/Types.lean`](../../Kernel/IL/Types.lean) and [`Kernel/IL/Types/Options.lean`](../../Kernel/IL/Types/Options.lean) are the authority for every record and field; this document states the wire encoding, the shape at the level a producer or consumer needs, and the rules that keep the shape stable while admission widens. The [proposal's IL section](ARCHITECTURE-SPEC.md#il) owns the design rationale.
 
 ## Position in the pipeline
 
@@ -100,7 +100,7 @@ The IL carries the full shape of every row now; admission widens per track. A fi
 
 ## Superseded representation
 
-The old Semantic Process IL lowered admitted BPMN to mechanism operations over control places, with per-profile operation multisets, cardinalities and well-formedness ([program][il-program], [well-formedness][il-wf], [supported slice][il-slice], [excluded surface][il-excluded]). The owner direction of 2026-11-08 replaced it with the element table above, because one constructor per variant matched closed-world across every layer was the dominant cause of the slowdown ([proposal](../LEAN-KERNEL-REWRITE-PROPOSAL.md#why-delivery-slowed)). What carries over:
+The old Semantic Process IL lowered admitted BPMN to mechanism operations over control places, with per-profile operation multisets, cardinalities and well-formedness ([program][il-program], [well-formedness][il-wf], [supported slice][il-slice], [excluded surface][il-excluded]). The owner direction of 2026-11-08 replaced it with the element table above, because one constructor per variant matched closed-world across every layer was the dominant cause of the slowdown ([proposal](ARCHITECTURE-SPEC.md#why-delivery-slowed)). What carries over:
 
 - Structural validity belongs to the reader: a duplicate identifier is refused as `parser.warning` (moddle reports it as a parser error), a dangling reference as `source.reference`, malformed containment as `source.containmentCardinality`. Admission rules per field take the place of the old per-profile operation, control-place and topology cardinalities, and the coverage target takes the place of the supported slice and excluded surface.
 - The old graph policies (reachability of every operation from initiation, co-reachability to completion, whole-graph acyclicity except a declared resumption cut) have no counterpart in the kernel: it admits cycles and unreachable elements, and a dangling reference that reaches the kernel fails at run time as a semantic failure.

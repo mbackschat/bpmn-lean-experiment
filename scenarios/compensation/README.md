@@ -1,6 +1,6 @@
 # Confirmed travel cancellation
 
-[travel-cancellation.bpmn](travel-cancellation.bpmn) confirms a hotel, ground travel, and insurance itinerary before reversing the confirmed arrangements. Its display names explain the business work; its identities, topology, declarations and limits retain the reviewed source checkpoint. The [profile](../../profiles/bpmn-2.0.2-compensation-source-checkpoint-draft/README.md) and [trigger account](../../docs/capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md) own the bounded semantics.
+[travel-cancellation.bpmn](travel-cancellation.bpmn) confirms a hotel, ground travel, and insurance itinerary before reversing the confirmed arrangements. Its display names explain the business work; its identities, topology, declarations and limits retain the reviewed source checkpoint. The [profile](../../profiles/bpmn-2.0.2-compensation-source-checkpoint-draft/README.md) and [trigger account](../../docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md) own the bounded semantics.
 
 A is hotel reservation, B is ground travel, and C is insurance. Ground travel depends on the hotel reservation; insurance is independent. Compensation reverses that dependency, so B and C become active together and A becomes active only after B succeeds.
 
@@ -15,7 +15,7 @@ A is hotel reservation, B is ground travel, and C is insurance. Ground travel de
 
 Every scenario retries its first completed User Task occurrence under a new command ID immediately after success. All handler outcomes are explicit neutral inputs with empty local patches and production content-bound completion IDs; expected observations are absent. The ground-travel handler receives the retained itinerary through its direct restored input binding.
 
-The CIB revision and `UserTaskActivityBehavior.java` provenance cover only ordinary human work, as recorded in the [registration amendment](../../docs/capsules/COMPENSATION-TRIGGER-HANDLER-PROPOSAL.md#public-registration-amendment). The pipeline declares no CIB target. Lean, the semantic core and ordered real Temporal Activities consume the same scenario inputs, with exact semantic comparison and primary-history replay.
+The CIB revision and `UserTaskActivityBehavior.java` provenance cover only ordinary human work, as recorded in the [compensation semantics](../../docs/kernel/semantics/COMPENSATION-SEMANTICS-SPEC.md). The pipeline declares no CIB target. Lean, the TypeScript kernel and ordered real Temporal Activities consume the same scenario inputs, with exact semantic comparison and primary-history replay.
 
 Run the focused artifact, chronology, identity and comparator checks from the repository root after building the workspace:
 

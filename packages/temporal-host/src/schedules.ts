@@ -1,7 +1,7 @@
 /**
  * One-shot Temporal Schedules whose single action starts a process chain (`runProcess`) with a timer-triggered start.
  *
- * A Schedule is the host's realization of a Timer Start ([proposal](../../../docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#temporal-hosting-and-refinement-preflight)):
+ * A Schedule is the host's realization of a Timer Start ([architecture](../../../docs/kernel/ARCHITECTURE-SPEC.md#temporal-hosting-and-refinement-preflight)):
  * the caller computes the due instant from the definition's timer schedule and passes the start arguments; the host
  * fires them once, durably. The stored Schedule is compared with what the caller expects through a memo the caller
  * owns, so drift in the action is found without decoding its arguments.

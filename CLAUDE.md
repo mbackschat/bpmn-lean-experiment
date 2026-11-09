@@ -2,12 +2,12 @@
 
 Shared guidance for Claude Code, OpenAI Codex and human contributors in **bpmn-lean-experiment**. [AGENTS.md](AGENTS.md) is a symlink to this one file. The project uses the HIGH, MEDIUM and LOW model tiers of the maintainer's global instructions ([tier table](https://github.com/mbackschat/coding-setup/blob/main/CLAUDE.md#model-tier-mappings)); without them, HIGH is your most capable model, MEDIUM a faster one and LOW the fastest.
 
-The project is being rewritten as a modular kernel by owner direction (2026-11-08). The [kernel rewrite proposal](docs/LEAN-KERNEL-REWRITE-PROPOSAL.md) owns the design, the guardrails, the delivery plan and the definition of done until it graduates to `docs/kernel/`. Old documents under `docs/` remain only as extraction sources until W0.4 and bind nothing; where one conflicts with this file or the proposal, this file and the proposal win.
+The project is a modular kernel, rewritten by owner direction (2026-11-08). The [kernel architecture](docs/kernel/ARCHITECTURE-SPEC.md) owns the design, the guardrails and the definition of done, and [PLAN](docs/PLAN.md) owns the delivery plan; where a document conflicts with this file or the kernel architecture, this file and the kernel architecture win.
 
 ## Start every session
 
 1. Read [PLAN's exact resume point](docs/PLAN.md#exact-resume-point).
-2. Read the proposal sections the task touches; for a coverage row, its row in the [coverage target](docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) by stable ID.
+2. Read the [kernel architecture](docs/kernel/ARCHITECTURE-SPEC.md) sections the task touches; for a coverage row, its row in the [coverage target](docs/PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list) by stable ID.
 3. Inspect `git status --short --branch` and `git log -5 --oneline`; preserve unrelated changes.
 
 ## Mission
@@ -84,7 +84,7 @@ Never initiate Temporal SDK repair, private SDK builds, patch qualification or a
 
 ### Delivery
 
-Deliver by mechanism track as the proposal plans. Report a missed budget to the owner at once with the boundary reached and the next decision; never renew it silently. Decide routine matters yourself. If work drifts into case-by-case fixes, revise the shared mechanism. `PLAN.md` and the kernel status map change only at a milestone or track closure, or at a stop. No work-in-progress or park commit lands on a track's mainline. A finding becomes a guard only for a defect class seen twice or a structural class; never turn a finding into a rule by default.
+Deliver by mechanism track as [PLAN](docs/PLAN.md#mechanism-tracks-then-rows) orders. Report a missed budget to the owner at once with the boundary reached and the next decision; never renew it silently. Decide routine matters yourself. If work drifts into case-by-case fixes, revise the shared mechanism. `PLAN.md` and the kernel status map change only at a milestone or track closure, or at a stop. No work-in-progress or park commit lands on a track's mainline. A finding becomes a guard only for a defect class seen twice or a structural class; never turn a finding into a rule by default.
 
 ### Reviews
 
@@ -96,7 +96,7 @@ The root is HIGH: it decides scope, meaning, design, bounds and acceptance, acce
 
 ### Code
 
-Follow the proposal's [guardrails](docs/LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation): one dispatch owner per guarded type, no catch-all over a guarded type, no mirror enumerations, layered imports, no profile identifier outside the catalog, Lean and TypeScript executable modules paired by name. Prefer enum-based pattern matching for semantic variants; keep the IL immutable and runtime state separate and serializable; perform no I/O in the kernel. Files target 800 nonblank lines with a ceiling of 1,200. Comments carry only non-obvious contracts and invariants, added in the change that introduces the fact. Use red/green TDD.
+Follow the kernel architecture's [guardrails](docs/kernel/ARCHITECTURE-SPEC.md#guardrails-against-degradation): one dispatch owner per guarded type, no catch-all over a guarded type, no mirror enumerations, layered imports, no profile identifier outside the catalog, Lean and TypeScript executable modules paired by name. Prefer enum-based pattern matching for semantic variants; keep the IL immutable and runtime state separate and serializable; perform no I/O in the kernel. Files target 800 nonblank lines with a ceiling of 1,200. Comments carry only non-obvious contracts and invariants, added in the change that introduces the fact. Use red/green TDD.
 
 ### Pre-release evolution
 
@@ -108,7 +108,7 @@ Obtain explicit owner approval before adding, removing, upgrading, vendoring or 
 
 ### Product 2
 
-For a material Product 2 UI/UX surface, inspect CIB Seven's analogous capability first and follow the [UI design specification](docs/BPM-PLATFORM-UI-DESIGN-SPEC.md); never copy code, styling, assets, private data models or product terminology. Before recommending a frontend library, routing approach, state owner or component system, read the [frontend recommendation preflight](docs/ARCHITECTURE.md#frontend-recommendation-preflight). Before PostgreSQL work, follow the [database test selection](docs/PLATFORM-VERIFICATION-POLICY.md#database-test-selection).
+For a material Product 2 UI/UX surface, inspect CIB Seven's analogous capability first and follow the [UI design specification](docs/BPM-PLATFORM-UI-DESIGN-SPEC.md); never copy code, styling, assets, private data models or product terminology. Before recommending a frontend library, routing approach, state owner or component system, read the [frontend recommendation preflight](docs/ARCHITECTURE.md#frontend-recommendation-preflight). Before PostgreSQL work, follow the [database test selection](docs/kernel/ENGINEERING-POLICY.md#product-2).
 
 ## Reference and source discipline
 
@@ -120,7 +120,7 @@ Locally: the Lean build of touched modules, the kernel runner, TypeScript type c
 
 **Never invoke `lake` or `lean` directly; use [the Lean wrapper](scripts/lake.sh)** (`build`, `test`, `run`, `exe`, `env lean`). It owns build parallelism, holds one fail-closed project lock shared by every checkout of this repository, and refuses a full-library build unless `LEAN_FULL_GATE=<gate>` names its gate. The [memory brake](scripts/lean-memory-brake.sh) exits `70` on a resource-ceiling breach; never raise it. Heavy lanes (full Lean, Docker, Temporal server, the complete pipeline, `verify.sh`) run one at a time across every checkout of this project, from the root only.
 
-In a managed sandbox, request host port-binding authorization before the first attempt to run `./scripts/verify.sh`, `./scripts/pnpm.sh run test:infrastructure`, `./scripts/pnpm.sh run test:temporal`, `./scripts/pnpm.sh run test:pipeline` or `./scripts/pnpm.sh run test:timer-time-skipping`; never probe inside the sandbox first. A loopback `EPERM` is a sandbox denial, not a port collision or test failure. Every helper process you start must terminate itself (bounded by `timeout`, a deadline or a fixed iteration count); capture each `$!` right after its own `&`.
+In a managed sandbox, request host port-binding authorization before the first attempt to run `./scripts/verify.sh`, `./scripts/pnpm.sh run test:infrastructure`, `./scripts/pnpm.sh run test:temporal-host:hosted`, `./scripts/pnpm.sh run test:differential:hosted` or `./scripts/pnpm.sh run test:pipeline`; never probe inside the sandbox first. A loopback `EPERM` is a sandbox denial, not a port collision or test failure. Every helper process you start must terminate itself (bounded by `timeout`, a deadline or a fixed iteration count); capture each `$!` right after its own `&`.
 
 ## Git and delivery
 
