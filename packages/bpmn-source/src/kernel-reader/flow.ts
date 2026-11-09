@@ -1,7 +1,7 @@
 import { asElement } from "../moddle-graph.js";
 import type { ElementRecord } from "../moddle-graph.js";
 import { defaultFlowOf, fixed, headerOf } from "./build.js";
-import { FlowElementKind, requireId } from "./model.js";
+import { FlowElementKind, ReadRefusal, ReadRefusalCode, requireId } from "./model.js";
 import type { Built, ModelNode, ReadContext } from "./model.js";
 import { assertNever, ctor } from "./wire.js";
 import type { KernelJson } from "./wire.js";
@@ -58,7 +58,20 @@ function gatewayKind(ctx: ReadContext, id: string, node: ModelNode, kind: Gatewa
   return assertNever(kind);
 }
 
+/**
+ * An instantiating Event-Based Gateway, Exclusive or Parallel (BPMN 2.0.2 §10.6.6, Table 10.127), starts the Process it
+ * begins, which `GatewayKind.eventBased` has no field for; the reader refuses it rather than read a gateway that waits
+ * (PC-CF-05).
+ */
+function refuseInstantiation(node: ModelNode, kind: GatewayKind): void {
+  if (kind === FlowElementKind.EventBasedGateway && (node.element.instantiate === true || node.element.eventGatewayType === "Parallel")) {
+    throw new ReadRefusal(ReadRefusalCode.EventBasedGatewayInstantiate, requireId(node.element),
+      `instantiate ${String(node.element.instantiate)}, eventGatewayType ${String(node.element.eventGatewayType)}`);
+  }
+}
+
 export function readGateway(ctx: ReadContext, node: ModelNode, kind: GatewayKind): Built {
+  refuseInstantiation(node, kind);
   const id = requireId(node.element);
   return fixed(id, ctor("gateway", {
     header: headerOf(node, kind),

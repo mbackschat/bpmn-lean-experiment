@@ -65,13 +65,38 @@ function first(...checks: readonly (() => string | null)[]): string | null {
   return null;
 }
 
+/** Whether an element sits directly in a Transaction. */
+function inTransaction(program: Program, header: Header): boolean {
+  return header.parent !== null && Scopes.transactionElement(program, header.parent);
+}
+
+/** What an element throws, if it is a throw Event. */
+function thrown(entry: Element): readonly [Header, Propagation.Reading] | null {
+  const event = elementEvent(entry);
+  if (event === null) return null;
+  const role = event[1].role;
+  switch (role.tag) {
+    case EventRoleTag.Throw:
+      return [event[0], Propagation.reading(role.record)];
+    case EventRoleTag.Catch:
+    case EventRoleTag.LinkCatch:
+    case EventRoleTag.LinkThrow:
+      return null;
+  }
+  return assertNever(role);
+}
+
+function compensationThrow(entry: Element): boolean {
+  return thrown(entry)?.[1].compensates ?? false;
+}
+
 function eventRole(program: Program, header: Header, payload: EventPayload): string | null {
   const role = payload.role;
   switch (role.tag) {
     case EventRoleTag.Catch:
       return Subscriptions.catchEvent(role.subscription) ?? subscriptionData(role.subscription);
     case EventRoleTag.Throw:
-      return Propagation.throwRecord(role.record);
+      return Propagation.throwRecord(inTransaction(program, header), role.record);
     case EventRoleTag.LinkCatch:
     case EventRoleTag.LinkThrow:
       return FlowAdmission.link(program, header, payload);
@@ -79,7 +104,8 @@ function eventRole(program: Program, header: Header, payload: EventPayload): str
   return assertNever(role);
 }
 
-function element(program: Program, entry: Element): string | null {
+/** `throws` lists the program's Compensation throws. */
+function element(program: Program, throws: readonly Element[], entry: Element): string | null {
   const header = entry.header;
   switch (entry.tag) {
     case ElementTag.Activity: {
@@ -93,26 +119,28 @@ function element(program: Program, entry: Element): string | null {
         () => Work.activity(program, payload),
         () => activityOrigin(program, header, payload),
         () => (loop === null ? null : MultiInstance.activity(payload.envelope, loop)),
-        () => Subscriptions.boundaries(payload.envelope.boundaries),
+        () => Subscriptions.boundaries(false, payload.envelope.boundaries),
         () => boundaryData(payload.envelope.boundaries),
+        () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
     }
     case ElementTag.Scope: {
       const payload = entry.payload;
-      const start = Scopes.interruptingStart(payload);
+      const subProcess = Scopes.eventSubProcessOf(payload);
       return first(
         () => Data.origin(header),
         () => Data.envelope(payload.envelope),
         () => Scopes.scope(program, header, payload),
-        () => (start === null ? null : Subscriptions.interruptingEventSubProcess(start)),
-        () => Subscriptions.boundaries(payload.envelope.boundaries),
+        () => (subProcess === null ? null : Subscriptions.eventSubProcess(subProcess[0], subProcess[1])),
+        () => Subscriptions.boundaries(Scopes.isTransaction(payload), payload.envelope.boundaries),
         () => boundaryData(payload.envelope.boundaries),
+        () => Scopes.nestedCompensation(program, throws, header, payload.envelope),
       );
     }
     case ElementTag.Event:
       return Data.origin(header) ?? eventRole(program, header, entry.payload);
     case ElementTag.Gateway:
-      return Data.origin(header) ?? FlowAdmission.gateway(program, entry.payload);
+      return Data.origin(header) ?? FlowAdmission.gateway(program, Work.branchContent, header, entry.payload);
     case ElementTag.Start: {
       const subscription = entry.payload.subscription;
       return first(
@@ -127,25 +155,12 @@ function element(program: Program, entry: Element): string | null {
   return assertNever(entry);
 }
 
-function throwTerminates(header: Header, payload: EventPayload): boolean {
-  const role = payload.role;
-  switch (role.tag) {
-    case EventRoleTag.Throw:
-      return header.parent !== null && Propagation.terminates(role.record);
-    case EventRoleTag.Catch:
-    case EventRoleTag.LinkCatch:
-    case EventRoleTag.LinkThrow:
-      return false;
-  }
-  return assertNever(role);
-}
-
 /** Whether the program's shape reaches an abnormal scope end: a Terminate in a Sub-Process or an interrupting Event Sub-Process. */
 function abnormalScope(program: Program): boolean {
   return program.elements.some((entry) => {
-    const event = elementEvent(entry);
+    const throw_ = thrown(entry);
     const scope = elementScope(entry);
-    return (event !== null && throwTerminates(event[0], event[1])) ||
+    return (throw_ !== null && throw_[0].parent !== null && throw_[1].terminates) ||
       (scope !== null && Scopes.interruptingStart(scope[1]) !== null);
   });
 }
@@ -166,13 +181,16 @@ function calledProcess(process: CalledProcess): string | null {
   return bound ? "process.definition.binding" : null;
 }
 
-/** The first refusal: profile options, then called-process bindings, flows and elements in program order. */
+/** The first refusal: references, profile options, then called-process bindings, flows and elements in program order. */
 export function admit(program: Program): string | null {
+  const throws = program.elements.filter(compensationThrow);
   return first(
+    () => FlowAdmission.references(program),
+    () => Scopes.references(program),
     () => Profile.options(abnormalScope(program), program.options),
     () => firstOf(program.processes, calledProcess),
     () => firstOf(program.flows, (entry) => flow(program, entry)),
-    () => firstOf(program.elements, (entry) => element(program, entry)),
+    () => firstOf(program.elements, (entry) => element(program, throws, entry)),
   );
 }
 

@@ -18,8 +18,8 @@ const scenario = JSON.parse(readFileSync(
 
 const header = (id: string, sourceType: string): Json => ({ id, origin: { definition: null, sourceId: id }, sourceType, parent: null });
 
-/** `Start → first → second → End`, where `Task` is an abstract Task and `Choice` an Exclusive Gateway whose one
- * candidate's condition is false. */
+/** `Start → first → second → End`, where `Task` is an abstract Task and `Choice` an Exclusive Gateway whose two
+ * candidates' conditions are false; the second, `Spare`, also reaches `End`. */
 function program(order: readonly ["Task" | "Choice", "Task" | "Choice"], marks: Readonly<{ before: boolean; after: boolean }>): Json {
   const flowInto = (element: string): string => `To_${element}`;
   const [first, second] = order;
@@ -39,7 +39,10 @@ function program(order: readonly ["Task" | "Choice", "Task" | "Choice"], marks: 
   const choice = {
     gateway: {
       header: header("Choice", "exclusiveGateway"),
-      payload: { kind: { exclusive: { candidates: [outOf("Choice")], default: null } }, incoming: [flowInto("Choice")], outgoing: [outOf("Choice")] },
+      payload: {
+        kind: { exclusive: { candidates: [outOf("Choice"), "Spare"], default: null } },
+        incoming: [flowInto("Choice")], outgoing: [outOf("Choice"), "Spare"],
+      },
     },
   };
   const condition = (source: string): unknown => (source === "Choice" ? { simpleBoolean: { body: { literal: { value: false } } } } : null);
@@ -49,12 +52,13 @@ function program(order: readonly ["Task" | "Choice", "Task" | "Choice"], marks: 
       { start: { header: header("Start", "startEvent"), payload: { subscription: null, outgoing: [flowInto(first)] } } },
       task,
       choice,
-      { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: [flowInto("End")], outgoing: [] } } },
+      { event: { header: header("End", "endEvent"), payload: { role: { throw: { record: "none" } }, placement: "finish", incoming: [flowInto("End"), "Spare"], outgoing: [] } } },
     ],
     flows: [
       { id: flowInto(first), source: "Start", target: first, condition: null },
       { id: flowInto(second), source: first, target: second, condition: condition(first) },
       { id: flowInto("End"), source: second, target: "End", condition: condition(second) },
+      { id: "Spare", source: "Choice", target: "End", condition: condition("Choice") },
     ],
   };
 }
@@ -63,7 +67,7 @@ function startFailure(json: Json): unknown {
   const decoded = decodeProgram(json);
   assert.ok(decoded.ok, decoded.ok ? "" : decoded.refusal);
   const stimulus = stimulusFromJson(scenario.stimuli[0]);
-  assert.ok(stimulus.ok && stimulus.value[1] !== null);
+  assert.ok(stimulus.ok);
   const outcome = step(hooks, decoded.value, null, stimulus.value[1]);
   return outcome.ok ? "committed" : outcome.failure;
 }

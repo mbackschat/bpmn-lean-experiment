@@ -50,6 +50,11 @@ def beginsWithoutToken : Work → Bool
   | .rule _ => false
   | .call _ => false
 
+/-- What a branch of a structured Inclusive region may hold (`Kernel.Admission.Flow.BranchWork`): a User or Service Task,
+which arms the branch, or a task without work; any other work is outside the reviewed region (PC-CF-04). -/
+def branchContent (work : Work) : Option Bool :=
+  if beginsWithoutToken work then some (mapsData work) else none
+
 def envelope (work : Work) (envelope : Envelope) : Option String :=
   if !envelope.inputs.isEmpty && !mapsData work then some "activity.inputMappings"
   else if !envelope.outputs.isEmpty && !mapsData work then some "activity.outputMappings"
@@ -78,6 +83,11 @@ def dataCorrespondence (work : CallWork) : Option String :=
     some "work.call.dataCorrespondence"
   else none
 
+/-- CIB drops a Call output whose target is a Multi-Instance counter before writing it
+(`CallableElementActivityBehavior.java:48,135,160-166`); the counters belong to the loop (BPMN 2.0.2 Table 10.30)
+(PC-SCOPE-04). -/
+def multiInstanceCounters : List String := ["nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"]
+
 /-- A Call names a called process literally that the program carries, not the root process and without an Event
 Sub-Process, binds the latest version, carries no business key or tenant and maps its data explicitly; its mappings
 live in `CallWork`, never in the envelope. -/
@@ -102,7 +112,8 @@ def call (program : Program) (work : CallWork) : Option String :=
     | .version _ => some "work.call.binding"
     | .versionTag _ => some "work.call.binding"
   element <|> binding <|>
-    (if work.businessKey.isSome then some "work.call.businessKey"
+    (if work.outputs.any (multiInstanceCounters.contains ·.target) then some "work.call.multiInstanceCounterOutput"
+     else if work.businessKey.isSome then some "work.call.businessKey"
      else if work.tenant.isSome then some "work.call.tenant"
      else if work.propagateAllInputs || work.propagateAllOutputs then some "work.call.propagateAll"
      else dataCorrespondence work)

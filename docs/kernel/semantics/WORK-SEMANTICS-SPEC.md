@@ -1,6 +1,10 @@
 # Work semantics
 
-What an Activity does once its occurrence has begun. [`Kernel.Feature.Work`](../../../Kernel/Feature/Work.lean) owns matching on the guarded type `Work` (`none`, `manual`, `user`, `receive`, `service`, `send`, `script`, `rule`, `call`), with [`Work.Call`](../../../Kernel/Feature/Work/Call.lean) for Call Activities and [`Work.Submission`](../../../Kernel/Feature/Work/Submission.lean) for the scope-chain submission rule; [`Kernel.Admission.Work`](../../../Kernel/Admission/Work.lean) admits it. How inputs, outputs and writes are evaluated is the [data semantics](data.md); boundaries, Errors and Multi-Instance bodies belong to the [subscriptions](subscriptions.md), [propagation](propagation.md) and [Multi-Instance](multi-instance.md) semantics.
+## Status
+
+Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it cites are the executable authority; where they differ, the difference is a defect of one of them.
+
+What an Activity does once its occurrence has begun. [`Kernel.Feature.Work`](../../../Kernel/Feature/Work.lean) owns matching on the guarded type `Work` (`none`, `manual`, `user`, `receive`, `service`, `send`, `script`, `rule`, `call`), with [`Work.Call`](../../../Kernel/Feature/Work/Call.lean) for Call Activities and [`Work.Submission`](../../../Kernel/Feature/Work/Submission.lean) for the scope-chain submission rule; [`Kernel.Admission.Work`](../../../Kernel/Admission/Work.lean) admits it. How inputs, outputs and writes are evaluated is the [data semantics](DATA-SEMANTICS-SPEC.md); boundaries, Errors and Multi-Instance bodies belong to the [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md), [propagation](PROPAGATION-SEMANTICS-SPEC.md) and [Multi-Instance](MULTI-INSTANCE-SEMANTICS-SPEC.md) semantics.
 
 ## Interpretation
 
@@ -21,7 +25,7 @@ What an Activity does once its occurrence has begun. [`Kernel.Feature.Work`](../
 
 ### User Tasks
 
-- A User Task occurrence opens one User Task item that publishes its name, literal candidate groups, form fields as `(key, type)` pairs and its evaluated inputs; `completeUserTask` naming the occurrence completes it ([decision][uti-decision]). What a completion writes is the [data semantics' OutputSet rule](data.md#activity-data).
+- A User Task occurrence opens one User Task item that publishes its name, literal candidate groups, form fields as `(key, type)` pairs and its evaluated inputs; `completeUserTask` naming the occurrence completes it ([decision][uti-decision]). What a completion writes is the [data semantics' OutputSet rule](DATA-SEMANTICS-SPEC.md#activity-data).
 - Assignment and form metadata are passive: they never change identity, enabledness, completion admission, the submitted-value merge or the continuation ([UTMETA-PASSIVE-01][utmeta-rules], [PARMETA-PASSIVE-01][parmeta-rules]).
 - The selected source is the CIB extension: `camunda:candidateGroups` and `camunda:formData/formField`, projected onto neutral candidate and field concepts so that a later standard source can project the same values without reinterpreting an admitted model. Standard Resource Roles, Human Performer, Potential Owner and Rendering stay deferred, because a Resource name does not say whether it denotes a user, group, role or organization and Rendering defines no field identity or type ([authority][utmeta-authority]). The exact lexical rules (alternate prefixes, boundary whitespace, no comma or expression opener) are source admission ([source profile][utmeta-source]).
 - Concurrent User Tasks are independent: completing one removes only its own item and metadata, and accepted completions apply in command order; final data is order-independent only for disjoint submitted keys ([PARMETA-SIBLING-01, PARMETA-DATA-01][parmeta-rules], [public contract][parmeta-contract]).
@@ -41,7 +45,7 @@ What an Activity does once its occurrence has begun. [`Kernel.Feature.Work`](../
 - An effect offers no user interaction; host attempts, retry counts, CIB incidents, job identities, Activity identities and transport keys never appear in observation ([EFFECT-OBSERVE-01][effect-rules]).
 - The host derives the transport idempotency key from definition identity, the occurrence and the descriptor, never from attempt, Activity or Run identity; transport retry and its exhaustion are host outcomes, never BPMN outcomes ([runtime contract][effect-runtime], [approved decisions][effect-approved], [excluded scope][effect-excluded]). The kernel supplies only the identity and descriptor.
 - Live occurrences of one Service Task, on concurrent tokens or in distinct scope occurrences, are distinct effects. A scope occurrence that holds an open effect is not idle (§13.3.4: a running Service Task is active), and committing one result changes only its own occurrence ([CSE-ARM-01, CSE-QUIESCE-01, CSE-ISOLATE-01, CSE-REFUSE-01][cse-rules], [normative basis][cse-norm], [public contract][cse-contract]).
-- A result's success patch is the effect's OutputSet ([data](data.md#activity-data)). A business failure leaves the Activity `raised` and raises a BPMN Error with the occurrence as host ([propagation](propagation.md)); it writes outputs only when the profile maps them on the error path (`ProfileOptions.errorPathOutputs`). A technical failure has no BPMN meaning (§13.3.3 defines only a fault): it is `unsupported` (`effect-technical-failure`) unless the profile selects incidents.
+- A result's success patch is the effect's OutputSet ([data](DATA-SEMANTICS-SPEC.md#activity-data)). A business failure leaves the Activity `raised` and raises a BPMN Error with the occurrence as host ([propagation](PROPAGATION-SEMANTICS-SPEC.md)); it writes outputs only when the profile maps them on the error path (`ProfileOptions.errorPathOutputs`). A technical failure has no BPMN meaning (§13.3.3 defines only a fault): it is `unsupported` (`effect-technical-failure`) unless the profile selects incidents.
 - A continuation that an effect result reaches and that cannot go on rolls back, unless the profile selects `ContinuationFailure.incident`, which turns the result into a technical failure ([`Step.effectContinuation`](../../../Kernel/Step.lean)).
 
 ### Incidents
@@ -69,7 +73,7 @@ What an Activity does once its occurrence has begun. [`Kernel.Feature.Work`](../
 - A called instance's identity is derived from the caller instance, the Call element and its activation, each part length-prefixed so nested identities never collide; it is distinct from the caller's and from every host identity ([CALL-IDENTITY-01][call-rules], [public identity][calln-contract], [`State.calledInstanceId`](../../../Kernel/State.lean)). Its tasks are addressed under that identity; an open called task publishes under the called identity and the caller's next task appears only after return ([CALL-OBSERVE-01][call-rules]).
 - A completion addressed with the caller's identity, to a sibling called instance, or to a returned instance is `rejected` ([CALL-REFUSE-01][call-rules], [CALLN-REFUSE-01][calln-rules], [CMCALL-REFUSE-01][cmcall-rules]).
 - Standard data across the Call boundary: the Call's Data Inputs and Outputs correspond to the called Process's (§10.3.6, §10.4.1 "Call Activity Mapping") without an association between them; their identifiers stay distinct. A task-owned output association may target its containing Process's DataOutput, the reading of §10.4.1's inconsistent "Data Output" wording that the selected interpretation follows; no association crosses a Process boundary ([normative basis][cdb-norm], [data flow][cdb-flow]). The kernel reads exactly one input and one output Data Association, never mixed with CIB variable mappings (`work.call.dataCorrespondence`). Canonical instance identity and variables stay the caller's and called interface storage is private ([data flow][cdb-flow]). No CIB relation is selected for standard Call data ([compatibility boundary][cdb-closure]).
-- CIB variable mappings across a Call (`camunda:in`, `camunda:out`) are the [data semantics](data.md#call-variable-mappings).
+- CIB variable mappings across a Call (`camunda:in`, `camunda:out`) are the [data semantics](DATA-SEMANTICS-SPEC.md#call-variable-mappings).
 
 ### Superseded first-profile restrictions
 
@@ -116,17 +120,18 @@ The deleted implementation admitted each work kind only in exact first-profile t
 | `work.user.assignee`, `work.user.candidateUsers`, `work.user.formKey`, `work.user.dueDate`, `work.user.followUpDate`, `work.user.priority`, `work.user.candidateGroupExpression` | User Task fields beyond literal candidate groups and form fields | PC-HUM-02; expression-valued fields wait for the M3 JUEL level |
 | `work.receive.correlation`, `work.receive.messageExpression` | correlated Receive Task, Message named by an expression | PC-HUM-03 |
 | `work.service.unboundImplementation` | Service work without protocol and operation | no handler to invoke |
-| `work.send` | Send Task without a configured implementation | PC-AUTO-04 |
+| `work.send` | Send Task that is not exactly the CIB-EXT-0023 form: a delegate expression with no `messageRef`, `operationRef`, output parameter or result variable (the reader reads only that form as configured service work, under every profile) | PC-AUTO-04 |
 | `work.script` | Script Task | PC-AUTO-05, PC-AUTO-06 |
 | `work.rule` | Business Rule Task without a delegate | PC-AUTO-07, PC-AUTO-08 |
 | `work.call.calledElementExpression`, `work.call.rootProcess`, `work.call.calledProcessMissing` | called element not a literal carried Process other than the root | PC-SCOPE-03 for dynamic and deployed binding |
 | `work.call.binding`, `work.call.businessKey`, `work.call.tenant`, `process.definition.binding` | version, deployment and tag binding, business key, tenant | PC-SCOPE-03 |
 | `work.call.propagateAll` | `variables="all"` in either direction | no reviewed account |
+| `work.call.multiInstanceCounterOutput` | a Call output targeting `nrOfInstances`, `nrOfActiveInstances` or `nrOfCompletedInstances` | CIB drops it (`CallableElementActivityBehavior`); PC-SCOPE-04 |
 | `work.call.dataCorrespondence` | standard Call data other than one input and one output Data Association | §10.3.6 correspondence the kernel can read |
 | `call.calledEventSubProcess` | called Process with an Event Sub-Process | the raise search and `armScope` read the Call's children for a called root |
 | `activity.inputMappings`, `activity.outputMappings` | mappings on work other than User and Service Tasks | nothing would carry or submit them |
-| `activity.multiInstanceBody` | Multi-Instance on work other than a User Task | [Multi-Instance rows](multi-instance.md) |
-| `activity.compensationHandler`, `activity.compensationHandler.input`, `compensation.handlerWork` | compensation on work the pipeline cannot complete | [compensation](compensation.md) |
+| `activity.multiInstanceBody` | Multi-Instance on work other than a User Task | [Multi-Instance rows](MULTI-INSTANCE-SEMANTICS-SPEC.md) |
+| `activity.compensationHandler`, `activity.compensationHandler.input`, `compensation.handlerWork` | compensation on work the pipeline cannot complete | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
 | `scope.implicitStart` | a Receive Task or Call begun by a Scope's implicit start | no flow to wait on |
 | dynamic: `effect-technical-failure` | technical failure without the incident profile | no BPMN meaning (§13.3.3) |
 | dynamic: `repeated-effect-incident` | a second incident on one effect occurrence | PC-AUTO-03 |
@@ -134,7 +139,7 @@ The deleted implementation admitted each work kind only in exact first-profile t
 | dynamic: `call-input-unavailable`, `call-output-unavailable` | an unavailable Data Association source at a Call | PC-DATA-09 |
 | dynamic: `async-boundary-failure` | a failure after an input crossed `asyncBefore`/`asyncAfter` | PC-AUTO-03 |
 
-Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `unknown-occurrence`, `message-channel-mismatch`, `unexpected-message-payload`, `incident-process-cancellation-unavailable`, `error-path-outputs-not-accepted` and the submission codes of the [data semantics](data.md#restrictions).
+Rejected commands: `unknown-user-task`, `unknown-effect`, `unknown-incident`, `unknown-occurrence`, `message-channel-mismatch`, `unexpected-message-payload`, `incident-process-cancellation-unavailable`, `error-path-outputs-not-accepted` and the submission codes of the [data semantics](DATA-SEMANTICS-SPEC.md#restrictions).
 
 ## Open rows
 

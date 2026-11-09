@@ -179,12 +179,20 @@ type ActivityKind = FlowElementKind.Task | FlowElementKind.ManualTask | FlowElem
   FlowElementKind.ServiceTask | FlowElementKind.SendTask | FlowElementKind.ReceiveTask | FlowElementKind.ScriptTask |
   FlowElementKind.BusinessRuleTask | FlowElementKind.CallActivity;
 
-const hasEffectImplementation = (ctx: ReadContext, element: ElementRecord): boolean =>
-  declaredImplementation(ctx, element) !== null || text(element, "implementation") !== null;
+/**
+ * A Send Task performed by a configured handler, the bounded reading CIB-EXT-0023 selects: a `camunda:delegateExpression`
+ * and no Message, Operation, output parameter or result variable, which that reading never reads. Any other Send Task
+ * stays Send work, whose BPMN meaning `Kernel.Admission` refuses (PC-AUTO-04).
+ */
+const configuredSendHandler = (ctx: ReadContext, element: ElementRecord): boolean =>
+  declaredImplementation(ctx, element)?.name === "delegateExpression" &&
+  reference(element, "messageRef", "bpmn:Message") === null && reference(element, "operationRef", "bpmn:Operation") === null &&
+  inputOutputParameters(ctx, element).outputs.length === 0 && ctx.attribute(element, "resultVariable") === null;
 
 /**
- * The work of an Activity and the type recorded for it. CIB executes a Send or Business Rule Task with a declared
- * implementation through the same delegate behaviour as a Service Task, so such a task is read as Service work.
+ * The work of an Activity and the type recorded for it. CIB executes a Business Rule Task with a declared
+ * implementation through the same delegate behaviour as a Service Task, so such a task is read as Service work; a Send
+ * Task is read so only within `configuredSendHandler`.
  */
 function workOf(ctx: ReadContext, element: ElementRecord, kind: ActivityKind): Readonly<{ work: KernelJson; sourceType: string }> {
   switch (kind) {
@@ -199,7 +207,7 @@ function workOf(ctx: ReadContext, element: ElementRecord, kind: ActivityKind): R
     case FlowElementKind.ServiceTask:
       return { work: serviceWork(ctx, element), sourceType: kind };
     case FlowElementKind.SendTask:
-      return hasEffectImplementation(ctx, element)
+      return configuredSendHandler(ctx, element)
         ? { work: serviceWork(ctx, element), sourceType: FlowElementKind.ServiceTask }
         : { work: sendWork(ctx, element), sourceType: kind };
     case FlowElementKind.ReceiveTask:

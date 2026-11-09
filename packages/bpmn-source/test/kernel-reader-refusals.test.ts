@@ -299,6 +299,20 @@ export const rows: readonly Row[] = [
       xml: catching(`<bpmn:conditionalEventDefinition><bpmn:condition xsi:type="bpmn:tFormalExpression">true</bpmn:condition></bpmn:conditionalEventDefinition>`),
     },
   },
+  {
+    code: "reader.eventBasedGatewayInstantiate",
+    description: "an Event-Based Gateway that instantiates its Process",
+    evidence: "instantiate true",
+    refused: { xml: model(`<bpmn:eventBasedGateway id="G" instantiate="true"/>`) },
+    control: { xml: model(`<bpmn:eventBasedGateway id="G"/>`) },
+  },
+  {
+    code: "reader.eventBasedGatewayInstantiate",
+    description: "a Parallel Event-Based Gateway",
+    evidence: "eventGatewayType Parallel",
+    refused: { xml: model(`<bpmn:eventBasedGateway id="G" instantiate="true" eventGatewayType="Parallel"/>`) },
+    control: { xml: model(`<bpmn:eventBasedGateway id="G" eventGatewayType="Exclusive"/>`) },
+  },
 ];
 
 for (const row of rows) {

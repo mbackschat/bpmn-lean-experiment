@@ -1,5 +1,9 @@
 # Multi-Instance semantics
 
+## Status
+
+Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it cites are the executable authority; where they differ, the difference is a defect of one of them.
+
 `Kernel.Feature.MultiInstance` ([Lean](../../../Kernel/Feature/MultiInstance.lean)) owns the guarded type `MultiInstanceMode` and the Multi-Instance body: a token reaching an Activity with Multi-Instance loop characteristics begins the body occurrence, which reads the input collection once, holds one slot per item in `FeatureSlots.multiInstances`, and begins each instance as an ordinary occurrence of the Activity in a scope occurrence of its own. `Kernel.Admission.MultiInstance` ([Lean](../../../Kernel/Admission/MultiInstance.lean)) admits the loop characteristics; `Kernel.Admission.Work` admits the instance's work. `Kernel.Publish.multiInstances` ([Lean](../../../Kernel/Publish.lean)) publishes the open bodies.
 
 ## Interpretation
@@ -14,19 +18,19 @@
 ### Completion and output
 
 - An instance's completion submits exactly its output data item, which fills that instance's slot whatever the completion order; the Activity's output collection, in item order, is written only when every slot is filled (`SMI-ITERATE-01`, `SMI-COMPLETE-01`, `PMI-COMPLETE-01`, `PMI-FINISH-01`). The output collection keeps the form of the input: a String List stays a String List.
-- The completion condition is evaluated after each instance completes; a true result before every slot is filled completes the Activity, ends the remaining instances, follows normal control and writes no output collection; a true result on the completion that fills the final slot writes the complete collection (`PMI-EARLY-01`, [PMI account][pmi-normative]). The no-partial-output rule reconciles early completion with the standard's caution that the output collection should not be accessible until all items are written; it is a profile resolution, not a claim about every BPMN implementation. The sequential account left the partial-output question open and excluded the completion condition ([SMI account][smi-normative]); the kernel applies the parallel resolution to both modes (reported).
+- The completion condition is evaluated after each instance completes; a true result before every slot is filled completes the Activity, ends the remaining instances, follows normal control and writes no output collection; a true result on the completion that fills the final slot writes the complete collection (`PMI-EARLY-01`, [PMI account][pmi-normative]). The no-partial-output rule reconciles early completion with the standard's caution that the output collection should not be accessible until all items are written; it is a profile resolution, not a claim about every BPMN implementation. The sequential account left the partial-output question open and excluded the completion condition ([SMI account][smi-normative]); the kernel applies the parallel resolution to both modes, and its selection for the sequential mode is track work of PC-MI-01, listed under the row below.
 - Under BPMN the condition is evaluated on every completion, the final one included (`MultiInstanceFinalBody.conditionEveryCompletion`).
 - All-complete outcomes are invariant under the order of distinct completion inputs; which instances an early completion ends follows the explicit input order (`PMI-ORDER-01`).
 - Wrong, stale, substituted or inactive identities and an output outside the declared item commit nothing (`SMI-REFUSE-01`, `PMI-REFUSE-01`).
 
 ### Interruption
 
-- The boundaries of a Multi-Instance Activity belong to its body (BPMN 2.0.2 §13.5.3; CIB `BpmnParse:3291-3295`): an instance arms none, and an interrupting boundary on the body cancels every instance, generates no pending item, writes no output collection and follows only the boundary flow (`SMI-CANCEL-01`, `PMI-TIMER-01`). One deadline covers the whole Activity, not one per instance ([SMI scope][smi-scope]). A raised event's search skips an instance's scope occurrence for boundaries (see [propagation](propagation.md)).
+- The boundaries of a Multi-Instance Activity belong to its body (BPMN 2.0.2 §13.5.3; CIB `BpmnParse:3291-3295`): an instance arms none, and an interrupting boundary on the body cancels every instance, generates no pending item, writes no output collection and follows only the boundary flow (`SMI-CANCEL-01`, `PMI-TIMER-01`). One deadline covers the whole Activity, not one per instance ([SMI scope][smi-scope]). A raised event's search skips an instance's scope occurrence for boundaries (see [propagation](PROPAGATION-SEMANTICS-SPEC.md)).
 - A task completion and the body's Timer aimed at the same committed state are ordered inputs: the first committed wins and the other is stale; a nonfinal completion leaves the Timer's identity and deadline unchanged ([SMI rules][smi-rules]).
 
 ### Publication
 
-- `openMultiInstances` is published in every state, as an empty list before entry and after either end, exactly when the program declares a Multi-Instance Activity; other programs omit it ([SMI contract][smi-contract], [PMI contract][pmi-contract]). Each entry carries the body occurrence's identity (process instance, element, activation), its mode, `plannedInstanceCount` (the once-evaluated cardinality), `pendingItemCount`, the Table 10.30 counters `numberOfInstances`, `numberOfActiveInstances` and `numberOfCompletedInstances`, and one entry per active instance with its counter, task identity, input data item and output binding name. `numberOfInstances` counts the instances generated so far, so `plannedInstanceCount = pendingItemCount + numberOfInstances`; the two planned counts are project extensions, not BPMN runtime attributes ([SMI account][smi-normative]). The snapshot and partial slots are never published. The sequential contract also published `numberOfTerminatedInstances` ([SMI contract][smi-contract]); the kernel publishes no terminated count, since a state that keeps a body never holds a terminated instance (kernel differs; reported).
+- `openMultiInstances` is published in every state, as an empty list before entry and after either end, exactly when the program declares a Multi-Instance Activity; other programs omit it ([SMI contract][smi-contract], [PMI contract][pmi-contract]). Each entry carries the body occurrence's identity (process instance, element, activation), its mode, `plannedInstanceCount` (the once-evaluated cardinality), `pendingItemCount`, the Table 10.30 counters `numberOfInstances`, `numberOfActiveInstances` and `numberOfCompletedInstances`, and one entry per active instance with its counter, task identity, input data item and output binding name. `numberOfInstances` counts the instances generated so far, so `plannedInstanceCount = pendingItemCount + numberOfInstances`; the two planned counts are project extensions, not BPMN runtime attributes ([SMI account][smi-normative]). The snapshot and partial slots are never published. The sequential contract also published `numberOfTerminatedInstances` ([SMI contract][smi-contract]); the kernel publishes no terminated count, since a state that keeps a body never holds a terminated instance; whether the count returns with interruption is track work of PC-MI-12, listed under the row below.
 - Ended instances are transition facts, never a retained open state: the journal closes each live instance as cancelled, and every generated instance is counted once as a flow-node occurrence (`SMI-OCCURRENCE-01`, [PMI contract][pmi-contract]).
 
 ## CIB relations
@@ -66,7 +70,7 @@ Superseded first-profile restrictions: the sequential and parallel User Task pro
 
 | Row | Decision owed or not yet implemented |
 |---|---|
-| PC-MI-01 | Cardinality generation; both modes on User Task bodies under the selected CIB result account. |
+| PC-MI-01 | Cardinality generation; both modes on User Task bodies under the selected CIB result account; the sequential completion condition and its partial-output resolution ([SMI account][smi-normative]). |
 | PC-MI-02, PC-MI-03 | Service Task and Call Activity bodies with per-instance effects and called instances. |
 | PC-MI-04, PC-MI-05 | Sequential and parallel Multi-Instance Sub-Processes: body quiescence, reset locals, fresh identities, early completion that cancels unfinished bodies after complete body quiescence ([SMIS basis][smis-basis], [PMIS purpose][pmis-purpose]). |
 | PC-MI-06 | Cardinality-driven Sub-Process bodies with a fixed total. |
@@ -75,7 +79,7 @@ Superseded first-profile restrictions: the sequential and parallel User Task pro
 | PC-MI-09 | Typed completion predicates for every body kind; classification of CIB's mode-specific final test (CIB-INT-0009). |
 | PC-MI-10 | Body data and result effects with local initialization, completed-body reset and sibling isolation (CIB-EXT-0017, CIB-EXT-0018). |
 | PC-MI-11 | Nested and repeated Multi-Instance composition and re-entry through a cycle. |
-| PC-MI-12 | Outer interruption and current-body boundaries for every body kind, fencing late results. |
+| PC-MI-12 | Outer interruption and current-body boundaries for every body kind, fencing late results; `numberOfTerminatedInstances` ([SMI contract][smi-contract]). |
 
 ## Sources
 

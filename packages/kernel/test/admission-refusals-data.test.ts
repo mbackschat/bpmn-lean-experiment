@@ -4,14 +4,13 @@
  * literal, variable or foreign condition on a gateway candidate is refused.
  */
 import {
-  activity, conditionOn, foreign, gateway, literalValue, bool, mapping, refusalTests, simpleBoolean, task, userWork, variable, replace,
+  activity, choice, conditionOn, foreign, literalValue, bool, mapping, refusalTests, simpleBoolean, task, userWork, variable,
   withOrigin,
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
 /** `T` becomes an exclusive gateway whose only candidate is `f2`, the one flow a condition may sit on. */
-const gatewayWith = (conditionExpression: Json) => (program: Json): Json =>
-  conditionOn(replace(program, "T", gateway("T", { exclusive: { candidates: ["f2"], default: null } })), "f2", conditionExpression);
+const gatewayWith = (conditionExpression: Json) => (program: Json): Json => conditionOn(choice(["f2"])(program), "f2", conditionExpression);
 
 const userTaskMapping = (source: Json) => task(activity("T", userWork(), { inputs: [mapping("x", source)] }));
 

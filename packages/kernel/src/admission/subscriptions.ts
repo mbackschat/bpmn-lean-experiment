@@ -2,9 +2,9 @@
  * Admission of catch Events, boundaries and triggered starts, transcribed from `Kernel/Admission/Subscriptions.lean`. A
  * refusal carries a stable code.
  *
- * Admitted: Timers with a literal exact duration (a cycle only on a boundary), Messages with a literal or unspecified
- * name and no correlation, a correlated Message only on a catch Event, and, on boundaries, the triggers that
- * `feature/propagation.ts` delivers (Error, Escalation, Compensation, Cancel).
+ * Admitted: Timers with a literal exact duration (a cycle only on a boundary), Messages with a literal name and no
+ * correlation, a correlated Message only on a catch Event, and, on boundaries, the triggers that
+ * `feature/propagation.ts` delivers (an interrupting Error, Escalation, Compensation, and Cancel on a Transaction).
  */
 import {
   CycleDialect,
@@ -67,9 +67,14 @@ function interruptingCycle(trigger: TimerTrigger): string | null {
   return assertNever(trigger.schedule);
 }
 
+/**
+ * A Message subscription is addressed by its Message (`messageRef`, BPMN 2.0.2 §10.5.5); without one only an
+ * occurrence-addressed command could reach it, which CIB-INT-0004 selects for a Receive Task alone, and
+ * `BpmnParse#parseMessageEventDefinition` refuses it (PC-MESSAGE-01).
+ */
 export function message(trigger: MessageTrigger): string | null {
   if (trigger.correlation.length > 0) return "message.correlation";
-  if (trigger.name === null) return null;
+  if (trigger.name === null) return "message.unnamed";
   switch (trigger.name.tag) {
     case ValueSourceTag.Expression:
       return "message.nameExpression";
@@ -121,17 +126,21 @@ function escalationTrigger(trigger: EscalationTrigger): string | null {
   return trigger.codeVariable !== null ? "event.escalation.codeVariable" : null;
 }
 
-/** An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts. */
-export function interruptingEventSubProcess(start: Subscription): string | null {
+/**
+ * An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts; an Error
+ * Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4) (PC-ERROR-02).
+ */
+export function eventSubProcess(start: Subscription, interrupting: boolean): string | null {
   const trigger = start.trigger;
   switch (trigger.tag) {
     case TriggerTag.Message:
-      return "scope.eventSubProcess.interruptingMessage";
+      return interrupting ? "scope.eventSubProcess.interruptingMessage" : null;
     case TriggerTag.Timer:
-      return interruptingCycle(trigger.payload);
+      return interrupting ? interruptingCycle(trigger.payload) : null;
+    case TriggerTag.Error:
+      return interrupting ? null : "start.error.nonInterrupting";
     case TriggerTag.Signal:
     case TriggerTag.Condition:
-    case TriggerTag.Error:
     case TriggerTag.Escalation:
     case TriggerTag.Compensation:
     case TriggerTag.Cancel:
@@ -165,7 +174,12 @@ export function catchEvent(subscription: Subscription): string | null {
   return assertNever(trigger);
 }
 
-function boundary(attached: Boundary): string | null {
+/**
+ * `transactionHost` says whether the boundary hangs on a Transaction. An Error boundary always interrupts (BPMN 2.0.2
+ * Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
+ * `BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02).
+ */
+function boundary(transactionHost: boolean, attached: Boundary): string | null {
   const refused = outputs(attached.subscription);
   if (refused !== null) return refused;
   const trigger = attached.subscription.trigger;
@@ -179,19 +193,21 @@ function boundary(attached: Boundary): string | null {
     case TriggerTag.Condition:
       return "boundary.condition";
     case TriggerTag.Error:
-      return errorTrigger(trigger.payload);
+      return (attached.interrupting ? null : "boundary.error.nonInterrupting") ?? errorTrigger(trigger.payload);
     case TriggerTag.Escalation:
       return escalationTrigger(trigger.payload);
     case TriggerTag.Compensation:
-    case TriggerTag.Cancel:
       return null;
+    case TriggerTag.Cancel:
+      if (!transactionHost) return "boundary.cancel.host";
+      return attached.interrupting ? null : "boundary.cancel.nonInterrupting";
   }
   return assertNever(trigger);
 }
 
-export function boundaries(list: readonly Boundary[]): string | null {
+export function boundaries(transactionHost: boolean, list: readonly Boundary[]): string | null {
   for (const attached of list) {
-    const refused = boundary(attached);
+    const refused = boundary(transactionHost, attached);
     if (refused !== null) return refused;
   }
   return null;

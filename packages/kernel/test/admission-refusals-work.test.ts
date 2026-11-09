@@ -9,6 +9,9 @@ import {
 } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
+/** `H`, an unconnected Task that a compensation subject names as its handler. */
+const handlerTask = activity("H", "manual", { incoming: [], outgoing: [] });
+
 const withTask = (work: Json | string, env: Json = {}) => task(activity("T", work, env));
 
 /** The process-level element `CT` of the called process `Called`, a Task unless a row names another. */
@@ -48,14 +51,14 @@ export const rows: readonly Row[] = [
   {
     code: "activity.compensationHandler",
     description: "a compensation handler on a Task without work",
-    mutate: withTask("manual", { compensationHandler: "H" }),
-    control: withTask(userWork(), { compensationHandler: "H" }),
+    mutate: (program) => append(withTask("manual", { compensationHandler: "H" })(program), handlerTask),
+    control: (program) => append(withTask(userWork(), { compensationHandler: "H" })(program), handlerTask),
   },
   {
     code: "activity.compensationHandler",
     description: "a compensation handler on a Multi-Instance User Task",
-    mutate: withTask(userWork(), { compensationHandler: "H", multiInstance: loop() }),
-    control: withTask(userWork(), { compensationHandler: "H" }),
+    mutate: (program) => append(withTask(userWork(), { compensationHandler: "H", multiInstance: loop() })(program), handlerTask),
+    control: (program) => append(withTask(userWork(), { compensationHandler: "H" })(program), handlerTask),
   },
   {
     code: "work.receive.correlation",
@@ -116,6 +119,12 @@ export const rows: readonly Row[] = [
     description: "a Call Activity bound to its deployment",
     mutate: calling({ binding: "deployment" }),
     control: calling({ binding: "latest" }),
+  },
+  {
+    code: "work.call.multiInstanceCounterOutput",
+    description: "a Call output targeting a Multi-Instance counter",
+    mutate: calling({ outputs: [callVariable("nrOfInstances")] }),
+    control: calling({ outputs: [callVariable("count")] }),
   },
   {
     code: "work.call.businessKey",

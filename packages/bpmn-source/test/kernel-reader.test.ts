@@ -16,6 +16,9 @@ function model(body: string, roots = ""): string {
 ${roots}<bpmn:process id="P" isExecutable="true">${body}</bpmn:process></bpmn:definitions>`;
 }
 
+/** The same model with its Definitions naming the Simple Boolean language, the only one the reader parses. */
+const declared = (xml: string): string => xml.replace(`id="D"`, `id="D" expressionLanguage="urn:bpmn-lean:expression:simple-boolean:v1"`);
+
 const read = (xml: string, profile = "any-profile"): Promise<KernelRead> => readKernelProgram({
   bytes: new TextEncoder().encode(xml),
   overlay: null,
@@ -42,14 +45,14 @@ const element = (p: Json, id: string): Json => {
 };
 
 test("an exclusive gateway keeps document order of its candidates, an inclusive one id order", async () => {
-  const p = await program(model(`<bpmn:startEvent id="S"/>
+  const p = await program(declared(model(`<bpmn:startEvent id="S"/>
     <bpmn:exclusiveGateway id="X" default="z"/><bpmn:inclusiveGateway id="I"/><bpmn:endEvent id="E"/>
     <bpmn:sequenceFlow id="s" sourceRef="S" targetRef="X"/>
     <bpmn:sequenceFlow id="b" sourceRef="X" targetRef="I"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">isPresent(a)</bpmn:conditionExpression></bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="a" sourceRef="X" targetRef="I"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">isNull(a)</bpmn:conditionExpression></bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="z" sourceRef="X" targetRef="I"/>
     <bpmn:sequenceFlow id="q" sourceRef="I" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">true</bpmn:conditionExpression></bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="p" sourceRef="I" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">false</bpmn:conditionExpression></bpmn:sequenceFlow>`));
+    <bpmn:sequenceFlow id="p" sourceRef="I" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">false</bpmn:conditionExpression></bpmn:sequenceFlow>`)));
   assert.deepEqual(element(p, "X").gateway.payload.kind, { exclusive: { candidates: ["b", "a"], default: "z" } });
   assert.deepEqual(element(p, "I").gateway.payload.kind, { inclusive: { candidates: ["p", "q"], default: null } });
   const flow = (id: string): Json => p.flows.find((entry: Json) => entry.id === id);
@@ -111,10 +114,10 @@ test("each mapping names the syntax that wrote it", async () => {
 });
 
 test("an Activity carries its default flow and asynchronous continuations in its envelope", async () => {
-  const p = await program(model(`<bpmn:task id="T" default="d" camunda:asyncBefore="true" camunda:asyncAfter="true"/><bpmn:task id="A" camunda:async="true"/>
+  const p = await program(declared(model(`<bpmn:task id="T" default="d" camunda:asyncBefore="true" camunda:asyncAfter="true"/><bpmn:task id="A" camunda:async="true"/>
     <bpmn:userTask id="U"><bpmn:multiInstanceLoopCharacteristics camunda:collection="items" isSequential="true"/></bpmn:userTask><bpmn:endEvent id="E"/>
     <bpmn:sequenceFlow id="c" sourceRef="T" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">true</bpmn:conditionExpression></bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="d" sourceRef="T" targetRef="E"/>`));
+    <bpmn:sequenceFlow id="d" sourceRef="T" targetRef="E"/>`)));
   const envelope = element(p, "T").activity.payload.envelope;
   assert.equal(envelope.defaultFlow, "d");
   assert.equal(envelope.asyncBefore, true);
@@ -288,6 +291,27 @@ test("semantic choices are emitted in full shape and left to Kernel.Admission", 
     <bpmn:association id="A" sourceRef="B" targetRef="H"/>`));
   assert.equal(element(compensationInput, "U").activity.payload.envelope.compensationHandler, "H");
   assert.deepEqual(element(compensationInput, "H").activity.payload.envelope.inputs, [{ target: "I", source: { variable: { name: "Prop" } }, dialect: "dataAssociation" }]);
+});
+
+test("a condition with no named language is in XPath, the BPMN default, even when it parses as Simple Boolean", async () => {
+  const flowWith = (language: string): string => model(`<bpmn:exclusiveGateway id="X" default="z"/><bpmn:endEvent id="E"/>
+    <bpmn:sequenceFlow id="c" sourceRef="X" targetRef="E"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"${language}>isPresent(a)</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="z" sourceRef="X" targetRef="E"/>`);
+  const condition = async (xml: string): Promise<unknown> => (await program(xml)).flows.find((entry: Json) => entry.id === "c").condition;
+  assert.deepEqual(await condition(flowWith("")), { foreign: { language: "http://www.w3.org/1999/XPath", source: "isPresent(a)" } });
+  assert.deepEqual(await condition(declared(flowWith(""))), { simpleBoolean: { body: { isPresent: { name: "a" } } } });
+  assert.deepEqual(await condition(flowWith(` language="urn:bpmn-lean:expression:simple-boolean:v1"`)), { simpleBoolean: { body: { isPresent: { name: "a" } } } });
+});
+
+test("a Send Task is read as an effect only as CIB-EXT-0023's configured handler", async () => {
+  const p = await program(model(`<bpmn:sendTask id="Class" camunda:class="x.Y"/><bpmn:sendTask id="Bpmn" implementation="urn:x" operationRef="O"/>
+    <bpmn:sendTask id="Named" messageRef="M" camunda:delegateExpression="\${d}"/>
+    <bpmn:sendTask id="Output" camunda:delegateExpression="\${d}"><bpmn:extensionElements><camunda:inputOutput><camunda:outputParameter name="r">x</camunda:outputParameter></camunda:inputOutput></bpmn:extensionElements></bpmn:sendTask>`,
+  `<bpmn:message id="M"/><bpmn:interface id="I" name="I"><bpmn:operation id="O" name="O"/></bpmn:interface>`));
+  for (const id of ["Class", "Bpmn", "Named", "Output"]) {
+    assert.ok(Object.hasOwn(element(p, id).activity.payload.work, "send"), id);
+    assert.equal(element(p, id).activity.header.sourceType, "sendTask", id);
+  }
 });
 
 test("a Send Task without an implementation is read as Send work, a declared one as an effect", async () => {

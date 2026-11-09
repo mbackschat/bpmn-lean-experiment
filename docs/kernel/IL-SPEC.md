@@ -1,5 +1,9 @@
 # Kernel IL specification
 
+## Status
+
+Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it cites are the executable authority; where they differ, the difference is a defect of one of them.
+
 The kernel IL is the program both kernels execute: one immutable, serializable, project-owned record per deployed definition, fixed in shape for every row of the [coverage target](../PRACTICAL-CIB7-COVERAGE-TARGET.md). [`Kernel/IL/Types.lean`](../../Kernel/IL/Types.lean) and [`Kernel/IL/Types/Options.lean`](../../Kernel/IL/Types/Options.lean) are the authority for every record and field; this document states the wire encoding, the shape at the level a producer or consumer needs, and the rules that keep the shape stable while admission widens. The [proposal's IL section](../LEAN-KERNEL-REWRITE-PROPOSAL.md#il) owns the design rationale.
 
 ## Position in the pipeline
@@ -17,7 +21,7 @@ The wire form is Lean's derived JSON encoding of the IL types ([`Kernel/IL/Codec
 - `ElementId` and `FlowId` are plain strings.
 - A data `Value` uses the scenario contract's `variableValue` form `{"kind": …, "value": …}` with kinds `null`, `boolean`, `integer`, `decimal` (`coefficient` as a decimal string, `scale` a natural), `string`, `stringList`, `list` and `map` (entries `{name, value}` in order). `Value` is the one nested inductive: kernel logic never recurses through a business value.
 - Two limits are JavaScript's: the TypeScript decoder refuses integers outside the safe range and cannot tell `1` from `1.0`.
-- The reviewed artifact-admission rule is strict: a duplicate decoded key, an unpaired surrogate, an unknown or missing field and unconsumed input are refused ([strict JSON][lcd-json]). The derived decoder ignores an unknown field and reads a missing `Option` field as `none` (kernel differs; reported).
+- The reviewed artifact-admission rule is strict: a duplicate decoded key, an unpaired surrogate, an unknown or missing field and unconsumed input are refused ([strict JSON][lcd-json]). Both decoders follow it: the Lean decoder re-encodes what it read and refuses any difference (`Kernel.IL.Codec.strictly`), the TypeScript decoder parses strictly (`parseStrict`).
 
 ## Program
 
@@ -52,13 +56,13 @@ The shared activity envelope, on Activity and Scope alike: `incoming` and `outgo
 
 A `Subscription` is a trigger plus output mappings. Triggers: `timer` (`duration`, `date` or `cycle` with dialect `iso8601` or `cron`, each a `ValueSource`), `message` (name as `ValueSource` or `none` for an unspecified Message, correlation criteria `{key, value}`, `interfaceRef`, `operationRef`), `signal` (name), `condition` (expression, variable name, variable events), `error` (code or catch-all, code and message variables), `escalation` (code or catch-all, code variable), `compensation`, `cancel`.
 
-A throw record is `none`, `message` (optional binding, payload mappings), `signal` (name, payload, `propagateAll`, `localOnly`, business key, `asynchronous`), `error` (code, optional message), `escalation` (code), `compensation` (optional `activity`, `waitForCompletion`), `cancel` or `terminate`.
+A throw record is `none`, `message` (optional binding, payload mappings), `signal` (name, payload, `propagateAll`, `localOnly`, business key, `asynchronous`), `error` (code, optional message), `escalation` (code), `compensation` (optional `activity`, `waitForCompletion`), `cancel` or the Terminate End Event's record.
 
 A Multi-Instance wrapper is `mode` (`sequential`, `parallel`), `count` (`collection` or `cardinality` expression), element variable, completion condition, input and output data items, output collection, and `mutableCollection` (`entrySnapshot` or `sequentialReread`).
 
 ### Expressions and mappings
 
-An `Expression` is `literal {value}`, `simpleBoolean {body}`, `variable {name}` or `foreign {language, source}`. The kernel evaluates the first three, the [Simple Boolean subset](../SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) being `literal`, `isPresent`, `isNull` and `stringEquals`; `foreign` carries any other language's text for the evaluator a later profile selects, and admission refuses it today. A `ValueSource` is a `literal` string or an `expression`. A `Mapping` is `target := source` with a `dialect` (`dataAssociation`, `ioParameter`, `callVariable`) that settles what an unavailable source means; [data](semantics/data.md) owns that meaning.
+An `Expression` is `literal {value}`, `simpleBoolean {body}`, `variable {name}` or `foreign {language, source}`. The kernel evaluates the first three, the [Simple Boolean subset](../SIMPLE-BOOLEAN-EXPRESSION-DECISION.md) being `literal`, `isPresent`, `isNull` and `stringEquals`; `foreign` carries any other language's text for the evaluator a later profile selects, and admission refuses it today. A `ValueSource` is a `literal` string or an `expression`. A `Mapping` is `target := source` with a `dialect` (`dataAssociation`, `ioParameter`, `callVariable`) that settles what an unavailable source means; [data](semantics/DATA-SEMANTICS-SPEC.md) owns that meaning.
 
 ### Profile options
 
@@ -92,7 +96,7 @@ The kernel step takes one input per call ([`Kernel/State/Input.lean`](../../Kern
 
 ## Refusal by field
 
-The IL carries the full shape of every row now; admission widens per track. A field outside the admitted surface is refused by `Kernel.Admission` with a stable refusal code, never left out of the type ([forward-compatible restrictions](../../CLAUDE.md#forward-compatible-restrictions)), so admitting it later widens the surface without reinterpreting any accepted program. Three guards hold the rule: every IL field is read by a non-codec declaration or refused with a code (guard 19); every runtime `unsupported` code has a matching admission refusal for the same shape or is marked dynamic-only at its site (guard 20); and every coverage row has a traceability entry and a decoding fixture (guard 21, [row traceability](ROW-TRACEABILITY-MAP.md)). [Admission](semantics/admission.md) lists the codes.
+The IL carries the full shape of every row now; admission widens per track. A field outside the admitted surface is refused by `Kernel.Admission` with a stable refusal code, never left out of the type ([forward-compatible restrictions](../../CLAUDE.md#forward-compatible-restrictions)), so admitting it later widens the surface without reinterpreting any accepted program. Three guards hold the rule: every IL field is read by a non-codec declaration or refused with a code (guard 19); every runtime `unsupported` code has a matching admission refusal for the same shape or is marked dynamic-only at its site (guard 20); and every coverage row has a traceability entry and a decoding fixture (guard 21, [row traceability](ROW-TRACEABILITY-MAP.md)). [Admission](semantics/ADMISSION-SEMANTICS-SPEC.md) lists the codes.
 
 ## Superseded representation
 
@@ -104,18 +108,18 @@ The old Semantic Process IL lowered admitted BPMN to mechanism operations over c
 
 | Old construct | Owner |
 |---|---|
-| Initiation by none, Message and Timer start | [subscriptions](semantics/subscriptions.md) |
-| User Task wait, Activity data-input and output User Tasks | [work](semantics/work.md), [data](semantics/data.md) |
-| Sequential Multi-Instance User Task | [multi-instance](semantics/multi-instance.md) |
-| Relative timer wait, Message subscription wait, event race arming and winner | [subscriptions](semantics/subscriptions.md), [flow](semantics/flow.md) |
-| Interrupting Message Event Sub-Process | [scopes](semantics/scopes.md) |
-| External effect wait, data mapping and typed business error | [work](semantics/work.md), [propagation](semantics/propagation.md) |
-| Parallel duplication and synchronization, Exclusive merge, conditional choice, Inclusive selection and synchronization | [flow](semantics/flow.md) |
-| Definition-scope entry and completion | [scopes](semantics/scopes.md) |
-| Compensation Event Sub-Process parent snapshots | [compensation](semantics/compensation.md) |
-| Called-Process invocation and return | [work](semantics/work.md) |
-| Error throw and direct-parent interruption | [propagation](semantics/propagation.md) |
-| Internal scheduling | [publication and observation](semantics/publication-and-observation.md) |
+| Initiation by none, Message and Timer start | [subscriptions](semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md) |
+| User Task wait, Activity data-input and output User Tasks | [work](semantics/WORK-SEMANTICS-SPEC.md), [data](semantics/DATA-SEMANTICS-SPEC.md) |
+| Sequential Multi-Instance User Task | [multi-instance](semantics/MULTI-INSTANCE-SEMANTICS-SPEC.md) |
+| Relative timer wait, Message subscription wait, event race arming and winner | [subscriptions](semantics/SUBSCRIPTIONS-SEMANTICS-SPEC.md), [flow](semantics/FLOW-SEMANTICS-SPEC.md) |
+| Interrupting Message Event Sub-Process | [scopes](semantics/SCOPES-SEMANTICS-SPEC.md) |
+| External effect wait, data mapping and typed business error | [work](semantics/WORK-SEMANTICS-SPEC.md), [propagation](semantics/PROPAGATION-SEMANTICS-SPEC.md) |
+| Parallel duplication and synchronization, Exclusive merge, conditional choice, Inclusive selection and synchronization | [flow](semantics/FLOW-SEMANTICS-SPEC.md) |
+| Definition-scope entry and completion | [scopes](semantics/SCOPES-SEMANTICS-SPEC.md) |
+| Compensation Event Sub-Process parent snapshots | [compensation](semantics/COMPENSATION-SEMANTICS-SPEC.md) |
+| Called-Process invocation and return | [work](semantics/WORK-SEMANTICS-SPEC.md) |
+| Error throw and direct-parent interruption | [propagation](semantics/PROPAGATION-SEMANTICS-SPEC.md) |
+| Internal scheduling | [publication and observation](semantics/PUBLICATION-AND-OBSERVATION-SEMANTICS-SPEC.md) |
 
 ## Sources
 

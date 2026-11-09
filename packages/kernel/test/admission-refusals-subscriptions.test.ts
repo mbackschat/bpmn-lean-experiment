@@ -39,6 +39,10 @@ const eventSubProcessOn = (trigger: Json | string, interrupting: boolean) => (pr
     interrupting ? withOptions(program, { abnormalScopeEnd: "completesNormally" }) : program);
 
 const named = message({ name: text("M") });
+
+/** `T` becomes a Transaction with a Cancel boundary `B`; `over` overrides the boundary's own fields. */
+const onTransaction = (over: Json = {}) =>
+  task(scope("T", { transaction: { payload: { method: "compensate" } } }, {}, { boundaries: [boundary("B", cancelTrigger, over)] }));
 const correlated = (...criteria: Json[]) => message(channel({ correlation: criteria }));
 const key = criterion("k", variable("x"));
 
@@ -222,6 +226,49 @@ export const rows: readonly Row[] = [
     control: nested(compensationTrigger),
   },
   { code: "start.cancel", description: "a Cancel start", mutate: nested(cancelTrigger) },
+  // BPMN structure and nameless Messages.
+  {
+    code: "message.unnamed",
+    description: "a catch Message without a Message",
+    mutate: catching(message()),
+    control: catching(named),
+  },
+  {
+    code: "message.unnamed",
+    description: "a boundary Message without a Message",
+    mutate: bounded(message()),
+    control: bounded(named),
+  },
+  {
+    code: "message.unnamed",
+    description: "a process Message start without a Message",
+    mutate: starting(message()),
+    control: starting(named),
+  },
+  {
+    code: "boundary.error.nonInterrupting",
+    description: "a non-interrupting Error boundary",
+    mutate: bounded(errorTrigger(), { interrupting: false }),
+    control: bounded(errorTrigger()),
+  },
+  {
+    code: "start.error.nonInterrupting",
+    description: "a non-interrupting Error Event Sub-Process",
+    mutate: eventSubProcessOn(errorTrigger(), false),
+    control: eventSubProcessOn(errorTrigger(), true),
+  },
+  {
+    code: "boundary.cancel.host",
+    description: "a Cancel boundary on a Task",
+    mutate: bounded(cancelTrigger),
+    control: onTransaction(),
+  },
+  {
+    code: "boundary.cancel.nonInterrupting",
+    description: "a non-interrupting Cancel boundary on a Transaction",
+    mutate: onTransaction({ interrupting: false }),
+    control: onTransaction(),
+  },
 ];
 
 refusalTests("subscriptions", rows);

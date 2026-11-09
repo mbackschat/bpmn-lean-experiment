@@ -8,7 +8,9 @@ public section
 
 namespace Kernel.Admission.Propagation
 
-def throwRecord : Throw → Option String
+/-- `inTransaction` says whether the throw's parent is a Transaction: a Cancel End is used only within a Transaction
+Sub-Process (BPMN 2.0.2 §10.3.5, §10.5.5 Cancel Event; `BpmnParse#parseEndEvents` refuses it elsewhere) (PC-TX-02). -/
+def throwRecord (inTransaction : Bool) : Throw → Option String
   | .none => none
   | .error record =>
     match record.message with
@@ -23,16 +25,21 @@ def throwRecord : Throw → Option String
     if record.activity.isSome then some "throw.compensation.activity"
     else if !record.waitForCompletion then some "throw.compensation.asynchronous"
     else none
-  | .cancel => none
+  | .cancel => if inTransaction then none else some "throw.cancel.outsideTransaction"
 
-def terminates : Throw → Bool
-  | .terminate => true
-  | .none => false
-  | .message _ => false
-  | .signal _ => false
-  | .error _ => false
-  | .escalation _ => false
-  | .compensation _ => false
-  | .cancel => false
+/-- What other admissions read of a throw: whether it terminates its scope or throws Compensation. -/
+structure Reading where
+  terminates : Bool := false
+  compensates : Bool := false
+
+def reading : Throw → Reading
+  | .terminate => { terminates := true }
+  | .compensation _ => { compensates := true }
+  | .none => {}
+  | .message _ => {}
+  | .signal _ => {}
+  | .error _ => {}
+  | .escalation _ => {}
+  | .cancel => {}
 
 end Kernel.Admission.Propagation

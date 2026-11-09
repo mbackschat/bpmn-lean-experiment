@@ -30,6 +30,7 @@ export enum ReadRefusalCode {
   ThrowWithoutCode = "reader.throwWithoutCode",
   MultiInstanceWithoutCount = "reader.multiInstanceWithoutCount",
   ConditionWithoutExpression = "reader.conditionWithoutExpression",
+  EventBasedGatewayInstantiate = "reader.eventBasedGatewayInstantiate",
 }
 
 export class ReadRefusal extends Error {

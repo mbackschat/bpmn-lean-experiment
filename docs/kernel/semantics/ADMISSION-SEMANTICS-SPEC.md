@@ -1,15 +1,19 @@
 # Admission semantics
 
+## Status
+
+Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it cites are the executable authority; where they differ, the difference is a defect of one of them.
+
 Admission decides whether a program lies inside the admitted surface before any instance runs. It is a rule per IL field, never a recognizer of whole topologies or of profile identifiers: [`Kernel/AdmissionRegistry.lean`](../../../Kernel/AdmissionRegistry.lean) returns the first refusal of the program, and each `Kernel.Admission.<F>` module owns the rules of one feature. Reading the BPMN source and admission are separate steps, and so are admission, normalization, execution, publication and host persistence. This document owns the cross-cutting rules, the reader's refusals and the profile-option refusals; each feature's own refusal codes and their reasons live in that feature's document.
 
 ## Interpretation
 
-- Admission is the conjunction of reusable rules over the program, not a growing disjunction of exact whole-program topologies; a profile restricts the shapes it admits without that restriction becoming the general meaning of the construct ([scope][ppa-scope], [exact claim][ppa-claim]). A restriction is a refusal with a stable code on the field it concerns ([forward-compatible restrictions](../../../CLAUDE.md#forward-compatible-restrictions)), so admitting the field later widens the surface without reinterpreting accepted programs ([IL refusal rule](../IL-SPECIFICATION.md#refusal-by-field)).
+- Admission is the conjunction of reusable rules over the program, not a growing disjunction of exact whole-program topologies; a profile restricts the shapes it admits without that restriction becoming the general meaning of the construct ([scope][ppa-scope], [exact claim][ppa-claim]). A restriction is a refusal with a stable code on the field it concerns ([forward-compatible restrictions](../../../CLAUDE.md#forward-compatible-restrictions)), so admitting the field later widens the surface without reinterpreting accepted programs ([IL refusal rule](../IL-SPEC.md#refusal-by-field)).
 - A profile is data: the selected relation options and the admitted field set ([profile][csm-profile]). It carries its exact authority, the pinned oracle release and environment for a CIB-backed profile, and no CIB target for a standards-only one; immutable CIB evidence fixes calibration, never a production deployment or history baseline. No code compares a profile identifier; the kernel reads only `ProfileOptions`.
-- Order of refusal: the profile options, then each called process's binding, then each flow (its condition, then where the condition sits), then each element in program order, first refusal wins. A refused program is an `unsupported` deployment carrying the code and runs no input ([`Kernel/Run.lean`](../../../Kernel/Run.lean)).
-- Admission and host capability are separate: a program the kernel admits but the host cannot schedule is refused by the host before a Workflow starts, never by a failure inside Workflow execution ([engineering rules](../ENGINEERING-RULES.md#redgreen-semantic-workflow)).
+- Order of refusal: referential integrity (`il.reference`), then the profile options, then each called process's binding, then each flow (its condition, then where the condition sits), then each element in program order, first refusal wins. A refused program is an `unsupported` deployment carrying the code and runs no input ([`Kernel/Run.lean`](../../../Kernel/Run.lean)).
+- Admission and host capability are separate: a program the kernel admits but the host cannot schedule is refused by the host before a Workflow starts, never by a failure inside Workflow execution ([engineering rules](../ENGINEERING-POLICY.md#redgreen-semantic-workflow)).
 - An admission widening is reviewed against two questions, the old contract's reopen conditions: can a newly admitted shape reach more than one enabled internal step without an independence or explicit-choice account, and can it reach a stable running state with no resumption surface ([exclusions][ppa-exclusions])?
-- Input admission has three levels: strict decoding settles wire validity; scenario admission settles the profile's value domain, the stimulus families and the first start, checking every stimulus before execution so that an out-of-domain value anywhere makes the whole scenario unsupported with no command publication; command admission settles names, occurrence identity and state-dependent eligibility, and its refusal is an executable `rejected` outcome. The first start names the program's own process ([value admission][ppa-values]). The kernel implements decoding and command admission; scenario-level value admission and the first start's process check are absent (reported, see Open rows).
+- Input admission has three levels: strict decoding settles wire validity; scenario admission settles the profile's value domain, the stimulus families and the first start, checking every stimulus before execution so that an out-of-domain value anywhere makes the whole scenario unsupported with no command publication; command admission settles names, occurrence identity and state-dependent eligibility, and its refusal is an executable `rejected` outcome. The first start names the program's own process ([value admission][ppa-values]). The kernel implements decoding and command admission; scenario-level value admission is the scenario schema plus strict decoding, and the first start's process check is absent (see Open rows).
 - Every parser warning blocks admission until a profile rule proves it safe, and exact bytes and normalized evidence are preserved even when compilation is refused (CLAUDE.md).
 
 ## Reader refusals
@@ -23,6 +27,7 @@ Admission decides whether a program lies inside the admitted surface before any 
 | `source.ambiguousBoolean` | an `xsd:boolean` attribute whose lexeme the parser's coercion does not preserve |
 | `parser.failure`, `parser.warning` | a parse failure or any parser warning, a duplicate identifier included |
 | `reader.unknownElement`, `reader.unknownAttribute`, `reader.unknownAttributeValue`, `reader.unknownExtension` | content the reader has no faithful IL field for |
+| `reader.eventBasedGatewayInstantiate` | an instantiating or Parallel Event-Based Gateway (`instantiate`, `eventGatewayType`, §10.6.6, Table 10.127): the IL has no field for either (PC-CF-05) |
 | `reader.multipleEventDefinitions`, `reader.eventDefinitionOnElement`, `reader.standardLoop`, `reader.eventSubProcessStart`, `reader.dataAssociationShape`, `reader.signalWithoutReference`, `reader.throwWithoutCode`, `reader.multiInstanceWithoutCount`, `reader.conditionWithoutExpression` | source shapes the IL cannot carry as written |
 
 Boolean coercion: `bpmn-moddle` reduces every `xsd:boolean` attribute to `value === "true"` without a warning, so `1`, which means true, reads as false. Any `Boolean`-typed attribute whose lexeme the coercion does not preserve is refused; `0` is admitted and `1` is not, which refuses exactly the disagreement, and an entity-encoded spelling is refused as well. The attribute set is the metamodel's `Boolean` properties, not a list. Enumerated defaults stay outside the rule, because BPMN 2.0.2's own machine-readable artifacts disagree on the only such literal (owner-confirmed 2026-08-07; [coercion rule][csm-boolean]).
@@ -47,12 +52,13 @@ A profile may select only behaviour the kernel implements ([`Kernel/Admission/Pr
 
 | Refusal code | Refused | Owner |
 |---|---|---|
-| `process.definition.binding` | a called process whose definition names its own version, version tag, deployment or tenant: it is bound at assembly to the one definition the program carries | [work](work.md), PC-SCOPE-03 |
-| `activity.compensationHandler.input` | input mappings on a compensation handler | [compensation](compensation.md) |
-| `compensation.handlerWork` | a handler whose work cannot begin without a token | [compensation](compensation.md) |
-| `scope.implicitStart` | an Activity begun by its Scope's implicit start whose work cannot begin without a token | [scopes](scopes.md) |
+| `il.reference` | an identifier naming no element, boundary or flow of the right container, or naming two: a duplicate element, boundary or flow id; a flow whose ends lie in different containers or that enters a start; a flow missing from either end's list; a repeated list entry; a default flow that is not outgoing or is a candidate; a gateway candidate that is not outgoing; a Scope child that does not name the Scope as parent; a compensation handler that does not exist | every flow, list and parent must resolve, or a dangling reference reads as no reference (`Kernel.Admission.Flow.references`, `Kernel.Admission.Scopes.references`) |
+| `process.definition.binding` | a called process whose definition names its own version, version tag, deployment or tenant: it is bound at assembly to the one definition the program carries | [work](WORK-SEMANTICS-SPEC.md), PC-SCOPE-03 |
+| `activity.compensationHandler.input` | input mappings on a compensation handler | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
+| `compensation.handlerWork` | a handler whose work cannot begin without a token | [compensation](COMPENSATION-SEMANTICS-SPEC.md) |
+| `scope.implicitStart` | an Activity begun by its Scope's implicit start whose work cannot begin without a token | [scopes](SCOPES-SEMANTICS-SPEC.md) |
 
-Every other code belongs to its feature: [data](data.md) (`expression.*`, `mapping.*`, `flow.condition.*`, `element.origin.*`, `activity.defaultFlow`), [flow](flow.md) (`gateway.*`, `flow.conditionalOutflow`, `link.*`), [work](work.md) (`work.*`, `call.*`, `activity.*Mappings`, `activity.multiInstanceBody`, `activity.compensationHandler`), [subscriptions](subscriptions.md) (`timer.*`, `message.*`, `event.*`, `boundary.*`, `start.*`), [scopes](scopes.md) (`scope.*`), [propagation](propagation.md) (`throw.*`), [multi-instance](multi-instance.md) (`multiInstance.*`).
+Every other code belongs to its feature: [data](DATA-SEMANTICS-SPEC.md) (`expression.*`, `mapping.*`, `flow.condition.*`, `element.origin.*`, `activity.defaultFlow`), [flow](FLOW-SEMANTICS-SPEC.md) (`gateway.*`, `flow.conditionalOutflow`, `link.*`), [work](WORK-SEMANTICS-SPEC.md) (`work.*`, `call.*`, `activity.*Mappings`, `activity.multiInstanceBody`, `activity.compensationHandler`), [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md) (`timer.*`, `message.*`, `event.*`, `boundary.*`, `start.*`), [scopes](SCOPES-SEMANTICS-SPEC.md) (`scope.*`), [compensation](COMPENSATION-SEMANTICS-SPEC.md) (`compensation.implicit`, `compensation.recursive`), [propagation](PROPAGATION-SEMANTICS-SPEC.md) (`throw.*`), [multi-instance](MULTI-INSTANCE-SEMANTICS-SPEC.md) (`multiInstance.*`).
 
 ## Superseded restrictions
 
@@ -62,7 +68,7 @@ The old admission surface was a per-profile capability table of operation kinds 
 
 | Row | Owed |
 |---|---|
-| PC-DATA-02 | Scenario-level value admission per profile and the first start's process check are absent from the kernel (`Kernel/Run.lean` runs every decoded stimulus; `StartInput` carries no process identity); reported as a contradiction with the row's done state |
+| PC-DATA-02 | Scenario-level value admission per profile and the first start's process check are absent from the kernel (`Kernel/Run.lean` runs every decoded stimulus; `StartInput` carries no process identity); the row keeps its done state only if its acceptance test still passes after strict decoding |
 | W0 profile consolidation | One standards profile and one cumulative CIB 2.2.0 profile per set of mutually exclusive relation options, each listing its relation identifiers |
 
 ## Sources

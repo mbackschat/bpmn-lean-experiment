@@ -1,6 +1,10 @@
 # Population semantics
 
-`Kernel.Population` ([Lean](../../../Kernel/Population.lean)) owns the mechanisms that span process instances: which instance, definition or start an input reaches. It never changes an instance itself; every input reaches an instance through `Kernel.Step.step`, and a scenario is one ordered list of stimuli mixing instance inputs and population stimuli. It dispatches on no guarded type of its own; it asks `Hooks.correlates` and `Hooks.selectStart` (owned by `Kernel.Feature.Subscriptions`, see [subscriptions](subscriptions.md)) for the facts that need one.
+## Status
+
+Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it cites are the executable authority; where they differ, the difference is a defect of one of them.
+
+`Kernel.Population` ([Lean](../../../Kernel/Population.lean)) owns the mechanisms that span process instances: which instance, definition or start an input reaches. It never changes an instance itself; every input reaches an instance through `Kernel.Step.step`, and a scenario is one ordered list of stimuli mixing instance inputs and population stimuli. It dispatches on no guarded type of its own; it asks `Hooks.correlates` and `Hooks.selectStart` (owned by `Kernel.Feature.Subscriptions`, see [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md)) for the facts that need one.
 
 ## Interpretation
 
@@ -16,7 +20,7 @@
 
 ### Start selection
 
-- A root start input selects the start Event it names if its trigger fires it, else the one start its trigger fires, and for a none trigger the sole none start; any other input selects nothing and is rejected as `no-start-event` ([`Subscriptions.selectStart`](../../../Kernel/Feature/Subscriptions.lean)). How a start trigger is admitted and fires is stated in [subscriptions](subscriptions.md#starts).
+- A root start input selects the start Event it names if its trigger fires it, else the one start its trigger fires, and for a none trigger the sole none start; any other input selects nothing and is rejected as `no-start-event` ([`Subscriptions.selectStart`](../../../Kernel/Feature/Subscriptions.lean)). How a start trigger is admitted and fires is stated in [subscriptions](SUBSCRIPTIONS-SEMANTICS-SPEC.md#starts).
 
 ## CIB relations
 

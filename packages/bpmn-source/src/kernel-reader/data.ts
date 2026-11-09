@@ -51,18 +51,19 @@ function simpleBoolean(body: string): KernelJson | undefined {
 }
 
 /**
- * The IL Expression of a condition. A body in Simple Boolean v1, declared or undeclared, is read in that grammar;
- * any other text stays `foreign` with its language, for `Kernel.Admission` to refuse. The language an undeclared
- * condition means is a profile's selection, so the reader never interprets text beyond this one grammar.
+ * The IL Expression of a condition. A body whose language, on the expression or its Definitions, is Simple Boolean v1
+ * is read in that grammar; any other text stays `foreign` with its language, for `Kernel.Admission` to refuse. A body
+ * with no named language is in the BPMN default, XPath (Table 8.17), even when it parses as Simple Boolean: CIB's JUEL
+ * default is a profile's selection, which the reader never makes (PC-DATA-07).
  */
 export function conditionExpression(ctx: ReadContext, expression: ElementRecord): KernelJson {
   const body = text(expression, "body") ?? "";
-  const language = text(expression, "language") ?? ctx.expressionLanguage;
-  if (language === null || language === simpleBooleanLanguage) {
+  const language = text(expression, "language") ?? ctx.expressionLanguage ?? defaultExpressionLanguage;
+  if (language === simpleBooleanLanguage) {
     const parsed = simpleBoolean(body);
     if (parsed !== undefined) return ctor("simpleBoolean", { body: parsed });
   }
-  return foreign(language ?? defaultExpressionLanguage, body);
+  return foreign(language, body);
 }
 
 /** A CIB value expression: a single variable read, or foreign JUEL. */

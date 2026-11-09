@@ -714,7 +714,7 @@ The evaluator needs no change. An expression outside Simple Boolean is refused a
 | `Subscriptions.afterFiring` | a non-interrupting subscription stays open; a cycle re-arms from the prior deadline | §13.5.3, §10.5.6; identity CIB-OP-0005 | none |
 | `Timer` | lexeme grammar | CIB-LIM-0003, CIB-AGR-0021 | admission |
 | `Subscriptions.timerDetail` | a cycle's first deadline is one period after arming | unclassified (E5) | admission |
-| `Flow.exclusive`, `Flow.inclusiveSplit` | no selected flow rolls back | Exclusive: CIB-INT-0003, whose boundary excludes a no-match reached by an effect result; Inclusive: unclassified (E2) | `O.noOutgoingFlow`, `O.continuationFailure` |
+| `Flow.exclusive`, `Flow.inclusiveSplit` | no selected flow rolls back | Exclusive: CIB-INT-0003, whose boundary excludes a no-match reached by an effect result; Inclusive: CIB-INT-0012 | `O.noOutgoingFlow`, `O.continuationFailure` |
 | `Flow.condition` | an absent condition holds | §8.4.13, CIB-INT-0005 | none |
 | `Flow.arriveGateway` | a Parallel join counts per incoming flow | §13.4.1; CIB-DEV-0001 differs, owner chose BPMN | none |
 | `Propagation` | a Terminate in a Sub-Process lets the parent continue | CIB (`SubProcessActivityBehavior#complete`); BPMN says "abnormally terminated" (§13.3.4, §13.5.6); unclassified (E4) | `O.abnormalScopeEnd` |
@@ -733,7 +733,7 @@ The evaluator needs no change. An expression outside Simple Boolean is refused a
 Register entries, landed in the [relation register](../CIB-BPMN-RELATION-REGISTER.md) on 2026-11-08 with the behaviour they govern, plus CIB-INT-0011 for `ConditionOrder`:
 
 - E1, CIB-EXT-0024: "An unresolved `camunda:inputParameter` or `outputParameter` expression raises an evaluation failure that rolls the command back; it is not an unavailable Data Input." Verify in a calibration probe before selection.
-- E2, widen CIB-INT-0003: "A diverging Inclusive Gateway with no selected flow and no default rolls its command back" (`InclusiveGatewayActivityBehavior:82`, Table 13.3).
+- E2, CIB-INT-0012 (landed 2026-11-09 as its own entry rather than a widening of CIB-INT-0003): "A diverging Inclusive Gateway with no selected flow and no default rolls its command back" (`InclusiveGatewayActivityBehavior:82`, Table 13.3).
 - E3, CIB-EXT-0025: "Correlation criteria are API-supplied and match Process or local variables, business key or instance identity; delivered variables install without a modeled output."
 - E4, CIB-INT-0007: "A Sub-Process left by a Terminate End or after an interrupting Event Sub-Process completes normally and takes its outgoing flows; BPMN says only 'abnormally terminated' and leaves the parent's continuation open."
 - E5, CIB-INT-0008: "`R/<duration>` without a start date fires first one period after arming."

@@ -34,27 +34,49 @@ def subscriptionData (subscription : Subscription) : Option String :=
 def boundaryData (boundaries : List Boundary) : Option String :=
   boundaries.findSome? (subscriptionData ·.subscription)
 
-def element (program : Program) : Element → Option String
+/-- Whether an element sits directly in a Transaction. -/
+def inTransaction (program : Program) (header : Header) : Bool :=
+  header.parent.any (Admission.Scopes.transactionElement program)
+
+/-- What an element throws, if it is a throw Event. -/
+def thrown (element : Element) : Option (Header × Admission.Propagation.Reading) :=
+  element.event?.bind fun (header, payload) =>
+    match payload.role with
+    | .throw record => some (header, Admission.Propagation.reading record)
+    | .catch _ => none
+    | .linkCatch _ => none
+    | .linkThrow _ => none
+
+def compensationThrow (element : Element) : Bool :=
+  (thrown element).any (·.2.compensates)
+
+/-- `throws` lists the program's Compensation throws. -/
+def element (program : Program) (throws : List Element) : Element → Option String
   | .activity header payload =>
     Admission.Data.origin header <|> Admission.Data.envelope payload.envelope <|>
       (payload.work.call?.bind fun work => Admission.Data.mappings work.inputs <|> Admission.Data.mappings work.outputs) <|>
       Admission.Work.activity program payload <|>
       activityOrigin program header payload <|>
       payload.envelope.multiInstance.bind (Admission.MultiInstance.activity payload.envelope) <|>
-      Admission.Subscriptions.boundaries payload.envelope.boundaries <|> boundaryData payload.envelope.boundaries
+      Admission.Subscriptions.boundaries false payload.envelope.boundaries <|> boundaryData payload.envelope.boundaries <|>
+      Admission.Scopes.nestedCompensation program throws header payload.envelope
   | .scope header payload =>
     Admission.Data.origin header <|> Admission.Data.envelope payload.envelope <|>
       Admission.Scopes.scope program header payload <|>
-      (Admission.Scopes.interruptingStart payload).bind Admission.Subscriptions.interruptingEventSubProcess <|>
-      Admission.Subscriptions.boundaries payload.envelope.boundaries <|> boundaryData payload.envelope.boundaries
+      (Admission.Scopes.eventSubProcess? payload).bind (fun (start, interrupting) =>
+        Admission.Subscriptions.eventSubProcess start interrupting) <|>
+      Admission.Subscriptions.boundaries (Admission.Scopes.isTransaction payload) payload.envelope.boundaries <|>
+      boundaryData payload.envelope.boundaries <|>
+      Admission.Scopes.nestedCompensation program throws header payload.envelope
   | .event header payload =>
     Admission.Data.origin header <|>
       match payload.role with
       | .catch subscription => Admission.Subscriptions.catchEvent subscription <|> subscriptionData subscription
-      | .throw record => Admission.Propagation.throwRecord record
+      | .throw record => Admission.Propagation.throwRecord (inTransaction program header) record
       | .linkCatch _ => Admission.Flow.link program header payload
       | .linkThrow _ => Admission.Flow.link program header payload
-  | .gateway header payload => Admission.Data.origin header <|> Admission.Flow.gateway program payload
+  | .gateway header payload =>
+    Admission.Data.origin header <|> Admission.Flow.gateway program Admission.Work.branchContent header payload
   | .start header payload =>
     Admission.Data.origin header <|> Admission.Flow.start payload <|>
       payload.subscription.bind fun subscription =>
@@ -64,12 +86,7 @@ def element (program : Program) : Element → Option String
 Sub-Process. -/
 def abnormalScope (program : Program) : Bool :=
   program.elements.any fun element =>
-    element.event?.any (fun (header, payload) =>
-      match payload.role with
-      | .throw record => header.parent.isSome && Admission.Propagation.terminates record
-      | .catch _ => false
-      | .linkCatch _ => false
-      | .linkThrow _ => false) ||
+    (thrown element).any (fun (header, reading) => header.parent.isSome && reading.terminates) ||
     element.scope?.any fun (_, payload) => (Admission.Scopes.interruptingStart payload).isSome
 
 /-- A flow's condition, then where it may sit. -/
@@ -84,11 +101,13 @@ def calledProcess (process : CalledProcess) : Option String :=
       definition.tenant.isSome then some "process.definition.binding"
   else none
 
-/-- The first refusal: profile options, then called-process bindings, flows and elements in program order. -/
+/-- The first refusal: references, profile options, then called-process bindings, flows and elements in program
+order. -/
 def admit (program : Program) : Option String :=
-  Admission.Profile.options (abnormalScope program) program.options <|>
+  Admission.Flow.references program <|> Admission.Scopes.references program <|>
+    Admission.Profile.options (abnormalScope program) program.options <|>
     program.processes.findSome? calledProcess <|>
     program.flows.findSome? (flow program) <|>
-    program.elements.findSome? (element program)
+    program.elements.findSome? (element program (program.elements.filter compensationThrow))
 
 end Kernel.AdmissionRegistry

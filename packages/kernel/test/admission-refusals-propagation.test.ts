@@ -3,13 +3,18 @@
  * message must be literal, a Compensation names no Activity and waits for its handlers, and a Message or Signal throw
  * has no kernel meaning.
  */
-import { computed, end, refusalTests, replace, text, variable } from "./admission-refusal-support.ts";
+import { append, computed, end, flow, refusalTests, replace, scope, start, task, text, variable, withFlows } from "./admission-refusal-support.ts";
 import type { Json, Row } from "./admission-refusal-support.ts";
 
 /** `E` becomes an End Event throwing `record`. */
 const throwing = (record: Json | string) => (program: Json): Json => replace(program, "E", end("E", record));
 
 const errorThrow = (message: Json | null): Json => ({ error: { payload: { code: "Failure", message } } });
+/** `T` becomes a Transaction whose start `XS` reaches a Cancel End `X`. */
+const cancelledTransaction = (program: Json): Json =>
+  withFlows(append(task(scope("T", { transaction: { payload: { method: "compensate" } } }))(program),
+    start("XS", null, [], "T"), end("X", "cancel", "T")), flow("fx", "XS", "X"));
+
 const compensation = (over: Json): Json => ({ compensation: { payload: { activity: null, waitForCompletion: true, ...over } } });
 
 export const rows: readonly Row[] = [
@@ -44,6 +49,12 @@ export const rows: readonly Row[] = [
     description: "a Compensation that does not wait for its handlers",
     mutate: throwing(compensation({ waitForCompletion: false })),
     control: throwing(compensation({})),
+  },
+  {
+    code: "throw.cancel.outsideTransaction",
+    description: "a Cancel End outside a Transaction",
+    mutate: throwing("cancel"),
+    control: cancelledTransaction,
   },
 ];
 

@@ -5,9 +5,9 @@ public import Kernel.IL.Timer
 
 /-! # Admission of catch Events, boundaries and triggered starts. A refusal carries a stable code.
 
-Admitted: Timers with a literal exact duration (a cycle only on a boundary), Messages with a literal or unspecified
-name and no correlation, a correlated Message only on a catch Event, and, on boundaries, the triggers that
-`Kernel.Feature.Propagation` delivers (Error, Escalation, Compensation, Cancel).
+Admitted: Timers with a literal exact duration (a cycle only on a boundary), Messages with a literal name and no
+correlation, a correlated Message only on a catch Event, and, on boundaries, the triggers that
+`Kernel.Feature.Propagation` delivers (an interrupting Error, Escalation, Compensation, and Cancel on a Transaction).
 -/
 
 public section
@@ -37,13 +37,16 @@ def interruptingCycle (trigger : TimerTrigger) : Option String :=
   | .duration _ => none
   | .date _ => none
 
+/-- A Message subscription is addressed by its Message (`messageRef`, BPMN 2.0.2 §10.5.5); without one only an
+occurrence-addressed command could reach it, which CIB-INT-0004 selects for a Receive Task alone, and
+`BpmnParse#parseMessageEventDefinition` refuses it (PC-MESSAGE-01). -/
 def message (trigger : MessageTrigger) : Option String :=
   if !trigger.correlation.isEmpty then some "message.correlation"
   else
     match trigger.name with
     | some (.expression _) => some "message.nameExpression"
     | some (.literal _) => none
-    | none => none
+    | none => some "message.unnamed"
 
 /-- A correlated catch, as the [specification](../../docs/capsules/MESSAGE-KEY-CORRELATION-SPEC.md#required-optional-and-excluded-scope)
 bounds it: one key bound to a variable, an Operation channel, and no output, since its payload is never written. -/
@@ -74,14 +77,15 @@ def errorTrigger (trigger : ErrorTrigger) : Option String :=
 def escalationTrigger (trigger : EscalationTrigger) : Option String :=
   if trigger.codeVariable.isSome then some "event.escalation.codeVariable" else none
 
-/-- An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts. -/
-def interruptingEventSubProcess (start : Subscription) : Option String :=
+/-- An interrupting Event Sub-Process started by a Message has no selected meaning for the Scope it interrupts; an Error
+Event Sub-Process always interrupts (BPMN 2.0.2 Table 10.86, Table 10.87 `isInterrupting`, §13.5.4) (PC-ERROR-02). -/
+def eventSubProcess (start : Subscription) (interrupting : Bool) : Option String :=
   match start.trigger with
-  | .message _ => some "scope.eventSubProcess.interruptingMessage"
-  | .timer trigger => interruptingCycle trigger
+  | .message _ => if interrupting then some "scope.eventSubProcess.interruptingMessage" else none
+  | .timer trigger => if interrupting then interruptingCycle trigger else none
+  | .error _ => if interrupting then none else some "start.error.nonInterrupting"
   | .signal _ => none
   | .condition _ => none
-  | .error _ => none
   | .escalation _ => none
   | .compensation => none
   | .cancel => none
@@ -98,20 +102,27 @@ def catchEvent (subscription : Subscription) : Option String :=
   | .compensation => some "event.catch.compensation"
   | .cancel => some "event.catch.cancel"
 
-def boundary (boundary : Boundary) : Option String :=
+/-- `transactionHost` says whether the boundary hangs on a Transaction. An Error boundary always interrupts (BPMN 2.0.2
+Table 10.90) (PC-ERROR-01); a Cancel boundary always interrupts and hangs only on a Transaction (Table 10.90, §10.3.5;
+`BpmnParse#parseBoundaryCancelEventDefinition`) (PC-TX-02). -/
+def boundary (transactionHost : Bool) (boundary : Boundary) : Option String :=
   outputs boundary.subscription <|>
   match boundary.subscription.trigger with
   | .timer trigger => (if boundary.interrupting then interruptingCycle trigger else none) <|> timer true trigger
   | .message trigger => message trigger
   | .signal _ => some "boundary.signal"
   | .condition _ => some "boundary.condition"
-  | .error trigger => errorTrigger trigger
+  | .error trigger =>
+    (if boundary.interrupting then none else some "boundary.error.nonInterrupting") <|> errorTrigger trigger
   | .escalation trigger => escalationTrigger trigger
   | .compensation => none
-  | .cancel => none
+  | .cancel =>
+    if !transactionHost then some "boundary.cancel.host"
+    else if boundary.interrupting then none
+    else some "boundary.cancel.nonInterrupting"
 
-def boundaries (list : List Boundary) : Option String :=
-  list.findSome? boundary
+def boundaries (transactionHost : Bool) (list : List Boundary) : Option String :=
+  list.findSome? (boundary transactionHost)
 
 /-- A triggered start. At process level (`nested = false`) the start input names it; nested, it is an Event
 Sub-Process start, which may also repeat a cycle and catch what `Kernel.Feature.Propagation` raises. -/

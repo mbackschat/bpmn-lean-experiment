@@ -1,5 +1,9 @@
 # Engineering rules
 
+## Status
+
+Adopted kernel owner document (W0 extraction, 2026-11-09). The kernel modules it cites are the executable authority; where they differ, the difference is a defect of one of them.
+
 How work on the kernel, its boundaries and Product 2 is reviewed, verified, documented, written and set up. [CLAUDE.md](../../CLAUDE.md) holds the triggers every contributor must see before acting, and the [kernel rewrite proposal](../LEAN-KERNEL-REWRITE-PROPOSAL.md) owns the architecture, the [guardrails](../LEAN-KERNEL-REWRITE-PROPOSAL.md#guardrails-against-degradation), the delivery plan and the definition of done; this document owns the procedure behind them and never restates them. It replaces the old review, testing, documentation, code-style and verification policies ([review][review], [testing][testing], [documentation][docs], [code style][style], [infrastructure][infra], [semantic][semantic], [Temporal][temporal], [platform][platform]); what the proposal's [process reset](../LEAN-KERNEL-REWRITE-PROPOSAL.md#process-and-rule-reset) drops is not carried here.
 
 ## Reviews

@@ -66,6 +66,14 @@ export function instanceBody(work: Work): boolean {
   return assertNever(work);
 }
 
+/**
+ * What a branch of a structured Inclusive region may hold (`admission/flow.ts` `BranchWork`): a User or Service Task,
+ * which arms the branch, or a task without work; any other work is outside the reviewed region (PC-CF-04).
+ */
+export function branchContent(work: Work): boolean | null {
+  return beginsWithoutToken(work) ? mapsData(work) : null;
+}
+
 /** The work an occurrence no token began may do: a task without work, a User Task or a Service Task. */
 export function beginsWithoutToken(work: Work): boolean {
   switch (work.tag) {
@@ -151,6 +159,13 @@ function callBinding(binding: CallBinding): string | null {
 }
 
 /**
+ * CIB drops a Call output whose target is a Multi-Instance counter before writing it
+ * (`CallableElementActivityBehavior.java:48,135,160-166`); the counters belong to the loop (BPMN 2.0.2 Table 10.30)
+ * (PC-SCOPE-04).
+ */
+const multiInstanceCounters: readonly string[] = ["nrOfInstances", "nrOfActiveInstances", "nrOfCompletedInstances"];
+
+/**
  * A Call names a called process literally that the program carries, not the root process and without an Event
  * Sub-Process, binds the latest version, carries no business key or tenant and maps its data explicitly; its mappings
  * live in `CallWork`, never in the envelope.
@@ -158,6 +173,7 @@ function callBinding(binding: CallBinding): string | null {
 function call(program: Program, work: CallWork): string | null {
   const refused = calledElement(program, work) ?? callBinding(work.binding);
   if (refused !== null) return refused;
+  if (work.outputs.some((mapping) => multiInstanceCounters.includes(mapping.target))) return "work.call.multiInstanceCounterOutput";
   if (work.businessKey !== null) return "work.call.businessKey";
   if (work.tenant !== null) return "work.call.tenant";
   if (work.propagateAllInputs || work.propagateAllOutputs) return "work.call.propagateAll";
