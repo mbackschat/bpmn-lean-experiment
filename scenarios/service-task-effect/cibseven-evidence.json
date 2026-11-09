@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "service-task-effect-success",
-    "sha256": "4fcb189b3dbbe1d11a8545fadd61cb7d08d8e6d8f09c7e761eb3404debf66487"
+    "sha256": "69c10c4ef250266dacea6ca418d84218f597a0b18cf5bb486362f0ef50ef9a0d"
   },
   "profile": {
-    "id": "cibseven-2.2.0-service-task-effect-draft",
-    "sha256": "0d6e2bad3cd98e49bf8c283fdf8aceb38b8d3bf24c5f5f04a13d671c511fb698"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -71,6 +71,16 @@
         "jobs": []
       }
     ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
+        "state": "COMPLETED"
+      }
+    ],
     "effectExecutions": [
       {
         "afterCommandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
@@ -114,7 +124,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "effectResult",
             "detail": {
               "kind": "effect",
               "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
@@ -122,7 +131,8 @@
               "arguments": [],
               "failures": 0,
               "send": null
-            }
+            },
+            "input": "effectResult"
           }
         ]
       },

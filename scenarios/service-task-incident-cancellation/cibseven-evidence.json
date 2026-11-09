@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "service-task-effect-incident-root-cancellation",
-    "sha256": "6ed129971cb591177a5a04e6eba48835666992884a06064663b4434fa6024954"
+    "sha256": "1f597e665e748b315029bd0af715ecb5d9eea9ecea0d2c6ca25e086cbe23add1"
   },
   "profile": {
-    "id": "cibseven-2.2.0-service-task-incident-cancellation-draft",
-    "sha256": "849ce7c7f8ef3f449917af3c2262610b65d0f9da307ea1f303313d70b6f02218"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -224,7 +224,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "effectResult",
             "detail": {
               "kind": "effect",
               "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
@@ -232,7 +231,8 @@
               "arguments": [],
               "failures": 0,
               "send": null
-            }
+            },
+            "input": "effectResult"
           }
         ]
       },
@@ -263,7 +263,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "incident",
               "effect": {
@@ -275,7 +274,8 @@
               },
               "generation": 1,
               "cancellable": true
-            }
+            },
+            "input": "command"
           }
         ]
       },

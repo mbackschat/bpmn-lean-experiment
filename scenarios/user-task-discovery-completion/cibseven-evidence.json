@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-discovery-completion",
-    "sha256": "e7918824f9de5f21a56c1647ae23839d7b356fec53e4ad53fd2e8556ad82f5ef"
+    "sha256": "3872955bcc367d0c655ab4c7ca357076c1467dfff7a9e9be5c61d55e9008ea5a"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-process-data-draft",
-    "sha256": "08d6e70e497d0eb2ca24b4bb52e7c03f464dc4703061512ba557c5e724b6a38f"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -35,12 +35,12 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "requestTitle",
-            "value": "Review invoice 42"
-          },
-          {
             "name": "decision",
             "value": "approved"
+          },
+          {
+            "name": "requestTitle",
+            "value": "Review invoice 42"
           },
           {
             "name": "reviewNote",
@@ -72,6 +72,16 @@
       {
         "afterCommandId": "complete-user-task-instance",
         "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "state": "COMPLETED"
       }
     ]
   },
@@ -115,7 +125,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Approve",
@@ -128,7 +137,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },

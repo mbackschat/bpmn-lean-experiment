@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "parallel-user-task-metadata-content-then-risk",
-    "sha256": "112339a6279bc08b8bfac7bf9a1451a9510bf062768ddfa48961141389f1fdde"
+    "sha256": "ef26cc31160cfa55f4e9c4c0b9dbbe7207e7c79695babad9ff1e220c0639efc5"
   },
   "profile": {
-    "id": "cibseven-2.2.0-parallel-user-task-assignment-form-metadata-draft",
-    "sha256": "dd144120a9bac8fb093a6fc4542b3385eab5f2b5364ab730e90473e30724761b"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -131,6 +131,20 @@
         "afterCommandId": "complete-risk-review",
         "jobs": []
       }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-content-review",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-risk-review",
+        "state": "COMPLETED"
+      }
     ]
   },
   "projection": {
@@ -165,7 +179,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Review content",
@@ -185,7 +198,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           },
           {
             "id": {
@@ -194,7 +208,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Review risk",
@@ -214,7 +227,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },
@@ -245,7 +259,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Review risk",
@@ -265,7 +278,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },

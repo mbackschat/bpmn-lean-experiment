@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "addressless-receive-task",
-    "sha256": "abd288c60947031c9c069d56895eb132be36aa8840e0d8065fd90e6fad2dbe26"
+    "sha256": "4c2be9d0f10c74fac3274f54c433078da4544864e25d90130d85e7edb6e4f5ff"
   },
   "profile": {
-    "id": "cibseven-2.2.0-addressless-receive-task-draft",
-    "sha256": "6fe0533d7c3b0315e2649dca1857f5d47db41c430ca1b1223a3395bd3f59ffb7"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -65,6 +65,16 @@
         "afterCommandId": "courier-scanned",
         "jobs": []
       }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "request-handover",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "courier-scanned",
+        "state": "COMPLETED"
+      }
     ]
   },
   "projection": {
@@ -99,7 +109,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "deliver",
             "detail": {
               "kind": "message",
               "channel": {
@@ -107,7 +116,8 @@
               },
               "payload": false,
               "criteria": []
-            }
+            },
+            "input": "deliver"
           }
         ]
       },

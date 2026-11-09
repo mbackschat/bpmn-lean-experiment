@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-boolean-completion",
-    "sha256": "b143241884e466ecc2ea13f309ab66b17e0bf327af87b435911fe87359285c30"
+    "sha256": "1c484ff81bb63b3804a1930ee1f4811812883530bf52cb9f2fe6b0bb9b4be21e"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-boolean-completion-data-draft",
-    "sha256": "e1ad4d96d23dbe6cb703567c4576acb7b45c9bddeed8aefece98370e12a055c5"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -39,20 +39,20 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "initialNote",
-            "value": null
-          },
-          {
-            "name": "requestTitle",
-            "value": "Review Boolean decision"
-          },
-          {
             "name": "approved",
             "value": true
           },
           {
             "name": "decisionLabel",
             "value": "approved"
+          },
+          {
+            "name": "initialNote",
+            "value": null
+          },
+          {
+            "name": "requestTitle",
+            "value": "Review Boolean decision"
           },
           {
             "name": "reviewNote",
@@ -84,6 +84,16 @@
       {
         "afterCommandId": "complete-user-task-instance",
         "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "state": "COMPLETED"
       }
     ]
   },
@@ -133,7 +143,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Approve",
@@ -146,7 +155,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },

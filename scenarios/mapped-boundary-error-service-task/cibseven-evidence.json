@@ -2,16 +2,16 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "mapped-boundary-error-service-task-caught",
-    "sha256": "2fc7ecef4f5c6c1f93f7a827551f072bf14bf0347ff4d4dd742dcb45d711bf3a"
+    "sha256": "44570952b7345be690faac9848604dd77f856c70c3841b97f5c969a748344dca"
   },
   "profile": {
-    "id": "cibseven-2.0.0-mapped-boundary-error-service-task-draft",
-    "sha256": "e7756064f3790f5935f45466d41c3625a7fa6b2388ae1d5d84ab59b638589e4d"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
-    "engineVersion": "2.0.0",
-    "engineRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
     "database": "H2 2.3.232"
@@ -64,6 +64,16 @@
       {
         "afterCommandId": "complete-mapped-error-review",
         "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-mapped-boundary-error",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-mapped-error-review",
+        "state": "COMPLETED"
       }
     ],
     "mappingExecutions": [
@@ -130,7 +140,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Review Mapped Error",
@@ -143,7 +152,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },

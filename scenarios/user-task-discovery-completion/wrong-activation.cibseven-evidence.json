@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-wrong-activation",
-    "sha256": "c7387d0e1bd5a034b313d7c2f87091e8e4a0881bac97fbb0a9b76abbb325bced"
+    "sha256": "165aaf929a6e160b95386768b3524ec51296011a8f6dd9fe7f45a58804779f73"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-process-data-draft",
-    "sha256": "08d6e70e497d0eb2ca24b4bb52e7c03f464dc4703061512ba557c5e724b6a38f"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -70,6 +70,16 @@
         "afterCommandId": "wrong-activation",
         "jobs": []
       }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "wrong-activation",
+        "state": "ACTIVE"
+      }
     ]
   },
   "projection": {
@@ -112,7 +122,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Approve",
@@ -125,7 +134,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },
@@ -156,7 +166,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Approve",
@@ -169,7 +178,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       }

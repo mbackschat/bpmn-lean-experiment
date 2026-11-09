@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-process-data-preserved-notation",
-    "sha256": "7f4f0df314f2c1073028a25a18c133edacaf293989ebb5896cd0eede3fdd5491"
+    "sha256": "9ee6124899d8dab40609a2a813e46891b378a8e19b2d4c9165aa881a33d978d8"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-process-data-preserved-notation-draft",
-    "sha256": "9316b3f08827af9011085e35546420497122bd92227223299289324d788b987b"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -77,6 +77,16 @@
         "afterCommandId": "complete-process-data-preserved-notation",
         "jobs": []
       }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process-data-preserved-notation",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-process-data-preserved-notation",
+        "state": "COMPLETED"
+      }
     ]
   },
   "projection": {
@@ -126,7 +136,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Approve",
@@ -139,7 +148,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },

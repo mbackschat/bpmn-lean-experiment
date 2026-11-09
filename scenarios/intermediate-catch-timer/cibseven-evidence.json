@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "intermediate-catch-timer-pt1s",
-    "sha256": "b48b8a825cbb5aa556e4ea039fc5b374d6f783306e9c4e84a40c7b174a624038"
+    "sha256": "2932ce9664f257dad1c12b406f43734afdb797ac84ded771dc839610cb2dfdbc"
   },
   "profile": {
-    "id": "cibseven-2.2.0-intermediate-catch-timer-draft",
-    "sha256": "849905396462486d2aaa5c83cb3811bbe4c6c311a8dec1df7f7e56a8b10ad413"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -56,6 +56,16 @@
         "afterCommandId": "fire-timer-sha256:6abd9ffaf10c2bcefd54580956fd16ca64043ce25367c6f8a5b697033bca5c3b",
         "jobs": []
       }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "fire-timer-sha256:6abd9ffaf10c2bcefd54580956fd16ca64043ce25367c6f8a5b697033bca5c3b",
+        "state": "COMPLETED"
+      }
     ]
   },
   "projection": {
@@ -90,12 +100,12 @@
               "activation": 1
             },
             "definition": null,
-            "input": "timerFire",
             "detail": {
               "kind": "timer",
               "deadlineMs": 1000,
               "recurrence": null
-            }
+            },
+            "input": "timerFire"
           }
         ]
       },

@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "parallel-fork-join-stale-a-while-b-active",
-    "sha256": "3bef0f9d2723a02ddd54ed4ece8619a10e9ff79b41ce84bb2d69f87c05e6f35f"
+    "sha256": "6b8c20f29820c1b1d47b8d8cab754139d72a3c199970b437f39e2f593335b221"
   },
   "profile": {
-    "id": "parallel-fork-join-draft",
-    "sha256": "5b7e357092e2e2b8c3c0759a5c660d5d6a656deea4352500409cf42753d6ed1e"
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -83,6 +83,20 @@
         "afterCommandId": "complete-stale-user-task-a",
         "jobs": []
       }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-user-task-a",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-stale-user-task-a",
+        "state": "ACTIVE"
+      }
     ]
   },
   "projection": {
@@ -117,7 +131,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "A",
@@ -130,7 +143,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           },
           {
             "id": {
@@ -139,7 +153,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "B",
@@ -152,7 +165,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },
@@ -175,7 +189,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "B",
@@ -188,7 +201,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },
@@ -211,7 +225,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "B",
@@ -224,7 +237,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       }

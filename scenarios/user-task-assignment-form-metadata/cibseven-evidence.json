@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-assignment-form-metadata",
-    "sha256": "b48e6ee74b67cf01d40460a0e50f23b019f2afe6433d1b6b35e4deab8d35bc56"
+    "sha256": "14a52d9fb782bbdd33a2af459c033f57a7aeab40b77864e1c9910140552183da"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-assignment-form-metadata-draft",
-    "sha256": "57711188e531e739db2af463ce269f0f7a16678537d8f9fb5a21f3b4668eec97"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -35,12 +35,12 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "requestTitle",
-            "value": "Review Boolean decision"
-          },
-          {
             "name": "approved",
             "value": true
+          },
+          {
+            "name": "requestTitle",
+            "value": "Review Boolean decision"
           }
         ]
       }
@@ -81,6 +81,16 @@
       {
         "afterCommandId": "complete-user-task-instance",
         "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "state": "COMPLETED"
       }
     ]
   },
@@ -124,7 +134,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Approve",
@@ -144,7 +153,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },

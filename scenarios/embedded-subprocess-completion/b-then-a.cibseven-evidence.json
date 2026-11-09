@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "embedded-subprocess-completion-b-then-a",
-    "sha256": "861e1ed88b8b3f0777982b1c404418ac1b862faac7e254db195805ae723932ec"
+    "sha256": "66917051cd3ca8a0acb3bc7c8fc6234ad332a53dd82f60ce54e73c5054ca4540"
   },
   "profile": {
-    "id": "cibseven-2.2.0-embedded-subprocess-completion-draft",
-    "sha256": "3de6654f4dcd437ae2d5dbafc200fdd077046f9e6587bb5677d08e962ef39a52"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -97,6 +97,24 @@
         "afterCommandId": "complete-after-scope",
         "jobs": []
       }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-child-b",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-child-a",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-after-scope",
+        "state": "COMPLETED"
+      }
     ]
   },
   "projection": {
@@ -131,7 +149,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Child A",
@@ -144,7 +161,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           },
           {
             "id": {
@@ -153,7 +171,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Child B",
@@ -166,7 +183,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },
@@ -189,7 +207,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Child A",
@@ -202,7 +219,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },
@@ -225,7 +243,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "After Scope",
@@ -238,7 +255,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },

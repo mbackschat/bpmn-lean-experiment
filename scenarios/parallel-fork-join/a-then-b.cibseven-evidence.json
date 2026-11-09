@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "parallel-fork-join-a-then-b",
-    "sha256": "ce21b16d544cec8cb44a58737d87fd2f4889897aaa458d98851f5142dbd4bcb9"
+    "sha256": "2fb4d20135f17ec3c24713c116e61cbdbfb97ad9b29d1cb30b70a968cc9c1bbe"
   },
   "profile": {
-    "id": "parallel-fork-join-draft",
-    "sha256": "5b7e357092e2e2b8c3c0759a5c660d5d6a656deea4352500409cf42753d6ed1e"
+    "id": "bpmn-2.0.2",
+    "sha256": "2a1e548c9f7d2dbf5a04e34279aab75bded1192883aae5cbd49f9df972d491a0"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -78,6 +78,20 @@
         "afterCommandId": "complete-user-task-b",
         "jobs": []
       }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-user-task-a",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-user-task-b",
+        "state": "COMPLETED"
+      }
     ]
   },
   "projection": {
@@ -112,7 +126,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "A",
@@ -125,7 +138,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           },
           {
             "id": {
@@ -134,7 +148,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "B",
@@ -147,7 +160,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },
@@ -170,7 +184,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "B",
@@ -183,7 +196,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },

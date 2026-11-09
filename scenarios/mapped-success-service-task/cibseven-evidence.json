@@ -2,16 +2,16 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "mapped-success-service-task",
-    "sha256": "30df2bff5b36b72058439f36c5d659f811caf0de93a866d89ae025fc516d2114"
+    "sha256": "5a6223de823f809383f205ad416b951b2171e69da8a3be1b906ecfbe7446bbcf"
   },
   "profile": {
-    "id": "cibseven-2.0.0-mapped-success-service-task-draft",
-    "sha256": "9c9997f75b4822d47943616cbdf10a14626cffa4c903467f77fe3219a55daea3"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
-    "engineVersion": "2.0.0",
-    "engineRevision": "57ed69550f1c9c2619b9711d8877418bb084a371",
+    "engineVersion": "2.2.0",
+    "engineRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
     "runner": "cibseven-oracle",
     "java": "21",
     "database": "H2 2.3.232"
@@ -40,6 +40,12 @@
       {
         "afterCommandId": "start-mapped-success",
         "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-mapped-success",
+        "state": "COMPLETED"
       }
     ],
     "mappingExecutions": [

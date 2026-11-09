@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "user-task-stale-completion",
-    "sha256": "5512405edc580b173e02c1d2fa8f8b834f97f1759cdb387de2641754e8d86794"
+    "sha256": "d8f3eebf30d32701327e429189abcd9b4c814dc55fe49ec1a2e0e4b10edfc01c"
   },
   "profile": {
-    "id": "cibseven-2.2.0-user-task-process-data-draft",
-    "sha256": "08d6e70e497d0eb2ca24b4bb52e7c03f464dc4703061512ba557c5e724b6a38f"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -35,12 +35,12 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "requestTitle",
-            "value": "Review invoice 42"
-          },
-          {
             "name": "decision",
             "value": "approved"
+          },
+          {
+            "name": "requestTitle",
+            "value": "Review invoice 42"
           },
           {
             "name": "reviewNote",
@@ -54,12 +54,12 @@
         "engineClockTimeMs": 0,
         "variables": [
           {
-            "name": "requestTitle",
-            "value": "Review invoice 42"
-          },
-          {
             "name": "decision",
             "value": "approved"
+          },
+          {
+            "name": "requestTitle",
+            "value": "Review invoice 42"
           },
           {
             "name": "reviewNote",
@@ -99,6 +99,20 @@
       {
         "afterCommandId": "complete-stale-user-task-instance",
         "jobs": []
+      }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-user-task-instance",
+        "state": "COMPLETED"
+      },
+      {
+        "afterCommandId": "complete-stale-user-task-instance",
+        "state": "COMPLETED"
       }
     ]
   },
@@ -142,7 +156,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Approve",
@@ -155,7 +168,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },

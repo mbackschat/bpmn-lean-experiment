@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "service-task-effect-incident-retry-success",
-    "sha256": "85918db4d394e76ae4808991d244050cd9cce85d6a940354c32cdba4058f9056"
+    "sha256": "050caf6bb8546cf08b319b344ccc51c35e469359f55a95d3402709cdacd9efac"
   },
   "profile": {
-    "id": "cibseven-2.2.0-service-task-incident-draft",
-    "sha256": "0585357cae98d13a295dbb504d900c80423742ed1bbc73f20350ed7f37f59f3b"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -187,7 +187,33 @@
         "jobs": []
       }
     ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "retry-service-task-effect-incident",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
+        "state": "COMPLETED"
+      }
+    ],
     "effectExecutions": [
+      {
+        "afterCommandId": "report-effect-failure-sha256:b6b5077e469b9421ed4a598e4c08fae7c3ce3e31c941fae9733b4c7206a2b345",
+        "schedule": "incidentReportRetrySuccess",
+        "invocations": 3,
+        "mutations": 1,
+        "initialRetries": 3,
+        "retriesAfterFirstFailure": 2
+      },
       {
         "afterCommandId": "complete-effect-sha256:64b75e53c74d30141f8c4e05db4cea269453a6cecdd09e190d1943f029797e5e",
         "schedule": "incidentReportRetrySuccess",
@@ -230,7 +256,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "effectResult",
             "detail": {
               "kind": "effect",
               "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
@@ -238,7 +263,8 @@
               "arguments": [],
               "failures": 0,
               "send": null
-            }
+            },
+            "input": "effectResult"
           }
         ]
       },
@@ -261,7 +287,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "incident",
               "effect": {
@@ -272,8 +297,9 @@
                 "send": null
               },
               "generation": 1,
-              "cancellable": false
-            }
+              "cancellable": true
+            },
+            "input": "command"
           }
         ]
       },
@@ -296,7 +322,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "effectResult",
             "detail": {
               "kind": "effect",
               "protocol": "urn:bpmn-lean:effect-protocol:activity-v1",
@@ -304,7 +329,8 @@
               "arguments": [],
               "failures": 1,
               "send": null
-            }
+            },
+            "input": "effectResult"
           }
         ]
       },

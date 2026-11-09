@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "subprocess-error-propagation-stale-sibling-after-error",
-    "sha256": "050bf5e461feb049bd80816c277a91f1b611fd818ef3011b2323348391b5a31d"
+    "sha256": "6870be9164a6e6042f1ce3aa20839b035b34c81361d5e93b7df767e1655bb72f"
   },
   "profile": {
-    "id": "cibseven-2.2.0-subprocess-error-propagation-draft",
-    "sha256": "0e2656dcdc0f7f7b5b74991a23aa3dcd407ca05c0e33b1295fc7e5a1db31e28c"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -83,6 +83,20 @@
         "afterCommandId": "refuse-stale-sibling-after-error",
         "jobs": []
       }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "start-process",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "complete-trigger-error",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "refuse-stale-sibling-after-error",
+        "state": "ACTIVE"
+      }
     ]
   },
   "projection": {
@@ -117,7 +131,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Sibling Work",
@@ -130,7 +143,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           },
           {
             "id": {
@@ -139,7 +153,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Trigger Error",
@@ -152,7 +165,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },
@@ -175,7 +189,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Recover",
@@ -188,7 +201,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       },
@@ -211,7 +225,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "command",
             "detail": {
               "kind": "userTask",
               "name": "Recover",
@@ -224,7 +237,8 @@
               "followUpDate": null,
               "priority": null,
               "inputs": []
-            }
+            },
+            "input": "command"
           }
         ]
       }

@@ -2,11 +2,11 @@
   "kind": "cibSevenScenarioEvidence",
   "scenario": {
     "id": "addressless-receive-task-named-delivery-first",
-    "sha256": "cad177b2d22d0308ba1053b73a5f8177e286f1d013ce111cbfd97c5ceee5a3e5"
+    "sha256": "fdc0729c8f26e3beb7ab682ad567ade78d64147a4220cbc2bbce38f7298f35f1"
   },
   "profile": {
-    "id": "cibseven-2.2.0-addressless-receive-task-draft",
-    "sha256": "6fe0533d7c3b0315e2649dca1857f5d47db41c430ca1b1223a3395bd3f59ffb7"
+    "id": "cibseven-2.2.0",
+    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -70,6 +70,16 @@
         "afterCommandId": "named-message-first",
         "jobs": []
       }
+    ],
+    "historicProcessStates": [
+      {
+        "afterCommandId": "request-handover",
+        "state": "ACTIVE"
+      },
+      {
+        "afterCommandId": "named-message-first",
+        "state": "ACTIVE"
+      }
     ]
   },
   "projection": {
@@ -104,7 +114,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "deliver",
             "detail": {
               "kind": "message",
               "channel": {
@@ -112,7 +121,8 @@
               },
               "payload": false,
               "criteria": []
-            }
+            },
+            "input": "deliver"
           }
         ]
       },
@@ -135,7 +145,6 @@
               "activation": 1
             },
             "definition": null,
-            "input": "deliver",
             "detail": {
               "kind": "message",
               "channel": {
@@ -143,7 +152,8 @@
               },
               "payload": false,
               "criteria": []
-            }
+            },
+            "input": "deliver"
           }
         ]
       }
