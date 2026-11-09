@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_RootHandler"
+  targetNamespace="urn:bpmn-lean:scenarios:error-esp-catch-variables:root-handler">
+  <bpmn:error id="Error_IntakeFailed" name="Intake failed" errorCode="INTAKE_FAILED" camunda:errorMessage="Intake rejected" />
+  <bpmn:process id="Process_RootHandler" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ParcelReceived" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:userTask id="MainWork" name="Main work" />
+    <bpmn:endEvent id="EndEvent_MainDone" />
+
+    <bpmn:userTask id="Trigger" name="Trigger intake failure" />
+    <bpmn:endEvent id="EndError_IntakeFailed">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_IntakeFailed" errorRef="Error_IntakeFailed" />
+    </bpmn:endEvent>
+
+    <bpmn:subProcess id="Handler_Intake_Failed" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Intake_Failed" isInterrupting="true">
+        <bpmn:errorEventDefinition
+          id="ErrorEventDefinition_Intake_Failed"
+          errorRef="Error_IntakeFailed"
+          camunda:errorCodeVariable="failCode"
+          camunda:errorMessageVariable="failMessage" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="Handle" name="Handle the intake failure" />
+      <bpmn:endEvent id="End_Intake_Failed" />
+      <bpmn:sequenceFlow id="Flow_Handler_Start_Handle" sourceRef="Start_Intake_Failed" targetRef="Handle" />
+      <bpmn:sequenceFlow id="Flow_Handler_Handle_End" sourceRef="Handle" targetRef="End_Intake_Failed" />
+    </bpmn:subProcess>
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ParcelReceived" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Main" sourceRef="Gateway_Fork" targetRef="MainWork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Trigger" sourceRef="Gateway_Fork" targetRef="Trigger" />
+    <bpmn:sequenceFlow id="Flow_Main_End" sourceRef="MainWork" targetRef="EndEvent_MainDone" />
+    <bpmn:sequenceFlow id="Flow_Trigger_Error" sourceRef="Trigger" targetRef="EndError_IntakeFailed" />
+  </bpmn:process>
+</bpmn:definitions>

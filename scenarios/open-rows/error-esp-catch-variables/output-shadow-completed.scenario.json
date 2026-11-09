@@ -1,0 +1,47 @@
+{
+  "kind": "scenario",
+  "id": "error-esp-catch-variables-output-shadow-completed",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-esp-catch-variables-output-shadow",
+    "relativePath": "scenarios/open-rows/error-esp-catch-variables/output-shadow.bpmn",
+    "sha256": "9009d3cdf2a0e36f18feadfa6e4652b77ebf38e434fbce32748f2d2471ab582d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-complete-screen",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Screen",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/core/variable/mapping/IoMapping.java"
+    ]
+  }
+}

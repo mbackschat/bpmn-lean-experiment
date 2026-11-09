@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_SiblingHandler"
+  targetNamespace="urn:bpmn-lean:scenarios:automation-business-error-non-ancestor">
+  <bpmn:error id="Error_CheckFailed" name="Check failed" errorCode="CHECK_FAILED" />
+  <bpmn:process id="Process_SiblingHandler" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ApplicationReceived" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:serviceTask
+      id="Check"
+      name="Check applicant"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:endEvent id="EndEvent_Checked" />
+
+    <bpmn:serviceTask
+      id="Verify"
+      name="Verify documents"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:boundaryEvent id="Boundary_Verify_CheckFailed" attachedToRef="Verify" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Verify_CheckFailed" errorRef="Error_CheckFailed" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Recheck" name="Recheck documents" />
+    <bpmn:endEvent id="EndEvent_Verified" />
+    <bpmn:endEvent id="EndEvent_Rechecked" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ApplicationReceived" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Check" sourceRef="Gateway_Fork" targetRef="Check" />
+    <bpmn:sequenceFlow id="Flow_Fork_Verify" sourceRef="Gateway_Fork" targetRef="Verify" />
+    <bpmn:sequenceFlow id="Flow_Check_End" sourceRef="Check" targetRef="EndEvent_Checked" />
+    <bpmn:sequenceFlow id="Flow_Verify_End" sourceRef="Verify" targetRef="EndEvent_Verified" />
+    <bpmn:sequenceFlow id="Flow_CheckFailed_Recheck" sourceRef="Boundary_Verify_CheckFailed" targetRef="Recheck" />
+    <bpmn:sequenceFlow id="Flow_Recheck_End" sourceRef="Recheck" targetRef="EndEvent_Rechecked" />
+  </bpmn:process>
+</bpmn:definitions>

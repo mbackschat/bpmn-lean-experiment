@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_WeighParcel"
+  targetNamespace="urn:bpmn-lean:scenarios:error-null-message:weigh-parcel">
+  <bpmn:error id="Error_WeighFailed" name="Weigh failed" errorCode="WEIGH_FAILED" />
+  <bpmn:process id="Process_WeighParcel" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ParcelArrived" />
+
+    <bpmn:subProcess id="Weigh" name="Weigh parcel">
+      <bpmn:startEvent id="StartEvent_Weigh" />
+      <bpmn:userTask id="Place" name="Place parcel on scale" />
+      <bpmn:endEvent id="EndError_WeighFailed">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_Weigh_Failed" errorRef="Error_WeighFailed" />
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="Flow_Weigh_Start_Place" sourceRef="StartEvent_Weigh" targetRef="Place" />
+      <bpmn:sequenceFlow id="Flow_Weigh_Place_Error" sourceRef="Place" targetRef="EndError_WeighFailed" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Weigh_WeighFailed" attachedToRef="Weigh" cancelActivity="true">
+      <bpmn:errorEventDefinition
+        id="ErrorEventDefinition_Weigh_Caught"
+        errorRef="Error_WeighFailed"
+        camunda:errorCodeVariable="weighCode"
+        camunda:errorMessageVariable="weighMessage" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ReviewWeigh" name="Review failed weighing" />
+    <bpmn:endEvent id="EndEvent_Weighed" />
+    <bpmn:endEvent id="EndEvent_WeighReviewed" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Weigh" sourceRef="StartEvent_ParcelArrived" targetRef="Weigh" />
+    <bpmn:sequenceFlow id="Flow_Weigh_End" sourceRef="Weigh" targetRef="EndEvent_Weighed" />
+    <bpmn:sequenceFlow id="Flow_WeighFailure_Review" sourceRef="Boundary_Weigh_WeighFailed" targetRef="ReviewWeigh" />
+    <bpmn:sequenceFlow id="Flow_ReviewWeigh_End" sourceRef="ReviewWeigh" targetRef="EndEvent_WeighReviewed" />
+  </bpmn:process>
+</bpmn:definitions>

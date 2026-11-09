@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_SinglePathMapped"
+  targetNamespace="urn:bpmn-lean:scenarios:error-unhandled-outcomes:single-path-mapped">
+  <bpmn:error id="Error_StockFrozen" name="Stock frozen" errorCode="STOCK_FROZEN" />
+  <bpmn:process id="Process_SinglePathMapped" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_OrderPlaced" />
+
+    <bpmn:serviceTask
+      id="Reserve"
+      name="Reserve stock"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="reservation">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Boundary_Reserve_StockFrozen" attachedToRef="Reserve" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Reserve_StockFrozen" errorRef="Error_StockFrozen" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ReleaseStock" name="Release frozen stock" />
+    <bpmn:endEvent id="EndEvent_Reserved" />
+    <bpmn:endEvent id="EndEvent_Released" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Reserve" sourceRef="StartEvent_OrderPlaced" targetRef="Reserve" />
+    <bpmn:sequenceFlow id="Flow_Reserve_End" sourceRef="Reserve" targetRef="EndEvent_Reserved" />
+    <bpmn:sequenceFlow id="Flow_StockFrozen_Release" sourceRef="Boundary_Reserve_StockFrozen" targetRef="ReleaseStock" />
+    <bpmn:sequenceFlow id="Flow_Release_End" sourceRef="ReleaseStock" targetRef="EndEvent_Released" />
+  </bpmn:process>
+</bpmn:definitions>

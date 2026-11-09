@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_ScanLabel"
+  targetNamespace="urn:bpmn-lean:scenarios:error-null-message:scan-label">
+  <bpmn:process id="Process_ScanLabel" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_LabelArrived" />
+
+    <bpmn:serviceTask
+      id="ScanLabel"
+      name="Scan label"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:boundaryEvent id="Boundary_ScanLabel_AnyFailure" attachedToRef="ScanLabel" cancelActivity="true">
+      <bpmn:errorEventDefinition
+        id="ErrorEventDefinition_ScanLabel_AnyFailure"
+        camunda:errorCodeVariable="scanCode"
+        camunda:errorMessageVariable="scanMessage" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="ReviewScan" name="Review failed scan" />
+    <bpmn:endEvent id="EndEvent_Scanned" />
+    <bpmn:endEvent id="EndEvent_ScanReviewed" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Scan" sourceRef="StartEvent_LabelArrived" targetRef="ScanLabel" />
+    <bpmn:sequenceFlow id="Flow_Scan_End" sourceRef="ScanLabel" targetRef="EndEvent_Scanned" />
+    <bpmn:sequenceFlow id="Flow_ScanFailure_Review" sourceRef="Boundary_ScanLabel_AnyFailure" targetRef="ReviewScan" />
+    <bpmn:sequenceFlow id="Flow_ReviewScan_End" sourceRef="ReviewScan" targetRef="EndEvent_ScanReviewed" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_IllegalStateCode"
+  targetNamespace="urn:bpmn-lean:scenarios:error-java-class-codes:illegal-state-code">
+  <bpmn:error id="Error_IllegalState" name="Illegal state" errorCode="java.lang.IllegalStateException" />
+  <bpmn:process id="Process_IllegalStateCode" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_SettlementDue" />
+
+    <bpmn:serviceTask
+      id="Settle"
+      name="Settle account"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:boundaryEvent id="Boundary_Settle_IllegalState" attachedToRef="Settle" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Settle_IllegalState" errorRef="Error_IllegalState" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="Recover" name="Recover the settlement" />
+    <bpmn:endEvent id="EndEvent_Settled" />
+    <bpmn:endEvent id="EndEvent_Recovered" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Settle" sourceRef="StartEvent_SettlementDue" targetRef="Settle" />
+    <bpmn:sequenceFlow id="Flow_Settle_End" sourceRef="Settle" targetRef="EndEvent_Settled" />
+    <bpmn:sequenceFlow id="Flow_IllegalState_Recover" sourceRef="Boundary_Settle_IllegalState" targetRef="Recover" />
+    <bpmn:sequenceFlow id="Flow_Recover_End" sourceRef="Recover" targetRef="EndEvent_Recovered" />
+  </bpmn:process>
+</bpmn:definitions>

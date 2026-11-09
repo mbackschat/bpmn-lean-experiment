@@ -1,0 +1,47 @@
+{
+  "kind": "scenario",
+  "id": "error-null-message-effect-without-message",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-null-message-scan-label",
+    "relativePath": "scenarios/open-rows/error-null-message/scan-label.bpmn",
+    "sha256": "662a71d0ada870a398f928fd7836049e2f5872693b5b3f65abd7757c263bddd1",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-fail-scan-label",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ScanLabel",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "businessFailure",
+        "code": "SCAN_FAILED",
+        "outputs": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

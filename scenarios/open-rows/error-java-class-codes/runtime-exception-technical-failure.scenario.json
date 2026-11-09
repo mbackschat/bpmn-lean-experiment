@@ -1,0 +1,52 @@
+{
+  "kind": "scenario",
+  "id": "error-java-class-codes-runtime-exception-technical-failure",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "error-java-class-codes-runtime-exception-code",
+    "relativePath": "scenarios/open-rows/error-java-class-codes/runtime-exception-code.bpmn",
+    "sha256": "336325d0c210134387cbc95ac6cd2596fc3a08d2f11c62d5716a7d22dd407730",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-fail-settle",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Settle",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "technicalFailure"
+      }
+    }
+  ],
+  "options": {
+    "incidents": {
+      "cancellable": true
+    }
+  },
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §10.3.3.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/ErrorEventDefinition.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ServiceTaskDelegateExpressionActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/cmd/DefaultJobRetryCmd.java"
+    ]
+  }
+}
