@@ -10,18 +10,17 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Objects;
-import java.util.stream.Stream;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
 import org.bpmnlean.cibseven.ScenarioProtocol.ScenarioDefinition;
 import org.bpmnlean.cibseven.ScenarioProtocol.Start;
-import org.cibseven.bpm.model.bpmn.Bpmn;
-import org.cibseven.bpm.model.bpmn.instance.BusinessRuleTask;
-import org.cibseven.bpm.model.bpmn.instance.Condition;
-import org.cibseven.bpm.model.bpmn.instance.ConditionExpression;
-import org.cibseven.bpm.model.bpmn.instance.ScriptTask;
-import org.cibseven.bpm.model.bpmn.instance.cibseven.CamundaScript;
 
 /** Validates the closed scenario shape and binds its content-addressed BPMN resource. */
 final class CibSevenScenarioValidator {
+
+  private static final String BPMN_MODEL = "http://www.omg.org/spec/BPMN/20100524/MODEL";
+  private static final String CAMUNDA = "http://camunda.org/schema/1.0/bpmn";
 
   private final CibSevenRelease release;
 
@@ -55,19 +54,44 @@ final class CibSevenScenarioValidator {
    * is never deployed. CIB would answer both with an engine exception that the runner records as a rolled-back command,
    * an answer of this environment, not of CIB; refusing here keeps them harness failures.
    */
-  private static void requireRealizable(Path bpmnPath) {
-    var model = Bpmn.readModelFromFile(bpmnPath.toFile());
-    if (!model.getModelElementsByType(ScriptTask.class).isEmpty()
-        || !model.getModelElementsByType(CamundaScript.class).isEmpty()
-        || Stream.concat(
-                model.getModelElementsByType(ConditionExpression.class).stream(),
-                model.getModelElementsByType(Condition.class).stream())
-            .map(condition -> condition.getAttributeValue("language"))
-            .anyMatch(language -> language != null && !"juel".equalsIgnoreCase(language))) {
+  private static void requireRealizable(Path bpmnPath) throws IOException {
+    // A streaming scan, not the model API: the model API validates against the XSD and refuses documents CIB's own
+    // deployment parser accepts, which would turn CIB's answer for them into a harness failure.
+    var factory = XMLInputFactory.newFactory();
+    factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+    factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+    var script = false;
+    var decision = false;
+    try (var input = Files.newInputStream(bpmnPath)) {
+      var reader = factory.createXMLStreamReader(input);
+      try {
+        while (reader.hasNext()) {
+          if (reader.next() != XMLStreamConstants.START_ELEMENT) {
+            continue;
+          }
+          var namespace = reader.getNamespaceURI();
+          var name = reader.getLocalName();
+          if (BPMN_MODEL.equals(namespace)) {
+            var language = reader.getAttributeValue(null, "language");
+            script |= "scriptTask".equals(name)
+                || (("conditionExpression".equals(name) || "condition".equals(name))
+                    && language != null && !"juel".equalsIgnoreCase(language));
+            decision |= "businessRuleTask".equals(name) && reader.getAttributeValue(CAMUNDA, "decisionRef") != null;
+          } else if (CAMUNDA.equals(namespace) && "script".equals(name)) {
+            script = true;
+          }
+        }
+      } finally {
+        reader.close();
+      }
+    } catch (XMLStreamException unreadable) {
+      // A document the scan cannot read is left to CIB's deployment, whose refusal is the oracle's answer.
+      return;
+    }
+    if (script) {
       throw new IllegalStateException("A script has no realization in this runner: " + bpmnPath.getFileName());
     }
-    if (model.getModelElementsByType(BusinessRuleTask.class).stream()
-        .anyMatch(task -> task.getCamundaDecisionRef() != null)) {
+    if (decision) {
       throw new IllegalStateException("A DMN decision has no realization in this runner: " + bpmnPath.getFileName());
     }
   }
