@@ -364,16 +364,14 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/messageSubscriptionEvidence"
-          },
-          "maxItems": 1
+          }
         },
         "addresslessReceiveWaits": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/addresslessReceiveWaitEvidence"
           },
-          "minItems": 1,
-          "maxItems": 1
+          "minItems": 1
         }
       }
     },
