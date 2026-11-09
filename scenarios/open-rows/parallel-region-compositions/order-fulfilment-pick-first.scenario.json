@@ -1,0 +1,136 @@
+{
+  "kind": "scenario",
+  "id": "parallel-region-compositions-order-fulfilment-pick-first",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "parallel-region-compositions-order-fulfilment",
+    "relativePath": "scenarios/open-rows/parallel-region-compositions/order-fulfilment.bpmn",
+    "sha256": "9b5d595a5ae325af025c17472d8138384ce5a3b72ea10562c74f86fa06e87872",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "orderId",
+          "value": {
+            "kind": "string",
+            "value": "o-1"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-PickItems-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "PickItems",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "picked",
+            "value": {
+              "kind": "string",
+              "value": "p-1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s03-effect-ChargeCard-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ChargeCard",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "r-1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-CheckSanctions-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CheckSanctions",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "sanctions",
+            "value": {
+              "kind": "string",
+              "value": "clear"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-CheckAddress-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CheckAddress",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "address",
+            "value": {
+              "kind": "string",
+              "value": "valid"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-ShipOrder-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ShipOrder",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.4",
+      "BPMN 2.0.2 \u00a713.4.1",
+      "BPMN 2.0.2 \u00a713.3.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

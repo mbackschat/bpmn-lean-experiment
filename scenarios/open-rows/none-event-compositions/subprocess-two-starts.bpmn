@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_SubprocessTwoStarts" targetNamespace="urn:bpmn-lean:scenarios:none-event-compositions:subprocess-two-starts">
+  <process id="Process_SubprocessTwoStarts" name="Two None Start Events in one Sub-Process" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <subProcess id="Scope" name="Scope">
+      <startEvent id="ScopeStartA" name="Scope start A" />
+      <startEvent id="ScopeStartB" name="Scope start B" />
+      <userTask id="InnerA" name="Inner A" />
+      <userTask id="InnerB" name="Inner B" />
+      <endEvent id="InnerDoneA" />
+      <endEvent id="InnerDoneB" />
+      <sequenceFlow id="Flow_ToInnerA" sourceRef="ScopeStartA" targetRef="InnerA" />
+      <sequenceFlow id="Flow_ToInnerB" sourceRef="ScopeStartB" targetRef="InnerB" />
+      <sequenceFlow id="Flow_InnerDoneA" sourceRef="InnerA" targetRef="InnerDoneA" />
+      <sequenceFlow id="Flow_InnerDoneB" sourceRef="InnerB" targetRef="InnerDoneB" />
+    </subProcess>
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Scope" />
+    <sequenceFlow id="Flow_Scoped" sourceRef="Scope" targetRef="Done" />
+  </process>
+</definitions>

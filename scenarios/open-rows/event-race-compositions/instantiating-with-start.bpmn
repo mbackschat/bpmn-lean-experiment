@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_InstantiatingWithStart" targetNamespace="urn:bpmn-lean:scenarios:event-race-compositions:instantiating-with-start">
+  <message id="Message_Approve" name="approve" />
+  <process id="Process_InstantiatingWithStart" name="An Event-Based Gateway marked instantiating behind a None Start" isExecutable="true">
+    <startEvent id="DecisionRequested" name="Decision requested" />
+    <eventBasedGateway id="AwaitDecision" name="Await decision" instantiate="true" />
+    <intermediateCatchEvent id="Approved" name="Approved">
+      <messageEventDefinition id="Approved_Message" messageRef="Message_Approve" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="Expired" name="Expired">
+      <timerEventDefinition id="Expired_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <userTask id="Proceed" name="Proceed" />
+    <userTask id="Lapse" name="Lapse" />
+    <endEvent id="Proceeded" name="Proceeded" />
+    <endEvent id="Lapsed" name="Lapsed" />
+    <sequenceFlow id="Flow_Requested" sourceRef="DecisionRequested" targetRef="AwaitDecision" />
+    <sequenceFlow id="Flow_ToApproved" sourceRef="AwaitDecision" targetRef="Approved" />
+    <sequenceFlow id="Flow_ToExpired" sourceRef="AwaitDecision" targetRef="Expired" />
+    <sequenceFlow id="Flow_Approved" sourceRef="Approved" targetRef="Proceed" />
+    <sequenceFlow id="Flow_Expired" sourceRef="Expired" targetRef="Lapse" />
+    <sequenceFlow id="Flow_Proceeded" sourceRef="Proceed" targetRef="Proceeded" />
+    <sequenceFlow id="Flow_Lapsed" sourceRef="Lapse" targetRef="Lapsed" />
+  </process>
+</definitions>

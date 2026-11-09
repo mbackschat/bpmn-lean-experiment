@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_InstantiatingNoStart" targetNamespace="urn:bpmn-lean:scenarios:event-race-compositions:instantiating-no-start">
+  <message id="Message_Card" name="card" />
+  <message id="Message_Form" name="form" />
+  <process id="Process_InstantiatingNoStart" name="An instantiating Event-Based Gateway with no Start Event" isExecutable="true">
+    <eventBasedGateway id="AwaitDocuments" name="Await documents" instantiate="true" />
+    <intermediateCatchEvent id="CardReceived" name="Card received">
+      <messageEventDefinition id="CardReceived_Message" messageRef="Message_Card" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="FormReceived" name="Form received">
+      <messageEventDefinition id="FormReceived_Message" messageRef="Message_Form" />
+    </intermediateCatchEvent>
+    <userTask id="ProcessCard" name="Process card" />
+    <userTask id="ProcessForm" name="Process form" />
+    <endEvent id="CardProcessed" name="Card processed" />
+    <endEvent id="FormProcessed" name="Form processed" />
+    <sequenceFlow id="Flow_ToCard" sourceRef="AwaitDocuments" targetRef="CardReceived" />
+    <sequenceFlow id="Flow_ToForm" sourceRef="AwaitDocuments" targetRef="FormReceived" />
+    <sequenceFlow id="Flow_Card" sourceRef="CardReceived" targetRef="ProcessCard" />
+    <sequenceFlow id="Flow_Form" sourceRef="FormReceived" targetRef="ProcessForm" />
+    <sequenceFlow id="Flow_CardProcessed" sourceRef="ProcessCard" targetRef="CardProcessed" />
+    <sequenceFlow id="Flow_FormProcessed" sourceRef="ProcessForm" targetRef="FormProcessed" />
+  </process>
+</definitions>

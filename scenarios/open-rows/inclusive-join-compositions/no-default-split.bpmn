@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_NoDefaultSplit" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-compositions:no-default-split">
+  <process id="Process_NoDefaultSplit" name="Every Inclusive candidate is conditioned and there is no default" isExecutable="true">
+    <startEvent id="ChecksRequested" name="Checks requested" />
+    <inclusiveGateway id="ChooseChecks" name="Choose checks" gatewayDirection="Diverging" />
+    <userTask id="CreditCheck" name="Credit check" />
+    <userTask id="FraudCheck" name="Fraud check" />
+    <inclusiveGateway id="ChecksComplete" name="Checks complete" gatewayDirection="Converging" />
+    <userTask id="Decide" name="Decide" />
+    <endEvent id="Decided" name="Decided" />
+    <sequenceFlow id="Flow_Requested" sourceRef="ChecksRequested" targetRef="ChooseChecks" />
+    <sequenceFlow id="Flow_ToCredit" sourceRef="ChooseChecks" targetRef="CreditCheck">
+      <conditionExpression xsi:type="tFormalExpression">${credit}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToFraud" sourceRef="ChooseChecks" targetRef="FraudCheck">
+      <conditionExpression xsi:type="tFormalExpression">${fraud}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_CreditDone" sourceRef="CreditCheck" targetRef="ChecksComplete" />
+    <sequenceFlow id="Flow_FraudDone" sourceRef="FraudCheck" targetRef="ChecksComplete" />
+    <sequenceFlow id="Flow_ChecksDone" sourceRef="ChecksComplete" targetRef="Decide" />
+    <sequenceFlow id="Flow_Decided" sourceRef="Decide" targetRef="Decided" />
+  </process>
+</definitions>

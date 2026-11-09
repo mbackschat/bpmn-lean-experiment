@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_UnconditionedFlows" targetNamespace="urn:bpmn-lean:scenarios:exclusive-choice-compositions:unconditioned-flows">
+  <process id="Process_UnconditionedFlows" name="Exclusive splits with one unconditioned flow and no default" isExecutable="true">
+    <startEvent id="OrderPlaced" name="Order placed" />
+    <exclusiveGateway id="RouteByUrgency" name="Route by urgency" gatewayDirection="Diverging" />
+    <userTask id="ExpediteOrder" name="Expedite order" />
+    <userTask id="ProcessOrder" name="Process order" />
+    <exclusiveGateway id="OrderRouted" name="Order routed" gatewayDirection="Converging" />
+    <exclusiveGateway id="RouteByGift" name="Route by gift" gatewayDirection="Diverging" />
+    <userTask id="PackPlain" name="Pack plain" />
+    <userTask id="WrapGift" name="Wrap gift" />
+    <exclusiveGateway id="OrderPacked" name="Order packed" gatewayDirection="Converging" />
+    <endEvent id="OrderDone" name="Order done" />
+    <sequenceFlow id="Flow_Placed" sourceRef="OrderPlaced" targetRef="RouteByUrgency" />
+    <sequenceFlow id="Flow_Urgent" sourceRef="RouteByUrgency" targetRef="ExpediteOrder">
+      <conditionExpression xsi:type="tFormalExpression">${urgent}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Normal" sourceRef="RouteByUrgency" targetRef="ProcessOrder" />
+    <sequenceFlow id="Flow_Expedited" sourceRef="ExpediteOrder" targetRef="OrderRouted" />
+    <sequenceFlow id="Flow_Processed" sourceRef="ProcessOrder" targetRef="OrderRouted" />
+    <sequenceFlow id="Flow_Routed" sourceRef="OrderRouted" targetRef="RouteByGift" />
+    <sequenceFlow id="Flow_Plain" sourceRef="RouteByGift" targetRef="PackPlain" />
+    <sequenceFlow id="Flow_Gift" sourceRef="RouteByGift" targetRef="WrapGift">
+      <conditionExpression xsi:type="tFormalExpression">${gift}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_PlainPacked" sourceRef="PackPlain" targetRef="OrderPacked" />
+    <sequenceFlow id="Flow_GiftWrapped" sourceRef="WrapGift" targetRef="OrderPacked" />
+    <sequenceFlow id="Flow_Packed" sourceRef="OrderPacked" targetRef="OrderDone" />
+  </process>
+</definitions>

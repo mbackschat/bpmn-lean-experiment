@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="N01" targetNamespace="urn:bpmn-lean:scenarios:link-event-compositions:go-to-links-renamed">
+  <process id="N02" name="Rejoin two routes through a Link pair and loop" isExecutable="true">
+    <startEvent id="N03" name="Ticket opened" />
+    <userTask id="N04" name="Triage">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="route" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="N05" name="Route ticket" gatewayDirection="Diverging" default="F20" />
+    <userTask id="N06" name="Handle billing" />
+    <userTask id="N07" name="Handle other" />
+    <intermediateThrowEvent id="N08" name="resolution">
+      <linkEventDefinition id="N09" name="resolution" />
+    </intermediateThrowEvent>
+    <intermediateThrowEvent id="N10" name="resolution">
+      <linkEventDefinition id="N11" name="resolution" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="N12" name="resolution">
+      <linkEventDefinition id="N13" name="resolution" />
+    </intermediateCatchEvent>
+    <userTask id="N14" name="Resolve">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="again" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="N15" name="Reopen" gatewayDirection="Diverging" default="F26" />
+    <endEvent id="N16" name="Ticket closed" />
+    <sequenceFlow id="F17" sourceRef="N03" targetRef="N04" />
+    <sequenceFlow id="F18" sourceRef="N04" targetRef="N05" />
+    <sequenceFlow id="F19" sourceRef="N05" targetRef="N06">
+      <conditionExpression xsi:type="tFormalExpression">${route == 'billing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="F20" sourceRef="N05" targetRef="N07" />
+    <sequenceFlow id="F21" sourceRef="N06" targetRef="N08" />
+    <sequenceFlow id="F22" sourceRef="N07" targetRef="N10" />
+    <sequenceFlow id="F23" sourceRef="N12" targetRef="N14" />
+    <sequenceFlow id="F24" sourceRef="N14" targetRef="N15" />
+    <sequenceFlow id="F25" sourceRef="N15" targetRef="N04">
+      <conditionExpression xsi:type="tFormalExpression">${again == 'yes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="F26" sourceRef="N15" targetRef="N16" />
+  </process>
+</definitions>

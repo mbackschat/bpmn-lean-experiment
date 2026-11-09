@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CatchWithIncoming" targetNamespace="urn:bpmn-lean:scenarios:link-event-compositions:catch-with-incoming">
+  <process id="Process_CatchWithIncoming" name="A catching Link that also has an incoming Sequence Flow" isExecutable="true">
+    <startEvent id="Opened" name="Opened" />
+    <parallelGateway id="Split" name="Split" gatewayDirection="Diverging" />
+    <intermediateCatchEvent id="Entry" name="entry">
+      <linkEventDefinition id="Entry_Link" name="entry" />
+    </intermediateCatchEvent>
+    <userTask id="Work" name="Work" />
+    <endEvent id="Done" name="Done" />
+    <task id="Prepare" name="Prepare" />
+    <intermediateThrowEvent id="Redirect" name="entry">
+      <linkEventDefinition id="Redirect_Link" name="entry" />
+    </intermediateThrowEvent>
+    <sequenceFlow id="Flow_Opened" sourceRef="Opened" targetRef="Split" />
+    <sequenceFlow id="Flow_ToCatch" sourceRef="Split" targetRef="Entry" />
+    <sequenceFlow id="Flow_ToPlain" sourceRef="Split" targetRef="Prepare" />
+    <sequenceFlow id="Flow_Prepared" sourceRef="Prepare" targetRef="Redirect" />
+    <sequenceFlow id="Flow_Entered" sourceRef="Entry" targetRef="Work" />
+    <sequenceFlow id="Flow_Worked" sourceRef="Work" targetRef="Done" />
+  </process>
+</definitions>

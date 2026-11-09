@@ -1,0 +1,134 @@
+{
+  "kind": "scenario",
+  "id": "event-race-compositions-reply-race-renamed-repeated-previous-race-identity",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "event-race-compositions-reply-race-renamed",
+    "relativePath": "scenarios/open-rows/event-race-compositions/reply-race-renamed.bpmn",
+    "sha256": "b2488acaf51ea491a0e13909d5d2f562c6f09f614468f8d40a5ccda878c39755",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-N07-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N07",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "N02"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-N11-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N11",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s04-deliver-N07-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N07",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "N02"
+        }
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s05-fire-N09-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N09",
+        "activation": 1
+      },
+      "logicalTimeMs": 10000
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s06-fire-N09-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N09",
+        "activation": 2
+      },
+      "logicalTimeMs": 10000
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s07-deliver-N07-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N07",
+        "activation": 2
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "N02"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-complete-N14-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N14",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.6",
+      "BPMN 2.0.2 \u00a713.4.4",
+      "BPMN 2.0.2 \u00a710.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventBasedGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

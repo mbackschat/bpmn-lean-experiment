@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_EmbeddedSplit" targetNamespace="urn:bpmn-lean:scenarios:activity-split-merge:embedded-split">
+  <process id="Process_EmbeddedSplit" name="The conditional split and merge inside an embedded Sub-Process" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <subProcess id="Inspection" name="Inspection">
+      <startEvent id="InspectionOpened" name="Inspection opened" />
+      <userTask id="Measure" name="Measure" default="Flow_Neither" />
+      <userTask id="RecordWidth" name="Record width" />
+      <userTask id="RecordHeight" name="Record height" />
+      <userTask id="RecordNothing" name="Record nothing" />
+      <userTask id="FileReport" name="File report" />
+      <endEvent id="InspectionClosed" name="Inspection closed" />
+      <sequenceFlow id="Flow_InspectionOpened" sourceRef="InspectionOpened" targetRef="Measure" />
+      <sequenceFlow id="Flow_ToWidth" sourceRef="Measure" targetRef="RecordWidth">
+        <conditionExpression xsi:type="tFormalExpression">${a}</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_ToHeight" sourceRef="Measure" targetRef="RecordHeight">
+        <conditionExpression xsi:type="tFormalExpression">${b}</conditionExpression>
+      </sequenceFlow>
+      <sequenceFlow id="Flow_Neither" sourceRef="Measure" targetRef="RecordNothing" />
+      <sequenceFlow id="Flow_WidthDone" sourceRef="RecordWidth" targetRef="FileReport" />
+      <sequenceFlow id="Flow_HeightDone" sourceRef="RecordHeight" targetRef="FileReport" />
+      <sequenceFlow id="Flow_NothingDone" sourceRef="RecordNothing" targetRef="FileReport" />
+      <sequenceFlow id="Flow_Filed" sourceRef="FileReport" targetRef="InspectionClosed" />
+    </subProcess>
+    <userTask id="Accept" name="Accept" />
+    <endEvent id="Accepted" name="Accepted" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Inspection" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="Inspection" targetRef="Accept" />
+    <sequenceFlow id="Flow_Accepted" sourceRef="Accept" targetRef="Accepted" />
+  </process>
+</definitions>

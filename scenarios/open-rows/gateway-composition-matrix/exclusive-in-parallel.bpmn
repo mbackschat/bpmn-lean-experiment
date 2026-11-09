@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ExclusiveInParallel" targetNamespace="urn:bpmn-lean:scenarios:gateway-composition-matrix:exclusive-in-parallel">
+  <process id="Process_ExclusiveInParallel" name="An Exclusive choice inside one branch of a Parallel fork" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <parallelGateway id="SplitOrder" name="Split order" gatewayDirection="Diverging" />
+    <exclusiveGateway id="ChoosePacking" name="Choose packing" gatewayDirection="Diverging" default="Flow_Standard" />
+    <userTask id="PackExpress" name="Pack express" />
+    <userTask id="PackStandard" name="Pack standard" />
+    <exclusiveGateway id="Packed" name="Packed" gatewayDirection="Converging" />
+    <userTask id="PrintInvoice" name="Print invoice" />
+    <parallelGateway id="OrderReady" name="Order ready" gatewayDirection="Converging" />
+    <userTask id="Ship" name="Ship" />
+    <endEvent id="OrderShipped" name="Order shipped" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="SplitOrder" />
+    <sequenceFlow id="Flow_ToPacking" sourceRef="SplitOrder" targetRef="ChoosePacking" />
+    <sequenceFlow id="Flow_ToInvoice" sourceRef="SplitOrder" targetRef="PrintInvoice" />
+    <sequenceFlow id="Flow_Express" sourceRef="ChoosePacking" targetRef="PackExpress">
+      <conditionExpression xsi:type="tFormalExpression">${express}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Standard" sourceRef="ChoosePacking" targetRef="PackStandard" />
+    <sequenceFlow id="Flow_ExpressPacked" sourceRef="PackExpress" targetRef="Packed" />
+    <sequenceFlow id="Flow_StandardPacked" sourceRef="PackStandard" targetRef="Packed" />
+    <sequenceFlow id="Flow_PackedJoin" sourceRef="Packed" targetRef="OrderReady" />
+    <sequenceFlow id="Flow_InvoicePrinted" sourceRef="PrintInvoice" targetRef="OrderReady" />
+    <sequenceFlow id="Flow_Ready" sourceRef="OrderReady" targetRef="Ship" />
+    <sequenceFlow id="Flow_Shipped" sourceRef="Ship" targetRef="OrderShipped" />
+  </process>
+</definitions>

@@ -1,0 +1,30 @@
+{
+  "kind": "scenario",
+  "id": "event-reference-forms-dangling-signal-ref-start",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "event-reference-forms-dangling-signal-ref",
+    "relativePath": "scenarios/open-rows/event-reference-forms/dangling-signal-ref.bpmn",
+    "sha256": "7ad07add0bc3b0d6efa27f1678f84665eb60223a74c85d4b46050af0e02d6935",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.5.4",
+      "BPMN 2.0.2 \u00a710.5.5"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

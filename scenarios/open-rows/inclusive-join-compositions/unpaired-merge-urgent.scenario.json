@@ -1,0 +1,64 @@
+{
+  "kind": "scenario",
+  "id": "inclusive-join-compositions-unpaired-merge-urgent",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "inclusive-join-compositions-unpaired-merge",
+    "relativePath": "scenarios/open-rows/inclusive-join-compositions/unpaired-merge.bpmn",
+    "sha256": "cb0ebd265023536d4ddecc48a8936b36ccd82fb5e297cd38934f650eb34a1461",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "urgent",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-HandleUrgent-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "HandleUrgent",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Archive-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Archive",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.3",
+      "BPMN 2.0.2 \u00a713.4.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/InclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "kind": "scenario",
+  "id": "exclusive-choice-compositions-default-with-unconditioned-start",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "exclusive-choice-compositions-default-with-unconditioned",
+    "relativePath": "scenarios/open-rows/exclusive-choice-compositions/default-with-unconditioned.bpmn",
+    "sha256": "fc494cbe91e96e05d20ded0aaa96de70f34e0188bba18e63d696a972da2fe48b",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "x",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.2",
+      "BPMN 2.0.2 \u00a713.4.2",
+      "BPMN 2.0.2 \u00a713.3.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ExclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

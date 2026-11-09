@@ -1,0 +1,94 @@
+{
+  "kind": "scenario",
+  "id": "exclusive-choice-compositions-claim-routing-renamed-large-and-severe-true",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "exclusive-choice-compositions-claim-routing-renamed",
+    "relativePath": "scenarios/open-rows/exclusive-choice-compositions/claim-routing-renamed.bpmn",
+    "sha256": "96094ec73f78792bf00be8869c6b35f7b503adaa735b63b49d5fed8f4898fb63",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "amount",
+          "value": {
+            "kind": "integer",
+            "value": 5000
+          }
+        },
+        {
+          "name": "claimId",
+          "value": {
+            "kind": "string",
+            "value": "c-1"
+          }
+        },
+        {
+          "name": "fraud",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        },
+        {
+          "name": "severity",
+          "value": {
+            "kind": "string",
+            "value": "severe"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-effect-N06-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N06",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "r-1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-N10-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N10",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.2",
+      "BPMN 2.0.2 \u00a713.4.2",
+      "BPMN 2.0.2 \u00a713.3.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ExclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

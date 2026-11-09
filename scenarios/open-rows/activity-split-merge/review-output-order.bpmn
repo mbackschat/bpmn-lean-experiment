@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ReviewOutputOrder" targetNamespace="urn:bpmn-lean:scenarios:activity-split-merge:review-output-order">
+  <process id="Process_ReviewOutputOrder" name="An outgoing condition that reads a name the task's output mapping writes" isExecutable="true">
+    <startEvent id="ClaimOpened" name="Claim opened" />
+    <userTask id="Review" name="Review" default="Flow_Slow">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="verdict" type="string" />
+        </camunda:formData>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="route">${verdict}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </userTask>
+    <userTask id="FastLane" name="Fast lane" />
+    <userTask id="SlowLane" name="Slow lane" />
+    <endEvent id="FastDone" />
+    <endEvent id="SlowDone" />
+    <sequenceFlow id="Flow_Opened" sourceRef="ClaimOpened" targetRef="Review" />
+    <sequenceFlow id="Flow_Fast" sourceRef="Review" targetRef="FastLane">
+      <conditionExpression xsi:type="tFormalExpression">${route == 'fast'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Slow" sourceRef="Review" targetRef="SlowLane" />
+    <sequenceFlow id="Flow_FastDone" sourceRef="FastLane" targetRef="FastDone" />
+    <sequenceFlow id="Flow_SlowDone" sourceRef="SlowLane" targetRef="SlowDone" />
+  </process>
+</definitions>

@@ -1,0 +1,83 @@
+{
+  "kind": "scenario",
+  "id": "parallel-region-compositions-duplicate-arrival-join-right-first",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "parallel-region-compositions-duplicate-arrival-join",
+    "relativePath": "scenarios/open-rows/parallel-region-compositions/duplicate-arrival-join.bpmn",
+    "sha256": "1f23df193c1012b725984f6ec50d8cec9b26b4a0d7ded8ea77b992f11d1a6493",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-ReviewC-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewC",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-ReviewA-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Decide-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Decide",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-ReviewB-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewB",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.4",
+      "BPMN 2.0.2 \u00a713.4.1",
+      "BPMN 2.0.2 \u00a713.3.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ParallelGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

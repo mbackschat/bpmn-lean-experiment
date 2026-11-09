@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ReviewSplit" targetNamespace="urn:bpmn-lean:scenarios:activity-split-merge:review-split">
+  <process id="Process_ReviewSplit" name="A task with conditional and default outgoing flows that merge on a task" isExecutable="true">
+    <startEvent id="ClaimOpened" name="Claim opened" />
+    <userTask id="Review" name="Review" default="Flow_Standard">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="a" type="boolean" />
+          <camunda:formField id="b" type="boolean" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <userTask id="FollowUpA" name="Follow up A" />
+    <userTask id="FollowUpB" name="Follow up B" />
+    <userTask id="StandardFollowUp" name="Standard follow-up" />
+    <userTask id="Archive" name="Archive" />
+    <endEvent id="Archived" name="Archived" />
+    <sequenceFlow id="Flow_Opened" sourceRef="ClaimOpened" targetRef="Review" />
+    <sequenceFlow id="Flow_ToA" sourceRef="Review" targetRef="FollowUpA">
+      <conditionExpression xsi:type="tFormalExpression">${a}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToB" sourceRef="Review" targetRef="FollowUpB">
+      <conditionExpression xsi:type="tFormalExpression">${b}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Standard" sourceRef="Review" targetRef="StandardFollowUp" />
+    <sequenceFlow id="Flow_ADone" sourceRef="FollowUpA" targetRef="Archive" />
+    <sequenceFlow id="Flow_BDone" sourceRef="FollowUpB" targetRef="Archive" />
+    <sequenceFlow id="Flow_StandardDone" sourceRef="StandardFollowUp" targetRef="Archive" />
+    <sequenceFlow id="Flow_Archived" sourceRef="Archive" targetRef="Archived" />
+  </process>
+</definitions>

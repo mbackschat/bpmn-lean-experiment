@@ -1,0 +1,59 @@
+{
+  "kind": "scenario",
+  "id": "activity-split-merge-review-split-no-default-no-flow-true",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "activity-split-merge-review-split-no-default",
+    "relativePath": "scenarios/open-rows/activity-split-merge/review-split-no-default.bpmn",
+    "sha256": "274af54cac64f6604f3655105a41ecf62db00eddb28b4f679d09f8a4c1d6e60d",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "a",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        },
+        {
+          "name": "b",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Review-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.3.1",
+      "BPMN 2.0.2 \u00a713.2",
+      "BPMN 2.0.2 \u00a710.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BpmnActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

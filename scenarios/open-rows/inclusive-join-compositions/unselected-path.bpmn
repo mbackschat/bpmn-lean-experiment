@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_UnselectedPath" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-compositions:unselected-path">
+  <process id="Process_UnselectedPath" name="A join branch that can still reach the join but may end elsewhere" isExecutable="true">
+    <startEvent id="CaseOpened" name="Case opened" />
+    <parallelGateway id="SplitCase" name="Split case" gatewayDirection="Diverging" />
+    <userTask id="ReviewA" name="Review A" />
+    <userTask id="ReviewB" name="Review B">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="retry" type="boolean" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="RetryDecision" name="Retry decision" gatewayDirection="Diverging" default="Flow_Closed" />
+    <inclusiveGateway id="Reviewed" name="Reviewed" gatewayDirection="Converging" />
+    <endEvent id="BClosed" name="B closed" />
+    <userTask id="Decide" name="Decide" />
+    <endEvent id="CaseDecided" name="Case decided" />
+    <sequenceFlow id="Flow_Opened" sourceRef="CaseOpened" targetRef="SplitCase" />
+    <sequenceFlow id="Flow_ToA" sourceRef="SplitCase" targetRef="ReviewA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="SplitCase" targetRef="ReviewB" />
+    <sequenceFlow id="Flow_ADone" sourceRef="ReviewA" targetRef="Reviewed" />
+    <sequenceFlow id="Flow_BReviewed" sourceRef="ReviewB" targetRef="RetryDecision" />
+    <sequenceFlow id="Flow_Retry" sourceRef="RetryDecision" targetRef="Reviewed">
+      <conditionExpression xsi:type="tFormalExpression">${retry}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Closed" sourceRef="RetryDecision" targetRef="BClosed" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="Reviewed" targetRef="Decide" />
+    <sequenceFlow id="Flow_Decided" sourceRef="Decide" targetRef="CaseDecided" />
+  </process>
+</definitions>

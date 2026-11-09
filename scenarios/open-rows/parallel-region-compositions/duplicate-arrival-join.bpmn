@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_DuplicateArrivalJoin" targetNamespace="urn:bpmn-lean:scenarios:parallel-region-compositions:duplicate-arrival-join">
+  <process id="Process_DuplicateArrivalJoin" name="Two tokens reach one incoming flow of a join while another flow is empty" isExecutable="true">
+    <startEvent id="CaseOpened" name="Case opened" />
+    <parallelGateway id="SplitCase" name="Split case" gatewayDirection="Diverging" />
+    <userTask id="ReviewA" name="Review A" />
+    <userTask id="ReviewB" name="Review B" />
+    <userTask id="ReviewC" name="Review C" />
+    <exclusiveGateway id="LeftReviewed" name="Left reviewed" gatewayDirection="Converging" />
+    <parallelGateway id="AllReviewed" name="All reviewed" gatewayDirection="Converging" />
+    <userTask id="Decide" name="Decide" />
+    <endEvent id="CaseDecided" name="Case decided" />
+    <sequenceFlow id="Flow_Opened" sourceRef="CaseOpened" targetRef="SplitCase" />
+    <sequenceFlow id="Flow_ToA" sourceRef="SplitCase" targetRef="ReviewA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="SplitCase" targetRef="ReviewB" />
+    <sequenceFlow id="Flow_ToC" sourceRef="SplitCase" targetRef="ReviewC" />
+    <sequenceFlow id="Flow_AMerge" sourceRef="ReviewA" targetRef="LeftReviewed" />
+    <sequenceFlow id="Flow_BMerge" sourceRef="ReviewB" targetRef="LeftReviewed" />
+    <sequenceFlow id="Flow_LeftJoin" sourceRef="LeftReviewed" targetRef="AllReviewed" />
+    <sequenceFlow id="Flow_RightJoin" sourceRef="ReviewC" targetRef="AllReviewed" />
+    <sequenceFlow id="Flow_Joined" sourceRef="AllReviewed" targetRef="Decide" />
+    <sequenceFlow id="Flow_Decided" sourceRef="Decide" targetRef="CaseDecided" />
+  </process>
+</definitions>

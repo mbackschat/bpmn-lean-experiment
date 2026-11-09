@@ -1,0 +1,119 @@
+{
+  "kind": "scenario",
+  "id": "activity-split-merge-mi-body-split-one-body-two-outputs",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "activity-split-merge-mi-body-split",
+    "relativePath": "scenarios/open-rows/activity-split-merge/mi-body-split.bpmn",
+    "sha256": "941e78119405a39dec737fc8b8aa6c7d59e6b833fe372aeb3a4f8326f3aa058f",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "items",
+          "value": {
+            "kind": "stringList",
+            "value": [
+              "x"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Check-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Check",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-LogA-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "LogA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-LogB-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "LogB",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Seal-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Seal",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-Seal-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Seal",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-Accept-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Accept",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.3.1",
+      "BPMN 2.0.2 \u00a713.2",
+      "BPMN 2.0.2 \u00a710.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BpmnActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

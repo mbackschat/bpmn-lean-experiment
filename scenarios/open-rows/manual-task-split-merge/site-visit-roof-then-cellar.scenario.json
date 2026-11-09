@@ -1,0 +1,82 @@
+{
+  "kind": "scenario",
+  "id": "manual-task-split-merge-site-visit-roof-then-cellar",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "manual-task-split-merge-site-visit",
+    "relativePath": "scenarios/open-rows/manual-task-split-merge/site-visit.bpmn",
+    "sha256": "d6fef30be2019d7155eec039ea5f1913925d9e196d34ca1f0867c3b1e96d209c",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-InspectRoof-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "InspectRoof",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-SignOff-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "SignOff",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-InspectCellar-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "InspectCellar",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-SignOff-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "SignOff",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.3.6",
+      "BPMN 2.0.2 \u00a713.3.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ManualTaskActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BpmnActivityBehavior.java"
+    ]
+  }
+}

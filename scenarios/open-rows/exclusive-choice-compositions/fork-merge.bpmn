@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ForkMerge" targetNamespace="urn:bpmn-lean:scenarios:exclusive-choice-compositions:fork-merge">
+  <process id="Process_ForkMerge" name="Merge two parallel branches without synchronizing" isExecutable="true">
+    <startEvent id="JobReceived" name="Job received" />
+    <parallelGateway id="SplitWork" name="Split work" gatewayDirection="Diverging" />
+    <userTask id="PrepareQuote" name="Prepare quote" />
+    <userTask id="PrepareInvoice" name="Prepare invoice" />
+    <exclusiveGateway id="DocumentsReady" name="Documents ready" gatewayDirection="Converging" />
+    <userTask id="SendDocuments" name="Send documents" />
+    <endEvent id="JobDone" name="Job done" />
+    <sequenceFlow id="Flow_Received" sourceRef="JobReceived" targetRef="SplitWork" />
+    <sequenceFlow id="Flow_ToQuote" sourceRef="SplitWork" targetRef="PrepareQuote" />
+    <sequenceFlow id="Flow_ToInvoice" sourceRef="SplitWork" targetRef="PrepareInvoice" />
+    <sequenceFlow id="Flow_QuoteDone" sourceRef="PrepareQuote" targetRef="DocumentsReady" />
+    <sequenceFlow id="Flow_InvoiceDone" sourceRef="PrepareInvoice" targetRef="DocumentsReady" />
+    <sequenceFlow id="Flow_Ready" sourceRef="DocumentsReady" targetRef="SendDocuments" />
+    <sequenceFlow id="Flow_Sent" sourceRef="SendDocuments" targetRef="JobDone" />
+  </process>
+</definitions>

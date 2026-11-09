@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CrossScope" targetNamespace="urn:bpmn-lean:scenarios:link-event-compositions:cross-scope">
+  <process id="Process_CrossScope" name="A throwing Link in a Sub-Process, its catch outside" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <subProcess id="Inner" name="Inner">
+      <startEvent id="InnerOpened" name="Inner opened" />
+      <userTask id="Prepare" name="Prepare" />
+      <intermediateThrowEvent id="Leave" name="exit">
+        <linkEventDefinition id="Leave_Link" name="exit" />
+      </intermediateThrowEvent>
+      <sequenceFlow id="Flow_InnerOpened" sourceRef="InnerOpened" targetRef="Prepare" />
+      <sequenceFlow id="Flow_Prepared" sourceRef="Prepare" targetRef="Leave" />
+    </subProcess>
+    <intermediateCatchEvent id="Arrive" name="exit">
+      <linkEventDefinition id="Arrive_Link" name="exit" />
+    </intermediateCatchEvent>
+    <userTask id="After" name="After" />
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Inner" />
+    <sequenceFlow id="Flow_Arrived" sourceRef="Arrive" targetRef="After" />
+    <sequenceFlow id="Flow_Done" sourceRef="After" targetRef="Done" />
+  </process>
+</definitions>

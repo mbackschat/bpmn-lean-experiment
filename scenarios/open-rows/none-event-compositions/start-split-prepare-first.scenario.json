@@ -1,0 +1,85 @@
+{
+  "kind": "scenario",
+  "id": "none-event-compositions-start-split-prepare-first",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "none-event-compositions-start-split",
+    "relativePath": "scenarios/open-rows/none-event-compositions/start-split.bpmn",
+    "sha256": "43a066ce4c2115e772a48ec918e936da57a9db33c152678af185771bc1c2e111",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Prepare-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Prepare",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-StepOne-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "StepOne",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-Notify-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Notify",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-StepTwo-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "StepTwo",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.5.1",
+      "BPMN 2.0.2 \u00a710.5.3",
+      "BPMN 2.0.2 \u00a713.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/NoneStartEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/NoneEndEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateThrowNoneEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

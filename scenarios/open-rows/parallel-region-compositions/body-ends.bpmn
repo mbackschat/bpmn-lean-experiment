@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_BodyEnds" targetNamespace="urn:bpmn-lean:scenarios:parallel-region-compositions:body-ends">
+  <process id="Process_BodyEnds" name="A scope with a fork and separate Ends beside an unjoined root branch" isExecutable="true">
+    <startEvent id="JobStarted" name="Job started" />
+    <parallelGateway id="SplitJob" name="Split job" gatewayDirection="Diverging" />
+    <subProcess id="Pack" name="Pack">
+      <startEvent id="PackOpened" name="Pack opened" />
+      <parallelGateway id="PackSplit" name="Pack split" gatewayDirection="Diverging" />
+      <userTask id="LabelParcel" name="Label parcel" />
+      <userTask id="SealParcel" name="Seal parcel" />
+      <endEvent id="Labelled" name="Labelled" />
+      <endEvent id="Sealed" name="Sealed" />
+      <sequenceFlow id="Flow_PackOpened" sourceRef="PackOpened" targetRef="PackSplit" />
+      <sequenceFlow id="Flow_ToLabel" sourceRef="PackSplit" targetRef="LabelParcel" />
+      <sequenceFlow id="Flow_ToSeal" sourceRef="PackSplit" targetRef="SealParcel" />
+      <sequenceFlow id="Flow_Labelled" sourceRef="LabelParcel" targetRef="Labelled" />
+      <sequenceFlow id="Flow_Sealed" sourceRef="SealParcel" targetRef="Sealed" />
+    </subProcess>
+    <userTask id="Dispatch" name="Dispatch" />
+    <endEvent id="Dispatched" name="Dispatched" />
+    <userTask id="Notify" name="Notify customer" />
+    <endEvent id="Notified" name="Notified" />
+    <sequenceFlow id="Flow_Started" sourceRef="JobStarted" targetRef="SplitJob" />
+    <sequenceFlow id="Flow_ToPack" sourceRef="SplitJob" targetRef="Pack" />
+    <sequenceFlow id="Flow_ToNotify" sourceRef="SplitJob" targetRef="Notify" />
+    <sequenceFlow id="Flow_Packed" sourceRef="Pack" targetRef="Dispatch" />
+    <sequenceFlow id="Flow_Dispatched" sourceRef="Dispatch" targetRef="Dispatched" />
+    <sequenceFlow id="Flow_Notified" sourceRef="Notify" targetRef="Notified" />
+  </process>
+</definitions>

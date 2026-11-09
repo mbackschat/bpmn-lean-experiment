@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TypoMessageRef" targetNamespace="urn:bpmn-lean:scenarios:event-reference-forms:typo-message-ref">
+  <message id="Message_Reply" name="reply" />
+  <process id="Process_TypoMessageRef" name="A Message reference that names no declared Message" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <intermediateCatchEvent id="Await" name="Await">
+      <messageEventDefinition id="Await_Message" messageRef="Message_Rply" />
+    </intermediateCatchEvent>
+    <userTask id="Proceed" name="Proceed" />
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Await" />
+    <sequenceFlow id="Flow_Awaited" sourceRef="Await" targetRef="Proceed" />
+    <sequenceFlow id="Flow_Done" sourceRef="Proceed" targetRef="Done" />
+  </process>
+</definitions>

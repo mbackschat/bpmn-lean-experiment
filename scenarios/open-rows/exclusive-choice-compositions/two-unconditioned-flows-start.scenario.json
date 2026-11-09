@@ -1,0 +1,31 @@
+{
+  "kind": "scenario",
+  "id": "exclusive-choice-compositions-two-unconditioned-flows-start",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "exclusive-choice-compositions-two-unconditioned-flows",
+    "relativePath": "scenarios/open-rows/exclusive-choice-compositions/two-unconditioned-flows.bpmn",
+    "sha256": "755fb3aacca22afa95de9e515d1eed9bf427525d224c5319f5e0b13a8efcfebd",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.2",
+      "BPMN 2.0.2 \u00a713.4.2",
+      "BPMN 2.0.2 \u00a713.3.1"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/ExclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ReviewSplitNoDefault" targetNamespace="urn:bpmn-lean:scenarios:activity-split-merge:review-split-no-default">
+  <process id="Process_ReviewSplitNoDefault" name="Conditional outgoing flows of a task and no default" isExecutable="true">
+    <startEvent id="ClaimOpened" name="Claim opened" />
+    <userTask id="Review" name="Review">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="a" type="boolean" />
+          <camunda:formField id="b" type="boolean" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <userTask id="FollowUpA" name="Follow up A" />
+    <userTask id="FollowUpB" name="Follow up B" />
+    <endEvent id="ADone" />
+    <endEvent id="BDone" />
+    <sequenceFlow id="Flow_Opened" sourceRef="ClaimOpened" targetRef="Review" />
+    <sequenceFlow id="Flow_ToA" sourceRef="Review" targetRef="FollowUpA">
+      <conditionExpression xsi:type="tFormalExpression">${a}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToB" sourceRef="Review" targetRef="FollowUpB">
+      <conditionExpression xsi:type="tFormalExpression">${b}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ADone" sourceRef="FollowUpA" targetRef="ADone" />
+    <sequenceFlow id="Flow_BDone" sourceRef="FollowUpB" targetRef="BDone" />
+  </process>
+</definitions>

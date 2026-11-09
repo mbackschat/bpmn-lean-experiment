@@ -1,0 +1,100 @@
+{
+  "kind": "scenario",
+  "id": "event-race-compositions-parallel-race-payment-then-timer-late-message",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "event-race-compositions-parallel-race",
+    "relativePath": "scenarios/open-rows/event-race-compositions/parallel-race.bpmn",
+    "sha256": "1d326be3769a18eab9728c62228b41bc25af38ad4cdc32b439881d5452441672",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-AwaitPayment-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "AwaitPayment",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Payment"
+        }
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s03-fire-CarrierOverdue-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CarrierOverdue",
+        "activation": 1
+      },
+      "logicalTimeMs": 3600000
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s04-deliver-CarrierArrived-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CarrierArrived",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Pickup"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-ReassignCarrier-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReassignCarrier",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-CloseOrder-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "CloseOrder",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.6",
+      "BPMN 2.0.2 \u00a713.4.4",
+      "BPMN 2.0.2 \u00a710.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventBasedGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

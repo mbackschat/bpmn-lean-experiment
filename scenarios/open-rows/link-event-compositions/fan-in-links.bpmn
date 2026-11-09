@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_FanInLinks" targetNamespace="urn:bpmn-lean:scenarios:link-event-compositions:fan-in-links">
+  <process id="Process_FanInLinks" name="Two Link throws of one name, one catch" isExecutable="true">
+    <startEvent id="Opened" name="Opened" />
+    <parallelGateway id="Split" name="Split" gatewayDirection="Diverging" />
+    <userTask id="PrepareA" name="Prepare A" />
+    <userTask id="PrepareB" name="Prepare B" />
+    <intermediateThrowEvent id="AToJoin" name="merge-point">
+      <linkEventDefinition id="AToJoin_Link" name="merge-point" />
+    </intermediateThrowEvent>
+    <intermediateThrowEvent id="BToJoin" name="merge-point">
+      <linkEventDefinition id="BToJoin_Link" name="merge-point" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="JoinPoint" name="merge-point">
+      <linkEventDefinition id="JoinPoint_Link" name="merge-point" />
+    </intermediateCatchEvent>
+    <userTask id="Handle" name="Handle" />
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Opened" sourceRef="Opened" targetRef="Split" />
+    <sequenceFlow id="Flow_ToA" sourceRef="Split" targetRef="PrepareA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="Split" targetRef="PrepareB" />
+    <sequenceFlow id="Flow_ADone" sourceRef="PrepareA" targetRef="AToJoin" />
+    <sequenceFlow id="Flow_BDone" sourceRef="PrepareB" targetRef="BToJoin" />
+    <sequenceFlow id="Flow_Continue" sourceRef="JoinPoint" targetRef="Handle" />
+    <sequenceFlow id="Flow_Handled" sourceRef="Handle" targetRef="Done" />
+  </process>
+</definitions>

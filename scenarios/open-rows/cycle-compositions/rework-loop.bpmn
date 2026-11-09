@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ReworkLoop" targetNamespace="urn:bpmn-lean:scenarios:cycle-compositions:rework-loop">
+  <process id="Process_ReworkLoop" name="Assess, price and review a claim until it is not sent back" isExecutable="true">
+    <startEvent id="ClaimFiled" name="Claim filed" />
+    <exclusiveGateway id="RoundStart" name="Round start" gatewayDirection="Converging" />
+    <subProcess id="Assess" name="Assess">
+      <startEvent id="AssessOpened" name="Assess opened" />
+      <userTask id="Inspect" name="Inspect damage">
+        <extensionElements>
+          <camunda:formData>
+            <camunda:formField id="notes" type="string" />
+          </camunda:formData>
+        </extensionElements>
+      </userTask>
+      <endEvent id="AssessClosed" name="Assess closed" />
+      <sequenceFlow id="Flow_AssessOpened" sourceRef="AssessOpened" targetRef="Inspect" />
+      <sequenceFlow id="Flow_Inspected" sourceRef="Inspect" targetRef="AssessClosed" />
+    </subProcess>
+    <serviceTask id="PriceRepair" name="Price repair" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="payload">${claimId}</camunda:inputParameter>
+          <camunda:outputParameter name="quote">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <userTask id="ReviewQuote" name="Review quote">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="decision" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="Outcome" name="Outcome" gatewayDirection="Diverging" default="Flow_Approved" />
+    <endEvent id="ClaimSettled" name="Claim settled" />
+    <sequenceFlow id="Flow_Filed" sourceRef="ClaimFiled" targetRef="RoundStart" />
+    <sequenceFlow id="Flow_RoundStarted" sourceRef="RoundStart" targetRef="Assess" />
+    <sequenceFlow id="Flow_Assessed" sourceRef="Assess" targetRef="PriceRepair" />
+    <sequenceFlow id="Flow_Priced" sourceRef="PriceRepair" targetRef="ReviewQuote" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewQuote" targetRef="Outcome" />
+    <sequenceFlow id="Flow_Rework" sourceRef="Outcome" targetRef="RoundStart">
+      <conditionExpression xsi:type="tFormalExpression">${decision == 'rework'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Approved" sourceRef="Outcome" targetRef="ClaimSettled" />
+  </process>
+</definitions>

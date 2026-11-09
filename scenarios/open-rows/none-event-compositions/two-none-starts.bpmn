@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TwoNoneStarts" targetNamespace="urn:bpmn-lean:scenarios:none-event-compositions:two-none-starts">
+  <process id="Process_TwoNoneStarts" name="Two None Start Events in one process" isExecutable="true">
+    <startEvent id="StartA" name="Start A" />
+    <startEvent id="StartB" name="Start B" />
+    <userTask id="HandleA" name="Handle A" />
+    <userTask id="HandleB" name="Handle B" />
+    <endEvent id="DoneA" name="Done A" />
+    <endEvent id="DoneB" name="Done B" />
+    <sequenceFlow id="Flow_ToA" sourceRef="StartA" targetRef="HandleA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="StartB" targetRef="HandleB" />
+    <sequenceFlow id="Flow_DoneA" sourceRef="HandleA" targetRef="DoneA" />
+    <sequenceFlow id="Flow_DoneB" sourceRef="HandleB" targetRef="DoneB" />
+  </process>
+</definitions>

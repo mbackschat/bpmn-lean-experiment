@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_CalledSplit" targetNamespace="urn:bpmn-lean:scenarios:activity-split-merge:called-split">
+  <process id="Process_CalledSplit" name="The conditional split and merge inside a called Process" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <callActivity id="InspectCall" name="Inspect call" calledElement="Process_Inspect">
+      <extensionElements>
+        <camunda:in source="a" target="a" />
+        <camunda:in source="b" target="b" />
+      </extensionElements>
+    </callActivity>
+    <userTask id="Accept" name="Accept" />
+    <endEvent id="Accepted" name="Accepted" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="InspectCall" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="InspectCall" targetRef="Accept" />
+    <sequenceFlow id="Flow_Accepted" sourceRef="Accept" targetRef="Accepted" />
+  </process>
+  <process id="Process_Inspect" name="Inspect one item" isExecutable="true">
+    <startEvent id="CalledOpened" name="Called opened" />
+    <userTask id="Measure" name="Measure" default="Flow_Neither" />
+    <userTask id="RecordWidth" name="Record width" />
+    <userTask id="RecordHeight" name="Record height" />
+    <userTask id="RecordNothing" name="Record nothing" />
+    <userTask id="FileReport" name="File report" />
+    <endEvent id="CalledClosed" name="Called closed" />
+    <sequenceFlow id="Flow_CalledOpened" sourceRef="CalledOpened" targetRef="Measure" />
+    <sequenceFlow id="Flow_ToWidth" sourceRef="Measure" targetRef="RecordWidth">
+      <conditionExpression xsi:type="tFormalExpression">${a}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToHeight" sourceRef="Measure" targetRef="RecordHeight">
+      <conditionExpression xsi:type="tFormalExpression">${b}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Neither" sourceRef="Measure" targetRef="RecordNothing" />
+    <sequenceFlow id="Flow_WidthDone" sourceRef="RecordWidth" targetRef="FileReport" />
+    <sequenceFlow id="Flow_HeightDone" sourceRef="RecordHeight" targetRef="FileReport" />
+    <sequenceFlow id="Flow_NothingDone" sourceRef="RecordNothing" targetRef="FileReport" />
+    <sequenceFlow id="Flow_Filed" sourceRef="FileReport" targetRef="CalledClosed" />
+  </process>
+</definitions>

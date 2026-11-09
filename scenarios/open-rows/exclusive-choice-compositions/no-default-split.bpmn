@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_NoDefaultSplit" targetNamespace="urn:bpmn-lean:scenarios:exclusive-choice-compositions:no-default-split">
+  <process id="Process_NoDefaultSplit" name="Every Exclusive candidate is conditioned and none is the default" isExecutable="true">
+    <startEvent id="TicketOpened" name="Ticket opened" />
+    <exclusiveGateway id="RouteTicket" name="Route ticket" gatewayDirection="Diverging" />
+    <userTask id="Escalate" name="Escalate" />
+    <userTask id="CloseTicket" name="Close ticket" />
+    <exclusiveGateway id="TicketRouted" name="Ticket routed" gatewayDirection="Converging" />
+    <endEvent id="TicketDone" name="Ticket done" />
+    <sequenceFlow id="Flow_Opened" sourceRef="TicketOpened" targetRef="RouteTicket" />
+    <sequenceFlow id="Flow_High" sourceRef="RouteTicket" targetRef="Escalate">
+      <conditionExpression xsi:type="tFormalExpression">${severity == 'high'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Low" sourceRef="RouteTicket" targetRef="CloseTicket">
+      <conditionExpression xsi:type="tFormalExpression">${severity == 'low'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Escalated" sourceRef="Escalate" targetRef="TicketRouted" />
+    <sequenceFlow id="Flow_Closed" sourceRef="CloseTicket" targetRef="TicketRouted" />
+    <sequenceFlow id="Flow_Routed" sourceRef="TicketRouted" targetRef="TicketDone" />
+  </process>
+</definitions>

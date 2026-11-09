@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_StartSplit" targetNamespace="urn:bpmn-lean:scenarios:none-event-compositions:start-split">
+  <process id="Process_StartSplit" name="Start Events with several outgoing flows, a None Throw and separate Ends" isExecutable="true">
+    <startEvent id="Opened" name="Opened" />
+    <userTask id="Prepare" name="Prepare" />
+    <intermediateThrowEvent id="Prepared" name="Prepared" />
+    <subProcess id="Execute" name="Execute">
+      <startEvent id="ExecuteOpened" name="Execute opened" />
+      <userTask id="StepOne" name="Step one" />
+      <userTask id="StepTwo" name="Step two" />
+      <endEvent id="StepOneEnd" name="Step one end" />
+      <endEvent id="StepTwoEnd" name="Step two end" />
+      <sequenceFlow id="Flow_ToOne" sourceRef="ExecuteOpened" targetRef="StepOne" />
+      <sequenceFlow id="Flow_ToTwo" sourceRef="ExecuteOpened" targetRef="StepTwo" />
+      <sequenceFlow id="Flow_OneEnd" sourceRef="StepOne" targetRef="StepOneEnd" />
+      <sequenceFlow id="Flow_TwoEnd" sourceRef="StepTwo" targetRef="StepTwoEnd" />
+    </subProcess>
+    <endEvent id="PrepareEnd" name="Prepare end" />
+    <userTask id="Notify" name="Notify" />
+    <endEvent id="NotifyEnd" name="Notify end" />
+    <sequenceFlow id="Flow_ToPrepare" sourceRef="Opened" targetRef="Prepare" />
+    <sequenceFlow id="Flow_ToNotify" sourceRef="Opened" targetRef="Notify" />
+    <sequenceFlow id="Flow_Prepared" sourceRef="Prepare" targetRef="Prepared" />
+    <sequenceFlow id="Flow_ToExecute" sourceRef="Prepared" targetRef="Execute" />
+    <sequenceFlow id="Flow_Executed" sourceRef="Execute" targetRef="PrepareEnd" />
+    <sequenceFlow id="Flow_Notified" sourceRef="Notify" targetRef="NotifyEnd" />
+  </process>
+</definitions>

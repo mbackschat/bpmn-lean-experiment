@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ClaimRouting" targetNamespace="urn:bpmn-lean:scenarios:exclusive-choice-compositions:claim-routing">
+  <process id="Process_ClaimRouting" name="Route a claim by ordered typed conditions" isExecutable="true">
+    <startEvent id="ClaimReceived" name="Claim received" />
+    <exclusiveGateway id="RouteClaim" name="Route claim" gatewayDirection="Diverging" default="Flow_Standard" />
+    <userTask id="InvestigateFraud" name="Investigate fraud" />
+    <serviceTask id="PayLargeClaim" name="Pay large claim" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="payload">${claimId}</camunda:inputParameter>
+          <camunda:outputParameter name="receipt">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <manualTask id="InspectOnSite" name="Inspect on site" />
+    <task id="ApproveStandard" name="Approve standard claim" />
+    <exclusiveGateway id="ClaimRouted" name="Claim routed" gatewayDirection="Converging" />
+    <userTask id="CloseClaim" name="Close claim" />
+    <endEvent id="ClaimClosed" name="Claim closed" />
+    <sequenceFlow id="Flow_Received" sourceRef="ClaimReceived" targetRef="RouteClaim" />
+    <sequenceFlow id="Flow_Fraud" sourceRef="RouteClaim" targetRef="InvestigateFraud">
+      <conditionExpression xsi:type="tFormalExpression">${fraud}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Large" sourceRef="RouteClaim" targetRef="PayLargeClaim">
+      <conditionExpression xsi:type="tFormalExpression">${amount > 1000}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Severe" sourceRef="RouteClaim" targetRef="InspectOnSite">
+      <conditionExpression xsi:type="tFormalExpression">${severity == 'severe'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Standard" sourceRef="RouteClaim" targetRef="ApproveStandard" />
+    <sequenceFlow id="Flow_Investigated" sourceRef="InvestigateFraud" targetRef="ClaimRouted" />
+    <sequenceFlow id="Flow_Paid" sourceRef="PayLargeClaim" targetRef="ClaimRouted" />
+    <sequenceFlow id="Flow_Inspected" sourceRef="InspectOnSite" targetRef="ClaimRouted" />
+    <sequenceFlow id="Flow_Approved" sourceRef="ApproveStandard" targetRef="ClaimRouted" />
+    <sequenceFlow id="Flow_Routed" sourceRef="ClaimRouted" targetRef="CloseClaim" />
+    <sequenceFlow id="Flow_Closed" sourceRef="CloseClaim" targetRef="ClaimClosed" />
+  </process>
+</definitions>

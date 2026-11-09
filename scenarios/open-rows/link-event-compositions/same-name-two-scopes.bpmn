@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_SameNameTwoScopes" targetNamespace="urn:bpmn-lean:scenarios:link-event-compositions:same-name-two-scopes">
+  <process id="Process_SameNameTwoScopes" name="One Link name used by a pair in the process and a pair in a Sub-Process" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <userTask id="Prepare" name="Prepare" />
+    <intermediateThrowEvent id="RootThrow" name="next">
+      <linkEventDefinition id="RootThrow_Link" name="next" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="RootCatch" name="next">
+      <linkEventDefinition id="RootCatch_Link" name="next" />
+    </intermediateCatchEvent>
+    <subProcess id="Phase" name="Phase">
+      <startEvent id="PhaseOpened" name="Phase opened" />
+      <userTask id="Inner" name="Inner step" />
+      <intermediateThrowEvent id="InnerThrow" name="next">
+        <linkEventDefinition id="InnerThrow_Link" name="next" />
+      </intermediateThrowEvent>
+      <intermediateCatchEvent id="InnerCatch" name="next">
+        <linkEventDefinition id="InnerCatch_Link" name="next" />
+      </intermediateCatchEvent>
+      <userTask id="Innermost" name="Innermost step" />
+      <endEvent id="PhaseClosed" name="Phase closed" />
+      <sequenceFlow id="Flow_PhaseOpened" sourceRef="PhaseOpened" targetRef="Inner" />
+      <sequenceFlow id="Flow_InnerDone" sourceRef="Inner" targetRef="InnerThrow" />
+      <sequenceFlow id="Flow_InnerContinue" sourceRef="InnerCatch" targetRef="Innermost" />
+      <sequenceFlow id="Flow_Innermost" sourceRef="Innermost" targetRef="PhaseClosed" />
+    </subProcess>
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Prepare" />
+    <sequenceFlow id="Flow_Prepared" sourceRef="Prepare" targetRef="RootThrow" />
+    <sequenceFlow id="Flow_RootContinue" sourceRef="RootCatch" targetRef="Phase" />
+    <sequenceFlow id="Flow_Phased" sourceRef="Phase" targetRef="Done" />
+  </process>
+</definitions>

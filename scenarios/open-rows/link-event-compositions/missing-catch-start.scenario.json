@@ -1,0 +1,30 @@
+{
+  "kind": "scenario",
+  "id": "link-event-compositions-missing-catch-start",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "link-event-compositions-missing-catch",
+    "relativePath": "scenarios/open-rows/link-event-compositions/missing-catch.bpmn",
+    "sha256": "aa6294ec47f60e42bc8cd57c66d60fc8c9333f69d622bf0eccfb567d43671332",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.5.5",
+      "BPMN 2.0.2 \u00a713.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchLinkEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

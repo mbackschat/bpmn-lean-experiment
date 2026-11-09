@@ -1,0 +1,82 @@
+{
+  "kind": "scenario",
+  "id": "link-event-compositions-fan-in-links-both-sources",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "link-event-compositions-fan-in-links",
+    "relativePath": "scenarios/open-rows/link-event-compositions/fan-in-links.bpmn",
+    "sha256": "1dfccdb740468d92f3a042a64cb13e1bbe80f6a8adae9894c82cd8fba1347b06",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-PrepareA-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "PrepareA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Handle-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-PrepareB-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "PrepareB",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-Handle-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Handle",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.5.5",
+      "BPMN 2.0.2 \u00a713.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchLinkEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

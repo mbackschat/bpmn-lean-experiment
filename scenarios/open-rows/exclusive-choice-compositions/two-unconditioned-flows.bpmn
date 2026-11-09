@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_TwoUnconditionedFlows" targetNamespace="urn:bpmn-lean:scenarios:exclusive-choice-compositions:two-unconditioned-flows">
+  <process id="Process_TwoUnconditionedFlows" name="Two unconditioned flows leave an Exclusive Gateway" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <exclusiveGateway id="Route" name="Route" gatewayDirection="Diverging" />
+    <userTask id="HandleOne" name="Handle one" />
+    <userTask id="HandleTwo" name="Handle two" />
+    <endEvent id="DoneOne" />
+    <endEvent id="DoneTwo" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Route" />
+    <sequenceFlow id="Flow_One" sourceRef="Route" targetRef="HandleOne" />
+    <sequenceFlow id="Flow_Two" sourceRef="Route" targetRef="HandleTwo" />
+    <sequenceFlow id="Flow_DoneOne" sourceRef="HandleOne" targetRef="DoneOne" />
+    <sequenceFlow id="Flow_DoneTwo" sourceRef="HandleTwo" targetRef="DoneTwo" />
+  </process>
+</definitions>

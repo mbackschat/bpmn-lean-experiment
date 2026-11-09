@@ -1,0 +1,56 @@
+{
+  "kind": "scenario",
+  "id": "link-event-compositions-catch-with-incoming-both-arrivals",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "link-event-compositions-catch-with-incoming",
+    "relativePath": "scenarios/open-rows/link-event-compositions/catch-with-incoming.bpmn",
+    "sha256": "4c0eb695c79debd37e322f68dc8caa939f0564f60c91e970bc17d44ed507c20a",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Work-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Work",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Work-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Work",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.5.5",
+      "BPMN 2.0.2 \u00a713.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchLinkEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

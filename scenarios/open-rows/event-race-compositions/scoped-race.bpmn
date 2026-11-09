@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ScopedRace" targetNamespace="urn:bpmn-lean:scenarios:event-race-compositions:scoped-race">
+  <message id="Message_Delivered" name="delivered" />
+  <process id="Process_ScopedRace" name="A race inside a Sub-Process that is entered again" isExecutable="true">
+    <startEvent id="DispatchStarted" name="Dispatch started" />
+    <exclusiveGateway id="AttemptStart" name="Attempt start" gatewayDirection="Converging" />
+    <subProcess id="Attempt" name="Attempt">
+      <startEvent id="AttemptOpened" name="Attempt opened" />
+      <eventBasedGateway id="AwaitDelivery" name="Await delivery" />
+      <intermediateCatchEvent id="Delivered" name="Delivered">
+        <messageEventDefinition id="Delivered_Message" messageRef="Message_Delivered" />
+      </intermediateCatchEvent>
+      <intermediateCatchEvent id="DeliveryOverdue" name="Delivery overdue">
+        <timerEventDefinition id="DeliveryOverdue_Timer">
+          <timeDuration xsi:type="tFormalExpression">PT5S</timeDuration>
+        </timerEventDefinition>
+      </intermediateCatchEvent>
+      <userTask id="ConfirmDelivery" name="Confirm delivery" />
+      <userTask id="RecordFailure" name="Record failure">
+        <extensionElements>
+          <camunda:formData>
+            <camunda:formField id="retry" type="boolean" />
+          </camunda:formData>
+        </extensionElements>
+      </userTask>
+      <endEvent id="ConfirmEnd" name="Confirmed" />
+      <endEvent id="FailureEnd" name="Failure recorded" />
+      <sequenceFlow id="Flow_AttemptOpened" sourceRef="AttemptOpened" targetRef="AwaitDelivery" />
+      <sequenceFlow id="Flow_ToDelivered" sourceRef="AwaitDelivery" targetRef="Delivered" />
+      <sequenceFlow id="Flow_ToOverdue" sourceRef="AwaitDelivery" targetRef="DeliveryOverdue" />
+      <sequenceFlow id="Flow_Delivered" sourceRef="Delivered" targetRef="ConfirmDelivery" />
+      <sequenceFlow id="Flow_Overdue" sourceRef="DeliveryOverdue" targetRef="RecordFailure" />
+      <sequenceFlow id="Flow_Confirmed" sourceRef="ConfirmDelivery" targetRef="ConfirmEnd" />
+      <sequenceFlow id="Flow_Recorded" sourceRef="RecordFailure" targetRef="FailureEnd" />
+    </subProcess>
+    <exclusiveGateway id="Decide" name="Decide" gatewayDirection="Diverging" default="Flow_Done" />
+    <endEvent id="DispatchDone" name="Dispatch done" />
+    <sequenceFlow id="Flow_Started" sourceRef="DispatchStarted" targetRef="AttemptStart" />
+    <sequenceFlow id="Flow_ToAttempt" sourceRef="AttemptStart" targetRef="Attempt" />
+    <sequenceFlow id="Flow_Attempted" sourceRef="Attempt" targetRef="Decide" />
+    <sequenceFlow id="Flow_Retry" sourceRef="Decide" targetRef="AttemptStart">
+      <conditionExpression xsi:type="tFormalExpression">${retry}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Done" sourceRef="Decide" targetRef="DispatchDone" />
+  </process>
+</definitions>

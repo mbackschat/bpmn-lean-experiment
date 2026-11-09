@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_SiteVisit" targetNamespace="urn:bpmn-lean:scenarios:manual-task-split-merge:site-visit">
+  <process id="Process_SiteVisit" name="A Manual Task that splits and a Manual Task that merges" isExecutable="true">
+    <startEvent id="VisitScheduled" name="Visit scheduled" />
+    <manualTask id="PrepareSite" name="Prepare site" />
+    <userTask id="InspectRoof" name="Inspect roof" />
+    <userTask id="InspectCellar" name="Inspect cellar" />
+    <manualTask id="RecordFindings" name="Record findings" />
+    <userTask id="SignOff" name="Sign off" />
+    <endEvent id="VisitClosed" name="Visit closed" />
+    <sequenceFlow id="Flow_Scheduled" sourceRef="VisitScheduled" targetRef="PrepareSite" />
+    <sequenceFlow id="Flow_ToRoof" sourceRef="PrepareSite" targetRef="InspectRoof" />
+    <sequenceFlow id="Flow_ToCellar" sourceRef="PrepareSite" targetRef="InspectCellar" />
+    <sequenceFlow id="Flow_RoofDone" sourceRef="InspectRoof" targetRef="RecordFindings" />
+    <sequenceFlow id="Flow_CellarDone" sourceRef="InspectCellar" targetRef="RecordFindings" />
+    <sequenceFlow id="Flow_Recorded" sourceRef="RecordFindings" targetRef="SignOff" />
+    <sequenceFlow id="Flow_Closed" sourceRef="SignOff" targetRef="VisitClosed" />
+  </process>
+</definitions>

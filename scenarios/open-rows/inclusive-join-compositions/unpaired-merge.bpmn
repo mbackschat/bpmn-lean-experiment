@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_UnpairedMerge" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-compositions:unpaired-merge">
+  <process id="Process_UnpairedMerge" name="An Inclusive merge after an Exclusive split" isExecutable="true">
+    <startEvent id="CaseOpened" name="Case opened" />
+    <exclusiveGateway id="Triage" name="Triage" gatewayDirection="Diverging" default="Flow_Routine" />
+    <userTask id="HandleUrgent" name="Handle urgent" />
+    <userTask id="HandleRoutine" name="Handle routine" />
+    <inclusiveGateway id="Handled" name="Handled" gatewayDirection="Converging" />
+    <userTask id="Archive" name="Archive" />
+    <endEvent id="Archived" name="Archived" />
+    <sequenceFlow id="Flow_Opened" sourceRef="CaseOpened" targetRef="Triage" />
+    <sequenceFlow id="Flow_Urgent" sourceRef="Triage" targetRef="HandleUrgent">
+      <conditionExpression xsi:type="tFormalExpression">${urgent}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Routine" sourceRef="Triage" targetRef="HandleRoutine" />
+    <sequenceFlow id="Flow_UrgentDone" sourceRef="HandleUrgent" targetRef="Handled" />
+    <sequenceFlow id="Flow_RoutineDone" sourceRef="HandleRoutine" targetRef="Handled" />
+    <sequenceFlow id="Flow_Handled" sourceRef="Handled" targetRef="Archive" />
+    <sequenceFlow id="Flow_Archived" sourceRef="Archive" targetRef="Archived" />
+  </process>
+</definitions>

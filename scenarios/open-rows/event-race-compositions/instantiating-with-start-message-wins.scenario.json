@@ -1,0 +1,61 @@
+{
+  "kind": "scenario",
+  "id": "event-race-compositions-instantiating-with-start-message-wins",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "event-race-compositions-instantiating-with-start",
+    "relativePath": "scenarios/open-rows/event-race-compositions/instantiating-with-start.bpmn",
+    "sha256": "d48f8c240766318f30001c24b38411c73234e09a2d57140fd2e73701efc38975",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-Approved-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Approved",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Approve"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-Proceed-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Proceed",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.6",
+      "BPMN 2.0.2 \u00a713.4.4",
+      "BPMN 2.0.2 \u00a710.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventBasedGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

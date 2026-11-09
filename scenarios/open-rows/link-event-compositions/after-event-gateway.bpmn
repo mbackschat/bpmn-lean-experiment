@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_AfterEventGateway" targetNamespace="urn:bpmn-lean:scenarios:link-event-compositions:after-event-gateway">
+  <process id="Process_AfterEventGateway" name="A catching Link as an Event-Based Gateway arm" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <eventBasedGateway id="Await" name="Await" />
+    <intermediateCatchEvent id="Resume" name="resume">
+      <linkEventDefinition id="Resume_Link" name="resume" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="Overdue" name="Overdue">
+      <timerEventDefinition id="Overdue_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <userTask id="Continue" name="Continue" />
+    <userTask id="Chase" name="Chase" />
+    <endEvent id="Continued" name="Continued" />
+    <endEvent id="Chased" name="Chased" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Await" />
+    <sequenceFlow id="Flow_ToResume" sourceRef="Await" targetRef="Resume" />
+    <sequenceFlow id="Flow_ToOverdue" sourceRef="Await" targetRef="Overdue" />
+    <sequenceFlow id="Flow_Resumed" sourceRef="Resume" targetRef="Continue" />
+    <sequenceFlow id="Flow_Overdue" sourceRef="Overdue" targetRef="Chase" />
+    <sequenceFlow id="Flow_Continued" sourceRef="Continue" targetRef="Continued" />
+    <sequenceFlow id="Flow_Chased" sourceRef="Chase" targetRef="Chased" />
+  </process>
+</definitions>

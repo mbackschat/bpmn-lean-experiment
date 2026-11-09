@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ParallelInInclusive" targetNamespace="urn:bpmn-lean:scenarios:gateway-composition-matrix:parallel-in-inclusive">
+  <process id="Process_ParallelInInclusive" name="A closed Parallel block inside one Inclusive branch" isExecutable="true">
+    <startEvent id="OrderReceived" name="Order received" />
+    <inclusiveGateway id="ChooseExtras" name="Choose extras" gatewayDirection="Diverging" default="Flow_Plain" />
+    <parallelGateway id="SplitGift" name="Split gift" gatewayDirection="Diverging" />
+    <userTask id="WrapGift" name="Wrap gift" />
+    <userTask id="AddCard" name="Add card" />
+    <parallelGateway id="GiftReady" name="Gift ready" gatewayDirection="Converging" />
+    <userTask id="InsureParcel" name="Insure parcel" />
+    <userTask id="PlainPack" name="Plain pack" />
+    <inclusiveGateway id="ExtrasDone" name="Extras done" gatewayDirection="Converging" />
+    <userTask id="Dispatch" name="Dispatch" />
+    <endEvent id="OrderDispatched" name="Order dispatched" />
+    <sequenceFlow id="Flow_Received" sourceRef="OrderReceived" targetRef="ChooseExtras" />
+    <sequenceFlow id="Flow_ToGift" sourceRef="ChooseExtras" targetRef="SplitGift">
+      <conditionExpression xsi:type="tFormalExpression">${gift}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToInsurance" sourceRef="ChooseExtras" targetRef="InsureParcel">
+      <conditionExpression xsi:type="tFormalExpression">${insured}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Plain" sourceRef="ChooseExtras" targetRef="PlainPack" />
+    <sequenceFlow id="Flow_ToWrap" sourceRef="SplitGift" targetRef="WrapGift" />
+    <sequenceFlow id="Flow_ToCard" sourceRef="SplitGift" targetRef="AddCard" />
+    <sequenceFlow id="Flow_Wrapped" sourceRef="WrapGift" targetRef="GiftReady" />
+    <sequenceFlow id="Flow_Carded" sourceRef="AddCard" targetRef="GiftReady" />
+    <sequenceFlow id="Flow_GiftDone" sourceRef="GiftReady" targetRef="ExtrasDone" />
+    <sequenceFlow id="Flow_InsuranceDone" sourceRef="InsureParcel" targetRef="ExtrasDone" />
+    <sequenceFlow id="Flow_PlainDone" sourceRef="PlainPack" targetRef="ExtrasDone" />
+    <sequenceFlow id="Flow_ExtrasDone" sourceRef="ExtrasDone" targetRef="Dispatch" />
+    <sequenceFlow id="Flow_Dispatched" sourceRef="Dispatch" targetRef="OrderDispatched" />
+  </process>
+</definitions>

@@ -1,0 +1,30 @@
+{
+  "kind": "scenario",
+  "id": "link-event-compositions-duplicate-catch-start",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "link-event-compositions-duplicate-catch",
+    "relativePath": "scenarios/open-rows/link-event-compositions/duplicate-catch.bpmn",
+    "sha256": "4dee16f5a6eb2fc28014a9df7194521d8adf9b34e8a65506584c3f586a0342b8",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.5.5",
+      "BPMN 2.0.2 \u00a713.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchLinkEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

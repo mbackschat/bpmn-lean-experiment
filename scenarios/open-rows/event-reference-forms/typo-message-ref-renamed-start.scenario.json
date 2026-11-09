@@ -1,0 +1,30 @@
+{
+  "kind": "scenario",
+  "id": "event-reference-forms-typo-message-ref-renamed-start",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "event-reference-forms-typo-message-ref-renamed",
+    "relativePath": "scenarios/open-rows/event-reference-forms/typo-message-ref-renamed.bpmn",
+    "sha256": "d461e680052878e80ddb2cc5feed13f61b9740682500c30982ac0dff4910d820",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.5.4",
+      "BPMN 2.0.2 \u00a710.5.5"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

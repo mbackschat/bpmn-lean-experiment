@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_NoneAndTimerStarts" targetNamespace="urn:bpmn-lean:scenarios:none-event-compositions:none-and-timer-starts">
+  <process id="Process_NoneAndTimerStarts" name="A None Start Event and a Timer Start Event in one process" isExecutable="true">
+    <startEvent id="StartNone" name="Start none" />
+    <startEvent id="StartOnTimer" name="Start on timer">
+      <timerEventDefinition id="StartOnTimer_Timer">
+        <timeDate xsi:type="tFormalExpression">2031-01-01T00:00:00Z</timeDate>
+      </timerEventDefinition>
+    </startEvent>
+    <userTask id="HandleNone" name="Handle none" />
+    <userTask id="HandleTimer" name="Handle timer" />
+    <endEvent id="DoneNone" />
+    <endEvent id="DoneTimer" />
+    <sequenceFlow id="Flow_ToNone" sourceRef="StartNone" targetRef="HandleNone" />
+    <sequenceFlow id="Flow_ToTimer" sourceRef="StartOnTimer" targetRef="HandleTimer" />
+    <sequenceFlow id="Flow_DoneNone" sourceRef="HandleNone" targetRef="DoneNone" />
+    <sequenceFlow id="Flow_DoneTimer" sourceRef="HandleTimer" targetRef="DoneTimer" />
+  </process>
+</definitions>

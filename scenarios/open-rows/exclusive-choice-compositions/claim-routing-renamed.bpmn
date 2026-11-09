@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="N01" targetNamespace="urn:bpmn-lean:scenarios:exclusive-choice-compositions:claim-routing-renamed">
+  <process id="N02" name="Route a claim by ordered typed conditions" isExecutable="true">
+    <startEvent id="N03" name="Claim received" />
+    <exclusiveGateway id="N04" name="Route claim" gatewayDirection="Diverging" default="F16" />
+    <userTask id="N05" name="Investigate fraud" />
+    <serviceTask id="N06" name="Pay large claim" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="payload">${claimId}</camunda:inputParameter>
+          <camunda:outputParameter name="receipt">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <manualTask id="N07" name="Inspect on site" />
+    <task id="N08" name="Approve standard claim" />
+    <exclusiveGateway id="N09" name="Claim routed" gatewayDirection="Converging" />
+    <userTask id="N10" name="Close claim" />
+    <endEvent id="N11" name="Claim closed" />
+    <sequenceFlow id="F12" sourceRef="N03" targetRef="N04" />
+    <sequenceFlow id="F13" sourceRef="N04" targetRef="N05">
+      <conditionExpression xsi:type="tFormalExpression">${fraud}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="F14" sourceRef="N04" targetRef="N06">
+      <conditionExpression xsi:type="tFormalExpression">${amount > 1000}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="F15" sourceRef="N04" targetRef="N07">
+      <conditionExpression xsi:type="tFormalExpression">${severity == 'severe'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="F16" sourceRef="N04" targetRef="N08" />
+    <sequenceFlow id="F17" sourceRef="N05" targetRef="N09" />
+    <sequenceFlow id="F18" sourceRef="N06" targetRef="N09" />
+    <sequenceFlow id="F19" sourceRef="N07" targetRef="N09" />
+    <sequenceFlow id="F20" sourceRef="N08" targetRef="N09" />
+    <sequenceFlow id="F21" sourceRef="N09" targetRef="N10" />
+    <sequenceFlow id="F22" sourceRef="N10" targetRef="N11" />
+  </process>
+</definitions>

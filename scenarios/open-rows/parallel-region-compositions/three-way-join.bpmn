@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ThreeWayJoin" targetNamespace="urn:bpmn-lean:scenarios:parallel-region-compositions:three-way-join">
+  <process id="Process_ThreeWayJoin" name="A three-branch fork and join" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <parallelGateway id="SplitSteps" name="Split steps" gatewayDirection="Diverging" />
+    <userTask id="StepA" name="Step A" />
+    <userTask id="StepB" name="Step B" />
+    <userTask id="StepC" name="Step C" />
+    <parallelGateway id="AllSteps" name="All steps" gatewayDirection="Converging" />
+    <userTask id="Wrap" name="Wrap up" />
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="SplitSteps" />
+    <sequenceFlow id="Flow_ToA" sourceRef="SplitSteps" targetRef="StepA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="SplitSteps" targetRef="StepB" />
+    <sequenceFlow id="Flow_ToC" sourceRef="SplitSteps" targetRef="StepC" />
+    <sequenceFlow id="Flow_AJoined" sourceRef="StepA" targetRef="AllSteps" />
+    <sequenceFlow id="Flow_BJoined" sourceRef="StepB" targetRef="AllSteps" />
+    <sequenceFlow id="Flow_CJoined" sourceRef="StepC" targetRef="AllSteps" />
+    <sequenceFlow id="Flow_Joined" sourceRef="AllSteps" targetRef="Wrap" />
+    <sequenceFlow id="Flow_Wrapped" sourceRef="Wrap" targetRef="Done" />
+  </process>
+</definitions>

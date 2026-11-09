@@ -1,0 +1,161 @@
+{
+  "kind": "scenario",
+  "id": "inclusive-join-compositions-loop-reentry-a-only-then-both",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "inclusive-join-compositions-loop-reentry",
+    "relativePath": "scenarios/open-rows/inclusive-join-compositions/loop-reentry.bpmn",
+    "sha256": "d025b1df12332b6694c74d277b254ce15cd70df3a1378e9666c688ac92fa88f3",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "a",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "again",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        },
+        {
+          "name": "b",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-StepA-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "StepA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-ReviewRound-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewRound",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "b",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-StepB-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "StepB",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-StepA-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "StepA",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-ReviewRound-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReviewRound",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "a",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          },
+          {
+            "name": "again",
+            "value": {
+              "kind": "boolean",
+              "value": false
+            }
+          },
+          {
+            "name": "b",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.3",
+      "BPMN 2.0.2 \u00a713.4.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/InclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

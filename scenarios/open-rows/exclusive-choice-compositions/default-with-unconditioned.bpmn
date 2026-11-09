@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_DefaultWithUnconditioned" targetNamespace="urn:bpmn-lean:scenarios:exclusive-choice-compositions:default-with-unconditioned">
+  <process id="Process_DefaultWithUnconditioned" name="A default flow beside an unconditioned non-default flow" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <exclusiveGateway id="Route" name="Route" gatewayDirection="Diverging" default="Flow_Default" />
+    <userTask id="HandleConditioned" name="Handle conditioned" />
+    <userTask id="HandleUnconditioned" name="Handle unconditioned" />
+    <userTask id="HandleDefault" name="Handle default" />
+    <endEvent id="DoneConditioned" />
+    <endEvent id="DoneUnconditioned" />
+    <endEvent id="DoneDefault" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Route" />
+    <sequenceFlow id="Flow_Conditioned" sourceRef="Route" targetRef="HandleConditioned">
+      <conditionExpression xsi:type="tFormalExpression">${x}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Unconditioned" sourceRef="Route" targetRef="HandleUnconditioned" />
+    <sequenceFlow id="Flow_Default" sourceRef="Route" targetRef="HandleDefault" />
+    <sequenceFlow id="Flow_DoneConditioned" sourceRef="HandleConditioned" targetRef="DoneConditioned" />
+    <sequenceFlow id="Flow_DoneUnconditioned" sourceRef="HandleUnconditioned" targetRef="DoneUnconditioned" />
+    <sequenceFlow id="Flow_DoneDefault" sourceRef="HandleDefault" targetRef="DoneDefault" />
+  </process>
+</definitions>

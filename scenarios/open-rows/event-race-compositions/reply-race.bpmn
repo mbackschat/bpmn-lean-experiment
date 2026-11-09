@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ReplyRace" targetNamespace="urn:bpmn-lean:scenarios:event-race-compositions:reply-race">
+  <message id="Message_Reply" name="reply" />
+  <process id="Process_ReplyRace" name="Await a reply or time out, repeatedly" isExecutable="true">
+    <startEvent id="RequestSent" name="Request sent" />
+    <exclusiveGateway id="RoundStart" name="Round start" gatewayDirection="Converging" />
+    <eventBasedGateway id="AwaitReply" name="Await reply" />
+    <intermediateCatchEvent id="ReplyReceived" name="Reply received">
+      <messageEventDefinition id="ReplyReceived_Message" messageRef="Message_Reply" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="ReplyOverdue" name="Reply overdue">
+      <timerEventDefinition id="ReplyOverdue_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT10S</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <userTask id="ProcessReply" name="Process reply">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="again" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="AnotherRound" name="Another round" gatewayDirection="Diverging" default="Flow_Finish" />
+    <endEvent id="Settled" name="Settled" />
+    <userTask id="ChaseCustomer" name="Chase customer" />
+    <endEvent id="Chased" name="Chased" />
+    <sequenceFlow id="Flow_Sent" sourceRef="RequestSent" targetRef="RoundStart" />
+    <sequenceFlow id="Flow_RoundStarted" sourceRef="RoundStart" targetRef="AwaitReply" />
+    <sequenceFlow id="Flow_ToReply" sourceRef="AwaitReply" targetRef="ReplyReceived" />
+    <sequenceFlow id="Flow_ToOverdue" sourceRef="AwaitReply" targetRef="ReplyOverdue" />
+    <sequenceFlow id="Flow_Replied" sourceRef="ReplyReceived" targetRef="ProcessReply" />
+    <sequenceFlow id="Flow_Processed" sourceRef="ProcessReply" targetRef="AnotherRound" />
+    <sequenceFlow id="Flow_Again" sourceRef="AnotherRound" targetRef="RoundStart">
+      <conditionExpression xsi:type="tFormalExpression">${again == 'yes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Finish" sourceRef="AnotherRound" targetRef="Settled" />
+    <sequenceFlow id="Flow_Overdue" sourceRef="ReplyOverdue" targetRef="ChaseCustomer" />
+    <sequenceFlow id="Flow_Chased" sourceRef="ChaseCustomer" targetRef="Chased" />
+  </process>
+</definitions>

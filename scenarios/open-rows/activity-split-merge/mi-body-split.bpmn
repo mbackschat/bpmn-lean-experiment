@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_MiBodySplit" targetNamespace="urn:bpmn-lean:scenarios:activity-split-merge:mi-body-split">
+  <process id="Process_MiBodySplit" name="An unconditioned split and merge inside a Multi-Instance Sub-Process body" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <subProcess id="Batch" name="Batch">
+      <multiInstanceLoopCharacteristics isSequential="true" camunda:collection="items" camunda:elementVariable="item" />
+      <startEvent id="BatchOpened" name="Batch opened" />
+      <userTask id="Check" name="Check" />
+      <userTask id="LogA" name="Log A" />
+      <userTask id="LogB" name="Log B" />
+      <userTask id="Seal" name="Seal" />
+      <endEvent id="BatchClosed" name="Batch closed" />
+      <sequenceFlow id="Flow_BatchOpened" sourceRef="BatchOpened" targetRef="Check" />
+      <sequenceFlow id="Flow_ToLogA" sourceRef="Check" targetRef="LogA" />
+      <sequenceFlow id="Flow_ToLogB" sourceRef="Check" targetRef="LogB" />
+      <sequenceFlow id="Flow_LogADone" sourceRef="LogA" targetRef="Seal" />
+      <sequenceFlow id="Flow_LogBDone" sourceRef="LogB" targetRef="Seal" />
+      <sequenceFlow id="Flow_Sealed" sourceRef="Seal" targetRef="BatchClosed" />
+    </subProcess>
+    <userTask id="Accept" name="Accept" />
+    <endEvent id="Accepted" name="Accepted" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Batch" />
+    <sequenceFlow id="Flow_Batched" sourceRef="Batch" targetRef="Accept" />
+    <sequenceFlow id="Flow_Accepted" sourceRef="Accept" targetRef="Accepted" />
+  </process>
+</definitions>

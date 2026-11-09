@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_StructuredRegions" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-compositions:structured-regions">
+  <process id="Process_StructuredRegions" name="Select checks with an Inclusive split and join them" isExecutable="true">
+    <startEvent id="ApplicationReceived" name="Application received" />
+    <inclusiveGateway id="ChooseChecks" name="Choose checks" gatewayDirection="Diverging" default="Flow_Standard" />
+    <userTask id="CreditCheck" name="Credit check" />
+    <userTask id="FraudCheck" name="Fraud check" />
+    <userTask id="IdentityCheck" name="Identity check" />
+    <userTask id="StandardCheck" name="Standard check" />
+    <inclusiveGateway id="ChecksComplete" name="Checks complete" gatewayDirection="Converging" />
+    <userTask id="Decide" name="Decide" />
+    <endEvent id="Decided" name="Decided" />
+    <sequenceFlow id="Flow_Received" sourceRef="ApplicationReceived" targetRef="ChooseChecks" />
+    <sequenceFlow id="Flow_ToCredit" sourceRef="ChooseChecks" targetRef="CreditCheck">
+      <conditionExpression xsi:type="tFormalExpression">${credit}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToFraud" sourceRef="ChooseChecks" targetRef="FraudCheck">
+      <conditionExpression xsi:type="tFormalExpression">${fraud}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToIdentity" sourceRef="ChooseChecks" targetRef="IdentityCheck">
+      <conditionExpression xsi:type="tFormalExpression">${identity}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Standard" sourceRef="ChooseChecks" targetRef="StandardCheck" />
+    <sequenceFlow id="Flow_CreditDone" sourceRef="CreditCheck" targetRef="ChecksComplete" />
+    <sequenceFlow id="Flow_FraudDone" sourceRef="FraudCheck" targetRef="ChecksComplete" />
+    <sequenceFlow id="Flow_IdentityDone" sourceRef="IdentityCheck" targetRef="ChecksComplete" />
+    <sequenceFlow id="Flow_StandardDone" sourceRef="StandardCheck" targetRef="ChecksComplete" />
+    <sequenceFlow id="Flow_ChecksDone" sourceRef="ChecksComplete" targetRef="Decide" />
+    <sequenceFlow id="Flow_Decided" sourceRef="Decide" targetRef="Decided" />
+  </process>
+</definitions>

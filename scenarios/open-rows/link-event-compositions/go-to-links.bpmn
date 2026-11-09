@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_GoToLinks" targetNamespace="urn:bpmn-lean:scenarios:link-event-compositions:go-to-links">
+  <process id="Process_GoToLinks" name="Rejoin two routes through a Link pair and loop" isExecutable="true">
+    <startEvent id="TicketOpened" name="Ticket opened" />
+    <userTask id="Triage" name="Triage">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="route" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="RouteTicket" name="Route ticket" gatewayDirection="Diverging" default="Flow_ToOther" />
+    <userTask id="HandleBilling" name="Handle billing" />
+    <userTask id="HandleOther" name="Handle other" />
+    <intermediateThrowEvent id="ToResolution" name="resolution">
+      <linkEventDefinition id="ToResolution_Link" name="resolution" />
+    </intermediateThrowEvent>
+    <intermediateThrowEvent id="OtherToResolution" name="resolution">
+      <linkEventDefinition id="OtherToResolution_Link" name="resolution" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="FromResolution" name="resolution">
+      <linkEventDefinition id="FromResolution_Link" name="resolution" />
+    </intermediateCatchEvent>
+    <userTask id="Resolve" name="Resolve">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="again" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="Reopen" name="Reopen" gatewayDirection="Diverging" default="Flow_Close" />
+    <endEvent id="TicketClosed" name="Ticket closed" />
+    <sequenceFlow id="Flow_Opened" sourceRef="TicketOpened" targetRef="Triage" />
+    <sequenceFlow id="Flow_Triaged" sourceRef="Triage" targetRef="RouteTicket" />
+    <sequenceFlow id="Flow_ToBilling" sourceRef="RouteTicket" targetRef="HandleBilling">
+      <conditionExpression xsi:type="tFormalExpression">${route == 'billing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToOther" sourceRef="RouteTicket" targetRef="HandleOther" />
+    <sequenceFlow id="Flow_BillingHandled" sourceRef="HandleBilling" targetRef="ToResolution" />
+    <sequenceFlow id="Flow_OtherHandled" sourceRef="HandleOther" targetRef="OtherToResolution" />
+    <sequenceFlow id="Flow_Continue" sourceRef="FromResolution" targetRef="Resolve" />
+    <sequenceFlow id="Flow_Resolved" sourceRef="Resolve" targetRef="Reopen" />
+    <sequenceFlow id="Flow_Reopen" sourceRef="Reopen" targetRef="Triage">
+      <conditionExpression xsi:type="tFormalExpression">${again == 'yes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Close" sourceRef="Reopen" targetRef="TicketClosed" />
+  </process>
+</definitions>

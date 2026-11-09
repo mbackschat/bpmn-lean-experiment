@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_GoToFlows" targetNamespace="urn:bpmn-lean:scenarios:link-event-compositions:go-to-flows">
+  <process id="Process_GoToFlows" name="The explicit-flow twin of go-to-links" isExecutable="true">
+    <startEvent id="TicketOpened" name="Ticket opened" />
+    <userTask id="Triage" name="Triage">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="route" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="RouteTicket" name="Route ticket" gatewayDirection="Diverging" default="Flow_ToOther" />
+    <userTask id="HandleBilling" name="Handle billing" />
+    <userTask id="HandleOther" name="Handle other" />
+    <userTask id="Resolve" name="Resolve">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="again" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="Reopen" name="Reopen" gatewayDirection="Diverging" default="Flow_Close" />
+    <endEvent id="TicketClosed" name="Ticket closed" />
+    <sequenceFlow id="Flow_Opened" sourceRef="TicketOpened" targetRef="Triage" />
+    <sequenceFlow id="Flow_Triaged" sourceRef="Triage" targetRef="RouteTicket" />
+    <sequenceFlow id="Flow_ToBilling" sourceRef="RouteTicket" targetRef="HandleBilling">
+      <conditionExpression xsi:type="tFormalExpression">${route == 'billing'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToOther" sourceRef="RouteTicket" targetRef="HandleOther" />
+    <sequenceFlow id="Flow_BillingHandled" sourceRef="HandleBilling" targetRef="Resolve" />
+    <sequenceFlow id="Flow_OtherHandled" sourceRef="HandleOther" targetRef="Resolve" />
+    <sequenceFlow id="Flow_Resolved" sourceRef="Resolve" targetRef="Reopen" />
+    <sequenceFlow id="Flow_Reopen" sourceRef="Reopen" targetRef="Triage">
+      <conditionExpression xsi:type="tFormalExpression">${again == 'yes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Close" sourceRef="Reopen" targetRef="TicketClosed" />
+  </process>
+</definitions>

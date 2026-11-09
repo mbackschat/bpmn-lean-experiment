@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ParallelRace" targetNamespace="urn:bpmn-lean:scenarios:event-race-compositions:parallel-race">
+  <message id="Message_Pickup" name="pickup" />
+  <message id="Message_Payment" name="payment" />
+  <process id="Process_ParallelRace" name="A race on one Parallel branch beside a Receive Task" isExecutable="true">
+    <startEvent id="ParcelReady" name="Parcel ready" />
+    <parallelGateway id="SplitParcel" name="Split parcel" gatewayDirection="Diverging" />
+    <eventBasedGateway id="AwaitCarrier" name="Await carrier" />
+    <intermediateCatchEvent id="CarrierArrived" name="Carrier arrived">
+      <messageEventDefinition id="CarrierArrived_Message" messageRef="Message_Pickup" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="CarrierOverdue" name="Carrier overdue">
+      <timerEventDefinition id="CarrierOverdue_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <userTask id="LoadParcel" name="Load parcel" />
+    <userTask id="ReassignCarrier" name="Reassign carrier" />
+    <exclusiveGateway id="Collected" name="Collected" gatewayDirection="Converging" />
+    <receiveTask id="AwaitPayment" name="Await payment" messageRef="Message_Payment" />
+    <parallelGateway id="ParcelSettled" name="Parcel settled" gatewayDirection="Converging" />
+    <userTask id="CloseOrder" name="Close order" />
+    <endEvent id="OrderClosed" name="Order closed" />
+    <sequenceFlow id="Flow_Ready" sourceRef="ParcelReady" targetRef="SplitParcel" />
+    <sequenceFlow id="Flow_ToCarrier" sourceRef="SplitParcel" targetRef="AwaitCarrier" />
+    <sequenceFlow id="Flow_ToPayment" sourceRef="SplitParcel" targetRef="AwaitPayment" />
+    <sequenceFlow id="Flow_ToArrived" sourceRef="AwaitCarrier" targetRef="CarrierArrived" />
+    <sequenceFlow id="Flow_ToOverdue" sourceRef="AwaitCarrier" targetRef="CarrierOverdue" />
+    <sequenceFlow id="Flow_Arrived" sourceRef="CarrierArrived" targetRef="LoadParcel" />
+    <sequenceFlow id="Flow_Overdue" sourceRef="CarrierOverdue" targetRef="ReassignCarrier" />
+    <sequenceFlow id="Flow_Loaded" sourceRef="LoadParcel" targetRef="Collected" />
+    <sequenceFlow id="Flow_Reassigned" sourceRef="ReassignCarrier" targetRef="Collected" />
+    <sequenceFlow id="Flow_Collected" sourceRef="Collected" targetRef="ParcelSettled" />
+    <sequenceFlow id="Flow_Paid" sourceRef="AwaitPayment" targetRef="ParcelSettled" />
+    <sequenceFlow id="Flow_Settled" sourceRef="ParcelSettled" targetRef="CloseOrder" />
+    <sequenceFlow id="Flow_Closed" sourceRef="CloseOrder" targetRef="OrderClosed" />
+  </process>
+</definitions>

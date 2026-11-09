@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_LoopReentry" targetNamespace="urn:bpmn-lean:scenarios:inclusive-join-compositions:loop-reentry">
+  <process id="Process_LoopReentry" name="An Inclusive split and join inside a rework loop" isExecutable="true">
+    <startEvent id="JobStarted" name="Job started" />
+    <exclusiveGateway id="RoundStart" name="Round start" gatewayDirection="Converging" />
+    <inclusiveGateway id="ChooseSteps" name="Choose steps" gatewayDirection="Diverging" default="Flow_Neither" />
+    <userTask id="StepA" name="Step A" />
+    <userTask id="StepB" name="Step B" />
+    <userTask id="StepDefault" name="Default step" />
+    <inclusiveGateway id="StepsDone" name="Steps done" gatewayDirection="Converging" />
+    <userTask id="ReviewRound" name="Review round">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="a" type="boolean" />
+          <camunda:formField id="b" type="boolean" />
+          <camunda:formField id="again" type="boolean" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="Another" name="Another round" gatewayDirection="Diverging" default="Flow_Finish" />
+    <endEvent id="JobDone" name="Job done" />
+    <sequenceFlow id="Flow_Started" sourceRef="JobStarted" targetRef="RoundStart" />
+    <sequenceFlow id="Flow_RoundStarted" sourceRef="RoundStart" targetRef="ChooseSteps" />
+    <sequenceFlow id="Flow_ToA" sourceRef="ChooseSteps" targetRef="StepA">
+      <conditionExpression xsi:type="tFormalExpression">${a}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_ToB" sourceRef="ChooseSteps" targetRef="StepB">
+      <conditionExpression xsi:type="tFormalExpression">${b}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Neither" sourceRef="ChooseSteps" targetRef="StepDefault" />
+    <sequenceFlow id="Flow_ADone" sourceRef="StepA" targetRef="StepsDone" />
+    <sequenceFlow id="Flow_BDone" sourceRef="StepB" targetRef="StepsDone" />
+    <sequenceFlow id="Flow_DefaultDone" sourceRef="StepDefault" targetRef="StepsDone" />
+    <sequenceFlow id="Flow_StepsDone" sourceRef="StepsDone" targetRef="ReviewRound" />
+    <sequenceFlow id="Flow_Reviewed" sourceRef="ReviewRound" targetRef="Another" />
+    <sequenceFlow id="Flow_Again" sourceRef="Another" targetRef="RoundStart">
+      <conditionExpression xsi:type="tFormalExpression">${again}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Finish" sourceRef="Another" targetRef="JobDone" />
+  </process>
+</definitions>

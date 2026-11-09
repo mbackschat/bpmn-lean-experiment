@@ -1,0 +1,124 @@
+{
+  "kind": "scenario",
+  "id": "activity-split-merge-embedded-split-both-flows",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "activity-split-merge-embedded-split",
+    "relativePath": "scenarios/open-rows/activity-split-merge/embedded-split.bpmn",
+    "sha256": "e1c83bbd3beeb03923a08e6754485cbae4b4bf0f810a722da669647b1a6cfdba",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "a",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "b",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-Measure-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Measure",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-RecordWidth-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "RecordWidth",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-RecordHeight-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "RecordHeight",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-FileReport-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FileReport",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-FileReport-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "FileReport",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-Accept-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Accept",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a713.3.1",
+      "BPMN 2.0.2 \u00a713.2",
+      "BPMN 2.0.2 \u00a710.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BpmnActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_FanInFlows" targetNamespace="urn:bpmn-lean:scenarios:link-event-compositions:fan-in-flows">
+  <process id="Process_FanInFlows" name="The explicit-flow twin of fan-in-links" isExecutable="true">
+    <startEvent id="Opened" name="Opened" />
+    <parallelGateway id="Split" name="Split" gatewayDirection="Diverging" />
+    <userTask id="PrepareA" name="Prepare A" />
+    <userTask id="PrepareB" name="Prepare B" />
+    <userTask id="Handle" name="Handle" />
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Opened" sourceRef="Opened" targetRef="Split" />
+    <sequenceFlow id="Flow_ToA" sourceRef="Split" targetRef="PrepareA" />
+    <sequenceFlow id="Flow_ToB" sourceRef="Split" targetRef="PrepareB" />
+    <sequenceFlow id="Flow_ADone" sourceRef="PrepareA" targetRef="Handle" />
+    <sequenceFlow id="Flow_BDone" sourceRef="PrepareB" targetRef="Handle" />
+    <sequenceFlow id="Flow_Handled" sourceRef="Handle" targetRef="Done" />
+  </process>
+</definitions>

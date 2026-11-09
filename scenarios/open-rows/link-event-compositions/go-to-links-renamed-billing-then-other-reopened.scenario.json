@@ -1,0 +1,140 @@
+{
+  "kind": "scenario",
+  "id": "link-event-compositions-go-to-links-renamed-billing-then-other-reopened",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "link-event-compositions-go-to-links-renamed",
+    "relativePath": "scenarios/open-rows/link-event-compositions/go-to-links-renamed.bpmn",
+    "sha256": "036905b61fb12f76ce7b9e39fb2fdfb346466de7dd7d16280bd821063e72f37b",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-complete-N04-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N04",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "billing"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-complete-N06-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N06",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-N14-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N14",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "yes"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-complete-N04-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N04",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "route",
+            "value": {
+              "kind": "string",
+              "value": "other"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-complete-N07-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N07",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-complete-N14-2",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "N14",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "again",
+            "value": {
+              "kind": "string",
+              "value": "no"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.5.5",
+      "BPMN 2.0.2 \u00a713.2"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchLinkEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

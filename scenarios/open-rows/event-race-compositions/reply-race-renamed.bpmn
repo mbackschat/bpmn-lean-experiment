@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="N01" targetNamespace="urn:bpmn-lean:scenarios:event-race-compositions:reply-race-renamed">
+  <message id="N02" name="reply" />
+  <process id="N03" name="Await a reply or time out, repeatedly" isExecutable="true">
+    <startEvent id="N04" name="Request sent" />
+    <exclusiveGateway id="N05" name="Round start" gatewayDirection="Converging" />
+    <eventBasedGateway id="N06" name="Await reply" />
+    <intermediateCatchEvent id="N07" name="Reply received">
+      <messageEventDefinition id="N08" messageRef="N02" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="N09" name="Reply overdue">
+      <timerEventDefinition id="N10">
+        <timeDuration xsi:type="tFormalExpression">PT10S</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <userTask id="N11" name="Process reply">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="again" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="N12" name="Another round" gatewayDirection="Diverging" default="F23" />
+    <endEvent id="N13" name="Settled" />
+    <userTask id="N14" name="Chase customer" />
+    <endEvent id="N15" name="Chased" />
+    <sequenceFlow id="F16" sourceRef="N04" targetRef="N05" />
+    <sequenceFlow id="F17" sourceRef="N05" targetRef="N06" />
+    <sequenceFlow id="F18" sourceRef="N06" targetRef="N07" />
+    <sequenceFlow id="F19" sourceRef="N06" targetRef="N09" />
+    <sequenceFlow id="F20" sourceRef="N07" targetRef="N11" />
+    <sequenceFlow id="F21" sourceRef="N11" targetRef="N12" />
+    <sequenceFlow id="F22" sourceRef="N12" targetRef="N05">
+      <conditionExpression xsi:type="tFormalExpression">${again == 'yes'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="F23" sourceRef="N12" targetRef="N13" />
+    <sequenceFlow id="F24" sourceRef="N09" targetRef="N14" />
+    <sequenceFlow id="F25" sourceRef="N14" targetRef="N15" />
+  </process>
+</definitions>

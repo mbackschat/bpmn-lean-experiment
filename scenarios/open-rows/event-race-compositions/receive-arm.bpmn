@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_ReceiveArm" targetNamespace="urn:bpmn-lean:scenarios:event-race-compositions:receive-arm">
+  <message id="Message_Payment" name="payment" />
+  <process id="Process_ReceiveArm" name="A Receive Task as an Event-Based Gateway arm" isExecutable="true">
+    <startEvent id="PaymentRequested" name="Payment requested" />
+    <eventBasedGateway id="AwaitEvent" name="Await event" />
+    <receiveTask id="PaymentReceive" name="Payment received" messageRef="Message_Payment" />
+    <intermediateCatchEvent id="PaymentOverdue" name="Payment overdue">
+      <timerEventDefinition id="PaymentOverdue_Timer">
+        <timeDuration xsi:type="tFormalExpression">PT1H</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <userTask id="Fulfil" name="Fulfil order" />
+    <userTask id="Remind" name="Send reminder" />
+    <endEvent id="Fulfilled" name="Fulfilled" />
+    <endEvent id="Reminded" name="Reminded" />
+    <sequenceFlow id="Flow_Requested" sourceRef="PaymentRequested" targetRef="AwaitEvent" />
+    <sequenceFlow id="Flow_ToReceive" sourceRef="AwaitEvent" targetRef="PaymentReceive" />
+    <sequenceFlow id="Flow_ToOverdue" sourceRef="AwaitEvent" targetRef="PaymentOverdue" />
+    <sequenceFlow id="Flow_Received" sourceRef="PaymentReceive" targetRef="Fulfil" />
+    <sequenceFlow id="Flow_Overdue" sourceRef="PaymentOverdue" targetRef="Remind" />
+    <sequenceFlow id="Flow_Fulfilled" sourceRef="Fulfil" targetRef="Fulfilled" />
+    <sequenceFlow id="Flow_Reminded" sourceRef="Remind" targetRef="Reminded" />
+  </process>
+</definitions>

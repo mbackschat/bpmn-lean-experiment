@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_DuplicateCatch" targetNamespace="urn:bpmn-lean:scenarios:link-event-compositions:duplicate-catch">
+  <process id="Process_DuplicateCatch" name="Two catching Links of one name" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <userTask id="Prepare" name="Prepare" />
+    <intermediateThrowEvent id="Go" name="again">
+      <linkEventDefinition id="Go_Link" name="again" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="First" name="again">
+      <linkEventDefinition id="First_Link" name="again" />
+    </intermediateCatchEvent>
+    <intermediateCatchEvent id="Second" name="again">
+      <linkEventDefinition id="Second_Link" name="again" />
+    </intermediateCatchEvent>
+    <userTask id="Alpha" name="Alpha" />
+    <userTask id="Beta" name="Beta" />
+    <endEvent id="AlphaDone" name="Alpha done" />
+    <endEvent id="BetaDone" name="Beta done" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Prepare" />
+    <sequenceFlow id="Flow_Prepared" sourceRef="Prepare" targetRef="Go" />
+    <sequenceFlow id="Flow_First" sourceRef="First" targetRef="Alpha" />
+    <sequenceFlow id="Flow_Second" sourceRef="Second" targetRef="Beta" />
+    <sequenceFlow id="Flow_AlphaDone" sourceRef="Alpha" targetRef="AlphaDone" />
+    <sequenceFlow id="Flow_BetaDone" sourceRef="Beta" targetRef="BetaDone" />
+  </process>
+</definitions>

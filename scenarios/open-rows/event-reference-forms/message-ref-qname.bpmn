@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             xmlns:tns="urn:bpmn-lean:scenarios:event-reference-forms:message-ref-qname"
+             id="Definitions_MessageRefQname" targetNamespace="urn:bpmn-lean:scenarios:event-reference-forms:message-ref-qname">
+  <message id="Message_Reply" name="reply" />
+  <process id="Process_MessageRefQname" name="A Message reference written as a QName of the target namespace" isExecutable="true">
+    <startEvent id="Started" name="Started" />
+    <intermediateCatchEvent id="Await" name="Await">
+      <messageEventDefinition id="Await_Message" messageRef="tns:Message_Reply" />
+    </intermediateCatchEvent>
+    <userTask id="Proceed" name="Proceed" />
+    <endEvent id="Done" name="Done" />
+    <sequenceFlow id="Flow_Started" sourceRef="Started" targetRef="Await" />
+    <sequenceFlow id="Flow_Awaited" sourceRef="Await" targetRef="Proceed" />
+    <sequenceFlow id="Flow_Done" sourceRef="Proceed" targetRef="Done" />
+  </process>
+</definitions>

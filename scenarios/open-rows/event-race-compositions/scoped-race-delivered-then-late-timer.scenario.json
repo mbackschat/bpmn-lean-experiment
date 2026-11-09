@@ -1,0 +1,79 @@
+{
+  "kind": "scenario",
+  "id": "event-race-compositions-scoped-race-delivered-then-late-timer",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "event-race-compositions-scoped-race",
+    "relativePath": "scenarios/open-rows/event-race-compositions/scoped-race.bpmn",
+    "sha256": "c8e441bf8d04ea91e687a7e9b5078850e3825e787702a069590883d831dbc549",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "retry",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s02-deliver-Delivered-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Delivered",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Delivered"
+        }
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s03-fire-DeliveryOverdue-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "DeliveryOverdue",
+        "activation": 1
+      },
+      "logicalTimeMs": 5000
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-complete-ConfirmDelivery-1",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ConfirmDelivery",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 \u00a710.6.6",
+      "BPMN 2.0.2 \u00a713.4.4",
+      "BPMN 2.0.2 \u00a710.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventBasedGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/IntermediateCatchEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java"
+    ]
+  }
+}

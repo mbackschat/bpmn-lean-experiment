@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             id="Definitions_OrderFulfilment" targetNamespace="urn:bpmn-lean:scenarios:parallel-region-compositions:order-fulfilment">
+  <process id="Process_OrderFulfilment" name="Fork a human branch and an automated branch that forks again" isExecutable="true">
+    <startEvent id="OrderPaid" name="Order paid" />
+    <parallelGateway id="SplitFulfilment" name="Split fulfilment" gatewayDirection="Diverging" />
+    <userTask id="PickItems" name="Pick items">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="picked" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <serviceTask id="ChargeCard" name="Charge card" implementation="urn:bpmn-lean:effect:probe-v1" camunda:delegateExpression="${bpmnLeanEffectHandler}" camunda:asyncBefore="true">
+      <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="payload">${orderId}</camunda:inputParameter>
+          <camunda:outputParameter name="receipt">${result}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </extensionElements>
+    </serviceTask>
+    <parallelGateway id="SplitChecks" name="Split checks" gatewayDirection="Diverging" />
+    <userTask id="CheckSanctions" name="Check sanctions">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="sanctions" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <userTask id="CheckAddress" name="Check address">
+      <extensionElements>
+        <camunda:formData>
+          <camunda:formField id="address" type="string" />
+        </camunda:formData>
+      </extensionElements>
+    </userTask>
+    <parallelGateway id="ChecksDone" name="Checks done" gatewayDirection="Converging" />
+    <parallelGateway id="FulfilmentReady" name="Fulfilment ready" gatewayDirection="Converging" />
+    <userTask id="ShipOrder" name="Ship order" />
+    <endEvent id="OrderShipped" name="Order shipped" />
+    <sequenceFlow id="Flow_Paid" sourceRef="OrderPaid" targetRef="SplitFulfilment" />
+    <sequenceFlow id="Flow_ToPick" sourceRef="SplitFulfilment" targetRef="PickItems" />
+    <sequenceFlow id="Flow_ToCharge" sourceRef="SplitFulfilment" targetRef="ChargeCard" />
+    <sequenceFlow id="Flow_Picked" sourceRef="PickItems" targetRef="FulfilmentReady" />
+    <sequenceFlow id="Flow_Charged" sourceRef="ChargeCard" targetRef="SplitChecks" />
+    <sequenceFlow id="Flow_ToSanctions" sourceRef="SplitChecks" targetRef="CheckSanctions" />
+    <sequenceFlow id="Flow_ToAddress" sourceRef="SplitChecks" targetRef="CheckAddress" />
+    <sequenceFlow id="Flow_SanctionsChecked" sourceRef="CheckSanctions" targetRef="ChecksDone" />
+    <sequenceFlow id="Flow_AddressChecked" sourceRef="CheckAddress" targetRef="ChecksDone" />
+    <sequenceFlow id="Flow_ChecksJoined" sourceRef="ChecksDone" targetRef="FulfilmentReady" />
+    <sequenceFlow id="Flow_Ready" sourceRef="FulfilmentReady" targetRef="ShipOrder" />
+    <sequenceFlow id="Flow_Shipped" sourceRef="ShipOrder" targetRef="OrderShipped" />
+  </process>
+</definitions>
