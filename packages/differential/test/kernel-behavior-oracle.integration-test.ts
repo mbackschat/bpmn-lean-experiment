@@ -2,7 +2,8 @@
  * Guard 16 of the kernel rewrite proposal over every discovered scenario: Lean `kernelRun` and the TypeScript kernel
  * return the same whole result on every scenario and population scenario, and on every scenario with retained CIB Seven
  * evidence the kernel's result equals the retained one at the CIB observation boundary (`compareTargetResults`, which
- * drops the kernel-only `code` and `scopes` members and sorts open waits). Discovery is by directory
+ * drops the kernel-only `code` and `scopes` members and sorts open waits, after `foldSynchronousEffects` folds the
+ * effect inputs of delegates CIB ran inside another command). Discovery is by directory
  * (`scenario-discovery.ts`), so a new scenario or evidence file joins without an edit here.
  *
  * No disagreement is expected: each one fails the test and is listed with the scenario and the first differing path,
@@ -15,7 +16,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { ComparisonKind, DifferentialTarget, compareTargetResults, firstValueDisagreement } from "@bpmn-lean/differential";
+import {
+  ComparisonKind,
+  DifferentialTarget,
+  compareTargetResults,
+  firstValueDisagreement,
+  foldSynchronousEffects,
+} from "@bpmn-lean/differential";
 import type { ScenarioDisagreement, ValueDisagreement } from "@bpmn-lean/differential";
 import { parseStrict, runPopulation, runScenario } from "@bpmn-lean/kernel";
 
@@ -35,6 +42,12 @@ function compared(scenario: string, expected: unknown, actual: unknown): OracleD
   const difference = firstValueDisagreement(expected, actual, "result");
   return difference === null ? null : { scenario, ...difference };
 }
+
+const effectInputsOf = (document: ScenarioDocument): ReadonlySet<string> =>
+  new Set(document.stimuli.flatMap((stimulus) => {
+    const { kind, commandId } = stimulus as Readonly<{ kind?: unknown; commandId?: unknown }>;
+    return kind === "effectResult" && typeof commandId === "string" ? [commandId] : [];
+  }));
 
 const label = (scenario: DiscoveredScenario): string => `${scenario.document.id} (${scenario.relativePath})`;
 
@@ -75,7 +88,10 @@ test("the Lean and TypeScript kernels agree on every discovered scenario, and th
           evidenceCount += 1;
           const comparison = compareTargetResults(
             { target: DifferentialTarget.RetainedCibEvidence, result: scenario.evidence.result },
-            [{ target: DifferentialTarget.KernelTs, result: typeScript }],
+            [{ target: DifferentialTarget.KernelTs, result: foldSynchronousEffects(typeScript, scenario.evidence.result, {
+              synchronousAfter: scenario.evidence.synchronousAfter,
+              effectInputs: effectInputsOf(scenario.document),
+            }) }],
           );
           if (comparison.kind === ComparisonKind.Disagreement) {
             evidenceDisagreements.push({

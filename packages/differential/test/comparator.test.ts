@@ -6,6 +6,7 @@ import {
   DifferentialTarget,
   DisagreementKind,
   compareTargetResults,
+  foldSynchronousEffects,
 } from "@bpmn-lean/differential";
 import type {
   CanonicalResult,
@@ -124,4 +125,47 @@ test("compares a state's variable scopes between the two kernels only, never aga
     requireDisagreement(compareTargetResults(lean, [{ target: DifferentialTarget.KernelTs, result: scoped(2) }])),
     { kind: DisagreementKind.ObservationValue, path: "trace[2].scopes[0].variables[0].value.value", expected: 1, actual: 2 },
   );
+});
+
+const deployed = { kind: "deployment", outcome: "committed" };
+const state = (status: string, variables: ReadonlyArray<unknown>, openWaits: ReadonlyArray<unknown>) =>
+  ({ kind: "state", instanceId: "Instance_1", status, logicalTimeMs: 0, variables, openWaits });
+const committed = (commandId: string) => ({ kind: "command", commandId, outcome: "committed" });
+const done = state("completed", [{ name: "resultValue", value: { kind: "string", value: "example-result" } }], []);
+const synchronousEvidence: CanonicalResult = {
+  outcome: { kind: "semantic", outcome: "completed" },
+  trace: [deployed, committed("start"), done],
+};
+const effectInputKernel: CanonicalResult = {
+  outcome: { kind: "semantic", outcome: "completed" },
+  trace: [
+    deployed,
+    committed("start"),
+    state("running", [], [wait("Task_Effect", "effect")]),
+    committed("complete-effect"),
+    done,
+  ],
+};
+
+test("folds an effect input CIB ran inside the command before it, dropping the open-effect state it never exposed", () => {
+  const folded = foldSynchronousEffects(effectInputKernel, synchronousEvidence, {
+    synchronousAfter: new Set(["start"]),
+    effectInputs: new Set(["complete-effect"]),
+  });
+  assert.deepEqual(folded.trace, synchronousEvidence.trace);
+  assert.equal(compareTargetResults(evidence(synchronousEvidence), [kernel(folded)]).kind, ComparisonKind.Agreement);
+});
+
+test("keeps an effect input the reference observed, one after a command without a delegate run, and any other input", () => {
+  const keeps = (synchronousAfter: ReadonlyArray<string>, effectInputs: ReadonlyArray<string>, reference = synchronousEvidence) =>
+    assert.deepEqual(
+      foldSynchronousEffects(effectInputKernel, reference, {
+        synchronousAfter: new Set(synchronousAfter),
+        effectInputs: new Set(effectInputs),
+      }).trace,
+      effectInputKernel.trace,
+    );
+  keeps(["start"], ["complete-effect"], effectInputKernel);
+  keeps([], ["complete-effect"]);
+  keeps(["start"], []);
 });

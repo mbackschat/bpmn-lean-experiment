@@ -185,3 +185,46 @@ export function compareTargetResults(
     targets,
   };
 }
+
+/** The inputs a CIB Seven evidence document records about delegates it ran inside another command. */
+export type SynchronousEffects = Readonly<{
+  /** Commands after which CIB recorded a delegate execution (`producerObservations.mappingExecutions`). */
+  synchronousAfter: ReadonlySet<string>;
+  /** The scenario's effect-result inputs. */
+  effectInputs: ReadonlySet<string>;
+}>;
+
+const commandIdOf = (observation: Readonly<{ kind: string }>): string | null => {
+  const commandId = (observation as Readonly<Record<string, unknown>>)["commandId"];
+  return observation.kind === "command" && typeof commandId === "string" ? commandId : null;
+};
+
+/**
+ * The candidate trace at the observation boundary of a synchronous CIB delegate (`CIB-OP-0002`, `CIB-OP-0003`,
+ * `CIB-OP-0007`): CIB runs the delegate inside the command that reached it and exposes no state in between, while the
+ * kernel opens an effect wait and takes the outcome as an input of its own. An effect input the reference never observed,
+ * following a command after which the reference recorded a delegate run, is dropped with the open-effect state before
+ * it, so the final observations of that command are compared; every other observation is kept, so any other gap still
+ * fails as a trace disagreement.
+ */
+export function foldSynchronousEffects(
+  candidate: CanonicalResult,
+  reference: CanonicalResult,
+  { synchronousAfter, effectInputs }: SynchronousEffects,
+): CanonicalResult {
+  const observed = new Set(reference.trace.map(commandIdOf));
+  const trace: Array<Readonly<{ kind: string }>> = [];
+  let lastCommand: string | null = null;
+  for (const observation of candidate.trace) {
+    const commandId = commandIdOf(observation);
+    const folds = commandId !== null && effectInputs.has(commandId) && !observed.has(commandId) &&
+      lastCommand !== null && synchronousAfter.has(lastCommand) && trace.at(-1)?.kind === "state";
+    if (folds) {
+      trace.pop();
+      continue;
+    }
+    if (commandId !== null) lastCommand = commandId;
+    trace.push(observation);
+  }
+  return { ...candidate, trace };
+}

@@ -53,7 +53,13 @@ export type PopulationScenarioDocument = Readonly<{
 /** The canonical result shape (`contracts/schemas/canonical-result.schema.json`) as the comparator reads it. */
 export type CanonicalResult = Readonly<{ outcome: unknown; trace: ReadonlyArray<Readonly<{ kind: string }>> }>;
 
-export type RetainedEvidence = Readonly<{ relativePath: string; engineVersion: string; result: CanonicalResult }>;
+export type RetainedEvidence = Readonly<{
+  relativePath: string;
+  engineVersion: string;
+  result: CanonicalResult;
+  /** The commands after which CIB recorded a delegate execution inside that command's transaction. */
+  synchronousAfter: ReadonlySet<string>;
+}>;
 
 export type DiscoveredScenario =
   | Readonly<{
@@ -73,6 +79,7 @@ type EvidenceDocument = Readonly<{
   scenario: Readonly<{ id: string; sha256: string }>;
   profile: Readonly<{ id: string; sha256: string }>;
   producer: Readonly<{ engineVersion: string }>;
+  producerObservations: Readonly<{ mappingExecutions?: ReadonlyArray<Readonly<{ afterCommandId: string }>> }>;
   result: CanonicalResult;
 }>;
 
@@ -108,7 +115,8 @@ async function boundEvidence(
   ) {
     throw new Error(`${relativePath} is not bound to the exact bytes of ${scenarioPath} and its profile`);
   }
-  return { relativePath, engineVersion: evidence.producer.engineVersion, result: evidence.result };
+  const synchronousAfter = new Set((evidence.producerObservations.mappingExecutions ?? []).map((run) => run.afterCommandId));
+  return { relativePath, engineVersion: evidence.producer.engineVersion, result: evidence.result, synchronousAfter };
 }
 
 /** Every scenario under `roots`, sorted by path. */
