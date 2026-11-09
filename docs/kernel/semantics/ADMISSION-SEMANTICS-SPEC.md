@@ -69,7 +69,6 @@ The old admission surface was a per-profile capability table of operation kinds 
 | Row | Owed |
 |---|---|
 | PC-DATA-02 | Scenario-level value admission per profile and the first start's process check are absent from the kernel (`Kernel/Run.lean` runs every decoded stimulus; `StartInput` carries no process identity); the row keeps its done state only if its acceptance test still passes after strict decoding |
-| W0 profile consolidation | One standards profile and one cumulative CIB 2.2.0 profile per set of mutually exclusive relation options, each listing its relation identifiers |
 
 ## Sources
 

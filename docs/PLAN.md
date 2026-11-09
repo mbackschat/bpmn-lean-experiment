@@ -27,7 +27,7 @@ W0 budget: seven days from approval (168 hours); with the tracks and integration
 
 In order, each before the next starts:
 
-1. Profile consolidation: the per-variant profiles become one BPMN 2.0.2 standards profile and one cumulative CIB Seven 2.2.0 profile ([profiles](kernel/ARCHITECTURE-SPEC.md#profiles)); the CIB 2.0.0 profiles retire into 2.2.0; the refusals deferred to it (abnormal-scope refusals, Sub-Process-level Data Objects as declared items, profile-dependent admission, the CIB 2.0.0 oracle mismatches and corpus refusals) are resolved or listed as lifted refusals of their tracks.
+1. Profile consolidation, closed with W0 (`3a10a909`): one BPMN 2.0.2 standards profile, one cumulative CIB Seven 2.2.0 profile and its scope-chain variant ([profiles](kernel/ARCHITECTURE-SPEC.md#profiles)); the CIB 2.0.0 profiles retired into 2.2.0 and every retained CIB result was regenerated on 2.2.0. The abnormal-scope refusals resolved under CIB-INT-0007; Sub-Process-level Data Objects as declared items pass to PC-DATA-04, the default expression language to PC-DATA-07 and Send Task implementations to M3.
 2. Scenario and evidence batch: scenarios and row fixtures for the open rows, with their CIB evidence produced in one batched hosted run.
 3. Pilot rows PC-MI-02, PC-ERROR-01 and PC-AUTO-02, green on both kernels and the CIB evidence before the tracks scale out.
 4. Mechanism tracks M1–M9, then the integration track.
@@ -65,7 +65,7 @@ HIGH track agents author kernel feature, admission and laws modules in Lean and 
 
 Active work: Practical CIB7 Coverage, through the [kernel architecture](kernel/ARCHITECTURE-SPEC.md) (owner direction 2026-11-08).
 
-Current task: close W0 with the W0.4 pull request: complete hosted verification green on the branch, then fast-forward `main` to that SHA.
+Current task: the scenario and evidence batch, step 2 of the [after-W0 sequence](#after-w0). W0 closed on 2026-11-09 with `main` at `5b526180` (pull request #64), profile consolidation included: three profiles (`bpmn-2.0.2`, `cibseven-2.2.0`, `cibseven-2.2.0-scope-chain`) and every retained CIB result regenerated on 2.2.0.
 
 Deliverable after W0: the [after-W0 sequence](#after-w0), then mechanism tracks M1–M9 and the integration track.
 
@@ -75,7 +75,7 @@ Owner items: none open; the owner packet (proof wave, JUEL levels, Script runtim
 
 Effort budget: W0's 168 hours from approval; the tracks five days across three in parallel, integration two days.
 
-Next action: profile consolidation.
+Next action: inventory the open rows' missing scenarios and fixtures against the [coverage target](PRACTICAL-CIB7-COVERAGE-TARGET.md#delivery-task-list), then author them for one batched hosted evidence run.
 
 Oracle: the guardrails, both kernels and the retained CIB evidence on every scenario.
 
