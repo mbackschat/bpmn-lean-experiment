@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -230,12 +230,12 @@
         "afterCommandId": "s07-complete-UserTask_CheckpointOne-1",
         "tasks": [
           {
-            "elementId": "UserTask_UndoReserve",
-            "name": "Undo reserve"
-          },
-          {
             "elementId": "UserTask_UndoBill",
             "name": "Undo bill"
+          },
+          {
+            "elementId": "UserTask_UndoReserve",
+            "name": "Undo reserve"
           }
         ]
       },

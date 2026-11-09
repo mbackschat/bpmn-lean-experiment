@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -269,11 +269,11 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "380",
+            "publicJobId": "14",
             "retries": 3,
             "executable": true,
             "dueDatePresent": false,
-            "processInstanceId": "371",
+            "processInstanceId": "5",
             "elementId": "SendNotice",
             "incident": null
           }
@@ -284,20 +284,20 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "380",
+            "publicJobId": "14",
             "retries": 0,
             "executable": false,
             "dueDatePresent": false,
-            "processInstanceId": "371",
+            "processInstanceId": "5",
             "elementId": "SendNotice",
             "incident": {
-              "publicIncidentId": "406",
+              "publicIncidentId": "40",
               "type": "failedJob",
-              "configurationJobId": "380",
-              "processInstanceId": "371",
+              "configurationJobId": "14",
+              "processInstanceId": "5",
               "elementId": "SendNotice",
-              "causeIncidentId": "406",
-              "rootCauseIncidentId": "406"
+              "causeIncidentId": "40",
+              "rootCauseIncidentId": "40"
             }
           }
         ]
@@ -307,11 +307,11 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "380",
+            "publicJobId": "14",
             "retries": 1,
             "executable": true,
             "dueDatePresent": false,
-            "processInstanceId": "371",
+            "processInstanceId": "5",
             "elementId": "SendNotice",
             "incident": null
           }

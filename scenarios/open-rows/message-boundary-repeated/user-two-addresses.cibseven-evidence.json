@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -60,16 +60,16 @@
         "afterCommandId": "s01-start",
         "tasks": [
           {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
-          },
-          {
             "elementId": "Host_User",
             "name": "Review the order"
           },
           {
             "elementId": "Scope_A",
             "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           }
         ]
       },
@@ -77,13 +77,26 @@
         "afterCommandId": "s02-deliver-Ping_User",
         "tasks": [
           {
+            "elementId": "Host_User",
+            "name": "Review the order"
+          },
+          {
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
           },
           {
             "elementId": "Handler_User",
             "name": "Respond to the ping"
-          },
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s03-deliver-Note_User",
+        "tasks": [
           {
             "elementId": "Host_User",
             "name": "Review the order"
@@ -91,12 +104,7 @@
           {
             "elementId": "Scope_A",
             "name": "Inspect the north wing"
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s03-deliver-Note_User",
-        "tasks": [
+          },
           {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
@@ -108,14 +116,6 @@
           {
             "elementId": "Handler_Note",
             "name": "Respond to the note"
-          },
-          {
-            "elementId": "Host_User",
-            "name": "Review the order"
-          },
-          {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
           }
         ]
       },
@@ -123,20 +123,20 @@
         "afterCommandId": "s04-complete-Handler_Note",
         "tasks": [
           {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
-          },
-          {
-            "elementId": "Handler_User",
-            "name": "Respond to the ping"
-          },
-          {
             "elementId": "Host_User",
             "name": "Review the order"
           },
           {
             "elementId": "Scope_A",
             "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
+          },
+          {
+            "elementId": "Handler_User",
+            "name": "Respond to the ping"
           }
         ]
       },
@@ -144,16 +144,16 @@
         "afterCommandId": "s05-complete-Handler_User",
         "tasks": [
           {
-            "elementId": "Scope_B",
-            "name": "Inspect the south wing"
-          },
-          {
             "elementId": "Host_User",
             "name": "Review the order"
           },
           {
             "elementId": "Scope_A",
             "name": "Inspect the north wing"
+          },
+          {
+            "elementId": "Scope_B",
+            "name": "Inspect the south wing"
           }
         ]
       },
@@ -161,16 +161,16 @@
         "afterCommandId": "s06-complete-Host_User",
         "tasks": [
           {
+            "elementId": "Scope_A",
+            "name": "Inspect the north wing"
+          },
+          {
             "elementId": "Scope_B",
             "name": "Inspect the south wing"
           },
           {
             "elementId": "After_User",
             "name": "File the order"
-          },
-          {
-            "elementId": "Scope_A",
-            "name": "Inspect the north wing"
           }
         ]
       }
@@ -180,20 +180,6 @@
         "afterCommandId": "s01-start",
         "subscriptions": [
           {
-            "elementId": "Ping_Receive",
-            "eventName": "pingReceive",
-            "messageId": "Message_PingReceive",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
-            "elementId": "Host_Receive",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Note_User",
             "eventName": "note",
             "messageId": "Message_Note",
@@ -211,6 +197,20 @@
             "elementId": "Ping_Scope",
             "eventName": "pingScope",
             "messageId": "Message_PingScope",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Ping_Receive",
+            "eventName": "pingReceive",
+            "messageId": "Message_PingReceive",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Host_Receive",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -220,20 +220,6 @@
         "afterCommandId": "s02-deliver-Ping_User",
         "subscriptions": [
           {
-            "elementId": "Ping_Receive",
-            "eventName": "pingReceive",
-            "messageId": "Message_PingReceive",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
-            "elementId": "Host_Receive",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Note_User",
             "eventName": "note",
             "messageId": "Message_Note",
@@ -251,6 +237,20 @@
             "elementId": "Ping_Scope",
             "eventName": "pingScope",
             "messageId": "Message_PingScope",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Ping_Receive",
+            "eventName": "pingReceive",
+            "messageId": "Message_PingReceive",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Host_Receive",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -260,20 +260,6 @@
         "afterCommandId": "s03-deliver-Note_User",
         "subscriptions": [
           {
-            "elementId": "Ping_Receive",
-            "eventName": "pingReceive",
-            "messageId": "Message_PingReceive",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
-            "elementId": "Host_Receive",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Note_User",
             "eventName": "note",
             "messageId": "Message_Note",
@@ -291,6 +277,20 @@
             "elementId": "Ping_Scope",
             "eventName": "pingScope",
             "messageId": "Message_PingScope",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Ping_Receive",
+            "eventName": "pingReceive",
+            "messageId": "Message_PingReceive",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Host_Receive",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -300,20 +300,6 @@
         "afterCommandId": "s04-complete-Handler_Note",
         "subscriptions": [
           {
-            "elementId": "Ping_Receive",
-            "eventName": "pingReceive",
-            "messageId": "Message_PingReceive",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
-            "elementId": "Host_Receive",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Note_User",
             "eventName": "note",
             "messageId": "Message_Note",
@@ -331,6 +317,20 @@
             "elementId": "Ping_Scope",
             "eventName": "pingScope",
             "messageId": "Message_PingScope",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Ping_Receive",
+            "eventName": "pingReceive",
+            "messageId": "Message_PingReceive",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Host_Receive",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -340,20 +340,6 @@
         "afterCommandId": "s05-complete-Handler_User",
         "subscriptions": [
           {
-            "elementId": "Ping_Receive",
-            "eventName": "pingReceive",
-            "messageId": "Message_PingReceive",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
-            "elementId": "Host_Receive",
-            "eventName": "documents",
-            "messageId": "Message_Docs",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Note_User",
             "eventName": "note",
             "messageId": "Message_Note",
@@ -373,12 +359,7 @@
             "messageId": "Message_PingScope",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s06-complete-Host_User",
-        "subscriptions": [
+          },
           {
             "elementId": "Ping_Receive",
             "eventName": "pingReceive",
@@ -392,11 +373,30 @@
             "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
-          },
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s06-complete-Host_User",
+        "subscriptions": [
           {
             "elementId": "Ping_Scope",
             "eventName": "pingScope",
             "messageId": "Message_PingScope",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Ping_Receive",
+            "eventName": "pingReceive",
+            "messageId": "Message_PingReceive",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Host_Receive",
+            "eventName": "documents",
+            "messageId": "Message_Docs",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }

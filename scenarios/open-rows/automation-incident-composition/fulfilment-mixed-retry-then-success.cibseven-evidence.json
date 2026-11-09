@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -327,11 +327,11 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "167",
+            "publicJobId": "13",
             "retries": 3,
             "executable": true,
             "dueDatePresent": false,
-            "processInstanceId": "161",
+            "processInstanceId": "7",
             "elementId": "Charge",
             "incident": null
           }
@@ -342,20 +342,20 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "167",
+            "publicJobId": "13",
             "retries": 0,
             "executable": false,
             "dueDatePresent": false,
-            "processInstanceId": "161",
+            "processInstanceId": "7",
             "elementId": "Charge",
             "incident": {
-              "publicIncidentId": "178",
+              "publicIncidentId": "24",
               "type": "failedJob",
-              "configurationJobId": "167",
-              "processInstanceId": "161",
+              "configurationJobId": "13",
+              "processInstanceId": "7",
               "elementId": "Charge",
-              "causeIncidentId": "178",
-              "rootCauseIncidentId": "178"
+              "causeIncidentId": "24",
+              "rootCauseIncidentId": "24"
             }
           }
         ]
@@ -365,11 +365,11 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "167",
+            "publicJobId": "13",
             "retries": 1,
             "executable": true,
             "dueDatePresent": false,
-            "processInstanceId": "161",
+            "processInstanceId": "7",
             "elementId": "Charge",
             "incident": null
           }
@@ -380,11 +380,11 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "187",
+            "publicJobId": "33",
             "retries": 3,
             "executable": true,
             "dueDatePresent": false,
-            "processInstanceId": "161",
+            "processInstanceId": "7",
             "elementId": "Reserve",
             "incident": null
           }
@@ -395,11 +395,11 @@
         "createIncidentOnFailedJobEnabled": true,
         "jobs": [
           {
-            "publicJobId": "193",
+            "publicJobId": "39",
             "retries": 3,
             "executable": true,
             "dueDatePresent": false,
-            "processInstanceId": "161",
+            "processInstanceId": "7",
             "elementId": "Dispatch",
             "incident": null
           }

@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -48,22 +48,6 @@
         "afterCommandId": "start-process",
         "tasks": [
           {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "Approve",
-            "name": "Approve a batch"
-          },
-          {
-            "elementId": "Step",
-            "name": "Take a step"
-          },
-          {
-            "elementId": "Step",
-            "name": "Take a step"
-          },
-          {
             "elementId": "Check",
             "name": "Check the batch"
           },
@@ -74,6 +58,22 @@
           {
             "elementId": "Verify",
             "name": "Verify the batch"
+          },
+          {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
+            "elementId": "Approve",
+            "name": "Approve a batch"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
+          },
+          {
+            "elementId": "Step",
+            "name": "Take a step"
           }
         ]
       },
@@ -81,6 +81,14 @@
         "afterCommandId": "complete-verify-1",
         "tasks": [
           {
+            "elementId": "Check",
+            "name": "Check the batch"
+          },
+          {
+            "elementId": "Check",
+            "name": "Check the batch"
+          },
+          {
             "elementId": "Approve",
             "name": "Approve a batch"
           },
@@ -103,20 +111,20 @@
           {
             "elementId": "TriageBatch",
             "name": "Triage the sequential batches"
-          },
-          {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
-            "elementId": "Check",
-            "name": "Check the batch"
           }
         ]
       },
       {
         "afterCommandId": "complete-finish-verify-1",
         "tasks": [
+          {
+            "elementId": "Check",
+            "name": "Check the batch"
+          },
+          {
+            "elementId": "Check",
+            "name": "Check the batch"
+          },
           {
             "elementId": "Approve",
             "name": "Approve a batch"
@@ -140,20 +148,20 @@
           {
             "elementId": "Verify",
             "name": "Verify the batch"
-          },
-          {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
-            "elementId": "Check",
-            "name": "Check the batch"
           }
         ]
       },
       {
         "afterCommandId": "complete-verify-2",
         "tasks": [
+          {
+            "elementId": "Check",
+            "name": "Check the batch"
+          },
+          {
+            "elementId": "Check",
+            "name": "Check the batch"
+          },
           {
             "elementId": "Approve",
             "name": "Approve a batch"
@@ -181,14 +189,6 @@
           {
             "elementId": "TriageBatch",
             "name": "Triage the sequential batches"
-          },
-          {
-            "elementId": "Check",
-            "name": "Check the batch"
-          },
-          {
-            "elementId": "Check",
-            "name": "Check the batch"
           }
         ]
       }

@@ -6,7 +6,7 @@
   },
   "profile": {
     "id": "cibseven-2.2.0",
-    "sha256": "8ee9366e46b27dbe278a6323747aaa34b7a4ca8734d82e57447ac129854a2f17"
+    "sha256": "28dba164ed6d66d9d6401e4c8ebae110d1688fc29810c8cac4f43ac97b5882c4"
   },
   "producer": {
     "engine": "CIB Seven",
@@ -342,13 +342,6 @@
         "afterCommandId": "s01-start",
         "subscriptions": [
           {
-            "elementId": "Start_Notice",
-            "eventName": "notice",
-            "messageId": "Message_Notice",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Start_RegionNotice",
             "eventName": "regionNotice",
             "messageId": "Message_RegionNotice",
@@ -373,6 +366,13 @@
             "elementId": "Start_SeqNotice",
             "eventName": "seqNotice",
             "messageId": "Message_SeqNotice",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Start_Notice",
+            "eventName": "notice",
+            "messageId": "Message_Notice",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -382,13 +382,6 @@
         "afterCommandId": "s02-deliver-Start_SeqNotice",
         "subscriptions": [
           {
-            "elementId": "Start_Notice",
-            "eventName": "notice",
-            "messageId": "Message_Notice",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Start_RegionNotice",
             "eventName": "regionNotice",
             "messageId": "Message_RegionNotice",
@@ -413,6 +406,13 @@
             "elementId": "Start_SeqNotice",
             "eventName": "seqNotice",
             "messageId": "Message_SeqNotice",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Start_Notice",
+            "eventName": "notice",
+            "messageId": "Message_Notice",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
@@ -422,13 +422,6 @@
         "afterCommandId": "s03-complete-Inner_Seq",
         "subscriptions": [
           {
-            "elementId": "Start_Notice",
-            "eventName": "notice",
-            "messageId": "Message_Notice",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Start_RegionNotice",
             "eventName": "regionNotice",
             "messageId": "Message_RegionNotice",
@@ -455,19 +448,19 @@
             "messageId": "Message_SeqNotice",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
-          }
-        ]
-      },
-      {
-        "afterCommandId": "s04-complete-Handle_SeqNotice",
-        "subscriptions": [
+          },
           {
             "elementId": "Start_Notice",
             "eventName": "notice",
             "messageId": "Message_Notice",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
-          },
+          }
+        ]
+      },
+      {
+        "afterCommandId": "s04-complete-Handle_SeqNotice",
+        "subscriptions": [
           {
             "elementId": "Start_RegionNotice",
             "eventName": "regionNotice",
@@ -486,6 +479,13 @@
             "elementId": "Start_ParNotice",
             "eventName": "parNotice",
             "messageId": "Message_ParNotice",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Start_Notice",
+            "eventName": "notice",
+            "messageId": "Message_Notice",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -502,13 +502,6 @@
         "afterCommandId": "s05-deliver-Start_SeqNotice",
         "subscriptions": [
           {
-            "elementId": "Start_Notice",
-            "eventName": "notice",
-            "messageId": "Message_Notice",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Start_RegionNotice",
             "eventName": "regionNotice",
             "messageId": "Message_RegionNotice",
@@ -526,6 +519,13 @@
             "elementId": "Start_ParNotice",
             "eventName": "parNotice",
             "messageId": "Message_ParNotice",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Start_Notice",
+            "eventName": "notice",
+            "messageId": "Message_Notice",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -542,13 +542,6 @@
         "afterCommandId": "s06-deliver-Start_SeqNotice",
         "subscriptions": [
           {
-            "elementId": "Start_Notice",
-            "eventName": "notice",
-            "messageId": "Message_Notice",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Start_RegionNotice",
             "eventName": "regionNotice",
             "messageId": "Message_RegionNotice",
@@ -566,6 +559,13 @@
             "elementId": "Start_ParNotice",
             "eventName": "parNotice",
             "messageId": "Message_ParNotice",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Start_Notice",
+            "eventName": "notice",
+            "messageId": "Message_Notice",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -582,13 +582,6 @@
         "afterCommandId": "s07-complete-Handle_SeqNotice",
         "subscriptions": [
           {
-            "elementId": "Start_Notice",
-            "eventName": "notice",
-            "messageId": "Message_Notice",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Start_RegionNotice",
             "eventName": "regionNotice",
             "messageId": "Message_RegionNotice",
@@ -606,6 +599,13 @@
             "elementId": "Start_ParNotice",
             "eventName": "parNotice",
             "messageId": "Message_ParNotice",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Start_Notice",
+            "eventName": "notice",
+            "messageId": "Message_Notice",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           },
@@ -622,13 +622,6 @@
         "afterCommandId": "s08-complete-Inner_Seq",
         "subscriptions": [
           {
-            "elementId": "Start_Notice",
-            "eventName": "notice",
-            "messageId": "Message_Notice",
-            "processInstanceIdMatches": true,
-            "executionIdPresent": true
-          },
-          {
             "elementId": "Start_RegionNotice",
             "eventName": "regionNotice",
             "messageId": "Message_RegionNotice",
@@ -646,6 +639,13 @@
             "elementId": "Start_ParNotice",
             "eventName": "parNotice",
             "messageId": "Message_ParNotice",
+            "processInstanceIdMatches": true,
+            "executionIdPresent": true
+          },
+          {
+            "elementId": "Start_Notice",
+            "eventName": "notice",
+            "messageId": "Message_Notice",
             "processInstanceIdMatches": true,
             "executionIdPresent": true
           }
