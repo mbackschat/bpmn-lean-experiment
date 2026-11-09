@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ReviewDesk"
+  targetNamespace="urn:bpmn-lean:scenarios:terminate-containing-region">
+  <bpmn:message id="Message_Reply" name="replyReceived" />
+  <bpmn:escalation id="Escalation_Alert" name="Alert" escalationCode="ALERT" />
+
+  <bpmn:process id="Process_ReviewDesk" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Opened" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+    <bpmn:userTask id="UserTask_Outside" name="Handle the unrelated request" />
+    <bpmn:endEvent id="EndEvent_Outside" />
+    <bpmn:userTask id="UserTask_Abort" name="Abort the whole review" />
+    <bpmn:endEvent id="EndEvent_RootTerminate">
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+
+    <bpmn:subProcess id="SubProcess_Region" name="Review region">
+      <bpmn:startEvent id="StartEvent_Region" />
+      <bpmn:parallelGateway id="Gateway_RegionFork" gatewayDirection="Diverging" />
+      <bpmn:userTask id="UserTask_Trigger" name="Close the region" />
+      <bpmn:endEvent id="EndEvent_RegionTerminate">
+        <bpmn:terminateEventDefinition />
+      </bpmn:endEvent>
+      <bpmn:userTask id="UserTask_Review" name="Review the file" />
+      <bpmn:endEvent id="EndEvent_Reviewed" />
+      <bpmn:receiveTask id="ReceiveTask_Reply" name="Await the reply" messageRef="Message_Reply" />
+      <bpmn:endEvent id="EndEvent_Replied" />
+      <bpmn:intermediateCatchEvent id="IntermediateCatch_Deadline" name="Review deadline">
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:endEvent id="EndEvent_DeadlineReached" />
+      <bpmn:serviceTask
+        id="ServiceTask_Notify"
+        name="Notify the applicant"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true" />
+      <bpmn:endEvent id="EndEvent_Notified" />
+      <bpmn:serviceTask
+        id="ServiceTask_Archive"
+        name="Archive the file"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true" />
+      <bpmn:endEvent id="EndEvent_Archived" />
+      <bpmn:userTask id="UserTask_Raise" name="Raise an alert" />
+      <bpmn:intermediateThrowEvent id="Throw_Alert">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Throw_Alert" escalationRef="Escalation_Alert" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:endEvent id="EndEvent_Raised" />
+
+      <bpmn:subProcess id="SubProcess_Child" name="Check the attachments">
+        <bpmn:startEvent id="StartEvent_Child" />
+        <bpmn:parallelGateway id="Gateway_ChildFork" gatewayDirection="Diverging" />
+        <bpmn:userTask id="UserTask_ChildTrigger" name="Close the attachment check" />
+        <bpmn:endEvent id="EndEvent_ChildTerminate">
+          <bpmn:terminateEventDefinition />
+        </bpmn:endEvent>
+        <bpmn:userTask id="UserTask_ChildWork" name="Check one attachment" />
+        <bpmn:endEvent id="EndEvent_ChildWork" />
+        <bpmn:sequenceFlow id="Flow_Child_Start_Fork" sourceRef="StartEvent_Child" targetRef="Gateway_ChildFork" />
+        <bpmn:sequenceFlow id="Flow_Child_Fork_Trigger" sourceRef="Gateway_ChildFork" targetRef="UserTask_ChildTrigger" />
+        <bpmn:sequenceFlow id="Flow_Child_Fork_Work" sourceRef="Gateway_ChildFork" targetRef="UserTask_ChildWork" />
+        <bpmn:sequenceFlow id="Flow_Child_Trigger_End" sourceRef="UserTask_ChildTrigger" targetRef="EndEvent_ChildTerminate" />
+        <bpmn:sequenceFlow id="Flow_Child_Work_End" sourceRef="UserTask_ChildWork" targetRef="EndEvent_ChildWork" />
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_ChildDone" />
+
+      <bpmn:subProcess id="Handler_Region_Alert" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Region_Alert" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Region_Alert" escalationRef="Escalation_Alert" />
+        </bpmn:startEvent>
+        <bpmn:userTask id="UserTask_Handle" name="Handle the alert" />
+        <bpmn:endEvent id="EndEvent_Handled" />
+        <bpmn:sequenceFlow id="Flow_Alert_Start_Handle" sourceRef="Start_Region_Alert" targetRef="UserTask_Handle" />
+        <bpmn:sequenceFlow id="Flow_Alert_Handle_End" sourceRef="UserTask_Handle" targetRef="EndEvent_Handled" />
+      </bpmn:subProcess>
+
+      <bpmn:sequenceFlow id="Flow_Region_Start_Fork" sourceRef="StartEvent_Region" targetRef="Gateway_RegionFork" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Trigger" sourceRef="Gateway_RegionFork" targetRef="UserTask_Trigger" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Review" sourceRef="Gateway_RegionFork" targetRef="UserTask_Review" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Reply" sourceRef="Gateway_RegionFork" targetRef="ReceiveTask_Reply" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Deadline" sourceRef="Gateway_RegionFork" targetRef="IntermediateCatch_Deadline" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Notify" sourceRef="Gateway_RegionFork" targetRef="ServiceTask_Notify" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Archive" sourceRef="Gateway_RegionFork" targetRef="ServiceTask_Archive" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Child" sourceRef="Gateway_RegionFork" targetRef="SubProcess_Child" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Raise" sourceRef="Gateway_RegionFork" targetRef="UserTask_Raise" />
+      <bpmn:sequenceFlow id="Flow_Region_Trigger_End" sourceRef="UserTask_Trigger" targetRef="EndEvent_RegionTerminate" />
+      <bpmn:sequenceFlow id="Flow_Region_Review_End" sourceRef="UserTask_Review" targetRef="EndEvent_Reviewed" />
+      <bpmn:sequenceFlow id="Flow_Region_Reply_End" sourceRef="ReceiveTask_Reply" targetRef="EndEvent_Replied" />
+      <bpmn:sequenceFlow id="Flow_Region_Deadline_End" sourceRef="IntermediateCatch_Deadline" targetRef="EndEvent_DeadlineReached" />
+      <bpmn:sequenceFlow id="Flow_Region_Notify_End" sourceRef="ServiceTask_Notify" targetRef="EndEvent_Notified" />
+      <bpmn:sequenceFlow id="Flow_Region_Archive_End" sourceRef="ServiceTask_Archive" targetRef="EndEvent_Archived" />
+      <bpmn:sequenceFlow id="Flow_Region_Child_End" sourceRef="SubProcess_Child" targetRef="EndEvent_ChildDone" />
+      <bpmn:sequenceFlow id="Flow_Region_Raise_Throw" sourceRef="UserTask_Raise" targetRef="Throw_Alert" />
+      <bpmn:sequenceFlow id="Flow_Region_Throw_End" sourceRef="Throw_Alert" targetRef="EndEvent_Raised" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_AfterRegion" name="File the region outcome" />
+    <bpmn:endEvent id="EndEvent_RegionDone" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_Opened" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Region" sourceRef="Gateway_Fork" targetRef="SubProcess_Region" />
+    <bpmn:sequenceFlow id="Flow_Fork_Outside" sourceRef="Gateway_Fork" targetRef="UserTask_Outside" />
+    <bpmn:sequenceFlow id="Flow_Fork_Abort" sourceRef="Gateway_Fork" targetRef="UserTask_Abort" />
+    <bpmn:sequenceFlow id="Flow_Region_After" sourceRef="SubProcess_Region" targetRef="UserTask_AfterRegion" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_AfterRegion" targetRef="EndEvent_RegionDone" />
+    <bpmn:sequenceFlow id="Flow_Outside_End" sourceRef="UserTask_Outside" targetRef="EndEvent_Outside" />
+    <bpmn:sequenceFlow id="Flow_Abort_Terminate" sourceRef="UserTask_Abort" targetRef="EndEvent_RootTerminate" />
+  </bpmn:process>
+</bpmn:definitions>

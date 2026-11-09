@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ParcelAlerts"
+  targetNamespace="urn:bpmn-lean:scenarios:event-subprocess-boundary">
+  <bpmn:escalation id="Escalation_Damage" name="Damage" escalationCode="DAMAGE" />
+
+  <bpmn:process id="Process_ParcelAlerts" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ParcelScanned" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+    <bpmn:userTask id="UserTask_Ordinary" name="Deliver the parcel" />
+    <bpmn:endEvent id="EndEvent_Delivered" />
+    <bpmn:userTask id="UserTask_Raise" name="Report damage" />
+    <bpmn:intermediateThrowEvent id="Throw_Damage">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Throw_Damage" escalationRef="Escalation_Damage" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="EndEvent_Reported" />
+
+    <bpmn:subProcess id="Handler_Damage" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_Damage" isInterrupting="false">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Handler_Damage" escalationRef="Escalation_Damage" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="UserTask_Inspect" name="Inspect the damage" />
+      <bpmn:endEvent id="EndEvent_Inspected" />
+      <bpmn:sequenceFlow id="Flow_Damage_Start_Inspect" sourceRef="Start_Damage" targetRef="UserTask_Inspect" />
+      <bpmn:sequenceFlow id="Flow_Damage_Inspect_End" sourceRef="UserTask_Inspect" targetRef="EndEvent_Inspected" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Handler_Timeout" attachedToRef="Handler_Damage" cancelActivity="true">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_TooSlow" name="Escalate the slow inspection" />
+    <bpmn:endEvent id="EndEvent_TooSlow" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ParcelScanned" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Ordinary" sourceRef="Gateway_Fork" targetRef="UserTask_Ordinary" />
+    <bpmn:sequenceFlow id="Flow_Fork_Raise" sourceRef="Gateway_Fork" targetRef="UserTask_Raise" />
+    <bpmn:sequenceFlow id="Flow_Ordinary_End" sourceRef="UserTask_Ordinary" targetRef="EndEvent_Delivered" />
+    <bpmn:sequenceFlow id="Flow_Raise_Throw" sourceRef="UserTask_Raise" targetRef="Throw_Damage" />
+    <bpmn:sequenceFlow id="Flow_Throw_End" sourceRef="Throw_Damage" targetRef="EndEvent_Reported" />
+    <bpmn:sequenceFlow id="Flow_Timeout_TooSlow" sourceRef="Boundary_Handler_Timeout" targetRef="UserTask_TooSlow" />
+    <bpmn:sequenceFlow id="Flow_TooSlow_End" sourceRef="UserTask_TooSlow" targetRef="EndEvent_TooSlow" />
+  </bpmn:process>
+</bpmn:definitions>

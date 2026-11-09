@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_Pickup"
+  targetNamespace="urn:bpmn-lean:scenarios:terminate-called-child">
+  <bpmn:message id="Message_Acknowledged" name="handoverAcknowledged" />
+
+  <bpmn:process id="Process_Pickup" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_PickupRequested" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+    <bpmn:callActivity id="CallActivity_HandoverA" name="Hand over at the north dock" calledElement="Process_Handover">
+      <bpmn:extensionElements>
+        <camunda:out source="receipt" target="receiptA" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:callActivity id="CallActivity_HandoverB" name="Hand over at the south dock" calledElement="Process_Handover">
+      <bpmn:extensionElements>
+        <camunda:out source="receipt" target="receiptB" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:userTask id="UserTask_AfterA" name="File the north receipt" />
+    <bpmn:userTask id="UserTask_AfterB" name="File the south receipt" />
+    <bpmn:userTask id="UserTask_CallerOutside" name="Update the pickup log" />
+    <bpmn:endEvent id="EndEvent_FiledA" />
+    <bpmn:endEvent id="EndEvent_FiledB" />
+    <bpmn:endEvent id="EndEvent_Logged" />
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_PickupRequested" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_A" sourceRef="Gateway_Fork" targetRef="CallActivity_HandoverA" />
+    <bpmn:sequenceFlow id="Flow_Fork_B" sourceRef="Gateway_Fork" targetRef="CallActivity_HandoverB" />
+    <bpmn:sequenceFlow id="Flow_Fork_Outside" sourceRef="Gateway_Fork" targetRef="UserTask_CallerOutside" />
+    <bpmn:sequenceFlow id="Flow_A_After" sourceRef="CallActivity_HandoverA" targetRef="UserTask_AfterA" />
+    <bpmn:sequenceFlow id="Flow_B_After" sourceRef="CallActivity_HandoverB" targetRef="UserTask_AfterB" />
+    <bpmn:sequenceFlow id="Flow_AfterA_End" sourceRef="UserTask_AfterA" targetRef="EndEvent_FiledA" />
+    <bpmn:sequenceFlow id="Flow_AfterB_End" sourceRef="UserTask_AfterB" targetRef="EndEvent_FiledB" />
+    <bpmn:sequenceFlow id="Flow_Outside_End" sourceRef="UserTask_CallerOutside" targetRef="EndEvent_Logged" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Handover" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_HandoverStarted" />
+    <bpmn:parallelGateway id="Gateway_HandoverFork" gatewayDirection="Diverging" />
+    <bpmn:userTask id="UserTask_Finish" name="Finish the handover" />
+    <bpmn:endEvent id="EndEvent_Terminate">
+      <bpmn:terminateEventDefinition />
+    </bpmn:endEvent>
+    <bpmn:userTask id="UserTask_Other" name="Count the parcels" />
+    <bpmn:endEvent id="EndEvent_Counted" />
+    <bpmn:serviceTask
+      id="ServiceTask_Notify"
+      name="Notify the recipient"
+      implementation="urn:bpmn-lean:effect:probe-v1"
+      camunda:delegateExpression="${bpmnLeanEffectHandler}"
+      camunda:asyncBefore="true" />
+    <bpmn:endEvent id="EndEvent_Notified" />
+    <bpmn:receiveTask id="ReceiveTask_Ack" name="Await the acknowledgement" messageRef="Message_Acknowledged" />
+    <bpmn:endEvent id="EndEvent_Acknowledged" />
+    <bpmn:sequenceFlow id="Flow_Handover_Start_Fork" sourceRef="StartEvent_HandoverStarted" targetRef="Gateway_HandoverFork" />
+    <bpmn:sequenceFlow id="Flow_Handover_Fork_Finish" sourceRef="Gateway_HandoverFork" targetRef="UserTask_Finish" />
+    <bpmn:sequenceFlow id="Flow_Handover_Fork_Other" sourceRef="Gateway_HandoverFork" targetRef="UserTask_Other" />
+    <bpmn:sequenceFlow id="Flow_Handover_Fork_Notify" sourceRef="Gateway_HandoverFork" targetRef="ServiceTask_Notify" />
+    <bpmn:sequenceFlow id="Flow_Handover_Fork_Ack" sourceRef="Gateway_HandoverFork" targetRef="ReceiveTask_Ack" />
+    <bpmn:sequenceFlow id="Flow_Handover_Finish_End" sourceRef="UserTask_Finish" targetRef="EndEvent_Terminate" />
+    <bpmn:sequenceFlow id="Flow_Handover_Other_End" sourceRef="UserTask_Other" targetRef="EndEvent_Counted" />
+    <bpmn:sequenceFlow id="Flow_Handover_Notify_End" sourceRef="ServiceTask_Notify" targetRef="EndEvent_Notified" />
+    <bpmn:sequenceFlow id="Flow_Handover_Ack_End" sourceRef="ReceiveTask_Ack" targetRef="EndEvent_Acknowledged" />
+  </bpmn:process>
+</bpmn:definitions>

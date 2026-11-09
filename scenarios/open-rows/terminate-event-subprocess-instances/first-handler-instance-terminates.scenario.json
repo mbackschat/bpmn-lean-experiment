@@ -1,0 +1,140 @@
+{
+  "kind": "scenario",
+  "id": "terminate-event-subprocess-instances-first-handler-instance-terminates",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "terminate-event-subprocess-instances-dock",
+    "relativePath": "scenarios/open-rows/terminate-event-subprocess-instances/dock.bpmn",
+    "sha256": "ae8ed97f6ce11f6d15faac81fca137a541c407b841ac4f9651f0d09593e2122a",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-report-delays",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Raise",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-cut-first-delay",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Cut",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-late-keep-first-delay",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Keep",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-keep-second-delay",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Keep",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-cut-second-delay",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Cut",
+        "activation": 2
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-unload",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Unload",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-sign-off-bay",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_AfterBay",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s09-update-schedule",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Outside",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.5.2",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.2",
+      "BPMN 2.0.2 §13.5.4",
+      "BPMN 2.0.2 §13.5.6"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/TerminateEndEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationEventDefinitionFinder.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/end/TerminateEndEventTest.java#testTerminateInSubProcessConcurrent"
+    ]
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "kind": "scenario",
+  "id": "terminate-containing-region-inner-scope-terminate",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "terminate-containing-region-review-desk",
+    "relativePath": "scenarios/open-rows/terminate-containing-region/review-desk.bpmn",
+    "sha256": "e1ac8f34a1f0b9996d6134aec2e73879cff90eedcbbb31bca4944849c984e8f5",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-close-attachment-check",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ChildTrigger",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-late-child-work",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_ChildWork",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-review-file",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Review",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "deliver",
+      "commandId": "s05-reply",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ReceiveTask_Reply",
+        "activation": 1
+      },
+      "trigger": {
+        "kind": "message",
+        "channel": {
+          "kind": "directMessage",
+          "messageId": "Message_Reply"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-close-region",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Trigger",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.2",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.5.4",
+      "BPMN 2.0.2 §13.5.6"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/TerminateEndEventActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/end/TerminateEndEventTest.java#testTerminateInSubProcessConcurrent",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/end/TerminateEndEventTest.java#testProcessTerminate",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/end/TerminateEndEventTest.java#testTerminateWithSubProcess"
+    ]
+  }
+}

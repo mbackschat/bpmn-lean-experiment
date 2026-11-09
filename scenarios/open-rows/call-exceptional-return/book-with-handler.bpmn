@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_BookWithHandler"
+  targetNamespace="urn:bpmn-lean:scenarios:call-exceptional-return:book-with-handler">
+  <bpmn:error id="Error_NoStock" name="No stock" errorCode="NO_STOCK" />
+
+  <bpmn:process id="Process_Order" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_OrderPlaced" />
+    <bpmn:callActivity id="CallActivity_BookItem" name="Book the item" calledElement="Process_BookItem">
+      <bpmn:extensionElements>
+        <camunda:out source="slot" target="slot" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_BookItem_NoStock" attachedToRef="CallActivity_BookItem" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Order_NoStock" errorRef="Error_NoStock" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_AfterBook" name="Confirm the order" />
+    <bpmn:userTask id="UserTask_CallerHandlesStock" name="Handle the stock shortage" />
+    <bpmn:endEvent id="EndEvent_Confirmed" />
+    <bpmn:endEvent id="EndEvent_StockHandled" />
+    <bpmn:sequenceFlow id="Flow_Order_Start_Book" sourceRef="StartEvent_OrderPlaced" targetRef="CallActivity_BookItem" />
+    <bpmn:sequenceFlow id="Flow_Order_Book_After" sourceRef="CallActivity_BookItem" targetRef="UserTask_AfterBook" />
+    <bpmn:sequenceFlow id="Flow_Order_NoStock_Handle" sourceRef="Boundary_BookItem_NoStock" targetRef="UserTask_CallerHandlesStock" />
+    <bpmn:sequenceFlow id="Flow_Order_After_End" sourceRef="UserTask_AfterBook" targetRef="EndEvent_Confirmed" />
+    <bpmn:sequenceFlow id="Flow_Order_Handle_End" sourceRef="UserTask_CallerHandlesStock" targetRef="EndEvent_StockHandled" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_BookItem" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_BookItemRequested" />
+    <bpmn:userTask id="UserTask_ReserveItem" name="Reserve the item" />
+    <bpmn:exclusiveGateway id="Gateway_StockOutcome" name="Stock outcome" gatewayDirection="Diverging" default="Flow_BookItem_Booked" />
+    <bpmn:endEvent id="EndEvent_NoStock">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_BookItem_NoStock" errorRef="Error_NoStock" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_ItemBooked" />
+    <bpmn:subProcess id="Handler_BookItem_NoStock" triggeredByEvent="true">
+      <bpmn:startEvent id="Start_BookItem_NoStock" isInterrupting="true">
+        <bpmn:errorEventDefinition id="ErrorEventDefinition_Handler_NoStock" errorRef="Error_NoStock" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="UserTask_Substitute" name="Substitute the item" />
+      <bpmn:endEvent id="EndEvent_Substituted" />
+      <bpmn:sequenceFlow id="Flow_Handler_Start_Substitute" sourceRef="Start_BookItem_NoStock" targetRef="UserTask_Substitute" />
+      <bpmn:sequenceFlow id="Flow_Handler_Substitute_End" sourceRef="UserTask_Substitute" targetRef="EndEvent_Substituted" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_BookItem_Start_Reserve" sourceRef="StartEvent_BookItemRequested" targetRef="UserTask_ReserveItem" />
+    <bpmn:sequenceFlow id="Flow_BookItem_Reserve_Outcome" sourceRef="UserTask_ReserveItem" targetRef="Gateway_StockOutcome" />
+    <bpmn:sequenceFlow id="Flow_BookItem_NoStock" sourceRef="Gateway_StockOutcome" targetRef="EndEvent_NoStock">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${outcome == 'noStock'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_BookItem_Booked" sourceRef="Gateway_StockOutcome" targetRef="EndEvent_ItemBooked" />
+  </bpmn:process>
+</bpmn:definitions>

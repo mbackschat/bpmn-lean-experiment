@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  id="Definitions_Dock"
+  targetNamespace="urn:bpmn-lean:scenarios:terminate-event-subprocess-instances">
+  <bpmn:escalation id="Escalation_Delay" name="Delay" escalationCode="DELAY" />
+
+  <bpmn:process id="Process_Dock" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ShipArrived" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="SubProcess_Bay" name="Unload the ship at the bay">
+      <bpmn:startEvent id="StartEvent_Bay" />
+      <bpmn:parallelGateway id="Gateway_BayFork" gatewayDirection="Diverging" />
+      <bpmn:userTask id="UserTask_Unload" name="Unload the containers" />
+      <bpmn:endEvent id="EndEvent_Unloaded" />
+      <bpmn:userTask id="UserTask_Raise" name="Report delays" />
+      <bpmn:intermediateThrowEvent id="Throw_DelayFirst">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Throw_DelayFirst" escalationRef="Escalation_Delay" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:intermediateThrowEvent id="Throw_DelaySecond">
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_Throw_DelaySecond" escalationRef="Escalation_Delay" />
+      </bpmn:intermediateThrowEvent>
+      <bpmn:endEvent id="EndEvent_Reported" />
+
+      <bpmn:subProcess id="Handler_Bay_Delay" triggeredByEvent="true">
+        <bpmn:startEvent id="Start_Bay_Delay" isInterrupting="false">
+          <bpmn:escalationEventDefinition id="EscalationEventDefinition_Bay_Delay" escalationRef="Escalation_Delay" />
+        </bpmn:startEvent>
+        <bpmn:parallelGateway id="Gateway_DelayFork" gatewayDirection="Diverging" />
+        <bpmn:userTask id="UserTask_Cut" name="Cut the delay short" />
+        <bpmn:endEvent id="EndEvent_DelayTerminate">
+          <bpmn:terminateEventDefinition />
+        </bpmn:endEvent>
+        <bpmn:userTask id="UserTask_Keep" name="Keep the delay notice" />
+        <bpmn:endEvent id="EndEvent_DelayKept" />
+        <bpmn:sequenceFlow id="Flow_Delay_Start_Fork" sourceRef="Start_Bay_Delay" targetRef="Gateway_DelayFork" />
+        <bpmn:sequenceFlow id="Flow_Delay_Fork_Cut" sourceRef="Gateway_DelayFork" targetRef="UserTask_Cut" />
+        <bpmn:sequenceFlow id="Flow_Delay_Fork_Keep" sourceRef="Gateway_DelayFork" targetRef="UserTask_Keep" />
+        <bpmn:sequenceFlow id="Flow_Delay_Cut_End" sourceRef="UserTask_Cut" targetRef="EndEvent_DelayTerminate" />
+        <bpmn:sequenceFlow id="Flow_Delay_Keep_End" sourceRef="UserTask_Keep" targetRef="EndEvent_DelayKept" />
+      </bpmn:subProcess>
+
+      <bpmn:sequenceFlow id="Flow_Bay_Start_Fork" sourceRef="StartEvent_Bay" targetRef="Gateway_BayFork" />
+      <bpmn:sequenceFlow id="Flow_Bay_Fork_Unload" sourceRef="Gateway_BayFork" targetRef="UserTask_Unload" />
+      <bpmn:sequenceFlow id="Flow_Bay_Fork_Raise" sourceRef="Gateway_BayFork" targetRef="UserTask_Raise" />
+      <bpmn:sequenceFlow id="Flow_Bay_Unload_End" sourceRef="UserTask_Unload" targetRef="EndEvent_Unloaded" />
+      <bpmn:sequenceFlow id="Flow_Bay_Raise_First" sourceRef="UserTask_Raise" targetRef="Throw_DelayFirst" />
+      <bpmn:sequenceFlow id="Flow_Bay_First_Second" sourceRef="Throw_DelayFirst" targetRef="Throw_DelaySecond" />
+      <bpmn:sequenceFlow id="Flow_Bay_Second_End" sourceRef="Throw_DelaySecond" targetRef="EndEvent_Reported" />
+    </bpmn:subProcess>
+    <bpmn:userTask id="UserTask_AfterBay" name="Sign off the bay" />
+    <bpmn:endEvent id="EndEvent_BaySigned" />
+    <bpmn:userTask id="UserTask_Outside" name="Update the berth schedule" />
+    <bpmn:endEvent id="EndEvent_Scheduled" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ShipArrived" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Bay" sourceRef="Gateway_Fork" targetRef="SubProcess_Bay" />
+    <bpmn:sequenceFlow id="Flow_Fork_Outside" sourceRef="Gateway_Fork" targetRef="UserTask_Outside" />
+    <bpmn:sequenceFlow id="Flow_Bay_After" sourceRef="SubProcess_Bay" targetRef="UserTask_AfterBay" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_AfterBay" targetRef="EndEvent_BaySigned" />
+    <bpmn:sequenceFlow id="Flow_Outside_End" sourceRef="UserTask_Outside" targetRef="EndEvent_Scheduled" />
+  </bpmn:process>
+</bpmn:definitions>

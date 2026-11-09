@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_ReviewLanes"
+  targetNamespace="urn:bpmn-lean:scenarios:same-definition-scope-lifetimes">
+  <bpmn:process id="Process_ReviewLanes" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Received" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+    <bpmn:userTask id="UserTask_IntakeNorth" name="Intake from the north desk" />
+    <bpmn:userTask id="UserTask_IntakeSouth" name="Intake from the south desk" />
+    <bpmn:userTask id="UserTask_Outside" name="Handle the unrelated request" />
+    <bpmn:endEvent id="EndEvent_Outside" />
+    <bpmn:exclusiveGateway id="Gateway_Merge" name="Review entry" gatewayDirection="Converging" />
+
+    <bpmn:subProcess id="SubProcess_Review" name="Review one submission">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="status">open</camunda:inputParameter>
+          <camunda:inputParameter name="note">${seed}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_Review" />
+      <bpmn:userTask id="UserTask_Examine" name="Examine the submission">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenStatus">${status}</camunda:inputParameter>
+            <camunda:inputParameter name="seenNote">${note}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:serviceTask
+        id="ServiceTask_Notify"
+        name="Notify the submitter"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true" />
+      <bpmn:userTask id="UserTask_Sign" name="Sign the review">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="seenStatus">${status}</camunda:inputParameter>
+            <camunda:inputParameter name="seenNote">${note}</camunda:inputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:endEvent id="EndEvent_Reviewed" />
+      <bpmn:sequenceFlow id="Flow_Review_Start_Examine" sourceRef="StartEvent_Review" targetRef="UserTask_Examine" />
+      <bpmn:sequenceFlow id="Flow_Review_Examine_Notify" sourceRef="UserTask_Examine" targetRef="ServiceTask_Notify" />
+      <bpmn:sequenceFlow id="Flow_Review_Notify_Sign" sourceRef="ServiceTask_Notify" targetRef="UserTask_Sign" />
+      <bpmn:sequenceFlow id="Flow_Review_Sign_End" sourceRef="UserTask_Sign" targetRef="EndEvent_Reviewed" />
+    </bpmn:subProcess>
+
+    <bpmn:userTask id="UserTask_Publish" name="Publish the decision" />
+    <bpmn:exclusiveGateway id="Gateway_Rework" name="Rework needed" gatewayDirection="Diverging" default="Flow_Rework_Done" />
+    <bpmn:endEvent id="EndEvent_Published" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_Received" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_North" sourceRef="Gateway_Fork" targetRef="UserTask_IntakeNorth" />
+    <bpmn:sequenceFlow id="Flow_Fork_South" sourceRef="Gateway_Fork" targetRef="UserTask_IntakeSouth" />
+    <bpmn:sequenceFlow id="Flow_Fork_Outside" sourceRef="Gateway_Fork" targetRef="UserTask_Outside" />
+    <bpmn:sequenceFlow id="Flow_Outside_End" sourceRef="UserTask_Outside" targetRef="EndEvent_Outside" />
+    <bpmn:sequenceFlow id="Flow_North_Merge" sourceRef="UserTask_IntakeNorth" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_South_Merge" sourceRef="UserTask_IntakeSouth" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Merge_Review" sourceRef="Gateway_Merge" targetRef="SubProcess_Review" />
+    <bpmn:sequenceFlow id="Flow_Review_Publish" sourceRef="SubProcess_Review" targetRef="UserTask_Publish" />
+    <bpmn:sequenceFlow id="Flow_Publish_Rework" sourceRef="UserTask_Publish" targetRef="Gateway_Rework" />
+    <bpmn:sequenceFlow id="Flow_Rework_Again" sourceRef="Gateway_Rework" targetRef="Gateway_Merge">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${again}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Rework_Done" sourceRef="Gateway_Rework" targetRef="EndEvent_Published" />
+  </bpmn:process>
+</bpmn:definitions>

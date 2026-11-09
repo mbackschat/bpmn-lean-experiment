@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_Dispatch"
+  targetNamespace="urn:bpmn-lean:scenarios:call-exceptional-return">
+  <bpmn:error id="Error_NoCarrier" name="No carrier" errorCode="NO_CARRIER" />
+  <bpmn:error id="Error_NoSlot" name="No slot" errorCode="NO_SLOT" />
+  <bpmn:escalation id="Escalation_SlowBooking" name="Slow booking" escalationCode="SLOW_BOOKING" />
+
+  <bpmn:process id="Process_Dispatch" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ShipmentReady" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:callActivity id="CallActivity_Route" name="Route the shipment" calledElement="Process_Route">
+      <bpmn:extensionElements>
+        <camunda:in source="priority" target="priority" />
+        <camunda:out source="carrier" target="carrier" />
+        <camunda:out source="slot" target="routeSlot" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_Route_NoCarrier" attachedToRef="CallActivity_Route" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Route_NoCarrier" errorRef="Error_NoCarrier" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Route_SlowBooking" attachedToRef="CallActivity_Route" cancelActivity="false">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Route_SlowBooking" escalationRef="Escalation_SlowBooking" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Boundary_Route_Timeout" attachedToRef="CallActivity_Route" cancelActivity="true">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_AfterRoute" name="Confirm the route to the customer" />
+    <bpmn:userTask id="UserTask_Reassign" name="Reassign the carrier" />
+    <bpmn:userTask id="UserTask_NotifyDelay" name="Notify the customer of the delay" />
+    <bpmn:userTask id="UserTask_Expedite" name="Expedite the shipment by hand" />
+
+    <bpmn:callActivity id="CallActivity_Spare" name="Book a spare slot" calledElement="Process_Book">
+      <bpmn:extensionElements>
+        <camunda:out source="slot" target="spareSlot" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:userTask id="UserTask_AfterSpare" name="File the spare booking" />
+
+    <bpmn:endEvent id="EndEvent_Routed" />
+    <bpmn:endEvent id="EndEvent_Reassigned" />
+    <bpmn:endEvent id="EndEvent_DelayNotified" />
+    <bpmn:endEvent id="EndEvent_Expedited" />
+    <bpmn:endEvent id="EndEvent_SpareFiled" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_ShipmentReady" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Route" sourceRef="Gateway_Fork" targetRef="CallActivity_Route" />
+    <bpmn:sequenceFlow id="Flow_Fork_Spare" sourceRef="Gateway_Fork" targetRef="CallActivity_Spare" />
+    <bpmn:sequenceFlow id="Flow_Route_After" sourceRef="CallActivity_Route" targetRef="UserTask_AfterRoute" />
+    <bpmn:sequenceFlow id="Flow_NoCarrier_Reassign" sourceRef="Boundary_Route_NoCarrier" targetRef="UserTask_Reassign" />
+    <bpmn:sequenceFlow id="Flow_SlowBooking_Notify" sourceRef="Boundary_Route_SlowBooking" targetRef="UserTask_NotifyDelay" />
+    <bpmn:sequenceFlow id="Flow_Timeout_Expedite" sourceRef="Boundary_Route_Timeout" targetRef="UserTask_Expedite" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_AfterRoute" targetRef="EndEvent_Routed" />
+    <bpmn:sequenceFlow id="Flow_Reassign_End" sourceRef="UserTask_Reassign" targetRef="EndEvent_Reassigned" />
+    <bpmn:sequenceFlow id="Flow_Notify_End" sourceRef="UserTask_NotifyDelay" targetRef="EndEvent_DelayNotified" />
+    <bpmn:sequenceFlow id="Flow_Expedite_End" sourceRef="UserTask_Expedite" targetRef="EndEvent_Expedited" />
+    <bpmn:sequenceFlow id="Flow_Spare_After" sourceRef="CallActivity_Spare" targetRef="UserTask_AfterSpare" />
+    <bpmn:sequenceFlow id="Flow_AfterSpare_End" sourceRef="UserTask_AfterSpare" targetRef="EndEvent_SpareFiled" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Route" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_RouteStarted" />
+    <bpmn:userTask id="UserTask_Plan" name="Plan the route" />
+    <bpmn:callActivity id="CallActivity_Book" name="Book the carrier slot" calledElement="Process_Book">
+      <bpmn:extensionElements>
+        <camunda:out source="slot" target="slot" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="Boundary_Book_NoSlot" attachedToRef="CallActivity_Book" cancelActivity="true">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Route_Book_NoSlot" errorRef="Error_NoSlot" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_Rebook" name="Rebook the slot by hand" />
+    <bpmn:userTask id="UserTask_Confirm" name="Confirm the booking" />
+    <bpmn:endEvent id="EndEvent_Routed_Child" />
+    <bpmn:sequenceFlow id="Flow_Route_Start_Plan" sourceRef="StartEvent_RouteStarted" targetRef="UserTask_Plan" />
+    <bpmn:sequenceFlow id="Flow_Route_Plan_Book" sourceRef="UserTask_Plan" targetRef="CallActivity_Book" />
+    <bpmn:sequenceFlow id="Flow_Route_Book_Confirm" sourceRef="CallActivity_Book" targetRef="UserTask_Confirm" />
+    <bpmn:sequenceFlow id="Flow_Route_NoSlot_Rebook" sourceRef="Boundary_Book_NoSlot" targetRef="UserTask_Rebook" />
+    <bpmn:sequenceFlow id="Flow_Route_Rebook_Confirm" sourceRef="UserTask_Rebook" targetRef="UserTask_Confirm" />
+    <bpmn:sequenceFlow id="Flow_Route_Confirm_End" sourceRef="UserTask_Confirm" targetRef="EndEvent_Routed_Child" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Book" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_BookRequested" />
+    <bpmn:userTask id="UserTask_Reserve" name="Reserve the slot" />
+    <bpmn:exclusiveGateway id="Gateway_Outcome" name="Reservation outcome" gatewayDirection="Diverging" default="Flow_Book_Booked" />
+    <bpmn:endEvent id="EndEvent_NoCarrier">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Book_NoCarrier" errorRef="Error_NoCarrier" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_NoSlot">
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_Book_NoSlot" errorRef="Error_NoSlot" />
+    </bpmn:endEvent>
+    <bpmn:intermediateThrowEvent id="Throw_SlowBooking">
+      <bpmn:escalationEventDefinition id="EscalationEventDefinition_Book_SlowBooking" escalationRef="Escalation_SlowBooking" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="EndEvent_Booked" />
+    <bpmn:sequenceFlow id="Flow_Book_Start_Reserve" sourceRef="StartEvent_BookRequested" targetRef="UserTask_Reserve" />
+    <bpmn:sequenceFlow id="Flow_Book_Reserve_Outcome" sourceRef="UserTask_Reserve" targetRef="Gateway_Outcome" />
+    <bpmn:sequenceFlow id="Flow_Book_NoCarrier" sourceRef="Gateway_Outcome" targetRef="EndEvent_NoCarrier">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${outcome == 'noCarrier'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Book_NoSlot" sourceRef="Gateway_Outcome" targetRef="EndEvent_NoSlot">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${outcome == 'noSlot'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Book_Late" sourceRef="Gateway_Outcome" targetRef="Throw_SlowBooking">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${outcome == 'late'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Book_Booked" sourceRef="Gateway_Outcome" targetRef="EndEvent_Booked" />
+    <bpmn:sequenceFlow id="Flow_Book_Slow_End" sourceRef="Throw_SlowBooking" targetRef="EndEvent_Booked" />
+  </bpmn:process>
+</bpmn:definitions>

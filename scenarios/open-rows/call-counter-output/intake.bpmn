@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  id="Definitions_Intake"
+  targetNamespace="urn:bpmn-lean:scenarios:call-counter-output">
+  <bpmn:process id="Process_Intake" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ApplicationReceived" />
+    <bpmn:callActivity id="CallActivity_Review" name="Review the application" calledElement="Process_Review">
+      <bpmn:extensionElements>
+        <camunda:out source="result" target="outcome" />
+        <camunda:out source="result" target="nrOfInstances" />
+        <camunda:out source="result" target="nrOfActiveInstances" />
+        <camunda:out source="result" target="nrOfCompletedInstances" />
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:userTask id="UserTask_Decide" name="Record the decision" />
+    <bpmn:endEvent id="EndEvent_Decided" />
+    <bpmn:sequenceFlow id="Flow_Intake_Start_Review" sourceRef="StartEvent_ApplicationReceived" targetRef="CallActivity_Review" />
+    <bpmn:sequenceFlow id="Flow_Intake_Review_Decide" sourceRef="CallActivity_Review" targetRef="UserTask_Decide" />
+    <bpmn:sequenceFlow id="Flow_Intake_Decide_End" sourceRef="UserTask_Decide" targetRef="EndEvent_Decided" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Review" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_ReviewStarted" />
+    <bpmn:userTask id="UserTask_Assess" name="Assess the application" />
+    <bpmn:endEvent id="EndEvent_Assessed" />
+    <bpmn:sequenceFlow id="Flow_Review_Start_Assess" sourceRef="StartEvent_ReviewStarted" targetRef="UserTask_Assess" />
+    <bpmn:sequenceFlow id="Flow_Review_Assess_End" sourceRef="UserTask_Assess" targetRef="EndEvent_Assessed" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_Fulfilment"
+  targetNamespace="urn:bpmn-lean:scenarios:nested-scope-quiescence">
+  <bpmn:process id="Process_Fulfilment" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_OrderPaid" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+
+    <bpmn:subProcess id="SubProcess_Pack" name="Pack the order">
+      <bpmn:startEvent id="StartEvent_Pack" />
+      <bpmn:parallelGateway id="Gateway_PackFork" gatewayDirection="Diverging" />
+
+      <bpmn:subProcess id="SubProcess_Stock" name="Prepare stock">
+        <bpmn:startEvent id="StartEvent_Stock" />
+        <bpmn:parallelGateway id="Gateway_StockFork" gatewayDirection="Diverging" />
+        <bpmn:serviceTask
+          id="ServiceTask_Reserve"
+          name="Reserve stock"
+          implementation="urn:bpmn-lean:effect:probe-v1"
+          camunda:delegateExpression="${bpmnLeanEffectHandler}"
+          camunda:asyncBefore="true" />
+        <bpmn:endEvent id="EndEvent_Reserved" />
+        <bpmn:inclusiveGateway id="Gateway_Select" name="Items to prepare" gatewayDirection="Diverging" default="Flow_Select_Inspect" />
+        <bpmn:userTask id="UserTask_Pick" name="Pick items" />
+        <bpmn:userTask id="UserTask_Wrap" name="Wrap gift" />
+        <bpmn:userTask id="UserTask_Inspect" name="Inspect shelf" />
+        <bpmn:inclusiveGateway id="Gateway_Merge" gatewayDirection="Converging" />
+        <bpmn:userTask id="UserTask_Stage" name="Stage parcel" />
+        <bpmn:endEvent id="EndEvent_Staged" />
+        <bpmn:sequenceFlow id="Flow_Stock_Start_Fork" sourceRef="StartEvent_Stock" targetRef="Gateway_StockFork" />
+        <bpmn:sequenceFlow id="Flow_Stock_Fork_Reserve" sourceRef="Gateway_StockFork" targetRef="ServiceTask_Reserve" />
+        <bpmn:sequenceFlow id="Flow_Stock_Fork_Select" sourceRef="Gateway_StockFork" targetRef="Gateway_Select" />
+        <bpmn:sequenceFlow id="Flow_Stock_Reserve_End" sourceRef="ServiceTask_Reserve" targetRef="EndEvent_Reserved" />
+        <bpmn:sequenceFlow id="Flow_Select_Pick" sourceRef="Gateway_Select" targetRef="UserTask_Pick">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${needPick}</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_Select_Wrap" sourceRef="Gateway_Select" targetRef="UserTask_Wrap">
+          <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${needWrap}</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_Select_Inspect" sourceRef="Gateway_Select" targetRef="UserTask_Inspect" />
+        <bpmn:sequenceFlow id="Flow_Pick_Merge" sourceRef="UserTask_Pick" targetRef="Gateway_Merge" />
+        <bpmn:sequenceFlow id="Flow_Wrap_Merge" sourceRef="UserTask_Wrap" targetRef="Gateway_Merge" />
+        <bpmn:sequenceFlow id="Flow_Inspect_Merge" sourceRef="UserTask_Inspect" targetRef="Gateway_Merge" />
+        <bpmn:sequenceFlow id="Flow_Merge_Stage" sourceRef="Gateway_Merge" targetRef="UserTask_Stage" />
+        <bpmn:sequenceFlow id="Flow_Stage_End" sourceRef="UserTask_Stage" targetRef="EndEvent_Staged" />
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_Stocked" />
+
+      <bpmn:exclusiveGateway id="Gateway_Route" name="Verification needed" gatewayDirection="Diverging" default="Flow_Route_Verify" />
+      <bpmn:callActivity id="CallActivity_Verify" name="Verify the address" calledElement="Process_Verify" />
+      <bpmn:serviceTask
+        id="ServiceTask_Waive"
+        name="Record the waiver"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true" />
+      <bpmn:endEvent id="EndEvent_Verified" />
+      <bpmn:endEvent id="EndEvent_Waived" />
+
+      <bpmn:sequenceFlow id="Flow_Pack_Start_Fork" sourceRef="StartEvent_Pack" targetRef="Gateway_PackFork" />
+      <bpmn:sequenceFlow id="Flow_Pack_Fork_Stock" sourceRef="Gateway_PackFork" targetRef="SubProcess_Stock" />
+      <bpmn:sequenceFlow id="Flow_Pack_Fork_Route" sourceRef="Gateway_PackFork" targetRef="Gateway_Route" />
+      <bpmn:sequenceFlow id="Flow_Pack_Stock_End" sourceRef="SubProcess_Stock" targetRef="EndEvent_Stocked" />
+      <bpmn:sequenceFlow id="Flow_Route_Verify" sourceRef="Gateway_Route" targetRef="CallActivity_Verify" />
+      <bpmn:sequenceFlow id="Flow_Route_Waive" sourceRef="Gateway_Route" targetRef="ServiceTask_Waive">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${skipVerification}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="Flow_Verify_End" sourceRef="CallActivity_Verify" targetRef="EndEvent_Verified" />
+      <bpmn:sequenceFlow id="Flow_Waive_End" sourceRef="ServiceTask_Waive" targetRef="EndEvent_Waived" />
+    </bpmn:subProcess>
+
+    <bpmn:userTask id="UserTask_Ship" name="Ship the parcel" />
+    <bpmn:endEvent id="EndEvent_Shipped" />
+    <bpmn:userTask id="UserTask_Invoice" name="Send the invoice" />
+    <bpmn:endEvent id="EndEvent_Invoiced" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_OrderPaid" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_Pack" sourceRef="Gateway_Fork" targetRef="SubProcess_Pack" />
+    <bpmn:sequenceFlow id="Flow_Fork_Invoice" sourceRef="Gateway_Fork" targetRef="UserTask_Invoice" />
+    <bpmn:sequenceFlow id="Flow_Pack_Ship" sourceRef="SubProcess_Pack" targetRef="UserTask_Ship" />
+    <bpmn:sequenceFlow id="Flow_Ship_End" sourceRef="UserTask_Ship" targetRef="EndEvent_Shipped" />
+    <bpmn:sequenceFlow id="Flow_Invoice_End" sourceRef="UserTask_Invoice" targetRef="EndEvent_Invoiced" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Verify" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Verify" />
+    <bpmn:userTask id="UserTask_CheckAddress" name="Check the address" />
+    <bpmn:endEvent id="EndEvent_VerifyDone" />
+    <bpmn:sequenceFlow id="Flow_Verify_Start_Check" sourceRef="StartEvent_Verify" targetRef="UserTask_CheckAddress" />
+    <bpmn:sequenceFlow id="Flow_Verify_Check_End" sourceRef="UserTask_CheckAddress" targetRef="EndEvent_VerifyDone" />
+  </bpmn:process>
+</bpmn:definitions>

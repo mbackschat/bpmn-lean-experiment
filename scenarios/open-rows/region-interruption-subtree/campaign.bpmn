@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  id="Definitions_Campaign"
+  targetNamespace="urn:bpmn-lean:scenarios:region-interruption-subtree">
+  <bpmn:message id="Message_Abort" name="abortRegion" />
+  <bpmn:message id="Message_Quote" name="quoteReceived" />
+
+  <bpmn:process id="Process_Campaign" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Launched" />
+    <bpmn:parallelGateway id="Gateway_Fork" gatewayDirection="Diverging" />
+    <bpmn:userTask id="UserTask_IntakeNorth" name="Open the north region" />
+    <bpmn:userTask id="UserTask_IntakeSouth" name="Open the south region" />
+    <bpmn:userTask id="UserTask_Outside" name="Run the unrelated audit" />
+    <bpmn:endEvent id="EndEvent_Outside" />
+    <bpmn:exclusiveGateway id="Gateway_Merge" name="Region entry" gatewayDirection="Converging" />
+
+    <bpmn:subProcess id="SubProcess_Region" name="Run one region">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="scratch">none</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="StartEvent_Region" />
+      <bpmn:parallelGateway id="Gateway_RegionFork" gatewayDirection="Diverging" />
+      <bpmn:userTask id="UserTask_Draft" name="Draft the offer" />
+      <bpmn:serviceTask
+        id="ServiceTask_Publish"
+        name="Publish the offer"
+        implementation="urn:bpmn-lean:effect:probe-v1"
+        camunda:delegateExpression="${bpmnLeanEffectHandler}"
+        camunda:asyncBefore="true" />
+      <bpmn:endEvent id="EndEvent_Published" />
+      <bpmn:receiveTask id="ReceiveTask_Quote" name="Await the supplier quote" messageRef="Message_Quote" />
+      <bpmn:endEvent id="EndEvent_Quoted" />
+
+      <bpmn:subProcess id="SubProcess_Inner" name="Approve the offer">
+        <bpmn:startEvent id="StartEvent_Inner" />
+        <bpmn:userTask id="UserTask_Review" name="Review the offer" />
+        <bpmn:callActivity id="CallActivity_Approve" name="Approve with the board" calledElement="Process_Approve">
+          <bpmn:extensionElements>
+            <camunda:in source="scratch" target="memo" />
+            <camunda:out source="verdict" target="approval" />
+          </bpmn:extensionElements>
+        </bpmn:callActivity>
+        <bpmn:boundaryEvent id="Boundary_Approve_Timeout" attachedToRef="CallActivity_Approve" cancelActivity="true">
+          <bpmn:timerEventDefinition>
+            <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30S</bpmn:timeDuration>
+          </bpmn:timerEventDefinition>
+        </bpmn:boundaryEvent>
+        <bpmn:userTask id="UserTask_Escalate" name="Escalate the approval" />
+        <bpmn:endEvent id="EndEvent_Approved" />
+        <bpmn:endEvent id="EndEvent_Escalated" />
+        <bpmn:sequenceFlow id="Flow_Inner_Start_Review" sourceRef="StartEvent_Inner" targetRef="UserTask_Review" />
+        <bpmn:sequenceFlow id="Flow_Inner_Review_Approve" sourceRef="UserTask_Review" targetRef="CallActivity_Approve" />
+        <bpmn:sequenceFlow id="Flow_Inner_Approve_End" sourceRef="CallActivity_Approve" targetRef="EndEvent_Approved" />
+        <bpmn:sequenceFlow id="Flow_Inner_Timeout_Escalate" sourceRef="Boundary_Approve_Timeout" targetRef="UserTask_Escalate" />
+        <bpmn:sequenceFlow id="Flow_Inner_Escalate_End" sourceRef="UserTask_Escalate" targetRef="EndEvent_Escalated" />
+      </bpmn:subProcess>
+      <bpmn:endEvent id="EndEvent_InnerDone" />
+
+      <bpmn:sequenceFlow id="Flow_Region_Start_Fork" sourceRef="StartEvent_Region" targetRef="Gateway_RegionFork" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Draft" sourceRef="Gateway_RegionFork" targetRef="UserTask_Draft" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Inner" sourceRef="Gateway_RegionFork" targetRef="SubProcess_Inner" />
+      <bpmn:sequenceFlow id="Flow_Region_Fork_Quote" sourceRef="Gateway_RegionFork" targetRef="ReceiveTask_Quote" />
+      <bpmn:sequenceFlow id="Flow_Region_Draft_Publish" sourceRef="UserTask_Draft" targetRef="ServiceTask_Publish" />
+      <bpmn:sequenceFlow id="Flow_Region_Publish_End" sourceRef="ServiceTask_Publish" targetRef="EndEvent_Published" />
+      <bpmn:sequenceFlow id="Flow_Region_Inner_End" sourceRef="SubProcess_Inner" targetRef="EndEvent_InnerDone" />
+      <bpmn:sequenceFlow id="Flow_Region_Quote_End" sourceRef="ReceiveTask_Quote" targetRef="EndEvent_Quoted" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="Boundary_Region_Abort" attachedToRef="SubProcess_Region" cancelActivity="true">
+      <bpmn:messageEventDefinition id="MessageEventDefinition_Region_Abort" messageRef="Message_Abort" />
+    </bpmn:boundaryEvent>
+    <bpmn:userTask id="UserTask_AfterRegion" name="Close the region" />
+    <bpmn:userTask id="UserTask_Aborted" name="Record the aborted region" />
+    <bpmn:endEvent id="EndEvent_Closed" />
+    <bpmn:endEvent id="EndEvent_Aborted" />
+
+    <bpmn:sequenceFlow id="Flow_Start_Fork" sourceRef="StartEvent_Launched" targetRef="Gateway_Fork" />
+    <bpmn:sequenceFlow id="Flow_Fork_North" sourceRef="Gateway_Fork" targetRef="UserTask_IntakeNorth" />
+    <bpmn:sequenceFlow id="Flow_Fork_South" sourceRef="Gateway_Fork" targetRef="UserTask_IntakeSouth" />
+    <bpmn:sequenceFlow id="Flow_Fork_Outside" sourceRef="Gateway_Fork" targetRef="UserTask_Outside" />
+    <bpmn:sequenceFlow id="Flow_Outside_End" sourceRef="UserTask_Outside" targetRef="EndEvent_Outside" />
+    <bpmn:sequenceFlow id="Flow_North_Merge" sourceRef="UserTask_IntakeNorth" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_South_Merge" sourceRef="UserTask_IntakeSouth" targetRef="Gateway_Merge" />
+    <bpmn:sequenceFlow id="Flow_Merge_Region" sourceRef="Gateway_Merge" targetRef="SubProcess_Region" />
+    <bpmn:sequenceFlow id="Flow_Region_After" sourceRef="SubProcess_Region" targetRef="UserTask_AfterRegion" />
+    <bpmn:sequenceFlow id="Flow_Abort_Record" sourceRef="Boundary_Region_Abort" targetRef="UserTask_Aborted" />
+    <bpmn:sequenceFlow id="Flow_After_End" sourceRef="UserTask_AfterRegion" targetRef="EndEvent_Closed" />
+    <bpmn:sequenceFlow id="Flow_Aborted_End" sourceRef="UserTask_Aborted" targetRef="EndEvent_Aborted" />
+  </bpmn:process>
+
+  <bpmn:process id="Process_Approve" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Approve" />
+    <bpmn:userTask id="UserTask_Sign" name="Sign the approval" />
+    <bpmn:endEvent id="EndEvent_Signed" />
+    <bpmn:sequenceFlow id="Flow_Approve_Start_Sign" sourceRef="StartEvent_Approve" targetRef="UserTask_Sign" />
+    <bpmn:sequenceFlow id="Flow_Approve_Sign_End" sourceRef="UserTask_Sign" targetRef="EndEvent_Signed" />
+  </bpmn:process>
+</bpmn:definitions>

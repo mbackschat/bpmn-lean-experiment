@@ -1,0 +1,149 @@
+{
+  "kind": "scenario",
+  "id": "nested-scope-quiescence-stock-end-first",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "nested-scope-quiescence-fulfilment",
+    "relativePath": "scenarios/open-rows/nested-scope-quiescence/fulfilment.bpmn",
+    "sha256": "428f6ff1fd95cb300192e77ea0dbca24aee207b30699793e52b647c74bc2d403",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "needPick",
+          "value": {
+            "kind": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "needWrap",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        },
+        {
+          "name": "skipVerification",
+          "value": {
+            "kind": "boolean",
+            "value": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "effectResult",
+      "commandId": "s02-reserve-stock",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "ServiceTask_Reserve",
+        "activation": 1
+      },
+      "outcome": {
+        "kind": "success",
+        "outputs": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-check-address",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:19:CallActivity_Verify:1",
+        "elementId": "UserTask_CheckAddress",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-pick-items",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Pick",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-premature-ship",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Ship",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-stage-parcel",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Stage",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s07-ship-parcel",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Ship",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s08-send-invoice",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Invoice",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.4.1",
+      "BPMN 2.0.2 §13.4.2",
+      "BPMN 2.0.2 §13.4.3"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/subprocess/SubProcessTest.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/gateway/InclusiveGatewayTest.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/InclusiveGatewayActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/SubProcessActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallActivityBehavior.java"
+    ]
+  }
+}

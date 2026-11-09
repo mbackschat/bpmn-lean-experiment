@@ -1,0 +1,65 @@
+{
+  "kind": "scenario",
+  "id": "call-counter-output-counter-outputs-dropped",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "call-counter-output-intake",
+    "relativePath": "scenarios/open-rows/call-counter-output/intake.bpmn",
+    "sha256": "b5c31920c05e7ad4af85c10cd0aff0f07329b4fe8f21d1600be0babbe2433e01",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-assess",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:19:CallActivity_Review:1",
+        "elementId": "UserTask_Assess",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "result",
+            "value": {
+              "kind": "string",
+              "value": "accepted"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-record-decision",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Decide",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §13.3.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallableElementActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/MultiInstanceActivityBehavior.java"
+    ]
+  }
+}

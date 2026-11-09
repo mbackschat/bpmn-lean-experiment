@@ -1,0 +1,79 @@
+{
+  "kind": "scenario",
+  "id": "call-exceptional-return-item-booked-normally",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "call-exceptional-return-book-with-handler",
+    "relativePath": "scenarios/open-rows/call-exceptional-return/book-with-handler.bpmn",
+    "sha256": "063f68d82b40af5d23861618c1f0b475bb0275b7245e5eb47dce30163ce506ad",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-reserve-item-booked",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:21:CallActivity_BookItem:1",
+        "elementId": "UserTask_ReserveItem",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "booked"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "S-5"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-confirm-order",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_AfterBook",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallableElementActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationEventDefinitionFinder.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/callactivity/CallActivityTest.java#testTwoSubProcessesDataOutputOnError",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/error/BoundaryErrorEventTest.java#testCatchErrorThrownByCallActivityOnCallActivity"
+    ]
+  }
+}

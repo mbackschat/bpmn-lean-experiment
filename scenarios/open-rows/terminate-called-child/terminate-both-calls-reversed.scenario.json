@@ -1,0 +1,116 @@
+{
+  "kind": "scenario",
+  "id": "terminate-called-child-terminate-both-calls-reversed",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "terminate-called-child-pickup",
+    "relativePath": "scenarios/open-rows/terminate-called-child/pickup.bpmn",
+    "sha256": "b249eee286c93b69aa5630004bf16ba732aea5f816ff03975f14f59270ff4b00",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-finish-south",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverB:1",
+        "elementId": "UserTask_Finish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "R-south"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-finish-north",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:22:CallActivity_HandoverA:1",
+        "elementId": "UserTask_Finish",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "receipt",
+            "value": {
+              "kind": "string",
+              "value": "R-north"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-file-south",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_AfterB",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-file-north",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_AfterA",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-update-log",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_CallerOutside",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §10.5.6",
+      "BPMN 2.0.2 §13.2",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.5.6"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/TerminateEndEventActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallableElementActivityBehavior.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/end/TerminateEndEventTest.java#testTerminateInCallActivity",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/end/TerminateEndEventTest.java#testTerminateInCallActivityConcurrent"
+    ]
+  }
+}

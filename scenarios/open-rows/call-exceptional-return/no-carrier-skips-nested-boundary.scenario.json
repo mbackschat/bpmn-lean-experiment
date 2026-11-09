@@ -1,0 +1,149 @@
+{
+  "kind": "scenario",
+  "id": "call-exceptional-return-no-carrier-skips-nested-boundary",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "call-exceptional-return-dispatch",
+    "relativePath": "scenarios/open-rows/call-exceptional-return/dispatch.bpmn",
+    "sha256": "a9c85ceb575de45a4188413e46bc6ce4f3fd1eb8ff39213789cd69e0cbda54dd",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": [
+        {
+          "name": "priority",
+          "value": {
+            "kind": "string",
+            "value": "high"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-plan-route",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:18:CallActivity_Route:1",
+        "elementId": "UserTask_Plan",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "carrier",
+            "value": {
+              "kind": "string",
+              "value": "DHL"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s03-reserve-book-noCarrier",
+      "occurrence": {
+        "processInstanceId": "call:42:call:10:Instance_1:18:CallActivity_Route:1:17:CallActivity_Book:1",
+        "elementId": "UserTask_Reserve",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "noCarrier"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "S-9"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-reserve-spare",
+      "occurrence": {
+        "processInstanceId": "call:10:Instance_1:18:CallActivity_Spare:1",
+        "elementId": "UserTask_Reserve",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": [
+          {
+            "name": "outcome",
+            "value": {
+              "kind": "string",
+              "value": "booked"
+            }
+          },
+          {
+            "name": "slot",
+            "value": {
+              "kind": "string",
+              "value": "S-spare"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-reassign",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Reassign",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s06-file-spare",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_AfterSpare",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.6",
+      "BPMN 2.0.2 §10.5.1",
+      "BPMN 2.0.2 §10.5.5",
+      "BPMN 2.0.2 §13.3.4",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/CallableElementActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/BpmnExceptionHandler.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/ErrorDeclarationForProcessInstanceFinder.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/helper/EscalationEventDefinitionFinder.java",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/callactivity/CallActivityTest.java#testTwoSubProcessesDataOutputOnError",
+      "engine/src/test/java/org/cibseven/bpm/engine/test/bpmn/event/error/BoundaryErrorEventTest.java#testCatchErrorThrownByCallActivityOnCallActivity"
+    ]
+  }
+}

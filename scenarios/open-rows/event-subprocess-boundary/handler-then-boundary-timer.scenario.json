@@ -1,0 +1,82 @@
+{
+  "kind": "scenario",
+  "id": "event-subprocess-boundary-handler-then-boundary-timer",
+  "profile": "cibseven-2.2.0",
+  "bpmn": {
+    "id": "event-subprocess-boundary-parcel-alerts",
+    "relativePath": "scenarios/open-rows/event-subprocess-boundary/parcel-alerts.bpmn",
+    "sha256": "b91dfbc1731c9bd62938f3f406e365d49e19323932405270fd80f153b9fbf7be",
+    "sourceOverlay": null
+  },
+  "stimuli": [
+    {
+      "kind": "start",
+      "commandId": "s01-start",
+      "instanceId": "Instance_1",
+      "variables": []
+    },
+    {
+      "kind": "command",
+      "commandId": "s02-report-damage",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Raise",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "timerFire",
+      "commandId": "s03-handler-timeout",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "Boundary_Handler_Timeout",
+        "activation": 1
+      },
+      "logicalTimeMs": 3600000
+    },
+    {
+      "kind": "command",
+      "commandId": "s04-inspect-damage",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Inspect",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    },
+    {
+      "kind": "command",
+      "commandId": "s05-deliver-parcel",
+      "occurrence": {
+        "processInstanceId": "Instance_1",
+        "elementId": "UserTask_Ordinary",
+        "activation": 1
+      },
+      "action": {
+        "kind": "completeUserTask",
+        "values": []
+      }
+    }
+  ],
+  "provenance": {
+    "normativeRefs": [
+      "BPMN 2.0.2 §10.3.5",
+      "BPMN 2.0.2 §10.5.4",
+      "BPMN 2.0.2 §13.5.3",
+      "BPMN 2.0.2 §13.5.4"
+    ],
+    "cibRevision": "834a9874760de8a0107f7c1b32806e37f17fb017",
+    "cibRefs": [
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/parser/BpmnParse.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/EventSubProcessActivityBehavior.java",
+      "engine/src/main/java/org/cibseven/bpm/engine/impl/bpmn/behavior/BoundaryEventActivityBehavior.java"
+    ]
+  }
+}
