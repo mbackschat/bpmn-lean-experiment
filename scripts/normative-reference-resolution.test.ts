@@ -115,7 +115,8 @@ async function declaredReferences(): Promise<ReadonlyArray<Reference>> {
   // went unchecked under the narrower pattern, which is how one profile shipped two clause numbers
   // that name event definitions while claiming to cover start and end events.
   for await (const entry of glob(
-    ["scenarios/*/*.scenario.json", "scenarios/*/scenario.json"],
+    ["scenarios/*/*.scenario.json", "scenarios/*/scenario.json",
+      "scenarios/open-rows/*/*.scenario.json", "scenarios/open-rows/*/scenario.json"],
     { cwd: projectRoot },
   )) {
     const scenario = JSON.parse(

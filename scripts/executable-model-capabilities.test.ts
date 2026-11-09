@@ -6,7 +6,7 @@ import { test } from "node:test";
 import {
   detectExecutableBpmnCapabilities,
 } from "./executable-model-capabilities.ts";
-import { artifactCases, normativeArtifactCases } from "./contract-artifact-cases.ts";
+import { artifactCases, isOpenRowWitness, normativeArtifactCases } from "./contract-artifact-cases.ts";
 import { enginePopulationScenarioRelativePaths } from "./engine-population-artifacts.ts";
 import { requireExecutableModelCorpusManifest } from "./executable-model-corpus-manifest.ts";
 import { CibCapabilityEvidenceKind, mvpBpmnCapabilities } from "../model-corpus/mvp-capabilities.ts";
@@ -138,6 +138,8 @@ test("the actual registered source union equals the catalog and remains covered 
   const manifest = requireExecutableModelCorpusManifest(JSON.parse(await readFile(new URL("../model-corpus/manifest.json", import.meta.url), "utf8")));
   const registeredSources = new Set<string>();
   for (const artifact of [...artifactCases, ...normativeArtifactCases]) {
+    // An open-row witness claims no capability (`isOpenRowWitness`), so it widens no catalog.
+    if (isOpenRowWitness(artifact.scenarioRelativePath)) continue;
     const scenario = JSON.parse(await readFile(new URL(`../${artifact.scenarioRelativePath}`, import.meta.url), "utf8"));
     registeredSources.add(scenario.bpmn.relativePath);
   }

@@ -25,6 +25,17 @@ export type NormativeArtifactCase = Readonly<{
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
+/**
+ * Witnesses of open coverage rows: answer-free scenarios whose CIB answer is fixed before the row's code (PLAN order
+ * gate). They claim no capability, so the claim guards (value surfaces, citations inside the profile, the executable
+ * capability catalog) skip them while every mechanical guard still applies; a row's track moves its witnesses into
+ * `scenarios/` when the row closes.
+ */
+export const openRowScenarioRoot = "scenarios/open-rows/";
+
+export const isOpenRowWitness = (scenarioRelativePath: string): boolean =>
+  scenarioRelativePath.startsWith(openRowScenarioRoot);
+
 /** The evidence path a scenario path pairs with, whether or not that file exists. */
 export function evidenceRelativePathFor(scenarioRelativePath: string): string {
   return scenarioRelativePath.replace(/scenario\.json$/u, "cibseven-evidence.json");

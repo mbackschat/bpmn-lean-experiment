@@ -23,6 +23,7 @@ import {
 import {
   artifactCases,
   normativeArtifactCases,
+  openRowScenarioRoot,
 } from "./contract-artifact-cases.ts";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
@@ -303,4 +304,17 @@ test("targets every CIB-referencing scenario at an oracle revision of the profil
     }
   }
   assert.deepEqual(stale, []);
+});
+
+test("applies the value-surface claim guard to registered scenarios and never to open-row witnesses", async () => {
+  const artifactSet = artifactSetAt(await readAndVerifyArtifactSets(projectRoot), userTaskDiscoveryScenario);
+  const withList = (scenarioRelativePath: string) => {
+    const mutated = cloneArtifactSet(artifactSet);
+    const start = (mutated.scenario.stimuli as Array<Record<string, unknown>>)[0]!;
+    start.variables = [{ name: "items", value: { kind: "stringList", value: ["a", "a"] } }];
+    bindScenarioBytes(mutated, `${JSON.stringify(mutated.scenario, null, 2)}\n`);
+    return { ...mutated, scenarioRelativePath };
+  };
+  assert.throws(() => verifyArtifactSet(withList(artifactSet.scenarioRelativePath)), /stringList is only admitted/u);
+  assert.doesNotThrow(() => verifyArtifactSet(withList(`${openRowScenarioRoot}user-task/scenario.json`)));
 });

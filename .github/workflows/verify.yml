@@ -399,7 +399,9 @@ jobs:
       - verify_runtime
     if: needs.changes.outputs.product1 == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Above the derived pipeline deadline (scenario count × the per-scenario bound, `scripts/pipeline-budget.ts`) plus
+    # setup, so a pathological run ends as that budget failure; the bound itself is unchanged.
+    timeout-minutes: 30
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   artifactCases,
+  isOpenRowWitness,
   normativeArtifactCases,
 } from "./contract-artifact-cases.ts";
 import type {
@@ -235,6 +236,7 @@ export function verifyArtifactSet(artifactSet: ArtifactSet): ArtifactSet {
     scenario,
     scenarioBytes,
     bpmnBytes,
+    artifactSet.scenarioRelativePath,
   );
   validateWith(validator, evidenceSchemaId, "evidence", evidence);
 
@@ -284,9 +286,10 @@ function verifyScenarioSourceBinding(
   scenario: ScenarioDocument,
   scenarioBytes: Buffer,
   bpmnBytes: Buffer,
+  scenarioRelativePath: string,
 ): void {
   validateWith(validator, scenarioSchemaId, "scenario", scenario);
-  verifyScenarioVariableValueContract(scenario);
+  if (!isOpenRowWitness(scenarioRelativePath)) verifyScenarioVariableValueContract(scenario);
   if (
     !isDeepStrictEqual(
       parseWireJsonBytes<ScenarioDocument>(
@@ -320,6 +323,7 @@ export function verifyNormativeArtifactSet(
     artifactSet.scenario,
     artifactSet.scenarioBytes,
     artifactSet.bpmnBytes,
+    artifactSet.scenarioRelativePath,
   );
   return artifactSet;
 }
