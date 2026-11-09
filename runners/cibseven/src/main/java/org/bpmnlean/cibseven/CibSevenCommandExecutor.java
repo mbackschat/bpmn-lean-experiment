@@ -280,7 +280,12 @@ final class CibSevenCommandExecutor {
         }
         continue;
       }
-      throw new IllegalStateException("A scripted technical failure completed the job");
+      // A boundary whose Error code names the failure's exception class or a superclass catches it and completes the
+      // job (`ErrorEventDefinition#catchesException`, `BpmnExceptionHandler#propagateExceptionAsError`): CIB's answer.
+      if (management.createJobQuery().jobId(job.jobId()).count() != 0) {
+        throw new IllegalStateException("A scripted technical failure neither failed nor completed the job");
+      }
+      return retriesAfterFirstFailure;
     }
     var incidents =
         engine.getRuntimeService().createIncidentQuery().processInstanceId(job.engineInstanceId()).list().stream()
