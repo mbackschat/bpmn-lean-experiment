@@ -4,7 +4,7 @@ This file is generated from `manifest.json` by the executable corpus guard. Edit
 
 ## Current result
 
-The first tranche contains 103 retained executable models and 7 exact external candidates. The kernel admits 104 and refuses 6; 1 differ from their recorded admission, and 12 are eligible for the browser catalog.
+The first tranche contains 103 retained executable models and 7 exact external candidates. The kernel admits 103 and refuses 7; 0 differ from their recorded admission, and 12 are eligible for the browser catalog.
 The retained MVP suite covers all 53 registered executable BPMN element or semantic variants.
 Browser eligibility separates 3 human-work journeys from 9 guided simulations with explicit host participants.
 
@@ -115,7 +115,7 @@ Browser eligibility separates 3 human-work journeys from 9 guided simulations wi
 | Review and rework an invoice | retainedScenario | invoice-validation-rework | accepted | invoice-rework | notSelected | notCatalogReady |
 | Recover from invoice business Errors | retainedScenario | invoice-business-error-recovery | accepted | invoice-business-error-recovery | notSelected | notCatalogReady |
 | Debounce an alarm before paging | retainedScenario | timer-then-human-review | accepted | intermediate-catch-timer-alarm-debounce | notSelected | notCatalogReady |
-| CIB Seven order goods | externalGit | cib-order-goods | accepted | none | notApplicable | notCatalogReady |
+| CIB Seven order goods | externalGit | cib-order-goods | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven review invoice | externalGit | cib-review-invoice | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven invoice receipt version 1 | externalGit | cib-invoice-receipt | rejected | none | notApplicable | notCatalogReady |
 | CIB Seven invoice receipt version 2 | externalGit | cib-invoice-receipt | rejected | none | notApplicable | notCatalogReady |
@@ -187,12 +187,15 @@ This ranking compares external candidates with the reusable mechanisms exercised
 
 | Rank | Reusable mechanism | Clone families | Model files |
 |---:|---|---:|---:|
-| 1 | `taskMetadata` | 3 | 4 |
-| 2 | `lanePresentation` | 2 | 3 |
-| 3 | `scriptTaskExecution` | 2 | 2 |
-| 4 | `resourceAssignment` | 1 | 1 |
-| 5 | `sendTaskDelivery` | 1 | 1 |
-| 6 | `signalEvent` | 1 | 1 |
+| 1 | `diagramInterchange` | 4 | 5 |
+| 2 | `vendorRuntimeMetadata` | 4 | 5 |
+| 3 | `collaborationPresentation` | 3 | 4 |
+| 4 | `taskMetadata` | 3 | 4 |
+| 5 | `lanePresentation` | 2 | 3 |
+| 6 | `scriptTaskExecution` | 2 | 2 |
+| 7 | `resourceAssignment` | 1 | 1 |
+| 8 | `sendTaskDelivery` | 1 | 1 |
+| 9 | `signalEvent` | 1 | 1 |
 
 ## Deduplicated admission blockers
 
@@ -200,6 +203,6 @@ Blockers are ranked by independent clone families first and physical model files
 
 | Rank | Refusal code | Clone families | Model files |
 |---:|---|---:|---:|
-| 1 | `flow.condition.foreign` | 3 | 4 |
-| 2 | `source.encoding` | 1 | 1 |
-| 3 | `work.user.assignee` | 1 | 1 |
+| 1 | `reader.factNotCarried` | 4 | 5 |
+| 2 | `flow.condition.foreign` | 1 | 1 |
+| 3 | `source.encoding` | 1 | 1 |

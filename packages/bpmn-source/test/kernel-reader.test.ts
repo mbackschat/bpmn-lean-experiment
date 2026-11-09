@@ -336,14 +336,14 @@ test("an unknown element, foreign attribute or unsafe source is refused with a s
   assert.equal(await refusal(model(`<bpmn:task id="T"><bpmn:standardLoopCharacteristics/></bpmn:task>`)), ReadRefusalCode.StandardLoop);
 });
 
-test("CIB attributes the IL has no field for are reported, never dropped silently", async () => {
-  const result = await read(model(`<bpmn:serviceTask id="T" camunda:delegateExpression="\${x}" camunda:asyncBefore="true" camunda:jobPriority="5"/>
+test("a CIB attribute the IL has no field for is refused, never dropped", async () => {
+  // No profile rule yet proves an uncarried CIB attribute safe (CLAUDE.md, non-negotiable boundaries), and CIB may act
+  // on it, so admitting the model would claim behaviour the kernel does not have.
+  const result = await read(model(`<bpmn:serviceTask id="T" camunda:delegateExpression="\${x}" camunda:asyncBefore="true"/>
     <bpmn:businessRuleTask id="R" camunda:decisionRef="d" camunda:decisionRefTenantId="t"/>`));
-  assert.equal(result.kind, "read");
-  assert.deepEqual((result as Extract<KernelRead, { kind: "read" }>).notCarried, [
-    { element: "T", fact: "camunda:jobPriority" },
-    { element: "R", fact: "camunda:decisionRefTenantId" },
-  ]);
+  assert.equal(result.kind, "refused");
+  assert.deepEqual(result.kind === "refused" ? [result.code, result.element, result.evidence] : null,
+    [ReadRefusalCode.FactNotCarried, "R", "camunda:decisionRefTenantId"]);
 });
 
 test("a conditional Activity outflow, an Activity default and a Transaction method are carried, not reported", async () => {

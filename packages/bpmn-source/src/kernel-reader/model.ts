@@ -21,6 +21,7 @@ export enum ReadRefusalCode {
   UnknownAttribute = "reader.unknownAttribute",
   UnknownAttributeValue = "reader.unknownAttributeValue",
   UnknownExtension = "reader.unknownExtension",
+  FactNotCarried = "reader.factNotCarried",
   MultipleEventDefinitions = "reader.multipleEventDefinitions",
   EventDefinitionOnElement = "reader.eventDefinitionOnElement",
   StandardLoop = "reader.standardLoop",
@@ -263,17 +264,17 @@ export function createExtensionTracker(definitions: ElementRecord): Pick<
 }
 
 /**
- * The foreign material of one element the IL does not carry: an unconsumed CIB attribute or extension element is
- * reported to the caller, and anything outside the CIB and project namespaces has no reader and is refused.
+ * Refuses the foreign material of one element the IL does not carry: an unconsumed CIB attribute or extension element,
+ * which CIB may act on and no profile rule yet proves safe to drop, and anything outside the CIB and project
+ * namespaces, which has no reader.
  */
-export function uncarriedFacts(
+export function requireCarried(
   element: ElementRecord,
   definitions: ElementRecord,
   consumed: ReadonlySet<string>,
   inertAttributes: ReadonlySet<string>,
-): ReadonlyArray<SourceFactNotCarried> {
+): void {
   const id = optionalId(element);
-  const facts: SourceFactNotCarried[] = [];
   for (const qualifiedName of Object.keys(asElement(element.$attrs) ?? {})) {
     if (qualifiedName === "xmlns" || qualifiedName.startsWith("xmlns:")) continue;
     const prefix = prefixOf(qualifiedName);
@@ -283,7 +284,7 @@ export function uncarriedFacts(
     if (namespace !== camundaNamespace) {
       throw new ReadRefusal(ReadRefusalCode.UnknownAttribute, id, qualifiedName);
     }
-    if (!consumed.has(localName)) facts.push({ element: id, fact: `camunda:${localName}` });
+    if (!consumed.has(localName)) throw new ReadRefusal(ReadRefusalCode.FactNotCarried, id, `camunda:${localName}`);
   }
   for (const value of extensionValues(element)) {
     const type = String(value.$type);
@@ -292,9 +293,8 @@ export function uncarriedFacts(
       throw new ReadRefusal(ReadRefusalCode.UnknownExtension, id, type);
     }
     const localName = extensionLocalName(value);
-    if (!consumed.has(localName)) facts.push({ element: id, fact: `camunda:${localName}` });
+    if (!consumed.has(localName)) throw new ReadRefusal(ReadRefusalCode.FactNotCarried, id, `camunda:${localName}`);
   }
-  return facts;
 }
 
 export function requireInertRoot(element: ElementRecord): void {

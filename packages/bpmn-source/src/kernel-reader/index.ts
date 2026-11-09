@@ -22,7 +22,7 @@ import {
   requireId,
   requireInertRoot,
   text,
-  uncarriedFacts,
+  requireCarried,
 } from "./model.js";
 import type { Built, ModelNode, ReadContext, SourceFactNotCarried } from "./model.js";
 import { childIds, readScope } from "./scopes.js";
@@ -200,15 +200,15 @@ function declaredItems(process: ElementRecord): string[] {
 const processDefinition = (key: string): KernelJson =>
   ({ key, version: null, versionTag: null, deployment: null, tenant: null, sourceSha256: null });
 
-function collectNotCarried(ctx: ReadContext & { consumedBy: (element: ElementRecord) => ReadonlySet<string> },
-  processes: ReadonlyArray<ElementRecord>): SourceFactNotCarried[] {
+function requireAllCarried(ctx: ReadContext & { consumedBy: (element: ElementRecord) => ReadonlySet<string> },
+  processes: ReadonlyArray<ElementRecord>): void {
   const owners: ElementRecord[] = [...processes, ...ctx.flows, ...[...ctx.nodes.values()].map((node) => node.element)];
   for (const node of ctx.nodes.values()) {
     owners.push(...list(node.element, "eventDefinitions"));
     const loop = asElement(node.element.loopCharacteristics);
     if (loop !== undefined) owners.push(loop);
   }
-  return owners.flatMap((element) => uncarriedFacts(element, ctx.definitions, ctx.consumedBy(element), ctx.inertAttributes));
+  for (const element of owners) requireCarried(element, ctx.definitions, ctx.consumedBy(element), ctx.inertAttributes);
 }
 
 /** Reads one BPMN source to the kernel IL; `options` are copied into the Program and select nothing here. */
@@ -223,7 +223,7 @@ export async function readKernelProgram(source: KernelSource, options: KernelPro
     const notCarried: SourceFactNotCarried[] = [];
     const ctx = createContext(parsed.definitions, parsed, scan, processes, notCarried);
     const elements = buildProgramElements(ctx);
-    notCarried.push(...collectNotCarried(ctx, processes));
+    requireAllCarried(ctx, processes);
     const program: KernelJson = {
       identity: { processId: requireId(ctx.rootProcess), sourceSha256: parsed.sha256, profile: source.profile },
       options,

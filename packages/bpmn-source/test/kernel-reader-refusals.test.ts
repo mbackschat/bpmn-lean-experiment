@@ -185,6 +185,20 @@ export const rows: readonly Row[] = [
     control: { xml: foreignAttribute("") },
   },
   {
+    code: "reader.factNotCarried",
+    description: "a CIB attribute the IL has no field for",
+    evidence: "camunda:jobPriority",
+    refused: { xml: model(`<bpmn:serviceTask id="T" camunda:delegateExpression="\${x}" camunda:jobPriority="5"/>`) },
+    control: { xml: model(`<bpmn:serviceTask id="T" camunda:delegateExpression="\${x}"/>`) },
+  },
+  {
+    code: "reader.factNotCarried",
+    description: "a process carrying CIB history configuration the IL has no field for",
+    evidence: "camunda:historyTimeToLive",
+    refused: { xml: model("").replace('<bpmn:process id="P"', '<bpmn:process id="P" camunda:historyTimeToLive="180"') },
+    control: { xml: model("") },
+  },
+  {
     code: "reader.unknownAttributeValue",
     description: "a decision result mapping the reader does not know",
     refused: { xml: model(`<bpmn:businessRuleTask id="R" camunda:decisionRef="d" camunda:mapDecisionResult="other"/>`) },

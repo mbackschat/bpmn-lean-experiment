@@ -86,8 +86,8 @@ Supporting lemmas count `private theorem` and every explicit `lemma` command, ma
 <!-- publication-statistics:language-footprint:start -->
 | Language | Files | Code | Comments | Blanks |
 |---|---:|---:|---:|---:|
-| Java | 75 | 12,183 | 575 | 1,384 |
-| TypeScript | 1,013 | 169,240 | 6,393 | 12,955 |
+| Java | 75 | 12,185 | 581 | 1,384 |
+| TypeScript | 1,013 | 169,345 | 6,442 | 12,968 |
 | Lean | 42 | 5,771 | 1,251 | 943 |
 <!-- publication-statistics:language-footprint:end -->
 
