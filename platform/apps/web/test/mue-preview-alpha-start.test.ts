@@ -4,8 +4,7 @@ import { test } from "node:test";
 import type { DeployedDefinitionVersion } from "@bpmn-lean/platform-contracts";
 
 import {
-  isMuePreviewAlphaProfile,
-  muePreviewAlphaSemanticProfile,
+  isMuePreviewAlphaDefinition,
   resolveMuePreviewAlphaStart,
 } from "../src/mue-preview-alpha-start.ts";
 
@@ -56,10 +55,13 @@ test("does not infer the Alpha preset from exact content admitted under another 
   }), null);
 });
 
-test("exposes one exact profile predicate for every Alpha-only surface", () => {
-  assert.equal(isMuePreviewAlphaProfile(muePreviewAlphaSemanticProfile), true);
+test("exposes one exact definition predicate for every Alpha-only surface", () => {
+  // The standards profile admits every portable model, so the profile alone no longer singles out Alpha.
+  assert.equal(isMuePreviewAlphaDefinition(exactDefinition), true);
+  assert.equal(isMuePreviewAlphaDefinition({ ...exactDefinition, semanticProfile: "cibseven-2.2.0" }), false);
+  assert.equal(isMuePreviewAlphaDefinition({ ...exactDefinition, processId: "Process_Other" }), false);
   assert.equal(
-    isMuePreviewAlphaProfile("cibseven-2.2.0"),
+    isMuePreviewAlphaDefinition({ ...exactDefinition, source: { ...exactDefinition.source, sha256: "0".repeat(64) } }),
     false,
   );
 });

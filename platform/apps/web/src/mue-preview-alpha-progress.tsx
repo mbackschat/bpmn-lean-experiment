@@ -12,7 +12,7 @@ import type {
   PublicJsonObject,
 } from "@bpmn-lean/platform-contracts";
 
-import { isMuePreviewAlphaProfile } from "./mue-preview-alpha-start.ts";
+import { isMuePreviewAlphaDefinition, type MuePreviewAlphaIdentity } from "./mue-preview-alpha-start.ts";
 import styles from "./mue-preview-alpha-progress.module.css";
 
 const terminalOutputName = "DataObjectReference_OutputResults";
@@ -20,17 +20,17 @@ const terminalOutputName = "DataObjectReference_OutputResults";
 export type MuePreviewAlphaProgressProps = Readonly<{
   batches: readonly CommittedTransitionBatch[];
   current: CurrentCommittedExecution;
-  semanticProfile: string;
+  definition: MuePreviewAlphaIdentity;
 }>;
 
-/** Presents only exact committed facts of the MUE Preview Alpha profile and ephemeral browser samples. */
+/** Presents only exact committed facts of the MUE Preview Alpha model and ephemeral browser samples. */
 export function MuePreviewAlphaProgress({
   batches,
   current,
-  semanticProfile,
+  definition,
 }: MuePreviewAlphaProgressProps) {
   const [samples, setSamples] = useState<readonly CurrentCommittedExecution[]>([]);
-  const isAlpha = isMuePreviewAlphaProfile(semanticProfile);
+  const isAlpha = isMuePreviewAlphaDefinition(definition);
 
   useEffect(() => {
     if (!isAlpha) return;

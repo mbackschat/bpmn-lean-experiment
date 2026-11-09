@@ -375,7 +375,7 @@ function ExecutionOverview({
       <MuePreviewAlphaProgress
         batches={publication.batches}
         current={publication.current}
-        semanticProfile={instance.definition.semanticProfile}
+        definition={instance.definition}
       />
       <div className={styles.actions}>
         <Button isPending={busy} onPress={onDownload}>Download execution history</Button>
